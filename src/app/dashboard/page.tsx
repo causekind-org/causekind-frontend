@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getMyDonations, type Donation } from "@/lib/api";
+import { getMyDonations, getMyItemListings, type Donation, type ItemListing } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Award, HandCoins, Loader2, Package, Plus } from "lucide-react";
 
-const MY_ITEMS = [
-  { title: "Children's school books (Grade 4)", status: "Approved", matches: 2 },
-  { title: "Winter jackets x 6", status: "Pending review", matches: 0 },
-  { title: "Study desk", status: "Matched", matches: 1 },
-];
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -31,11 +26,14 @@ export default function DonorDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [itemListings, setItemListings] = useState<ItemListing[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
-    getMyDonations().then(setDonations).finally(() => setLoading(false));
+    Promise.all([getMyDonations(), getMyItemListings()])
+      .then(([d, i]) => { setDonations(d); setItemListings(i); })
+      .finally(() => setLoading(false));
   }, [user, router]);
 
   if (!user || loading) {
@@ -145,25 +143,26 @@ export default function DonorDashboardPage() {
             <CardTitle>Your item listings</CardTitle>
             <Link href="/items/new"><Button variant="ghost" size="sm">Add new</Button></Link>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {MY_ITEMS.map((m) => (
-              <div key={m.title} className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <p className="font-medium">{m.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {m.matches} potential match{m.matches === 1 ? "" : "es"} nearby
-                  </p>
-                </div>
-                <Badge
-                  variant={
-                    m.status === "Approved" ? "default" :
-                    m.status === "Matched" ? "secondary" : "outline"
-                  }
-                >
-                  {m.status}
-                </Badge>
+          <CardContent>
+            {itemListings.length === 0 ? (
+              <div className="py-10 text-center">
+                <p className="text-muted-foreground">You haven&apos;t listed any items yet.</p>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-3">
+                {itemListings.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <p className="font-medium">{m.title}</p>
+                      <p className="text-xs text-muted-foreground">{m.city} · {m.condition}</p>
+                    </div>
+                    <Badge variant={m.status === "APPROVED" ? "default" : m.status === "MATCHED" ? "secondary" : "outline"}>
+                      {m.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

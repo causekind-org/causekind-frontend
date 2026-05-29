@@ -164,3 +164,117 @@ export function initiateDonation(campaignId: number, amount: number) {
 export function getMyDonations() {
   return request<Donation[]>("/api/v1/donations/mine");
 }
+
+// ── Item Listings ─────────────────────────────────────────────────────────────
+
+export type ItemListing = {
+  id: number;
+  title: string;
+  category: string;
+  quantity: number;
+  condition: string;
+  city: string;
+  pincode: string | null;
+  description: string | null;
+  status: string;
+  rejectionReason: string | null;
+  donorId: number;
+  donorName: string;
+  createdAt: string;
+};
+
+export function getItemListings() {
+  return request<ItemListing[]>("/api/v1/items");
+}
+
+export function getMyItemListings() {
+  return request<ItemListing[]>("/api/v1/items/mine");
+}
+
+export function createItemListing(data: {
+  title: string;
+  category: string;
+  quantity: number;
+  condition: string;
+  city: string;
+  pincode?: string;
+  description?: string;
+}) {
+  return request<ItemListing>("/api/v1/items", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function adminGetItemListings(status?: string) {
+  const qs = status ? `?status=${status}` : "";
+  return request<ItemListing[]>(`/api/v1/admin/items${qs}`);
+}
+
+export function adminApproveItemListing(id: number) {
+  return request<ItemListing>(`/api/v1/admin/items/${id}/approve`, { method: "PATCH" });
+}
+
+export function adminRejectItemListing(id: number, reason: string) {
+  return request<ItemListing>(`/api/v1/admin/items/${id}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+// ── Item Requests ─────────────────────────────────────────────────────────────
+
+export type ItemRequest = {
+  id: number;
+  title: string;
+  category: string;
+  quantity: number;
+  urgency: string;
+  city: string;
+  pincode: string | null;
+  description: string | null;
+  status: string;
+  rejectionReason: string | null;
+  doneeId: number;
+  doneeName: string;
+  createdAt: string;
+};
+
+export function getItemRequests() {
+  return request<ItemRequest[]>("/api/v1/item-requests");
+}
+
+export function getMyItemRequests() {
+  return request<ItemRequest[]>("/api/v1/item-requests/mine");
+}
+
+export function createItemRequest(data: {
+  title: string;
+  category: string;
+  quantity: number;
+  urgency: string;
+  city: string;
+  pincode?: string;
+  description?: string;
+}) {
+  return request<ItemRequest>("/api/v1/item-requests", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function adminGetItemRequests(status?: string) {
+  const qs = status ? `?status=${status}` : "";
+  return request<ItemRequest[]>(`/api/v1/admin/item-requests${qs}`);
+}
+
+export function adminApproveItemRequest(id: number) {
+  return request<ItemRequest>(`/api/v1/admin/item-requests/${id}/approve`, { method: "PATCH" });
+}
+
+export function adminRejectItemRequest(id: number, reason: string) {
+  return request<ItemRequest>(`/api/v1/admin/item-requests/${id}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}

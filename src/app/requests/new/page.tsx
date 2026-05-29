@@ -1,16 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
+import { createItemRequest } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+
+const CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
+const URGENCIES = [
+  { value: "NORMAL", label: "Normal" },
+  { value: "HIGH", label: "High" },
+  { value: "CRITICAL", label: "Critical" },
+];
+
+const empty = { title: "", category: "", quantity: 1, urgency: "NORMAL", city: "", pincode: "", description: "" };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <Label>{label}</Label>
       {children}
     </div>
@@ -18,82 +33,85 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function NewRequestPage() {
-  return (
-    <div>
-      <div className="border-b bg-gradient-to-b from-accent/40 to-transparent">
-        <div className="mx-auto max-w-7xl px-4 py-8">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Request an item</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Describe what you need. Admin will verify before publishing it for donors.
-          </p>
-        </div>
-      </div>
+  const { user } = useAuth();
+  const router = useRouter();
+  const [form, setForm] = useState(empty);
+  const [submitting, setSubmitting] = useState(false);
 
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <Card>
-          <CardContent className="space-y-5 p-6">
+  useEffect(() => {
+    if (!user) { router.push("/login"); return; }
+    if (user.role !== "DONEE") { router.push("/"); }
+  }, [user, router]);
+
+  function set(field: string, value: string | number) {
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await createItemRequest({ ...form, quantity: Number(form.quantity) });
+      toast.success("Request submitted for review!");
+      router.push("/donee/dashboard");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (!user) return null;
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <Card>
+        <CardHeader>
+          <CardTitle>Request an item</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Your request appears to nearby donors once admin approves. Donors anywhere in India can also sponsor the item with money.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field label="Item name">
+              <Input placeholder="e.g. Foldable wheelchair" value={form.title} onChange={(e) => set("title", e.target.value)} required />
+            </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Item name">
-                <Input placeholder="e.g. Foldable wheelchair" />
-              </Field>
               <Field label="Category">
-                <Select>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    {["Medical aid", "Education", "Livelihood", "Relief", "Household"].map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
+                <Select value={form.category} onValueChange={(v) => set("category", v)} required>
+                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
               <Field label="Quantity">
-                <Input type="number" defaultValue={1} />
+                <Input type="number" min={1} value={form.quantity} onChange={(e) => set("quantity", e.target.value)} required />
               </Field>
               <Field label="Urgency">
-                <Select>
-                  <SelectTrigger><SelectValue placeholder="Normal" /></SelectTrigger>
-                  <SelectContent>
-                    {["Normal", "High", "Critical"].map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
+                <Select value={form.urgency} onValueChange={(v) => set("urgency", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{URGENCIES.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
               <Field label="City">
-                <Input placeholder="Pune" />
+                <Input placeholder="Pune" value={form.city} onChange={(e) => set("city", e.target.value)} required />
               </Field>
               <Field label="Pincode">
-                <Input placeholder="411001" />
+                <Input placeholder="411001" value={form.pincode} onChange={(e) => set("pincode", e.target.value)} />
               </Field>
             </div>
-
             <Field label="Why you need this">
-              <Textarea rows={5} placeholder="Be specific. Helps admin verify faster and donors connect with your story." />
+              <Textarea rows={4} placeholder="Be specific. Helps admin verify faster and donors connect with your story." value={form.description} onChange={(e) => set("description", e.target.value)} />
             </Field>
-
-            <Field label="Supporting documents (optional)">
-              <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                Doctor&apos;s note, school ID, etc.
-                <div className="mt-2">
-                  <Button variant="outline" size="sm">Choose files</Button>
-                </div>
-              </div>
-            </Field>
-
-            <div className="rounded-lg bg-accent/40 p-4 text-sm">
-              Your request appears to nearby donors (default 10 km) once admin approves.
-              Donors anywhere in India can also sponsor the item with money — our trust team purchases and delivers it.
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" disabled={submitting}>
+                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : "Submit for review"}
+              </Button>
+              <Link href="/donee/dashboard"><Button type="button" variant="outline">Cancel</Button></Link>
             </div>
-
-            <div className="flex flex-wrap justify-end gap-2">
-              <Link href="/donee/dashboard">
-                <Button variant="outline">Cancel</Button>
-              </Link>
-              <Button>Submit for review</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
