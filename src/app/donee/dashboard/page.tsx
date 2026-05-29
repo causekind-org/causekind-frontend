@@ -16,11 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { HandCoins, Loader2, Package, Plus, ShieldCheck, X } from "lucide-react";
 
-const MY_REQUESTS = [
-  { title: "Wheelchair (adult, foldable)", status: "Approved", matches: 3 },
-  { title: "Sewing machine", status: "Pending review", matches: 0 },
-];
-
 const CATEGORIES = ["Medical", "Education", "Disaster Relief", "Animal Welfare", "Environment", "Community", "Other"];
 
 const emptyForm = { title: "", description: "", category: "", targetAmount: "", city: "", state: "" };
@@ -212,20 +207,10 @@ export default function DoneeDashboardPage() {
             <CardTitle>Your item requests</CardTitle>
             <Link href="/requests/new"><Button size="sm" variant="ghost">New</Button></Link>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {MY_REQUESTS.map((r) => (
-              <div key={r.title} className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <p className="font-medium">{r.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {r.matches > 0
-                      ? `${r.matches} donors nearby (10 km)`
-                      : "Will appear once approved"}
-                  </p>
-                </div>
-                <Badge variant={r.status === "Approved" ? "default" : "outline"}>{r.status}</Badge>
-              </div>
-            ))}
+          <CardContent>
+            <div className="py-10 text-center">
+              <p className="text-muted-foreground">You haven&apos;t made any item requests yet.</p>
+            </div>
           </CardContent>
         </Card>
       </div>
