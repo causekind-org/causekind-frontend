@@ -15,11 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, HandCoins, Loader2, MapPin, Package, ShieldCheck, Users, XCircle } from "lucide-react";
 
-const QUEUES = [
-  { label: "Campaigns awaiting review", count: 12 },
-  { label: "Item requests pending", count: 8 },
-  { label: "Donor item listings pending", count: 5 },
-  { label: "Contact share requests", count: 4 },
+const ITEM_QUEUES = [
+  { label: "Item requests pending" },
+  { label: "Donor item listings pending" },
+  { label: "Contact share requests" },
 ];
 
 const STATUS_OPTIONS = [
@@ -139,13 +138,17 @@ export default function AdminDashboardPage() {
               <CardTitle>Approval queues</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {QUEUES.map((q) => (
-                <Link key={q.label} href="/admin/approvals" className="block">
-                  <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
-                    <p className="font-medium">{q.label}</p>
-                    <Badge>{q.count}</Badge>
-                  </div>
-                </Link>
+              <Link href="/admin/approvals" className="block">
+                <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
+                  <p className="font-medium">Campaigns awaiting review</p>
+                  <Badge>{campaigns.filter((c) => c.status === "PENDING_APPROVAL").length}</Badge>
+                </div>
+              </Link>
+              {ITEM_QUEUES.map((q) => (
+                <div key={q.label} className="flex items-center justify-between rounded-lg border p-4 text-muted-foreground">
+                  <p className="font-medium">{q.label}</p>
+                  <Badge variant="secondary">0</Badge>
+                </div>
               ))}
             </CardContent>
           </Card>

@@ -98,7 +98,7 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
-                <Input id="city" placeholder="Pune" value={form.city} onChange={(e) => set("city", e.target.value)} required />
+                <Input id="city" placeholder="Mumbai" value={form.city} onChange={(e) => set("city", e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
