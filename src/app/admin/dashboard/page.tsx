@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign } from "@/lib/api";
+import { adminGetCampaigns, approveCampaign, rejectCampaign, adminGetItemListings, adminGetItemRequests, type Campaign } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, HandCoins, Loader2, MapPin, Package, ShieldCheck, Users, XCircle } from "lucide-react";
 
-const ITEM_QUEUES = [
-  { label: "Item requests pending" },
-  { label: "Donor item listings pending" },
-  { label: "Contact share requests" },
-];
 
 const STATUS_OPTIONS = [
   { value: "ALL", label: "All statuses" },
@@ -42,6 +37,10 @@ export default function AdminDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [activeCampaignCount, setActiveCampaignCount] = useState(0);
+  const [pendingCampaignCount, setPendingCampaignCount] = useState(0);
+  const [pendingListings, setPendingListings] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("PENDING_APPROVAL");
   const [rejectId, setRejectId] = useState<number | null>(null);
@@ -54,9 +53,21 @@ export default function AdminDashboardPage() {
 
     let cancelled = false;
     setLoading(true);
-    adminGetCampaigns(statusFilter === "ALL" ? undefined : statusFilter)
-      .then((data) => { if (!cancelled) setCampaigns(data); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+    Promise.all([
+      adminGetCampaigns(statusFilter === "ALL" ? undefined : statusFilter),
+      adminGetCampaigns("APPROVED"),
+      adminGetCampaigns("PENDING_APPROVAL"),
+      adminGetItemListings("PENDING_APPROVAL"),
+      adminGetItemRequests("PENDING_APPROVAL"),
+    ]).then(([c, approved, pending, l, r]) => {
+      if (!cancelled) {
+        setCampaigns(c);
+        setActiveCampaignCount(approved.length);
+        setPendingCampaignCount(pending.length);
+        setPendingListings(l.length);
+        setPendingRequests(r.length);
+      }
+    }).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, [user, router, statusFilter]);
@@ -94,8 +105,8 @@ export default function AdminDashboardPage() {
 
   const stats = [
     { label: "Verified donees", value: "—", icon: Users },
-    { label: "Active campaigns", value: String(campaigns.filter((c) => c.status === "APPROVED").length), icon: HandCoins },
-    { label: "Pending review", value: String(campaigns.filter((c) => c.status === "PENDING_APPROVAL").length), icon: Package },
+    { label: "Active campaigns", value: String(activeCampaignCount), icon: HandCoins },
+    { label: "Pending review", value: String(pendingCampaignCount), icon: Package },
     { label: "Verified rate", value: "100%", icon: ShieldCheck },
   ];
 
@@ -144,12 +155,22 @@ export default function AdminDashboardPage() {
                   <Badge>{campaigns.filter((c) => c.status === "PENDING_APPROVAL").length}</Badge>
                 </div>
               </Link>
-              {ITEM_QUEUES.map((q) => (
-                <div key={q.label} className="flex items-center justify-between rounded-lg border p-4 text-muted-foreground">
-                  <p className="font-medium">{q.label}</p>
-                  <Badge variant="secondary">0</Badge>
+              <Link href="/admin/approvals" className="block">
+                <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
+                  <p className="font-medium">Item requests pending</p>
+                  <Badge>{pendingRequests}</Badge>
                 </div>
-              ))}
+              </Link>
+              <Link href="/admin/approvals" className="block">
+                <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
+                  <p className="font-medium">Donor item listings pending</p>
+                  <Badge>{pendingListings}</Badge>
+                </div>
+              </Link>
+              <div className="flex items-center justify-between rounded-lg border p-4 text-muted-foreground">
+                <p className="font-medium">Contact share requests</p>
+                <Badge variant="secondary">0</Badge>
+              </div>
             </CardContent>
           </Card>
 

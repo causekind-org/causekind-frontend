@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { getMyCampaigns, createCampaign, type Campaign } from "@/lib/api";
+import { getMyCampaigns, createCampaign, getMyItemRequests, type Campaign, type ItemRequest } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ export default function DoneeDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [itemRequests, setItemRequests] = useState<ItemRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -42,7 +43,9 @@ export default function DoneeDashboardPage() {
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
     if (user.role !== "DONEE") { router.push("/"); return; }
-    getMyCampaigns().then(setCampaigns).finally(() => setLoading(false));
+    Promise.all([getMyCampaigns(), getMyItemRequests()])
+      .then(([c, r]) => { setCampaigns(c); setItemRequests(r); })
+      .finally(() => setLoading(false));
   }, [user, router]);
 
   function set(field: string, value: string) {
@@ -208,9 +211,25 @@ export default function DoneeDashboardPage() {
             <Link href="/requests/new"><Button size="sm" variant="ghost">New</Button></Link>
           </CardHeader>
           <CardContent>
-            <div className="py-10 text-center">
-              <p className="text-muted-foreground">You haven&apos;t made any item requests yet.</p>
-            </div>
+            {itemRequests.length === 0 ? (
+              <div className="py-10 text-center">
+                <p className="text-muted-foreground">You haven&apos;t made any item requests yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {itemRequests.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <p className="font-medium">{r.title}</p>
+                      <p className="text-xs text-muted-foreground">{r.city} · {r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase()} urgency</p>
+                    </div>
+                    <Badge variant={r.status === "APPROVED" ? "default" : r.status === "REJECTED" ? "destructive" : "outline"}>
+                      {r.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
