@@ -6,17 +6,17 @@
 :root {
   --radius: 0.75rem;
 
-  /* Brand colors */
-  --brand-orange: oklch(0.62 0.21 32);
-  --brand-green: oklch(0.72 0.24 145);
+  /* Brand colors — exact from logo */
+  --brand-orange: #f8530e;
+  --brand-green: #00df5b;
 
   /* Base */
   --background: oklch(0.99 0.004 60);
   --foreground: oklch(0.18 0.04 30);
 
   /* Primary — Brand Orange */
-  --primary: oklch(0.62 0.21 32);
-  --primary-foreground: oklch(1 0 0);
+  --primary: #f8530e;
+  --primary-foreground: #ffffff;
 
   /* Secondary — soft warm grey */
   --secondary: oklch(0.96 0.02 50);
@@ -43,7 +43,7 @@
   /* Border & Input */
   --border: oklch(0.91 0.02 50);
   --input: oklch(0.91 0.02 50);
-  --ring: oklch(0.62 0.21 32);
+  --ring: #f8530e;
 
   /* Charts */
   --chart-1: oklch(0.62 0.21 32);

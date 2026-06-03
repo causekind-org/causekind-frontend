@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button";
 function CauseKindLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   return (
-    <span className={`font-extrabold tracking-tight ${sizes[size]}`}>
+    <span
+      className={`font-extrabold tracking-tight ${sizes[size]}`}
+      style={{ fontFamily: "var(--font-nunito), sans-serif" }}
+    >
       <span className="brand-cause">Cause</span>
       <span className="brand-kind">kind</span>
     </span>
