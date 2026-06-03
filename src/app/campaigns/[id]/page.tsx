@@ -17,12 +17,6 @@ import { ArrowLeft, Loader2, MapPin, ShieldCheck, User, Users } from "lucide-rea
 const PRESETS_ONETIME = [500, 1000, 2500, 5000];
 const PRESETS_DAILY = [5, 10, 20, 50, 100];
 
-const RECENT_DONORS = [
-  "Anjali S. · ₹5,000",
-  "Anonymous · ₹1,000",
-  "Karthik R. · ₹2,500",
-  "Priya M. · ₹500",
-];
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -123,13 +117,8 @@ export default function CampaignDetailPage() {
                 <Users className="h-4 w-4" /> Recent donors
               </CardTitle>
             </CardHeader>
-            <CardContent className="divide-y">
-              {RECENT_DONORS.map((d) => (
-                <div key={d} className="flex items-center justify-between py-2 text-sm">
-                  <span>{d}</span>
-                  <span className="text-muted-foreground">just now</span>
-                </div>
-              ))}
+            <CardContent>
+              <p className="text-sm text-muted-foreground text-center py-4">Be the first to donate to this campaign!</p>
             </CardContent>
           </Card>
         </div>

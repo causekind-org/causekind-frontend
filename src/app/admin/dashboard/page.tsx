@@ -186,10 +186,10 @@ export default function AdminDashboardPage() {
               </p>
               <div className="space-y-2">
                 <Label>Radius (km)</Label>
-                <Input defaultValue={10} type="number" min={1} max={100} />
+                <Input defaultValue={10} type="number" min={1} max={100} disabled />
               </div>
-              <Button className="w-full">Update radius</Button>
-              <p className="text-xs text-muted-foreground">Changes apply to all future matches.</p>
+              <Button className="w-full" disabled>Update radius</Button>
+              <p className="text-xs text-muted-foreground">Available when the matching system is live.</p>
             </CardContent>
           </Card>
         </div>
@@ -286,14 +286,16 @@ export default function AdminDashboardPage() {
           </TabsContent>
 
           <TabsContent value="items" className="mt-6">
-            <div className="rounded-lg border border-dashed p-16 text-center text-muted-foreground">
-              Item requests — coming soon
+            <div className="rounded-lg border border-dashed p-16 text-center space-y-3">
+              <p className="text-muted-foreground">Manage item requests from the approval queue.</p>
+              <Link href="/admin/approvals"><Button variant="outline">Go to approval queue</Button></Link>
             </div>
           </TabsContent>
 
           <TabsContent value="listings" className="mt-6">
-            <div className="rounded-lg border border-dashed p-16 text-center text-muted-foreground">
-              Item listings — coming soon
+            <div className="rounded-lg border border-dashed p-16 text-center space-y-3">
+              <p className="text-muted-foreground">Manage item listings from the approval queue.</p>
+              <Link href="/admin/approvals"><Button variant="outline">Go to approval queue</Button></Link>
             </div>
           </TabsContent>
 
