@@ -36,7 +36,6 @@ export default function NewItemPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
-    if (user.role !== "DONOR") { router.push("/"); }
   }, [user, router]);
 
   function set(field: string, value: string | number) {

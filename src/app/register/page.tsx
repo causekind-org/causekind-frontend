@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { HandCoins, HeartHandshake } from "lucide-react";
 
 export default function RegisterPage() {
   const { setAuth, user } = useAuth();
@@ -21,7 +20,6 @@ export default function RegisterPage() {
     phone: "",
     city: "",
     password: "",
-    role: "DONOR" as "DONOR" | "DONEE",
   });
   const [loading, setLoading] = useState(false);
 
@@ -55,34 +53,10 @@ export default function RegisterPage() {
       <Card>
         <CardHeader>
           <CardTitle>Create your CauseKind account</CardTitle>
-          <CardDescription>Pick how you want to use CauseKind.</CardDescription>
+          <CardDescription>Join CauseKind to donate or get support.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Role selector */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                { value: "DONOR" as const, icon: HeartHandshake, title: "I want to donate", desc: "Give money to verified campaigns." },
-                { value: "DONEE" as const, icon: HandCoins, title: "I need support", desc: "Create verified campaigns and raise funds." },
-              ].map((opt) => {
-                const active = form.role === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => set("role", opt.value)}
-                    className={`rounded-xl border p-4 text-left transition ${
-                      active ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "hover:border-primary/40"
-                    }`}
-                  >
-                    <opt.icon className={`h-5 w-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
-                    <p className="mt-2 font-semibold text-sm">{opt.title}</p>
-                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                  </button>
-                );
-              })}
-            </div>
-
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full name</Label>
@@ -107,7 +81,7 @@ export default function RegisterPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account…" : `Create account as ${form.role === "DONOR" ? "Donor" : "Donee"}`}
+              {loading ? "Creating account…" : "Create account"}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have one?{" "}

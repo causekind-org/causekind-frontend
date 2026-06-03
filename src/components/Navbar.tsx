@@ -13,8 +13,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   const dashHref =
-    user?.role === "ADMIN" ? "/admin/dashboard" :
-    user?.role === "DONEE" ? "/donee/dashboard" : "/dashboard";
+    user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
 
   function handleLogout() {
     logout();

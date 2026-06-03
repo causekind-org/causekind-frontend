@@ -42,7 +42,6 @@ export default function DoneeDashboardPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
-    if (user.role !== "DONEE") { router.push("/"); return; }
     Promise.all([getMyCampaigns(), getMyItemRequests()])
       .then(([c, r]) => { setCampaigns(c); setItemRequests(r); })
       .finally(() => setLoading(false));
