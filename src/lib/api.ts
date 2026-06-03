@@ -45,7 +45,6 @@ export function register(data: {
   phone: string;
   city: string;
   password: string;
-  role: "DONOR" | "DONEE";
 }) {
   return request<{ token: string }>("/api/v1/auth/register", {
     method: "POST",

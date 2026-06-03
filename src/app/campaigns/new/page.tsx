@@ -42,7 +42,6 @@ export default function NewCampaignPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
-    if (user.role !== "DONEE") { router.push("/"); }
   }, [user, router]);
 
   function set(field: string, value: string) {
