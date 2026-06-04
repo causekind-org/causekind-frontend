@@ -15,7 +15,7 @@ function cardImage(category: string, id: number): string | null {
   const imgs = CATEGORY_IMAGES[category];
   return imgs ? imgs[id % imgs.length] : null;
 }
-import { getCampaigns, getItemRequests, getItemListings, type Campaign } from "@/lib/api";
+import { getCampaigns, getPlatformStats, type Campaign, type PlatformStats } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -217,18 +217,13 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
 
 export default function HomePage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [itemRequestCount, setItemRequestCount] = useState(0);
-  const [itemListingCount, setItemListingCount] = useState(0);
+  const [stats, setStats] = useState<PlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getCampaigns(), getItemRequests(), getItemListings()])
-      .then(([c, r, l]) => {
-        setCampaigns(c);
-        setItemRequestCount(r.length);
-        setItemListingCount(l.length);
-      })
+    Promise.all([getCampaigns(), getPlatformStats()])
+      .then(([c, s]) => { setCampaigns(c); setStats(s); })
       .catch(() => setError("Could not load campaigns. Is the backend running?"))
       .finally(() => setLoading(false));
   }, []);
@@ -243,10 +238,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-2 divide-x divide-border md:grid-cols-4">
             {[
-              { value: campaigns.length.toString(), label: "Active campaigns" },
-              { value: `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(campaigns.reduce((s, c) => s + c.amountRaised, 0))}`, label: "Raised for verified causes" },
-              { value: itemRequestCount.toString(), label: "People needing items" },
-              { value: itemListingCount.toString(), label: "Items offered by donors" },
+              { value: stats ? stats.activeCampaigns.toString() : "—", label: "Active campaigns" },
+              { value: stats ? `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(stats.totalRaised)}` : "—", label: "Raised for verified causes" },
+              { value: stats ? stats.totalDonations.toString() : "—", label: "Donations completed" },
+              { value: stats ? stats.uniqueDonors.toString() : "—", label: "Unique donors" },
             ].map((s) => (
               <div key={s.label} className="px-6 py-5 text-center">
                 <p className="text-2xl font-extrabold text-primary sm:text-3xl">{s.value}</p>

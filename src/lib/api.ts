@@ -52,6 +52,20 @@ export function register(data: {
   });
 }
 
+// ── Platform Stats ────────────────────────────────────────────────────────────
+
+export type PlatformStats = {
+  activeCampaigns: number;
+  totalDonations: number;
+  uniqueDonors: number;
+  totalRaised: number;
+  topCategory: string;
+};
+
+export function getPlatformStats() {
+  return request<PlatformStats>("/api/v1/stats");
+}
+
 export function forgotPassword(email: string) {
   return request<{ message: string }>("/api/v1/auth/forgot-password", {
     method: "POST",
