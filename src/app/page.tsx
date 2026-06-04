@@ -15,7 +15,7 @@ function cardImage(category: string, id: number): string | null {
   const imgs = CATEGORY_IMAGES[category];
   return imgs ? imgs[id % imgs.length] : null;
 }
-import { getCampaigns, type Campaign } from "@/lib/api";
+import { getCampaigns, getItemRequests, getItemListings, type Campaign } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,12 +55,6 @@ function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
 }
 
-const STATS = [
-  { value: "0%", label: "Fees charged to donors" },
-  { value: "100%", label: "Campaigns admin-verified" },
-  { value: "10 km", label: "Default in-kind match radius" },
-  { value: "₹1", label: "Minimum donation accepted" },
-];
 
 function HeroSlider() {
   const [current, setCurrent] = useState(0);
@@ -178,21 +172,7 @@ function HeroSlider() {
           </div>
         </div>
       </section>
-
-      {/* ── Stats strip ── */}
-      <div className="border-b bg-background shadow-sm">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 divide-x divide-border md:grid-cols-4">
-            {STATS.map((s) => (
-              <div key={s.label} className="px-6 py-5 text-center">
-                <p className="text-2xl font-extrabold text-primary sm:text-3xl">{s.value}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
+  </>
   );
 }
 
@@ -237,12 +217,18 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
 
 export default function HomePage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [itemRequestCount, setItemRequestCount] = useState(0);
+  const [itemListingCount, setItemListingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getCampaigns()
-      .then(setCampaigns)
+    Promise.all([getCampaigns(), getItemRequests(), getItemListings()])
+      .then(([c, r, l]) => {
+        setCampaigns(c);
+        setItemRequestCount(r.length);
+        setItemListingCount(l.length);
+      })
       .catch(() => setError("Could not load campaigns. Is the backend running?"))
       .finally(() => setLoading(false));
   }, []);
@@ -251,6 +237,25 @@ export default function HomePage() {
     <div>
       {/* Hero Image Slider */}
       <HeroSlider />
+
+      {/* ── Stats strip — real live data ── */}
+      <div className="border-b bg-background shadow-sm">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-2 divide-x divide-border md:grid-cols-4">
+            {[
+              { value: campaigns.length.toString(), label: "Active campaigns" },
+              { value: `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(campaigns.reduce((s, c) => s + c.amountRaised, 0))}`, label: "Raised for verified causes" },
+              { value: itemRequestCount.toString(), label: "People needing items" },
+              { value: itemListingCount.toString(), label: "Items offered by donors" },
+            ].map((s) => (
+              <div key={s.label} className="px-6 py-5 text-center">
+                <p className="text-2xl font-extrabold text-primary sm:text-3xl">{s.value}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Features */}
       <section className="mx-auto max-w-7xl px-4 py-16">
