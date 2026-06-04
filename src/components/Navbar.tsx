@@ -130,7 +130,7 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-foreground text-background">
+    <footer className="bg-foreground text-background">
       <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 md:grid-cols-4">
         <div className="space-y-4">
           <CauseKindLogo size="lg" />
