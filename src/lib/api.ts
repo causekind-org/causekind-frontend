@@ -66,6 +66,19 @@ export function getPlatformStats() {
   return request<PlatformStats>("/api/v1/stats");
 }
 
+export type RecentActivity = {
+  type: "DONATION" | "CAMPAIGN";
+  campaignTitle: string;
+  city: string;
+  category: string;
+  amount: number | null;
+  createdAt: string;
+};
+
+export function getRecentActivity() {
+  return request<RecentActivity[]>("/api/v1/stats/recent-activity");
+}
+
 export function forgotPassword(email: string) {
   return request<{ message: string }>("/api/v1/auth/forgot-password", {
     method: "POST",

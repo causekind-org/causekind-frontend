@@ -15,7 +15,7 @@ function cardImage(category: string, id: number): string | null {
   const imgs = CATEGORY_IMAGES[category];
   return imgs ? imgs[id % imgs.length] : null;
 }
-import { getCampaigns, getPlatformStats, type Campaign, type PlatformStats } from "@/lib/api";
+import { getCampaigns, getPlatformStats, getRecentActivity, type Campaign, type PlatformStats, type RecentActivity } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -218,12 +218,13 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
 export default function HomePage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [activity, setActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getCampaigns(), getPlatformStats()])
-      .then(([c, s]) => { setCampaigns(c); setStats(s); })
+    Promise.all([getCampaigns(), getPlatformStats(), getRecentActivity()])
+      .then(([c, s, a]) => { setCampaigns(c); setStats(s); setActivity(a); })
       .catch(() => setError("Could not load campaigns. Is the backend running?"))
       .finally(() => setLoading(false));
   }, []);
@@ -251,6 +252,39 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* ── Live Activity Feed ── */}
+      {activity.length > 0 && (
+        <div className="border-b bg-accent/30 py-3 overflow-hidden">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
+              <span className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
+                LIVE
+              </span>
+              <div className="flex gap-6 animate-none">
+                {activity.map((a, i) => (
+                  <span key={i} className="shrink-0 flex items-center gap-2 text-sm text-foreground/80 whitespace-nowrap">
+                    {a.type === "DONATION" ? (
+                      <>
+                        <span className="text-primary font-semibold">₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}</span>
+                        donated to <span className="font-medium truncate max-w-[140px]">{a.campaignTitle}</span>
+                        <span className="text-muted-foreground">· {a.city}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-green-600 font-semibold">New campaign</span>
+                        <span className="font-medium truncate max-w-[140px]">{a.campaignTitle}</span>
+                        <span className="text-muted-foreground">· {a.category} · {a.city}</span>
+                      </>
+                    )}
+                    {i < activity.length - 1 && <span className="text-border ml-4">·</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Features */}
       <section className="mx-auto max-w-7xl px-4 py-16">
