@@ -156,3 +156,21 @@ body {
 
 .hero-slide-active       { animation: kenburns     7s ease-out forwards; }
 .hero-slide-active-alt   { animation: kenburns-alt 7s ease-out forwards; }
+
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker 30s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

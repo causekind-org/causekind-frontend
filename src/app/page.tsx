@@ -253,34 +253,38 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── Live Activity Feed ── */}
+      {/* ── Live Activity Ticker ── */}
       {activity.length > 0 && (
-        <div className="border-b bg-accent/30 py-3 overflow-hidden">
-          <div className="mx-auto max-w-7xl px-4">
-            <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
-              <span className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
-                LIVE
-              </span>
-              <div className="flex gap-6 animate-none">
-                {activity.map((a, i) => (
-                  <span key={i} className="shrink-0 flex items-center gap-2 text-sm text-foreground/80 whitespace-nowrap">
-                    {a.type === "DONATION" ? (
-                      <>
-                        <span className="text-primary font-semibold">₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}</span>
-                        donated to <span className="font-medium truncate max-w-[140px]">{a.campaignTitle}</span>
-                        <span className="text-muted-foreground">· {a.city}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-green-600 font-semibold">New campaign</span>
-                        <span className="font-medium truncate max-w-[140px]">{a.campaignTitle}</span>
-                        <span className="text-muted-foreground">· {a.category} · {a.city}</span>
-                      </>
-                    )}
-                    {i < activity.length - 1 && <span className="text-border ml-4">·</span>}
-                  </span>
-                ))}
-              </div>
+        <div className="border-b bg-accent/30 py-2.5 overflow-hidden flex items-center gap-3">
+          <span className="shrink-0 ml-4 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white z-10">
+            LIVE
+          </span>
+          <div className="overflow-hidden flex-1">
+            {/* Duplicate items for seamless infinite scroll */}
+            <div className="ticker-track">
+              {[...activity, ...activity].map((a, i) => (
+                <span key={i} className="flex items-center gap-2 text-sm text-foreground/80 whitespace-nowrap px-8">
+                  {a.type === "DONATION" ? (
+                    <>
+                      <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+                      <span className="text-primary font-semibold">
+                        ₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}
+                      </span>
+                      donated to
+                      <span className="font-medium">{a.campaignTitle}</span>
+                      <span className="text-muted-foreground">· {a.city}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                      <span className="font-semibold" style={{ color: "var(--brand-green)" }}>New campaign</span>
+                      <span className="font-medium">{a.campaignTitle}</span>
+                      <span className="text-muted-foreground">· {a.category} · {a.city}</span>
+                    </>
+                  )}
+                  <span className="text-border mx-4">|</span>
+                </span>
+              ))}
             </div>
           </div>
         </div>
