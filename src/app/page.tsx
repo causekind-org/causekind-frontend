@@ -56,10 +56,10 @@ function formatINR(n: number) {
 }
 
 const STATS = [
-  { value: "₹2.4 Cr+", label: "Raised for verified causes" },
-  { value: "1,284", label: "Verified donees helped" },
-  { value: "5,127", label: "Items donated in-kind" },
-  { value: "98%", label: "Campaign verification rate" },
+  { value: "0%", label: "Fees charged to donors" },
+  { value: "100%", label: "Campaigns admin-verified" },
+  { value: "10 km", label: "Default in-kind match radius" },
+  { value: "₹1", label: "Minimum donation accepted" },
 ];
 
 function HeroSlider() {
@@ -119,8 +119,8 @@ function HeroSlider() {
 
               {/* Headline */}
               <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-                Give money or things you own —{" "}
-                <span className="text-primary-foreground opacity-90">to people who truly need them.</span>
+                Give money or things you own.{" "}
+                <span className="text-primary-foreground opacity-90">Help people who truly need it.</span>
               </h1>
 
               {/* Description */}
