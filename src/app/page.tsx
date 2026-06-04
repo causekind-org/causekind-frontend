@@ -337,7 +337,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="border-y bg-primary text-primary-foreground">
+      <section className="border-t bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-12 text-center">
           <h2 className="text-3xl font-bold">Be part of someone&apos;s turning point.</h2>
           <p className="max-w-xl opacity-90">
