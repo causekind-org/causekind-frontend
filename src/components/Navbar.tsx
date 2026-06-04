@@ -131,32 +131,32 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="border-t bg-foreground text-background">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 text-sm sm:grid-cols-2 md:grid-cols-4">
-        <div>
+      <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 md:grid-cols-4">
+        <div className="space-y-4">
           <CauseKindLogo size="lg" />
-          <p className="mt-3 text-background/60 leading-relaxed">
-            India&apos;s verified giving platform. Zero fees for donors — 100% of your donation goes to the cause.
+          <p className="text-background/60 leading-relaxed">
+            India&apos;s verified giving platform. Zero fees for donors. 100% of your donation goes to the cause.
           </p>
         </div>
-        <div>
-          <p className="font-semibold text-background">Give</p>
-          <ul className="mt-3 space-y-2 text-background/60">
+        <div className="space-y-4">
+          <p className="font-semibold text-background tracking-wide uppercase text-xs">Give</p>
+          <ul className="space-y-3 text-background/60">
             <li><Link href="/campaigns" className="hover:text-background transition">Money campaigns</Link></li>
             <li><Link href="/items" className="hover:text-background transition">Item listings</Link></li>
             <li><Link href="/requests" className="hover:text-background transition">In-kind requests</Link></li>
           </ul>
         </div>
-        <div>
-          <p className="font-semibold text-background">Get support</p>
-          <ul className="mt-3 space-y-2 text-background/60">
+        <div className="space-y-4">
+          <p className="font-semibold text-background tracking-wide uppercase text-xs">Get support</p>
+          <ul className="space-y-3 text-background/60">
             <li><Link href="/register" className="hover:text-background transition">Create an account</Link></li>
             <li><Link href="/dashboard" className="hover:text-background transition">My dashboard</Link></li>
             <li><Link href="/campaigns/new" className="hover:text-background transition">Start a campaign</Link></li>
           </ul>
         </div>
-        <div>
-          <p className="font-semibold text-background">Trust</p>
-          <ul className="mt-3 space-y-2 text-background/60">
+        <div className="space-y-4">
+          <p className="font-semibold text-background tracking-wide uppercase text-xs">Trust</p>
+          <ul className="space-y-3 text-background/60">
             <li>Admin-verified listings</li>
             <li>Zero fees charged to donors</li>
             <li>Razorpay-secured payments</li>
