@@ -234,22 +234,26 @@ export default function HomePage() {
       {/* Hero Image Slider */}
       <HeroSlider />
 
-      {/* ── Stats strip — real live data ── */}
+      {/* ── India Online Giving Stats ── */}
       <div className="border-b bg-background shadow-sm">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-2 divide-x divide-border md:grid-cols-4">
             {[
-              { value: stats ? stats.activeCampaigns.toString() : "—", label: "Active campaigns" },
-              { value: stats ? `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(stats.totalRaised)}` : "—", label: "Raised for verified causes" },
-              { value: stats ? stats.totalDonations.toString() : "—", label: "Donations completed" },
-              { value: stats ? stats.uniqueDonors.toString() : "—", label: "Unique donors" },
+              { value: "₹6,000 Cr+", label: "Cumulative online donations in India", note: "Across all major platforms" },
+              { value: "70%", label: "Donations go to medical causes", note: "Largest category by volume" },
+              { value: "₹1,500 Cr", label: "Donated online every year", note: "Growing 15–18% annually" },
+              { value: "96 Lakh+", label: "Individual donations made online", note: "Source: Milaap, Ketto & others" },
             ].map((s) => (
               <div key={s.label} className="px-6 py-5 text-center">
                 <p className="text-2xl font-extrabold text-primary sm:text-3xl">{s.value}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{s.label}</p>
+                <p className="mt-0.5 text-xs font-medium text-foreground/80 sm:text-sm">{s.label}</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">{s.note}</p>
               </div>
             ))}
           </div>
+        </div>
+        <div className="border-t px-4 py-2 text-center text-[11px] text-muted-foreground">
+          India online giving landscape · Source: Milaap, Ketto, ImpactGuru & Give platform reports
         </div>
       </div>
 
