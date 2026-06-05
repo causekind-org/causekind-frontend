@@ -22,7 +22,15 @@ async function request<T>(
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const msg =
-      body?.message ?? body?.title ?? `HTTP ${res.status}`;
+      body?.message ??
+      body?.detail ??
+      (Array.isArray(body?.errors) && body.errors.length > 0
+        ? body.errors.map((e: { defaultMessage?: string; field?: string }) =>
+            e.field ? `${e.field}: ${e.defaultMessage}` : e.defaultMessage
+          ).join(", ")
+        : null) ??
+      (body?.title !== "Bad Request" ? body?.title : null) ??
+      `Something went wrong (${res.status})`;
     throw new Error(msg);
   }
 
