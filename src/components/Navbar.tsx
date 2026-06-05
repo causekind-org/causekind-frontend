@@ -3,17 +3,29 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+
+function CauseKindLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+  const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
+  return (
+    <span
+      className={`font-extrabold tracking-tight ${sizes[size]}`}
+      style={{ fontFamily: "var(--font-nunito), sans-serif" }}
+    >
+      <span className="brand-cause">Cause</span>
+      <span className="brand-kind">kind</span>
+    </span>
+  );
+}
 
 export function SiteHeader() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const dashHref =
-    user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
+  const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
 
   function handleLogout() {
     logout();
@@ -22,30 +34,31 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Heart className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-bold tracking-tight">CauseKind</span>
-          <span className="ml-1 hidden rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground sm:inline">
-            Verified
-          </span>
+          <CauseKindLogo />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
-          <Link href="/campaigns" className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 hover:bg-accent hover:text-foreground">
-            Campaigns
-          </Link>
-          <Link href="/requests" className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 hover:bg-accent hover:text-foreground">
-            In-Kind Requests
-          </Link>
-          <Link href="/items" className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 hover:bg-accent hover:text-foreground">
-            Item Listings
-          </Link>
+          {[
+            { href: "/campaigns", label: "Campaigns" },
+            { href: "/requests", label: "In-Kind Requests" },
+            { href: "/items", label: "Item Listings" },
+          ].map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition hover:bg-accent hover:text-foreground"
+            >
+              {link.label}
+            </Link>
+          ))}
           {user && (
-            <Link href={dashHref} className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 hover:bg-accent hover:text-foreground">
+            <Link
+              href={dashHref}
+              className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition hover:bg-accent hover:text-foreground"
+            >
               Dashboard
             </Link>
           )}
@@ -60,7 +73,7 @@ export function SiteHeader() {
           ) : (
             <>
               <Link href="/login"><Button variant="ghost" size="sm">Log in</Button></Link>
-              <Link href="/register"><Button size="sm">Sign up</Button></Link>
+              <Link href="/register"><Button size="sm" className="bg-primary text-white hover:bg-primary/90">Sign up</Button></Link>
             </>
           )}
         </div>
@@ -74,15 +87,20 @@ export function SiteHeader() {
         <div className="border-t bg-white lg:hidden">
           <div className="mx-auto max-w-7xl px-4 py-3">
             <div className="flex flex-col">
-              <Link href="/campaigns" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent">
-                Campaigns
-              </Link>
-              <Link href="/requests" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent">
-                In-Kind Requests
-              </Link>
-              <Link href="/items" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent">
-                Item Listings
-              </Link>
+              {[
+                { href: "/campaigns", label: "Campaigns" },
+                { href: "/requests", label: "In-Kind Requests" },
+                { href: "/items", label: "Item Listings" },
+              ].map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent"
+                >
+                  {link.label}
+                </Link>
+              ))}
               {user && (
                 <Link href={dashHref} onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent">
                   Dashboard
@@ -112,45 +130,41 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-muted/40">
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 text-sm sm:grid-cols-2 md:grid-cols-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Heart className="h-4 w-4" />
-            </div>
-            <span className="font-semibold">CauseKind</span>
-          </div>
-          <p className="mt-3 text-muted-foreground">
-            India&apos;s verified giving platform. Zero fees for donors — 100% of your donation goes to the cause.
+    <footer className="bg-foreground text-background">
+      <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 md:grid-cols-4">
+        <div className="space-y-4">
+          <CauseKindLogo size="lg" />
+          <p className="text-background/60 leading-relaxed">
+            India&apos;s verified giving platform. Zero fees for donors. 100% of your donation goes to the cause.
           </p>
         </div>
-        <div>
-          <p className="font-semibold">Give</p>
-          <ul className="mt-2 space-y-1 text-muted-foreground">
-            <li><Link href="/campaigns" className="hover:text-foreground">Money campaigns</Link></li>
-            <li><Link href="/items" className="hover:text-foreground">Item listings</Link></li>
-            <li><Link href="/requests" className="hover:text-foreground">In-kind requests</Link></li>
+        <div className="space-y-4">
+          <p className="font-semibold text-background tracking-wide uppercase text-xs">Give</p>
+          <ul className="space-y-3 text-background/60">
+            <li><Link href="/campaigns" className="hover:text-background transition">Money campaigns</Link></li>
+            <li><Link href="/items" className="hover:text-background transition">Item listings</Link></li>
+            <li><Link href="/requests" className="hover:text-background transition">In-kind requests</Link></li>
           </ul>
         </div>
-        <div>
-          <p className="font-semibold">Receive</p>
-          <ul className="mt-2 space-y-1 text-muted-foreground">
-            <li><Link href="/register" className="hover:text-foreground">Create an account</Link></li>
-            <li><Link href="/donee/dashboard" className="hover:text-foreground">Donee dashboard</Link></li>
+        <div className="space-y-4">
+          <p className="font-semibold text-background tracking-wide uppercase text-xs">Get support</p>
+          <ul className="space-y-3 text-background/60">
+            <li><Link href="/register" className="hover:text-background transition">Create an account</Link></li>
+            <li><Link href="/dashboard" className="hover:text-background transition">My dashboard</Link></li>
+            <li><Link href="/campaigns/new" className="hover:text-background transition">Start a campaign</Link></li>
           </ul>
         </div>
-        <div>
-          <p className="font-semibold">Trust</p>
-          <ul className="mt-2 space-y-1 text-muted-foreground">
+        <div className="space-y-4">
+          <p className="font-semibold text-background tracking-wide uppercase text-xs">Trust</p>
+          <ul className="space-y-3 text-background/60">
             <li>Admin-verified listings</li>
             <li>Zero fees charged to donors</li>
             <li>Razorpay-secured payments</li>
           </ul>
         </div>
       </div>
-      <div className="border-t py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} CauseKind. Made with care in India.
+      <div className="border-t border-background/10 py-5 text-center text-xs text-background/40">
+        © {new Date().getFullYear()} <span className="brand-cause font-semibold">Cause</span><span className="brand-kind font-semibold">kind</span>. Made with care in India.
       </div>
     </footer>
   );

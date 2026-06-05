@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Nunito } from "next/font/google";
 import "@/styles.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["700", "800", "900"],
+});
+
 export const metadata: Metadata = {
   title: "CauseKind — Give With Purpose",
   description: "Discover and support verified charity campaigns.",
@@ -27,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}>
         <AuthProvider>
           <SiteHeader />
           <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>

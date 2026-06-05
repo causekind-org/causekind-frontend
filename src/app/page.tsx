@@ -15,7 +15,7 @@ function cardImage(category: string, id: number): string | null {
   const imgs = CATEGORY_IMAGES[category];
   return imgs ? imgs[id % imgs.length] : null;
 }
-import { getCampaigns, type Campaign } from "@/lib/api";
+import { getCampaigns, getPlatformStats, getRecentActivity, type Campaign, type PlatformStats, type RecentActivity } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,12 +55,6 @@ function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
 }
 
-const STATS = [
-  { value: "₹2.4 Cr+", label: "Raised for verified causes" },
-  { value: "1,284", label: "Verified donees helped" },
-  { value: "5,127", label: "Items donated in-kind" },
-  { value: "98%", label: "Campaign verification rate" },
-];
 
 function HeroSlider() {
   const [current, setCurrent] = useState(0);
@@ -119,8 +113,8 @@ function HeroSlider() {
 
               {/* Headline */}
               <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-                Give money or things you own —{" "}
-                <span className="text-primary-foreground opacity-90">to people who truly need them.</span>
+                Give money or things you own.{" "}
+                <span className="text-primary-foreground opacity-90">Help people who truly need it.</span>
               </h1>
 
               {/* Description */}
@@ -178,21 +172,7 @@ function HeroSlider() {
           </div>
         </div>
       </section>
-
-      {/* ── Stats strip ── */}
-      <div className="border-b bg-background shadow-sm">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 divide-x divide-border md:grid-cols-4">
-            {STATS.map((s) => (
-              <div key={s.label} className="px-6 py-5 text-center">
-                <p className="text-2xl font-extrabold text-primary sm:text-3xl">{s.value}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
+  </>
   );
 }
 
@@ -237,12 +217,14 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
 
 export default function HomePage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [activity, setActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getCampaigns()
-      .then(setCampaigns)
+    Promise.all([getCampaigns(), getPlatformStats(), getRecentActivity()])
+      .then(([c, s, a]) => { setCampaigns(c); setStats(s); setActivity(a); })
       .catch(() => setError("Could not load campaigns. Is the backend running?"))
       .finally(() => setLoading(false));
   }, []);
@@ -251,6 +233,62 @@ export default function HomePage() {
     <div>
       {/* Hero Image Slider */}
       <HeroSlider />
+
+      {/* ── India Online Giving Stats ── */}
+      <div className="border-b bg-background shadow-sm">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-2 divide-x divide-border md:grid-cols-4">
+            {[
+              { value: "₹6,000 Cr+", label: "Cumulative online donations in India" },
+              { value: "70%", label: "Donations go to medical causes" },
+              { value: "₹1,500 Cr", label: "Donated online every year" },
+              { value: "96 Lakh+", label: "Individual donations made online" },
+            ].map((s) => (
+              <div key={s.label} className="px-6 py-5 text-center">
+                <p className="text-2xl font-extrabold text-primary sm:text-3xl">{s.value}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Live Activity Ticker ── */}
+      {activity.length > 0 && (
+        <div className="border-b bg-accent/30 py-2.5 overflow-hidden flex items-center gap-3">
+          <span className="shrink-0 ml-4 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white z-10">
+            LIVE
+          </span>
+          <div className="overflow-hidden flex-1">
+            {/* Duplicate items for seamless infinite scroll */}
+            <div className="ticker-track">
+              {[...activity, ...activity].map((a, i) => (
+                <span key={i} className="flex items-center gap-2 text-sm text-foreground/80 whitespace-nowrap px-8">
+                  {a.type === "DONATION" ? (
+                    <>
+                      <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+                      <span className="text-primary font-semibold">
+                        ₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}
+                      </span>
+                      donated to
+                      <span className="font-medium">{a.campaignTitle}</span>
+                      <span className="text-muted-foreground">· {a.city}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                      <span className="font-semibold" style={{ color: "var(--brand-green)" }}>New campaign</span>
+                      <span className="font-medium">{a.campaignTitle}</span>
+                      <span className="text-muted-foreground">· {a.category} · {a.city}</span>
+                    </>
+                  )}
+                  <span className="text-border mx-4">|</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Features */}
       <section className="mx-auto max-w-7xl px-4 py-16">
@@ -332,7 +370,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="border-y bg-primary text-primary-foreground">
+      <section className="border-t bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-12 text-center">
           <h2 className="text-3xl font-bold">Be part of someone&apos;s turning point.</h2>
           <p className="max-w-xl opacity-90">
