@@ -304,3 +304,49 @@ export function adminRejectItemRequest(id: number, reason: string) {
     body: JSON.stringify({ reason }),
   });
 }
+
+// ── Matches ───────────────────────────────────────────────────────────────────
+
+export type ItemMatch = {
+  id: number;
+  listingId: number;
+  listingTitle: string;
+  requestId: number;
+  requestTitle: string;
+  donorName: string;
+  donorCity: string;
+  doneeName: string;
+  doneeCity: string;
+  status: string;
+  rejectionReason: string | null;
+  createdAt: string;
+  donorContact: string | null;
+  doneeContact: string | null;
+};
+
+export function createMatch(listingId: number, requestId: number) {
+  return request<ItemMatch>("/api/v1/matches", {
+    method: "POST",
+    body: JSON.stringify({ listingId, requestId }),
+  });
+}
+
+export function getMyMatches() {
+  return request<ItemMatch[]>("/api/v1/matches/mine");
+}
+
+export function adminGetMatches(status?: string) {
+  const qs = status ? `?status=${status}` : "";
+  return request<ItemMatch[]>(`/api/v1/admin/matches${qs}`);
+}
+
+export function adminApproveMatch(id: number) {
+  return request<ItemMatch>(`/api/v1/admin/matches/${id}/approve`, { method: "PATCH" });
+}
+
+export function adminRejectMatch(id: number, reason: string) {
+  return request<ItemMatch>(`/api/v1/admin/matches/${id}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
