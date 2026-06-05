@@ -91,6 +91,8 @@ function HeroSlider() {
                 fill
                 className="object-cover object-center"
                 priority={i === 0}
+                loading="eager"
+                sizes="100vw"
               />
             </div>
           </div>
