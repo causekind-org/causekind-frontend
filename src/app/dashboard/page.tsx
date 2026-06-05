@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  getMyDonations, getMyItemListings, getMyCampaigns, getMyItemRequests,
-  type Donation, type ItemListing, type Campaign, type ItemRequest
+  getMyDonations, getMyItemListings, getMyCampaigns, getMyItemRequests, getMyMatches,
+  type Donation, type ItemListing, type Campaign, type ItemRequest, type ItemMatch
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -38,16 +38,18 @@ export default function DashboardPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [itemListings, setItemListings] = useState<ItemListing[]>([]);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>([]);
+  const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
-    Promise.all([getMyDonations(), getMyCampaigns(), getMyItemListings(), getMyItemRequests()])
-      .then(([d, c, l, r]) => {
+    Promise.all([getMyDonations(), getMyCampaigns(), getMyItemListings(), getMyItemRequests(), getMyMatches()])
+      .then(([d, c, l, r, m]) => {
         setDonations(d);
         setCampaigns(c);
         setItemListings(l);
         setItemRequests(r);
+        setMatches(m);
       })
       .catch(() => toast.error("Failed to load dashboard data"))
       .finally(() => setLoading(false));
@@ -250,6 +252,40 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* My matches */}
+        {matches.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>My in-kind matches</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {matches.map((m) => (
+                  <div key={m.id} className="rounded-lg border p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{m.listingTitle} → {m.requestTitle}</p>
+                      <Badge variant={m.status === "APPROVED" ? "default" : m.status === "REJECTED" ? "destructive" : "secondary"}>
+                        {m.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{m.donorName} · {m.donorCity} → {m.doneeName} · {m.doneeCity}</p>
+                    {m.status === "APPROVED" && (
+                      <div className="mt-2 rounded-md bg-accent/40 p-2 text-xs space-y-0.5">
+                        <p className="font-medium text-foreground">Contact details shared:</p>
+                        {m.donorContact && <p>Donor: {m.donorContact}</p>}
+                        {m.doneeContact && <p>Donee: {m.doneeContact}</p>}
+                      </div>
+                    )}
+                    {m.rejectionReason && (
+                      <p className="text-xs text-destructive">Rejected: {m.rejectionReason}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       </div>
     </div>

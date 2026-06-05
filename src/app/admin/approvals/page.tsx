@@ -8,6 +8,7 @@ import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
   adminGetItemListings, adminApproveItemListing, adminRejectItemListing, type ItemListing,
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest, type ItemRequest,
+  adminGetMatches, adminApproveMatch, adminRejectMatch, type ItemMatch,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +30,11 @@ export default function ApprovalsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [listings, setListings] = useState<ItemListing[]>([]);
   const [requests, setRequests] = useState<ItemRequest[]>([]);
+  const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [rejectId, setRejectId] = useState<number | null>(null);
-  const [rejectType, setRejectType] = useState<"campaign" | "listing" | "request" | null>(null);
+  const [rejectType, setRejectType] = useState<"campaign" | "listing" | "request" | "match" | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState<number | null>(null);
 
@@ -44,13 +46,14 @@ export default function ApprovalsPage() {
       adminGetCampaigns("PENDING_APPROVAL"),
       adminGetItemListings("PENDING_APPROVAL"),
       adminGetItemRequests("PENDING_APPROVAL"),
+      adminGetMatches("PENDING"),
     ])
-      .then(([c, l, r]) => { setCampaigns(c); setListings(l); setRequests(r); })
+      .then(([c, l, r, m]) => { setCampaigns(c); setListings(l); setRequests(r); setMatches(m); })
       .catch(() => toast.error("Failed to load approval queues"))
       .finally(() => setLoading(false));
   }, [user, router]);
 
-  function openReject(id: number, type: "campaign" | "listing" | "request") {
+  function openReject(id: number, type: "campaign" | "listing" | "request" | "match") {
     setRejectId(id); setRejectType(type); setRejectReason("");
   }
   function cancelReject() { setRejectId(null); setRejectType(null); setRejectReason(""); }
@@ -121,6 +124,28 @@ export default function ApprovalsPage() {
     finally { setProcessing(null); }
   }
 
+  async function handleApproveMatch(id: number) {
+    setProcessing(id);
+    try {
+      await adminApproveMatch(id);
+      setMatches((p) => p.filter((m) => m.id !== id));
+      toast.success("Match approved! Contact details sent to both parties.");
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
+    finally { setProcessing(null); }
+  }
+
+  async function handleRejectMatch(id: number) {
+    if (!rejectReason.trim()) { toast.error("Enter a rejection reason"); return; }
+    setProcessing(id);
+    try {
+      await adminRejectMatch(id, rejectReason.trim());
+      setMatches((p) => p.filter((m) => m.id !== id));
+      cancelReject();
+      toast.success("Match rejected.");
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
+    finally { setProcessing(null); }
+  }
+
   function RejectForm({ id, onConfirm }: { id: number; onConfirm: (id: number) => void }) {
     return (
       <div className="space-y-2 pt-1">
@@ -136,7 +161,7 @@ export default function ApprovalsPage() {
     );
   }
 
-  function ActionButtons({ id, type, onApprove }: { id: number; type: "campaign" | "listing" | "request"; onApprove: (id: number) => void }) {
+  function ActionButtons({ id, type, onApprove }: { id: number; type: "campaign" | "listing" | "request" | "match"; onApprove: (id: number) => void }) {
     return (
       <div className="flex gap-2 pt-1">
         <Button size="sm" onClick={() => onApprove(id)} disabled={processing === id} className="gap-1">
@@ -175,7 +200,9 @@ export default function ApprovalsPage() {
             <TabsTrigger value="items">
               Item listings {!loading && <Badge className="ml-1.5" variant="secondary">{listings.length}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="contacts">Contact shares</TabsTrigger>
+            <TabsTrigger value="contacts">
+              Contact shares {!loading && matches.length > 0 && <Badge className="ml-1.5" variant="secondary">{matches.length}</Badge>}
+            </TabsTrigger>
           </TabsList>
 
           {/* Campaigns */}
@@ -247,8 +274,29 @@ export default function ApprovalsPage() {
               ))}
           </TabsContent>
 
-          <TabsContent value="contacts" className="mt-6">
-            <div className="rounded-lg border border-dashed p-16 text-center text-muted-foreground">Contact share requests — coming soon</div>
+          {/* Contact share matches */}
+          <TabsContent value="contacts" className="mt-6 space-y-3">
+            {loading ? <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>
+              : matches.length === 0 ? <p className="py-20 text-center text-muted-foreground">No pending contact share requests.</p>
+              : matches.map((m) => (
+                <Card key={m.id}>
+                  <CardContent className="space-y-3 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium">{m.listingTitle} → {m.requestTitle}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Donor: {m.donorName} ({m.donorCity}) · Donee: {m.doneeName} ({m.doneeCity})
+                        </p>
+                      </div>
+                      <Badge variant="secondary">Pending</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Approving will share contact numbers between both parties via email.</p>
+                    {rejectId === m.id && rejectType === "match"
+                      ? <RejectForm id={m.id} onConfirm={handleRejectMatch} />
+                      : <ActionButtons id={m.id} type="match" onApprove={handleApproveMatch} />}
+                  </CardContent>
+                </Card>
+              ))}
           </TabsContent>
         </Tabs>
       </div>
