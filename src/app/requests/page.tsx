@@ -25,7 +25,7 @@ export default function RequestsPage() {
   const [category, setCategory] = useState("All");
 
   useEffect(() => {
-    const fetches: Promise<void>[] = [
+    const fetches: Promise<unknown>[] = [
       getItemRequests().then(setRequests).catch(() => toast.error("Failed to load item requests")),
     ];
     if (user) {
