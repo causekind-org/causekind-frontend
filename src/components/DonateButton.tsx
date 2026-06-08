@@ -64,8 +64,9 @@ export function DonateButton({ campaignId, campaignTitle, amount }: Props) {
         prefill: { email: user.email },
         theme: { color: "#0f172a" },
         handler: () => {
-          toast.success("Payment successful! Thank you for your donation.");
-          router.refresh();
+          router.push(
+            `/thank-you?campaign=${encodeURIComponent(campaignTitle)}&amount=${amount}&campaignId=${campaignId}`
+          );
         },
         modal: { ondismiss: () => toast.info("Payment cancelled.") },
       });
