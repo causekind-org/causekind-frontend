@@ -350,3 +350,37 @@ export function adminRejectMatch(id: number, reason: string) {
     body: JSON.stringify({ reason }),
   });
 }
+
+// ── Admin Donations ───────────────────────────────────────────────────────────
+
+export type AdminDonation = {
+  id: number;
+  donorName: string;
+  donorEmail: string;
+  campaignId: number;
+  campaignTitle: string;
+  amount: number;
+  currency: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string | null;
+  status: "INITIATED" | "COMPLETED" | "FAILED";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DonationStats = {
+  totalTransactions: number;
+  completedTransactions: number;
+  failedTransactions: number;
+  initiatedTransactions: number;
+  uniqueDonors: number;
+  totalCollected: number;
+};
+
+export function adminGetAllDonations() {
+  return request<AdminDonation[]>("/api/v1/admin/donations");
+}
+
+export function adminGetDonationStats() {
+  return request<DonationStats>("/api/v1/admin/donations/stats");
+}
