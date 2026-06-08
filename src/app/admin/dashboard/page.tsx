@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { adminGetCampaigns, approveCampaign, rejectCampaign, adminGetItemListings, adminGetItemRequests, type Campaign } from "@/lib/api";
+import { adminGetCampaigns, approveCampaign, rejectCampaign, adminGetItemListings, adminGetItemRequests, adminGetAllDonations, adminGetDonationStats, type Campaign, type AdminDonation, type DonationStats } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, HandCoins, Loader2, MapPin, Package, ShieldCheck, Users, XCircle } from "lucide-react";
+import { CheckCircle, CreditCard, HandCoins, Loader2, MapPin, Package, ShieldCheck, TrendingUp, Users, XCircle } from "lucide-react";
 
 
 const STATUS_OPTIONS = [
@@ -46,6 +46,9 @@ export default function AdminDashboardPage() {
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState<number | null>(null);
+  const [donations, setDonations] = useState<AdminDonation[]>([]);
+  const [donationStats, setDonationStats] = useState<DonationStats | null>(null);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
@@ -71,6 +74,20 @@ export default function AdminDashboardPage() {
 
     return () => { cancelled = true; };
   }, [user, router, statusFilter]);
+
+  async function loadPayments() {
+    if (donations.length > 0) return;
+    setPaymentsLoading(true);
+    try {
+      const [d, s] = await Promise.all([adminGetAllDonations(), adminGetDonationStats()]);
+      setDonations(d);
+      setDonationStats(s);
+    } catch {
+      toast.error("Failed to load payments");
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }
 
   async function handleApprove(id: number) {
     setProcessing(id);
@@ -201,6 +218,7 @@ export default function AdminDashboardPage() {
             <TabsTrigger value="items">Item requests</TabsTrigger>
             <TabsTrigger value="listings">Item listings</TabsTrigger>
             <TabsTrigger value="contacts">Contact shares</TabsTrigger>
+            <TabsTrigger value="payments" onClick={loadPayments}>Payments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="campaigns" className="mt-6 space-y-4">
@@ -303,6 +321,110 @@ export default function AdminDashboardPage() {
             <div className="rounded-lg border border-dashed p-16 text-center text-muted-foreground">
               Contact share requests — coming soon
             </div>
+          </TabsContent>
+
+          <TabsContent value="payments" className="mt-6 space-y-6">
+            {paymentsLoading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                {donationStats && (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                      <CardContent className="flex items-center gap-4 p-5">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <TrendingUp className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total collected</p>
+                          <p className="text-xl font-bold">{formatINR(donationStats.totalCollected)}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="flex items-center gap-4 p-5">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-500/10 text-green-600">
+                          <CheckCircle className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Completed</p>
+                          <p className="text-xl font-bold">{donationStats.completedTransactions}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="flex items-center gap-4 p-5">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <Users className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Unique donors</p>
+                          <p className="text-xl font-bold">{donationStats.uniqueDonors}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="flex items-center gap-4 p-5">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <CreditCard className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total transactions</p>
+                          <p className="text-xl font-bold">{donationStats.totalTransactions}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {donations.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-20">No donations yet.</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full text-sm">
+                      <thead className="border-b bg-muted/50">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Date</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Donor</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Campaign</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">Amount</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Payment ID</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {donations.map((d) => (
+                          <tr key={d.id} className="hover:bg-muted/30">
+                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                              {new Date(d.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <p className="font-medium">{d.donorName}</p>
+                              <p className="text-xs text-muted-foreground">{d.donorEmail}</p>
+                            </td>
+                            <td className="px-4 py-3 max-w-[200px] truncate">{d.campaignTitle}</td>
+                            <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{formatINR(d.amount)}</td>
+                            <td className="px-4 py-3">
+                              <Badge
+                                variant={d.status === "COMPLETED" ? "default" : d.status === "FAILED" ? "destructive" : "secondary"}
+                                className="text-xs"
+                              >
+                                {d.status}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
+                              {d.razorpayPaymentId ?? <span className="text-muted-foreground/50">—</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </div>
