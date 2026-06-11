@@ -85,7 +85,7 @@ export default function CampaignDetailPage() {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Left — details */}
         <div className="space-y-6 lg:col-span-2">
-          <div className="h-64 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/30 via-accent to-secondary" />
+          <div className="h-64 overflow-hidden rounded-2xl bg-gradient-to-br from-[#b04a15]/15 via-orange-50 to-[#1e3a60]/10" />
 
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs">

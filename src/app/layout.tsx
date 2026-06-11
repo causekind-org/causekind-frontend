@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Nunito } from "next/font/google";
+import { Plus_Jakarta_Sans, Nunito } from "next/font/google";
 import "@/styles.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
+import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
@@ -24,6 +20,7 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "CauseKind — Give With Purpose",
   description: "Discover and support verified charity campaigns.",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
@@ -33,8 +30,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}>
+      <body className={`${plusJakarta.className} ${nunito.variable} antialiased`}>
         <AuthProvider>
+          <ScrollProgress />
           <SiteHeader />
           <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
           <SiteFooter />
