@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
   const { setAuth, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,6 +29,7 @@ export default function LoginPage() {
       toast.error("Your session has expired. Please log in again.");
     }
   }, [searchParams]);
+
   if (user) return null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -42,9 +43,7 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center bg-[#faf8f4] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300 bg-grid-pattern px-6 py-12 overflow-hidden">
       <ParticleBackground className="z-0" />
-      {/* content above canvas */}
       <div className="relative z-10 flex flex-col items-center w-full">
-      {/* Donation icon */}
       <div className="mb-6 logo-icon-3d flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] text-white shadow-md shadow-orange-900/18 shrink-0 anim-scale">
         <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7">
           <path d="M12 10.5C12 10.5 9.2 8 9.2 6.2C9.2 5.1 10.2 4.5 11.1 4.9C11.6 5.2 12 5.7 12 5.7C12 5.7 12.4 5.2 12.9 4.9C13.8 4.5 14.8 5.1 14.8 6.2C14.8 8 12 10.5 12 10.5Z" fill="white"/>
@@ -90,7 +89,15 @@ export default function LoginPage() {
           </form>
         </CardContent>
       </Card>
-      </div>{/* end z-10 */}
+      </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }
