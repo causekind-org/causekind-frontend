@@ -30,6 +30,7 @@ const AuthContext = createContext<AuthContextValue>({
 function parseJwt(token: string): AuthUser | null {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
     return { email: payload.sub, role: payload.role };
   } catch {
     return null;
@@ -43,8 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem("ck_token");
     if (stored) {
-      setToken(stored);
-      setUser(parseJwt(stored));
+      const parsed = parseJwt(stored);
+      if (parsed) {
+        setToken(stored);
+        setUser(parsed);
+      } else {
+        localStorage.removeItem("ck_token");
+      }
     }
   }, []);
 

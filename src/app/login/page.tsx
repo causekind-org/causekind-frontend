@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,12 +16,19 @@ import { Eye, EyeOff } from "lucide-react";
 export default function LoginPage() {
   const { setAuth, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
+
+  useEffect(() => {
+    if (searchParams.get("expired") === "1") {
+      toast.error("Your session has expired. Please log in again.");
+    }
+  }, [searchParams]);
   if (user) return null;
 
   async function handleSubmit(e: React.FormEvent) {

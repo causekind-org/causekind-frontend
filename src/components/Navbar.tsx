@@ -99,15 +99,26 @@ export function SiteHeader() {
             </Link>
           ))}
           {user && (
-            <Link href={dashHref}
-              className={
-                isHome
-                  ? "text-sm px-3 py-2 font-medium text-[#5c3a1e] dark:text-[#f0b97a] hover:text-[#1c1108] dark:hover:text-white transition-colors"
-                  : "rounded-xl px-4 py-2 text-sm font-medium text-slate-600 dark:text-stone-400 hover:text-[#1c1108] dark:hover:text-white transition-all duration-200 hover:bg-orange-50/60 dark:hover:bg-zinc-900/60 relative group"
-              }>
-              Dashboard
-              {!isHome && <span className="absolute bottom-1.5 left-4 right-4 h-0.5 bg-gradient-to-r from-[#b04a15] to-[#e07b3a] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-300" />}
-            </Link>
+            <>
+              <Link href={dashHref}
+                className={
+                  isHome
+                    ? "text-sm px-3 py-2 font-medium text-[#5c3a1e] dark:text-[#f0b97a] hover:text-[#1c1108] dark:hover:text-white transition-colors"
+                    : "rounded-xl px-4 py-2 text-sm font-medium text-slate-600 dark:text-stone-400 hover:text-[#1c1108] dark:hover:text-white transition-all duration-200 hover:bg-orange-50/60 dark:hover:bg-zinc-900/60 relative group"
+                }>
+                Dashboard
+                {!isHome && <span className="absolute bottom-1.5 left-4 right-4 h-0.5 bg-gradient-to-r from-[#b04a15] to-[#e07b3a] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-300" />}
+              </Link>
+              <Link href="/profile"
+                className={
+                  isHome
+                    ? "text-sm px-3 py-2 font-medium text-[#5c3a1e] dark:text-[#f0b97a] hover:text-[#1c1108] dark:hover:text-white transition-colors"
+                    : "rounded-xl px-4 py-2 text-sm font-medium text-slate-600 dark:text-stone-400 hover:text-[#1c1108] dark:hover:text-white transition-all duration-200 hover:bg-orange-50/60 dark:hover:bg-zinc-900/60 relative group"
+                }>
+                Profile
+                {!isHome && <span className="absolute bottom-1.5 left-4 right-4 h-0.5 bg-gradient-to-r from-[#b04a15] to-[#e07b3a] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-300" />}
+              </Link>
+            </>
           )}
           {isHome && (
             <Link href="/campaigns">
@@ -188,6 +199,12 @@ export function SiteHeader() {
           </div>
           <div className={`mt-8 flex flex-col gap-4 transition-all duration-500 ${open ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
             style={{ transitionDelay: open ? "400ms" : "0ms" }}>
+            {user && (
+              <>
+                <Link href={dashHref} onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-[#1c1108] dark:text-stone-200 hover:text-white">Dashboard</Link>
+                <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-[#1c1108] dark:text-stone-200 hover:text-white">Profile</Link>
+              </>
+            )}
             {!user && (
               <>
                 <Link href="/register" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-[#1c1108] dark:text-stone-200 hover:text-white"><UserPlus className="w-4 h-4" /> Sign Up</Link>
