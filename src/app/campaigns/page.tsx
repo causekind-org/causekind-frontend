@@ -58,13 +58,13 @@ export default function CampaignsPage() {
               <span className="h-7 w-7 rounded-xl bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center shadow-sm">
                 <HandCoins className="h-3.5 w-3.5 text-white" />
               </span>
-              <span className="text-xs font-bold text-[#b04a15] dark:text-[#ff8a65] uppercase tracking-widest">Verified Fundraisers</span>
+              <span className="text-xs font-bold text-[#b04a15] dark:text-[#e07b3a] uppercase tracking-widest">Verified Fundraisers</span>
             </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#1c1108] dark:text-white sm:text-3xl">Money Campaigns</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-[#963c0d] dark:text-white sm:text-3xl">Money Campaigns</h1>
             <p className="mt-1 text-sm text-stone-500 dark:text-stone-400 font-medium">Admin-verified causes from across India.</p>
           </Reveal>
           <Link href="/campaigns/new">
-            <Button className="btn-3d btn-shine bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl font-semibold px-5 py-5">
+            <Button className="btn-3d btn-shine bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl font-semibold px-5 py-5">
               Start a campaign
             </Button>
           </Link>
@@ -85,7 +85,7 @@ export default function CampaignsPage() {
                   className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                     category === c
                       ? "bg-[#b04a15] border-[#b04a15] text-white shadow-sm shadow-orange-900/20"
-                      : "border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:border-[#b04a15] dark:hover:border-[#ff8a65] hover:text-[#b04a15] dark:hover:text-[#ff8a65] bg-white dark:bg-zinc-900"
+                      : "border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:border-[#b04a15] dark:hover:border-[#e07b3a] hover:text-[#b04a15] dark:hover:text-[#e07b3a] bg-white dark:bg-zinc-900"
                   }`}>{c}
                 </button>
               ))}
@@ -116,8 +116,8 @@ export default function CampaignsPage() {
                     </div>
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between text-xs">
-                        <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#ff8a65] border-0 font-semibold">{c.category}</Badge>
-                        <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#ff8a65]" /> {c.city}</span>
+                        <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold">{c.category}</Badge>
+                        <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" /> {c.city}</span>
                       </div>
                       <h3 className="mt-3 font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2">{c.title}</h3>
                       <div className="mt-4 space-y-2">
@@ -130,7 +130,7 @@ export default function CampaignsPage() {
                         </div>
                       </div>
                       <Link href={`/campaigns/${c.id}`}>
-                        <Button size="sm" className="btn-3d btn-shine mt-4 w-full bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl font-semibold">
+                        <Button size="sm" className="btn-3d btn-shine mt-4 w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl font-semibold">
                           View &amp; donate
                         </Button>
                       </Link>

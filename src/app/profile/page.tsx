@@ -3,136 +3,149 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { getMyProfile, updateLocation, type UserProfile } from "@/lib/api";
+import { getProfile, updateProfile, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MapPin, Navigation, CheckCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, User, Phone, MapPin, Mail, ArrowLeft, Shield } from "lucide-react";
+import Link from "next/link";
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const router = useRouter();
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [locating, setLocating] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
 
   useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    getMyProfile()
-      .then(setProfile)
-      .catch(() => toast.error("Failed to load profile"))
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    getProfile()
+      .then((p) => {
+        setProfile(p);
+        setFullName(p.fullName);
+        setPhone(p.phone);
+        setCity(p.city ?? "");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to load profile details");
+      })
       .finally(() => setLoading(false));
   }, [user, router]);
 
-  function handleUseMyLocation() {
-    if (!navigator.geolocation) {
-      toast.error("Your browser does not support geolocation");
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!fullName.trim() || !phone.trim() || !city.trim()) {
+      toast.error("Please fill in all fields");
       return;
     }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const updated = await updateLocation(pos.coords.latitude, pos.coords.longitude);
-          setProfile(updated);
-          toast.success("Location saved successfully!");
-        } catch {
-          toast.error("Failed to save location");
-        } finally {
-          setLocating(false);
-        }
-      },
-      (err) => {
-        setLocating(false);
-        if (err.code === err.PERMISSION_DENIED) {
-          toast.error("Location permission denied. Please allow location access in your browser settings.");
-        } else {
-          toast.error("Could not get your location. Please try again.");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+
+    setSaving(true);
+    try {
+      const updated = await updateProfile({
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        city: city.trim(),
+      });
+      setProfile(updated);
+      toast.success("Profile updated successfully!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!user || loading) {
+    return (
+      <div className="flex justify-center items-center py-40">
+        <Loader2 className="size-8 animate-spin text-[#b04a15]" />
+      </div>
     );
   }
 
-  if (!user) return null;
-
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-bold tracking-tight">My Profile</h1>
+    <div className="bg-[#faf8f4] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 min-h-[calc(100vh-3.5rem)] py-12 px-6 sm:px-10 transition-colors duration-300">
+      <div className="max-w-2xl mx-auto space-y-6">
 
-      {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>
-      ) : profile && (
-        <div className="space-y-4">
-          {/* Basic info */}
-          <Card>
-            <CardHeader><CardTitle className="text-base">Account details</CardTitle></CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Name</span>
-                <span className="font-medium">{profile.fullName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Email</span>
-                <span className="font-medium">{profile.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Phone</span>
-                <span className="font-medium">{profile.phone}</span>
-              </div>
-              {profile.city && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">City</span>
-                  <span className="font-medium">{profile.city}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Role</span>
-                <span className="font-medium capitalize">{profile.role.toLowerCase()}</span>
-              </div>
-            </CardContent>
-          </Card>
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-amber-500 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+        </Link>
 
-          {/* Location */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <MapPin className="h-4 w-4" /> Location
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {profile.latitude && profile.longitude ? (
-                <div className="flex items-center gap-3 rounded-lg bg-green-50 px-4 py-3 text-sm dark:bg-green-950/30">
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-700 dark:text-green-400">Location set</p>
-                    <p className="text-green-600/80 dark:text-green-500/80">
-                      {profile.latitude.toFixed(5)}, {profile.longitude.toFixed(5)}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm dark:border-orange-900 dark:bg-orange-950/30">
-                  <p className="font-medium text-orange-700 dark:text-orange-400">Location not set</p>
-                  <p className="mt-0.5 text-orange-600/80 dark:text-orange-500/80">
-                    You need to set your location to donate or request items within 10 km.
-                  </p>
-                </div>
-              )}
+        <Card className="rounded-2xl border-2 border-orange-200 dark:border-stone-800 bg-white dark:bg-zinc-900 shadow-md overflow-hidden">
+          <CardHeader className="border-b border-orange-100 dark:border-stone-800 bg-gradient-to-r from-orange-50/50 to-transparent p-6">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] text-white flex items-center justify-center shadow-md shadow-orange-900/18 shrink-0">
+                <User className="h-7 w-7" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold tracking-tight">My Profile</CardTitle>
+                <CardDescription className="text-stone-500 dark:text-stone-400">View and update your personal details</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
 
-              <Button onClick={handleUseMyLocation} disabled={locating} className="w-full" variant={profile.latitude ? "outline" : "default"}>
-                {locating
-                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Detecting location…</>
-                  : <><Navigation className="mr-2 h-4 w-4" /> {profile.latitude ? "Update my location" : "Use my current location"}</>
-                }
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Your device will ask for permission. Coordinates are used only to verify 10 km proximity.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+          <CardContent className="p-6">
+            <form onSubmit={handleSave} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-stone-400">Full Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-stone-400" />
+                  <Input id="fullName" className="pl-10 rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 text-stone-800 dark:text-stone-100" placeholder="Enter your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-stone-400">Email Address</Label>
+                  <span className="text-[10px] font-black text-stone-400 uppercase flex items-center gap-1"><Shield className="w-3 h-3 text-[#b04a15]" /> System ID</span>
+                </div>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-stone-400" />
+                  <Input id="email" className="pl-10 rounded-xl border-stone-200 dark:border-stone-850 py-5 font-medium bg-stone-50 dark:bg-zinc-950 text-stone-400 cursor-not-allowed" value={profile?.email || ""} disabled />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-wider text-stone-400">Phone Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-stone-400" />
+                  <Input id="phone" className="pl-10 rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 text-stone-800 dark:text-stone-100" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city" className="text-xs font-bold uppercase tracking-wider text-stone-400">City</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-stone-400" />
+                  <Input id="city" className="pl-10 rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 text-stone-800 dark:text-stone-100" placeholder="Enter your city" value={city} onChange={(e) => setCity(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button type="submit" className="btn-3d btn-shine w-full bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2" disabled={saving}>
+                  {saving ? <><Loader2 className="size-4 animate-spin" /> Saving Changes...</> : "Save Profile Changes"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+      </div>
     </div>
   );
 }

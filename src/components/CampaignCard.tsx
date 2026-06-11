@@ -31,7 +31,7 @@ export function CampaignCard({ campaign }: Props) {
     <Card className="card-3d card-shimmer card-glow flex flex-col h-full overflow-hidden glass-card rounded-2xl group border-stone-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300">
       {/* Top-Heavy Image Container (Flush with top/left/right) */}
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-orange-50 dark:bg-zinc-950 shrink-0">
-        <Image src={getCardImage(campaign.category, campaign.id)} alt={campaign.title} fill
+        <Image src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)} alt={campaign.title} fill
           sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
           className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -67,7 +67,7 @@ export function CampaignCard({ campaign }: Props) {
             </div>
             {/* Thick 12px Progress Bar track */}
             <div className="w-full bg-[#f3f4f6] dark:bg-zinc-800 rounded-full h-3 overflow-hidden border border-stone-100 dark:border-zinc-800/40">
-              <div className="bg-gradient-to-r from-[#006c49] to-[#10b981] h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+              <div className="bg-gradient-to-r from-[#006c49] to-[#f0b97a] h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
             </div>
           </div>
 

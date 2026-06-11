@@ -36,7 +36,7 @@ export default function RootLayout({
           <SiteHeader />
           <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
           <SiteFooter />
-          <Toaster richColors position="top-right" />
+          <Toaster richColors position="top-right" toastOptions={{ style: { zIndex: 99999 } }} />
         </AuthProvider>
       </body>
     </html>

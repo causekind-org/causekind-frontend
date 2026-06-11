@@ -48,7 +48,7 @@ function GlassArrow({
         dir === "left" ? "-left-5 sm:-left-6" : "-right-5 sm:-right-6",
         "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center",
         "bg-white border border-stone-200/80 text-stone-700 shadow-md",
-        "hover:bg-orange-50 hover:text-[#ff5722] hover:border-[#ff5722]/30",
+        "hover:bg-orange-50 hover:text-[#e07b3a] hover:border-[#e07b3a]/30",
         "transition-all duration-300 ease-out",
       ].join(" ")}
     >
@@ -208,13 +208,13 @@ export function HeroCampaignSlider({
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span
-                        className="text-[9px] sm:text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md border border-[#ff5722]/20"
-                        style={{ background: "rgba(255,87,34,0.08)", color: "#ff5722" }}
+                        className="text-[9px] sm:text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md border border-[#e07b3a]/20"
+                        style={{ background: "rgba(255,87,34,0.08)", color: "#e07b3a" }}
                       >
                         {c.category}
                       </span>
                       <span className="text-[10px] text-stone-500 font-bold flex items-center gap-0.5">
-                        <MapPin className="h-3 w-3 text-[#ff5722]" />
+                        <MapPin className="h-3 w-3 text-[#e07b3a]" />
                         {c.city}
                       </span>
                     </div>
@@ -222,7 +222,7 @@ export function HeroCampaignSlider({
                     <h3 className="font-black text-stone-900 text-sm sm:text-lg md:text-xl lg:text-[1.65rem] leading-tight tracking-tight line-clamp-2">
                       {secondPart ? (
                         <>
-                          <span className="text-[#ff5722]">{firstPart},</span>
+                          <span className="text-[#e07b3a]">{firstPart},</span>
                           <span className="text-stone-900">{secondPart}</span>
                         </>
                       ) : (
@@ -242,14 +242,14 @@ export function HeroCampaignSlider({
                       <div className="flex justify-between text-[10px] sm:text-[11px] font-bold text-stone-600">
                         <span>₹{new Intl.NumberFormat("en-IN").format(c.amountRaised)} raised</span>
                         <span>Target: ₹{new Intl.NumberFormat("en-IN").format(c.targetAmount)}</span>
-                        <span className="text-[#ff5722]">{pct}%</span>
+                        <span className="text-[#e07b3a]">{pct}%</span>
                       </div>
                       <div className="h-[5px] rounded-full overflow-hidden bg-stone-200/60">
                         <div
                           className="h-full rounded-full transition-all duration-700"
                           style={{
                             width: `${pct}%`,
-                            background: "linear-gradient(90deg, #ff8a65, #ff5722)",
+                            background: "linear-gradient(90deg, #e07b3a, #e07b3a)",
                           }}
                         />
                       </div>
@@ -262,7 +262,7 @@ export function HeroCampaignSlider({
                         disabled={isLoading || pct >= 100}
                         className="hero-donate-btn flex items-center justify-center gap-1.5 px-6 py-2 sm:py-2.5 rounded-lg text-white text-xs font-black uppercase tracking-wider transition-all duration-200 hover:brightness-105 active:scale-95 disabled:opacity-55 disabled:cursor-not-allowed"
                         style={{
-                          background: "#ff5722",
+                          background: "#e07b3a",
                           boxShadow: "0 4px 12px rgba(255,87,34,0.25)",
                         }}
                       >
@@ -320,7 +320,7 @@ export function HeroCampaignSlider({
               style={{
                 width: i === idx ? "1.5rem" : "0.375rem",
                 height: "0.375rem",
-                background: i === idx ? "#ff5722" : "rgba(255,255,255,0.32)",
+                background: i === idx ? "#e07b3a" : "rgba(255,255,255,0.32)",
               }}
             />
           ))}
