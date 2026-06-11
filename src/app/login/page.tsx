@@ -48,7 +48,7 @@ export default function LoginPage() {
 
       <Card className="anim-up anim-d1 w-full max-w-md glass-card card-shimmer rounded-2xl border-orange-100 dark:border-stone-850 shadow-xl dark:shadow-none">
         <CardHeader className="space-y-1.5 pb-5">
-          <CardTitle className="text-2xl font-extrabold text-[#1c1108] dark:text-white">Welcome back</CardTitle>
+          <CardTitle className="text-2xl font-extrabold text-[#963c0d] dark:text-white">Welcome back</CardTitle>
           <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">Log in to your CauseKind account.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -72,13 +72,13 @@ export default function LoginPage() {
               </div>
             </div>
             <div className="flex justify-end">
-              <Link href="/forgot-password" className="text-sm font-semibold text-[#b04a15] dark:text-[#ff8a65] hover:underline underline-offset-2">Forgot password?</Link>
+              <Link href="/forgot-password" className="text-sm font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Forgot password?</Link>
             </div>
-            <Button type="submit" className="btn-3d btn-shine w-full bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl py-5 font-semibold text-sm" disabled={loading}>
+            <Button type="submit" className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl py-5 font-semibold text-sm" disabled={loading}>
               {loading ? "Logging in…" : "Log in"}
             </Button>
             <p className="text-center text-sm text-stone-500 dark:text-stone-400 font-medium">
-              New here?{" "}<Link href="/register" className="font-semibold text-[#b04a15] dark:text-[#ff8a65] hover:underline underline-offset-2">Create an account</Link>
+              New here?{" "}<Link href="/register" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Create an account</Link>
             </p>
           </form>
         </CardContent>

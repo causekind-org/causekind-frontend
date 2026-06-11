@@ -16,7 +16,7 @@ import { ImagePlus, Loader2, Paperclip, X } from "lucide-react";
 
 const CATEGORIES = ["Medical", "Education", "Disaster", "Community", "Livelihood"];
 
-const empty = { title: "", category: "", targetAmount: "", city: "", state: "", description: "" };
+const empty = { title: "", category: "", targetAmount: "", city: "", state: "", description: "", imageUrl: "" };
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -50,7 +50,14 @@ export default function NewCampaignPage() {
 
   function handlePhotos(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
-    setPhotos((prev) => [...prev, ...files].slice(0, 4));
+    const newPhotos = [...photos, ...files].slice(0, 4);
+    setPhotos(newPhotos);
+    // Use first photo as card image
+    if (newPhotos.length > 0 && !form.imageUrl) {
+      const reader = new FileReader();
+      reader.onload = (ev) => set("imageUrl", ev.target?.result as string ?? "");
+      reader.readAsDataURL(newPhotos[0]);
+    }
     e.target.value = "";
   }
 
@@ -83,6 +90,7 @@ export default function NewCampaignPage() {
         city: form.city,
         state: form.state,
         description: form.description,
+        imageUrl: form.imageUrl || null,
       });
       toast.success("Campaign submitted for review!");
       router.push("/donee/dashboard");

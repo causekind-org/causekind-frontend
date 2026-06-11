@@ -126,7 +126,7 @@ export function ParticleBackground({ className = "" }: Props) {
             ctx.beginPath();
             ctx.moveTo(pts[i].x, pts[i].y);
             ctx.lineTo(pts[j].x, pts[j].y);
-            ctx.strokeStyle = `rgba(176,74,21,${(1 - d / LINK) * 0.11})`;
+            ctx.strokeStyle = `rgba(176, 74, 21,${(1 - d / LINK) * 0.11})`;
             ctx.lineWidth   = thick;
             ctx.stroke();
           }

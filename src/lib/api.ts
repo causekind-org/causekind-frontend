@@ -93,6 +93,26 @@ export function resetPassword(token: string, newPassword: string) {
   });
 }
 
+export type UserProfile = {
+  id: number;
+  email: string;
+  fullName: string;
+  phone: string;
+  city: string;
+  role: string;
+};
+
+export function getProfile() {
+  return request<UserProfile>("/api/v1/auth/me");
+}
+
+export function updateProfile(data: { fullName?: string; phone?: string; city?: string }) {
+  return request<UserProfile>("/api/v1/auth/me", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
 // ── Campaigns ─────────────────────────────────────────────────────────────────
 
 export type Campaign = {
@@ -110,6 +130,7 @@ export type Campaign = {
   doneeName: string;
   createdAt: string;
   updatedAt: string;
+  imageUrl: string | null;
 };
 
 export function getCampaigns() {
@@ -131,6 +152,7 @@ export function createCampaign(data: {
   targetAmount: number;
   city: string;
   state: string;
+  imageUrl?: string | null;
 }) {
   return request<Campaign>("/api/v1/campaigns", {
     method: "POST",
@@ -207,6 +229,7 @@ export type ItemListing = {
   donorId: number;
   donorName: string;
   createdAt: string;
+  imageUrl: string | null;
 };
 
 export function getItemListings() {
@@ -225,6 +248,7 @@ export function createItemListing(data: {
   city: string;
   pincode?: string;
   description?: string;
+  imageUrl?: string | null;
 }) {
   return request<ItemListing>("/api/v1/items", {
     method: "POST",
@@ -264,6 +288,7 @@ export type ItemRequest = {
   doneeId: number;
   doneeName: string;
   createdAt: string;
+  imageUrl: string | null;
 };
 
 export function getItemRequests() {
@@ -282,6 +307,7 @@ export function createItemRequest(data: {
   city: string;
   pincode?: string;
   description?: string;
+  imageUrl?: string | null;
 }) {
   return request<ItemRequest>("/api/v1/item-requests", {
     method: "POST",
