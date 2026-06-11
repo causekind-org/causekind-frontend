@@ -20,7 +20,7 @@ function ThankYouContent() {
       <Card className="anim-up anim-d1 w-full max-w-md glass-card card-shimmer rounded-2xl border-orange-100 dark:border-stone-850 shadow-xl dark:shadow-none text-center">
         <CardContent className="pt-8 pb-8 space-y-6">
           <div className="space-y-2">
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#1c1108] dark:text-white">Thank you for your donation!</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-[#963c0d] dark:text-white">Thank you for your donation!</h1>
             <p className="text-stone-500 dark:text-stone-400 font-medium">
               Your donation of{" "}
               <span className="font-semibold text-stone-800 dark:text-stone-200">₹{amount.toLocaleString("en-IN")}</span>{" "}
@@ -28,12 +28,12 @@ function ThankYouContent() {
             </p>
           </div>
           <div className="rounded-xl bg-orange-50 dark:bg-zinc-900/50 border border-orange-100 dark:border-stone-800 p-4 text-sm text-stone-500 dark:text-stone-400 flex items-start gap-2.5">
-            <Heart className="h-4 w-4 mt-0.5 shrink-0 text-[#b04a15] dark:text-[#ff8a65]" />
+            <Heart className="h-4 w-4 mt-0.5 shrink-0 text-[#b04a15] dark:text-[#e07b3a]" />
             <span>Your generosity makes a real difference. The campaign organiser has been notified of your donation.</span>
           </div>
           <div className="flex flex-col gap-2.5">
             <Link href="/dashboard">
-              <Button className="btn-3d btn-shine w-full bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl py-5 font-semibold text-sm">
+              <Button className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl py-5 font-semibold text-sm">
                 View my donations
               </Button>
             </Link>

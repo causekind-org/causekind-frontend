@@ -44,11 +44,11 @@ function ResetPasswordForm() {
             className="rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 placeholder:text-stone-400 dark:placeholder:text-stone-600 text-stone-800 dark:text-stone-100" />
         </div>
       ))}
-      <Button type="submit" className="btn-3d btn-shine w-full bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl py-5 font-semibold text-sm" disabled={loading}>
+      <Button type="submit" className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl py-5 font-semibold text-sm" disabled={loading}>
         {loading ? "Resetting…" : "Reset password"}
       </Button>
       <p className="text-center text-sm text-stone-500 dark:text-stone-400 font-medium">
-        <Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#ff8a65] hover:underline underline-offset-2">Back to login</Link>
+        <Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Back to login</Link>
       </p>
     </form>
   );
@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
       </div>
       <Card className="anim-up anim-d1 w-full max-w-md glass-card card-shimmer rounded-2xl border-orange-100 dark:border-stone-850 shadow-xl dark:shadow-none">
         <CardHeader className="space-y-1.5 pb-5">
-          <CardTitle className="text-2xl font-extrabold text-[#1c1108] dark:text-white">Set a new password</CardTitle>
+          <CardTitle className="text-2xl font-extrabold text-[#963c0d] dark:text-white">Set a new password</CardTitle>
           <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">Choose a strong password for your account.</CardDescription>
         </CardHeader>
         <CardContent>

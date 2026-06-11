@@ -41,50 +41,18 @@ function formatINR(n: number) {
   }).format(n);
 }
 
-/* ── Arrow button ──────────────────────────────────────────── */
-function Arrow({
-  dir,
-  onClick,
-  disabled,
-}: {
-  dir: "left" | "right";
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={dir === "left" ? "Previous" : "Next"}
-      className={[
-        "absolute top-1/2 -translate-y-1/2 z-20",
-        dir === "left"
-          ? "left-0 -translate-x-12 sm:-translate-x-16 md:-translate-x-20"
-          : "right-0 translate-x-12 sm:translate-x-16 md:translate-x-20",
-        "flex h-12 w-12 items-center justify-center rounded-full",
-        "bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm shadow-lg border border-orange-100/50 dark:border-zinc-800/80",
-        "text-[#b04a15] dark:text-[#ff8a65] transition-all duration-300",
-        "hover:bg-[#b04a15] dark:hover:bg-[#b04a15] hover:text-white hover:border-[#b04a15] hover:scale-110 hover:shadow-xl hover:shadow-orange-900/15",
-        "active:scale-95",
-        disabled ? "opacity-35 pointer-events-none" : "",
-      ].join(" ")}
-    >
-      {dir === "left" ? (
-        <ChevronLeft className="h-6 w-6" />
-      ) : (
-        <ChevronRight className="h-6 w-6" />
-      )}
-    </button>
-  );
-}
 
 /* ── Horizontal Single Card with Simulated Instagram Reel ── */
 function HorizontalCampaignCard({
   campaign,
   idx,
+  className = "",
+  peek = false,
 }: {
   campaign: Campaign;
   idx: number;
+  className?: string;
+  peek?: boolean;
 }) {
   const pct = Math.min(
     100,
@@ -100,12 +68,19 @@ function HorizontalCampaignCard({
     .replace(/\s+/g, "_")}`;
 
   return (
-    <div className="glass-card border border-orange-100/50 dark:border-zinc-800/80 p-5 md:p-6 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 md:gap-8 items-stretch w-full bg-white/90 dark:bg-zinc-900/90 hover:shadow-2xl transition-all duration-300">
+    <div
+      aria-hidden={peek || undefined}
+      className={[
+        "border border-orange-100 dark:border-zinc-800 p-5 md:p-6 lg:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 md:gap-8 items-stretch w-full h-full bg-white dark:bg-zinc-900 transition-shadow duration-300 hover:shadow-2xl",
+        peek ? "select-none" : "",
+        className,
+      ].join(" ")}
+    >
       {/* Left side: Simulated Instagram Reel (9:16 vertical ratio) */}
       <div className="w-full md:w-[240px] lg:w-[260px] aspect-[9/16] shrink-0 relative overflow-hidden bg-zinc-950 rounded-2xl shadow-lg border border-stone-200/20 dark:border-zinc-800/50 group select-none">
         {/* Reel Background Cover Image */}
         <Image
-          src={getCardImage(campaign.category, campaign.id)}
+          src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)}
           alt={campaign.title}
           fill
           sizes="(max-width: 768px) 100vw, 260px"
@@ -143,7 +118,7 @@ function HorizontalCampaignCard({
           </div>
 
           <div className="flex flex-col items-center cursor-pointer group/icon">
-            <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-emerald-600 transition-colors border border-white/10 group-hover/icon:scale-110 duration-200">
+            <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-orange-600 transition-colors border border-white/10 group-hover/icon:scale-110 duration-200">
               <Share2 className="w-5 h-5 fill-white text-white" />
             </div>
             <span className="text-[10px] font-bold mt-1 text-white/90 drop-shadow-md">
@@ -192,17 +167,17 @@ function HorizontalCampaignCard({
         <div>
           {/* Category & City badges */}
           <div className="flex items-center gap-3 text-xs mb-4">
-            <Badge className="bg-[#b04a15]/10 dark:bg-[#b04a15]/20 text-[#b04a15] dark:text-[#ff8a65] border-0 font-extrabold uppercase tracking-wider text-[10px] px-3 py-1 rounded-full">
+            <Badge className="bg-[#b04a15]/10 dark:bg-[#b04a15]/20 text-[#b04a15] dark:text-[#e07b3a] border-0 font-extrabold uppercase tracking-wider text-[10px] px-3 py-1 rounded-full">
               {campaign.category}
             </Badge>
             <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500 font-bold">
-              <MapPin className="h-3.5 w-3.5 text-[#b04a15] dark:text-[#ff8a65]" />
+              <MapPin className="h-3.5 w-3.5 text-[#b04a15] dark:text-[#e07b3a]" />
               {campaign.city}
             </span>
           </div>
 
           {/* Heading (Campaign Title) */}
-          <h3 className="text-xl md:text-2xl lg:text-3xl font-black text-stone-900 dark:text-white leading-tight mb-3 hover:text-[#b04a15] dark:hover:text-[#ff8a65] transition-colors duration-200">
+          <h3 className="text-xl md:text-2xl lg:text-3xl font-black text-stone-900 dark:text-white leading-tight mb-3 hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-colors duration-200">
             {campaign.title}
           </h3>
 
@@ -217,7 +192,7 @@ function HorizontalCampaignCard({
           <div className="space-y-2">
             <div className="flex justify-between text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">
               <span>Fundraising Progress</span>
-              <span className="text-[#b04a15] dark:text-[#ff8a65] font-extrabold">
+              <span className="text-[#b04a15] dark:text-[#e07b3a] font-extrabold">
                 {pct}%
               </span>
             </div>
@@ -235,12 +210,12 @@ function HorizontalCampaignCard({
               <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5">
                 Amount Raised
               </span>
-              <span className="font-extrabold text-[#b04a15] dark:text-[#ff8a65] text-lg tabular-nums">
+              <span className="font-extrabold text-[#b04a15] dark:text-[#e07b3a] text-lg tabular-nums">
                 {formatINR(campaign.amountRaised)}
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-[#b04a15]/10 dark:bg-[#ff8a65]/10 text-[#b04a15] dark:text-[#ff8a65] font-black px-3 py-1 rounded-full text-[10px] tracking-wider uppercase border border-[#b04a15]/20 dark:border-[#ff8a65]/20">
+            <div className="flex items-center gap-1.5 bg-[#b04a15]/10 dark:bg-[#e07b3a]/10 text-[#b04a15] dark:text-[#e07b3a] font-black px-3 py-1 rounded-full text-[10px] tracking-wider uppercase border border-[#b04a15]/20 dark:border-[#e07b3a]/20">
               {pct}% Funded
             </div>
 
@@ -273,62 +248,166 @@ function HorizontalCampaignCard({
 /* ── Main carousel ─────────────────────────────────────────── */
 export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
   const [idx, setIdx] = useState(0);
+  const [exitingCampaign, setExitingCampaign] = useState<Campaign | null>(null);
+  const [direction, setDirection] = useState<"left" | "right">("right");
   const [paused, setPaused] = useState(false);
   const timerKey = useRef(0); // incremented to force timer reset on manual nav
 
   const maxIdx = campaigns.length - 1;
 
   /* navigation helpers */
-  const go = useCallback((nextIdx: number) => {
+  const go = useCallback((nextIdx: number, dir?: "left" | "right") => {
     timerKey.current += 1;
+    const resolvedDir = dir || (nextIdx > idx ? "right" : "left");
+    setDirection(resolvedDir);
+    setExitingCampaign(campaigns[idx]);
     setIdx(nextIdx);
-  }, []);
+  }, [idx, campaigns]);
 
   const prev = useCallback(() => {
-    go(idx <= 0 ? maxIdx : idx - 1);
+    go(idx <= 0 ? maxIdx : idx - 1, "left");
   }, [idx, maxIdx, go]);
 
   const next = useCallback(() => {
-    go(idx >= maxIdx ? 0 : idx + 1);
+    go(idx >= maxIdx ? 0 : idx + 1, "right");
   }, [idx, maxIdx, go]);
+
+  // Clean up the exiting campaign after slide animation completes (500ms)
+  useEffect(() => {
+    if (!exitingCampaign) return;
+    const t = setTimeout(() => {
+      setExitingCampaign(null);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [exitingCampaign]);
 
   /* auto-rotate interval matching 3s */
   useEffect(() => {
-    if (paused || campaigns.length <= 1) return;
+    if (paused || campaigns.length <= 1 || exitingCampaign) return;
     const t = setInterval(next, INTERVAL);
     return () => clearInterval(t);
-  }, [paused, next, campaigns.length]);
+  }, [paused, next, campaigns.length, exitingCampaign]);
 
   if (!campaigns.length) return null;
 
   const campaign = campaigns[idx];
+  const hasPeek = campaigns.length > 1;
+  const prevIdx = idx <= 0 ? maxIdx : idx - 1;
+  const nextIdx = idx >= maxIdx ? 0 : idx + 1;
 
   return (
     <div
-      className="relative w-[76%] md:w-[70%] max-w-[950px] mx-auto py-4"
+      className="relative w-full overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* ── Active Card with Y-Axis 3D Entrance transition (using key reset) ── */}
-      <div key={`${idx}-${timerKey.current}`} className="animate-card-3d-enter">
-        <HorizontalCampaignCard campaign={campaign} idx={idx} />
+      {/* ── Active card (normal flow — sets container height) ── */}
+      <div
+        className="relative z-20 mx-auto w-[82%] max-w-[1100px] py-6 overflow-hidden min-h-[580px] sm:min-h-[460px] md:min-h-[380px] lg:min-h-[480px]"
+      >
+        {exitingCampaign && (
+          <div className={`absolute inset-x-0 top-6 w-full ${
+            direction === "right" ? "animate-slide-out-left" : "animate-slide-out-right"
+          }`}>
+            <HorizontalCampaignCard campaign={exitingCampaign} idx={prevIdx} peek />
+          </div>
+        )}
+        <div className={`w-full ${
+          exitingCampaign
+            ? (direction === "right" ? "animate-slide-in-right" : "animate-slide-in-left")
+            : ""
+        }`}>
+          <HorizontalCampaignCard campaign={campaign} idx={idx} />
+        </div>
       </div>
 
-      {/* ── Floating Nav Arrows ── */}
-      {campaigns.length > 1 && (
-        <>
-          <Arrow dir="left" onClick={prev} />
-          <Arrow dir="right" onClick={next} />
-        </>
+      {/* ── Peek prev: centered at left screen edge → right half visible ── */}
+      {hasPeek && (
+        <div
+          role="button"
+          tabIndex={-1}
+          aria-label="Previous campaign"
+          onClick={prev}
+          className="absolute inset-y-0 left-0 -translate-x-1/2 z-10
+                     w-[82%] max-w-[1100px] py-6
+                     hidden md:block cursor-pointer
+                     opacity-40 blur-[1.5px]
+                     hover:opacity-65 hover:blur-0
+                     transition-[opacity,filter] duration-300"
+        >
+          <HorizontalCampaignCard
+            campaign={campaigns[prevIdx]}
+            idx={prevIdx}
+            peek
+            className="pointer-events-none h-full"
+          />
+        </div>
       )}
 
-      {/* ── Dot Indicators ── */}
+      {/* ── Peek next: centered at right screen edge → left half visible ── */}
+      {hasPeek && (
+        <div
+          role="button"
+          tabIndex={-1}
+          aria-label="Next campaign"
+          onClick={next}
+          className="absolute inset-y-0 right-0 translate-x-1/2 z-10
+                     w-[82%] max-w-[1100px] py-6
+                     hidden md:block cursor-pointer
+                     opacity-40 blur-[1.5px]
+                     hover:opacity-65 hover:blur-0
+                     transition-[opacity,filter] duration-300"
+        >
+          <HorizontalCampaignCard
+            campaign={campaigns[nextIdx]}
+            idx={nextIdx}
+            peek
+            className="pointer-events-none h-full"
+          />
+        </div>
+      )}
+
+      {/* ── Nav arrows — float at active-card edges ── */}
+      {hasPeek && (
+        <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-[96%] max-w-[1240px] z-30 flex items-center justify-between px-2 sm:px-4">
+          <button
+            onClick={prev}
+            aria-label="Previous"
+            className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
+                       bg-white/25 dark:bg-zinc-900/25 backdrop-blur-xl backdrop-saturate-150
+                       border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
+                       shadow-[0_8px_32px_-8px_rgba(176, 74, 21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
+                       text-[#b04a15] dark:text-[#e07b3a]
+                       hover:bg-[#b04a15]/90 hover:text-white hover:border-[#b04a15]/50 hover:scale-110
+                       hover:shadow-[0_12px_40px_-6px_rgba(176, 74, 21,0.5)]
+                       active:scale-95 transition-all duration-300 ease-out"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            onClick={next}
+            aria-label="Next"
+            className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
+                       bg-white/25 dark:bg-zinc-900/25 backdrop-blur-xl backdrop-saturate-150
+                       border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
+                       shadow-[0_8px_32px_-8px_rgba(176, 74, 21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
+                       text-[#b04a15] dark:text-[#e07b3a]
+                       hover:bg-[#b04a15]/90 hover:text-white hover:border-[#b04a15]/50 hover:scale-110
+                       hover:shadow-[0_12px_40px_-6px_rgba(176, 74, 21,0.5)]
+                       active:scale-95 transition-all duration-300 ease-out"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Dot indicators ── */}
       {campaigns.length > 1 && (
-        <div className="mt-8 flex justify-center items-center gap-2">
+        <div className="pb-6 flex justify-center items-center gap-2">
           {campaigns.map((_, i) => (
             <button
               key={i}
-              onClick={() => go(i)}
+              onClick={() => go(i, i > idx ? "right" : "left")}
               aria-label={`Slide ${i + 1}`}
               className={[
                 "rounded-full transition-all duration-300",
@@ -357,8 +436,8 @@ export function LatestActiveCampaignsSection({
   const latestCampaigns = campaigns.slice(0, 5);
 
   return (
-    <section className="mx-auto max-w-7xl px-10 py-20 text-stone-900 dark:text-stone-100">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 px-0">
+    <section className="w-full py-20 bg-[#faf8f5] dark:bg-zinc-950 text-stone-900 dark:text-stone-100">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 px-6 sm:px-10 max-w-7xl mx-auto">
         <div className="space-y-2">
           <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
             Latest active campaigns
@@ -378,15 +457,15 @@ export function LatestActiveCampaignsSection({
       </div>
 
       {loading && (
-        <div className="flex justify-center py-20">
+        <div className="flex justify-center py-20 px-10">
           <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#b04a15]/20 border-t-[#b04a15]" />
         </div>
       )}
       {error && (
-        <p className="text-center text-red-500 py-20 font-semibold">{error}</p>
+        <p className="text-center text-red-500 py-20 px-10 font-semibold">{error}</p>
       )}
       {!loading && !error && latestCampaigns.length === 0 && (
-        <p className="text-center text-stone-400 py-20 font-medium bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-stone-850 shadow-xs">
+        <p className="text-center text-stone-400 py-20 mx-10 font-medium bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-stone-850 shadow-xs">
           No approved campaigns yet — check back soon!
         </p>
       )}

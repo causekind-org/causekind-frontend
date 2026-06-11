@@ -3,31 +3,41 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Sparkles, Play, Heart, ShieldCheck, HandCoins, MapPin, Award, Loader2, Coins, Users, Package } from "lucide-react";
+import { Sparkles, Heart, ShieldCheck, HandCoins, MapPin, Award, Coins, Users, Package, ArrowRight } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
-import { ParticleBackground } from "@/components/ParticleBackground";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
 import { MockListingsCarousel } from "@/components/MockListingsCarousel";
-import { ArrowRight } from "lucide-react";
-import { getCampaigns, getPlatformStats, getRecentActivity, type Campaign, type PlatformStats, type RecentActivity } from "@/lib/api";
+import { PhoneAnimationSection } from "@/components/PhoneAnimationSection";
+import { getCampaigns, getItemRequests, getItemListings, getPlatformStats, getRecentActivity, type Campaign, type ItemRequest, type ItemListing, type PlatformStats, type RecentActivity } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const HERO_IMAGES = [
+  "/images/care_nest_hero.png",
   "/images/hero-1.jpg", "/images/hero-2.jpg", "/images/hero-3.jpg",
   "/images/hero-4.jpg", "/images/hero-5.jpg", "/images/hero-6.jpg",
   "/images/hero-7.jpg", "/images/hero-8.jpg", "/images/hero-9.jpg",
 ];
 
 const features = [
-  { icon: ShieldCheck, title: "Admin Verified", desc: "Every campaign, item request, and listing is strictly reviewed before going live to prevent scams.", color: "from-[#b04a15]/10 to-[#e07b3a]/10 text-[#b04a15]" },
-  { icon: HandCoins, title: "100% Direct Giving", desc: "Zero platform fees for donors. 100% of your contribution goes directly to the intended cause.", color: "from-[#e07b3a]/10 to-[#f59e0b]/10 text-[#c2660a]" },
-  { icon: MapPin, title: "Radius-Based Matches", desc: "In-kind physical donations match local donees within a 10 km radius to ensure easy logistics.", color: "from-[#1e3a60]/10 to-[#2d5a96]/10 text-[#1e3a60]" },
-  { icon: Award, title: "Tax Certificates", desc: "Receive verified thank-you and contribution certificates immediately after delivery confirmation.", color: "from-amber-500/10 to-yellow-500/10 text-amber-700" },
+  { icon: ShieldCheck, title: "Admin Verified", desc: "Every campaign and item request is reviewed by our team before it goes live. Nothing gets through without a real check.", color: "from-[#b04a15]/10 to-[#e07b3a]/10 text-[#b04a15]" },
+  { icon: HandCoins, title: "Zero Platform Fees", desc: "We charge nothing. Every rupee you donate or every item you give reaches the person who needs it.", color: "from-[#e07b3a]/10 to-[#f59e0b]/10 text-[#c2660a]" },
+  { icon: MapPin, title: "Local Matching", desc: "Item donations are matched with people within 10 km of you, making drop-offs simple and quick.", color: "from-[#1e3a60]/10 to-[#2d5a96]/10 text-[#1e3a60]" },
+  { icon: Award, title: "Impact Certificates", desc: "After your donation is delivered, you receive a verified certificate you can keep or share.", color: "from-amber-500/10 to-yellow-500/10 text-amber-700" },
 ];
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+}
+
+function getCategoryEmoji(category: string) {
+  const cat = category.toUpperCase();
+  if (cat.includes("MED") || cat.includes("HEAL")) return "🏥";
+  if (cat.includes("EDU")) return "📚";
+  if (cat.includes("FOOD") || cat.includes("HUNGER")) return "🍲";
+  if (cat.includes("DISAST") || cat.includes("EMERG")) return "🚨";
+  if (cat.includes("ENV") || cat.includes("ANIM")) return "🌱";
+  return "✨";
 }
 
 function HeroImageSlider() {
@@ -41,88 +51,153 @@ function HeroImageSlider() {
       {HERO_IMAGES.map((src, i) => (
         <div key={src} className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out" style={{ opacity: i === current ? 0.95 : 0 }}>
           <div className={i === current ? (i % 2 === 0 ? "hero-slide-active" : "hero-slide-active-alt") : ""} style={{ position: "absolute", inset: 0 }}>
-            <Image src={src} alt="" fill className="object-cover object-center" priority={i === 0} sizes="100vw" />
+            <Image src={src} alt="" fill className="object-cover object-center brightness-[0.85] contrast-[1.05]" priority={i === 0} sizes="100vw" />
           </div>
         </div>
       ))}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1c1108]/45 via-[#1c1108]/18 to-[#1c1108]/55 pointer-events-none" />
     </div>
   );
 }
 
 export default function HomePage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [itemRequests, setItemRequests] = useState<ItemRequest[]>([]);
+  const [itemListings, setItemListings] = useState<ItemListing[]>([]);
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [activity, setActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeCampaignIndex, setActiveCampaignIndex] = useState(0);
 
   useEffect(() => {
-    Promise.all([getCampaigns(), getPlatformStats(), getRecentActivity()])
-      .then(([c, s, a]) => { setCampaigns(c); setStats(s); setActivity(a); })
+    Promise.all([getCampaigns(), getPlatformStats(), getRecentActivity(), getItemRequests(), getItemListings()])
+      .then(([c, s, a, ir, il]) => { setCampaigns(c); setStats(s); setActivity(a); setItemRequests(ir); setItemListings(il); })
       .catch(() => setError("Could not load campaigns."))
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (campaigns.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveCampaignIndex(prev => (prev + 1) % campaigns.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [campaigns.length]);
+
   return (
-    <div className="relative bg-[#faf8f4] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 min-h-screen overflow-x-hidden transition-colors duration-300">
-      {/* particle layer — behind all content */}
-      <ParticleBackground className="z-0" />
-
+    <div className="carenest-bg-cream dark:bg-zinc-950 text-stone-900 dark:text-stone-100 min-h-screen overflow-x-hidden transition-colors duration-300">
       <div className="relative z-10">
-        {/* ── Hero ── */}
-        <section className="relative w-full min-h-screen overflow-hidden flex items-center pt-28 pb-20 px-6 sm:px-12 md:px-16 lg:px-24">
-          <HeroImageSlider />
-
-          <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
-            
-            {/* Left side: CauseKind Brand Statement, Title, Description & Actions */}
-            <div className="col-span-12 md:col-span-8 lg:col-span-7 flex flex-col items-start gap-6">
-              <div className="flex items-center gap-2 text-white/90">
-                <Sparkles className="w-5 h-5 text-[#f0b97a] animate-pulse" />
-                <span className="text-sm font-bold uppercase tracking-widest">CauseKind<sup className="text-[10px]">TM</sup></span>
-              </div>
-              
-              <h1 className="font-normal leading-[0.95] text-white text-[2.5rem] sm:text-5xl md:text-6xl lg:text-[4.75rem] xl:text-[5.25rem] max-w-4xl"
-                style={{ 
-                  fontFamily: '"Neue Haas Grotesk Display Pro 55 Roman","Neue Haas Grotesk Text Pro","Helvetica Neue",Helvetica,Arial,sans-serif', 
-                  letterSpacing: '-0.035em',
-                  textShadow: '0 2px 15px rgba(0,0,0,0.4)'
-                }}>
-                Close the rift{' '}
-                <span className="text-[#f0b97a] block mt-1">linking compassion and action</span>
-              </h1>
-
-              <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed max-w-xl font-medium"
-                style={{ textShadow: '0 1px 5px rgba(0,0,0,0.3)' }}>
-                CauseKind helps you support verified campaigns and donate items directly to people in your area. 100% of your contribution goes directly to the cause with zero platform fees.
-              </p>
-
-              <div className="flex items-center gap-4 mt-4 flex-wrap">
-                <Link href="/campaigns">
-                  <button className="btn-3d btn-shine bg-white hover:bg-white/92 text-[#1c1108] text-sm sm:text-base font-bold px-6 sm:px-8 py-3 sm:py-3.5 rounded-full shadow-md">
-                    Donate Now
-                  </button>
-                </Link>
-                <a href="#how" className="text-white text-sm sm:text-base font-semibold hover:opacity-85 transition-opacity underline underline-offset-4 flex items-center gap-1">
-                  How we work <ArrowRight className="w-4 h-4" />
-                </a>
-              </div>
+        
+        {/* ── Hero Section ── */}
+        <section className="relative w-full max-w-[1440px] mx-auto px-6 sm:px-10 pt-8 pb-0">
+          <div className="relative w-full min-h-[640px] sm:min-h-[720px] rounded-t-[3rem] rounded-b-none overflow-hidden bg-stone-900 shadow-xl border-x border-t border-[#e5e2d5]/60 animate-scale anim-d1">
+            {/* Background Image Slideshow */}
+            <div className="absolute inset-0 w-full h-full pointer-events-none">
+              <HeroImageSlider />
+              {/* Soft overlay gradients to ensure text readability */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
             </div>
 
-            {/* Right side: Clear/Decorative (Left empty to show background image of children) */}
-            <div className="hidden md:col-span-4 lg:col-span-5 md:flex" />
+            {/* Content Container */}
+            <div className="relative z-10 w-full h-full min-h-[640px] sm:min-h-[720px] px-6 sm:px-12 py-12 sm:py-16 flex flex-col justify-between">
+              
+              {/* Top part: Badges and pills */}
+              <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                {/* Badge: MAKING LIVES BETTER */}
+                <div className="self-start inline-flex items-center gap-2 bg-white rounded-full px-5 py-2 border border-[#e2e0d5]">
+                  <span className="w-2 h-2 rounded-full bg-[#f0b97a] animate-pulse shrink-0" />
+                  <span className="text-[#b04a15] text-xs font-extrabold uppercase tracking-wider">MAKING LIVES BETTER</span>
+                </div>
 
-          </div>
+                {/* Floating Pills */}
+                <div className="hidden lg:flex flex-col items-end gap-3">
+                  <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
+                    <span className="text-white text-sm font-semibold">100% transparent donations</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
+                    <span className="text-white text-sm font-semibold">Fast, effective distribution</span>
+                  </div>
+                </div>
+              </div>
 
-          {/* Lower right absolute action button */}
-          <div className="absolute right-6 sm:right-12 md:right-16 lg:right-24 bottom-8 sm:bottom-12 z-20 flex items-center gap-2 text-white/90 text-sm">
-            <a href="#trust" className="flex items-center gap-2.5 group bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/25 transition-all px-4 py-2.5 rounded-full shadow-sm">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20">
-                <Play className="w-2.5 h-2.5 fill-white text-white ml-0.5" />
-              </span>
-              <span className="font-semibold text-xs uppercase tracking-wider">How we Verify</span>
-            </a>
+              {/* Bottom part: Heading on left, Card on right */}
+              <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mt-auto">
+                {/* Left Side: Headline + description */}
+                <div className="lg:col-span-7 flex flex-col items-start gap-5 relative">
+                  
+                  {/* Watermark leaf logo overlay behind or next to heading */}
+                  <div className="absolute -top-12 left-12 opacity-15 pointer-events-none select-none text-white">
+                    <svg viewBox="0 0 24 24" fill="none" className="h-28 w-28" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 21.5C7.5 18 4.5 14.5 4.5 10.5C4.5 7.5 6.5 5.5 9.5 5.5C10.8 5.5 11.6 6 12 6.5C12.4 6 13.2 5.5 14.5 5.5C17.5 5.5 19.5 7.5 19.5 10.5C19.5 14.5 16.5 18 12 21.5Z" stroke="currentColor" strokeWidth="1" />
+                    </svg>
+                  </div>
+
+                  <h1 className="text-white font-extrabold leading-[1.08] tracking-tight text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] max-w-2xl font-jakarta">
+                    Together We Support <br />
+                    Educate and Heal
+                  </h1>
+
+                  <p className="text-white/85 text-sm sm:text-base leading-relaxed max-w-lg font-medium">
+                    Every donation helps a family grow stronger, healthier, and more secure. Together, we build a future full of possibilities.
+                  </p>
+                </div>
+
+                {/* Right Side: Floating action card */}
+                <div className="lg:col-span-5 flex justify-end">
+                  {(() => {
+                    const currentCampaign = campaigns[activeCampaignIndex];
+                    return (
+                      <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 shadow-2xl w-full max-w-[320px] border border-[#e5e2d5]/65 dark:border-zinc-800 animate-card-3d-enter min-h-[350px] flex flex-col justify-between transition-all duration-500">
+                        <div>
+                          {/* Card Top: Logo and Year */}
+                          <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center shadow-sm shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" className="h-4.5 w-4.5" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 21.5C7.5 18 4.5 14.5 4.5 10.5C4.5 7.5 6.5 5.5 9.5 5.5C10.8 5.5 11.6 6 12 6.5C12.4 6 13.2 5.5 14.5 5.5C17.5 5.5 19.5 7.5 19.5 10.5C19.5 14.5 16.5 18 12 21.5Z" stroke="white" strokeWidth="1.8" />
+                                </svg>
+                              </div>
+                              <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100">CauseKind</span>
+                            </div>
+                            <span className="text-xs text-stone-400 font-bold">
+                              • {currentCampaign ? currentCampaign.city : "2026"}
+                            </span>
+                          </div>
+
+                          {/* Mask Icon Circle */}
+                          <div className="w-10 h-10 rounded-full bg-[#e8f3ec] dark:bg-zinc-800 flex items-center justify-center mb-4 transition-all duration-300">
+                            <span className="text-lg">
+                              {currentCampaign ? getCategoryEmoji(currentCampaign.category) : "😷"}
+                            </span>
+                          </div>
+
+                          {/* Card Title */}
+                          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white leading-snug mb-2 font-jakarta line-clamp-2 h-[52px] transition-all duration-300">
+                            {currentCampaign ? currentCampaign.title : "Make an Immediate Impact"}
+                          </h3>
+
+                          {/* Card Description */}
+                          <p className="text-xs text-stone-500 dark:text-stone-400 mb-5 leading-relaxed font-medium line-clamp-2 min-h-[32px] transition-all duration-300">
+                            {currentCampaign ? currentCampaign.description : "Every donation directly supports frontline community programs."}
+                          </p>
+                        </div>
+
+                        {/* Card Button */}
+                        <Link href={currentCampaign ? `/campaigns/${currentCampaign.id}` : "/campaigns"} className="block w-full">
+                          <button className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold py-3.5 rounded-xl text-xs tracking-wide uppercase transition-all duration-300 shadow-md shadow-orange-900/20 active:scale-95">
+                            Donate Now
+                          </button>
+                        </Link>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+            </div>
           </div>
         </section>
 
@@ -154,7 +229,7 @@ export default function HomePage() {
         {/* ── Live Ticker ── */}
         {activity.length > 0 && (
           <div className="border-b border-orange-100/40 dark:border-stone-850/40 bg-orange-50/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
-            <span className="shrink-0 ml-6 rounded-full bg-[#1c1108] px-3 py-1 text-[10px] font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
+            <span className="shrink-0 ml-6 rounded-full bg-[#963c0d] px-3 py-1 text-[10px] font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#f0b97a]" />
               LIVE
             </span>
@@ -175,11 +250,14 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* ── Phone Animation Section ── */}
+        <PhoneAnimationSection />
+
         {/* ── Features ── */}
         <section id="trust" className="mx-auto max-w-7xl px-6 py-20 bg-grid-pattern">
           <Reveal className="mx-auto max-w-2xl text-center space-y-3">
-            <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">How we Verify</h2>
-            <p className="text-base text-stone-500 dark:text-stone-400 font-medium">Every transaction, donee verification, and item match is fully transparent and vetted by administrators.</p>
+            <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">How we Process</h2>
+            <p className="text-base text-stone-500 dark:text-stone-400 font-medium">Every campaign and item request goes through a clear, step-by-step review before it reaches donors.</p>
           </Reveal>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f, i) => (
@@ -202,20 +280,20 @@ export default function HomePage() {
         <section id="how" className="bg-orange-50/40 dark:bg-zinc-900/20 border-y border-orange-100/35 dark:border-stone-850/30 py-20">
           <div className="mx-auto max-w-7xl px-6">
             <Reveal className="mx-auto max-w-2xl text-center space-y-3 mb-12">
-              <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">How we work</h2>
-              <p className="text-base text-stone-500 dark:text-stone-400 font-medium">Get started in three straightforward steps.</p>
+              <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">What we Provide</h2>
+              <p className="text-base text-stone-500 dark:text-stone-400 font-medium">Three ways to give, all under one roof.</p>
             </Reveal>
             <div className="grid gap-6 md:grid-cols-3">
               {[
-                { step: "01", icon: ShieldCheck, title: "Vetted Donees", desc: "Donees submit verification details, medical files, or local requests. Administrators review for legitimacy." },
-                { step: "02", icon: Heart, title: "Direct Giving Mode", desc: "Choose a financial campaign, or select local donee requests asking for physical clothes, books, and laptops." },
-                { step: "03", icon: Package, title: "Local Logistics Match", desc: "In-kind donations match automatically with local families within 10 km, reducing fuel and courier costs." },
+                { step: "01", icon: ShieldCheck, title: "Verified Campaigns", desc: "Every person who posts a campaign is checked by our team first. You know your money is going somewhere real." },
+                { step: "02", icon: Heart, title: "Money or Items", desc: "Donate cash to a campaign, or give physical items like books, clothes, or a laptop to someone nearby." },
+                { step: "03", icon: Package, title: "Local Drop-offs", desc: "Item donations are matched within 10 km. No couriers, no shipping fees — just direct giving to a neighbour." },
               ].map((s, i) => (
                 <Reveal key={s.title} delay={i * 100}>
                   <Card className="card-3d card-shimmer card-glow glass-card rounded-2xl border-white/80 p-6 relative overflow-hidden h-full">
                     <div className="absolute right-4 top-4 text-4xl font-black text-orange-100 dark:text-zinc-800/60 select-none">{s.step}</div>
                     <CardContent className="p-0 space-y-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1c1108] text-white shadow-md shadow-stone-900/20">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#963c0d] text-white shadow-md shadow-stone-900/20">
                         <s.icon className="h-5 w-5" />
                       </div>
                       <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">{s.title}</h3>
@@ -259,47 +337,51 @@ export default function HomePage() {
               </Reveal>
             </div>
 
-            {/* Placeholder area for further implementation */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                { title: "NCERT Class 12 Textbooks", donee: "Ramesh P.", city: "Pune", qty: "2 Sets", urgency: "High Urgency" },
-                { title: "Gently Used School Uniforms", donee: "Sneha G.", city: "Mumbai", qty: "3 Pairs", urgency: "Medium Urgency" },
-                { title: "Basic Laptop for Online Studies", donee: "Karan K.", city: "Pune", qty: "1 Unit", urgency: "Critical Needs" },
-              ].map((req, i) => (
-                <Reveal key={req.title} delay={i * 100}>
-                  <Card className="card-3d card-glow glass-card dark:bg-zinc-900/60 rounded-2xl border-white/80 dark:border-stone-800 p-6 relative overflow-hidden h-full flex flex-col justify-between">
-                    <div className="absolute top-4 right-4">
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase border ${
-                        req.urgency === "High Urgency" || req.urgency === "Critical Needs"
-                          ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
-                          : "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
-                      }`}>
-                        {req.urgency}
-                      </span>
-                    </div>
-
-                    <CardContent className="p-0 space-y-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 dark:bg-zinc-950 text-[#b04a15] shadow-xs">
-                        <Package className="h-5 w-5" />
+              {(itemRequests.length > 0 ? itemRequests.slice(0, 3) : Array(3).fill(null)).map((req: ItemRequest | null, i) => (
+                <Reveal key={req ? req.id : `skel-${i}`} delay={i * 100}>
+                  {req ? (
+                    <Card className="card-glow bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden h-full flex flex-col">
+                      {/* Image */}
+                      <div className="relative w-full h-36 bg-orange-50 dark:bg-zinc-800 shrink-0 overflow-hidden">
+                        {req.imageUrl ? (
+                          <Image src={req.imageUrl} alt={req.title} fill className="object-cover" sizes="(max-width: 640px) 100vw, 33vw" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <Package className="h-10 w-10 text-orange-200 dark:text-zinc-700" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 right-3">
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase border ${
+                            req.urgency === "CRITICAL"
+                              ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
+                              : req.urgency === "HIGH"
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                              : "bg-stone-100 border-stone-200 text-stone-500 dark:text-stone-400"
+                          }`}>
+                            {req.urgency === "CRITICAL" ? "Critical" : req.urgency === "HIGH" ? "High Urgency" : "Normal"}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">{req.title}</h3>
-                        <p className="text-xs text-stone-400 font-semibold mt-1">Requested by {req.donee} · {req.city}</p>
-                      </div>
-                      <p className="text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed">
-                        Quantity needed: <span className="font-extrabold text-stone-800 dark:text-stone-200">{req.qty}</span>. Match logistics matching will verify local dropoff.
-                      </p>
-                    </CardContent>
-
-                    <div className="mt-6 pt-4 border-t border-orange-50/50 dark:border-stone-800 flex justify-between items-center text-xs">
-                      <span className="text-stone-400 dark:text-stone-500 font-bold flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> PLACEHOLDER AREA
-                      </span>
-                      <span className="text-[#b04a15] dark:text-[#ff8a65] font-extrabold uppercase text-[10px] tracking-wider">
-                        Matched Soon
-                      </span>
-                    </div>
-                  </Card>
+                      <CardContent className="p-5 flex flex-col flex-1 gap-3">
+                        <div>
+                          <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug">{req.title}</h3>
+                          <p className="text-xs text-stone-400 font-semibold mt-1">By {req.doneeName} · {req.city}</p>
+                        </div>
+                        {req.description && (
+                          <p className="text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed line-clamp-2">{req.description}</p>
+                        )}
+                        <div className="mt-auto pt-3 border-t border-orange-50 dark:border-zinc-800 flex justify-between items-center text-xs">
+                          <span className="text-stone-400 font-semibold">Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span></span>
+                          <Link href="/requests">
+                            <span className="text-[#b04a15] font-extrabold uppercase text-[10px] tracking-wider hover:underline">Donate Item →</span>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="rounded-2xl border border-orange-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-64 animate-pulse" />
+                  )}
                 </Reveal>
               ))}
             </div>
@@ -330,9 +412,8 @@ export default function HomePage() {
               </Reveal>
             </div>
 
-            {/* Carousel display of listings (rotate speed 3s) */}
             <Reveal delay={200}>
-              <MockListingsCarousel />
+              <MockListingsCarousel listings={itemListings.slice(0, 8)} />
             </Reveal>
           </div>
         </section>
@@ -350,7 +431,7 @@ export default function HomePage() {
                 </p>
                 <div className="flex flex-wrap justify-center gap-4 pt-2">
                   <Link href="/register">
-                    <Button size="lg" className="btn-3d btn-shine bg-[#b04a15] hover:bg-[#8f3b10] text-white shadow-md shadow-orange-900/25 rounded-xl font-bold px-6 py-6">
+                    <Button size="lg" className="btn-3d btn-shine bg-[#b04a15] hover:bg-[#963c0d] text-white shadow-md shadow-orange-900/25 rounded-xl font-bold px-6 py-6">
                       Create An Account
                     </Button>
                   </Link>

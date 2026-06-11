@@ -42,7 +42,7 @@ export default function RegisterPage() {
 
       <Card className="anim-up anim-d1 w-full max-w-xl glass-card card-shimmer rounded-2xl border-orange-100 dark:border-stone-850 shadow-xl dark:shadow-none">
         <CardHeader className="space-y-1.5 pb-5">
-          <CardTitle className="text-2xl font-extrabold text-[#1c1108] dark:text-white">Create your CauseKind account</CardTitle>
+          <CardTitle className="text-2xl font-extrabold text-[#963c0d] dark:text-white">Create your CauseKind account</CardTitle>
           <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">Join CauseKind to donate or request local in-kind support.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -83,11 +83,11 @@ export default function RegisterPage() {
                 </div>
               </div>
             </div>
-            <Button type="submit" className="btn-3d btn-shine w-full bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl py-5 font-semibold text-sm mt-2" disabled={loading}>
+            <Button type="submit" className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl py-5 font-semibold text-sm mt-2" disabled={loading}>
               {loading ? "Creating account…" : "Create account"}
             </Button>
             <p className="text-center text-sm text-stone-500 dark:text-stone-400 font-medium">
-              Already have one?{" "}<Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#ff8a65] hover:underline underline-offset-2">Log in</Link>
+              Already have one?{" "}<Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Log in</Link>
             </p>
           </form>
         </CardContent>
