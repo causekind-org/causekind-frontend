@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { adminGetCampaigns, approveCampaign, rejectCampaign, adminGetItemListings, adminGetItemRequests, adminGetAllDonations, adminGetDonationStats, type Campaign, type AdminDonation, type DonationStats } from "@/lib/api";
+import { adminGetCampaigns, approveCampaign, rejectCampaign, adminGetItemListings, adminGetItemRequests, adminGetAllDonations, adminGetDonationStats, adminGetMatches, type Campaign, type AdminDonation, type DonationStats } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ export default function AdminDashboardPage() {
   const [pendingCampaignCount, setPendingCampaignCount] = useState(0);
   const [pendingListings, setPendingListings] = useState(0);
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [pendingMatches, setPendingMatches] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("PENDING_APPROVAL");
   const [rejectId, setRejectId] = useState<number | null>(null);
@@ -62,13 +63,15 @@ export default function AdminDashboardPage() {
       adminGetCampaigns("PENDING_APPROVAL"),
       adminGetItemListings("PENDING_APPROVAL"),
       adminGetItemRequests("PENDING_APPROVAL"),
-    ]).then(([c, approved, pending, l, r]) => {
+      adminGetMatches("PENDING"),
+    ]).then(([c, approved, pending, l, r, m]) => {
       if (!cancelled) {
         setCampaigns(c);
         setActiveCampaignCount(approved.length);
         setPendingCampaignCount(pending.length);
         setPendingListings(l.length);
         setPendingRequests(r.length);
+        setPendingMatches(m.length);
       }
     }).finally(() => { if (!cancelled) setLoading(false); });
 
@@ -184,10 +187,12 @@ export default function AdminDashboardPage() {
                   <Badge>{pendingListings}</Badge>
                 </div>
               </Link>
-              <div className="flex items-center justify-between rounded-lg border p-4 text-muted-foreground">
-                <p className="font-medium">Contact share requests</p>
-                <Badge variant="secondary">0</Badge>
-              </div>
+              <Link href="/admin/approvals" className="block">
+                <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
+                  <p className="font-medium">Contact share requests</p>
+                  <Badge>{pendingMatches}</Badge>
+                </div>
+              </Link>
             </CardContent>
           </Card>
 
@@ -318,8 +323,9 @@ export default function AdminDashboardPage() {
           </TabsContent>
 
           <TabsContent value="contacts" className="mt-6">
-            <div className="rounded-lg border border-dashed p-16 text-center text-muted-foreground">
-              Contact share requests — coming soon
+            <div className="rounded-lg border border-dashed p-16 text-center space-y-3">
+              <p className="text-muted-foreground">Manage contact share requests from the approval queue.</p>
+              <Link href="/admin/approvals"><Button variant="outline">Go to approval queue</Button></Link>
             </div>
           </TabsContent>
 

@@ -5,6 +5,12 @@ function getToken(): string | null {
   return localStorage.getItem("ck_token");
 }
 
+function handleUnauthorized() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("ck_token");
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {}
@@ -20,10 +26,19 @@ async function request<T>(
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      handleUnauthorized();
+      throw new Error("Session expired. Please log in again.");
+    }
+    if (res.status === 403) throw new Error("You don't have permission to do that.");
+    if (res.status === 404) throw new Error("The requested item was not found.");
+    if (res.status === 409) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.message ?? "This action has already been done.");
+    }
+    if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
     const body = await res.json().catch(() => ({}));
-    const msg =
-      body?.message ?? body?.title ?? `HTTP ${res.status}`;
-    throw new Error(msg);
+    throw new Error(body?.message ?? body?.title ?? "Something went wrong. Please try again.");
   }
 
   if (res.status === 204) return undefined as T;
@@ -309,25 +324,78 @@ export function adminRejectItemRequest(id: number, reason: string) {
 
 export type ItemMatch = {
   id: number;
-  listingId: number;
-  listingTitle: string;
-  requestId: number;
-  requestTitle: string;
+  matchType: "DONATE_TO_REQUEST" | "REQUEST_LISTING";
+  listingId: number | null;
+  listingTitle: string | null;
+  requestId: number | null;
+  requestTitle: string | null;
   donorName: string;
   donorCity: string;
   doneeName: string;
   doneeCity: string;
-  status: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
   rejectionReason: string | null;
   createdAt: string;
+  matchScore: number | null;
+  donorImages: string[];
+  donorItemDescription: string | null;
+  doneeReason: string | null;
   donorContact: string | null;
   doneeContact: string | null;
 };
 
-export function createMatch(listingId: number, requestId: number) {
-  return request<ItemMatch>("/api/v1/matches", {
+export function donateToRequest(requestId: number, images: File[], description: string) {
+  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const formData = new FormData();
+  formData.append("requestId", String(requestId));
+  formData.append("description", description);
+  images.forEach((img) => formData.append("images", img));
+
+  return fetch(`${BASE_URL}/api/v1/matches/donate`, {
     method: "POST",
-    body: JSON.stringify({ listingId, requestId }),
+    headers: {
+      "Authorization": token ? `Bearer ${token}` : "",
+      "ngrok-skip-browser-warning": "true",
+    },
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      if (res.status === 401) { handleUnauthorized(); throw new Error("Session expired. Please log in again."); }
+      if (res.status === 403) throw new Error("You don't have permission to do that.");
+      if (res.status === 409) throw new Error("You have already offered to donate for this request.");
+      if (res.status === 400) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message ?? "Please check your details and try again.");
+      }
+      if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.message ?? body?.title ?? "Something went wrong. Please try again.");
+    }
+    return res.json() as Promise<ItemMatch>;
+  });
+}
+
+export function analyzeItemImage(image: File): Promise<{ description: string }> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const formData = new FormData();
+  formData.append("image", image);
+  return fetch(`${BASE_URL}/api/v1/matches/analyze-image`, {
+    method: "POST",
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+      "ngrok-skip-browser-warning": "true",
+    },
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) throw new Error("Analysis failed");
+    return res.json() as Promise<{ description: string }>;
+  });
+}
+
+export function requestListing(listingId: number, reason: string) {
+  return request<ItemMatch>("/api/v1/matches/request", {
+    method: "POST",
+    body: JSON.stringify({ listingId, reason }),
   });
 }
 
@@ -348,6 +416,30 @@ export function adminRejectMatch(id: number, reason: string) {
   return request<ItemMatch>(`/api/v1/admin/matches/${id}/reject`, {
     method: "PATCH",
     body: JSON.stringify({ reason }),
+  });
+}
+
+// ── User profile ──────────────────────────────────────────────────────────────
+
+export type UserProfile = {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  city: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  role: string;
+};
+
+export function getMyProfile() {
+  return request<UserProfile>("/api/v1/users/me");
+}
+
+export function updateLocation(latitude: number, longitude: number) {
+  return request<UserProfile>("/api/v1/users/location", {
+    method: "PUT",
+    body: JSON.stringify({ latitude, longitude }),
   });
 }
 

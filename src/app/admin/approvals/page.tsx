@@ -282,14 +282,60 @@ export default function ApprovalsPage() {
                 <Card key={m.id}>
                   <CardContent className="space-y-3 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-medium">{m.listingTitle} → {m.requestTitle}</p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={m.matchType === "DONATE_TO_REQUEST" ? "default" : "secondary"} className="text-xs">
+                            {m.matchType === "DONATE_TO_REQUEST" ? "Donate → Request" : "Request → Listing"}
+                          </Badge>
+                          {m.matchScore != null && (
+                            <Badge variant={m.matchScore >= 60 ? "default" : m.matchScore >= 30 ? "secondary" : "outline"}
+                              className={`text-xs ${m.matchScore >= 60 ? "bg-green-600" : m.matchScore >= 30 ? "" : "text-muted-foreground"}`}>
+                              AI match: {m.matchScore.toFixed(0)}%
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 font-medium">
+                          {m.matchType === "DONATE_TO_REQUEST"
+                            ? `${m.donorName} wants to donate for "${m.requestTitle}"`
+                            : `${m.doneeName} requested "${m.listingTitle}"`}
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           Donor: {m.donorName} ({m.donorCity}) · Donee: {m.doneeName} ({m.doneeCity})
                         </p>
                       </div>
                       <Badge variant="secondary">Pending</Badge>
                     </div>
+
+                    {/* Donor uploaded images for DONATE_TO_REQUEST */}
+                    {m.matchType === "DONATE_TO_REQUEST" && m.donorImages.length > 0 && (
+                      <div>
+                        <p className="mb-2 text-xs font-medium text-muted-foreground">Donor&apos;s item photos</p>
+                        <div className="flex gap-2">
+                          {m.donorImages.map((url, i) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                              <img src={url} alt={`Item photo ${i + 1}`}
+                                className="h-20 w-20 rounded-lg border object-cover hover:opacity-80 transition" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Donor description */}
+                    {m.donorItemDescription && (
+                      <div className="rounded-md bg-accent/40 px-3 py-2 text-sm">
+                        <span className="font-medium">Donor&apos;s description: </span>{m.donorItemDescription}
+                      </div>
+                    )}
+
+                    {/* Donee reason for REQUEST_LISTING */}
+                    {m.doneeReason && (
+                      <div className="rounded-md bg-accent/40 px-3 py-2 text-sm">
+                        <span className="font-medium">Donee&apos;s reason: </span>{m.doneeReason}
+                      </div>
+                    )}
+
                     <p className="text-xs text-muted-foreground">Approving will share contact numbers between both parties via email.</p>
                     {rejectId === m.id && rejectType === "match"
                       ? <RejectForm id={m.id} onConfirm={handleRejectMatch} />
