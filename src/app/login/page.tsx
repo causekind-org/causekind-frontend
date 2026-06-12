@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { login } from "@/lib/api";
+import { login, googleAuth } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ParticleBackground } from "@/components/ParticleBackground";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 
 function LoginContent() {
   const { setAuth, user } = useAuth();
@@ -20,6 +21,7 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
@@ -40,6 +42,27 @@ function LoginContent() {
     finally { setLoading(false); }
   }
 
+  async function handleGoogleSuccess(credentialResponse: { credential?: string }) {
+    if (!credentialResponse.credential) return;
+    setGoogleLoading(true);
+    try {
+      const res = await googleAuth(credentialResponse.credential);
+      if (res.needsCompletion) {
+        sessionStorage.setItem("ck_google_token", credentialResponse.credential);
+        sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
+        router.push("/register?social=google");
+      } else {
+        setAuth(res.token);
+        toast.success("Welcome back!");
+        router.push("/");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google login failed");
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center bg-[#faf8f4] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300 bg-grid-pattern px-6 py-12 overflow-hidden">
       <ParticleBackground className="z-0" />
@@ -58,6 +81,28 @@ function LoginContent() {
           <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">Log in to your CauseKind account.</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Google Sign In */}
+          <div className="mb-5">
+            <div className={`flex justify-center transition-opacity ${googleLoading ? "opacity-50 pointer-events-none" : ""}`}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error("Google sign-in failed")}
+                width="368"
+                theme="outline"
+                shape="rectangular"
+                text="signin_with"
+                size="large"
+              />
+            </div>
+          </div>
+
+          <div className="relative mb-5">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-orange-100 dark:border-stone-800" /></div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white dark:bg-zinc-900 px-3 text-stone-400 font-semibold uppercase tracking-wider">or continue with email</span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="font-semibold text-stone-700 dark:text-stone-300">Email</Label>

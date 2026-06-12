@@ -40,12 +40,12 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("ck_theme") as "light" | "dark") || "light";
-    }
-    return "light";
-  });
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ck_theme") as "light" | "dark" | null;
+    if (saved) setTheme(saved);
+  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -111,6 +111,7 @@ export function SiteHeader() {
             onClick={toggleTheme}
             className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-700 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all duration-300 active:scale-95 overflow-hidden shadow-xs bg-white dark:bg-zinc-900"
             aria-label="Toggle theme"
+            suppressHydrationWarning
           >
             <div className="relative w-5 h-5 flex items-center justify-center">
               <Sun className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />

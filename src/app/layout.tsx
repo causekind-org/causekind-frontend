@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Nunito } from "next/font/google";
 import "@/styles.css";
 import { AuthProvider } from "@/hooks/useAuth";
+import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
 import { ScrollProgress } from "@/components/ScrollProgress";
@@ -32,15 +33,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${plusJakarta.className} ${nunito.variable} antialiased`}>
-        <AuthProvider>
-          <ScrollProgress />
-          <SiteHeader />
-          <main className="min-h-[calc(100vh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
-          <SiteFooter />
-          <MobileBottomNav />
-          <FloatingSupportButton />
-          <Toaster richColors position="top-right" toastOptions={{ style: { zIndex: 99999 } }} />
-        </AuthProvider>
+        <GoogleProvider>
+          <AuthProvider>
+            <ScrollProgress />
+            <SiteHeader />
+            <main className="min-h-[calc(100vh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
+            <SiteFooter />
+            <MobileBottomNav />
+            <FloatingSupportButton />
+            <Toaster richColors position="top-right" toastOptions={{ style: { zIndex: 99999 } }} />
+          </AuthProvider>
+        </GoogleProvider>
       </body>
     </html>
   );
