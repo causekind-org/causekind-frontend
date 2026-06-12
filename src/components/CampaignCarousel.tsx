@@ -71,96 +71,67 @@ function HorizontalCampaignCard({
     <div
       aria-hidden={peek || undefined}
       className={[
-        "border border-orange-100 dark:border-zinc-800 p-5 md:p-6 lg:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 md:gap-8 items-stretch w-full h-full bg-white dark:bg-zinc-900 transition-shadow duration-300 hover:shadow-2xl",
+        "border border-orange-100 dark:border-zinc-800 p-5 md:p-6 lg:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 md:gap-8 items-center w-full h-full bg-white dark:bg-zinc-900 transition-shadow duration-300 hover:shadow-2xl",
         peek ? "select-none" : "",
         className,
       ].join(" ")}
     >
-      {/* Left side: Simulated Instagram Reel (9:16 vertical ratio) */}
-      <div className="w-full md:w-[240px] lg:w-[260px] aspect-[9/16] shrink-0 relative overflow-hidden bg-zinc-950 rounded-2xl shadow-lg border border-stone-200/20 dark:border-zinc-800/50 group select-none">
+      {/* Left side: Clickable Simulated Reel (16:9 landscape ratio) */}
+      <Link
+        href={`/campaigns/${campaign.id}`}
+        className="w-full md:w-[260px] lg:w-[280px] aspect-[16/9] shrink-0 relative overflow-hidden bg-zinc-950 rounded-2xl shadow-lg border border-stone-200/20 dark:border-zinc-800/50 group block cursor-pointer select-none"
+      >
         {/* Reel Background Cover Image */}
         <Image
           src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)}
           alt={campaign.title}
           fill
-          sizes="(max-width: 768px) 100vw, 260px"
+          unoptimized
+          sizes="(max-width: 768px) 100vw, 280px"
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
 
         {/* Video simulation dark filters */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/35 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
 
         {/* Pulsating Play Button overlay */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 transition-all duration-300 group-hover:bg-white/30 group-hover:scale-110">
-            <Play className="w-6 h-6 fill-white ml-0.5 text-white" />
+          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 transition-all duration-300 group-hover:bg-white/30 group-hover:scale-110">
+            <Play className="w-4 h-4 fill-white ml-0.5 text-white" />
           </div>
         </div>
 
-        {/* Floating Right Engagement Icons Panel */}
-        <div className="absolute right-3 bottom-16 flex flex-col items-center gap-4 z-10 text-white">
-          <div className="flex flex-col items-center cursor-pointer group/icon">
-            <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-[#b04a15] transition-colors border border-white/10 group-hover/icon:scale-110 duration-200">
-              <Heart className="w-5 h-5 fill-white text-white" />
+        {/* Floating Bottom Info & Engagement Bar (Horizontal layout for 16:9) */}
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 text-white">
+          <div className="flex items-center gap-1.5 min-w-0 max-w-[65%]">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center font-bold text-[8px] border border-white/20 uppercase shrink-0">
+              {campaign.doneeName[0]}
             </div>
-            <span className="text-[10px] font-bold mt-1 text-white/90 drop-shadow-md">
-              {likes}
+            <span className="text-[10px] font-black drop-shadow-md truncate">
+              {doneeUsername}
             </span>
           </div>
 
-          <div className="flex flex-col items-center cursor-pointer group/icon">
-            <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-[#1e3a60] transition-colors border border-white/10 group-hover/icon:scale-110 duration-200">
-              <MessageCircle className="w-5 h-5 fill-white text-white" />
+          <div className="flex items-center gap-2.5 text-white/90 shrink-0">
+            <div className="flex items-center gap-0.5 text-[9px] font-black">
+              <Heart className="w-3 h-3 fill-white text-white" />
+              <span className="drop-shadow-md">{likes}</span>
             </div>
-            <span className="text-[10px] font-bold mt-1 text-white/90 drop-shadow-md">
-              {comments}
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center cursor-pointer group/icon">
-            <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-orange-600 transition-colors border border-white/10 group-hover/icon:scale-110 duration-200">
-              <Share2 className="w-5 h-5 fill-white text-white" />
+            <div className="flex items-center gap-0.5 text-[9px] font-black">
+              <MessageCircle className="w-3 h-3 fill-white text-white" />
+              <span className="drop-shadow-md">{comments}</span>
             </div>
-            <span className="text-[10px] font-bold mt-1 text-white/90 drop-shadow-md">
-              {shares}
-            </span>
-          </div>
-
-          <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/10 transition-colors border border-white/10 cursor-pointer">
-            <MoreVertical className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Floating Bottom Left Info & Audio Spinning Disc */}
-        <div className="absolute bottom-4 left-3 right-3 flex items-end justify-between z-10 text-white">
-          <div className="space-y-1 max-w-[70%]">
-            <div className="flex items-center gap-1.5">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center font-bold text-[10px] border border-white/20 uppercase">
-                {campaign.doneeName[0]}
-              </div>
-              <span className="text-xs font-black drop-shadow-md truncate">
-                {doneeUsername}
-              </span>
-            </div>
-            <p className="text-[10px] font-semibold text-white/80 line-clamp-1 drop-shadow-sm">
-              #{campaign.category.toLowerCase()} #causekind #directgiving
-            </p>
-          </div>
-
-          {/* Spin disk mockup */}
-          <div className="w-8 h-8 rounded-full bg-zinc-900/80 border border-white/20 flex items-center justify-center animate-reel-disc shrink-0 shadow-md">
-            <Music className="w-3.5 h-3.5 text-[#f0b97a]" />
           </div>
         </div>
 
         {/* Sync seek tracker bar at the bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20 z-20">
           <div
             className="h-full bg-gradient-to-r from-[#b04a15] to-[#e07b3a]"
             style={{ animation: "timer-bar-fill 3000ms linear forwards" }}
           />
         </div>
-      </div>
+      </Link>
 
       {/* Right side: Detailed Campaign content */}
       <div className="flex-1 flex flex-col justify-between py-2 md:py-4 px-1">
@@ -272,12 +243,12 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
     go(idx >= maxIdx ? 0 : idx + 1, "right");
   }, [idx, maxIdx, go]);
 
-  // Clean up the exiting campaign after slide animation completes (500ms)
+  // Clean up the exiting campaign after the deck animation completes (700ms)
   useEffect(() => {
     if (!exitingCampaign) return;
     const t = setTimeout(() => {
       setExitingCampaign(null);
-    }, 500);
+    }, 710);
     return () => clearTimeout(t);
   }, [exitingCampaign]);
 
@@ -291,85 +262,49 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
   if (!campaigns.length) return null;
 
   const campaign = campaigns[idx];
-  const hasPeek = campaigns.length > 1;
+  const hasMultiple = campaigns.length > 1;
   const prevIdx = idx <= 0 ? maxIdx : idx - 1;
-  const nextIdx = idx >= maxIdx ? 0 : idx + 1;
 
   return (
     <div
-      className="relative w-full overflow-hidden"
+      className="relative w-full"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* ── Active card (normal flow — sets container height) ── */}
+      {/* ── Animation stage: the ONLY clip boundary for the card animation.
+            Padding keeps it far wider than the card so the pop-out scale
+            and drop-shadows never touch the edge ── */}
       <div
-        className="relative z-20 mx-auto w-[82%] max-w-[1100px] py-6 overflow-hidden min-h-[580px] sm:min-h-[460px] md:min-h-[380px] lg:min-h-[480px]"
+        className="relative z-20 mx-auto w-full max-w-[1340px] px-5 sm:px-12 md:px-[120px] pt-6 pb-14 overflow-hidden min-h-[580px] sm:min-h-[460px] md:min-h-[380px] lg:min-h-[480px]"
       >
-        {exitingCampaign && (
-          <div className={`absolute inset-x-0 top-6 w-full ${
-            direction === "right" ? "animate-slide-out-left" : "animate-slide-out-right"
-          }`}>
-            <HorizontalCampaignCard campaign={exitingCampaign} idx={prevIdx} peek />
+        {/* Inner wrapper sets the card width — absolute exit card aligns to it */}
+        <div className="relative w-full h-full">
+          {exitingCampaign && (
+            <div
+              key={`exit-${exitingCampaign.id}-${idx}`}
+              className={`absolute inset-x-0 top-0 w-full z-0 ${
+                direction === "right" ? "animate-card-pop-behind-left" : "animate-card-pop-behind-right"
+              }`}
+            >
+              <HorizontalCampaignCard campaign={exitingCampaign} idx={prevIdx} peek />
+            </div>
+          )}
+          <div
+            key={`active-${idx}`}
+            className={`relative z-10 w-full ${
+              exitingCampaign
+                ? (direction === "right" ? "animate-card-cover-right" : "animate-card-cover-left")
+                : ""
+            }`}
+          >
+            <HorizontalCampaignCard campaign={campaign} idx={idx} />
           </div>
-        )}
-        <div className={`w-full ${
-          exitingCampaign
-            ? (direction === "right" ? "animate-slide-in-right" : "animate-slide-in-left")
-            : ""
-        }`}>
-          <HorizontalCampaignCard campaign={campaign} idx={idx} />
         </div>
       </div>
 
-      {/* ── Peek prev: centered at left screen edge → right half visible ── */}
-      {hasPeek && (
-        <div
-          role="button"
-          tabIndex={-1}
-          aria-label="Previous campaign"
-          onClick={prev}
-          className="absolute inset-y-0 left-0 -translate-x-1/2 z-10
-                     w-[82%] max-w-[1100px] py-6
-                     hidden md:block cursor-pointer
-                     opacity-40 blur-[1.5px]
-                     hover:opacity-65 hover:blur-0
-                     transition-[opacity,filter] duration-300"
-        >
-          <HorizontalCampaignCard
-            campaign={campaigns[prevIdx]}
-            idx={prevIdx}
-            peek
-            className="pointer-events-none h-full"
-          />
-        </div>
-      )}
-
-      {/* ── Peek next: centered at right screen edge → left half visible ── */}
-      {hasPeek && (
-        <div
-          role="button"
-          tabIndex={-1}
-          aria-label="Next campaign"
-          onClick={next}
-          className="absolute inset-y-0 right-0 translate-x-1/2 z-10
-                     w-[82%] max-w-[1100px] py-6
-                     hidden md:block cursor-pointer
-                     opacity-40 blur-[1.5px]
-                     hover:opacity-65 hover:blur-0
-                     transition-[opacity,filter] duration-300"
-        >
-          <HorizontalCampaignCard
-            campaign={campaigns[nextIdx]}
-            idx={nextIdx}
-            peek
-            className="pointer-events-none h-full"
-          />
-        </div>
-      )}
-
       {/* ── Nav arrows — float at active-card edges ── */}
-      {hasPeek && (
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-[96%] max-w-[1240px] z-30 flex items-center justify-between px-2 sm:px-4">
+      {hasMultiple && (
+        <div className="pointer-events-none absolute top-[144px] md:top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[96%] max-w-[1240px] z-30 flex items-center justify-between px-2 sm:px-4">
           <button
             onClick={prev}
             aria-label="Previous"
