@@ -786,27 +786,49 @@ section:focus-within {
   animation: rotating-in-left 0.7s cubic-bezier(0.25, 1, 0.5, 1) both;
 }
 
-/* ── Flat slide carousel (stiff, no rotation) ── */
-@keyframes slide-in-from-right {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
+/* ── Card-deck carousel: active card pops out of its slot, then recedes
+      behind the incoming card, which slides in over the top of it.
+      Tuned: 0.7s, gentle pop (1.02), enters from 110% (clears padded stage). ── */
+@keyframes card-pop-behind-left {
+  0%   { transform: translate(0, 0) scale(1);         opacity: 1;
+         filter: drop-shadow(0 10px 18px rgba(28, 18, 10, 0.10)); }
+  35%  { transform: translate(-1.5%, -1%) scale(1.02); opacity: 1;
+         filter: drop-shadow(0 30px 46px rgba(28, 18, 10, 0.22)); }   /* pop out — shadow lifts */
+  70%  { opacity: 0.8; }
+  100% { transform: translate(-5%, 1.5%) scale(0.88);  opacity: 0;
+         filter: drop-shadow(0 4px 8px rgba(28, 18, 10, 0.04)); }     /* recede — shadow grounds */
 }
-@keyframes slide-in-from-left {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(0); }
+@keyframes card-pop-behind-right {
+  0%   { transform: translate(0, 0) scale(1);         opacity: 1;
+         filter: drop-shadow(0 10px 18px rgba(28, 18, 10, 0.10)); }
+  35%  { transform: translate(1.5%, -1%) scale(1.02);  opacity: 1;
+         filter: drop-shadow(0 30px 46px rgba(28, 18, 10, 0.22)); }
+  70%  { opacity: 0.8; }
+  100% { transform: translate(5%, 1.5%) scale(0.88);   opacity: 0;
+         filter: drop-shadow(0 4px 8px rgba(28, 18, 10, 0.04)); }
 }
-@keyframes slide-out-to-left {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-100%); }
+@keyframes card-cover-from-right {
+  from { transform: translateX(110%) scale(0.97);
+         filter: drop-shadow(-18px 34px 50px rgba(28, 18, 10, 0.26)); }  /* airborne — deep shadow */
+  to   { transform: translateX(0) scale(1);
+         filter: drop-shadow(0 0 0 rgba(28, 18, 10, 0)); }               /* landed — shadow settles */
 }
-@keyframes slide-out-to-right {
-  from { transform: translateX(0); }
-  to   { transform: translateX(100%); }
+@keyframes card-cover-from-left {
+  from { transform: translateX(-110%) scale(0.97);
+         filter: drop-shadow(18px 34px 50px rgba(28, 18, 10, 0.26)); }
+  to   { transform: translateX(0) scale(1);
+         filter: drop-shadow(0 0 0 rgba(28, 18, 10, 0)); }
 }
-.animate-slide-in-right  { animation: slide-in-from-right 0.48s cubic-bezier(0.4, 0, 0.2, 1) both; }
-.animate-slide-in-left   { animation: slide-in-from-left  0.48s cubic-bezier(0.4, 0, 0.2, 1) both; }
-.animate-slide-out-left  { animation: slide-out-to-left   0.48s cubic-bezier(0.4, 0, 0.2, 1) both; }
-.animate-slide-out-right { animation: slide-out-to-right  0.48s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.animate-card-pop-behind-left,
+.animate-card-pop-behind-right,
+.animate-card-cover-right,
+.animate-card-cover-left {
+  will-change: transform, opacity, filter;
+}
+.animate-card-pop-behind-left  { animation: card-pop-behind-left  0.7s cubic-bezier(0.45, 0.05, 0.25, 1) both; }
+.animate-card-pop-behind-right { animation: card-pop-behind-right 0.7s cubic-bezier(0.45, 0.05, 0.25, 1) both; }
+.animate-card-cover-right      { animation: card-cover-from-right 0.7s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.animate-card-cover-left       { animation: card-cover-from-left  0.7s cubic-bezier(0.32, 0.72, 0, 1) both; }
 
 /* ── Phone section background blobs ── */
 @keyframes blob-drift-a {
@@ -822,7 +844,14 @@ section:focus-within {
 .animate-blob-a { animation: blob-drift-a 14s ease-in-out infinite; }
 .animate-blob-b { animation: blob-drift-b 18s ease-in-out infinite; }
 
-/* ── Phone screen transitions ── */
+/* ── Scrollytelling track: tall scroll container (desktop only) ── */
+@media (min-width: 1024px) {
+  .phone-scrollytelling-track {
+    height: 480vh;
+  }
+}
+
+/* ── Phone screen transitions (scroll-direction-aware) ── */
 @keyframes phone-screen-in {
   from { opacity: 0; transform: translateY(10px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -830,6 +859,24 @@ section:focus-within {
 .phone-screen-enter {
   animation: phone-screen-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+@keyframes phone-screen-in-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes phone-screen-in-down {
+  from { opacity: 0; transform: translateY(-28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.phone-screen-enter-up   { animation: phone-screen-in-up   0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.phone-screen-enter-down { animation: phone-screen-in-down 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ── Scroll hint: bouncing arrow ── */
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(6px); }
+}
+.animate-bounce-slow { animation: bounce-slow 1.8s ease-in-out infinite; }
 
 /* ── FAQ accordion expand ── */
 @keyframes faq-open {
@@ -840,18 +887,64 @@ section:focus-within {
   animation: faq-open 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ── Mobile bottom nav safe-bottom for iOS home bar ── */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ── Mobile donate pill: gentle continuous pulse glow ── */
+@keyframes donate-pulse {
+  0%, 100% { box-shadow: 0 6px 24px -4px rgba(176,74,21,0.65); }
+  50%       { box-shadow: 0 6px 36px -2px rgba(176,74,21,0.90), 0 0 0 6px rgba(176,74,21,0.12); }
+}
+.mobile-donate-pulse { animation: donate-pulse 2.4s ease-in-out infinite; }
+
+/* ── Floating support button: soft ripple ring ── */
+@keyframes support-ripple {
+  0%   { box-shadow: 0 8px 28px -4px rgba(30,58,96,0.55), 0 0 0 0 rgba(30,58,96,0.30); }
+  60%  { box-shadow: 0 8px 28px -4px rgba(30,58,96,0.55), 0 0 0 10px rgba(30,58,96,0); }
+  100% { box-shadow: 0 8px 28px -4px rgba(30,58,96,0.55), 0 0 0 0 rgba(30,58,96,0); }
+}
+.support-btn-ripple { animation: support-ripple 2.8s ease-out infinite; }
+
+/* ── Stats marquee ticker ── */
+@keyframes stats-ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.stats-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: stats-ticker 28s linear infinite;
+}
+.stats-ticker-track:hover { animation-play-state: paused; }
+
+/* ── Hero urgency badge pulse ── */
+@keyframes urgency-flash {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.urgency-dot-critical { animation: urgency-flash 0.9s ease-in-out infinite; }
+.urgency-dot-high     { animation: urgency-flash 1.6s ease-in-out infinite; }
+
 /* ── Reduced motion: disable all custom animations ── */
 @media (prefers-reduced-motion: reduce) {
   .animate-swipe-in-right,
   .animate-swipe-in-left,
-  .animate-slide-in-right,
-  .animate-slide-in-left,
-  .animate-slide-out-left,
-  .animate-slide-out-right,
+  .animate-card-pop-behind-left,
+  .animate-card-pop-behind-right,
+  .animate-card-cover-right,
+  .animate-card-cover-left,
   .animate-blob-a,
   .animate-blob-b,
+  .animate-bounce-slow,
   .phone-screen-enter,
+  .phone-screen-enter-up,
+  .phone-screen-enter-down,
   .faq-answer-enter,
+  .mobile-donate-pulse,
+  .support-btn-ripple,
+  .stats-ticker-track,
+  .urgency-dot-critical,
+  .urgency-dot-high,
   .animate-reel-disc,
   .animate-card-3d-enter,
   .hero-slide-active,

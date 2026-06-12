@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Heart, HandCoins, CheckCircle2, ArrowLeft, ChevronRight } from "lucide-react";
-import { Reveal } from "./Reveal";
 
-const STEP_DURATION = 3400;
+const STEP_DURATION = 3400; // ms — mobile auto-play only
 
 const STEPS = [
   {
@@ -12,14 +11,16 @@ const STEPS = [
     Icon: Search,
     accentBg: "bg-[#b04a15]",
     accentText: "text-[#b04a15]",
+    accentRing: "ring-[#b04a15]/30",
     title: "Discover Causes",
-    desc: "Browse real campaigns and item requests near you. Every listing is checked by our team before it's visible.",
+    desc: "Browse real campaigns and item requests near you. Every listing is reviewed by our team before it goes live.",
   },
   {
     number: "02",
     Icon: Heart,
     accentBg: "bg-rose-500",
     accentText: "text-rose-500",
+    accentRing: "ring-rose-400/30",
     title: "Choose How to Give",
     desc: "Donate money to a campaign, or give physical items like books or clothes to someone nearby.",
   },
@@ -28,6 +29,7 @@ const STEPS = [
     Icon: HandCoins,
     accentBg: "bg-emerald-600",
     accentText: "text-emerald-600",
+    accentRing: "ring-emerald-500/30",
     title: "Give Directly",
     desc: "100% of what you give reaches the person who needs it. We charge nothing — ever.",
   },
@@ -36,12 +38,14 @@ const STEPS = [
     Icon: CheckCircle2,
     accentBg: "bg-[#1e3a60]",
     accentText: "text-[#1e3a60]",
+    accentRing: "ring-[#1e3a60]/30",
     title: "See Your Impact",
     desc: "Get a verified certificate and track your donation all the way to delivery.",
   },
 ];
 
-/* ── Mini phone screen components ── */
+/* ─────────────────────────── phone screens ─────────────────────────── */
+
 function DiscoverScreen() {
   return (
     <div className="flex flex-col h-full pt-4 pb-2 px-3 bg-white">
@@ -174,178 +178,363 @@ function SuccessScreen() {
   );
 }
 
-const SCREENS = [<DiscoverScreen key="s0" />, <DetailScreen key="s1" />, <DonateScreen key="s2" />, <SuccessScreen key="s3" />];
+const SCREENS = [
+  <DiscoverScreen key="s0" />,
+  <DetailScreen key="s1" />,
+  <DonateScreen key="s2" />,
+  <SuccessScreen key="s3" />,
+];
 
-/* ── Main section ── */
+/* ─────────────────────────── main component ─────────────────────────── */
+
 export function PhoneAnimationSection() {
-  const [step, setStep] = useState(0);
-  const [screenKey, setScreenKey] = useState(0);
+  const outerRef    = useRef<HTMLDivElement>(null);
+  const lineRef     = useRef<HTMLDivElement>(null); // progress fill line
+  const phoneRef    = useRef<HTMLDivElement>(null); // phone wrapper for parallax
+  const rafRef      = useRef<number>(0);
+  const prevStep    = useRef(0);
 
-  const goTo = useCallback((i: number) => {
-    setStep(i);
-    setScreenKey((k) => k + 1);
+  const [step, setStep]           = useState(0);
+  const [screenKey, setScreenKey] = useState(0);
+  const [dir, setDir]             = useState<"up" | "down">("down");
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [hinted, setHinted]       = useState(false); // scroll hint fades after first scroll
+
+  /* ── breakpoint detection ── */
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    check();
+    window.addEventListener("resize", check, { passive: true });
+    return () => window.removeEventListener("resize", check);
   }, []);
 
+  /* ── mobile: timer auto-play ── */
   useEffect(() => {
+    if (isDesktop) return;
     const t = setInterval(() => {
       setStep((s) => {
         const next = (s + 1) % 4;
         setScreenKey((k) => k + 1);
         return next;
       });
+      setDir("down");
     }, STEP_DURATION);
     return () => clearInterval(t);
-  }, []);
+  }, [isDesktop]);
+
+  /* ── desktop: scroll-driven ── */
+  useEffect(() => {
+    if (!isDesktop) return;
+
+    const onScroll = () => {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        const el = outerRef.current;
+        if (!el) return;
+
+        const rect       = el.getBoundingClientRect();
+        const sectionH   = el.offsetHeight;
+        const viewH      = window.innerHeight;
+        const scrollRange = sectionH - viewH;
+        if (scrollRange <= 0) return;
+
+        // progress 0→1 through the scroll track
+        const scrolled  = Math.max(0, Math.min(scrollRange, -rect.top));
+        const progress  = scrolled / scrollRange;
+
+        // smooth line fill — direct DOM (no React re-render)
+        if (lineRef.current) {
+          lineRef.current.style.transform = `scaleY(${progress})`;
+        }
+
+        // subtle phone parallax — floats 12px up then returns
+        if (phoneRef.current) {
+          const floatY = -Math.sin(progress * Math.PI) * 12;
+          phoneRef.current.style.transform = `translateY(${floatY}px)`;
+        }
+
+        // step activation — React state only on boundary crossing
+        const newStep = Math.min(3, Math.floor(progress * 4));
+        if (newStep !== prevStep.current) {
+          const newDir = newStep > prevStep.current ? "down" : "up";
+          prevStep.current = newStep;
+          setDir(newDir);
+          setStep(newStep);
+          setScreenKey((k) => k + 1);
+          if (!hinted) setHinted(true);
+        }
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    onScroll(); // initialize line fill + active step on mount / mid-page load
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [isDesktop, hinted]);
+
+  /* ── click / tap navigation ── */
+  const goTo = useCallback(
+    (i: number) => {
+      const newDir = i > step ? "down" : "up";
+      setDir(newDir);
+      setStep(i);
+      setScreenKey((k) => k + 1);
+      prevStep.current = i;
+    },
+    [step]
+  );
+
+  const enterClass = dir === "down" ? "phone-screen-enter-up" : "phone-screen-enter-down";
 
   return (
-    <section className="relative py-24 overflow-hidden bg-[#f8f4ee] dark:bg-[#0c0a08] border-b border-orange-100/60 dark:border-zinc-800">
-      {/* Background blobs — sleek, barely-visible */}
+    /*
+     * Outer div = scroll track.
+     * CSS class `phone-scrollytelling-track` sets height: 480vh on lg+.
+     * On mobile the div is auto-height (normal flow).
+     */
+    <div
+      ref={outerRef}
+      className="phone-scrollytelling-track relative bg-[#f8f4ee] dark:bg-[#0c0a08] border-b border-orange-100/60 dark:border-zinc-800"
+    >
+      {/* Background blobs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="animate-blob-a absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full bg-[#b04a15]/[0.05] blur-3xl dark:bg-[#b04a15]/[0.08]" />
         <div className="animate-blob-b absolute -bottom-24 -right-24 w-[400px] h-[400px] rounded-full bg-[#1e3a60]/[0.04] blur-3xl dark:bg-[#1e3a60]/[0.10]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(176,74,21,0.04),transparent)]" />
       </div>
-      <div className="relative mx-auto max-w-7xl px-6">
 
-        {/* Section header */}
-        <Reveal className="text-center mb-16 space-y-3">
-          <p className="text-xs font-black uppercase tracking-widest text-[#b04a15]">See it in action</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
-            From browsing to giving — in minutes
-          </h2>
-          <p className="text-base text-stone-500 dark:text-stone-400 max-w-xl mx-auto font-medium leading-relaxed">
-            Everything happens right inside the app. Simple steps, direct impact.
-          </p>
-        </Reveal>
+      {/*
+       * Sticky panel — sticks at top of viewport while outer div scrolls.
+       * On mobile: normal padding/flow (no sticky, no fixed height).
+       */}
+      <div className="lg:sticky lg:top-0 lg:h-[100dvh] lg:overflow-hidden py-16 lg:pb-0 lg:pt-20 flex flex-col justify-center">
+        <div className="relative mx-auto max-w-7xl px-6 w-full">
 
-        {/* Two-column: steps left, phone right */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          {/* ── Section header ── */}
+          <div className="text-center mb-10 lg:mb-12 space-y-3">
+            <p className="text-xs font-black uppercase tracking-widest text-[#b04a15]">
+              See it in action
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+              From browsing to giving — in minutes
+            </h2>
+            <p className="text-base text-stone-500 dark:text-stone-400 max-w-xl mx-auto font-medium leading-relaxed">
+              Scroll through every step, right here on the page.
+            </p>
+          </div>
 
-          {/* ── Left: step list ── */}
-          <div className="relative order-2 lg:order-1">
-            {/* vertical connector line */}
-            <div className="absolute left-5 top-8 bottom-8 w-px bg-stone-100 dark:bg-zinc-800 pointer-events-none" />
+          {/* ── Two-column layout ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-            <div className="space-y-1">
-              {STEPS.map((s, i) => {
-                const isActive = i === step;
-                const isPast = i < step;
-                return (
+            {/* ── LEFT: step list ── */}
+            <div className="relative order-2 lg:order-1">
+
+              {/* Track line (static background) */}
+              <div className="absolute left-5 top-8 bottom-10 w-[1.5px] bg-stone-200/70 dark:bg-zinc-800 pointer-events-none" />
+
+              {/* Fill line — scaleY driven by direct DOM ref */}
+              <div
+                ref={lineRef}
+                className="absolute left-5 top-8 w-[1.5px] pointer-events-none origin-top"
+                style={{
+                  height: "calc(100% - 74px)",
+                  background: "linear-gradient(to bottom, #b04a15, #1e3a60)",
+                  transform: "scaleY(0)",
+                  willChange: "transform",
+                }}
+              />
+
+              {/* Steps */}
+              <div className="space-y-1">
+                {STEPS.map((s, i) => {
+                  const isActive = i === step;
+                  const isPast   = i < step;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => goTo(i)}
+                      aria-label={`Go to step ${i + 1}: ${s.title}`}
+                      className="relative flex gap-5 w-full text-left py-4 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#b04a15] cursor-pointer"
+                    >
+                      {/* Circle */}
+                      <div
+                        className={[
+                          "relative z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center border-2",
+                          "transition-all duration-500",
+                          isActive
+                            ? `${s.accentBg} border-transparent shadow-lg scale-110 ring-4 ${s.accentRing}`
+                            : isPast
+                            ? "bg-stone-100 dark:bg-zinc-800 border-stone-100 dark:border-zinc-700 scale-100"
+                            : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-700 scale-100",
+                        ].join(" ")}
+                      >
+                        {isPast ? (
+                          <svg className="w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <s.Icon
+                            className={`w-4 h-4 transition-colors duration-300 ${
+                              isActive ? "text-white" : "text-stone-400 dark:text-stone-600"
+                            }`}
+                          />
+                        )}
+                      </div>
+
+                      {/* Text */}
+                      <div className="flex-1 min-w-0 pt-1">
+                        <span
+                          className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 transition-colors duration-300 ${
+                            isActive ? s.accentText : "text-stone-300 dark:text-zinc-600"
+                          }`}
+                        >
+                          {s.number}
+                        </span>
+                        <p
+                          className={`text-[15px] font-bold leading-snug transition-all duration-300 ${
+                            isActive ? "text-stone-900 dark:text-white" : "text-stone-400 dark:text-zinc-600"
+                          }`}
+                        >
+                          {s.title}
+                        </p>
+                        {/* Description — accordion reveal on active */}
+                        <div
+                          className={`overflow-hidden transition-all duration-500 ease-in-out ${
+                            isActive ? "max-h-24 opacity-100 mt-1.5" : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed font-medium pr-4">
+                            {s.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Scroll hint — desktop only, fades after scrolling starts */}
+              <div
+                aria-hidden
+                className={`hidden lg:flex items-center gap-2.5 mt-7 ml-[60px] transition-all duration-700 ${
+                  hinted ? "opacity-0 translate-y-1 pointer-events-none" : "opacity-100"
+                }`}
+              >
+                <div className="animate-bounce-slow flex flex-col items-center gap-[3px]">
+                  <div className="w-px h-3.5 bg-[#b04a15]/35 rounded-full" />
+                  <div
+                    className="w-0 h-0"
+                    style={{
+                      borderLeft: "4px solid transparent",
+                      borderRight: "4px solid transparent",
+                      borderTop: "5px solid rgba(176,74,21,0.35)",
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-stone-400 dark:text-zinc-600 font-medium">
+                  Scroll to walk through each step
+                </span>
+              </div>
+
+              {/* Progress dots — mobile only */}
+              <div className="mt-5 ml-[60px] flex gap-2 lg:hidden">
+                {STEPS.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => goTo(i)}
-                    className="relative flex gap-5 w-full text-left py-4 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#b04a15] transition-colors"
-                  >
-                    {/* Step circle */}
+                    aria-label={`Step ${i + 1}`}
+                    className={`h-1 rounded-full transition-all duration-500 ${
+                      i === step
+                        ? "w-8 bg-[#b04a15]"
+                        : "w-3 bg-stone-200 dark:bg-zinc-700 hover:bg-stone-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* ── RIGHT: phone mockup ── */}
+            <div className="flex justify-center order-1 lg:order-2">
+              {/* phoneRef: receives translateY parallax via direct DOM */}
+              <div ref={phoneRef} className="relative" style={{ willChange: "transform" }}>
+                {/* Ambient glow */}
+                <div className="absolute inset-0 bg-[#b04a15]/6 blur-3xl rounded-full scale-y-75 pointer-events-none" />
+
+                {/* Phone frame */}
+                <div className="relative w-[248px] h-[496px] bg-zinc-900 rounded-[44px] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.5)] border-[7px] border-zinc-800">
+
+                  {/* Side buttons */}
+                  <div className="absolute -left-[8px] top-[70px] w-[4px] h-6 bg-zinc-700 rounded-l-full" />
+                  <div className="absolute -left-[8px] top-[104px] w-[4px] h-10 bg-zinc-700 rounded-l-full" />
+                  <div className="absolute -left-[8px] top-[148px] w-[4px] h-10 bg-zinc-700 rounded-l-full" />
+                  <div className="absolute -right-[8px] top-[90px] w-[4px] h-14 bg-zinc-700 rounded-r-full" />
+
+                  {/* Screen bezel */}
+                  <div className="absolute inset-0 overflow-hidden rounded-[37px] bg-stone-50">
+
+                    {/* Status bar */}
+                    <div className="relative z-20 flex items-center justify-between px-5 pt-2.5 pb-0.5 bg-white">
+                      <span className="text-[9px] font-bold text-stone-800">9:41</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex gap-[2px] items-end h-[10px]">
+                          {[3, 5, 7, 9].map((h, i) => (
+                            <div key={i} className="w-[2.5px] bg-stone-800 rounded-[1px]" style={{ height: h }} />
+                          ))}
+                        </div>
+                        <div className="w-[18px] h-[9px] border border-stone-800 rounded-[2.5px] relative">
+                          <div className="absolute inset-[1.5px] right-[3px] bg-stone-800 rounded-[1px]" />
+                          <div className="absolute right-[-3px] top-1/2 -translate-y-1/2 w-[2px] h-[4px] bg-stone-700 rounded-r-sm" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dynamic island */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[72px] h-[22px] bg-zinc-900 rounded-b-[18px] z-30" />
+
+                    {/* Screen content — transition class is direction-aware */}
+                    <div className="absolute inset-0 top-9 overflow-hidden bg-white">
+                      {SCREENS.map((screen, i) => (
+                        <div
+                          key={i === step ? `screen-${step}-${screenKey}` : `screen-idle-${i}`}
+                          className={`absolute inset-0 ${
+                            i === step ? enterClass : "opacity-0 pointer-events-none"
+                          }`}
+                        >
+                          {screen}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Home indicator */}
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[80px] h-[3px] bg-stone-300 rounded-full" />
+                  </div>
+                </div>
+
+                {/* Step counter badge — shows which screen is active */}
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                  {STEPS.map((_, i) => (
                     <div
-                      className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
-                        isActive
-                          ? `${s.accentBg} border-transparent shadow-lg`
-                          : isPast
-                          ? "bg-stone-100 dark:bg-zinc-800 border-stone-100 dark:border-zinc-700"
-                          : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-700"
+                      key={i}
+                      className={`rounded-full transition-all duration-500 ${
+                        i === step
+                          ? "w-6 h-1.5 bg-[#b04a15]"
+                          : i < step
+                          ? "w-1.5 h-1.5 bg-[#b04a15]/40"
+                          : "w-1.5 h-1.5 bg-stone-300 dark:bg-zinc-700"
                       }`}
-                    >
-                      {isPast ? (
-                        <svg className="w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <s.Icon className={`w-4 h-4 transition-colors duration-300 ${isActive ? "text-white" : "text-stone-400 dark:text-stone-600"}`} />
-                      )}
-                    </div>
-
-                    {/* Step text */}
-                    <div className="flex-1 min-w-0 pt-1">
-                      <span className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 transition-colors duration-300 ${isActive ? s.accentText : "text-stone-300 dark:text-zinc-600"}`}>
-                        {s.number}
-                      </span>
-                      <p className={`text-[15px] font-bold leading-snug transition-all duration-300 ${isActive ? "text-stone-900 dark:text-white" : "text-stone-400 dark:text-zinc-600"}`}>
-                        {s.title}
-                      </p>
-                      {/* Accordion-style desc reveals when active */}
-                      <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isActive ? "max-h-20 opacity-100 mt-1.5" : "max-h-0 opacity-0"}`}>
-                        <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed font-medium pr-4">{s.desc}</p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Progress dots */}
-            <div className="mt-5 ml-[60px] flex gap-2">
-              {STEPS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => goTo(i)}
-                  aria-label={`Step ${i + 1}`}
-                  className={`h-1 rounded-full transition-all duration-500 ${i === step ? "w-8 bg-[#b04a15]" : "w-3 bg-stone-200 dark:bg-zinc-700 hover:bg-stone-300"}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* ── Right: phone mockup ── */}
-          <div className="flex justify-center order-1 lg:order-2">
-            <div className="relative">
-              {/* ambient glow */}
-              <div className="absolute inset-0 bg-[#b04a15]/6 blur-3xl rounded-full scale-y-75 pointer-events-none" />
-
-              {/* Phone outer frame */}
-              <div className="relative w-[248px] h-[496px] bg-zinc-900 rounded-[44px] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.5)] border-[7px] border-zinc-800">
-
-                {/* Side buttons */}
-                <div className="absolute -left-[8px] top-[70px] w-[4px] h-6 bg-zinc-700 rounded-l-full" />
-                <div className="absolute -left-[8px] top-[104px] w-[4px] h-10 bg-zinc-700 rounded-l-full" />
-                <div className="absolute -left-[8px] top-[148px] w-[4px] h-10 bg-zinc-700 rounded-l-full" />
-                <div className="absolute -right-[8px] top-[90px] w-[4px] h-14 bg-zinc-700 rounded-r-full" />
-
-                {/* Screen */}
-                <div className="absolute inset-0 overflow-hidden rounded-[37px] bg-stone-50">
-
-                  {/* Status bar */}
-                  <div className="relative z-20 flex items-center justify-between px-5 pt-2.5 pb-0.5 bg-white">
-                    <span className="text-[9px] font-bold text-stone-800">9:41</span>
-                    <div className="flex items-center gap-1.5">
-                      {/* Signal bars */}
-                      <div className="flex gap-[2px] items-end h-[10px]">
-                        {[3, 5, 7, 9].map((h, i) => (
-                          <div key={i} className="w-[2.5px] bg-stone-800 rounded-[1px]" style={{ height: h }} />
-                        ))}
-                      </div>
-                      {/* Battery */}
-                      <div className="w-[18px] h-[9px] border border-stone-800 rounded-[2.5px] relative">
-                        <div className="absolute inset-[1.5px] right-[3px] bg-stone-800 rounded-[1px]" />
-                        <div className="absolute right-[-3px] top-1/2 -translate-y-1/2 w-[2px] h-[4px] bg-stone-700 rounded-r-sm" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dynamic island */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[72px] h-[22px] bg-zinc-900 rounded-b-[18px] z-30" />
-
-                  {/* Animated screen area */}
-                  <div className="absolute inset-0 top-9 overflow-hidden bg-white">
-                    {SCREENS.map((screen, i) => (
-                      <div
-                        key={i === step ? `screen-${step}-${screenKey}` : `screen-idle-${i}`}
-                        className={`absolute inset-0 ${i === step ? "phone-screen-enter" : "opacity-0 pointer-events-none"}`}
-                      >
-                        {screen}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Home indicator */}
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[80px] h-[3px] bg-stone-300 rounded-full" />
+                    />
+                  ))}
                 </div>
               </div>
             </div>
-          </div>
 
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

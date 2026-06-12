@@ -148,6 +148,7 @@ export type Campaign = {
   createdAt: string;
   updatedAt: string;
   imageUrl: string | null;
+  urgency?: string;
 };
 
 export function getCampaigns() {
