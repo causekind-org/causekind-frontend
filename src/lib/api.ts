@@ -108,6 +108,24 @@ export function resetPassword(token: string, newPassword: string) {
   });
 }
 
+export type GoogleAuthResponse =
+  | { needsCompletion: false; token: string; userId: number; email: string; role: string }
+  | { needsCompletion: true; email: string; fullName: string };
+
+export function googleAuth(idToken: string) {
+  return request<GoogleAuthResponse>("/api/v1/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ idToken }),
+  });
+}
+
+export function googleComplete(idToken: string, phone: string, city: string) {
+  return request<GoogleAuthResponse>("/api/v1/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ idToken, phone, city }),
+  });
+}
+
 export type UserProfile = {
   id: number;
   email: string;
