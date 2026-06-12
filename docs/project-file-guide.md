@@ -1,6 +1,6 @@
 # CauseKind Frontend — Project File Guide
 
-_Last updated: 2026-06-11 (friend UI/UX v2 merge)_
+_Last updated: 2026-06-12 (Mobile UI UX & Layout improvements)_
 
 ## Tech Stack
 - Next.js 15 (App Router), TypeScript, Tailwind CSS
@@ -20,6 +20,7 @@ _Last updated: 2026-06-11 (friend UI/UX v2 merge)_
 | `forgot-password/page.tsx` | `/forgot-password` | Password reset request |
 | `reset-password/page.tsx` | `/reset-password` | Password reset (token from email link) |
 | `dashboard/page.tsx` | `/dashboard` | Donor dashboard — my listings, matches, donations |
+| `donate/page.tsx` | `/donate` | Give Directly / microdonation flow |
 | `donee/dashboard/page.tsx` | `/donee/dashboard` | Donee dashboard — my requests, matches |
 | `profile/page.tsx` | `/profile` | Editable profile (name, phone, city) — friend's design |
 | `campaigns/page.tsx` | `/campaigns` | Browse all approved campaigns |
@@ -48,6 +49,7 @@ _Last updated: 2026-06-11 (friend UI/UX v2 merge)_
 | `CampaignCarousel.tsx` | Horizontal scroll carousel of campaigns |
 | `HeroCampaignSlider.tsx` | Hero section full-bleed campaign slider |
 | `MockListingsCarousel.tsx` | Animated mock listings for landing page |
+| `MobileUI.tsx` | Scroll-responsive bottom navigation bar + elevated floating support button |
 | `DonateButton.tsx` | Razorpay donate button wrapper |
 | `BoomerangVideoBg.tsx` | Video background section |
 | `FaqSection.tsx` | Collapsible FAQ section |
