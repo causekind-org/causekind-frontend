@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, CreditCard, HandCoins, Loader2, MapPin, Package, ShieldCheck, TrendingUp, Users, XCircle } from "lucide-react";
+import { BarChart3, CheckCircle, CreditCard, HandCoins, Loader2, MapPin, Package, ShieldCheck, TrendingUp, Users, XCircle } from "lucide-react";
 
 // Auth guard: show spinner while rehydrating; then check user/role.
 
@@ -145,9 +145,17 @@ export default function AdminDashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Admin dashboard</h1>
             <p className="mt-1 text-sm text-muted-foreground">Verify campaigns, item listings, and connection requests.</p>
           </div>
-          <Link href="/admin/approvals">
-            <Button>Open approval queue</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/admin/analytics">
+              <Button variant="outline" className="gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Analytics
+              </Button>
+            </Link>
+            <Link href="/admin/approvals">
+              <Button>Open approval queue</Button>
+            </Link>
+          </div>
         </div>
       </div>
 
