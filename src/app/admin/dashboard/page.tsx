@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, CreditCard, HandCoins, Loader2, MapPin, Package, ShieldCheck, TrendingUp, Users, XCircle } from "lucide-react";
 
+// Auth guard: show spinner while rehydrating; then check user/role.
 
 const STATUS_OPTIONS = [
   { value: "ALL", label: "All statuses" },
@@ -34,7 +35,7 @@ function formatINR(n: number) {
 }
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeCampaignCount, setActiveCampaignCount] = useState(0);
@@ -52,6 +53,7 @@ export default function AdminDashboardPage() {
   const [paymentsLoading, setPaymentsLoading] = useState(false);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) { router.push("/login"); return; }
     if (user.role !== "ADMIN") { router.push("/"); return; }
 
@@ -76,7 +78,7 @@ export default function AdminDashboardPage() {
     }).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [user, router, statusFilter]);
+  }, [user, isLoading, router, statusFilter]);
 
   async function loadPayments() {
     if (donations.length > 0) return;
@@ -121,6 +123,11 @@ export default function AdminDashboardPage() {
     }
   }
 
+  if (isLoading) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <Loader2 className="size-8 animate-spin text-stone-400" />
+    </div>
+  );
   if (!user) return null;
 
   const stats = [

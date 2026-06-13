@@ -30,16 +30,6 @@ function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
 }
 
-function getCategoryEmoji(category: string) {
-  const cat = category.toUpperCase();
-  if (cat.includes("MED") || cat.includes("HEAL")) return "🏥";
-  if (cat.includes("EDU")) return "📚";
-  if (cat.includes("FOOD") || cat.includes("HUNGER")) return "🍲";
-  if (cat.includes("DISAST") || cat.includes("EMERG")) return "🚨";
-  if (cat.includes("ENV") || cat.includes("ANIM")) return "🌱";
-  return "✨";
-}
-
 function HeroImageSlider() {
   const [current, setCurrent] = useState(0);
   useEffect(() => {
@@ -51,7 +41,7 @@ function HeroImageSlider() {
       {HERO_IMAGES.map((src, i) => (
         <div key={src} className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out" style={{ opacity: i === current ? 0.95 : 0 }}>
           <div className={i === current ? (i % 2 === 0 ? "hero-slide-active" : "hero-slide-active-alt") : ""} style={{ position: "absolute", inset: 0 }}>
-            <Image src={src} alt="" fill className="object-cover brightness-[0.85] contrast-[1.05]" style={{ objectPosition: "center" }} priority={i === 0} sizes="100vw" />
+            <Image src={src} alt="" fill className="object-cover brightness-[0.85] contrast-[1.05]" style={{ objectPosition: "center 30%" }} priority={i === 0} sizes="100vw" />
           </div>
         </div>
       ))}
@@ -85,28 +75,25 @@ export default function HomePage() {
   }, [campaigns.length]);
 
   return (
-    <div className="carenest-bg-cream dark:bg-zinc-950 text-stone-900 dark:text-stone-100 min-h-screen overflow-x-clip transition-colors duration-300">
+    <div className="bg-white dark:bg-zinc-950 text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
       <div className="relative z-10">
         
-        {/* ── Stats ticker (scrolling marquee, desktop+mobile) ── */}
-        <div className="border-b border-orange-100/50 dark:border-stone-850 bg-white/72 dark:bg-zinc-950/72 backdrop-blur-md shadow-xs overflow-hidden">
-          <div className="stats-ticker-track py-3">
-            {/* Duplicated twice for seamless loop */}
+        {/* ── Mobile-only scrolling stats strip — above hero image ── */}
+        <div className="sm:hidden overflow-hidden border-b border-orange-100 bg-white">
+          <div className="stats-ticker-track py-3.5">
             {[0, 1].map(copy => (
-              <div key={copy} className="flex items-stretch divide-x divide-orange-50 dark:divide-zinc-800 shrink-0">
+              <div key={copy} className="flex items-center shrink-0">
                 {[
-                  { value: stats ? `₹${formatINR(stats.totalRaised)}` : "₹5,652", label: "Total Funds Raised", desc: "Donated directly", icon: Coins, color: "text-[#b04a15]" },
-                  { value: stats ? stats.activeCampaigns : "3", label: "Active Campaigns", desc: "Verified fundraisers", icon: Heart, color: "text-[#c2660a]" },
-                  { value: stats ? stats.totalDonations : "24", label: "Donations Made", desc: "Money & items matched", icon: Sparkles, color: "text-[#1e3a60]" },
-                  { value: stats ? stats.uniqueDonors : "18", label: "Verified Donors", desc: "Community helpers", icon: Users, color: "text-amber-700" },
+                  { value: stats ? `₹${formatINR(stats.totalRaised)}` : "₹5,652", label: "Total Funds Raised", icon: Coins, color: "text-[#b04a15]" },
+                  { value: stats ? stats.activeCampaigns : "3", label: "Active Campaigns", icon: Heart, color: "text-[#b04a15]" },
+                  { value: stats ? stats.totalDonations : "24", label: "Donations Made", icon: Sparkles, color: "text-[#b04a15]" },
+                  { value: stats ? stats.uniqueDonors : "18", label: "Verified Donors", icon: Users, color: "text-[#b04a15]" },
                 ].map((s) => (
-                  <div key={s.label} className="flex items-center gap-3 px-8">
-                    <s.icon className={`h-5 w-5 shrink-0 ${s.color}`} />
-                    <div>
-                      <p className="text-xl font-black text-stone-900 dark:text-stone-100 tabular-nums leading-none">{s.value}</p>
-                      <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-0.5 whitespace-nowrap">{s.label}</p>
-                    </div>
-                    <span className="ml-6 text-stone-200 dark:text-zinc-800 font-thin text-xl select-none">·</span>
+                  <div key={s.label} className="flex items-center gap-2 px-5">
+                    <s.icon className={`h-4 w-4 shrink-0 ${s.color}`} />
+                    <span className="text-stone-900 font-black text-sm tabular-nums">{s.value}</span>
+                    <span className="text-stone-500 font-bold text-[10px] uppercase tracking-wider whitespace-nowrap">{s.label}</span>
+                    <span className="text-stone-200 ml-3 select-none">·</span>
                   </div>
                 ))}
               </div>
@@ -115,7 +102,7 @@ export default function HomePage() {
         </div>
 
         {/* ── Hero Section ── */}
-        <section className="relative w-full max-w-[1440px] mx-auto px-6 sm:px-10 pt-8 pb-0">
+        <section className="relative w-full max-w-[1440px] mx-auto px-0 sm:px-10 pt-0 sm:pt-8 pb-0">
           <div className="relative w-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] rounded-t-[3rem] rounded-b-none overflow-hidden bg-stone-900 shadow-xl border-x border-t border-[#e5e2d5]/60 animate-scale anim-d1">
             {/* Background Image Slideshow */}
             <div className="absolute inset-0 w-full h-full pointer-events-none">
@@ -127,20 +114,22 @@ export default function HomePage() {
             {/* Content Container */}
             <div className="relative z-10 w-full h-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] px-6 sm:px-12 py-10 sm:py-16 flex flex-col justify-between">
 
-              {/* Top: badge + desktop pills */}
-              <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              {/* Top: badge + donate button + desktop pills */}
+              <div className="w-full flex items-start justify-between gap-4 lg:gap-6">
                 <div className="self-start inline-flex items-center gap-2 bg-white rounded-full px-5 py-2 border border-[#e2e0d5]">
                   <span className="w-2 h-2 rounded-full bg-[#f0b97a] animate-pulse shrink-0" />
                   <span className="text-[#b04a15] text-xs font-extrabold uppercase tracking-wider">MAKING LIVES BETTER</span>
                 </div>
-                <div className="hidden lg:flex flex-col items-end gap-3">
-                  <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-xs">
-                    <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
-                    <span className="text-white text-sm font-semibold">100% transparent donations</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-xs">
-                    <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
-                    <span className="text-white text-sm font-semibold">Fast, effective distribution</span>
+                <div className="flex flex-col items-end gap-3">
+                  <div className="hidden lg:flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-xs">
+                      <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
+                      <span className="text-white text-sm font-semibold">100% transparent donations</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-xs">
+                      <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
+                      <span className="text-white text-sm font-semibold">Fast, effective distribution</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -149,11 +138,6 @@ export default function HomePage() {
               <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mt-auto">
                 {/* Headline */}
                 <div className="lg:col-span-7 flex flex-col items-start gap-5 relative">
-                  <div className="absolute -top-12 left-12 opacity-15 pointer-events-none select-none text-white">
-                    <svg viewBox="0 0 24 24" fill="none" className="h-28 w-28" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 21.5C7.5 18 4.5 14.5 4.5 10.5C4.5 7.5 6.5 5.5 9.5 5.5C10.8 5.5 11.6 6 12 6.5C12.4 6 13.2 5.5 14.5 5.5C17.5 5.5 19.5 7.5 19.5 10.5C19.5 14.5 16.5 18 12 21.5Z" stroke="currentColor" strokeWidth="1" />
-                    </svg>
-                  </div>
                   <h1 className="text-white font-extrabold leading-[1.08] tracking-tight text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] max-w-2xl font-jakarta">
                     Together We Support <br />Educate and Heal
                   </h1>
@@ -173,10 +157,10 @@ export default function HomePage() {
                       NORMAL:   { label: "Active Campaign", dot: "", badge: "bg-white/10 border-white/20 text-white/70" },
                     }[urgency] ?? { label: "Active Campaign", dot: "", badge: "bg-white/10 border-white/20 text-white/70" };
                     return (
-                      <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 shadow-2xl w-full max-w-[320px] border border-[#e5e2d5]/65 dark:border-zinc-800 animate-card-3d-enter min-h-[300px] sm:min-h-[350px] flex flex-col justify-between transition-all duration-500">
+                      <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 shadow-2xl w-full max-w-[320px] border border-[#e5e2d5]/65 dark:border-zinc-800 animate-card-3d-enter sm:min-h-[350px] flex flex-col justify-between transition-all duration-500">
                         <div>
                           {/* Mobile: urgency badge. Desktop: logo row */}
-                          <div className="mb-4">
+                          <div className="mb-0 lg:mb-4">
                             {/* Urgency badge — always visible on mobile, hidden on lg */}
                             <div className={`lg:hidden inline-flex items-center gap-1.5 rounded-full border px-3 py-1 mb-3 ${urgencyConfig.badge}`}>
                               {urgencyConfig.dot && (
@@ -196,11 +180,6 @@ export default function HomePage() {
                               </div>
                               <span className="text-xs text-stone-400 font-bold">· {currentCampaign ? currentCampaign.city : "2026"}</span>
                             </div>
-                          </div>
-
-                          {/* Category emoji — desktop only */}
-                          <div className="hidden lg:flex w-10 h-10 rounded-full bg-[#e8f3ec] dark:bg-zinc-800 items-center justify-center mb-4 transition-all duration-300">
-                            <span className="text-lg">{currentCampaign ? getCategoryEmoji(currentCampaign.category) : "😷"}</span>
                           </div>
 
                           {/* City badge on mobile */}
@@ -228,6 +207,26 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* ── Stats bar — desktop only (mobile has the scrolling strip inside the hero) ── */}
+        <div className="hidden sm:block border-y border-orange-100/50 dark:border-stone-850 bg-white dark:bg-zinc-950 shadow-xs">
+          <div className="flex items-stretch divide-x divide-orange-50 dark:divide-zinc-800 justify-around py-5">
+            {[
+              { value: stats ? `₹${formatINR(stats.totalRaised)}` : "₹5,652", label: "Total Funds Raised", icon: Coins, color: "text-[#b04a15]" },
+              { value: stats ? stats.activeCampaigns : "3", label: "Active Campaigns", icon: Heart, color: "text-[#c2660a]" },
+              { value: stats ? stats.totalDonations : "24", label: "Donations Made", icon: Sparkles, color: "text-[#1e3a60]" },
+              { value: stats ? stats.uniqueDonors : "18", label: "Verified Donors", icon: Users, color: "text-amber-700" },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-3 px-10">
+                <s.icon className={`h-6 w-6 shrink-0 ${s.color}`} />
+                <div>
+                  <p className="text-2xl font-black text-stone-900 dark:text-stone-100 tabular-nums leading-none">{s.value}</p>
+                  <p className="text-[11px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-0.5 whitespace-nowrap">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* ── Live Ticker ── */}
         {activity.length > 0 && (
@@ -259,8 +258,8 @@ export default function HomePage() {
         {/* ── Features / How we Process ── */}
         <section id="trust" className="mx-auto max-w-7xl px-6 py-16 bg-grid-pattern">
           <Reveal className="mx-auto max-w-2xl text-center space-y-3 mb-10">
-            <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">How we Process</h2>
-            <p className="text-base text-stone-500 dark:text-stone-400 font-medium">Every campaign and item request goes through a clear, step-by-step review before it reaches donors.</p>
+            <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">Why raise funds through us</h2>
+            <p className="text-base text-stone-500 dark:text-stone-400 font-medium">Every donation is verified, zero-fee, and delivered directly to someone who truly needs it.</p>
           </Reveal>
           {/* Mobile: compact icon+text rows. Desktop: card grid */}
           <div className="grid gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -353,7 +352,7 @@ export default function HomePage() {
                 </p>
               </Reveal>
               <Reveal delay={100} className="shrink-0">
-                <Link href="/requests">
+                <Link href="/requests" className="inline-flex">
                   <Button
                     variant="outline"
                     className="btn-3d border-orange-200 dark:border-stone-850 hover:bg-orange-50 dark:hover:bg-zinc-800 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200"
@@ -400,7 +399,7 @@ export default function HomePage() {
                         )}
                         <div className="mt-auto pt-2 border-t border-orange-50 dark:border-zinc-800 flex justify-between items-center">
                           <span className="text-[10px] sm:text-xs text-stone-400 font-semibold">Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span></span>
-                          <Link href="/requests">
+                          <Link href="/requests" className="inline-flex">
                             <span className="text-[#b04a15] font-extrabold uppercase text-[9px] sm:text-[10px] tracking-wider hover:underline">Give →</span>
                           </Link>
                         </div>
@@ -428,7 +427,7 @@ export default function HomePage() {
                 </p>
               </Reveal>
               <Reveal delay={100} className="shrink-0">
-                <Link href="/items">
+                <Link href="/items" className="inline-flex">
                   <Button
                     variant="outline"
                     className="btn-3d border-orange-200 dark:border-stone-850 hover:bg-orange-50 dark:hover:bg-zinc-900 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200"
@@ -446,7 +445,7 @@ export default function HomePage() {
         </section>
 
         {/* ── CTA ── */}
-        <section className="max-w-7xl mx-auto px-6 pb-20">
+        <section className="max-w-7xl mx-auto px-6 pt-10 sm:pt-14 pb-20">
           <Reveal>
             <div className="relative rounded-3xl overflow-hidden bg-[#120c04] text-white px-8 py-16 text-center border border-stone-800 shadow-2xl">
               <div className="absolute top-0 right-0 h-48 w-48 bg-[#b04a15]/12 rounded-full blur-3xl" />
@@ -457,12 +456,12 @@ export default function HomePage() {
                   Whether it&apos;s a micro-donation of ₹100 or spare textbooks, notebooks, and clothes — your act of giving makes an immediate difference.
                 </p>
                 <div className="flex flex-wrap justify-center gap-4 pt-2">
-                  <Link href="/register">
+                  <Link href="/register" className="inline-flex">
                     <Button size="lg" className="btn-3d btn-shine bg-[#b04a15] hover:bg-[#963c0d] text-white shadow-md shadow-orange-900/25 rounded-xl font-bold px-6 py-6">
                       Create An Account
                     </Button>
                   </Link>
-                  <Link href="/campaigns">
+                  <Link href="/campaigns" className="inline-flex">
                     <Button size="lg" variant="outline" className="btn-3d border-stone-700 bg-transparent text-white hover:text-white hover:bg-stone-900/40 rounded-xl font-bold px-6 py-6">
                       Browse Active Campaigns
                     </Button>

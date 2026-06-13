@@ -1,19 +1,36 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { login, googleAuth } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { ParticleBackground } from "@/components/ParticleBackground";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 
+// ── Inline brand SVGs ──────────────────────────────────────────────────────────
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+      <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" fill="#1877F2"/>
+    </svg>
+  );
+}
+
+// ── Main content ───────────────────────────────────────────────────────────────
 function LoginContent() {
   const { setAuth, user } = useAuth();
   const router = useRouter();
@@ -23,6 +40,12 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement>(null);
+
+  function triggerGoogle() {
+    const btn = googleBtnRef.current?.querySelector<HTMLElement>('div[role="button"], button');
+    btn?.click();
+  }
 
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
 
@@ -37,9 +60,16 @@ function LoginContent() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    try { const { token } = await login(email, password); setAuth(token); toast.success("Welcome back!"); router.push("/"); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "Login failed"); }
-    finally { setLoading(false); }
+    try {
+      const { token } = await login(email, password);
+      setAuth(token);
+      toast.success("Welcome back!");
+      router.push("/");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleGoogleSuccess(credentialResponse: { credential?: string }) {
@@ -64,77 +94,165 @@ function LoginContent() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center bg-[#faf8f4] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300 bg-grid-pattern px-6 py-12 overflow-hidden">
-      <ParticleBackground className="z-0" />
-      <div className="relative z-10 flex flex-col items-center w-full">
-      <div className="mb-6 logo-icon-3d flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] text-white shadow-md shadow-orange-900/18 shrink-0 anim-scale">
-        <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7">
-          <path d="M12 10.5C12 10.5 9.2 8 9.2 6.2C9.2 5.1 10.2 4.5 11.1 4.9C11.6 5.2 12 5.7 12 5.7C12 5.7 12.4 5.2 12.9 4.9C13.8 4.5 14.8 5.1 14.8 6.2C14.8 8 12 10.5 12 10.5Z" fill="white"/>
-          <path d="M12 11.2 L12 12.2" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeOpacity="0.55"/>
-          <path d="M6.5 16.5C6.5 14.2 8 12.8 9.8 12.8L14.2 12.8C16 12.8 17.5 14.2 17.5 16.5C17.5 18.2 15.2 19.5 12 19.5C8.8 19.5 6.5 18.2 6.5 16.5Z" fill="white" fillOpacity="0.82"/>
-        </svg>
-      </div>
+    <div className="min-h-[calc(100svh-4rem)] flex">
 
-      <Card className="anim-up anim-d1 w-full max-w-md glass-card card-shimmer rounded-2xl border-orange-100 dark:border-stone-850 shadow-xl dark:shadow-none">
-        <CardHeader className="space-y-1.5 pb-5">
-          <CardTitle className="text-2xl font-extrabold text-[#963c0d] dark:text-white">Welcome back</CardTitle>
-          <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">Log in to your CauseKind account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Google Sign In */}
-          <div className="mb-5">
-            <div className={`flex justify-center transition-opacity ${googleLoading ? "opacity-50 pointer-events-none" : ""}`}>
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast.error("Google sign-in failed")}
-                width="368"
-                theme="outline"
-                shape="rectangular"
-                text="signin_with"
-                size="large"
+      {/* ── LEFT: Form panel ───────────────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-8 sm:py-10 lg:max-w-[480px] lg:px-12 overflow-y-auto">
+
+        {/* Top spacer on mobile so form breathes */}
+        <div />
+
+        <div className="w-full max-w-[400px] mx-auto space-y-7">
+
+          {/* Heading */}
+          <div className="space-y-1.5">
+            <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+              Welcome Back 👋
+            </h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              Sign in to continue your giving journey.
+            </p>
+          </div>
+
+          {/* Hidden Google SSO — triggered programmatically by the styled button below */}
+          <div ref={googleBtnRef} aria-hidden="true" style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error("Google sign-in failed")}
+              width="300"
+            />
+          </div>
+
+          {/* Email / Password form */}
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
               />
             </div>
-          </div>
 
-          <div className="relative mb-5">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-orange-100 dark:border-stone-800" /></div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white dark:bg-zinc-900 px-3 text-stone-400 font-semibold uppercase tracking-wider">or continue with email</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="font-semibold text-stone-700 dark:text-stone-300">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" autoComplete="email"
-                value={email} onChange={e => setEmail(e.target.value)} required
-                className="rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 placeholder:text-stone-400 dark:placeholder:text-stone-600 text-stone-800 dark:text-stone-100" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="font-semibold text-stone-700 dark:text-stone-300">Password</Label>
+            {/* Password */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                  Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} autoComplete="current-password"
-                  placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required
-                  className="pr-10 rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 placeholder:text-stone-400 dark:placeholder:text-stone-600 text-stone-800 dark:text-stone-100" />
-                <button type="button" onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+                >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-            <div className="flex justify-end">
-              <Link href="/forgot-password" className="text-sm font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Forgot password?</Link>
-            </div>
-            <Button type="submit" className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl py-5 font-semibold text-sm" disabled={loading}>
-              {loading ? "Logging in…" : "Log in"}
-            </Button>
-            <p className="text-center text-sm text-stone-500 dark:text-stone-400 font-medium">
-              New here?{" "}<Link href="/register" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Create an account</Link>
-            </p>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 text-sm tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2"
+            >
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
           </form>
-        </CardContent>
-      </Card>
+
+          {/* Social buttons */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              disabled={googleLoading}
+              onClick={triggerGoogle}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
+            >
+              <GoogleIcon />
+              {googleLoading ? "Signing in…" : "Continue with Google"}
+            </button>
+            <button
+              type="button"
+              onClick={() => toast.info("Social sign-in coming soon")}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
+            >
+              <FacebookIcon />
+              Continue with Facebook
+            </button>
+          </div>
+
+          {/* Cross-link */}
+          <p className="text-center text-sm text-stone-500 dark:text-stone-400">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">
+              Sign up
+            </Link>
+          </p>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-8 text-center text-xs text-stone-400 dark:text-zinc-600">
+          &copy; 2026 CauseKind
+        </p>
       </div>
+
+      {/* ── RIGHT: Image panel (hidden on mobile) ──────────────────────────── */}
+      <div className="hidden lg:flex flex-1 relative p-6">
+        <div className="relative w-full h-full rounded-3xl overflow-hidden">
+          {/* Hero image */}
+          <Image
+            src="/images/hero-4.jpg"
+            alt="People helping each other in the community"
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40" />
+
+          {/* Quote overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-10">
+            <blockquote className="space-y-3">
+              <p className="text-white text-2xl font-bold leading-snug" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                &ldquo;The smallest act of kindness is worth more than the grandest intention.&rdquo;
+              </p>
+              <footer className="flex items-center gap-2">
+                <span className="block h-px w-8 bg-white/50" />
+                <cite className="text-white/70 text-sm not-italic font-medium">Oscar Wilde</cite>
+              </footer>
+            </blockquote>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

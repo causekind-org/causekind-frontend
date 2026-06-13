@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Loader2, MapPin, Search, HandCoins } from "lucide-react";
+import { MapPin, Search, HandCoins, HeartHandshake, SearchX } from "lucide-react";
 
 const CATEGORY_IMAGES: Record<string, string[]> = {
   Medical: ["/images/medical-1.png", "/images/medical-2.png"],
@@ -27,6 +27,48 @@ const CATEGORIES = ["All","Medical","Education","Disaster Relief","Animal Welfar
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+}
+
+function AnimatedBar({ pct, delay = 0 }: { pct: number; delay?: number }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(pct), 150 + delay);
+    return () => clearTimeout(t);
+  }, [pct, delay]);
+  return (
+    <div className="w-full bg-orange-50 dark:bg-zinc-950 rounded-full h-2 overflow-hidden">
+      <div
+        className="bg-gradient-to-r from-[#b04a15] to-[#e07b3a] h-full rounded-full"
+        style={{ width: `${width}%`, transition: "width 900ms cubic-bezier(0.16,1,0.3,1)" }}
+      />
+    </div>
+  );
+}
+
+function CampaignCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-orange-100/50 dark:border-stone-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+      <div className="aspect-video bg-stone-100 dark:bg-zinc-800 animate-pulse" />
+      <div className="p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="h-5 w-20 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+          <div className="h-4 w-14 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+        </div>
+        <div className="space-y-1.5">
+          <div className="h-4 w-full bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+          <div className="h-4 w-3/4 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+        </div>
+        <div className="space-y-2 pt-1">
+          <div className="h-2 w-full bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+          <div className="flex justify-between">
+            <div className="h-3.5 w-20 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+            <div className="h-3.5 w-24 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="h-9 w-full bg-stone-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+      </div>
+    </div>
+  );
 }
 
 export default function CampaignsPage() {
@@ -93,12 +135,32 @@ export default function CampaignsPage() {
           </div>
         </Reveal>
 
-        {loading && <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-[#b04a15]" /></div>}
-        {error   && <p className="text-center text-red-500 py-20 font-medium">{error}</p>}
+        {loading && (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => <CampaignCardSkeleton key={i} />)}
+          </div>
+        )}
+        {error && <p className="text-center text-red-500 py-20 font-medium">{error}</p>}
         {!loading && !error && filtered.length === 0 && (
-          <p className="text-center text-stone-400 dark:text-stone-500 py-20 font-medium bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-stone-850">
-            {campaigns.length === 0 ? "No approved campaigns yet." : "No campaigns match your search."}
-          </p>
+          <div className="flex flex-col items-center justify-center py-20 px-8 bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-stone-800">
+            {campaigns.length === 0 ? (
+              <>
+                <div className="mb-4 w-16 h-16 rounded-2xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
+                  <HeartHandshake className="w-8 h-8 text-[#b04a15]/40 dark:text-orange-400/30" />
+                </div>
+                <p className="font-bold text-stone-700 dark:text-stone-300 text-base">No campaigns yet</p>
+                <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">Be the first to start a verified fundraiser for your cause.</p>
+              </>
+            ) : (
+              <>
+                <div className="mb-4 w-16 h-16 rounded-2xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
+                  <SearchX className="w-8 h-8 text-stone-300 dark:text-zinc-600" />
+                </div>
+                <p className="font-bold text-stone-700 dark:text-stone-300 text-base">No matches found</p>
+                <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">Try adjusting your search or category filter.</p>
+              </>
+            )}
+          </div>
         )}
         {!loading && !error && filtered.length > 0 && (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -121,9 +183,7 @@ export default function CampaignsPage() {
                       </div>
                       <h3 className="mt-3 font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2">{c.title}</h3>
                       <div className="mt-4 space-y-2">
-                        <div className="w-full bg-orange-50 dark:bg-zinc-950 rounded-full h-2 overflow-hidden">
-                          <div className="bg-gradient-to-r from-[#b04a15] to-[#e07b3a] h-full rounded-full transition-all duration-500" style={{ width:`${pct}%` }} />
-                        </div>
+                        <AnimatedBar pct={pct} delay={i * 70} />
                         <div className="flex justify-between text-xs text-stone-400">
                           <span className="font-semibold text-stone-700 dark:text-stone-300">₹{formatINR(c.amountRaised)}</span>
                           <span>of ₹{formatINR(c.targetAmount)}</span>

@@ -1,11 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 export function CauseKindLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
@@ -34,11 +51,95 @@ export function CareNestLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   return <CauseKindLogo size={size} />;
 }
 
+function Donate3DButton() {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+  const [hearts, setHearts] = useState<{ id: number; x: number }[]>([]);
+  const heartIdRef = useRef(0);
+
+  function handleMouseMove(e: React.MouseEvent<HTMLButtonElement>) {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    setTilt({
+      x: ((e.clientY - rect.top  - rect.height / 2) / (rect.height / 2)) * -14,
+      y: ((e.clientX - rect.left - rect.width  / 2) / (rect.width  / 2)) *  14,
+    });
+  }
+
+  function spawnHeart() {
+    const id = ++heartIdRef.current;
+    setHearts(h => [...h, { id, x: Math.random() * 60 + 20 }]);
+    setTimeout(() => setHearts(h => h.filter(ht => ht.id !== id)), 800);
+  }
+
+  return (
+    <Link href="/donate">
+      <div style={{ perspective: "600px", display: "inline-block", position: "relative" }}>
+        {hearts.map(({ id, x }) => (
+          <span
+            key={id}
+            className="absolute z-50 text-[11px] text-orange-300 pointer-events-none select-none"
+            style={{
+              left: `${x}%`,
+              bottom: "110%",
+              animation: "donate-navbar-heart-float 0.8s ease-out forwards",
+            }}
+          >
+            ♥
+          </span>
+        ))}
+        <button
+          ref={btnRef}
+          onMouseMove={handleMouseMove}
+          onMouseEnter={() => { setHovered(true); spawnHeart(); }}
+          onMouseLeave={() => { setHovered(false); setTilt({ x: 0, y: 0 }); }}
+          style={{
+            transform: hovered
+              ? `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.1) translateZ(10px)`
+              : "rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px)",
+            transition: hovered
+              ? "transform 0.08s ease-out"
+              : "transform 0.55s cubic-bezier(0.34,1.56,0.64,1)",
+            transformStyle: "preserve-3d",
+            boxShadow: hovered
+              ? "0 0 0 2px rgba(240,185,122,0.5), 0 10px 36px rgba(176,74,21,0.65), 0 4px 14px rgba(0,0,0,0.18)"
+              : undefined,
+          }}
+          className="donate-navbar-3d relative bg-[#b04a15] text-white font-bold px-[18px] py-[6px] rounded-full text-xs sm:text-sm"
+          aria-label="Donate"
+        >
+          <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
+            <span className="donate-navbar-shimmer" />
+          </span>
+          {hovered && <span className="donate-navbar-ring" />}
+          <span className="relative z-10 flex items-center gap-1.5">
+            <span
+              style={{
+                display: "inline-block",
+                transform: hovered ? "scale(1.35) rotate(-15deg)" : "scale(1) rotate(0deg)",
+                transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+                fontSize: "0.72em",
+                lineHeight: 1,
+              }}
+            >
+              ♥
+            </span>
+            Donate
+          </span>
+        </button>
+      </div>
+    </Link>
+  );
+}
+
 export function SiteHeader() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -59,155 +160,238 @@ export function SiteHeader() {
 
   const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
-  const isHome = pathname === "/";
   const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
 
-  function handleLogout() { logout(); router.push("/"); setOpen(false); }
+  /** Opens the confirmation dialog — actual logout happens only on confirm. */
+  function requestLogout() { setLogoutDialogOpen(true); }
+
+  /** Called by the AlertDialogAction (confirm button). */
+  function confirmLogout() {
+    logout();
+    router.push("/");
+    setOpen(false);
+  }
 
   const navLinks = [
-    { href: "/",                 label: "Home" },
-    { href: "/campaigns",        label: "Campaigns" },
-    { href: "/requests",         label: "In-Kind Requests" },
-    { href: "/items",            label: "Listings" },
+    { href: "/",         label: "Home" },
+    { href: "/campaigns",label: "Campaigns" },
+    { href: "/requests", label: "In-Kind Requests" },
+    { href: "/items",    label: "Listings" },
   ];
 
+  /** Whether a nav link is active, keyed by href for exactness. */
+  function isActive(href: string) {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(href + "/");
+  }
+
+  // Shared icon-button class (matches the theme toggle button exactly)
+  const iconBtnCls =
+    "relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-700 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all duration-300 active:scale-95 overflow-hidden shadow-xs bg-white dark:bg-zinc-900";
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#f5f4ee] dark:bg-zinc-950 border-b border-[#e5e2d5] dark:border-stone-850/30 transition-all duration-200">
-      <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between px-6 sm:px-10 py-4 sm:py-5">
-        <Link href="/" className="flex items-center gap-2">
-          <CareNestLogo />
-        </Link>
+    <>
+      {/* ── Logout confirmation dialog ── */}
+      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out of CauseKind?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You can sign back in anytime.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmLogout}
+              className="bg-[#b04a15] hover:bg-[#963c0d] text-white border-0"
+            >
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        {/* Center navigation capsule */}
-        <nav className="hidden lg:flex items-center gap-1 bg-white dark:bg-zinc-900 border border-[#e5e2d5] dark:border-stone-800 rounded-full p-1 shadow-sm">
-          {navLinks.map((link) => {
-            const isLinkActive =
-              (link.label === "Home" && pathname === "/") ||
-              (link.label === "Campaigns" && pathname === "/campaigns") ||
-              (link.label === "In-Kind Requests" && pathname === "/requests") ||
-              (link.label === "Listings" && pathname === "/items");
-
-            return (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={`text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-2 font-semibold ${
-                  isLinkActive
-                    ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6] dark:bg-zinc-800 border border-[#e5e2d5] dark:border-zinc-700 shadow-2xs"
-                    : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
-                }`}
-              >
-                {isLinkActive && <span className="w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right buttons */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Animated Sleek Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-700 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all duration-300 active:scale-95 overflow-hidden shadow-xs bg-white dark:bg-zinc-900"
-            aria-label="Toggle theme"
-            suppressHydrationWarning
-          >
-            <div className="relative w-5 h-5 flex items-center justify-center">
-              <Sun className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
-              <Moon className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 transform ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
-            </div>
-          </button>
-
-          {user ? (
-            <div className="hidden sm:flex items-center gap-3">
-              <Link href={dashHref} className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
-                Dashboard
-              </Link>
-              <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-              <Link href="/profile" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
-                Profile
-              </Link>
-              <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-              <span className="text-sm font-semibold text-[#b04a15] dark:text-orange-400 max-w-[120px] truncate" title={user.email}>
-                {user.email.split("@")[0]}
-              </span>
-              <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-              <button 
-                onClick={handleLogout} 
-                className="text-sm font-semibold text-stone-500 hover:text-red-600 dark:text-stone-400 dark:hover:text-red-400 transition-colors"
-              >
-                Log Out
-              </button>
-            </div>
-          ) : (
-            <div className="hidden sm:flex items-center gap-4">
-              <Link href="/login" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
-                Log In
-              </Link>
-              <Link href="/register" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
-                Sign Up
-              </Link>
-            </div>
-          )}
-          
-          <Link href="/campaigns" className="hidden lg:block">
-            <button className="border border-stone-900 dark:border-stone-100 text-stone-900 dark:text-stone-100 font-semibold px-6 py-2.5 rounded-full text-sm hover:bg-stone-900 hover:text-white dark:hover:bg-white dark:hover:text-stone-900 transition-all active:scale-95 duration-200">
-              Donate Now
-            </button>
+      <header className="sticky top-0 z-50 w-full bg-[#f5f4ee] dark:bg-zinc-950 border-b border-[#e5e2d5] dark:border-stone-850/30 transition-all duration-200">
+        <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between px-6 sm:px-10 py-4 sm:py-5">
+          <Link href="/" className="flex items-center gap-2">
+            <CareNestLogo />
           </Link>
 
-          <button onClick={() => setOpen(v => !v)}
-            className="lg:hidden relative flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-[#e5e2d5] dark:border-zinc-800 text-stone-900 dark:text-white transition-all hover:bg-stone-50 dark:hover:bg-zinc-850"
-            aria-label={open ? "Close menu" : "Open menu"}>
-            <Menu className={`w-5 h-5 absolute transition-all duration-300 ${open ? "opacity-0 rotate-90 scale-50" : "opacity-100"}`} />
-            <X    className={`w-5 h-5 absolute transition-all duration-300 ${open ? "opacity-100" : "opacity-0 -rotate-90 scale-50"}`} />
-          </button>
-        </div>
-      </div>
+          {/* Center navigation capsule */}
+          <nav className="hidden lg:flex items-center gap-1 bg-white dark:bg-zinc-900 border border-[#e5e2d5] dark:border-stone-800 rounded-full p-1 shadow-sm">
+            {navLinks.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={`text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-2 font-semibold ${
+                    active
+                      ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6] dark:bg-zinc-800 border border-[#e5e2d5] dark:border-zinc-700 shadow-2xs"
+                      : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
+                  }`}
+                >
+                  {active && <span className="w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-      {/* Mobile overlay */}
-      <div className={`lg:hidden fixed inset-0 z-20 transition-opacity duration-300 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-        onClick={() => setOpen(false)}>
-        <div className="absolute inset-0 bg-stone-950/40 backdrop-blur-xs" />
-      </div>
+          {/* Right buttons */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Animated Sleek Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className={iconBtnCls}
+              aria-label="Toggle theme"
+              suppressHydrationWarning
+            >
+              <div className="relative w-5 h-5 flex items-center justify-center">
+                <Sun className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
+                <Moon className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 transform ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
+              </div>
+            </button>
 
-      {/* Mobile drawer */}
-      <div className={`lg:hidden fixed top-0 right-0 bottom-0 z-20 w-[85%] max-w-sm bg-[#f5f4ee] dark:bg-zinc-950 backdrop-blur-xl shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "translate-x-0" : "translate-x-full"}`}>
-        <div className="flex flex-col h-full pt-24 px-8 pb-8">
-          <div className="flex flex-col gap-1">
-            {navLinks.map((link, i) => (
-              <Link key={link.href} href={link.href} onClick={() => setOpen(false)}
-                className={`text-2xl font-semibold text-stone-900 dark:text-white py-4 border-b border-stone-200 dark:border-stone-800 transition-all duration-500 ${open ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
-                style={{ transitionDelay: open ? `${150 + i * 70}ms` : "0ms" }}>
-                {link.label}
-              </Link>
-            ))}
-          </div>
-          <div className={`mt-8 flex flex-col gap-4 transition-all duration-500 ${open ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
-            style={{ transitionDelay: open ? "400ms" : "0ms" }}>
+            {/* Profile icon dropdown — mobile only; desktop uses the text links */}
+            <div className="lg:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={iconBtnCls} aria-label="Profile menu">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {user ? (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href={dashHref} className="flex items-center gap-2 cursor-pointer">
+                          <LayoutDashboard className="w-4 h-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={requestLogout}
+                        className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/30 cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Log out
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/login" className="flex items-center gap-2 cursor-pointer">
+                          <LogIn className="w-4 h-4" />
+                          Log in
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/register" className="flex items-center gap-2 cursor-pointer">
+                          <UserPlus className="w-4 h-4" />
+                          Sign up
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
             {user ? (
-              <>
-                <div className="text-sm font-bold text-stone-400 truncate mb-2">{user.email}</div>
-                <Link href={dashHref} onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><Shield className="w-4 h-4" /> Dashboard</Link>
-                <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><User className="w-4 h-4" /> Profile</Link>
-                <button onClick={handleLogout} className="flex items-center gap-2 text-sm font-medium text-stone-750 dark:text-stone-200 hover:text-red-650 text-left"><LogIn className="w-4 h-4" /> Log Out</button>
-              </>
+              <div className="hidden sm:flex items-center gap-3">
+                <Link href={dashHref} className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
+                  Dashboard
+                </Link>
+                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                <Link href="/profile" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
+                  Profile
+                </Link>
+                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                <span className="text-sm font-semibold text-[#b04a15] dark:text-orange-400 max-w-[120px] truncate" title={user.email}>
+                  {user.email.split("@")[0]}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                <button
+                  onClick={requestLogout}
+                  className="text-sm font-semibold text-stone-500 hover:text-red-600 dark:text-stone-400 dark:hover:text-red-400 transition-colors"
+                >
+                  Log Out
+                </button>
+                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                <Donate3DButton />
+              </div>
             ) : (
-              <>
-                <Link href="/register" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><UserPlus className="w-4 h-4" /> Sign Up</Link>
-                <Link href="/login"    onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><LogIn    className="w-4 h-4" /> Log In</Link>
-              </>
+              <div className="hidden sm:flex items-center gap-4">
+                <Link href="/login" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
+                  Log In
+                </Link>
+                <Link href="/register" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
+                  Sign Up
+                </Link>
+                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                <Donate3DButton />
+              </div>
             )}
-            <Link href="/campaigns" onClick={() => setOpen(false)}>
-              <button className="w-full mt-2 bg-[#b04a15] hover:bg-[#963c0d] text-white text-sm font-semibold px-5 py-3 rounded-full">
-                Donate Now
-              </button>
-            </Link>
+
+            <button onClick={() => setOpen(v => !v)}
+              className="lg:hidden relative flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-[#e5e2d5] dark:border-zinc-800 text-stone-900 dark:text-white transition-all hover:bg-stone-50 dark:hover:bg-zinc-850"
+              aria-label={open ? "Close menu" : "Open menu"}>
+              <Menu className={`w-5 h-5 absolute transition-all duration-300 ${open ? "opacity-0 rotate-90 scale-50" : "opacity-100"}`} />
+              <X    className={`w-5 h-5 absolute transition-all duration-300 ${open ? "opacity-100" : "opacity-0 -rotate-90 scale-50"}`} />
+            </button>
           </div>
         </div>
-      </div>
-    </header>
+
+        {/* Mobile overlay */}
+        <div className={`lg:hidden fixed inset-0 z-20 transition-opacity duration-300 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+          onClick={() => setOpen(false)}>
+          <div className="absolute inset-0 bg-stone-950/40 backdrop-blur-xs" />
+        </div>
+
+        {/* Mobile drawer */}
+        <div className={`lg:hidden fixed top-0 right-0 bottom-0 z-20 w-[85%] max-w-sm bg-[#f5f4ee] dark:bg-zinc-950 backdrop-blur-xl shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "translate-x-0" : "translate-x-full"}`}>
+          <div className="flex flex-col h-full pt-24 px-8 pb-8">
+            <div className="flex flex-col gap-1">
+              {navLinks.map((link, i) => (
+                <Link key={link.href} href={link.href} onClick={() => setOpen(false)}
+                  className={`text-2xl font-semibold py-4 border-b border-stone-200 dark:border-stone-800 transition-all duration-500 ${
+                    isActive(link.href)
+                      ? "text-[#b04a15] dark:text-orange-400"
+                      : "text-stone-900 dark:text-white"
+                  } ${open ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
+                  style={{ transitionDelay: open ? `${150 + i * 70}ms` : "0ms" }}>
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+            <div className={`mt-8 flex flex-col gap-4 transition-all duration-500 ${open ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
+              style={{ transitionDelay: open ? "470ms" : "0ms" }}>
+              {user ? (
+                <>
+                  <div className="text-sm font-bold text-stone-400 truncate mb-2">{user.email}</div>
+                  <Link href={dashHref} onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><Shield className="w-4 h-4" /> Dashboard</Link>
+                  <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><User className="w-4 h-4" /> Profile</Link>
+                  <button
+                    onClick={() => { setOpen(false); requestLogout(); }}
+                    className="flex items-center gap-2 text-sm font-medium text-stone-750 dark:text-stone-200 hover:text-red-600 text-left"
+                  >
+                    <LogOut className="w-4 h-4" /> Log Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/register" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><UserPlus className="w-4 h-4" /> Sign Up</Link>
+                  <Link href="/login"    onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><LogIn    className="w-4 h-4" /> Log In</Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+    </>
   );
 }
 

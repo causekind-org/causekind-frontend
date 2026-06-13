@@ -71,35 +71,49 @@ function HorizontalCampaignCard({
     <div
       aria-hidden={peek || undefined}
       className={[
-        "border border-orange-100 dark:border-zinc-800 p-5 md:p-6 lg:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 md:gap-8 items-center w-full h-full bg-white dark:bg-zinc-900 transition-shadow duration-300 hover:shadow-2xl",
+        "border border-orange-100 dark:border-zinc-800 p-5 md:p-6 lg:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 md:gap-8 items-stretch w-full h-full bg-white dark:bg-zinc-900 transition-shadow duration-300 hover:shadow-2xl",
         peek ? "select-none" : "",
         className,
       ].join(" ")}
     >
-      {/* Left side: Clickable Simulated Reel (16:9 landscape ratio) */}
+      {/* Left side: Clickable Simulated Reel (9:16 portrait/Instagram reel ratio) */}
       <Link
         href={`/campaigns/${campaign.id}`}
-        className="w-full md:w-[260px] lg:w-[280px] aspect-[16/9] shrink-0 relative overflow-hidden bg-zinc-950 rounded-2xl shadow-lg border border-stone-200/20 dark:border-zinc-800/50 group block cursor-pointer select-none"
+        className="w-full md:w-[260px] lg:w-[300px] aspect-[16/9] md:aspect-[9/16] self-center md:self-center shrink-0 relative overflow-hidden bg-zinc-950 rounded-2xl shadow-lg border border-stone-200/20 dark:border-zinc-800/50 group block cursor-pointer select-none"
       >
-        {/* Reel Background Cover Image */}
-        <Image
-          src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)}
-          alt={campaign.title}
-          fill
-          unoptimized
-          sizes="(max-width: 768px) 100vw, 280px"
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-        />
+        {/* Reel media: real video when available, else static image */}
+        {campaign.videoUrl ? (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video
+            src={campaign.videoUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <>
+            <Image
+              src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)}
+              alt={campaign.title}
+              fill
+              unoptimized
+              sizes="(max-width: 768px) 100vw, 280px"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+            {/* Pulsating Play Button overlay (image-only fallback) */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 transition-all duration-300 group-hover:bg-white/30 group-hover:scale-110">
+                <Play className="w-4 h-4 fill-white ml-0.5 text-white" />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Video simulation dark filters */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
-
-        {/* Pulsating Play Button overlay */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 transition-all duration-300 group-hover:bg-white/30 group-hover:scale-110">
-            <Play className="w-4 h-4 fill-white ml-0.5 text-white" />
-          </div>
-        </div>
 
         {/* Floating Bottom Info & Engagement Bar (Horizontal layout for 16:9) */}
         <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 text-white">
@@ -275,7 +289,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
             Padding keeps it far wider than the card so the pop-out scale
             and drop-shadows never touch the edge ── */}
       <div
-        className="relative z-20 mx-auto w-full max-w-[1340px] px-5 sm:px-12 md:px-[120px] pt-6 pb-14 overflow-hidden min-h-[580px] sm:min-h-[460px] md:min-h-[380px] lg:min-h-[480px]"
+        className="relative z-20 mx-auto w-full max-w-[1400px] px-5 sm:px-12 md:px-[120px] pt-6 pb-14 overflow-hidden min-h-[480px] sm:min-h-[520px] md:min-h-[560px] lg:min-h-[620px]"
       >
         {/* Inner wrapper sets the card width — absolute exit card aligns to it */}
         <div className="relative w-full h-full">
@@ -300,41 +314,41 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
             <HorizontalCampaignCard campaign={campaign} idx={idx} />
           </div>
         </div>
-      </div>
 
-      {/* ── Nav arrows — float at active-card edges ── */}
-      {hasMultiple && (
-        <div className="pointer-events-none absolute top-[144px] md:top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[96%] max-w-[1240px] z-30 flex items-center justify-between px-2 sm:px-4">
-          <button
-            onClick={prev}
-            aria-label="Previous"
-            className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
-                       bg-white/25 dark:bg-zinc-900/25 backdrop-blur-xl backdrop-saturate-150
-                       border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
-                       shadow-[0_8px_32px_-8px_rgba(176, 74, 21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
-                       text-[#b04a15] dark:text-[#e07b3a]
-                       hover:bg-[#b04a15]/90 hover:text-white hover:border-[#b04a15]/50 hover:scale-110
-                       hover:shadow-[0_12px_40px_-6px_rgba(176, 74, 21,0.5)]
-                       active:scale-95 transition-all duration-300 ease-out"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            onClick={next}
-            aria-label="Next"
-            className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
-                       bg-white/25 dark:bg-zinc-900/25 backdrop-blur-xl backdrop-saturate-150
-                       border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
-                       shadow-[0_8px_32px_-8px_rgba(176, 74, 21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
-                       text-[#b04a15] dark:text-[#e07b3a]
-                       hover:bg-[#b04a15]/90 hover:text-white hover:border-[#b04a15]/50 hover:scale-110
-                       hover:shadow-[0_12px_40px_-6px_rgba(176, 74, 21,0.5)]
-                       active:scale-95 transition-all duration-300 ease-out"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-        </div>
-      )}
+        {/* ── Nav arrows — inside stage so inset-y-0 centers on the card area ── */}
+        {hasMultiple && (
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-[96%] max-w-[1300px] z-30 flex items-center justify-between px-2 sm:px-4">
+            <button
+              onClick={prev}
+              aria-label="Previous"
+              className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
+                         bg-white/25 dark:bg-zinc-900/25 backdrop-blur-xl backdrop-saturate-150
+                         border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
+                         shadow-[0_8px_32px_-8px_rgba(176,74,21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
+                         text-[#b04a15] dark:text-[#e07b3a]
+                         hover:bg-[#b04a15]/90 hover:text-white hover:border-[#b04a15]/50 hover:scale-110
+                         hover:shadow-[0_12px_40px_-6px_rgba(176,74,21,0.5)]
+                         active:scale-95 transition-all duration-300 ease-out"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              onClick={next}
+              aria-label="Next"
+              className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
+                         bg-white/25 dark:bg-zinc-900/25 backdrop-blur-xl backdrop-saturate-150
+                         border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
+                         shadow-[0_8px_32px_-8px_rgba(176,74,21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
+                         text-[#b04a15] dark:text-[#e07b3a]
+                         hover:bg-[#b04a15]/90 hover:text-white hover:border-[#b04a15]/50 hover:scale-110
+                         hover:shadow-[0_12px_40px_-6px_rgba(176,74,21,0.5)]
+                         active:scale-95 transition-all duration-300 ease-out"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ── Dot indicators ── */}
       {campaigns.length > 1 && (
@@ -381,7 +395,7 @@ export function LatestActiveCampaignsSection({
             Support the latest vetted fundraising efforts across India.
           </p>
         </div>
-        <Link href="/campaigns" className="shrink-0">
+        <Link href="/campaigns" className="shrink-0 inline-flex">
           <Button
             variant="outline"
             className="btn-3d border-orange-200 dark:border-stone-850 hover:bg-orange-50 dark:hover:bg-zinc-900 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200"

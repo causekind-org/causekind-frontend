@@ -14,10 +14,32 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
-import { Loader2, MapPin, Search, Package, X } from "lucide-react";
+import { Loader2, MapPin, PackageOpen, Search, SearchX, Package, X } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = ["All", "Education", "Clothing", "Furniture", "Electronics", "Household", "Sports", "Medical aid"];
+
+function ItemCardSkeleton() {
+  return (
+    <div className="rounded-2xl border-2 border-orange-200/50 dark:border-orange-900/30 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+      <div className="h-40 bg-stone-100 dark:bg-zinc-800 animate-pulse" />
+      <div className="p-5 space-y-3">
+        <div className="flex gap-2">
+          <div className="h-5 w-20 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+          <div className="h-5 w-16 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+        </div>
+        <div className="h-5 w-3/4 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+        <div className="h-4 w-full bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+        <div className="h-4 w-2/3 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+        <div className="flex justify-between items-center">
+          <div className="h-4 w-16 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+          <div className="h-5 w-14 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+        </div>
+        <div className="h-9 w-full bg-stone-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
 export default function ItemsPage() {
   const { user } = useAuth();
@@ -122,33 +144,55 @@ export default function ItemsPage() {
 
         <div className="mx-auto max-w-7xl px-4 py-8">
           {loading ? (
-            <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-[#b04a15]" /></div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => <ItemCardSkeleton key={i} />)}
+            </div>
           ) : filtered.length === 0 ? (
-            <p className="py-20 text-center text-stone-400 dark:text-stone-500 font-medium bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-stone-850">
-              {items.length === 0 ? "No items listed yet." : "No items match your search."}
-            </p>
+            <div className="flex flex-col items-center justify-center py-20 px-8 bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-stone-800">
+              {items.length === 0 ? (
+                <>
+                  <div className="mb-4 w-16 h-16 rounded-2xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
+                    <PackageOpen className="w-8 h-8 text-[#b04a15]/40 dark:text-orange-400/30" />
+                  </div>
+                  <p className="font-bold text-stone-700 dark:text-stone-300 text-base">No listings yet</p>
+                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">No items have been listed for donation yet. Be the first to give.</p>
+                </>
+              ) : (
+                <>
+                  <div className="mb-4 w-16 h-16 rounded-2xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
+                    <SearchX className="w-8 h-8 text-stone-300 dark:text-zinc-600" />
+                  </div>
+                  <p className="font-bold text-stone-700 dark:text-stone-300 text-base">No matches found</p>
+                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">Try a different search term or category.</p>
+                </>
+              )}
+            </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((item, i) => (
                 <Reveal key={item.id} delay={i * 70}>
                   <Card className="card-3d card-shimmer card-glow overflow-hidden rounded-2xl border-2 border-orange-200 dark:border-orange-900/60 bg-white dark:bg-zinc-900 shadow-sm h-full">
-                    <div className="relative h-40 w-full bg-gradient-to-br from-orange-50 to-orange-100 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden">
-                      {item.imageUrl ? (
-                        <Image src={item.imageUrl} alt={item.title} fill sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw" className="object-cover" />
-                      ) : (
-                        <div className="flex h-full flex-col items-center justify-center gap-2">
-                          <Package className="h-10 w-10 text-orange-300 dark:text-zinc-600" />
-                          <span className="text-xs font-semibold text-orange-300 dark:text-zinc-600 uppercase tracking-wider">No photo</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                    </div>
+                    <Link href={`/items/${item.id}`} className="block group">
+                      <div className="relative h-40 w-full bg-gradient-to-br from-orange-50 to-orange-100 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden">
+                        {item.imageUrl ? (
+                          <Image src={item.imageUrl} alt={item.title} fill sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw" className="object-cover" />
+                        ) : (
+                          <div className="flex h-full flex-col items-center justify-center gap-2">
+                            <Package className="h-10 w-10 text-orange-300 dark:text-zinc-600" />
+                            <span className="text-xs font-semibold text-orange-300 dark:text-zinc-600 uppercase tracking-wider">No photo</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                      </div>
+                    </Link>
                     <CardContent className="space-y-3 p-5">
                       <div className="flex flex-wrap gap-2">
                         <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold">{item.category}</Badge>
                         <Badge variant="outline" className="border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400">{item.condition}</Badge>
                       </div>
-                      <p className="font-bold text-stone-900 dark:text-stone-100 leading-tight">{item.title}</p>
+                      <Link href={`/items/${item.id}`} className="block">
+                        <p className="font-bold text-stone-900 dark:text-stone-100 leading-tight hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-colors">{item.title}</p>
+                      </Link>
                       {item.description && <p className="line-clamp-2 text-sm text-stone-500 dark:text-stone-400">{item.description}</p>}
                       <p className="text-sm text-stone-500 dark:text-stone-400">Qty: {item.quantity} · by {item.donorName}</p>
                       <div className="flex items-center justify-between">

@@ -925,6 +925,100 @@ section:focus-within {
 .urgency-dot-critical { animation: urgency-flash 0.9s ease-in-out infinite; }
 .urgency-dot-high     { animation: urgency-flash 1.6s ease-in-out infinite; }
 
+/* ── Scrollytelling section: tiny floating shapes ── */
+@keyframes float-shape {
+  0%   { transform: translateY(0);    opacity: 0; }
+  8%   { opacity: 1; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(-100vh); opacity: 0; }
+}
+
+/* ── Scrollytelling section: diagonal shimmer sweep ── */
+@keyframes bg-shimmer-sweep {
+  0%   { transform: translateX(-60%) translateY(-20%) rotate(20deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(120%) translateY(20%) rotate(20deg); opacity: 0; }
+}
+
+.animate-bg-shimmer {
+  background: linear-gradient(
+    108deg,
+    transparent 30%,
+    rgba(176, 74, 21, 0.025) 45%,
+    rgba(224, 123, 58, 0.03) 50%,
+    rgba(176, 74, 21, 0.025) 55%,
+    transparent 70%
+  );
+  background-size: 200% 200%;
+  animation: bg-shimmer-sweep 22s ease-in-out infinite;
+}
+
+.animate-float-shape-1 { animation: float-shape 16s ease-in-out infinite; animation-delay: 0s; }
+.animate-float-shape-2 { animation: float-shape 20s ease-in-out infinite; animation-delay: 3s; }
+.animate-float-shape-3 { animation: float-shape 14s ease-in-out infinite; animation-delay: 6s; }
+.animate-float-shape-4 { animation: float-shape 18s ease-in-out infinite; animation-delay: 9s; }
+.animate-float-shape-5 { animation: float-shape 22s ease-in-out infinite; animation-delay: 2s; }
+.animate-float-shape-6 { animation: float-shape 12s ease-in-out infinite; animation-delay: 5s; }
+
+/* ── Navbar Donate Button: 3D tilt + shimmer + pulse ring + float hearts ── */
+.donate-navbar-3d {
+  animation: donate-navbar-idle 3.2s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+.donate-navbar-3d:hover {
+  animation: none;
+}
+
+@keyframes donate-navbar-idle {
+  0%, 100% { box-shadow: 0 4px 14px rgba(176,74,21,0.38); }
+  50%       { box-shadow: 0 4px 24px rgba(176,74,21,0.65), 0 0 0 3px rgba(240,185,122,0.20); }
+}
+
+.donate-navbar-shimmer {
+  position: absolute;
+  top: 0; left: -100%;
+  width: 55%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.30) 50%, transparent);
+  transform: skewX(-18deg);
+  pointer-events: none;
+  animation: donate-navbar-shimmer-anim 3s ease-in-out infinite;
+}
+
+@keyframes donate-navbar-shimmer-anim {
+  0%        { left: -100%; opacity: 0; }
+  12%       { opacity: 1; }
+  45%       { left: 145%; opacity: 1; }
+  52%, 100% { left: 145%; opacity: 0; }
+}
+
+.donate-navbar-ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  border: 2px solid rgba(240,185,122,0.75);
+  pointer-events: none;
+  animation: donate-navbar-ring-anim 0.92s ease-out infinite;
+}
+
+@keyframes donate-navbar-ring-anim {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+@keyframes donate-navbar-heart-float {
+  0%   { transform: translateY(0)     scale(1)    rotate(0deg);  opacity: 1;   }
+  55%  { transform: translateY(-14px) scale(0.8)  rotate(-10deg); opacity: 0.7; }
+  100% { transform: translateY(-28px) scale(0.15) rotate(18deg); opacity: 0;   }
+}
+
+/* ── Donation success confetti ── */
+@keyframes confetti-fall {
+  0%   { transform: translateY(0)     rotate(0deg);   opacity: 1;   }
+  15%  { opacity: 1; }
+  100% { transform: translateY(94vh)  rotate(600deg); opacity: 0.2; }
+}
+
 /* ── Reduced motion: disable all custom animations ── */
 @media (prefers-reduced-motion: reduce) {
   .animate-swipe-in-right,
@@ -950,7 +1044,17 @@ section:focus-within {
   .hero-slide-active,
   .hero-slide-active-alt,
   .card-3d:hover,
-  .reveal-hidden {
+  .reveal-hidden,
+  .animate-bg-shimmer,
+  .animate-float-shape-1,
+  .animate-float-shape-2,
+  .animate-float-shape-3,
+  .animate-float-shape-4,
+  .animate-float-shape-5,
+  .animate-float-shape-6,
+  .donate-navbar-3d,
+  .donate-navbar-shimmer,
+  .donate-navbar-ring {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;

@@ -24,7 +24,7 @@ function formatINR(n: number) {
 }
 
 export default function ApprovalsPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -39,6 +39,7 @@ export default function ApprovalsPage() {
   const [processing, setProcessing] = useState<number | null>(null);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) { router.push("/login"); return; }
     if (user.role !== "ADMIN") { router.push("/"); return; }
 
@@ -51,7 +52,7 @@ export default function ApprovalsPage() {
       .then(([c, l, r, m]) => { setCampaigns(c); setListings(l); setRequests(r); setMatches(m); })
       .catch(() => toast.error("Failed to load approval queues"))
       .finally(() => setLoading(false));
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   function openReject(id: number, type: "campaign" | "listing" | "request" | "match") {
     setRejectId(id); setRejectType(type); setRejectReason("");
@@ -174,6 +175,11 @@ export default function ApprovalsPage() {
     );
   }
 
+  if (isLoading) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <Loader2 className="size-8 animate-spin text-stone-400" />
+    </div>
+  );
   if (!user) return null;
 
   return (

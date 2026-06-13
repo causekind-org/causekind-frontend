@@ -166,6 +166,7 @@ export type Campaign = {
   createdAt: string;
   updatedAt: string;
   imageUrl: string | null;
+  videoUrl: string | null;
   urgency?: string;
 };
 
@@ -189,6 +190,7 @@ export function createCampaign(data: {
   city: string;
   state: string;
   imageUrl?: string | null;
+  videoUrl?: string | null;
 }) {
   return request<Campaign>("/api/v1/campaigns", {
     method: "POST",

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, MapPin, Package, Sparkles } from "lucide-react";
 import type { ItemListing } from "@/lib/api";
 
@@ -67,7 +68,7 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="overflow-hidden">
+      <div className="overflow-hidden py-4 -my-4">
         <div
           className="flex"
           style={{
@@ -76,12 +77,7 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
           }}
         >
           {items.map((item) => {
-            return (
-            <div
-              key={item.id}
-              className="flex-shrink-0 px-3"
-              style={{ width: `${pct}%` }}
-            >
+            const cardInner = (
               <div className="card-glow flex flex-col h-full overflow-hidden glass-card dark:bg-zinc-900/60 rounded-2xl group border-2 border-orange-200 dark:border-orange-900/60 relative">
                 {/* Image Section */}
                 <div className="relative w-full aspect-video overflow-hidden bg-orange-50 dark:bg-zinc-950 shrink-0">
@@ -133,6 +129,21 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
                   </div>
                 </div>
               </div>
+            );
+
+            return (
+            <div
+              key={item.id}
+              className="flex-shrink-0 px-3"
+              style={{ width: `${pct}%` }}
+            >
+              {isReal ? (
+                <Link href={`/items/${item.id}`} className="block h-full">
+                  {cardInner}
+                </Link>
+              ) : (
+                cardInner
+              )}
             </div>
             );
           })}

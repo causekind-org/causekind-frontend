@@ -12,11 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImagePlus, Loader2, Paperclip, X } from "lucide-react";
+import { ImagePlus, Link2, Loader2, Paperclip, Upload, X } from "lucide-react";
 
 const CATEGORIES = ["Medical", "Education", "Disaster", "Community", "Livelihood"];
 
-const empty = { title: "", category: "", targetAmount: "", city: "", state: "", description: "", imageUrl: "" };
+const empty = { title: "", category: "", targetAmount: "", city: "", state: "", description: "", imageUrl: "", videoUrl: "" };
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -35,10 +35,13 @@ export default function NewCampaignPage() {
   const router = useRouter();
   const photoInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [form, setForm] = useState(empty);
   const [submitting, setSubmitting] = useState(false);
+  const [videoMode, setVideoMode] = useState<"link" | "upload">("link");
+  const [videoFileName, setVideoFileName] = useState<string>("");
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
@@ -75,6 +78,21 @@ export default function NewCampaignPage() {
     setDocs((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function handleVideoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVideoFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => set("videoUrl", ev.target?.result as string ?? "");
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  function clearVideo() {
+    set("videoUrl", "");
+    setVideoFileName("");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title || !form.category || !form.targetAmount || !form.city || !form.state || !form.description) {
@@ -91,6 +109,7 @@ export default function NewCampaignPage() {
         state: form.state,
         description: form.description,
         imageUrl: form.imageUrl || null,
+        videoUrl: form.videoUrl || null,
       });
       toast.success("Campaign submitted for review!");
       router.push("/donee/dashboard");
@@ -172,6 +191,91 @@ export default function NewCampaignPage() {
                     <span className="font-medium">Click to add photos</span>
                     <span className="text-xs">JPG, PNG up to 10 MB each · Max 4 photos</span>
                   </button>
+                )}
+              </Field>
+
+              {/* Campaign video */}
+              <Field label="Campaign video (9:16 vertical)" hint="Vertical 9:16 video recommended (like a phone reel). Keep uploaded files short.">
+                {/* Mode toggle pills */}
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => { setVideoMode("link"); clearVideo(); }}
+                    className={[
+                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border transition-colors",
+                      videoMode === "link"
+                        ? "bg-[#b04a15] text-white border-[#b04a15]"
+                        : "border-stone-300 text-stone-600 hover:border-[#b04a15] hover:text-[#b04a15]",
+                    ].join(" ")}
+                  >
+                    <Link2 className="h-3 w-3" /> Paste link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setVideoMode("upload"); clearVideo(); }}
+                    className={[
+                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border transition-colors",
+                      videoMode === "upload"
+                        ? "bg-[#b04a15] text-white border-[#b04a15]"
+                        : "border-stone-300 text-stone-600 hover:border-[#b04a15] hover:text-[#b04a15]",
+                    ].join(" ")}
+                  >
+                    <Upload className="h-3 w-3" /> Upload file
+                  </button>
+                </div>
+
+                {videoMode === "link" && (
+                  <Input
+                    type="url"
+                    placeholder="https://youtube.com/shorts/..."
+                    value={form.videoUrl}
+                    onChange={(e) => set("videoUrl", e.target.value)}
+                  />
+                )}
+
+                {videoMode === "upload" && (
+                  <>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={handleVideoFile}
+                    />
+                    {!videoFileName ? (
+                      <button
+                        type="button"
+                        onClick={() => videoInputRef.current?.click()}
+                        className="flex w-full flex-col items-center gap-2 rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                      >
+                        <Upload className="h-8 w-8" />
+                        <span className="font-medium">Click to upload video</span>
+                        <span className="text-xs">MP4, MOV, WebM · Keep short for best performance</span>
+                      </button>
+                    ) : (
+                      <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+                        <span className="truncate">{videoFileName}</span>
+                        <button type="button" onClick={clearVideo} className="ml-2 shrink-0 text-muted-foreground hover:text-destructive transition-colors">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* 9:16 preview */}
+                {form.videoUrl && (
+                  <div className="mt-3 flex justify-start">
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video
+                      src={form.videoUrl}
+                      className="aspect-[9/16] w-40 rounded-lg object-cover"
+                      muted
+                      loop
+                      autoPlay
+                      playsInline
+                    />
+                  </div>
                 )}
               </Field>
 

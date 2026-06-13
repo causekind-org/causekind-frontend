@@ -16,6 +16,16 @@ type AuthUser = {
 type AuthContextValue = {
   user: AuthUser | null;
   token: string | null;
+  /** True until localStorage rehydration is complete on first mount.
+   *  Auth-guarded pages MUST render a spinner (not redirect) while isLoading is true,
+   *  otherwise a hard refresh will flash-redirect even when the user is logged in.
+   *
+   *  Pattern for guarded pages:
+   *    const { user, isLoading } = useAuth();
+   *    if (isLoading) return <div className="flex justify-center items-center min-h-screen"><Loader2 className="animate-spin" /></div>;
+   *    if (!user) { router.push("/login"); return null; }
+   */
+  isLoading: boolean;
   setAuth: (token: string) => void;
   logout: () => void;
 };
@@ -23,6 +33,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   token: null,
+  isLoading: true,
   setAuth: () => {},
   logout: () => {},
 });
@@ -40,6 +51,8 @@ function parseJwt(token: string): AuthUser | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  // isLoading starts true; flips to false after the first localStorage read on mount.
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem("ck_token");
@@ -52,6 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("ck_token");
       }
     }
+    // Rehydration complete — guarded pages may now check user.
+    setIsLoading(false);
   }, []);
 
   const setAuth = useCallback((newToken: string) => {
@@ -67,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, setAuth, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, setAuth, logout }}>
       {children}
     </AuthContext.Provider>
   );

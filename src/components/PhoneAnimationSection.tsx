@@ -300,18 +300,214 @@ export function PhoneAnimationSection() {
       ref={outerRef}
       className="phone-scrollytelling-track relative bg-[#f8f4ee] dark:bg-[#0c0a08] border-b border-orange-100/60 dark:border-zinc-800"
     >
-      {/* Background blobs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      {/* ── 3D animated background layer ── */}
+      <style>{`
+        @keyframes ck-orbit-x {
+          0%   { transform: perspective(900px) rotateX(0deg)   rotateY(0deg)   translateZ(0px); }
+          25%  { transform: perspective(900px) rotateX(6deg)   rotateY(10deg)  translateZ(20px); }
+          50%  { transform: perspective(900px) rotateX(0deg)   rotateY(18deg)  translateZ(40px); }
+          75%  { transform: perspective(900px) rotateX(-6deg)  rotateY(10deg)  translateZ(20px); }
+          100% { transform: perspective(900px) rotateX(0deg)   rotateY(0deg)   translateZ(0px); }
+        }
+        @keyframes ck-orbit-y {
+          0%   { transform: perspective(900px) rotateX(4deg)   rotateY(0deg)   translateZ(10px); }
+          33%  { transform: perspective(900px) rotateX(-4deg)  rotateY(-12deg) translateZ(30px); }
+          66%  { transform: perspective(900px) rotateX(6deg)   rotateY(8deg)   translateZ(50px); }
+          100% { transform: perspective(900px) rotateX(4deg)   rotateY(0deg)   translateZ(10px); }
+        }
+        @keyframes ck-float-a {
+          0%, 100% { transform: translateY(0px)   translateZ(0px); opacity: 0.55; }
+          50%       { transform: translateY(-28px) translateZ(18px); opacity: 0.85; }
+        }
+        @keyframes ck-float-b {
+          0%, 100% { transform: translateY(0px)   translateZ(0px); opacity: 0.4; }
+          50%       { transform: translateY(-20px) translateZ(12px); opacity: 0.65; }
+        }
+        @keyframes ck-float-c {
+          0%, 100% { transform: translateY(0px)   translateZ(0px) rotate(0deg);   opacity: 0.3; }
+          50%       { transform: translateY(-16px) translateZ(8px)  rotate(90deg);  opacity: 0.55; }
+        }
+        @keyframes ck-float-d {
+          0%, 100% { transform: translateY(0px)   translateZ(0px) rotate(0deg);   opacity: 0.35; }
+          50%       { transform: translateY(-22px) translateZ(14px) rotate(-60deg); opacity: 0.6; }
+        }
+        @keyframes ck-pulse-ring {
+          0%, 100% { transform: scale(1);    opacity: 0.12; }
+          50%       { transform: scale(1.18); opacity: 0.22; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ck-3d-scene,
+          .ck-3d-plane-a,
+          .ck-3d-plane-b,
+          .ck-3d-orb-a,
+          .ck-3d-orb-b,
+          .ck-3d-orb-c,
+          .ck-3d-orb-d,
+          .ck-3d-ring {
+            animation: none !important;
+          }
+        }
+      `}</style>
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        aria-hidden
+        style={{ zIndex: 0 }}
+      >
+        {/* Perspective scene wrapper */}
+        <div
+          className="ck-3d-scene absolute inset-0"
+          style={{
+            perspective: "900px",
+            perspectiveOrigin: "50% 40%",
+          }}
+        >
+          {/* Plane A — large warm brand tile rotating in 3D */}
+          <div
+            className="ck-3d-plane-a absolute"
+            style={{
+              width: "60%",
+              height: "60%",
+              left: "5%",
+              top: "15%",
+              background:
+                "radial-gradient(ellipse at 40% 40%, rgba(176,74,21,0.07) 0%, rgba(224,123,58,0.04) 55%, transparent 80%)",
+              borderRadius: "40% 60% 55% 45% / 45% 55% 50% 50%",
+              animation: "ck-orbit-x 22s ease-in-out infinite",
+              willChange: "transform",
+            }}
+          />
+          {/* Plane B — cool deep-blue tile */}
+          <div
+            className="ck-3d-plane-b absolute"
+            style={{
+              width: "50%",
+              height: "55%",
+              right: "4%",
+              bottom: "8%",
+              background:
+                "radial-gradient(ellipse at 60% 55%, rgba(30,58,96,0.06) 0%, rgba(30,58,96,0.03) 55%, transparent 80%)",
+              borderRadius: "55% 45% 40% 60% / 50% 60% 40% 50%",
+              animation: "ck-orbit-y 28s ease-in-out infinite",
+              willChange: "transform",
+            }}
+          />
+        </div>
+
+        {/* Depth orbs — warm brand, various sizes and speeds */}
+        <div
+          className="ck-3d-orb-a absolute rounded-full"
+          style={{
+            width: 180,
+            height: 180,
+            top: "12%",
+            left: "8%",
+            background:
+              "radial-gradient(circle at 35% 35%, rgba(224,123,58,0.18), rgba(176,74,21,0.06) 65%, transparent 85%)",
+            filter: "blur(2px)",
+            animation: "ck-float-a 14s ease-in-out infinite",
+            willChange: "transform, opacity",
+          }}
+        />
+        <div
+          className="ck-3d-orb-b absolute rounded-full"
+          style={{
+            width: 130,
+            height: 130,
+            bottom: "18%",
+            right: "10%",
+            background:
+              "radial-gradient(circle at 40% 40%, rgba(176,74,21,0.15), rgba(224,123,58,0.05) 65%, transparent 85%)",
+            filter: "blur(3px)",
+            animation: "ck-float-b 18s ease-in-out infinite 2s",
+            willChange: "transform, opacity",
+          }}
+        />
+        <div
+          className="ck-3d-orb-c absolute"
+          style={{
+            width: 64,
+            height: 64,
+            top: "40%",
+            right: "22%",
+            border: "1.5px solid rgba(176,74,21,0.14)",
+            borderRadius: "50%",
+            animation: "ck-float-c 11s ease-in-out infinite 1s",
+            willChange: "transform, opacity",
+          }}
+        />
+        <div
+          className="ck-3d-orb-d absolute"
+          style={{
+            width: 48,
+            height: 48,
+            bottom: "28%",
+            left: "18%",
+            border: "1.5px solid rgba(30,58,96,0.12)",
+            borderRadius: "8px",
+            animation: "ck-float-d 16s ease-in-out infinite 3s",
+            willChange: "transform, opacity",
+          }}
+        />
+
+        {/* Soft pulsing ring — center anchor point */}
+        <div
+          className="ck-3d-ring absolute rounded-full"
+          style={{
+            width: 340,
+            height: 340,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            border: "1px solid rgba(176,74,21,0.10)",
+            animation: "ck-pulse-ring 9s ease-in-out infinite",
+            willChange: "transform, opacity",
+          }}
+        />
+        <div
+          className="ck-3d-ring absolute rounded-full"
+          style={{
+            width: 520,
+            height: 520,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            border: "1px solid rgba(176,74,21,0.06)",
+            animation: "ck-pulse-ring 13s ease-in-out infinite 2s",
+            willChange: "transform, opacity",
+          }}
+        />
+
+        {/* Stone-warm top gradient wash */}
+        <div
+          className="absolute inset-x-0 top-0 h-1/3"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(240,187,122,0.05) 0%, transparent 100%)",
+          }}
+        />
+      </div>
+
+      {/* Background blobs + floating shapes + shimmer */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden style={{ zIndex: 1 }}>
         <div className="animate-blob-a absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full bg-[#b04a15]/[0.05] blur-3xl dark:bg-[#b04a15]/[0.08]" />
         <div className="animate-blob-b absolute -bottom-24 -right-24 w-[400px] h-[400px] rounded-full bg-[#1e3a60]/[0.04] blur-3xl dark:bg-[#1e3a60]/[0.10]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(176,74,21,0.04),transparent)]" />
+        {/* Diagonal shimmer sweep */}
+        <div className="animate-bg-shimmer absolute inset-0" />
+        {/* Tiny floating shapes — rise from bottom */}
+        <div className="animate-float-shape-1 absolute bottom-0 left-[8%] w-2 h-2 rounded-full bg-[#b04a15]/[0.08]" />
+        <div className="animate-float-shape-2 absolute bottom-0 left-[22%] w-2.5 h-2.5 rounded-full border border-[#e07b3a]/[0.09]" />
+        <div className="animate-float-shape-3 absolute bottom-0 left-[41%] w-1.5 h-1.5 rounded-full bg-[#1e3a60]/[0.07]" />
+        <div className="animate-float-shape-4 absolute bottom-0 left-[60%] w-2 h-2 rounded-full border border-[#b04a15]/[0.07]" />
+        <div className="animate-float-shape-5 absolute bottom-0 left-[76%] w-3 h-3 rounded-full bg-[#e07b3a]/[0.06]" />
+        <div className="animate-float-shape-6 absolute bottom-0 left-[90%] w-1.5 h-1.5 rounded-full bg-[#1e3a60]/[0.08]" />
       </div>
 
       {/*
        * Sticky panel — sticks at top of viewport while outer div scrolls.
        * On mobile: normal padding/flow (no sticky, no fixed height).
        */}
-      <div className="lg:sticky lg:top-0 lg:h-[100dvh] lg:overflow-hidden py-16 lg:pb-0 lg:pt-20 flex flex-col justify-center">
+      <div className="lg:sticky lg:top-0 lg:h-[100dvh] lg:overflow-hidden py-16 lg:pb-0 lg:pt-20 flex flex-col justify-center relative" style={{ zIndex: 2 }}>
         <div className="relative mx-auto max-w-7xl px-6 w-full">
 
           {/* ── Section header ── */}
@@ -334,7 +530,7 @@ export function PhoneAnimationSection() {
             <div className="relative order-2 lg:order-1">
 
               {/* Track line (static background) */}
-              <div className="absolute left-5 top-8 bottom-10 w-[1.5px] bg-stone-200/70 dark:bg-zinc-800 pointer-events-none" />
+              <div className="absolute left-5 top-8 bottom-10 w-[1.5px] bg-stone-200/70 dark:bg-black pointer-events-none" />
 
               {/* Fill line — scaleY driven by direct DOM ref */}
               <div
@@ -368,7 +564,7 @@ export function PhoneAnimationSection() {
                           isActive
                             ? `${s.accentBg} border-transparent shadow-lg scale-110 ring-4 ${s.accentRing}`
                             : isPast
-                            ? "bg-stone-100 dark:bg-zinc-800 border-stone-100 dark:border-zinc-700 scale-100"
+                            ? "bg-stone-100 dark:bg-black border-stone-100 dark:border-zinc-700 scale-100"
                             : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-700 scale-100",
                         ].join(" ")}
                       >
@@ -462,19 +658,22 @@ export function PhoneAnimationSection() {
               {/* phoneRef: receives translateY parallax via direct DOM */}
               <div ref={phoneRef} className="relative" style={{ willChange: "transform" }}>
                 {/* Ambient glow */}
-                <div className="absolute inset-0 bg-[#b04a15]/6 blur-3xl rounded-full scale-y-75 pointer-events-none" />
+                <div className="absolute inset-0 bg-black/10 blur-3xl rounded-full scale-y-75 pointer-events-none" />
 
-                {/* Phone frame */}
-                <div className="relative w-[248px] h-[496px] bg-zinc-900 rounded-[44px] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.5)] border-[7px] border-zinc-800">
+                {/* Phone outer wrapper — side buttons live here so they're not clipped */}
+                <div className="relative w-[248px] h-[496px]">
 
                   {/* Side buttons */}
-                  <div className="absolute -left-[8px] top-[70px] w-[4px] h-6 bg-zinc-700 rounded-l-full" />
-                  <div className="absolute -left-[8px] top-[104px] w-[4px] h-10 bg-zinc-700 rounded-l-full" />
-                  <div className="absolute -left-[8px] top-[148px] w-[4px] h-10 bg-zinc-700 rounded-l-full" />
-                  <div className="absolute -right-[8px] top-[90px] w-[4px] h-14 bg-zinc-700 rounded-r-full" />
+                  <div className="absolute -left-[8px] top-[70px] w-[4px] h-6 bg-black rounded-l-full z-10" />
+                  <div className="absolute -left-[8px] top-[104px] w-[4px] h-10 bg-black rounded-l-full z-10" />
+                  <div className="absolute -left-[8px] top-[148px] w-[4px] h-10 bg-black rounded-l-full z-10" />
+                  <div className="absolute -right-[8px] top-[90px] w-[4px] h-14 bg-black rounded-r-full z-10" />
 
-                  {/* Screen bezel */}
-                  <div className="absolute inset-0 overflow-hidden rounded-[37px] bg-stone-50">
+                  {/* Phone body — black bg clipped to rounded corners */}
+                  <div className="absolute inset-0 bg-black rounded-[44px] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
+
+                  {/* Screen — explicit 7px inset guarantees the black frame is always visible */}
+                  <div className="absolute inset-[7px] overflow-hidden rounded-[37px] bg-stone-50">
 
                     {/* Status bar */}
                     <div className="relative z-20 flex items-center justify-between px-5 pt-2.5 pb-0.5 bg-white">
@@ -512,7 +711,8 @@ export function PhoneAnimationSection() {
                     {/* Home indicator */}
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[80px] h-[3px] bg-stone-300 rounded-full" />
                   </div>
-                </div>
+                  {/* closes phone body */}
+                  </div>
 
                 {/* Step counter badge — shows which screen is active */}
                 <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
@@ -528,6 +728,8 @@ export function PhoneAnimationSection() {
                       }`}
                     />
                   ))}
+                </div>
+                {/* closes outer wrapper */}
                 </div>
               </div>
             </div>
