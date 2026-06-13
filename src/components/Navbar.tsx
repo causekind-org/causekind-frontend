@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -172,11 +174,13 @@ export function SiteHeader() {
     setOpen(false);
   }
 
+  const t = useTranslations();
+
   const navLinks = [
-    { href: "/",         label: "Home" },
-    { href: "/campaigns",label: "Campaigns" },
-    { href: "/requests", label: "In-Kind Requests" },
-    { href: "/items",    label: "Listings" },
+    { href: "/",          label: t("nav.home") },
+    { href: "/campaigns", label: t("nav.campaigns") },
+    { href: "/requests",  label: t("nav.requests") },
+    { href: "/items",     label: t("nav.listings") },
   ];
 
   /** Whether a nav link is active, keyed by href for exactness. */
@@ -195,18 +199,18 @@ export function SiteHeader() {
       <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sign out of CauseKind?</AlertDialogTitle>
+            <AlertDialogTitle>{t("logout.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              You can sign back in anytime.
+              {t("logout.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("logout.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmLogout}
               className="bg-[#b04a15] hover:bg-[#963c0d] text-white border-0"
             >
-              Sign out
+              {t("logout.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -242,10 +246,12 @@ export function SiteHeader() {
           {/* Right buttons */}
           <div className="flex items-center gap-3 sm:gap-4">
             {/* Animated Sleek Theme Toggle */}
+            <LanguageSwitcher />
+
             <button
               onClick={toggleTheme}
               className={iconBtnCls}
-              aria-label="Toggle theme"
+              aria-label={t("nav.toggleTheme")}
               suppressHydrationWarning
             >
               <div className="relative w-5 h-5 flex items-center justify-center">
@@ -258,7 +264,7 @@ export function SiteHeader() {
             <div className="lg:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className={iconBtnCls} aria-label="Profile menu">
+                  <button className={iconBtnCls} aria-label={t("nav.profileMenu")}>
                     <User className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -268,7 +274,7 @@ export function SiteHeader() {
                       <DropdownMenuItem asChild>
                         <Link href={dashHref} className="flex items-center gap-2 cursor-pointer">
                           <LayoutDashboard className="w-4 h-4" />
-                          Dashboard
+                          {t("nav.dashboard")}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -277,7 +283,7 @@ export function SiteHeader() {
                         className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/30 cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
-                        Log out
+                        {t("nav.signOut")}
                       </DropdownMenuItem>
                     </>
                   ) : (
@@ -285,13 +291,13 @@ export function SiteHeader() {
                       <DropdownMenuItem asChild>
                         <Link href="/login" className="flex items-center gap-2 cursor-pointer">
                           <LogIn className="w-4 h-4" />
-                          Log in
+                          {t("nav.logIn")}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href="/register" className="flex items-center gap-2 cursor-pointer">
                           <UserPlus className="w-4 h-4" />
-                          Sign up
+                          {t("nav.signUp")}
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -303,11 +309,11 @@ export function SiteHeader() {
             {user ? (
               <div className="hidden sm:flex items-center gap-3">
                 <Link href={dashHref} className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
                 <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
                 <Link href="/profile" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
-                  Profile
+                  {t("nav.profile")}
                 </Link>
                 <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
                 <span className="text-sm font-semibold text-[#b04a15] dark:text-orange-400 max-w-[120px] truncate" title={user.email}>
@@ -318,7 +324,7 @@ export function SiteHeader() {
                   onClick={requestLogout}
                   className="text-sm font-semibold text-stone-500 hover:text-red-600 dark:text-stone-400 dark:hover:text-red-400 transition-colors"
                 >
-                  Log Out
+                  {t("nav.signOut")}
                 </button>
                 <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
                 <Donate3DButton />
@@ -326,10 +332,10 @@ export function SiteHeader() {
             ) : (
               <div className="hidden sm:flex items-center gap-4">
                 <Link href="/login" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
-                  Log In
+                  {t("nav.logIn")}
                 </Link>
                 <Link href="/register" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
-                  Sign Up
+                  {t("nav.signUp")}
                 </Link>
                 <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
                 <Donate3DButton />
@@ -338,7 +344,7 @@ export function SiteHeader() {
 
             <button onClick={() => setOpen(v => !v)}
               className="lg:hidden relative flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-[#e5e2d5] dark:border-zinc-800 text-stone-900 dark:text-white transition-all hover:bg-stone-50 dark:hover:bg-zinc-850"
-              aria-label={open ? "Close menu" : "Open menu"}>
+              aria-label={t("nav.openMenu")}>
               <Menu className={`w-5 h-5 absolute transition-all duration-300 ${open ? "opacity-0 rotate-90 scale-50" : "opacity-100"}`} />
               <X    className={`w-5 h-5 absolute transition-all duration-300 ${open ? "opacity-100" : "opacity-0 -rotate-90 scale-50"}`} />
             </button>
@@ -372,19 +378,19 @@ export function SiteHeader() {
               {user ? (
                 <>
                   <div className="text-sm font-bold text-stone-400 truncate mb-2">{user.email}</div>
-                  <Link href={dashHref} onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><Shield className="w-4 h-4" /> Dashboard</Link>
-                  <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><User className="w-4 h-4" /> Profile</Link>
+                  <Link href={dashHref} onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><Shield className="w-4 h-4" /> {t("nav.dashboard")}</Link>
+                  <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><User className="w-4 h-4" /> {t("nav.profile")}</Link>
                   <button
                     onClick={() => { setOpen(false); requestLogout(); }}
                     className="flex items-center gap-2 text-sm font-medium text-stone-750 dark:text-stone-200 hover:text-red-600 text-left"
                   >
-                    <LogOut className="w-4 h-4" /> Log Out
+                    <LogOut className="w-4 h-4" /> {t("nav.signOut")}
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/register" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><UserPlus className="w-4 h-4" /> Sign Up</Link>
-                  <Link href="/login"    onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><LogIn    className="w-4 h-4" /> Log In</Link>
+                  <Link href="/register" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><UserPlus className="w-4 h-4" /> {t("nav.signUp")}</Link>
+                  <Link href="/login"    onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><LogIn    className="w-4 h-4" /> {t("nav.logIn")}</Link>
                 </>
               )}
             </div>
@@ -396,6 +402,7 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
+  const t = useTranslations("footer");
   return (
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
       <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 md:grid-cols-4">
@@ -403,48 +410,55 @@ export function SiteFooter() {
           <div className="inline-block bg-white dark:bg-zinc-900 px-4 py-2.5 rounded-2xl shadow-sm border border-stone-200/10 dark:border-zinc-800">
             <CareNestLogo size="lg" />
           </div>
-          <p className="text-stone-400 leading-relaxed font-medium">
-            India&apos;s verified giving platform. Zero fees for donors. 100% of your donation goes directly to the cause.
-          </p>
+          <p className="text-stone-400 leading-relaxed font-medium">{t("tagline")}</p>
           <div className="text-stone-400 font-medium text-xs">
-            <span className="text-white font-semibold">Contact us:</span> +91 7719938619
+            <span className="text-white font-semibold">{t("contact")}:</span> +91 7719938619
           </div>
           <div className="flex gap-3 pt-2 flex-wrap">
             <span className="flex items-center gap-1.5 text-xs bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-full text-white">
-              <Shield className="h-3.5 w-3.5 text-[#b04a15]" /> Admin Verified
+              <Shield className="h-3.5 w-3.5 text-[#b04a15]" /> {t("adminVerified")}
             </span>
             <span className="flex items-center gap-1.5 text-xs bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-full text-white">
-              <Shield className="h-3.5 w-3.5 text-[#4a7fba]" /> Razorpay Secured
+              <Shield className="h-3.5 w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
             </span>
           </div>
         </div>
         <div className="space-y-4">
-          <p className="font-semibold text-white tracking-wider uppercase text-xs">Give Back</p>
+          <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
-            {[{href:"/campaigns",l:"Money campaigns"},{href:"/items",l:"Item listings"},{href:"/requests",l:"In-kind requests"}].map(({href,l})=>(
+            {[
+              { href: "/campaigns", l: t("moneyDrives") },
+              { href: "/items",     l: t("itemListings") },
+              { href: "/requests",  l: t("inkindRequests") },
+            ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
           </ul>
         </div>
         <div className="space-y-4">
-          <p className="font-semibold text-white tracking-wider uppercase text-xs">Get Support</p>
+          <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
-            {[{href:"/register",l:"Create an account"},{href:"/dashboard",l:"My dashboard"},{href:"/campaigns/new",l:"Start a campaign"},{href:"/help",l:"Help & FAQ"}].map(({href,l})=>(
+            {[
+              { href: "/register",       l: t("createAccount") },
+              { href: "/dashboard",      l: t("myDashboard") },
+              { href: "/campaigns/new",  l: t("startCampaign") },
+              { href: "/help",           l: t("helpFaq") },
+            ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
           </ul>
         </div>
         <div className="space-y-4">
-          <p className="font-semibold text-white tracking-wider uppercase text-xs">Our Trust Promise</p>
+          <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("trust")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b04a15]" /> Admin-verified listings</li>
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b04a15]" /> Zero platform fees for donors</li>
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#4a7fba]" /> Verified delivery certificates</li>
+            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b04a15]" /> {t("adminVerifiedFull")}</li>
+            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b04a15]" /> {t("zeroFees")}</li>
+            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
           </ul>
         </div>
       </div>
       <div className="border-t border-stone-900 py-6 text-center text-xs text-stone-500 font-medium">
-        © {new Date().getFullYear()} <span className="font-bold text-[#b04a15]">Cause</span><span className="font-bold text-stone-300">Kind</span>. Made with care in India.
+        © {new Date().getFullYear()} <span className="font-bold text-[#b04a15]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
       </div>
     </footer>
   );
