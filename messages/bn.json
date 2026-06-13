@@ -136,13 +136,24 @@
     "category": "শ্রেণী",
     "description": "বর্ণনা",
     "status": "স্ট্যাটাস",
+    "statusCompleted": "সম্পন্ন",
+    "statusPending": "মুলতুবি",
+    "statusApproved": "অনুমোদিত",
+    "statusRejected": "প্রত্যাখ্যাত",
+    "statusMatched": "মিলে গেছে",
+    "statusActive": "সক্রিয়",
     "date": "তারিখ",
     "amount": "পরিমাণ",
     "search": "অনুসন্ধান করুন",
     "filter": "ফিল্টার",
     "close": "বন্ধ",
     "confirm": "নিশ্চিত করুন",
-    "new": "নতুন"
+    "new": "নতুন",
+    "urgencyLow": "কম জরুরী",
+    "urgencyMedium": "মাঝারি জরুরী",
+    "urgencyHigh": "উচ্চ জরুরী",
+    "urgencyNormal": "স্বাভাবিক জরুরী",
+    "urgencyCritical": "গুরুতর জরুরী"
   },
   "auth": {
     "login": {

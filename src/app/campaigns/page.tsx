@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useDynamicTranslations } from "@/hooks/useDynamicTranslation";
+import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getCampaigns, type Campaign } from "@/lib/api";
 import { Reveal } from "@/components/Reveal";
 import { ParticleBackground } from "@/components/ParticleBackground";
@@ -89,8 +89,8 @@ function CampaignItem({ c, i }: { c: Campaign; i: number }) {
         </div>
         <CardContent className="p-5">
           <div className="flex items-center justify-between text-xs">
-            <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold">{c.category}</Badge>
-            <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" /> {c.city}</span>
+            <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold"><TranslatedText text={c.category} /></Badge>
+            <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" /> <TranslatedText text={c.city} /></span>
           </div>
           <h3 className="mt-3 font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2">{title ?? c.title}</h3>
           <div className="mt-4 space-y-2">
@@ -174,7 +174,7 @@ export default function CampaignsPage() {
                     category === c
                       ? "bg-[#b04a15] border-[#b04a15] text-white shadow-sm shadow-orange-900/20"
                       : "border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:border-[#b04a15] dark:hover:border-[#e07b3a] hover:text-[#b04a15] dark:hover:text-[#e07b3a] bg-white dark:bg-zinc-900"
-                  }`}>{c}
+                  }`}><TranslatedText text={c} />
                 </button>
               ))}
             </div>

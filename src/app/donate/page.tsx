@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Heart, Zap, Shield, ChevronRight, ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import { getCampaigns, type Campaign } from "@/lib/api";
+import { TranslatedText } from "@/hooks/useDynamicTranslation";
 
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000];
 const TIP_PCTS = [5, 10, 15] as const;
@@ -115,8 +116,8 @@ function CampaignDropdown({
         <div className="min-w-0 flex-1">
           {activeCampaign ? (
             <>
-              <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate">{activeCampaign.title}</p>
-              <p className="text-[10px] text-stone-400 font-medium">{activeCampaign.city} · {activeCampaign.category}</p>
+              <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate"><TranslatedText text={activeCampaign.title} /></p>
+              <p className="text-[10px] text-stone-400 font-medium"><TranslatedText text={activeCampaign.city} /> · <TranslatedText text={activeCampaign.category} /></p>
             </>
           ) : (
             <p className="text-sm font-medium text-stone-400 dark:text-zinc-500">{placeholder}</p>
@@ -156,8 +157,8 @@ function CampaignDropdown({
                     }`}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate">{c.title}</p>
-                    <p className="text-[10px] text-stone-400 font-medium">{c.city} · {c.category}</p>
+                    <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate"><TranslatedText text={c.title} /></p>
+                    <p className="text-[10px] text-stone-400 font-medium"><TranslatedText text={c.city} /> · <TranslatedText text={c.category} /></p>
                   </div>
                   {c.urgency === "CRITICAL" && (
                     <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-500 shrink-0">
@@ -466,8 +467,8 @@ export default function DonatePage() {
 
                 <div className="border-t border-orange-100 dark:border-zinc-700 pt-3">
                   <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">To</p>
-                  <p className="text-sm font-bold text-stone-800 dark:text-stone-100">{activeCampaign?.title}</p>
-                  <p className="text-xs text-stone-400 font-medium">{activeCampaign?.city} · {activeCampaign?.category}</p>
+                  <p className="text-sm font-bold text-stone-800 dark:text-stone-100"><TranslatedText text={activeCampaign?.title} /></p>
+                  <p className="text-xs text-stone-400 font-medium"><TranslatedText text={activeCampaign?.city} /> · <TranslatedText text={activeCampaign?.category} /></p>
                 </div>
 
                 <div className="border-t border-orange-100 dark:border-zinc-700 pt-3 flex justify-between text-xs font-bold">

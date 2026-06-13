@@ -136,13 +136,24 @@
     "category": "വിഭാഗം",
     "description": "വിവരണം",
     "status": "നില",
+    "statusCompleted": "പൂർത്തിയാക്കി",
+    "statusPending": "തീർപ്പാക്കാത്തത്",
+    "statusApproved": "അംഗീകരിച്ചു",
+    "statusRejected": "നിരസിച്ചു",
+    "statusMatched": "പൊരുത്തപ്പെട്ടു",
+    "statusActive": "സജീവമാണ്",
     "date": "തീയതി",
     "amount": "തുക",
     "search": "തിരയുക",
     "filter": "ഫിൽട്ടർ ചെയ്യുക",
     "close": "അടയ്ക്കുക",
     "confirm": "സ്ഥിരീകരിക്കുക",
-    "new": "പുതിയത്"
+    "new": "പുതിയത്",
+    "urgencyLow": "കുറഞ്ഞ അടിയന്തിരാവസ്ഥ",
+    "urgencyMedium": "ഇടത്തരം അടിയന്തരാവസ്ഥ",
+    "urgencyHigh": "ഉയർന്ന അടിയന്തരാവസ്ഥ",
+    "urgencyNormal": "സാധാരണ അടിയന്തരാവസ്ഥ",
+    "urgencyCritical": "ഗുരുതരമായ അടിയന്തരാവസ്ഥ"
   },
   "auth": {
     "login": {

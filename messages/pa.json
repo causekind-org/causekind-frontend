@@ -136,13 +136,24 @@
     "category": "ਸ਼੍ਰੇਣੀ",
     "description": "ਵਰਣਨ",
     "status": "ਸਥਿਤੀ",
+    "statusCompleted": "ਪੂਰਾ ਹੋਇਆ",
+    "statusPending": "ਬਕਾਇਆ",
+    "statusApproved": "ਨੂੰ ਮਨਜ਼ੂਰੀ ਦਿੱਤੀ",
+    "statusRejected": "ਰੱਦ ਕਰ ਦਿੱਤਾ",
+    "statusMatched": "ਮੇਲ ਖਾਂਦਾ ਹੈ",
+    "statusActive": "ਕਿਰਿਆਸ਼ੀਲ",
     "date": "ਮਿਤੀ",
     "amount": "ਰਕਮ",
     "search": "ਖੋਜ",
     "filter": "ਫਿਲਟਰ",
     "close": "ਬੰਦ ਕਰੋ",
     "confirm": "ਪੁਸ਼ਟੀ ਕਰੋ",
-    "new": "ਨਵਾਂ"
+    "new": "ਨਵਾਂ",
+    "urgencyLow": "ਘੱਟ ਜ਼ਰੂਰੀ",
+    "urgencyMedium": "ਮੱਧਮ ਜ਼ਰੂਰੀ",
+    "urgencyHigh": "ਉੱਚ ਜ਼ਰੂਰੀ",
+    "urgencyNormal": "ਸਧਾਰਣ ਜ਼ਰੂਰੀ",
+    "urgencyCritical": "ਨਾਜ਼ੁਕ ਜ਼ਰੂਰੀ"
   },
   "auth": {
     "login": {

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check } from "lucide-react";
+import { TranslatedText } from "@/hooks/useDynamicTranslation";
 
 const DEFAULT_GOAL = 26000;
 const GOAL_KEY_PREFIX = "ck_annual_goal_";
@@ -40,6 +41,7 @@ function toTitleCase(str: string) {
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -194,14 +196,14 @@ export default function DashboardPage() {
                   {donations.map((d) => (
                     <div key={d.id} className="flex items-center justify-between rounded-lg border p-3">
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{d.campaignTitle}</p>
+                        <p className="font-medium truncate"><TranslatedText text={d.campaignTitle} /></p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(d.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="font-semibold text-sm">{formatINR(Number(d.amount))}</span>
-                        <Badge variant={donationVariant(d.status)}>{toTitleCase(d.status)}</Badge>
+                        <Badge variant={donationVariant(d.status)}>{tCommon("status" + d.status.charAt(0) + d.status.slice(1).toLowerCase())}</Badge>
                       </div>
                     </div>
                   ))}
@@ -298,8 +300,8 @@ export default function DashboardPage() {
                     return (
                       <div key={c.id} className="rounded-lg border p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="font-medium truncate">{c.title}</p>
-                          <Badge variant={campaignVariant(c.status)}>{toTitleCase(c.status)}</Badge>
+                          <p className="font-medium truncate"><TranslatedText text={c.title} /></p>
+                          <Badge variant={campaignVariant(c.status)}>{tCommon("status" + c.status.charAt(0) + c.status.slice(1).toLowerCase())}</Badge>
                         </div>
                         <Progress value={pct} className="h-1.5" />
                         <div className="flex justify-between text-xs text-muted-foreground">
@@ -307,7 +309,7 @@ export default function DashboardPage() {
                           <span>{t("goal")} {formatINR(c.targetAmount)}</span>
                         </div>
                         {c.rejectionReason && (
-                          <p className="text-xs text-destructive">{t("rejected")}: {c.rejectionReason}</p>
+                          <p className="text-xs text-destructive">{t("rejected")}: <TranslatedText text={c.rejectionReason} /></p>
                         )}
                       </div>
                     );
@@ -332,11 +334,11 @@ export default function DashboardPage() {
                   {itemListings.map((l) => (
                     <div key={l.id} className="flex items-center justify-between rounded-lg border p-3">
                       <div>
-                        <p className="font-medium">{l.title}</p>
-                        <p className="text-xs text-muted-foreground">{l.city} · {l.condition}</p>
+                        <p className="font-medium"><TranslatedText text={l.title} /></p>
+                        <p className="text-xs text-muted-foreground"><TranslatedText text={l.city} /> · {l.condition}</p>
                       </div>
                       <Badge variant={l.status === "APPROVED" ? "default" : l.status === "MATCHED" ? "secondary" : "outline"}>
-                        {toTitleCase(l.status)}
+                        {tCommon("status" + l.status.charAt(0) + l.status.slice(1).toLowerCase())}
                       </Badge>
                     </div>
                   ))}
@@ -362,11 +364,13 @@ export default function DashboardPage() {
                 {itemRequests.map((r) => (
                   <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div>
-                      <p className="font-medium">{r.title}</p>
-                      <p className="text-xs text-muted-foreground">{r.city} · {r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase()} urgency</p>
+                      <p className="font-medium"><TranslatedText text={r.title} /></p>
+                      <p className="text-xs text-muted-foreground">
+                        <TranslatedText text={r.city} /> · {tCommon("urgency" + r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase())}
+                      </p>
                     </div>
                     <Badge variant={r.status === "APPROVED" ? "default" : r.status === "REJECTED" ? "destructive" : "outline"}>
-                      {toTitleCase(r.status)}
+                      {tCommon("status" + r.status.charAt(0) + r.status.slice(1).toLowerCase())}
                     </Badge>
                   </div>
                 ))}
@@ -386,12 +390,14 @@ export default function DashboardPage() {
                 {matches.map((m) => (
                   <div key={m.id} className="rounded-lg border p-3 space-y-1">
                     <div className="flex items-center justify-between">
-                      <p className="font-medium">{m.listingTitle} → {m.requestTitle}</p>
+                      <p className="font-medium"><TranslatedText text={m.listingTitle} /> → <TranslatedText text={m.requestTitle} /></p>
                       <Badge variant={m.status === "APPROVED" ? "default" : m.status === "REJECTED" ? "destructive" : "secondary"}>
-                        {toTitleCase(m.status)}
+                        {tCommon("status" + m.status.charAt(0) + m.status.slice(1).toLowerCase())}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{m.donorName} · {m.donorCity} → {m.doneeName} · {m.doneeCity}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {m.donorName} · <TranslatedText text={m.donorCity} /> → {m.doneeName} · <TranslatedText text={m.doneeCity} />
+                    </p>
                     {m.status === "APPROVED" && (
                       <div className="mt-2 rounded-md bg-accent/40 p-2 text-xs space-y-0.5">
                         <p className="font-medium text-foreground">{t("contactDetails")}</p>
@@ -400,7 +406,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                     {m.rejectionReason && (
-                      <p className="text-xs text-destructive">{t("rejected")}: {m.rejectionReason}</p>
+                      <p className="text-xs text-destructive">{t("rejected")}: <TranslatedText text={m.rejectionReason} /></p>
                     )}
                   </div>
                 ))}

@@ -136,13 +136,24 @@
     "category": "வகை",
     "description": "விளக்கம்",
     "status": "நிலை",
+    "statusCompleted": "முடிக்கப்பட்டது",
+    "statusPending": "நிலுவையில் உள்ளது",
+    "statusApproved": "அங்கீகரிக்கப்பட்டது",
+    "statusRejected": "நிராகரிக்கப்பட்டது",
+    "statusMatched": "பொருந்தியது",
+    "statusActive": "செயலில்",
     "date": "தேதி",
     "amount": "தொகை",
     "search": "தேடு",
     "filter": "வடிகட்டி",
     "close": "மூடு",
     "confirm": "உறுதிப்படுத்தவும்",
-    "new": "புதியது"
+    "new": "புதியது",
+    "urgencyLow": "குறைந்த அவசரம்",
+    "urgencyMedium": "நடுத்தர அவசரம்",
+    "urgencyHigh": "அதிக அவசரம்",
+    "urgencyNormal": "சாதாரண அவசரம்",
+    "urgencyCritical": "முக்கியமான அவசரம்"
   },
   "auth": {
     "login": {

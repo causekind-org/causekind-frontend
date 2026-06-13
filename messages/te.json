@@ -136,13 +136,24 @@
     "category": "వర్గం",
     "description": "వివరణ",
     "status": "స్థితి",
+    "statusCompleted": "పూర్తయింది",
+    "statusPending": "పెండింగ్‌లో ఉంది",
+    "statusApproved": "ఆమోదించబడింది",
+    "statusRejected": "తిరస్కరించబడింది",
+    "statusMatched": "సరిపోలింది",
+    "statusActive": "చురుకుగా",
     "date": "తేదీ",
     "amount": "మొత్తం",
     "search": "శోధించండి",
     "filter": "ఫిల్టర్ చేయండి",
     "close": "మూసివేయి",
     "confirm": "నిర్ధారించండి",
-    "new": "కొత్తది"
+    "new": "కొత్తది",
+    "urgencyLow": "తక్కువ ఆవశ్యకత",
+    "urgencyMedium": "మధ్యస్థ ఆవశ్యకత",
+    "urgencyHigh": "అధిక ఆవశ్యకత",
+    "urgencyNormal": "సాధారణ ఆవశ్యకత",
+    "urgencyCritical": "క్లిష్టమైన ఆవశ్యకత"
   },
   "auth": {
     "login": {

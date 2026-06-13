@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useDynamicTranslation } from "@/hooks/useDynamicTranslation";
+import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Sparkles, Heart, ShieldCheck, HandCoins, MapPin, Award, Coins, Users, Package, ArrowRight } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
@@ -48,6 +48,7 @@ export default function HomePage() {
   const t = useTranslations("landing");
   const tHero = useTranslations("hero");
   const tStats = useTranslations("stats");
+  const tCommon = useTranslations("common");
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>([]);
@@ -187,12 +188,12 @@ export default function HomePage() {
                                 </div>
                                 <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100">CauseKind</span>
                               </div>
-                              <span className="text-xs text-stone-400 font-bold">· {currentCampaign ? currentCampaign.city : "2026"}</span>
+                              <span className="text-xs text-stone-400 font-bold">· {currentCampaign ? <TranslatedText text={currentCampaign.city} /> : "2026"}</span>
                             </div>
                           </div>
 
                           <p className="lg:hidden text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">
-                            {currentCampaign ? `${currentCampaign.city} · ${currentCampaign.category}` : tHero("localCampaign")}
+                            {currentCampaign ? <><TranslatedText text={currentCampaign.city} /> · <TranslatedText text={currentCampaign.category} /></> : tHero("localCampaign")}
                           </p>
 
                           <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white leading-snug mb-2 font-jakarta line-clamp-2 transition-all duration-300">
@@ -248,9 +249,9 @@ export default function HomePage() {
                 {[...activity, ...activity].map((a, i) => (
                   <span key={i} className="flex items-center gap-2 text-xs text-stone-500 font-bold whitespace-nowrap px-8">
                     {a.type === "DONATION" ? (
-                      <><span className="inline-block h-2 w-2 rounded-full bg-[#b04a15]" /><span className="text-[#b04a15] font-extrabold">₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}</span> donated to <span className="font-extrabold text-stone-800 dark:text-stone-200">{a.campaignTitle}</span><span className="text-stone-400">· {a.city}</span></>
+                      <><span className="inline-block h-2 w-2 rounded-full bg-[#b04a15]" /><span className="text-[#b04a15] font-extrabold">₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}</span> donated to <span className="font-extrabold text-stone-800 dark:text-stone-200"><TranslatedText text={a.campaignTitle} /></span><span className="text-stone-400">· <TranslatedText text={a.city} /></span></>
                     ) : (
-                      <><span className="inline-block h-2 w-2 rounded-full bg-[#1e3a60]" /><span className="text-[#1e3a60] font-extrabold">New Campaign</span><span className="font-extrabold text-stone-800 dark:text-stone-200">{a.campaignTitle}</span><span className="text-stone-400">· {a.category} · {a.city}</span></>
+                      <><span className="inline-block h-2 w-2 rounded-full bg-[#1e3a60]" /><span className="text-[#1e3a60] font-extrabold">New Campaign</span><span className="font-extrabold text-stone-800 dark:text-stone-200"><TranslatedText text={a.campaignTitle} /></span><span className="text-stone-400">· <TranslatedText text={a.category} /> · <TranslatedText text={a.city} /></span></>
                     )}
                     <span className="text-stone-200 dark:text-stone-800 mx-4">|</span>
                   </span>
@@ -383,17 +384,17 @@ export default function HomePage() {
                               ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
                               : "bg-stone-100 border-stone-200 text-stone-500 dark:text-stone-400"
                           }`}>
-                            {req.urgency === "CRITICAL" ? "Critical" : req.urgency === "HIGH" ? "High" : "Normal"}
+                            {tCommon("urgency" + req.urgency.charAt(0) + req.urgency.slice(1).toLowerCase())}
                           </span>
                         </div>
                       </div>
                       <CardContent className="p-3 sm:p-5 flex flex-col flex-1 gap-2">
                         <div>
-                          <h3 className="text-xs sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2">{req.title}</h3>
-                          <p className="text-[10px] sm:text-xs text-stone-400 font-semibold mt-0.5 truncate">By {req.doneeName} · {req.city}</p>
+                          <h3 className="text-xs sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2"><TranslatedText text={req.title} /></h3>
+                          <p className="text-[10px] sm:text-xs text-stone-400 font-semibold mt-0.5 truncate">By {req.doneeName} · <TranslatedText text={req.city} /></p>
                         </div>
                         {req.description && (
-                          <p className="hidden sm:block text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed line-clamp-2">{req.description}</p>
+                          <p className="hidden sm:block text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed line-clamp-2"><TranslatedText text={req.description} /></p>
                         )}
                         <div className="mt-auto pt-2 border-t border-orange-50 dark:border-zinc-800 flex justify-between items-center">
                           <span className="text-[10px] sm:text-xs text-stone-400 font-semibold">Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span></span>

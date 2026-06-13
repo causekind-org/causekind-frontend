@@ -136,13 +136,24 @@
     "category": "ವರ್ಗ",
     "description": "ವಿವರಣೆ",
     "status": "ಸ್ಥಿತಿ",
+    "statusCompleted": "ಪೂರ್ಣಗೊಂಡಿದೆ",
+    "statusPending": "ಬಾಕಿಯಿದೆ",
+    "statusApproved": "ಅನುಮೋದಿಸಲಾಗಿದೆ",
+    "statusRejected": "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
+    "statusMatched": "ಹೊಂದಿಕೆಯಾಯಿತು",
+    "statusActive": "ಸಕ್ರಿಯ",
     "date": "ದಿನಾಂಕ",
     "amount": "ಮೊತ್ತ",
     "search": "ಹುಡುಕು",
     "filter": "ಫಿಲ್ಟರ್",
     "close": "ಮುಚ್ಚಿ",
     "confirm": "ದೃಢೀಕರಿಸಿ",
-    "new": "ಹೊಸದು"
+    "new": "ಹೊಸದು",
+    "urgencyLow": "ಕಡಿಮೆ ತುರ್ತು",
+    "urgencyMedium": "ಮಧ್ಯಮ ತುರ್ತು",
+    "urgencyHigh": "ಹೆಚ್ಚಿನ ತುರ್ತು",
+    "urgencyNormal": "ಸಾಮಾನ್ಯ ತುರ್ತು",
+    "urgencyCritical": "ನಿರ್ಣಾಯಕ ತುರ್ತು"
   },
   "auth": {
     "login": {

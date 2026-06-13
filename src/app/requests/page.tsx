@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { useDynamicTranslation, useDynamicTranslations } from "@/hooks/useDynamicTranslation";
+import { useDynamicTranslation, useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getItemRequests, donateToRequest, getMyProfile, analyzeItemImage, type ItemRequest, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Reveal } from "@/components/Reveal";
@@ -49,6 +49,7 @@ function RequestCardSkeleton() {
 
 function RequestItem({ r, onDonate }: { r: ItemRequest; onDonate: (r: ItemRequest) => void }) {
   const t = useTranslations("requests");
+  const tCommon = useTranslations("common");
   const [title, description] = useDynamicTranslations([r.title, r.description ?? null]);
   return (
     <Card className="card-3d card-shimmer card-glow rounded-2xl border-2 border-orange-200 dark:border-orange-900/60 bg-white dark:bg-zinc-900 shadow-sm h-full overflow-hidden">
@@ -65,14 +66,16 @@ function RequestItem({ r, onDonate }: { r: ItemRequest; onDonate: (r: ItemReques
       </div>
       <CardContent className="space-y-3 p-5">
         <div className="flex flex-wrap gap-2">
-          <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold">{r.category}</Badge>
-          <Badge variant={urgencyVariant(r.urgency)} className="dark:border-stone-805">{r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase()}</Badge>
+          <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold"><TranslatedText text={r.category} /></Badge>
+          <Badge variant={urgencyVariant(r.urgency)} className="dark:border-stone-850">
+            {tCommon("urgency" + r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase())}
+          </Badge>
         </div>
         <p className="font-bold text-stone-900 dark:text-stone-100 leading-tight">{title ?? r.title}</p>
         {(description ?? r.description) && <p className="line-clamp-2 text-sm text-stone-500 dark:text-stone-400">{description ?? r.description}</p>}
         <p className="text-sm text-stone-500 dark:text-stone-400">{t("qty")}: {r.quantity} · {t("by")} {r.doneeName}</p>
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" /> {r.city}</span>
+          <span className="flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" /> <TranslatedText text={r.city} /></span>
           <Badge className="bg-[#b04a15] text-white border-0 text-xs">{t("verified")}</Badge>
         </div>
         <p className="text-xs text-stone-400 dark:text-stone-500">{t("contactDetails")}</p>
@@ -87,6 +90,7 @@ function RequestItem({ r, onDonate }: { r: ItemRequest; onDonate: (r: ItemReques
 
 export default function RequestsPage() {
   const t = useTranslations("requests");
+  const tCommon = useTranslations("common");
   const { user } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -225,7 +229,7 @@ export default function RequestsPage() {
                   category === c
                     ? "bg-[#b04a15] border-[#b04a15] text-white shadow-sm shadow-orange-900/20"
                     : "border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:border-[#b04a15] dark:hover:border-[#e07b3a] hover:text-[#b04a15] dark:hover:text-[#e07b3a] bg-white dark:bg-zinc-900"
-                }`}>{c}
+                }`}><TranslatedText text={c} />
               </button>
             ))}
           </div>
@@ -280,10 +284,10 @@ export default function RequestsPage() {
                 <p className="text-xs font-bold uppercase tracking-wider text-[#b04a15] dark:text-[#ff8a65]">{t("donatingTo")}</p>
                 <h2 className="mt-0.5 text-lg font-extrabold text-[#1c1108] dark:text-white leading-tight">{modalTitle ?? donateTarget.title}</h2>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="flex items-center gap-1 text-xs text-stone-500"><MapPin className="h-3 w-3" /> {donateTarget.city}</span>
-                  <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#ff8a65] border-0 text-xs">{donateTarget.category}</Badge>
+                  <span className="flex items-center gap-1 text-xs text-stone-500"><MapPin className="h-3 w-3" /> <TranslatedText text={donateTarget.city} /></span>
+                  <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#ff8a65] border-0 text-xs"><TranslatedText text={donateTarget.category} /></Badge>
                   <Badge variant={urgencyVariant(donateTarget.urgency)} className="text-xs">
-                    {donateTarget.urgency.charAt(0) + donateTarget.urgency.slice(1).toLowerCase()} urgency
+                    {tCommon("urgency" + donateTarget.urgency.charAt(0) + donateTarget.urgency.slice(1).toLowerCase())}
                   </Badge>
                 </div>
               </div>

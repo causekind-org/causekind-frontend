@@ -136,13 +136,24 @@
     "category": "શ્રેણી",
     "description": "વર્ણન",
     "status": "સ્થિતિ",
+    "statusCompleted": "પૂર્ણ થયું",
+    "statusPending": "બાકી છે",
+    "statusApproved": "મંજૂર",
+    "statusRejected": "ફગાવી દીધી",
+    "statusMatched": "મેળ ખાય છે",
+    "statusActive": "સક્રિય",
     "date": "તારીખ",
     "amount": "રકમ",
     "search": "શોધો",
     "filter": "ફિલ્ટર કરો",
     "close": "બંધ કરો",
     "confirm": "પુષ્ટિ કરો",
-    "new": "નવી"
+    "new": "નવી",
+    "urgencyLow": "ઓછી તાકીદ",
+    "urgencyMedium": "મધ્યમ તાકીદ",
+    "urgencyHigh": "ઉચ્ચ તાકીદ",
+    "urgencyNormal": "સામાન્ય તાકીદ",
+    "urgencyCritical": "જટિલ તાકીદ"
   },
   "auth": {
     "login": {

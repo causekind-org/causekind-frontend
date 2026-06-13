@@ -136,13 +136,24 @@
     "category": "श्रेणी",
     "description": "विवरण",
     "status": "स्थिति",
+    "statusCompleted": "पुरा होना।",
+    "statusPending": "लंबित",
+    "statusApproved": "अनुमत",
+    "statusRejected": "अस्वीकार कर दिया",
+    "statusMatched": "मेल खाने वाले",
+    "statusActive": "सक्रिय",
     "date": "तारीख",
     "amount": "राशि",
     "search": "खोजें",
     "filter": "फ़िल्टर",
     "close": "बंद करें",
     "confirm": "पुष्टि करें",
-    "new": "नया"
+    "new": "नया",
+    "urgencyLow": "कम तात्कालिकता",
+    "urgencyMedium": "मध्यम तात्कालिकता",
+    "urgencyHigh": "उच्च तात्कालिकता",
+    "urgencyNormal": "सामान्य तात्कालिकता",
+    "urgencyCritical": "गंभीर तात्कालिकता"
   },
   "auth": {
     "login": {

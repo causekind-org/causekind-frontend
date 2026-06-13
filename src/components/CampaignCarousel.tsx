@@ -18,6 +18,7 @@ import {
 import type { Campaign } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TranslatedText } from "@/hooks/useDynamicTranslation";
 
 const INTERVAL = 3000; // ms between auto-slides
 
@@ -153,22 +154,22 @@ function HorizontalCampaignCard({
           {/* Category & City badges */}
           <div className="flex items-center gap-3 text-xs mb-4">
             <Badge className="bg-[#b04a15]/10 dark:bg-[#b04a15]/20 text-[#b04a15] dark:text-[#e07b3a] border-0 font-extrabold uppercase tracking-wider text-[10px] px-3 py-1 rounded-full">
-              {campaign.category}
+              <TranslatedText text={campaign.category} />
             </Badge>
             <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500 font-bold">
               <MapPin className="h-3.5 w-3.5 text-[#b04a15] dark:text-[#e07b3a]" />
-              {campaign.city}
+              <TranslatedText text={campaign.city} />
             </span>
           </div>
 
           {/* Heading (Campaign Title) */}
           <h3 className="text-xl md:text-2xl lg:text-3xl font-black text-stone-900 dark:text-white leading-tight mb-3 hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-colors duration-200">
-            {campaign.title}
+            <TranslatedText text={campaign.title} />
           </h3>
 
           {/* Description of the campaign */}
           <p className="text-sm md:text-base text-stone-500 dark:text-stone-400 line-clamp-3 md:line-clamp-4 leading-relaxed font-medium mb-6">
-            {campaign.description}
+            <TranslatedText text={campaign.description} />
           </p>
         </div>
 

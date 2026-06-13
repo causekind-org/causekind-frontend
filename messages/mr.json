@@ -136,13 +136,24 @@
     "category": "श्रेणी",
     "description": "वर्णन",
     "status": "स्थिती",
+    "statusCompleted": "पूर्ण झाले",
+    "statusPending": "प्रलंबित",
+    "statusApproved": "मंजूर",
+    "statusRejected": "नाकारले",
+    "statusMatched": "जुळले",
+    "statusActive": "सक्रिय",
     "date": "तारीख",
     "amount": "रक्कम",
     "search": "शोधा",
     "filter": "फिल्टर करा",
     "close": "बंद करा",
     "confirm": "पुष्टी करा",
-    "new": "नवीन"
+    "new": "नवीन",
+    "urgencyLow": "कमी निकड",
+    "urgencyMedium": "मध्यम निकड",
+    "urgencyHigh": "उच्च निकड",
+    "urgencyNormal": "सामान्य निकड",
+    "urgencyCritical": "गंभीर निकड"
   },
   "auth": {
     "login": {

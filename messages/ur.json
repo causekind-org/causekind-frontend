@@ -136,13 +136,24 @@
     "category": "زمرہ",
     "description": "تفصیل",
     "status": "حیثیت",
+    "statusCompleted": "مکمل",
+    "statusPending": "زیر التواء",
+    "statusApproved": "منظور شدہ",
+    "statusRejected": "مسترد",
+    "statusMatched": "مماثل",
+    "statusActive": "فعال",
     "date": "تاریخ",
     "amount": "رقم",
     "search": "تلاش کریں۔",
     "filter": "فلٹر",
     "close": "بند",
     "confirm": "تصدیق کریں۔",
-    "new": "نیا"
+    "new": "نیا",
+    "urgencyLow": "کم عجلت",
+    "urgencyMedium": "درمیانی عجلت",
+    "urgencyHigh": "اعلی عجلت",
+    "urgencyNormal": "عام عجلت",
+    "urgencyCritical": "اہم عجلت"
   },
   "auth": {
     "login": {

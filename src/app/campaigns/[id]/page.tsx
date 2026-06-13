@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useDynamicTranslations } from "@/hooks/useDynamicTranslation";
+import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -199,9 +199,9 @@ export default function CampaignDetailPage() {
 
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Badge variant="secondary">{campaign.category}</Badge>
+              <Badge variant="secondary"><TranslatedText text={campaign.category} /></Badge>
               <span className="flex items-center gap-1 text-muted-foreground">
-                <MapPin className="h-3 w-3" /> {campaign.city}, {campaign.state}
+                <MapPin className="h-3 w-3" /> <TranslatedText text={campaign.city} />, <TranslatedText text={campaign.state} />
               </span>
               <span className="flex items-center gap-1 text-primary">
                 <ShieldCheck className="h-3 w-3" /> {t("adminVerified")}
@@ -268,7 +268,7 @@ export default function CampaignDetailPage() {
                           })}
                         </span>
                       </div>
-                      <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{u.content}</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line"><TranslatedText text={u.content} /></p>
                     </div>
                   ))}
                 </div>

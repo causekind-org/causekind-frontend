@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { useDynamicTranslation, useDynamicTranslations } from "@/hooks/useDynamicTranslation";
+import { useDynamicTranslation, useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getItemListings, requestListing, getMyProfile, type ItemListing, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Reveal } from "@/components/Reveal";
@@ -63,8 +63,8 @@ function ItemCard({ item, onRequest }: { item: ItemListing; onRequest: (item: It
       </Link>
       <CardContent className="space-y-3 p-5">
         <div className="flex flex-wrap gap-2">
-          <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold">{item.category}</Badge>
-          <Badge variant="outline" className="border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400">{item.condition}</Badge>
+          <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold"><TranslatedText text={item.category} /></Badge>
+          <Badge variant="outline" className="border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400"><TranslatedText text={item.condition} /></Badge>
         </div>
         <Link href={`/items/${item.id}`} className="block">
           <p className="font-bold text-stone-900 dark:text-stone-100 leading-tight hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-colors">{title ?? item.title}</p>
@@ -72,7 +72,7 @@ function ItemCard({ item, onRequest }: { item: ItemListing; onRequest: (item: It
         {(description ?? item.description) && <p className="line-clamp-2 text-sm text-stone-500 dark:text-stone-400">{description ?? item.description}</p>}
         <p className="text-sm text-stone-500 dark:text-stone-400">{t("qty")}: {item.quantity} · {t("by")} {item.donorName}</p>
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" /> {item.city}</span>
+          <span className="flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" /> <TranslatedText text={item.city} /></span>
           <Badge className="bg-[#b04a15] text-white border-0 text-xs">{t("verified")}</Badge>
         </div>
         <Button size="sm" className="btn-3d btn-shine w-full bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl font-semibold"
@@ -180,7 +180,7 @@ export default function ItemsPage() {
                   category === c
                     ? "bg-[#b04a15] border-[#b04a15] text-white shadow-sm shadow-orange-900/20"
                     : "border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:border-[#b04a15] dark:hover:border-[#e07b3a] hover:text-[#b04a15] dark:hover:text-[#e07b3a] bg-white dark:bg-zinc-900"
-                }`}>{c}
+                }`}><TranslatedText text={c} />
               </button>
             ))}
           </div>
@@ -231,7 +231,7 @@ export default function ItemsPage() {
               <div className="pr-8">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#b04a15] dark:text-[#ff8a65]">{t("requestItem")}</p>
                 <h2 className="mt-0.5 text-lg font-extrabold text-[#1c1108] dark:text-white leading-tight">{modalTitle ?? requestTarget.title}</h2>
-                <p className="text-sm text-stone-500 dark:text-stone-400">{requestTarget.category} · {requestTarget.condition} · Qty {requestTarget.quantity} · {requestTarget.city}</p>
+                <p className="text-sm text-stone-500 dark:text-stone-400"><TranslatedText text={requestTarget.category} /> · <TranslatedText text={requestTarget.condition} /> · Qty {requestTarget.quantity} · <TranslatedText text={requestTarget.city} /></p>
               </div>
               <button onClick={closeRequestModal}
                 className="absolute right-4 top-4 rounded-lg p-1.5 text-stone-400 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-stone-600 transition">

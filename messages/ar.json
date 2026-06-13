@@ -136,13 +136,24 @@
     "category": "فئة",
     "description": "وصف",
     "status": "حالة",
+    "statusCompleted": "مكتمل",
+    "statusPending": "قيد الانتظار",
+    "statusApproved": "موافقة",
+    "statusRejected": "مرفوض",
+    "statusMatched": "متطابق",
+    "statusActive": "نشيط",
     "date": "تاريخ",
     "amount": "كمية",
     "search": "يبحث",
     "filter": "فلتر",
     "close": "يغلق",
     "confirm": "يتأكد",
-    "new": "جديد"
+    "new": "جديد",
+    "urgencyLow": "إلحاح منخفض",
+    "urgencyMedium": "إلحاح متوسط",
+    "urgencyHigh": "إلحاحية عالية",
+    "urgencyNormal": "إلحاح عادي",
+    "urgencyCritical": "الإلحاح الحاسم"
   },
   "auth": {
     "login": {

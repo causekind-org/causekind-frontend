@@ -136,13 +136,24 @@
     "category": "Categoría",
     "description": "Descripción",
     "status": "Estado",
+    "statusCompleted": "Terminado",
+    "statusPending": "Pendiente",
+    "statusApproved": "Aprobado",
+    "statusRejected": "Rechazado",
+    "statusMatched": "emparejado",
+    "statusActive": "Activo",
     "date": "Fecha",
     "amount": "Cantidad",
     "search": "Buscar",
     "filter": "Filtrar",
     "close": "Cerca",
     "confirm": "Confirmar",
-    "new": "Nuevo"
+    "new": "Nuevo",
+    "urgencyLow": "Baja urgencia",
+    "urgencyMedium": "Urgencia media",
+    "urgencyHigh": "Alta urgencia",
+    "urgencyNormal": "urgencia normal",
+    "urgencyCritical": "Urgencia crítica"
   },
   "auth": {
     "login": {

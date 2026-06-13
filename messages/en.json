@@ -136,13 +136,24 @@
     "category": "Category",
     "description": "Description",
     "status": "Status",
+    "statusCompleted": "Completed",
+    "statusPending": "Pending",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "statusMatched": "Matched",
+    "statusActive": "Active",
     "date": "Date",
     "amount": "Amount",
     "search": "Search",
     "filter": "Filter",
     "close": "Close",
     "confirm": "Confirm",
-    "new": "New"
+    "new": "New",
+    "urgencyLow": "Low urgency",
+    "urgencyMedium": "Medium urgency",
+    "urgencyHigh": "High urgency",
+    "urgencyNormal": "Normal urgency",
+    "urgencyCritical": "Critical urgency"
   },
   "auth": {
     "login": {
