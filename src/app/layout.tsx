@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Nunito } from "next/font/google";
 import "@/styles.css";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { AuthProvider } from "@/hooks/useAuth";
 import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
@@ -25,25 +27,29 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.svg" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const messages = await getMessages();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${plusJakarta.className} ${nunito.variable} antialiased`}>
-        <GoogleProvider>
-          <AuthProvider>
-            <ScrollProgress />
-            <SiteHeader />
-            <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
-            <SiteFooter />
-            <MobileBottomNav />
-            <FloatingSupportButton />
-            <Toaster richColors position="top-right" toastOptions={{ style: { zIndex: 99999 } }} />
-          </AuthProvider>
-        </GoogleProvider>
+        <NextIntlClientProvider messages={messages}>
+          <GoogleProvider>
+            <AuthProvider>
+              <ScrollProgress />
+              <SiteHeader />
+              <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
+              <SiteFooter />
+              <MobileBottomNav />
+              <FloatingSupportButton />
+              <Toaster richColors position="top-right" toastOptions={{ style: { zIndex: 99999 } }} />
+            </AuthProvider>
+          </GoogleProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

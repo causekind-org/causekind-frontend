@@ -8,6 +8,7 @@ function getToken(): string | null {
 function handleUnauthorized() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("ck_token");
+    window.location.href = "/login";
   }
 }
 

@@ -1,0 +1,210 @@
+{
+  "nav": {
+    "home": "Home",
+    "campaigns": "Campaigns",
+    "requests": "In-Kind Requests",
+    "listings": "Listings",
+    "signUp": "Sign Up",
+    "logIn": "Log In",
+    "donate": "Donate",
+    "profile": "Profile",
+    "dashboard": "Dashboard",
+    "adminDashboard": "Admin Dashboard",
+    "doneeDashboard": "Donee Dashboard",
+    "signOut": "Sign out",
+    "openMenu": "Open menu",
+    "profileMenu": "Profile menu",
+    "toggleTheme": "Toggle theme"
+  },
+  "logout": {
+    "title": "Sign out?",
+    "description": "You'll need to log in again to access your account.",
+    "cancel": "Cancel",
+    "confirm": "Sign out"
+  },
+  "hero": {
+    "badge": "Making Lives Better",
+    "headline": "Together We Support, Educate and Heal",
+    "subtext": "Every donation helps a family grow stronger, healthier, and more secure. Together, we build a future full of possibilities.",
+    "donateNow": "Donate Now",
+    "howWeWork": "How we work"
+  },
+  "stats": {
+    "totalRaised": "Total Funds Raised",
+    "activeCampaigns": "Active Campaigns",
+    "donations": "Donations Made",
+    "donors": "Verified Donors"
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "new": "New Campaign",
+    "noCampaigns": "No campaigns yet",
+    "viewAll": "View all campaigns",
+    "donate": "Donate",
+    "target": "Target",
+    "raised": "Raised",
+    "progress": "Progress",
+    "goal": "Goal",
+    "by": "by",
+    "funded": "funded",
+    "donateNow": "Donate Now",
+    "aboutCampaign": "About this campaign",
+    "updates": "Campaign updates",
+    "postUpdate": "Post an update",
+    "noUpdates": "No updates posted yet.",
+    "recentDonors": "Recent donors",
+    "share": "Share",
+    "amount": "Amount"
+  },
+  "listings": {
+    "title": "Item Listings",
+    "new": "List an item",
+    "noListings": "No listings yet",
+    "viewAll": "View all listings",
+    "condition": "Condition",
+    "quantity": "Quantity",
+    "requestItem": "Request item"
+  },
+  "requests": {
+    "title": "In-Kind Requests",
+    "new": "Request an item",
+    "noRequests": "No requests yet",
+    "viewAll": "View all requests",
+    "urgency": "Urgency",
+    "donate": "Donate this item"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "approve": "Approve",
+    "reject": "Reject",
+    "back": "Back",
+    "viewAll": "View all",
+    "noData": "Nothing here yet",
+    "city": "City",
+    "category": "Category",
+    "description": "Description",
+    "status": "Status",
+    "date": "Date",
+    "amount": "Amount",
+    "search": "Search",
+    "filter": "Filter",
+    "close": "Close",
+    "confirm": "Confirm"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to continue your giving journey.",
+      "email": "Email address",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "signIn": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "google": "Continue with Google",
+      "facebook": "Continue with Facebook"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Join CauseKind and start making a difference.",
+      "fullName": "Full name",
+      "email": "Email address",
+      "phone": "Phone number",
+      "city": "City",
+      "password": "Password",
+      "role": "I want to",
+      "donor": "Donate to campaigns",
+      "donee": "Receive support",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your account and view your giving history.",
+    "totalDonated": "Total donated",
+    "causesHelped": "Causes helped",
+    "campaigns": "Campaigns",
+    "donationHistory": "Donation history",
+    "noDonations": "No donations yet",
+    "viewAll": "View all",
+    "personalInfo": "Personal information",
+    "fullName": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "city": "City",
+    "saveChanges": "Save changes",
+    "role": "Role"
+  },
+  "footer": {
+    "tagline": "India's verified giving platform. Zero fees for donors. 100% of your donation goes directly to the cause.",
+    "giveBack": "Give Back",
+    "getSupport": "Get Support",
+    "trust": "Our Trust Promise",
+    "adminVerified": "Admin Verified",
+    "razorpaySecured": "Razorpay Secured",
+    "moneyDrives": "Money campaigns",
+    "itemListings": "Item listings",
+    "inkindRequests": "In-kind requests",
+    "createAccount": "Create an account",
+    "myDashboard": "My dashboard",
+    "startCampaign": "Start a campaign",
+    "helpFaq": "Help & FAQ",
+    "adminVerifiedFull": "Admin-verified listings",
+    "zeroFees": "Zero platform fees for donors",
+    "certificates": "Verified delivery certificates",
+    "rights": "Made with care in India.",
+    "contact": "Contact us"
+  },
+  "donate": {
+    "title": "Make a Donation",
+    "subtitle": "Choose a cause you care about",
+    "quick": "Quick amounts",
+    "custom": "Custom amount",
+    "selectCampaign": "Select a campaign",
+    "proceed": "Proceed to donate",
+    "confirm": "Confirm donation",
+    "total": "Total",
+    "to": "to",
+    "pay": "Pay now"
+  },
+  "landing": {
+    "how": {
+      "title": "How CauseKind Works",
+      "subtitle": "Three simple steps to make a real difference.",
+      "step1Title": "Find a Cause",
+      "step1Desc": "Browse verified campaigns and in-kind requests near you.",
+      "step2Title": "Give with Confidence",
+      "step2Desc": "Every campaign is admin-verified. Your donation goes directly to the cause.",
+      "step3Title": "See the Impact",
+      "step3Desc": "Track your giving and receive updates from the people you help."
+    },
+    "cta": {
+      "title": "Ready to make a difference?",
+      "subtitle": "Join thousands of donors helping families across India.",
+      "startCampaign": "Start a campaign",
+      "browseAll": "Browse campaigns"
+    },
+    "inkind": {
+      "title": "In-Kind Donations",
+      "subtitle": "Donate items directly to people who need them most.",
+      "viewAll": "View all requests"
+    },
+    "listings": {
+      "title": "Community Listings",
+      "subtitle": "Items available to give — claim what you need.",
+      "viewAll": "View all listings"
+    },
+    "verify": {
+      "title": "How We Verify",
+      "subtitle": "Every campaign goes through a strict verification process before going live."
+    }
+  }
+}
