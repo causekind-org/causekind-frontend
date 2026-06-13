@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useDynamicTranslations } from "@/hooks/useDynamicTranslation";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -44,8 +46,13 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const t = useTranslations("campaigns");
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [translatedTitle, translatedDescription] = useDynamicTranslations([
+    campaign?.title ?? null,
+    campaign?.description ?? null,
+  ]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -171,7 +178,7 @@ export default function CampaignDetailPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 pb-24 lg:pb-8">
       <Link href="/campaigns" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to campaigns
+        <ArrowLeft className="h-4 w-4" /> {t("backToCampaigns")}
       </Link>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -197,20 +204,20 @@ export default function CampaignDetailPage() {
                 <MapPin className="h-3 w-3" /> {campaign.city}, {campaign.state}
               </span>
               <span className="flex items-center gap-1 text-primary">
-                <ShieldCheck className="h-3 w-3" /> Admin verified
+                <ShieldCheck className="h-3 w-3" /> {t("adminVerified")}
               </span>
             </div>
-            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">{campaign.title}</h1>
+            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">{translatedTitle ?? campaign.title}</h1>
             <div className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
               <User className="h-3.5 w-3.5" />
-              Organized by <span className="font-medium text-foreground">{campaign.doneeName}</span>
+              {t("organizedBy")} <span className="font-medium text-foreground">{campaign.doneeName}</span>
             </div>
           </div>
 
           <Card>
-            <CardHeader><CardTitle>About this campaign</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("aboutCampaign")}</CardTitle></CardHeader>
             <CardContent className="text-sm leading-relaxed text-foreground/80 whitespace-pre-line">
-              {campaign.description}
+              {translatedDescription ?? campaign.description}
             </CardContent>
           </Card>
 
@@ -219,13 +226,13 @@ export default function CampaignDetailPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4 text-[#b04a15]" />
-                Campaign updates
+                {t("updates")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {isOrganizer && (
                 <div className="space-y-2 p-3 rounded-xl bg-orange-50/60 dark:bg-zinc-800/60 border border-orange-100 dark:border-stone-800">
-                  <p className="text-xs font-semibold text-[#b04a15] dark:text-orange-300">Post an update</p>
+                  <p className="text-xs font-semibold text-[#b04a15] dark:text-orange-300">{t("postUpdate")}</p>
                   <Textarea
                     placeholder="Share progress, milestones, or a thank-you with your donors…"
                     rows={3}
@@ -246,7 +253,7 @@ export default function CampaignDetailPage() {
                 </div>
               )}
               {updates.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No updates posted yet.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t("noUpdates")}</p>
               ) : (
                 <div className="space-y-3">
                   {updates.map((u) => (
@@ -272,11 +279,11 @@ export default function CampaignDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-4 w-4" /> Recent donors
+                <Users className="h-4 w-4" /> {t("recentDonors")}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-4">Be the first to donate to this campaign!</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{t("beFirstToDonate")}</p>
             </CardContent>
           </Card>
         </div>
@@ -295,7 +302,7 @@ export default function CampaignDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amount">Donation amount (₹)</Label>
+                <Label htmlFor="amount">{t("donationAmount")}</Label>
                 <Input
                   id="amount"
                   type="number"
@@ -321,8 +328,8 @@ export default function CampaignDetailPage() {
               <div className="rounded-lg border bg-accent/30 p-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">Make it recurring</p>
-                    <p className="text-xs text-muted-foreground">Give a little, regularly. Cancel anytime.</p>
+                    <p className="text-sm font-medium">{t("makeRecurring")}</p>
+                    <p className="text-xs text-muted-foreground">{t("giveRegularly")}</p>
                   </div>
                   <Switch checked={recurring} onCheckedChange={setRecurring} />
                 </div>
@@ -347,8 +354,8 @@ export default function CampaignDetailPage() {
               <div className="rounded-lg border bg-accent/30 p-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">Add a tip to CauseKind</p>
-                    <p className="text-xs text-muted-foreground">Helps keep this platform free.</p>
+                    <p className="text-sm font-medium">{t("addTip")}</p>
+                    <p className="text-xs text-muted-foreground">{t("keepFree")}</p>
                   </div>
                   <Switch checked={addTip} onCheckedChange={setAddTip} />
                 </div>
@@ -406,7 +413,7 @@ export default function CampaignDetailPage() {
       >
         <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-t border-orange-100 dark:border-stone-800 px-4 py-3 flex items-center gap-3 shadow-lg">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 truncate">{campaign.title}</p>
+            <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 truncate">{translatedTitle ?? campaign.title}</p>
             <div className="flex items-center gap-2 mt-1">
               <div className="flex-1 h-1.5 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                 <div

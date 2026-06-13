@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { login, googleAuth } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
@@ -32,6 +33,7 @@ function FacebookIcon() {
 
 // ── Main content ───────────────────────────────────────────────────────────────
 function LoginContent() {
+  const t = useTranslations("auth.login");
   const { setAuth, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,9 +53,9 @@ function LoginContent() {
 
   useEffect(() => {
     if (searchParams.get("expired") === "1") {
-      toast.error("Your session has expired. Please log in again.");
+      toast.error(t("sessionExpired"));
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   if (user) return null;
 
@@ -99,7 +101,6 @@ function LoginContent() {
       {/* ── LEFT: Form panel ───────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-8 sm:py-10 lg:max-w-[480px] lg:px-12 overflow-y-auto">
 
-        {/* Top spacer on mobile so form breathes */}
         <div />
 
         <div className="w-full max-w-[400px] mx-auto space-y-7">
@@ -107,14 +108,14 @@ function LoginContent() {
           {/* Heading */}
           <div className="space-y-1.5">
             <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-              Welcome Back 👋
+              {t("title")} 👋
             </h1>
             <p className="text-sm text-stone-500 dark:text-stone-400">
-              Sign in to continue your giving journey.
+              {t("subtitle")}
             </p>
           </div>
 
-          {/* Hidden Google SSO — triggered programmatically by the styled button below */}
+          {/* Hidden Google SSO */}
           <div ref={googleBtnRef} aria-hidden="true" style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
@@ -129,7 +130,7 @@ function LoginContent() {
             {/* Email */}
             <div className="space-y-1.5">
               <label htmlFor="email" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-                Email address
+                {t("email")}
               </label>
               <input
                 id="email"
@@ -147,13 +148,13 @@ function LoginContent() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-                  Password
+                  {t("password")}
                 </label>
                 <Link
                   href="/forgot-password"
                   className="text-xs font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2"
                 >
-                  Forgot password?
+                  {t("forgotPassword")}
                 </Link>
               </div>
               <div className="relative">
@@ -184,7 +185,7 @@ function LoginContent() {
               disabled={loading}
               className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 text-sm tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? t("signingIn") : t("signIn")}
             </button>
           </form>
 
@@ -197,7 +198,7 @@ function LoginContent() {
               className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
             >
               <GoogleIcon />
-              {googleLoading ? "Signing in…" : "Continue with Google"}
+              {googleLoading ? t("signingIn") : t("google")}
             </button>
             <button
               type="button"
@@ -205,15 +206,15 @@ function LoginContent() {
               className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
             >
               <FacebookIcon />
-              Continue with Facebook
+              {t("facebook")}
             </button>
           </div>
 
           {/* Cross-link */}
           <p className="text-center text-sm text-stone-500 dark:text-stone-400">
-            Don&apos;t have an account?{" "}
+            {t("noAccount")}{" "}
             <Link href="/register" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">
-              Sign up
+              {t("signUp")}
             </Link>
           </p>
         </div>
@@ -227,7 +228,6 @@ function LoginContent() {
       {/* ── RIGHT: Image panel (hidden on mobile) ──────────────────────────── */}
       <div className="hidden lg:flex flex-1 relative p-6">
         <div className="relative w-full h-full rounded-3xl overflow-hidden">
-          {/* Hero image */}
           <Image
             src="/images/hero-4.jpg"
             alt="People helping each other in the community"
@@ -235,10 +235,7 @@ function LoginContent() {
             className="object-cover"
             priority
           />
-          {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40" />
-
-          {/* Quote overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-10">
             <blockquote className="space-y-3">
               <p className="text-white text-2xl font-bold leading-snug" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>

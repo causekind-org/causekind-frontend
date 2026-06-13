@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import type { Campaign } from "@/lib/api";
@@ -5,6 +7,8 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Target, TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useDynamicTranslations } from "@/hooks/useDynamicTranslation";
 
 type Props = { campaign: Campaign };
 
@@ -25,6 +29,8 @@ function formatINR(n: number) {
 }
 
 export function CampaignCard({ campaign }: Props) {
+  const t = useTranslations("campaigns");
+  const [title, description] = useDynamicTranslations([campaign.title, campaign.description]);
   const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
 
   return (
@@ -52,17 +58,17 @@ export function CampaignCard({ campaign }: Props) {
       <div className="flex flex-col flex-1 p-6">
         <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 mb-2 group-hover:text-[#006c49] dark:group-hover:text-[#4edea3] transition-colors duration-200"
             style={{ fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif' }}>
-          {campaign.title}
+          {title ?? campaign.title}
         </h3>
         <p className="text-sm text-stone-500 dark:text-stone-400 line-clamp-2 mb-5 leading-relaxed font-medium flex-1">
-          {campaign.description}
+          {description ?? campaign.description}
         </p>
 
         {/* Progress & Fundraising Details */}
         <div className="mt-auto space-y-4">
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">
-              <span>Progress</span>
+              <span>{t("progress")}</span>
               <span className="text-stone-900 dark:text-stone-100 font-extrabold">{pct}%</span>
             </div>
             {/* Thick 12px Progress Bar track */}
@@ -73,7 +79,7 @@ export function CampaignCard({ campaign }: Props) {
 
           <div className="flex justify-between text-xs items-center pt-1">
             <div className="flex flex-col">
-              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider">Raised</span>
+              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider">{t("raised")}</span>
               <span className="font-extrabold text-[#006c49] dark:text-[#4edea3] text-base">{formatINR(campaign.amountRaised)}</span>
             </div>
             
@@ -82,7 +88,7 @@ export function CampaignCard({ campaign }: Props) {
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider">Goal</span>
+              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider">{t("goal")}</span>
               <span className="font-bold text-stone-700 dark:text-stone-300 text-sm">{formatINR(campaign.targetAmount)}</span>
             </div>
           </div>
@@ -92,7 +98,7 @@ export function CampaignCard({ campaign }: Props) {
               className="btn-3d w-full bg-[#006c49] hover:bg-[#005236] text-white dark:bg-[#006c49] dark:hover:bg-[#005236] rounded-xl py-6 font-bold text-sm active:scale-98 transition-all duration-200 shadow-md"
               asChild>
               <Link href={`/campaigns/${campaign.id}`}>
-                Donate Now
+                {t("donateNow")}
               </Link>
             </Button>
           </div>

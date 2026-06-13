@@ -27,7 +27,10 @@
     "headline": "Together We Support, Educate and Heal",
     "subtext": "Every donation helps a family grow stronger, healthier, and more secure. Together, we build a future full of possibilities.",
     "donateNow": "Donate Now",
-    "howWeWork": "How we work"
+    "howWeWork": "How we work",
+    "transparent": "100% transparent donations",
+    "fastDistribution": "Fast, effective distribution",
+    "localCampaign": "Local Campaign"
   },
   "stats": {
     "totalRaised": "Total Funds Raised",
@@ -54,7 +57,30 @@
     "noUpdates": "No updates posted yet.",
     "recentDonors": "Recent donors",
     "share": "Share",
-    "amount": "Amount"
+    "amount": "Amount",
+    "backToCampaigns": "Back to campaigns",
+    "adminVerified": "Admin verified",
+    "organizedBy": "Organized by",
+    "beFirstToDonate": "Be the first to donate to this campaign!",
+    "donationAmount": "Donation amount (₹)",
+    "makeRecurring": "Make it recurring",
+    "giveRegularly": "Give a little, regularly. Cancel anytime.",
+    "addTip": "Add a tip to CauseKind",
+    "keepFree": "Helps keep this platform free.",
+    "securedBy": "Secured by Razorpay · Cards · UPI · Netbanking"
+  },
+  "campaigns_page": {
+    "heading": "Money Campaigns",
+    "subtitle": "Admin-verified causes from across India.",
+    "verifiedFundraisers": "Verified Fundraisers",
+    "startCampaign": "Start a campaign",
+    "searchPlaceholder": "Search by cause, city, organizer…",
+    "noCampaigns": "No campaigns yet",
+    "noCampaignsSubtext": "Be the first to start a verified fundraiser for your cause.",
+    "noMatches": "No matches found",
+    "noMatchesSubtext": "Try adjusting your search or category filter.",
+    "viewDonate": "View & donate",
+    "of": "of"
   },
   "listings": {
     "title": "Item Listings",
@@ -63,7 +89,16 @@
     "viewAll": "View all listings",
     "condition": "Condition",
     "quantity": "Quantity",
-    "requestItem": "Request item"
+    "requestItem": "Request this item",
+    "subtitle": "Browse items donors are offering. Contact details shared after admin approves your match.",
+    "searchPlaceholder": "Search by item, city, category…",
+    "noListingsSubtext": "No items have been listed for donation yet. Be the first to give.",
+    "noMatches": "No matches found",
+    "noMatchesSubtext": "Try a different search term or category.",
+    "verified": "Verified",
+    "qty": "Qty",
+    "by": "by",
+    "noPhoto": "No photo"
   },
   "requests": {
     "title": "In-Kind Requests",
@@ -71,7 +106,18 @@
     "noRequests": "No requests yet",
     "viewAll": "View all requests",
     "urgency": "Urgency",
-    "donate": "Donate this item"
+    "donate": "Donate this item",
+    "subtitle": "Items people need. Upload photos and AI auto-fills the description for you.",
+    "searchPlaceholder": "Search by item, city, category…",
+    "noRequestsSubtext": "No in-kind requests have been posted yet. Check back soon.",
+    "noMatches": "No matches found",
+    "noMatchesSubtext": "Try a different search term or category.",
+    "verified": "Verified",
+    "qty": "Qty",
+    "by": "by",
+    "contactDetails": "Contact details shared after admin approves your match",
+    "donateThis": "I can donate this",
+    "noPhoto": "No photo"
   },
   "common": {
     "loading": "Loading...",
@@ -95,7 +141,8 @@
     "search": "Search",
     "filter": "Filter",
     "close": "Close",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "new": "New"
   },
   "auth": {
     "login": {
@@ -105,25 +152,49 @@
       "password": "Password",
       "forgotPassword": "Forgot password?",
       "signIn": "Sign in",
+      "signingIn": "Signing in…",
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
       "google": "Continue with Google",
-      "facebook": "Continue with Facebook"
+      "facebook": "Continue with Facebook",
+      "sessionExpired": "Your session has expired. Please log in again."
     },
     "register": {
       "title": "Create your account",
       "subtitle": "Join CauseKind and start making a difference.",
+      "joinTitle": "Join CauseKind",
+      "almostThereTitle": "Almost there",
+      "createSubtitle": "Create your account and start making a difference today.",
+      "googleLinkedSubtitle": "Your Google account is linked. Just add your phone and location to finish.",
       "fullName": "Full name",
       "email": "Email address",
       "phone": "Phone number",
+      "location": "Location",
+      "country": "Country",
+      "state": "State / Province",
       "city": "City",
       "password": "Password",
       "role": "I want to",
       "donor": "Donate to campaigns",
       "donee": "Receive support",
       "submit": "Create account",
+      "creating": "Creating account…",
+      "complete": "Complete registration",
       "haveAccount": "Already have an account?",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "google": "Continue with Google",
+      "facebook": "Continue with Facebook",
+      "googleLinkedHint": "Linked from your Google account",
+      "noStatesListed": "No states listed — enter city below.",
+      "selectCountry": "Select country",
+      "selectState": "Select state",
+      "selectCity": "Select city",
+      "selectCountryFirst": "Select country first",
+      "selectStateFirst": "Select state first",
+      "enterCity": "Enter your city",
+      "searchCountry": "Search country…",
+      "searchState": "Search state…",
+      "searchCity": "Search city…"
     }
   },
   "profile": {
@@ -175,6 +246,78 @@
     "to": "to",
     "pay": "Pay now"
   },
+  "donate_page": {
+    "heading": "Give Directly",
+    "subtitle": "100% reaches the cause. Zero platform fees.",
+    "back": "Back",
+    "chooseAmount": "Choose amount",
+    "customPlaceholder": "Enter custom amount",
+    "giveTo": "Give to",
+    "selectCampaign": "Select a campaign…",
+    "addTip": "Add a tip to CauseKind",
+    "tipSubtext": "Tips keep CauseKind free for everyone.",
+    "makeMonthly": "Make this monthly",
+    "monthlySubtext": "Give a little, regularly. Cancel anytime.",
+    "monthlyNote": "Your card will be charged every month via Razorpay eMandate. You can cancel at any time from your profile.",
+    "donation": "Donation",
+    "tip": "Tip",
+    "verifiedCampaign": "Verified campaign",
+    "instantTransfer": "Instant transfer",
+    "zeroFees": "Zero fees",
+    "donating": "Donating",
+    "tipTo": "Tip to CauseKind",
+    "platformFee": "Platform fee",
+    "platformFeeValue": "Free",
+    "confirmTerms": "By donating you agree to our terms. Funds are transferred directly after campaign verification.",
+    "confirmDonation": "Confirm Donation",
+    "confirmMonthly": "Confirm Monthly Donation",
+    "monthlyAutopay": "Monthly autopay via Razorpay eMandate · Cancel anytime",
+    "urgent": "Urgent",
+    "noCampaigns": "No campaigns available",
+    "loadingCampaigns": "Loading campaigns…",
+    "total": "Total",
+    "perMonth": "/month",
+    "perMo": "/mo"
+  },
+  "dashboard": {
+    "title": "My Dashboard",
+    "welcomeBack": "Welcome back",
+    "new": "New",
+    "donateMoney": "Donate money",
+    "listItem": "List an item",
+    "startCampaign": "Start campaign",
+    "requestItem": "Request an item",
+    "moneyDonated": "Money donated",
+    "campaignsCreated": "Campaigns created",
+    "itemsListed": "Items listed",
+    "itemsRequested": "Items requested",
+    "myDonations": "My donations",
+    "browseCampaigns": "Browse campaigns",
+    "noDonations": "You haven't donated yet.",
+    "annualGoal": "Annual giving goal",
+    "setOwnGoal": "Set your own goal",
+    "setGoalLabel": "Set your annual giving goal",
+    "goalReached": "Goal reached!",
+    "toGo": "to go",
+    "given": "given",
+    "goal": "Goal",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "myCampaigns": "My campaigns",
+    "noCampaigns": "You haven't created any campaigns yet.",
+    "myListings": "My item listings",
+    "noListings": "You haven't listed any items yet.",
+    "addNew": "Add new",
+    "myRequests": "My item requests",
+    "noRequests": "You haven't made any item requests yet.",
+    "myMatches": "My in-kind matches",
+    "contactDetails": "Contact details shared:",
+    "donor": "Donor",
+    "donee": "Donee",
+    "raised": "raised",
+    "rejected": "Rejected"
+  },
   "landing": {
     "how": {
       "title": "How CauseKind Works",
@@ -205,6 +348,48 @@
     "verify": {
       "title": "How We Verify",
       "subtitle": "Every campaign goes through a strict verification process before going live."
+    },
+    "why": {
+      "title": "Why raise funds through us",
+      "subtitle": "Every donation is verified, zero-fee, and delivered directly to someone who truly needs it."
+    },
+    "what": {
+      "title": "What we Provide",
+      "subtitle": "Three ways to give, all under one roof."
+    },
+    "inkindSection": {
+      "title": "In-Kind Requests",
+      "subtitle": "Donees request physical items they need. You can match their requests and donate items directly, bypassing shipping fees through local radius matches.",
+      "browseAll": "Browse All Requests"
+    },
+    "listingsSection": {
+      "title": "Community Listings",
+      "subtitle": "Browse physical items listed by donors in your neighborhood offering school bags, books, uniforms, and toys for free pickup.",
+      "browseAll": "Browse All Listings"
+    },
+    "ctaSection": {
+      "headline": "Be the change in someone's story.",
+      "subtext": "Whether it's a micro-donation of ₹100 or spare textbooks, notebooks, and clothes — your act of giving makes an immediate difference.",
+      "createAccount": "Create An Account",
+      "browseCampaigns": "Browse Active Campaigns"
+    },
+    "features": {
+      "adminVerified": "Admin Verified",
+      "adminVerifiedDesc": "Every campaign and item request is reviewed by our team before it goes live. Nothing gets through without a real check.",
+      "zeroFees": "Zero Platform Fees",
+      "zeroFeesDesc": "We charge nothing. Every rupee you donate or every item you give reaches the person who needs it.",
+      "localMatching": "Local Matching",
+      "localMatchingDesc": "Item donations are matched with people within 10 km of you, making drop-offs simple and quick.",
+      "impactCertificates": "Impact Certificates",
+      "impactCertificatesDesc": "After your donation is delivered, you receive a verified certificate you can keep or share."
+    },
+    "provide": {
+      "verifiedCampaigns": "Verified Campaigns",
+      "verifiedCampaignsDesc": "Every person who posts a campaign is checked by our team first. You know your money is going somewhere real.",
+      "moneyOrItems": "Money or Items",
+      "moneyOrItemsDesc": "Donate cash to a campaign, or give physical items like books, clothes, or a laptop to someone nearby.",
+      "localDropoffs": "Local Drop-offs",
+      "localDropoffsDesc": "Item donations are matched within 10 km. No couriers, no shipping fees — just direct giving to a neighbour."
     }
   }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Heart, Zap, Shield, ChevronRight, ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import { getCampaigns, type Campaign } from "@/lib/api";
 
@@ -47,12 +48,20 @@ function CampaignDropdown({
   onSelect,
   loading,
   onOpen,
+  placeholder,
+  loadingText,
+  noCampaignsText,
+  urgentText,
 }: {
   campaigns: Campaign[];
   selected: number | null;
   onSelect: (id: number) => void;
   loading: boolean;
   onOpen: () => void;
+  placeholder: string;
+  loadingText: string;
+  noCampaignsText: string;
+  urgentText: string;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,7 +79,6 @@ function CampaignDropdown({
     buttonRef.current?.focus();
   };
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
@@ -82,7 +90,6 @@ function CampaignDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  // Close on Escape
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
@@ -112,7 +119,7 @@ function CampaignDropdown({
               <p className="text-[10px] text-stone-400 font-medium">{activeCampaign.city} · {activeCampaign.category}</p>
             </>
           ) : (
-            <p className="text-sm font-medium text-stone-400 dark:text-zinc-500">Select a campaign…</p>
+            <p className="text-sm font-medium text-stone-400 dark:text-zinc-500">{placeholder}</p>
           )}
         </div>
         <ChevronDown
@@ -130,10 +137,10 @@ function CampaignDropdown({
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-6 text-xs text-stone-400">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Loading campaigns…
+                {loadingText}
               </div>
             ) : campaigns.length === 0 ? (
-              <div className="py-6 text-center text-xs text-stone-400">No campaigns available</div>
+              <div className="py-6 text-center text-xs text-stone-400">{noCampaignsText}</div>
             ) : (
               campaigns.map((c) => (
                 <button
@@ -154,7 +161,7 @@ function CampaignDropdown({
                   </div>
                   {c.urgency === "CRITICAL" && (
                     <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-500 shrink-0">
-                      Urgent
+                      {urgentText}
                     </span>
                   )}
                   {selected === c.id && (
@@ -172,6 +179,7 @@ function CampaignDropdown({
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function DonatePage() {
+  const t = useTranslations("donate_page");
   const [amount, setAmount] = useState<number | "">(100);
   const [custom, setCustom] = useState("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -179,14 +187,10 @@ export default function DonatePage() {
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [step, setStep] = useState<"pick" | "confirm">("pick");
 
-  // Tip state — mirrors campaign page: on by default, 10% default, chips 5/10/15
   const [addTip, setAddTip] = useState(true);
   const [tipPct, setTipPct] = useState<typeof TIP_PCTS[number]>(10);
-
-  // Autopay/recurring state — mirrors campaign page: "Make it recurring" switch
   const [recurring, setRecurring] = useState(false);
 
-  // Initial load
   useEffect(() => {
     getCampaigns()
       .then((c) => {
@@ -197,13 +201,11 @@ export default function DonatePage() {
       .finally(() => setCampaignsLoading(false));
   }, []);
 
-  // Re-fetch when dropdown opens (dynamic refresh)
   const handleDropdownOpen = useCallback(() => {
     setCampaignsLoading(true);
     getCampaigns()
       .then((c) => {
         setCampaigns(c);
-        // If currently selected campaign disappeared, pick first
         setCampaigns((prev) => {
           const ids = new Set(c.map((x) => x.id));
           if (selectedCampaign && !ids.has(selectedCampaign) && c.length > 0) {
@@ -239,16 +241,16 @@ export default function DonatePage() {
             className="absolute left-6 top-6 inline-flex items-center gap-1.5 text-stone-500 hover:text-white text-xs font-semibold transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Back
+            {t("back")}
           </Link>
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#b04a15]/15 border border-[#b04a15]/30 mb-4">
             <Heart className="w-5 h-5 text-[#e07b3a]" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">
-            Give Directly
+            {t("heading")}
           </h1>
           <p className="text-sm text-stone-400 font-medium">
-            100% reaches the cause. Zero platform fees.
+            {t("subtitle")}
           </p>
         </div>
       </div>
@@ -262,7 +264,7 @@ export default function DonatePage() {
 
               {/* Quick amounts */}
               <div>
-                <p className="text-xs font-black uppercase tracking-widest text-stone-400 dark:text-zinc-500 mb-3">Choose amount</p>
+                <p className="text-xs font-black uppercase tracking-widest text-stone-400 dark:text-zinc-500 mb-3">{t("chooseAmount")}</p>
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   {QUICK_AMOUNTS.slice(0, 3).map((v) => (
                     <button
@@ -302,7 +304,7 @@ export default function DonatePage() {
                   <input
                     type="number"
                     min="1"
-                    placeholder="Enter custom amount"
+                    placeholder={t("customPlaceholder")}
                     value={custom}
                     onChange={(e) => { setCustom(e.target.value); setAmount(""); }}
                     className={`w-full pl-8 pr-4 py-3.5 rounded-2xl border-2 text-sm font-bold bg-orange-50/40 dark:bg-zinc-800 text-stone-800 dark:text-stone-100 placeholder-stone-300 dark:placeholder-zinc-600 outline-none transition-all
@@ -311,9 +313,9 @@ export default function DonatePage() {
                 </div>
               </div>
 
-              {/* Campaign picker — dropdown */}
+              {/* Campaign picker */}
               <div>
-                <p className="text-xs font-black uppercase tracking-widest text-stone-400 dark:text-zinc-500 mb-3">Give to</p>
+                <p className="text-xs font-black uppercase tracking-widest text-stone-400 dark:text-zinc-500 mb-3">{t("giveTo")}</p>
                 {campaigns.length === 0 && campaignsLoading ? (
                   <div className="h-14 rounded-2xl bg-stone-100 dark:bg-zinc-800 animate-pulse" />
                 ) : (
@@ -323,16 +325,20 @@ export default function DonatePage() {
                     onSelect={setSelectedCampaign}
                     loading={campaignsLoading}
                     onOpen={handleDropdownOpen}
+                    placeholder={t("selectCampaign")}
+                    loadingText={t("loadingCampaigns")}
+                    noCampaignsText={t("noCampaigns")}
+                    urgentText={t("urgent")}
                   />
                 )}
               </div>
 
-              {/* ── Tip section (mirrors campaign page) ── */}
+              {/* Tip section */}
               <div className="rounded-xl border border-orange-100 dark:border-zinc-700 bg-orange-50/30 dark:bg-zinc-800/60 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Add a tip to CauseKind</p>
-                    <p className="text-xs text-stone-400 dark:text-zinc-500 mt-0.5">Tips keep CauseKind free for everyone.</p>
+                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{t("addTip")}</p>
+                    <p className="text-xs text-stone-400 dark:text-zinc-500 mt-0.5">{t("tipSubtext")}</p>
                   </div>
                   <Switch checked={addTip} onCheckedChange={setAddTip} id="tip-switch" />
                 </div>
@@ -361,36 +367,36 @@ export default function DonatePage() {
                 )}
               </div>
 
-              {/* ── Autopay/recurring section (mirrors campaign page) ── */}
+              {/* Recurring section */}
               <div className="rounded-xl border border-orange-100 dark:border-zinc-700 bg-orange-50/30 dark:bg-zinc-800/60 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Make this monthly</p>
-                    <p className="text-xs text-stone-400 dark:text-zinc-500 mt-0.5">Give a little, regularly. Cancel anytime.</p>
+                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{t("makeMonthly")}</p>
+                    <p className="text-xs text-stone-400 dark:text-zinc-500 mt-0.5">{t("monthlySubtext")}</p>
                   </div>
                   <Switch checked={recurring} onCheckedChange={setRecurring} id="recurring-switch" />
                 </div>
                 {recurring && (
                   <p className="mt-2 text-[10px] text-stone-400 dark:text-zinc-500 leading-relaxed">
-                    Your card will be charged ₹{formatINR(finalAmount)} every month via Razorpay eMandate. You can cancel at any time from your profile.
+                    {t("monthlyNote")}
                   </p>
                 )}
               </div>
 
-              {/* Amount summary line */}
+              {/* Amount summary */}
               {baseAmount > 0 && addTip && tip > 0 && (
                 <div className="rounded-xl border border-orange-100/80 dark:border-zinc-700 bg-orange-50/20 dark:bg-zinc-800/40 px-4 py-3 space-y-1.5">
                   <div className="flex justify-between text-xs font-medium text-stone-500 dark:text-zinc-400">
-                    <span>Donation</span>
+                    <span>{t("donation")}</span>
                     <span>₹{formatINR(baseAmount)}</span>
                   </div>
                   <div className="flex justify-between text-xs font-medium text-stone-500 dark:text-zinc-400">
-                    <span>Tip ({tipPct}%)</span>
+                    <span>{t("tip")} ({tipPct}%)</span>
                     <span>₹{formatINR(tip)}</span>
                   </div>
                   <div className="border-t border-orange-100 dark:border-zinc-700 pt-1.5 flex justify-between text-sm font-extrabold text-stone-800 dark:text-stone-100">
-                    <span>Total{recurring ? "/month" : ""}</span>
-                    <span className="text-[#b04a15]">₹{formatINR(finalAmount)}{recurring ? "/mo" : ""}</span>
+                    <span>{t("total")}{recurring ? t("perMonth") : ""}</span>
+                    <span className="text-[#b04a15]">₹{formatINR(finalAmount)}{recurring ? t("perMo") : ""}</span>
                   </div>
                 </div>
               )}
@@ -398,9 +404,9 @@ export default function DonatePage() {
               {/* Trust badges */}
               <div className="flex items-center justify-center gap-6 pt-1 pb-2">
                 {[
-                  { icon: Shield, text: "Verified campaign" },
-                  { icon: Zap,    text: "Instant transfer" },
-                  { icon: Heart,  text: "Zero fees" },
+                  { icon: Shield, text: t("verifiedCampaign") },
+                  { icon: Zap,    text: t("instantTransfer") },
+                  { icon: Heart,  text: t("zeroFees") },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex flex-col items-center gap-1">
                     <Icon className="w-4 h-4 text-stone-300 dark:text-zinc-600" />
@@ -416,7 +422,7 @@ export default function DonatePage() {
                 onClick={() => setStep("confirm")}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-sm tracking-wide transition-all duration-200 shadow-lg shadow-[#b04a15]/30 active:scale-[0.98]"
               >
-                {recurring ? "Set up monthly ₹" : "Donate ₹"}{finalAmount ? formatINR(finalAmount) : "–"}{recurring ? "/mo" : " Now"}
+                {recurring ? `${t("donating")} ₹` : `${t("donating")} ₹`}{finalAmount ? formatINR(finalAmount) : "–"}{recurring ? t("perMo") : " Now"}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -428,63 +434,57 @@ export default function DonatePage() {
                 onClick={() => setStep("pick")}
                 className="flex items-center gap-1.5 text-xs font-bold text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back
+                <ArrowLeft className="w-3.5 h-3.5" /> {t("back")}
               </button>
 
               <div className="rounded-2xl bg-orange-50/60 dark:bg-zinc-800 border border-orange-100 dark:border-zinc-700 p-5 space-y-3">
-                {/* Donation amount */}
                 <div className="flex justify-between items-start">
-                  <p className="text-xs font-black uppercase tracking-widest text-stone-400 dark:text-zinc-500">Donating</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-stone-400 dark:text-zinc-500">{t("donating")}</p>
                   <span className="text-2xl font-black text-[#b04a15]">₹{formatINR(baseAmount)}</span>
                 </div>
 
-                {/* Tip line */}
                 {addTip && tip > 0 && (
                   <div className="flex justify-between items-center text-xs font-medium text-stone-500 dark:text-zinc-400">
-                    <span>Tip to CauseKind ({tipPct}%)</span>
+                    <span>{t("tipTo")} ({tipPct}%)</span>
                     <span>+ ₹{formatINR(tip)}</span>
                   </div>
                 )}
 
-                {/* Total */}
                 {addTip && tip > 0 && (
                   <div className="flex justify-between items-center text-sm font-extrabold text-stone-800 dark:text-stone-100 border-t border-orange-100 dark:border-zinc-700 pt-2">
-                    <span>Total{recurring ? " / month" : ""}</span>
-                    <span className="text-[#b04a15]">₹{formatINR(finalAmount)}{recurring ? "/mo" : ""}</span>
+                    <span>{t("total")}{recurring ? " / month" : ""}</span>
+                    <span className="text-[#b04a15]">₹{formatINR(finalAmount)}{recurring ? t("perMo") : ""}</span>
                   </div>
                 )}
 
-                {/* Monthly autopay badge */}
                 {recurring && (
                   <div className="flex items-center gap-2 rounded-lg bg-[#1e3a60]/8 dark:bg-[#1e3a60]/20 border border-[#1e3a60]/20 dark:border-[#1e3a60]/30 px-3 py-2 mt-1">
                     <RefreshCw className="w-3.5 h-3.5 text-[#1e3a60] dark:text-blue-400 shrink-0" />
-                    <p className="text-[10px] font-bold text-[#1e3a60] dark:text-blue-400">Monthly autopay via Razorpay eMandate · Cancel anytime</p>
+                    <p className="text-[10px] font-bold text-[#1e3a60] dark:text-blue-400">{t("monthlyAutopay")}</p>
                   </div>
                 )}
 
-                {/* Campaign */}
                 <div className="border-t border-orange-100 dark:border-zinc-700 pt-3">
                   <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">To</p>
                   <p className="text-sm font-bold text-stone-800 dark:text-stone-100">{activeCampaign?.title}</p>
                   <p className="text-xs text-stone-400 font-medium">{activeCampaign?.city} · {activeCampaign?.category}</p>
                 </div>
 
-                {/* Platform fee */}
                 <div className="border-t border-orange-100 dark:border-zinc-700 pt-3 flex justify-between text-xs font-bold">
-                  <span className="text-stone-400">Platform fee</span>
-                  <span className="text-emerald-600 font-extrabold">₹0 — Free</span>
+                  <span className="text-stone-400">{t("platformFee")}</span>
+                  <span className="text-emerald-600 font-extrabold">₹0 — {t("platformFeeValue")}</span>
                 </div>
               </div>
 
               <p className="text-xs text-stone-400 dark:text-zinc-600 text-center font-medium leading-relaxed">
-                By donating you agree to our terms. Funds are transferred directly after campaign verification.
+                {t("confirmTerms")}
               </p>
 
               <Link
                 href={activeCampaign ? `/campaigns/${activeCampaign.id}` : "/campaigns"}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold text-sm tracking-wide transition-all duration-200 shadow-lg shadow-[#b04a15]/30 active:scale-[0.98]"
               >
-                Confirm {recurring ? "Monthly " : ""}Donation
+                {recurring ? t("confirmMonthly") : t("confirmDonation")}
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { register, googleAuth, googleComplete } from "@/lib/api";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
@@ -109,7 +110,7 @@ function getDialCode(isoCode: string): string {
   return `+${country.phonecode.replace(/^\+/, "")}`;
 }
 
-// ── Input component (reduces repetition) ──────────────────────────────────────
+// ── Input component ──────────────────────────────────────────────────────────────
 function Field({
   id, label, type = "text", placeholder, value, onChange, required = true,
   readOnly = false, hint, autoComplete,
@@ -141,6 +142,7 @@ function Field({
 
 // ── Main content ───────────────────────────────────────────────────────────────
 function RegisterContent() {
+  const t = useTranslations("auth.register");
   const { setAuth, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -154,11 +156,9 @@ function RegisterContent() {
   const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
-  // Phone
   const [dialCountry, setDialCountry] = useState("IN");
   const [phoneNumber, setPhoneNumber] = useState("");
 
-  // Location
   const [countryIso, setCountryIso] = useState("");
   const [stateIso, setStateIso] = useState("");
   const [cityValue, setCityValue] = useState("");
@@ -200,7 +200,6 @@ function RegisterContent() {
 
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
 
-  // Detect country from IP on mount
   useEffect(() => {
     detectCountryFromIP().then((code) => {
       setDialCountry(code);
@@ -208,7 +207,6 @@ function RegisterContent() {
     });
   }, []);
 
-  // Pre-fill from Google if coming from Google OAuth flow
   useEffect(() => {
     if (isSocialFlow) {
       const token = sessionStorage.getItem("ck_google_token");
@@ -291,16 +289,14 @@ function RegisterContent() {
           {/* Heading */}
           <div className="space-y-1.5">
             <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-              {isSocialFlow ? "Almost there 🎉" : "Join CauseKind 🌱"}
+              {isSocialFlow ? `${t("almostThereTitle")} 🎉` : `${t("joinTitle")} 🌱`}
             </h1>
             <p className="text-sm text-stone-500 dark:text-stone-400">
-              {isSocialFlow
-                ? "Your Google account is linked. Just add your phone and location to finish."
-                : "Create your account and start making a difference today."}
+              {isSocialFlow ? t("googleLinkedSubtitle") : t("createSubtitle")}
             </p>
           </div>
 
-          {/* Hidden Google SSO — triggered programmatically by the styled button below */}
+          {/* Hidden Google SSO */}
           {!isSocialFlow && (
             <div ref={googleBtnRef} aria-hidden="true" style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
               <GoogleLogin
@@ -314,27 +310,25 @@ function RegisterContent() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
-            {/* Full name */}
             <Field
-              id="fullName" label="Full name" placeholder="Jane Doe"
+              id="fullName" label={t("fullName")} placeholder="Jane Doe"
               value={form.fullName} onChange={v => set("fullName", v)}
               readOnly={isSocialFlow && !!form.fullName}
               autoComplete="name"
             />
 
-            {/* Email */}
             <Field
-              id="email" label="Email address" type="email" placeholder="you@example.com"
+              id="email" label={t("email")} type="email" placeholder="you@example.com"
               value={form.email} onChange={v => set("email", v)}
               readOnly={isSocialFlow}
-              hint={isSocialFlow ? "Linked from your Google account" : undefined}
+              hint={isSocialFlow ? t("googleLinkedHint") : undefined}
               autoComplete="email"
             />
 
             {/* Phone with dial-code */}
             <div className="space-y-1.5">
               <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                <Phone className="w-3.5 h-3.5" /> Phone number
+                <Phone className="w-3.5 h-3.5" /> {t("phone")}
               </label>
               <div className="flex gap-2">
                 <div className="w-[120px] shrink-0">
@@ -343,7 +337,7 @@ function RegisterContent() {
                     value={dialCountry}
                     onChange={setDialCountry}
                     placeholder="+–"
-                    searchPlaceholder="Search country…"
+                    searchPlaceholder={t("searchCountry")}
                     renderSelectedLabel={(opt) => getDialCode(opt.value)}
                   />
                 </div>
@@ -351,7 +345,7 @@ function RegisterContent() {
                   id="phone"
                   type="tel"
                   inputMode="numeric"
-                  placeholder="Phone number"
+                  placeholder={t("phone")}
                   value={phoneNumber}
                   onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
                   autoComplete="tel"
@@ -363,47 +357,44 @@ function RegisterContent() {
             {/* Location: Country → State → City */}
             <div className="space-y-3">
               <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                <MapPin className="w-3.5 h-3.5" /> Location
+                <MapPin className="w-3.5 h-3.5" /> {t("location")}
               </label>
 
-              {/* Country */}
               <div className="space-y-1">
-                <label className="text-xs text-stone-500 dark:text-stone-400">Country</label>
+                <label className="text-xs text-stone-500 dark:text-stone-400">{t("country")}</label>
                 <SearchableSelect
                   options={countryOptions}
                   value={countryIso}
                   onChange={handleCountryChange}
-                  placeholder="Select country"
-                  searchPlaceholder="Search country…"
+                  placeholder={t("selectCountry")}
+                  searchPlaceholder={t("searchCountry")}
                 />
               </div>
 
-              {/* State */}
               <div className="space-y-1">
-                <label className="text-xs text-stone-500 dark:text-stone-400">State / Province</label>
+                <label className="text-xs text-stone-500 dark:text-stone-400">{t("state")}</label>
                 {noStateOptions ? (
-                  <p className="text-xs text-stone-400 italic py-1">No states listed — enter city below.</p>
+                  <p className="text-xs text-stone-400 italic py-1">{t("noStatesListed")}</p>
                 ) : (
                   <SearchableSelect
                     options={stateOptions}
                     value={stateIso}
                     onChange={handleStateChange}
-                    placeholder="Select state"
-                    disabledPlaceholder="Select country first"
+                    placeholder={t("selectState")}
+                    disabledPlaceholder={t("selectCountryFirst")}
                     disabled={!countryIso}
-                    searchPlaceholder="Search state…"
+                    searchPlaceholder={t("searchState")}
                   />
                 )}
               </div>
 
-              {/* City */}
               <div className="space-y-1">
-                <label className="text-xs text-stone-500 dark:text-stone-400">City</label>
+                <label className="text-xs text-stone-500 dark:text-stone-400">{t("city")}</label>
                 {showCityFreeText ? (
                   <input
                     id="city"
                     type="text"
-                    placeholder="Enter your city"
+                    placeholder={t("enterCity")}
                     value={cityFreeText}
                     onChange={e => setCityFreeText(e.target.value)}
                     autoComplete="address-level2"
@@ -414,10 +405,10 @@ function RegisterContent() {
                     options={cityOptions}
                     value={cityValue}
                     onChange={setCityValue}
-                    placeholder="Select city"
-                    disabledPlaceholder="Select state first"
+                    placeholder={t("selectCity")}
+                    disabledPlaceholder={t("selectStateFirst")}
                     disabled={!stateIso && !noStateOptions}
-                    searchPlaceholder="Search city…"
+                    searchPlaceholder={t("searchCity")}
                   />
                 )}
               </div>
@@ -427,7 +418,7 @@ function RegisterContent() {
             {!isSocialFlow && (
               <div className="space-y-1.5">
                 <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-                  Password
+                  {t("password")}
                 </label>
                 <div className="relative">
                   <input
@@ -459,10 +450,10 @@ function RegisterContent() {
               className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 text-sm tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 mt-2"
             >
               {loading
-                ? "Creating account…"
+                ? t("creating")
                 : isSocialFlow
-                  ? "Complete registration"
-                  : "Create account"}
+                  ? t("complete")
+                  : t("submit")}
             </button>
           </form>
 
@@ -476,7 +467,7 @@ function RegisterContent() {
                 className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
               >
                 <GoogleIcon />
-                {googleLoading ? "Signing in…" : "Continue with Google"}
+                {googleLoading ? t("creating") : t("google")}
               </button>
               <button
                 type="button"
@@ -484,21 +475,20 @@ function RegisterContent() {
                 className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
               >
                 <FacebookIcon />
-                Continue with Facebook
+                {t("facebook")}
               </button>
             </div>
           )}
 
           {/* Cross-link */}
           <p className="text-center text-sm text-stone-500 dark:text-stone-400">
-            Already have an account?{" "}
+            {t("haveAccount")}{" "}
             <Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">
-              Sign in
+              {t("signIn")}
             </Link>
           </p>
         </div>
 
-        {/* Footer */}
         <p className="mt-8 text-center text-xs text-stone-400 dark:text-zinc-600">
           &copy; 2026 CauseKind
         </p>
