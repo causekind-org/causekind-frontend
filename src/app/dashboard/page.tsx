@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   getMyDonations, getMyItemListings, getMyCampaigns, getMyItemRequests, getMyMatches,
   type Donation, type ItemListing, type Campaign, type ItemRequest, type ItemMatch
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check } from "lucide-react";
+import { TranslatedText } from "@/hooks/useDynamicTranslation";
 
 const DEFAULT_GOAL = 26000;
 const GOAL_KEY_PREFIX = "ck_annual_goal_";
@@ -38,6 +40,8 @@ function toTitleCase(str: string) {
 }
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -48,19 +52,16 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Annual goal state
   const [annualGoal, setAnnualGoal] = useState<number>(DEFAULT_GOAL);
   const [goalIsCustom, setGoalIsCustom] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState<string>("");
   const [goalError, setGoalError] = useState<string>("");
 
-  // TASK 1: Refresh-logout fix — wait for auth rehydration before redirecting
   useEffect(() => {
     if (isLoading) return;
     if (!user) { router.push("/login"); return; }
 
-    // Load persisted goal from localStorage
     const stored = localStorage.getItem(GOAL_KEY_PREFIX + user.email);
     if (stored) {
       const parsed = parseInt(stored, 10);
@@ -82,7 +83,6 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [user, isLoading, router]);
 
-  // TASK 1: Show spinner during auth rehydration
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -101,13 +101,12 @@ export default function DashboardPage() {
   const totalGiven = completed.reduce((s, d) => s + Number(d.amount), 0);
 
   const stats = [
-    { label: "Money donated", value: formatINR(totalGiven), icon: HandCoins },
-    { label: "Campaigns created", value: String(campaigns.length), icon: Package },
-    { label: "Items listed", value: String(itemListings.length), icon: Award },
-    { label: "Items requested", value: String(itemRequests.length), icon: ShieldCheck },
+    { label: t("moneyDonated"), value: formatINR(totalGiven), icon: HandCoins },
+    { label: t("campaignsCreated"), value: String(campaigns.length), icon: Package },
+    { label: t("itemsListed"), value: String(itemListings.length), icon: Award },
+    { label: t("itemsRequested"), value: String(itemRequests.length), icon: ShieldCheck },
   ];
 
-  // TASK 2: Goal progress calculations — cap bar at 100%, show real % in text
   const goalPct = annualGoal > 0 ? Math.round((totalGiven / annualGoal) * 100) : 0;
   const goalBarValue = Math.min(100, goalPct);
   const goalReached = totalGiven >= annualGoal;
@@ -148,22 +147,21 @@ export default function DashboardPage() {
       <div className="border-b bg-gradient-to-b from-accent/40 to-transparent">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">My Dashboard</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Welcome back, {user.email}</p>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t("welcomeBack")}, {user.email}</p>
           </div>
-          {/* TASK 4: Wrap each Link+Button with w-fit so the clickable area matches the button, not the full row */}
-          <div className="flex flex-wrap gap-2">
-            <Link href="/campaigns" className="w-fit"><Button variant="outline" className="gap-1">Donate money</Button></Link>
-            <Link href="/items/new" className="w-fit"><Button variant="outline" className="gap-1"><Plus className="h-4 w-4" /> List an item</Button></Link>
-            <Link href="/campaigns/new" className="w-fit"><Button variant="outline" className="gap-1"><Plus className="h-4 w-4" /> Start campaign</Button></Link>
-            <Link href="/requests/new" className="w-fit"><Button className="gap-1"><Plus className="h-4 w-4" /> Request an item</Button></Link>
+          <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:flex-wrap">
+            <Link href="/campaigns" className="w-full sm:w-auto"><Button variant="outline" className="w-full gap-1">{t("donateMoney")}</Button></Link>
+            <Link href="/items/new" className="w-full sm:w-auto"><Button variant="outline" className="w-full gap-1"><Plus className="h-4 w-4" /> {t("listItem")}</Button></Link>
+            <Link href="/campaigns/new" className="w-full sm:w-auto"><Button variant="outline" className="w-full gap-1"><Plus className="h-4 w-4" /> {t("startCampaign")}</Button></Link>
+            <Link href="/requests/new" className="w-full sm:w-auto"><Button className="w-full gap-1"><Plus className="h-4 w-4" /> {t("requestItem")}</Button></Link>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
 
-        {/* TASK 3: Stats — 2-up on mobile (grid-cols-2), 4-up on lg; compact padding/text on mobile */}
+        {/* Stats */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {stats.map((s) => (
             <Card key={s.label}>
@@ -171,9 +169,9 @@ export default function DashboardPage() {
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-11 sm:w-11">
                   <s.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-xs text-muted-foreground sm:text-sm">{s.label}</p>
-                  <p className="text-base font-bold leading-tight sm:text-xl">{s.value}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground sm:text-sm leading-tight line-clamp-2" title={s.label}>{s.label}</p>
+                  <p className="text-base font-bold leading-tight sm:text-xl truncate" title={s.value}>{s.value}</p>
                 </div>
               </CardContent>
             </Card>
@@ -184,30 +182,28 @@ export default function DashboardPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>My donations</CardTitle>
-              {/* TASK 4: constrain ghost link button to w-fit */}
-              <Link href="/campaigns" className="w-fit"><Button variant="ghost" size="sm">Browse campaigns</Button></Link>
+              <CardTitle>{t("myDonations")}</CardTitle>
+              <Link href="/campaigns" className="w-fit"><Button variant="ghost" size="sm">{t("browseCampaigns")}</Button></Link>
             </CardHeader>
             <CardContent>
               {donations.length === 0 ? (
                 <div className="py-10 text-center space-y-3">
-                  <p className="text-muted-foreground">You haven&apos;t donated yet.</p>
-                  {/* TASK 4: inline-flex so button is not block-level */}
-                  <Link href="/campaigns" className="inline-flex"><Button>Browse campaigns</Button></Link>
+                  <p className="text-muted-foreground">{t("noDonations")}</p>
+                  <Link href="/campaigns" className="inline-flex"><Button>{t("browseCampaigns")}</Button></Link>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {donations.map((d) => (
                     <div key={d.id} className="flex items-center justify-between rounded-lg border p-3">
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{d.campaignTitle}</p>
+                        <p className="font-medium truncate"><TranslatedText text={d.campaignTitle} /></p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(d.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="font-semibold text-sm">{formatINR(Number(d.amount))}</span>
-                        <Badge variant={donationVariant(d.status)}>{toTitleCase(d.status)}</Badge>
+                        <Badge variant={donationVariant(d.status)}>{tCommon("status" + d.status.charAt(0) + d.status.slice(1).toLowerCase())}</Badge>
                       </div>
                     </div>
                   ))}
@@ -216,10 +212,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* TASK 2: Annual giving goal — editable */}
+          {/* Annual giving goal */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle>Annual giving goal</CardTitle>
+              <CardTitle>{t("annualGoal")}</CardTitle>
               {!editingGoal && (
                 <button
                   onClick={openGoalEditor}
@@ -227,14 +223,14 @@ export default function DashboardPage() {
                   aria-label="Edit annual goal"
                 >
                   <Pencil className="h-3 w-3" />
-                  Edit
+                  {t("edit")}
                 </button>
               )}
             </CardHeader>
             <CardContent className="space-y-3">
               {editingGoal ? (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Set your annual giving goal</label>
+                  <label className="text-sm font-medium">{t("setGoalLabel")}</label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">₹</span>
                     <input
@@ -251,10 +247,10 @@ export default function DashboardPage() {
                   {goalError && <p className="text-xs text-destructive">{goalError}</p>}
                   <div className="flex gap-2">
                     <Button size="sm" onClick={saveGoal} className="gap-1">
-                      <Check className="h-3 w-3" /> Save
+                      <Check className="h-3 w-3" /> {t("save")}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={cancelGoalEdit} className="gap-1">
-                      <X className="h-3 w-3" /> Cancel
+                      <X className="h-3 w-3" /> {t("cancel")}
                     </Button>
                   </div>
                 </div>
@@ -265,18 +261,18 @@ export default function DashboardPage() {
                       onClick={openGoalEditor}
                       className="w-full rounded-md border border-dashed border-muted-foreground/40 py-1.5 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
                     >
-                      Set your own goal
+                      {t("setOwnGoal")}
                     </button>
                   )}
                   <Progress value={goalBarValue} className="h-3" />
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{formatINR(totalGiven)} given</span>
-                    <span>Goal {formatINR(annualGoal)}</span>
+                    <span>{formatINR(totalGiven)} {t("given")}</span>
+                    <span>{t("goal")} {formatINR(annualGoal)}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {goalReached
-                      ? `Goal reached! (${goalPct}%)`
-                      : `${goalPct}% · ₹${(annualGoal - totalGiven).toLocaleString("en-IN")} to go`}
+                      ? `${t("goalReached")} (${goalPct}%)`
+                      : `${goalPct}% · ₹${(annualGoal - totalGiven).toLocaleString("en-IN")} ${t("toGo")}`}
                   </p>
                 </>
               )}
@@ -288,15 +284,14 @@ export default function DashboardPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>My campaigns</CardTitle>
-              {/* TASK 4: w-fit on link */}
-              <Link href="/campaigns/new" className="w-fit"><Button variant="ghost" size="sm">New</Button></Link>
+              <CardTitle>{t("myCampaigns")}</CardTitle>
+              <Link href="/campaigns/new" className="w-fit"><Button variant="ghost" size="sm">{t("new") || "New"}</Button></Link>
             </CardHeader>
             <CardContent>
               {campaigns.length === 0 ? (
                 <div className="py-10 text-center space-y-3">
-                  <p className="text-muted-foreground">You haven&apos;t created any campaigns yet.</p>
-                  <Link href="/campaigns/new" className="inline-flex"><Button>Start a campaign</Button></Link>
+                  <p className="text-muted-foreground">{t("noCampaigns")}</p>
+                  <Link href="/campaigns/new" className="inline-flex"><Button>{t("startCampaign")}</Button></Link>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -305,16 +300,16 @@ export default function DashboardPage() {
                     return (
                       <div key={c.id} className="rounded-lg border p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="font-medium truncate">{c.title}</p>
-                          <Badge variant={campaignVariant(c.status)}>{toTitleCase(c.status)}</Badge>
+                          <p className="font-medium truncate"><TranslatedText text={c.title} /></p>
+                          <Badge variant={campaignVariant(c.status)}>{tCommon("status" + c.status.charAt(0) + c.status.slice(1).toLowerCase())}</Badge>
                         </div>
                         <Progress value={pct} className="h-1.5" />
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{formatINR(c.amountRaised)} raised</span>
-                          <span>Goal {formatINR(c.targetAmount)}</span>
+                          <span>{formatINR(c.amountRaised)} {t("raised")}</span>
+                          <span>{t("goal")} {formatINR(c.targetAmount)}</span>
                         </div>
                         {c.rejectionReason && (
-                          <p className="text-xs text-destructive">Rejected: {c.rejectionReason}</p>
+                          <p className="text-xs text-destructive">{t("rejected")}: <TranslatedText text={c.rejectionReason} /></p>
                         )}
                       </div>
                     );
@@ -326,25 +321,24 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>My item listings</CardTitle>
-              {/* TASK 4: w-fit on link */}
-              <Link href="/items/new" className="w-fit"><Button variant="ghost" size="sm">Add new</Button></Link>
+              <CardTitle>{t("myListings")}</CardTitle>
+              <Link href="/items/new" className="w-fit"><Button variant="ghost" size="sm">{t("addNew")}</Button></Link>
             </CardHeader>
             <CardContent>
               {itemListings.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-muted-foreground">You haven&apos;t listed any items yet.</p>
+                  <p className="text-muted-foreground">{t("noListings")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {itemListings.map((l) => (
                     <div key={l.id} className="flex items-center justify-between rounded-lg border p-3">
                       <div>
-                        <p className="font-medium">{l.title}</p>
-                        <p className="text-xs text-muted-foreground">{l.city} · {l.condition}</p>
+                        <p className="font-medium"><TranslatedText text={l.title} /></p>
+                        <p className="text-xs text-muted-foreground"><TranslatedText text={l.city} /> · {l.condition}</p>
                       </div>
                       <Badge variant={l.status === "APPROVED" ? "default" : l.status === "MATCHED" ? "secondary" : "outline"}>
-                        {toTitleCase(l.status)}
+                        {tCommon("status" + l.status.charAt(0) + l.status.slice(1).toLowerCase())}
                       </Badge>
                     </div>
                   ))}
@@ -357,25 +351,26 @@ export default function DashboardPage() {
         {/* Item requests */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>My item requests</CardTitle>
-            {/* TASK 4: w-fit on link */}
-            <Link href="/requests/new" className="w-fit"><Button variant="ghost" size="sm">New</Button></Link>
+            <CardTitle>{t("myRequests")}</CardTitle>
+            <Link href="/requests/new" className="w-fit"><Button variant="ghost" size="sm">{t("new") || "New"}</Button></Link>
           </CardHeader>
           <CardContent>
             {itemRequests.length === 0 ? (
               <div className="py-10 text-center">
-                <p className="text-muted-foreground">You haven&apos;t made any item requests yet.</p>
+                <p className="text-muted-foreground">{t("noRequests")}</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {itemRequests.map((r) => (
                   <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div>
-                      <p className="font-medium">{r.title}</p>
-                      <p className="text-xs text-muted-foreground">{r.city} · {r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase()} urgency</p>
+                      <p className="font-medium"><TranslatedText text={r.title} /></p>
+                      <p className="text-xs text-muted-foreground">
+                        <TranslatedText text={r.city} /> · {tCommon("urgency" + r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase())}
+                      </p>
                     </div>
                     <Badge variant={r.status === "APPROVED" ? "default" : r.status === "REJECTED" ? "destructive" : "outline"}>
-                      {toTitleCase(r.status)}
+                      {tCommon("status" + r.status.charAt(0) + r.status.slice(1).toLowerCase())}
                     </Badge>
                   </div>
                 ))}
@@ -388,28 +383,30 @@ export default function DashboardPage() {
         {matches.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>My in-kind matches</CardTitle>
+              <CardTitle>{t("myMatches")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {matches.map((m) => (
                   <div key={m.id} className="rounded-lg border p-3 space-y-1">
                     <div className="flex items-center justify-between">
-                      <p className="font-medium">{m.listingTitle} → {m.requestTitle}</p>
+                      <p className="font-medium"><TranslatedText text={m.listingTitle} /> → <TranslatedText text={m.requestTitle} /></p>
                       <Badge variant={m.status === "APPROVED" ? "default" : m.status === "REJECTED" ? "destructive" : "secondary"}>
-                        {toTitleCase(m.status)}
+                        {tCommon("status" + m.status.charAt(0) + m.status.slice(1).toLowerCase())}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{m.donorName} · {m.donorCity} → {m.doneeName} · {m.doneeCity}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {m.donorName} · <TranslatedText text={m.donorCity} /> → {m.doneeName} · <TranslatedText text={m.doneeCity} />
+                    </p>
                     {m.status === "APPROVED" && (
                       <div className="mt-2 rounded-md bg-accent/40 p-2 text-xs space-y-0.5">
-                        <p className="font-medium text-foreground">Contact details shared:</p>
-                        {m.donorContact && <p>Donor: {m.donorContact}</p>}
-                        {m.doneeContact && <p>Donee: {m.doneeContact}</p>}
+                        <p className="font-medium text-foreground">{t("contactDetails")}</p>
+                        {m.donorContact && <p>{t("donor")}: {m.donorContact}</p>}
+                        {m.doneeContact && <p>{t("donee")}: {m.doneeContact}</p>}
                       </div>
                     )}
                     {m.rejectionReason && (
-                      <p className="text-xs text-destructive">Rejected: {m.rejectionReason}</p>
+                      <p className="text-xs text-destructive">{t("rejected")}: <TranslatedText text={m.rejectionReason} /></p>
                     )}
                   </div>
                 ))}

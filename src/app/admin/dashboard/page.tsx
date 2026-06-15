@@ -30,6 +30,12 @@ function statusVariant(status: string) {
   return "secondary" as const;
 }
 
+function statusBadgeClass(status: string) {
+  if (status === "APPROVED") return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  if (status === "REJECTED") return "bg-red-50 text-red-700 border border-red-200";
+  return "bg-amber-50 text-amber-700 border border-amber-200";
+}
+
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 }
@@ -138,7 +144,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div>
+    <div className="bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen">
       <div className="border-b bg-gradient-to-b from-accent/40 to-transparent">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -163,14 +169,14 @@ export default function AdminDashboardPage() {
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((s) => (
-            <Card key={s.label}>
+            <Card key={s.label} className="rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
               <CardContent className="flex items-center gap-4 p-5">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <s.icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">{s.label}</p>
-                  <p className="text-xl font-bold">{s.value}</p>
+                  <p className="text-xs text-stone-400 uppercase tracking-wide">{s.label}</p>
+                  <p className="text-xl font-black text-[#C17A3A]">{s.value}</p>
                 </div>
               </CardContent>
             </Card>
@@ -179,7 +185,7 @@ export default function AdminDashboardPage() {
 
         {/* Queues overview + radius */}
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
             <CardHeader>
               <CardTitle>Approval queues</CardTitle>
             </CardHeader>
@@ -211,7 +217,7 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" /> Matching radius
@@ -234,11 +240,11 @@ export default function AdminDashboardPage() {
         {/* Tabs */}
         <Tabs defaultValue="campaigns">
           <TabsList>
-            <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-            <TabsTrigger value="items">Item requests</TabsTrigger>
-            <TabsTrigger value="listings">Item listings</TabsTrigger>
-            <TabsTrigger value="contacts">Contact shares</TabsTrigger>
-            <TabsTrigger value="payments" onClick={loadPayments}>Payments</TabsTrigger>
+            <TabsTrigger value="campaigns" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">Campaigns</TabsTrigger>
+            <TabsTrigger value="items" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">Item requests</TabsTrigger>
+            <TabsTrigger value="listings" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">Item listings</TabsTrigger>
+            <TabsTrigger value="contacts" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">Contact shares</TabsTrigger>
+            <TabsTrigger value="payments" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white" onClick={loadPayments}>Payments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="campaigns" className="mt-6 space-y-4">
@@ -265,7 +271,7 @@ export default function AdminDashboardPage() {
             ) : (
               <div className="space-y-4">
                 {campaigns.map((c) => (
-                  <Card key={c.id}>
+                  <Card key={c.id} className="rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
                     <CardContent className="pt-5 space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -274,7 +280,7 @@ export default function AdminDashboardPage() {
                             {c.doneeName} · {c.city}, {c.state} · {c.category}
                           </p>
                         </div>
-                        <Badge variant={statusVariant(c.status)} className="shrink-0">
+                        <Badge variant={statusVariant(c.status)} className={`shrink-0 ${statusBadgeClass(c.status)}`}>
                           {c.status.replace("_", " ")}
                         </Badge>
                       </div>
@@ -308,10 +314,10 @@ export default function AdminDashboardPage() {
 
                       {c.status === "PENDING_APPROVAL" && rejectId !== c.id && (
                         <div className="flex gap-2 pt-1">
-                          <Button size="sm" onClick={() => handleApprove(c.id)} disabled={processing === c.id}>
+                          <Button size="sm" className="bg-[#C17A3A] hover:bg-[#a86430] text-white rounded-xl" onClick={() => handleApprove(c.id)} disabled={processing === c.id}>
                             {processing === c.id ? <Loader2 className="size-4 animate-spin" /> : <><CheckCircle className="size-4" /> Approve</>}
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => setRejectId(c.id)}>
+                          <Button size="sm" variant="destructive" className="rounded-xl" onClick={() => setRejectId(c.id)}>
                             <XCircle className="size-4" /> Reject
                           </Button>
                         </div>
@@ -353,47 +359,47 @@ export default function AdminDashboardPage() {
               <>
                 {donationStats && (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card>
+                    <Card className="rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
                       <CardContent className="flex items-center gap-4 p-5">
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <TrendingUp className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Total collected</p>
-                          <p className="text-xl font-bold">{formatINR(donationStats.totalCollected)}</p>
+                          <p className="text-xs text-stone-400 uppercase tracking-wide">Total collected</p>
+                          <p className="text-xl font-black text-[#C17A3A]">{formatINR(donationStats.totalCollected)}</p>
                         </div>
                       </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
                       <CardContent className="flex items-center gap-4 p-5">
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-500/10 text-green-600">
                           <CheckCircle className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Completed</p>
-                          <p className="text-xl font-bold">{donationStats.completedTransactions}</p>
+                          <p className="text-xs text-stone-400 uppercase tracking-wide">Completed</p>
+                          <p className="text-xl font-black text-[#C17A3A]">{donationStats.completedTransactions}</p>
                         </div>
                       </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
                       <CardContent className="flex items-center gap-4 p-5">
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <Users className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Unique donors</p>
-                          <p className="text-xl font-bold">{donationStats.uniqueDonors}</p>
+                          <p className="text-xs text-stone-400 uppercase tracking-wide">Unique donors</p>
+                          <p className="text-xl font-black text-[#C17A3A]">{donationStats.uniqueDonors}</p>
                         </div>
                       </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
                       <CardContent className="flex items-center gap-4 p-5">
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <CreditCard className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Total transactions</p>
-                          <p className="text-xl font-bold">{donationStats.totalTransactions}</p>
+                          <p className="text-xs text-stone-400 uppercase tracking-wide">Total transactions</p>
+                          <p className="text-xl font-black text-[#C17A3A]">{donationStats.totalTransactions}</p>
                         </div>
                       </CardContent>
                     </Card>

@@ -26,20 +26,22 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-export function CauseKindLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   return (
     <span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2 hover:opacity-95 transition-all duration-200`}
     >
-      <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 sm:h-8 sm:w-8 text-[#b04a15] dark:text-orange-400 shrink-0" xmlns="http://www.w3.org/2000/svg">
-        {/* Heart/hands outer cradle */}
-        <path d="M12 21.5C7.5 18 4.5 14.5 4.5 10.5C4.5 7.5 6.5 5.5 9.5 5.5C10.8 5.5 11.6 6 12 6.5C12.4 6 13.2 5.5 14.5 5.5C17.5 5.5 19.5 7.5 19.5 10.5C19.5 14.5 16.5 18 12 21.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Plant sprout */}
-        <path d="M12 18V9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M12 12C12 12 9.5 11 9 9.5C8.5 8 9.5 7 11 8.5C12 9.5 12 11 12 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2" />
-        <path d="M12 14C12 14 14.5 13 15 11.5C15.5 10 14.5 9 13 10.5C12 11.5 12 13 12 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2" />
-      </svg>
+      {!hideIcon && (
+        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 sm:h-8 sm:w-8 text-[#b04a15] dark:text-orange-400 shrink-0" xmlns="http://www.w3.org/2000/svg">
+          {/* Heart/hands outer cradle */}
+          <path d="M12 21.5C7.5 18 4.5 14.5 4.5 10.5C4.5 7.5 6.5 5.5 9.5 5.5C10.8 5.5 11.6 6 12 6.5C12.4 6 13.2 5.5 14.5 5.5C17.5 5.5 19.5 7.5 19.5 10.5C19.5 14.5 16.5 18 12 21.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Plant sprout */}
+          <path d="M12 18V9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M12 12C12 12 9.5 11 9 9.5C8.5 8 9.5 7 11 8.5C12 9.5 12 11 12 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2" />
+          <path d="M12 14C12 14 14.5 13 15 11.5C15.5 10 14.5 9 13 10.5C12 11.5 12 13 12 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2" />
+        </svg>
+      )}
       <span className="flex items-center text-stone-900 dark:text-stone-100 font-extrabold text-base sm:text-xl">
         <span className="tracking-tight">Cause</span>
         <span className="text-[#b04a15] dark:text-orange-400">Kind</span>
@@ -49,8 +51,8 @@ export function CauseKindLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 }
 
 // Keep CareNestLogo exported and map it to CauseKindLogo to prevent any broken imports in other files
-export function CareNestLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  return <CauseKindLogo size={size} />;
+export function CareNestLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
+  return <CauseKindLogo size={size} hideIcon={hideIcon} />;
 }
 
 function Donate3DButton() {
@@ -160,6 +162,23 @@ export function SiteHeader() {
     localStorage.setItem("ck_theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    const html = window.document.documentElement;
+    const body = window.document.body;
+    if (open) {
+      html.classList.add("mobile-menu-open");
+      body.classList.add("mobile-menu-open");
+    } else {
+      html.classList.remove("mobile-menu-open");
+      body.classList.remove("mobile-menu-open");
+    }
+    window.dispatchEvent(new CustomEvent("ck-mobile-menu-toggle", { detail: { open } }));
+    return () => {
+      html.classList.remove("mobile-menu-open");
+      body.classList.remove("mobile-menu-open");
+    };
+  }, [open]);
+
   const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
   const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
@@ -216,8 +235,30 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className="sticky top-0 z-50 w-full bg-[#f5f4ee] dark:bg-zinc-950 border-b border-[#e5e2d5] dark:border-stone-850/30 transition-all duration-200">
-        <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between px-6 sm:px-10 py-4 sm:py-5">
+      <header className="sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30 transition-all duration-200">
+        {/* Mobile Header (lg:hidden) */}
+        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30">
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Open menu"
+            className="flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <Link href="/" className="flex items-center justify-center">
+            <CareNestLogo size="md" hideIcon={true} />
+          </Link>
+          <Link
+            href={user ? "/profile" : "/login"}
+            className="flex items-center justify-center w-8 h-8 rounded-full border border-[#b04a15]/30 text-[#b04a15] active:scale-95 hover:bg-[#b04a15]/5 transition-all"
+            aria-label="Profile"
+          >
+            <User className="w-4.5 h-4.5" />
+          </Link>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between px-10 py-5">
           <Link href="/" className="flex items-center gap-2">
             <CareNestLogo />
           </Link>
@@ -260,52 +301,6 @@ export function SiteHeader() {
               </div>
             </button>
 
-            {/* Profile icon dropdown — mobile only; desktop uses the text links */}
-            <div className="lg:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className={iconBtnCls} aria-label={t("nav.profileMenu")}>
-                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {user ? (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link href={dashHref} className="flex items-center gap-2 cursor-pointer">
-                          <LayoutDashboard className="w-4 h-4" />
-                          {t("nav.dashboard")}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onSelect={requestLogout}
-                        className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/30 cursor-pointer"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        {t("nav.signOut")}
-                      </DropdownMenuItem>
-                    </>
-                  ) : (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link href="/login" className="flex items-center gap-2 cursor-pointer">
-                          <LogIn className="w-4 h-4" />
-                          {t("nav.logIn")}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/register" className="flex items-center gap-2 cursor-pointer">
-                          <UserPlus className="w-4 h-4" />
-                          {t("nav.signUp")}
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
             {user ? (
               <div className="hidden sm:flex items-center gap-3">
                 <Link href={dashHref} className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
@@ -341,58 +336,90 @@ export function SiteHeader() {
                 <Donate3DButton />
               </div>
             )}
-
-            <button onClick={() => setOpen(v => !v)}
-              className="lg:hidden relative flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-[#e5e2d5] dark:border-zinc-800 text-stone-900 dark:text-white transition-all hover:bg-stone-50 dark:hover:bg-zinc-850"
-              aria-label={t("nav.openMenu")}>
-              <Menu className={`w-5 h-5 absolute transition-all duration-300 ${open ? "opacity-0 rotate-90 scale-50" : "opacity-100"}`} />
-              <X    className={`w-5 h-5 absolute transition-all duration-300 ${open ? "opacity-100" : "opacity-0 -rotate-90 scale-50"}`} />
-            </button>
           </div>
         </div>
 
         {/* Mobile overlay */}
-        <div className={`lg:hidden fixed inset-0 z-20 transition-opacity duration-300 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        <div className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
           onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-stone-950/40 backdrop-blur-xs" />
         </div>
 
         {/* Mobile drawer */}
-        <div className={`lg:hidden fixed top-0 right-0 bottom-0 z-20 w-[85%] max-w-sm bg-[#f5f4ee] dark:bg-zinc-950 backdrop-blur-xl shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "translate-x-0" : "translate-x-full"}`}>
-          <div className="flex flex-col h-full pt-24 px-8 pb-8">
-            <div className="flex flex-col gap-1">
+        <div className={`lg:hidden fixed top-0 right-0 bottom-0 z-50 w-[85%] max-w-sm bg-[#faf8f5] dark:bg-zinc-950 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "translate-x-0" : "translate-x-full"}`}>
+          <div className="flex flex-col h-full p-6">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-[#e5e2d5]/60 dark:border-stone-850/30">
+              <Link href="/" onClick={() => setOpen(false)}>
+                <CareNestLogo size="md" />
+              </Link>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close menu"
+                className="flex items-center justify-center w-9 h-9 rounded-full text-stone-750 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Navigation links */}
+            <div className="flex flex-col gap-1 py-4 overflow-y-auto flex-1">
               {navLinks.map((link, i) => (
                 <Link key={link.href} href={link.href} onClick={() => setOpen(false)}
-                  className={`text-2xl font-semibold py-4 border-b border-stone-200 dark:border-stone-800 transition-all duration-500 ${
+                  className={`text-xl font-bold py-3 px-2 rounded-xl transition-all duration-200 ${
                     isActive(link.href)
-                      ? "text-[#b04a15] dark:text-orange-400"
-                      : "text-stone-900 dark:text-white"
-                  } ${open ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
-                  style={{ transitionDelay: open ? `${150 + i * 70}ms` : "0ms" }}>
+                      ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6]/50 dark:bg-zinc-900"
+                      : "text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-900/40"
+                  }`}
+                >
                   {link.label}
                 </Link>
               ))}
             </div>
-            <div className={`mt-8 flex flex-col gap-4 transition-all duration-500 ${open ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
-              style={{ transitionDelay: open ? "470ms" : "0ms" }}>
-              {user ? (
-                <>
-                  <div className="text-sm font-bold text-stone-400 truncate mb-2">{user.email}</div>
-                  <Link href={dashHref} onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><Shield className="w-4 h-4" /> {t("nav.dashboard")}</Link>
-                  <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-[#b04a15]"><User className="w-4 h-4" /> {t("nav.profile")}</Link>
+
+            {/* Divider & Preferences */}
+            <div className="border-t border-[#e5e2d5]/60 dark:border-stone-850/30 pt-4 mt-auto space-y-4">
+              {/* Preferences */}
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Preferences</span>
+                <div className="flex items-center gap-2">
+                  <LanguageSwitcher />
                   <button
-                    onClick={() => { setOpen(false); requestLogout(); }}
-                    className="flex items-center gap-2 text-sm font-medium text-stone-750 dark:text-stone-200 hover:text-red-600 text-left"
+                    onClick={toggleTheme}
+                    className="relative flex items-center justify-center w-8 h-8 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-750 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all active:scale-95 bg-white dark:bg-zinc-900"
+                    aria-label="Toggle theme"
                   >
-                    <LogOut className="w-4 h-4" /> {t("nav.signOut")}
+                    <div className="relative w-4 h-4 flex items-center justify-center">
+                      <Sun className={`w-3.5 h-3.5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
+                      <Moon className={`w-3.5 h-3.5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 transform ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
+                    </div>
                   </button>
-                </>
-              ) : (
-                <>
-                  <Link href="/register" onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><UserPlus className="w-4 h-4" /> {t("nav.signUp")}</Link>
-                  <Link href="/login"    onClick={() => setOpen(false)} className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-white"><LogIn    className="w-4 h-4" /> {t("nav.logIn")}</Link>
-                </>
-              )}
+                </div>
+              </div>
+
+              {/* Profile or Auth actions */}
+              <div className="flex flex-col gap-2 pt-2">
+                {user ? (
+                  <>
+                    <div className="text-xs font-bold text-stone-400 truncate mb-1 px-1">{user.email}</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link href={dashHref} onClick={() => setOpen(false)} className="flex items-center justify-center gap-1 text-xs font-bold py-2 border rounded-xl bg-white dark:bg-zinc-900 text-stone-750 dark:text-stone-200 hover:bg-stone-50"><Shield className="w-3.5 h-3.5" /> Dashboard</Link>
+                      <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center justify-center gap-1 text-xs font-bold py-2 border rounded-xl bg-white dark:bg-zinc-900 text-stone-750 dark:text-stone-200 hover:bg-stone-50"><User className="w-3.5 h-3.5" /> Profile</Link>
+                    </div>
+                    <button
+                      onClick={() => { setOpen(false); requestLogout(); }}
+                      className="flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/20 dark:bg-red-950/10 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 w-full"
+                    >
+                      <LogOut className="w-3.5 h-3.5" /> {t("nav.signOut")}
+                    </button>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link href="/login" onClick={() => setOpen(false)} className="flex items-center justify-center gap-1 text-xs font-bold py-2.5 border rounded-xl bg-white dark:bg-zinc-900 text-stone-750 dark:text-stone-250 hover:bg-stone-50"><LogIn className="w-3.5 h-3.5" /> {t("nav.logIn")}</Link>
+                    <Link href="/register" onClick={() => setOpen(false)} className="flex items-center justify-center gap-1 text-xs font-bold py-2.5 border rounded-xl bg-[#b04a15] text-white hover:bg-[#963c0d]"><UserPlus className="w-3.5 h-3.5" /> {t("nav.signUp")}</Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

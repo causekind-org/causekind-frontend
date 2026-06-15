@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocale } from "next-intl";
 
 // Module-level in-memory cache — survives re-renders, cleared on page reload
@@ -93,4 +93,13 @@ export function useDynamicTranslations(texts: (string | null | undefined)[]): (s
   }, [JSON.stringify(texts), locale]);
 
   return results;
+}
+
+/**
+ * A helper component to dynamically translate and render database-driven text.
+ * Safe to use inside loops or conditional rendering blocks where hooks are not allowed.
+ */
+export function TranslatedText({ text }: { text: string | null | undefined }): ReactNode {
+  const translated = useDynamicTranslation(text);
+  return translated ?? "";
 }

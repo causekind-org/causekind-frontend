@@ -147,7 +147,7 @@ export function SearchableSelect({
       {open && (
         <div
           className={[
-            "absolute z-50 mt-1 w-full min-w-[200px]",
+            "absolute z-[100] mt-1 w-full min-w-[200px]",
             "rounded-xl border border-orange-100 dark:border-stone-700",
             "bg-white dark:bg-zinc-900 shadow-lg",
           ].join(" ")}

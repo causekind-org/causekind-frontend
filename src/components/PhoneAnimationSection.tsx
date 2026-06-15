@@ -134,11 +134,10 @@ function DonateScreen() {
         ].map((a) => (
           <div
             key={a.label}
-            className={`h-8 rounded-xl flex items-center justify-center border text-[9px] font-black ${
-              a.active
+            className={`h-8 rounded-xl flex items-center justify-center border text-[9px] font-black ${a.active
                 ? "bg-[#b04a15] border-[#b04a15] text-white shadow-md shadow-[#b04a15]/25"
                 : "bg-white border-stone-200 text-stone-600"
-            }`}
+              }`}
           >
             {a.label}
           </div>
@@ -188,17 +187,17 @@ const SCREENS = [
 /* ─────────────────────────── main component ─────────────────────────── */
 
 export function PhoneAnimationSection() {
-  const outerRef    = useRef<HTMLDivElement>(null);
-  const lineRef     = useRef<HTMLDivElement>(null); // progress fill line
-  const phoneRef    = useRef<HTMLDivElement>(null); // phone wrapper for parallax
-  const rafRef      = useRef<number>(0);
-  const prevStep    = useRef(0);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const lineRef = useRef<HTMLDivElement>(null); // progress fill line
+  const phoneRef = useRef<HTMLDivElement>(null); // phone wrapper for parallax
+  const rafRef = useRef<number>(0);
+  const prevStep = useRef(0);
 
-  const [step, setStep]           = useState(0);
+  const [step, setStep] = useState(0);
   const [screenKey, setScreenKey] = useState(0);
-  const [dir, setDir]             = useState<"up" | "down">("down");
+  const [dir, setDir] = useState<"up" | "down">("down");
   const [isDesktop, setIsDesktop] = useState(false);
-  const [hinted, setHinted]       = useState(false); // scroll hint fades after first scroll
+  const [hinted, setHinted] = useState(false); // scroll hint fades after first scroll
 
   /* ── breakpoint detection ── */
   useEffect(() => {
@@ -232,15 +231,15 @@ export function PhoneAnimationSection() {
         const el = outerRef.current;
         if (!el) return;
 
-        const rect       = el.getBoundingClientRect();
-        const sectionH   = el.offsetHeight;
-        const viewH      = window.innerHeight;
+        const rect = el.getBoundingClientRect();
+        const sectionH = el.offsetHeight;
+        const viewH = window.innerHeight;
         const scrollRange = sectionH - viewH;
         if (scrollRange <= 0) return;
 
         // progress 0→1 through the scroll track
-        const scrolled  = Math.max(0, Math.min(scrollRange, -rect.top));
-        const progress  = scrolled / scrollRange;
+        const scrolled = Math.max(0, Math.min(scrollRange, -rect.top));
+        const progress = scrolled / scrollRange;
 
         // smooth line fill — direct DOM (no React re-render)
         if (lineRef.current) {
@@ -548,7 +547,7 @@ export function PhoneAnimationSection() {
               <div className="space-y-1">
                 {STEPS.map((s, i) => {
                   const isActive = i === step;
-                  const isPast   = i < step;
+                  const isPast = i < step;
                   return (
                     <button
                       key={i}
@@ -564,8 +563,8 @@ export function PhoneAnimationSection() {
                           isActive
                             ? `${s.accentBg} border-transparent shadow-lg scale-110 ring-4 ${s.accentRing}`
                             : isPast
-                            ? "bg-stone-100 dark:bg-black border-stone-100 dark:border-zinc-700 scale-100"
-                            : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-700 scale-100",
+                              ? "bg-stone-100 dark:bg-black border-stone-100 dark:border-zinc-700 scale-100"
+                              : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-700 scale-100",
                         ].join(" ")}
                       >
                         {isPast ? (
@@ -574,9 +573,8 @@ export function PhoneAnimationSection() {
                           </svg>
                         ) : (
                           <s.Icon
-                            className={`w-4 h-4 transition-colors duration-300 ${
-                              isActive ? "text-white" : "text-stone-400 dark:text-stone-600"
-                            }`}
+                            className={`w-4 h-4 transition-colors duration-300 ${isActive ? "text-white" : "text-stone-400 dark:text-stone-600"
+                              }`}
                           />
                         )}
                       </div>
@@ -584,24 +582,21 @@ export function PhoneAnimationSection() {
                       {/* Text */}
                       <div className="flex-1 min-w-0 pt-1">
                         <span
-                          className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 transition-colors duration-300 ${
-                            isActive ? s.accentText : "text-stone-300 dark:text-zinc-600"
-                          }`}
+                          className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 transition-colors duration-300 ${isActive ? s.accentText : "text-stone-300 dark:text-zinc-600"
+                            }`}
                         >
                           {s.number}
                         </span>
                         <p
-                          className={`text-[15px] font-bold leading-snug transition-all duration-300 ${
-                            isActive ? "text-stone-900 dark:text-white" : "text-stone-400 dark:text-zinc-600"
-                          }`}
+                          className={`text-[15px] font-bold leading-snug transition-all duration-300 ${isActive ? "text-stone-900 dark:text-white" : "text-stone-400 dark:text-zinc-600"
+                            }`}
                         >
                           {s.title}
                         </p>
                         {/* Description — accordion reveal on active */}
                         <div
-                          className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                            isActive ? "max-h-24 opacity-100 mt-1.5" : "max-h-0 opacity-0"
-                          }`}
+                          className={`overflow-hidden transition-all duration-500 ease-in-out ${isActive ? "max-h-24 opacity-100 mt-1.5" : "max-h-0 opacity-0"
+                            }`}
                         >
                           <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed font-medium pr-4">
                             {s.desc}
@@ -616,9 +611,8 @@ export function PhoneAnimationSection() {
               {/* Scroll hint — desktop only, fades after scrolling starts */}
               <div
                 aria-hidden
-                className={`hidden lg:flex items-center gap-2.5 mt-7 ml-[60px] transition-all duration-700 ${
-                  hinted ? "opacity-0 translate-y-1 pointer-events-none" : "opacity-100"
-                }`}
+                className={`hidden lg:flex items-center gap-2.5 mt-7 ml-[60px] transition-all duration-700 ${hinted ? "opacity-0 translate-y-1 pointer-events-none" : "opacity-100"
+                  }`}
               >
                 <div className="animate-bounce-slow flex flex-col items-center gap-[3px]">
                   <div className="w-px h-3.5 bg-[#b04a15]/35 rounded-full" />
@@ -643,11 +637,10 @@ export function PhoneAnimationSection() {
                     key={i}
                     onClick={() => goTo(i)}
                     aria-label={`Step ${i + 1}`}
-                    className={`h-1 rounded-full transition-all duration-500 ${
-                      i === step
+                    className={`h-1 rounded-full transition-all duration-500 ${i === step
                         ? "w-8 bg-[#b04a15]"
                         : "w-3 bg-stone-200 dark:bg-zinc-700 hover:bg-stone-300"
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -672,64 +665,62 @@ export function PhoneAnimationSection() {
                   {/* Phone body — black bg clipped to rounded corners */}
                   <div className="absolute inset-0 bg-black rounded-[44px] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
 
-                  {/* Screen — explicit 7px inset guarantees the black frame is always visible */}
-                  <div className="absolute inset-[7px] overflow-hidden rounded-[37px] bg-stone-50">
+                    {/* Screen — explicit 7px inset guarantees the black frame is always visible */}
+                    <div className="absolute inset-[7px] overflow-hidden rounded-[37px] bg-stone-50">
 
-                    {/* Status bar */}
-                    <div className="relative z-20 flex items-center justify-between px-5 pt-2.5 pb-0.5 bg-white">
-                      <span className="text-[9px] font-bold text-stone-800">9:41</span>
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex gap-[2px] items-end h-[10px]">
-                          {[3, 5, 7, 9].map((h, i) => (
-                            <div key={i} className="w-[2.5px] bg-stone-800 rounded-[1px]" style={{ height: h }} />
-                          ))}
-                        </div>
-                        <div className="w-[18px] h-[9px] border border-stone-800 rounded-[2.5px] relative">
-                          <div className="absolute inset-[1.5px] right-[3px] bg-stone-800 rounded-[1px]" />
-                          <div className="absolute right-[-3px] top-1/2 -translate-y-1/2 w-[2px] h-[4px] bg-stone-700 rounded-r-sm" />
+                      {/* Status bar */}
+                      <div className="relative z-20 flex items-center justify-between px-5 pt-2.5 pb-0.5 bg-white">
+                        <span className="text-[9px] font-bold text-stone-800">9:41</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex gap-[2px] items-end h-[10px]">
+                            {[3, 5, 7, 9].map((h, i) => (
+                              <div key={i} className="w-[2.5px] bg-stone-800 rounded-[1px]" style={{ height: h }} />
+                            ))}
+                          </div>
+                          <div className="w-[18px] h-[9px] border border-stone-800 rounded-[2.5px] relative">
+                            <div className="absolute inset-[1.5px] right-[3px] bg-stone-800 rounded-[1px]" />
+                            <div className="absolute right-[-3px] top-1/2 -translate-y-1/2 w-[2px] h-[4px] bg-stone-700 rounded-r-sm" />
+                          </div>
                         </div>
                       </div>
+
+                      {/* Dynamic island */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[72px] h-[22px] bg-zinc-900 rounded-b-[18px] z-30" />
+
+                      {/* Screen content — transition class is direction-aware */}
+                      <div className="absolute inset-0 top-9 overflow-hidden bg-white">
+                        {SCREENS.map((screen, i) => (
+                          <div
+                            key={i === step ? `screen-${step}-${screenKey}` : `screen-idle-${i}`}
+                            className={`absolute inset-0 ${i === step ? enterClass : "opacity-0 pointer-events-none"
+                              }`}
+                          >
+                            {screen}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Home indicator */}
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[80px] h-[3px] bg-stone-300 rounded-full" />
                     </div>
+                    {/* closes phone body */}
+                  </div>
 
-                    {/* Dynamic island */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[72px] h-[22px] bg-zinc-900 rounded-b-[18px] z-30" />
-
-                    {/* Screen content — transition class is direction-aware */}
-                    <div className="absolute inset-0 top-9 overflow-hidden bg-white">
-                      {SCREENS.map((screen, i) => (
-                        <div
-                          key={i === step ? `screen-${step}-${screenKey}` : `screen-idle-${i}`}
-                          className={`absolute inset-0 ${
-                            i === step ? enterClass : "opacity-0 pointer-events-none"
+                  {/* Step counter badge — shows which screen is active */}
+                  <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                    {STEPS.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`rounded-full transition-all duration-500 ${i === step
+                            ? "w-6 h-1.5 bg-[#b04a15]"
+                            : i < step
+                              ? "w-1.5 h-1.5 bg-[#b04a15]/40"
+                              : "w-1.5 h-1.5 bg-stone-300 dark:bg-zinc-700"
                           }`}
-                        >
-                          {screen}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Home indicator */}
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[80px] h-[3px] bg-stone-300 rounded-full" />
+                      />
+                    ))}
                   </div>
-                  {/* closes phone body */}
-                  </div>
-
-                {/* Step counter badge — shows which screen is active */}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-                  {STEPS.map((_, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-full transition-all duration-500 ${
-                        i === step
-                          ? "w-6 h-1.5 bg-[#b04a15]"
-                          : i < step
-                          ? "w-1.5 h-1.5 bg-[#b04a15]/40"
-                          : "w-1.5 h-1.5 bg-stone-300 dark:bg-zinc-700"
-                      }`}
-                    />
-                  ))}
-                </div>
-                {/* closes outer wrapper */}
+                  {/* closes outer wrapper */}
                 </div>
               </div>
             </div>

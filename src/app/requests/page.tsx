@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { useDynamicTranslation, useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getItemRequests, donateToRequest, getMyProfile, analyzeItemImage, type ItemRequest, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Reveal } from "@/components/Reveal";
@@ -19,29 +21,58 @@ import Link from "next/link";
 
 const CATEGORIES = ["All", "Medical aid", "Education", "Livelihood", "Relief", "Household"];
 
+function urgencyVariant(u: string) {
+  return (u === "CRITICAL" || u === "HIGH") ? "destructive" as const : "outline" as const;
+}
+
 function RequestCardSkeleton() {
   return (
-    <div className="rounded-2xl border-2 border-orange-200/50 dark:border-orange-900/30 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
-      <div className="h-40 bg-stone-100 dark:bg-zinc-800 animate-pulse" />
-      <div className="p-5 space-y-3">
-        <div className="flex gap-2">
-          <div className="h-5 w-20 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
-          <div className="h-5 w-16 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
-        </div>
-        <div className="h-5 w-3/4 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
-        <div className="h-4 w-full bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
-        <div className="h-4 w-2/3 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
-        <div className="flex justify-between items-center">
-          <div className="h-4 w-16 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
-          <div className="h-5 w-14 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
-        </div>
-        <div className="h-9 w-full bg-stone-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+    <div className="flex items-center gap-4 px-4 py-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-stone-100 dark:border-zinc-800">
+      <div className="w-14 h-14 rounded-xl bg-stone-100 dark:bg-zinc-800 animate-pulse shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 w-3/4 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+        <div className="h-3 w-1/2 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+        <div className="h-3 w-1/3 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
       </div>
+      <div className="w-16 h-8 bg-stone-100 dark:bg-zinc-800 rounded-xl animate-pulse shrink-0" />
+    </div>
+  );
+}
+
+function RequestItem({ r, onDonate }: { r: ItemRequest; onDonate: (r: ItemRequest) => void }) {
+  const t = useTranslations("requests");
+  const [title] = useDynamicTranslations([r.title]);
+  return (
+    <div className="flex items-center gap-4 px-4 py-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-stone-100 dark:border-zinc-800 transition-shadow hover:shadow-md">
+      <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-orange-50 dark:bg-zinc-800 shrink-0">
+        {r.imageUrl ? (
+          <Image src={r.imageUrl} alt={r.title} fill sizes="56px" className="object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <Package className="h-6 w-6 text-orange-200 dark:text-zinc-600" />
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-stone-900 dark:text-stone-100 text-sm leading-tight line-clamp-1">{title ?? r.title}</p>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">
+          {t("by")} {r.doneeName}, <TranslatedText text={r.city} />
+        </p>
+        <p className="text-xs text-stone-400 dark:text-stone-500">{t("qty")}: {r.quantity}</p>
+      </div>
+      <button
+        onClick={() => onDonate(r)}
+        className="shrink-0 px-4 py-1.5 bg-[#C17A3A] hover:bg-[#a86430] dark:bg-[#C17A3A] dark:hover:bg-[#a86430] text-white text-sm font-semibold rounded-xl transition-colors active:scale-95"
+      >
+        Give
+      </button>
     </div>
   );
 }
 
 export default function RequestsPage() {
+  const t = useTranslations("requests");
+  const tCommon = useTranslations("common");
   const { user } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,6 +85,7 @@ export default function RequestsPage() {
 
   // Donate modal state
   const [donateTarget, setDonateTarget] = useState<ItemRequest | null>(null);
+  const modalTitle = useDynamicTranslation(donateTarget?.title ?? null);
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -76,10 +108,6 @@ export default function RequestsPage() {
     return (!q || r.title.toLowerCase().includes(q) || r.city.toLowerCase().includes(q) || r.category.toLowerCase().includes(q))
       && (category === "All" || r.category === category);
   });
-
-  function urgencyVariant(u: string) {
-    return (u === "CRITICAL" || u === "HIGH") ? "destructive" as const : "outline" as const;
-  }
 
   function openDonateModal(request: ItemRequest) {
     if (!user) { router.push("/login"); return; }
@@ -164,16 +192,16 @@ export default function RequestsPage() {
               </span>
               <span className="text-xs font-bold text-[#b04a15] dark:text-[#e07b3a] uppercase tracking-widest">In-Kind Giving</span>
             </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#963c0d] dark:text-white sm:text-3xl">In-kind Requests</h1>
-            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400 font-medium">Items people need. Upload photos and AI auto-fills the description for you.</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-[#963c0d] dark:text-white sm:text-3xl">{t("title")}</h1>
+            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400 font-medium">{t("subtitle")}</p>
           </Reveal>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
-              <Input className="pl-9 rounded-xl border-orange-100 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 bg-white dark:bg-zinc-900 dark:text-stone-100" placeholder="Search by item, city, category…" value={search} onChange={e => setSearch(e.target.value)} />
+              <Input className="pl-9 rounded-xl border-orange-100 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 bg-white dark:bg-zinc-900 dark:text-stone-100" placeholder={t("searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} />
             </div>
             <Link href="/requests/new">
-              <Button variant="outline" className="btn-3d rounded-xl border-orange-200 dark:border-stone-800 text-[#b04a15] dark:text-[#e07b3a] hover:bg-orange-50 dark:hover:bg-zinc-900 font-semibold">Request an item</Button>
+              <Button variant="outline" className="btn-3d rounded-xl border-orange-200 dark:border-stone-800 text-[#b04a15] dark:text-[#e07b3a] hover:bg-orange-50 dark:hover:bg-zinc-900 font-semibold">{t("new")}</Button>
             </Link>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -183,7 +211,7 @@ export default function RequestsPage() {
                   category === c
                     ? "bg-[#b04a15] border-[#b04a15] text-white shadow-sm shadow-orange-900/20"
                     : "border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:border-[#b04a15] dark:hover:border-[#e07b3a] hover:text-[#b04a15] dark:hover:text-[#e07b3a] bg-white dark:bg-zinc-900"
-                }`}>{c}
+                }`}><TranslatedText text={c} />
               </button>
             ))}
           </div>
@@ -192,7 +220,7 @@ export default function RequestsPage() {
 
         <div className="mx-auto max-w-7xl px-4 py-8">
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-3 max-w-2xl mx-auto">
               {Array.from({ length: 6 }).map((_, i) => <RequestCardSkeleton key={i} />)}
             </div>
           ) : filtered.length === 0 ? (
@@ -202,55 +230,24 @@ export default function RequestsPage() {
                   <div className="mb-4 w-16 h-16 rounded-2xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
                     <PackageOpen className="w-8 h-8 text-[#b04a15]/40 dark:text-orange-400/30" />
                   </div>
-                  <p className="font-bold text-stone-700 dark:text-stone-300 text-base">No requests yet</p>
-                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">No in-kind requests have been posted yet. Check back soon.</p>
+                  <p className="font-bold text-stone-700 dark:text-stone-300 text-base">{t("noRequests")}</p>
+                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">{t("noRequestsSubtext")}</p>
                 </>
               ) : (
                 <>
                   <div className="mb-4 w-16 h-16 rounded-2xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
                     <SearchX className="w-8 h-8 text-stone-300 dark:text-zinc-600" />
                   </div>
-                  <p className="font-bold text-stone-700 dark:text-stone-300 text-base">No matches found</p>
-                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">Try a different search term or category.</p>
+                  <p className="font-bold text-stone-700 dark:text-stone-300 text-base">{t("noMatches")}</p>
+                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">{t("noMatchesSubtext")}</p>
                 </>
               )}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-3 max-w-2xl mx-auto">
               {filtered.map((r, i) => (
-                <Reveal key={r.id} delay={i * 70}>
-                  <Card className="card-3d card-shimmer card-glow rounded-2xl border-2 border-orange-200 dark:border-orange-900/60 bg-white dark:bg-zinc-900 shadow-sm h-full overflow-hidden">
-                    {/* Image section */}
-                    <div className="relative w-full h-40 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden">
-                      {r.imageUrl ? (
-                        <Image src={r.imageUrl} alt={r.title} fill sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw" className="object-cover" />
-                      ) : (
-                        <div className="flex h-full flex-col items-center justify-center gap-2 text-orange-300 dark:text-zinc-600">
-                          <Package className="h-10 w-10" />
-                          <span className="text-xs font-semibold text-orange-300 dark:text-zinc-600 uppercase tracking-wider">No photo</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                    </div>
-                    <CardContent className="space-y-3 p-5">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold">{r.category}</Badge>
-                        <Badge variant={urgencyVariant(r.urgency)} className="dark:border-stone-805">{r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase()}</Badge>
-                      </div>
-                      <p className="font-bold text-stone-900 dark:text-stone-100 leading-tight">{r.title}</p>
-                      {r.description && <p className="line-clamp-2 text-sm text-stone-500 dark:text-stone-400">{r.description}</p>}
-                      <p className="text-sm text-stone-500 dark:text-stone-400">Qty: {r.quantity} · by {r.doneeName}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500"><MapPin className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" /> {r.city}</span>
-                        <Badge className="bg-[#b04a15] text-white border-0 text-xs">Verified</Badge>
-                      </div>
-                      <p className="text-xs text-stone-400 dark:text-stone-500">Contact details shared after admin approves your match</p>
-                      <Button size="sm" className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl font-semibold"
-                        onClick={() => openDonateModal(r)}>
-                        <Upload className="mr-1.5 h-4 w-4" /> I can donate this
-                      </Button>
-                    </CardContent>
-                  </Card>
+                <Reveal key={r.id} delay={i * 50}>
+                  <RequestItem r={r} onDonate={openDonateModal} />
                 </Reveal>
               ))}
             </div>
@@ -266,13 +263,13 @@ export default function RequestsPage() {
             {/* Header */}
             <div className="relative border-b border-orange-100 dark:border-stone-800 bg-gradient-to-r from-[#b04a15]/10 to-transparent px-5 py-4">
               <div className="pr-8">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#b04a15] dark:text-[#ff8a65]">Donating to</p>
-                <h2 className="mt-0.5 text-lg font-extrabold text-[#1c1108] dark:text-white leading-tight">{donateTarget.title}</h2>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#b04a15] dark:text-[#ff8a65]">{t("donatingTo")}</p>
+                <h2 className="mt-0.5 text-lg font-extrabold text-[#1c1108] dark:text-white leading-tight">{modalTitle ?? donateTarget.title}</h2>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="flex items-center gap-1 text-xs text-stone-500"><MapPin className="h-3 w-3" /> {donateTarget.city}</span>
-                  <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#ff8a65] border-0 text-xs">{donateTarget.category}</Badge>
+                  <span className="flex items-center gap-1 text-xs text-stone-500"><MapPin className="h-3 w-3" /> <TranslatedText text={donateTarget.city} /></span>
+                  <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#ff8a65] border-0 text-xs"><TranslatedText text={donateTarget.category} /></Badge>
                   <Badge variant={urgencyVariant(donateTarget.urgency)} className="text-xs">
-                    {donateTarget.urgency.charAt(0) + donateTarget.urgency.slice(1).toLowerCase()} urgency
+                    {tCommon("urgency" + donateTarget.urgency.charAt(0) + donateTarget.urgency.slice(1).toLowerCase())}
                   </Badge>
                 </div>
               </div>

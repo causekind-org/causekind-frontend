@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, MapPin, Package, Sparkles } from "lucide-react";
+import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import type { ItemListing } from "@/lib/api";
 
 const INTERVAL = 3000;
@@ -100,7 +101,7 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
                   {/* Category Badge */}
                   <div className="absolute top-3 right-3 z-10">
                     <span className="bg-[#b04a15] text-white font-bold text-[10px] px-2.5 py-1 rounded-lg shadow-sm tracking-wider uppercase">
-                      {item.category}
+                      <TranslatedText text={item.category} />
                     </span>
                   </div>
                 </div>
@@ -110,13 +111,13 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
                   <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 font-semibold mb-2">
                     <span className="flex items-center gap-1 bg-orange-50/80 dark:bg-zinc-950/50 px-2 py-1 rounded-md border border-orange-100/40 dark:border-stone-800">
                       <MapPin className="size-3.5 text-[#b04a15]" />
-                      {item.city}
+                      <TranslatedText text={item.city} />
                     </span>
                     <span className="text-stone-400 dark:text-stone-500">By {item.donorName}</span>
                   </div>
 
                   <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-1 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors duration-200">
-                    {item.title}
+                    <TranslatedText text={item.title} />
                   </h3>
 
                   <div className="mt-auto pt-3 border-t border-orange-50/50 dark:border-stone-800 flex justify-between items-center text-[11px] text-stone-400 font-bold">

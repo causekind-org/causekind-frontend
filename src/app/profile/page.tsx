@@ -9,19 +9,15 @@ import {
   updateProfile,
   getMyDonations,
   getMyCampaigns,
+  getMyItemRequests,
+  getMyMatches,
   type UserProfile,
   type Donation,
   type Campaign,
+  type ItemRequest,
+  type ItemMatch,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,13 +27,15 @@ import {
   Phone,
   MapPin,
   Mail,
-  ArrowLeft,
   Shield,
   Heart,
-  TrendingUp,
-  BarChart3,
+  ChevronDown,
+  Award,
+  BookOpen,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 
@@ -101,17 +99,12 @@ function formatINR(n: number) {
   }).format(n);
 }
 
-function toTitleCase(str: string) {
-  return str.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
-}
-
 // ── country-state-city option builders ───────────────────────────────────────
 
 function buildCountryOptions(): SelectOption[] {
   return Country.getAllCountries().map((c) => ({
     value: c.isoCode,
     label: c.name,
-    // No prefix: emoji flags render as 2-letter codes (e.g. "IN") on Windows
   }));
 }
 
@@ -176,6 +169,13 @@ export default function ProfilePage() {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
+  // In-kind / requests
+  const [myRequests, setMyRequests] = useState<ItemRequest[]>([]);
+  const [inKindCount, setInKindCount] = useState(0);
+
+  // Settings panel toggle
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   // Derived option lists (memoized to avoid re-building every render)
   const countryOptions = buildCountryOptions();
   const dialCodeOptions = buildDialCodeOptions();
@@ -199,18 +199,22 @@ export default function ProfilePage() {
     const savedAvatar = localStorage.getItem(avatarKey(user.email));
     if (savedAvatar) setAvatarDataUrl(savedAvatar);
 
-    // Run IP geolocation, profile fetch, and donation/campaign history in parallel
+    // Run IP geolocation, profile fetch, donation/campaign history, and in-kind data in parallel
     Promise.all([
       detectCountryFromIP(),
       getProfile(),
       getMyDonations().catch((): Donation[] => []),
       getMyCampaigns().catch((): Campaign[] => []),
+      getMyItemRequests().catch((): ItemRequest[] => []),
+      getMyMatches().catch((): ItemMatch[] => []),
     ])
-      .then(([detectedCountry, p, d, c]) => {
+      .then(([detectedCountry, p, d, c, req, matches]) => {
         setProfile(p);
         setFullName(p.fullName);
         setDonations(d);
         setCampaigns(c);
+        setMyRequests(req);
+        setInKindCount(matches.length);
 
         // Parse phone: if stored with dial code prefix "+XX …" split it out
         if (p.phone) {
@@ -344,41 +348,26 @@ export default function ProfilePage() {
     }
   }
 
-  // Loading / auth guard renders
+  // Loading skeleton
   if (authLoading || loading) {
     return (
-      <div className="bg-[#faf8f4] dark:bg-zinc-950 min-h-[calc(100vh-3.5rem)] py-12 px-6 sm:px-10">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div className="h-5 w-36 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
-          <div className="grid grid-cols-3 gap-3">
+      <div className="bg-[#F7F0E8] min-h-screen pb-28">
+        <div className="px-5 pt-14 pb-4 flex items-center justify-between">
+          <div className="h-8 w-40 bg-stone-200 rounded-lg animate-pulse" />
+          <div className="w-10 h-10 rounded-full bg-stone-200 animate-pulse" />
+        </div>
+        <div className="mx-5 mt-2 rounded-3xl bg-stone-200 h-36 animate-pulse" />
+        <div className="px-5 mt-6 space-y-3">
+          <div className="h-5 w-44 bg-stone-200 rounded animate-pulse" />
+          <div className="flex gap-4 overflow-hidden">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-2xl bg-white dark:bg-zinc-900 border border-orange-100 dark:border-stone-800 h-20 animate-pulse"
-              />
+              <div key={i} className="w-48 shrink-0 h-44 bg-stone-200 rounded-2xl animate-pulse" />
             ))}
           </div>
-          <div className="rounded-2xl border-2 border-orange-100 dark:border-stone-800 bg-white dark:bg-zinc-900 overflow-hidden">
-            <div className="p-6 border-b border-orange-100 dark:border-stone-800">
-              <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-full bg-stone-200 dark:bg-zinc-700 animate-pulse shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-5 w-24 bg-stone-200 dark:bg-zinc-700 rounded animate-pulse" />
-                  <div className="h-3 w-40 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
-                  <div className="h-5 w-16 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
-                </div>
-              </div>
-            </div>
-            <div className="p-6 space-y-5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="h-3 w-20 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
-                  <div className="h-11 w-full bg-stone-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
-                </div>
-              ))}
-              <div className="h-12 w-full bg-stone-200 dark:bg-zinc-700 rounded-xl animate-pulse" />
-            </div>
-          </div>
+        </div>
+        <div className="px-5 mt-6 grid grid-cols-2 gap-4">
+          <div className="h-36 bg-stone-200 rounded-2xl animate-pulse" />
+          <div className="h-36 bg-stone-200 rounded-2xl animate-pulse" />
         </div>
       </div>
     );
@@ -387,89 +376,216 @@ export default function ProfilePage() {
   if (!user) return null;
 
   const initials = getInitials(fullName || profile?.fullName || user.email);
-  const selectedDialOption = dialCodeOptions.find((o) => o.value === dialCountry);
-  const dialDisplay = selectedDialOption
-    ? `${selectedDialOption.prefix ?? ""} ${getDialCode(dialCountry)}`
-    : "";
 
   const completedDonations = donations.filter((d) => d.status === "COMPLETED");
   const totalGiven = completedDonations.reduce((sum, d) => sum + Number(d.amount), 0);
   const campaignsSupported = new Set(completedDonations.map((d) => d.campaignId)).size;
 
-  const roleColorClass =
-    profile?.role === "ADMIN"
-      ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-0"
-      : profile?.role === "DONEE"
-      ? "bg-[#b04a15]/10 dark:bg-orange-900/20 text-[#b04a15] dark:text-orange-300 border-0"
-      : "bg-sky-100 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300 border-0";
+  // Derive supported campaigns list (deduplicated by campaignId)
+  const campaignMap = new Map<number, { id: number; title: string; amount: number }>();
+  completedDonations.forEach((d) => {
+    const existing = campaignMap.get(d.campaignId);
+    if (existing) existing.amount += Number(d.amount);
+    else campaignMap.set(d.campaignId, { id: d.campaignId, title: d.campaignTitle, amount: Number(d.amount) });
+  });
+  const supportedCampaigns = Array.from(campaignMap.values());
+
+  // Badge eligibility
+  const hasFirstGiver = completedDonations.length > 0;
+  const hasCommunityHero = campaignsSupported >= 3;
+  const hasEducationAdvocate = completedDonations.some((d) =>
+    d.campaignTitle?.toLowerCase().includes("education")
+  );
+
+  const badges = [
+    { label: "First Giver", icon: Heart, earned: hasFirstGiver },
+    { label: "Community Hero", icon: Award, earned: hasCommunityHero },
+    { label: "Education Advocate", icon: BookOpen, earned: hasEducationAdvocate },
+  ];
 
   return (
-    <div className="bg-[#faf8f4] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 min-h-[calc(100vh-3.5rem)] py-12 px-6 sm:px-10 transition-colors duration-300">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="bg-[#F7F0E8] min-h-screen pb-28">
 
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-amber-500 transition-colors w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-        </Link>
+      {/* ── Page Header ── */}
+      <div className="px-5 pt-14 pb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-black text-stone-900">My Impact</h1>
+        <div className="w-10 h-10 rounded-full bg-[#C17A3A] flex items-center justify-center overflow-hidden shrink-0">
+          {avatarDataUrl ? (
+            <Image
+              src={avatarDataUrl}
+              alt={initials}
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-white font-bold text-sm">{initials}</span>
+          )}
+        </div>
+      </div>
 
-        {/* Stats strip */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-orange-100 dark:border-stone-800 p-4 text-center shadow-sm">
-            <Heart className="h-4 w-4 text-[#b04a15] mx-auto mb-1" />
-            <p className="text-base font-extrabold text-[#b04a15] leading-tight truncate">{formatINR(totalGiven)}</p>
-            <p className="text-[10px] text-stone-400 font-semibold mt-0.5 uppercase tracking-wide">Total donated</p>
+      {/* ── Hero Impact Card ── */}
+      <div className="mx-5 mt-2 rounded-3xl overflow-hidden">
+        <div className="bg-gradient-to-br from-[#C17A3A] to-[#8B4513] p-6 text-white relative">
+          <div className="relative z-10">
+            <p className="text-xs font-bold uppercase tracking-wide opacity-80">Total Impact</p>
+            <p className="text-4xl font-black leading-tight mt-1">{formatINR(totalGiven)}</p>
+            <p className="text-sm opacity-80 mt-1">Donated</p>
+            <div className="border-t border-white/30 my-3" />
+            <p className="text-sm font-semibold">
+              {inKindCount} In-Kind Item{inKindCount !== 1 ? "s" : ""} Given
+            </p>
           </div>
-          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-orange-100 dark:border-stone-800 p-4 text-center shadow-sm">
-            <TrendingUp className="h-4 w-4 text-[#1e3a60] dark:text-[#4a7fba] mx-auto mb-1" />
-            <p className="text-base font-extrabold text-[#1e3a60] dark:text-[#4a7fba] leading-tight">{campaignsSupported}</p>
-            <p className="text-[10px] text-stone-400 font-semibold mt-0.5 uppercase tracking-wide">Causes helped</p>
+          {/* Decorative illustration */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="20" r="12" fill="white" />
+              <path d="M18 70c0-12.15 9.85-22 22-22h0c12.15 0 22 9.85 22 22" stroke="white" strokeWidth="5" strokeLinecap="round" />
+              <circle cx="16" cy="28" r="8" fill="white" />
+              <path d="M2 62c0-8.84 5.37-16 12-16" stroke="white" strokeWidth="4" strokeLinecap="round" />
+              <circle cx="64" cy="28" r="8" fill="white" />
+              <path d="M78 62c0-8.84-5.37-16-12-16" stroke="white" strokeWidth="4" strokeLinecap="round" />
+            </svg>
           </div>
-          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-orange-100 dark:border-stone-800 p-4 text-center shadow-sm">
-            <BarChart3 className="h-4 w-4 text-stone-400 dark:text-stone-500 mx-auto mb-1" />
-            <p className="text-base font-extrabold text-stone-800 dark:text-stone-100 leading-tight">{campaigns.length}</p>
-            <p className="text-[10px] text-stone-400 font-semibold mt-0.5 uppercase tracking-wide">Campaigns</p>
+        </div>
+      </div>
+
+      {/* ── Supported Campaigns ── */}
+      <div className="px-5 mt-6">
+        <p className="text-lg font-bold text-stone-900 mb-3">Supported Campaigns</p>
+        {supportedCampaigns.length === 0 ? (
+          <div className="bg-white rounded-2xl px-4 py-6 shadow-sm text-center">
+            <p className="text-sm text-stone-400">No campaigns supported yet</p>
+          </div>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-3 -mx-0 scrollbar-hide">
+            {supportedCampaigns.map((item) => {
+              const campaignImage =
+                campaigns.find((c) => c.id === item.id)?.imageUrl || "/images/hero-1.jpg";
+              return (
+                <div
+                  key={item.id}
+                  className="w-48 shrink-0 bg-white rounded-2xl shadow-sm overflow-hidden"
+                >
+                  <div className="h-28 w-full relative">
+                    <Image
+                      src={campaignImage}
+                      alt={item.title}
+                      fill
+                      className="object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/images/hero-1.jpg";
+                      }}
+                    />
+                  </div>
+                  <div className="px-3 py-2">
+                    <p className="text-xs font-bold truncate text-stone-900">{item.title}</p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">Campaign</p>
+                    <p className="text-xs font-bold text-[#C17A3A] mt-1">{formatINR(item.amount)}</p>
+                    <Link href={`/campaigns/${item.id}`}>
+                      <button className="w-full mt-1.5 py-1 bg-[#C17A3A] text-white text-xs rounded-lg font-semibold hover:bg-[#a8642e] transition-colors">
+                        Donate Now
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Two-column grid: Badges + My Requests ── */}
+      <div className="px-5 mt-6 grid grid-cols-2 gap-4">
+
+        {/* Badges & Recognition */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-bold text-stone-900 mb-3">Badges</p>
+          <div className="grid grid-cols-3 gap-2">
+            {badges.map(({ label, icon: Icon, earned }) => (
+              <div
+                key={label}
+                className={`flex flex-col items-center ${earned ? "" : "opacity-40"}`}
+              >
+                <div className="w-10 h-10 rounded-full bg-[#C17A3A]/10 flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-[#C17A3A]" />
+                </div>
+                <p className="text-[9px] font-semibold text-stone-600 text-center mt-1 leading-tight">
+                  {label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
-        <Card className="rounded-2xl border-2 border-orange-200 dark:border-stone-800 bg-white dark:bg-zinc-900 shadow-md overflow-hidden">
-          <CardHeader className="border-b border-orange-100 dark:border-stone-800 bg-gradient-to-r from-orange-50/50 to-transparent p-6">
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
-              {/* Avatar */}
-              <AvatarUpload
-                imageDataUrl={avatarDataUrl}
-                initials={initials}
-                onImageChange={handleAvatarChange}
-              />
-              <div>
-                <CardTitle className="text-xl font-bold tracking-tight">My Profile</CardTitle>
-                <CardDescription className="text-stone-500 dark:text-stone-400">
-                  View and update your personal details
-                </CardDescription>
-                <Badge className={`mt-2 text-xs font-bold ${roleColorClass}`}>
-                  {toTitleCase(profile?.role ?? "DONOR")}
-                </Badge>
-              </div>
+        {/* My Requests */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-bold text-stone-900 mb-3">My Requests</p>
+          {myRequests.length === 0 ? (
+            <p className="text-xs text-stone-400">No requests yet</p>
+          ) : (
+            <div className="space-y-0.5">
+              {myRequests.slice(0, 3).map((req) => (
+                <div key={req.id} className="flex items-center gap-2 py-1.5">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-stone-100 shrink-0 flex items-center justify-center">
+                    {req.imageUrl ? (
+                      <Image
+                        src={req.imageUrl}
+                        alt={req.title}
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Package className="w-4 h-4 text-stone-400" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold truncate text-stone-900">{req.title}</p>
+                    <p className="text-[10px] text-stone-400 truncate">{req.city}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardHeader>
+          )}
+        </div>
+      </div>
 
-          <CardContent className="p-6">
+      {/* ── Account Settings ── */}
+      <div className="px-5 mt-6 mb-6">
+        <button
+          onClick={() => setSettingsOpen((v) => !v)}
+          className="w-full flex items-center justify-between py-3 px-4 bg-white rounded-2xl shadow-sm"
+        >
+          <span className="text-sm font-bold text-stone-900">Account Settings</span>
+          <ChevronDown
+            className={`w-4 h-4 text-stone-400 transition-transform duration-200 ${settingsOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {settingsOpen && (
+          <div className="bg-white rounded-2xl p-5 mt-3 shadow-sm">
             <form onSubmit={handleSave} className="space-y-5">
 
+              {/* Avatar */}
+              <div className="flex justify-center">
+                <AvatarUpload
+                  imageDataUrl={avatarDataUrl}
+                  initials={initials}
+                  onImageChange={handleAvatarChange}
+                />
+              </div>
+
               {/* Full Name */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="fullName"
-                  className="text-xs font-bold uppercase tracking-wider text-stone-400"
-                >
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-stone-400">
                   Full Name
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-stone-400" />
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                   <Input
                     id="fullName"
-                    className="pl-10 rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 text-stone-800 dark:text-stone-100"
+                    className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
                     placeholder="Enter your full name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -478,23 +594,20 @@ export default function ProfilePage() {
               </div>
 
               {/* Email (read-only) */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <Label
-                    htmlFor="email"
-                    className="text-xs font-bold uppercase tracking-wider text-stone-400"
-                  >
+                  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-stone-400">
                     Email Address
                   </Label>
                   <span className="text-[10px] font-black text-stone-400 uppercase flex items-center gap-1">
-                    <Shield className="w-3 h-3 text-[#b04a15]" /> System ID
+                    <Shield className="w-3 h-3 text-[#C17A3A]" /> System ID
                   </span>
                 </div>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-stone-400" />
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                   <Input
                     id="email"
-                    className="pl-10 rounded-xl border-stone-200 dark:border-stone-850 py-5 font-medium bg-stone-50 dark:bg-zinc-950 text-stone-400 cursor-not-allowed"
+                    className="pl-10 rounded-xl border-stone-200 py-5 font-medium bg-stone-50 text-stone-400 cursor-not-allowed"
                     value={profile?.email || ""}
                     disabled
                   />
@@ -502,12 +615,11 @@ export default function ProfilePage() {
               </div>
 
               {/* Phone with dial-code dropdown */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
                   <Phone className="w-3.5 h-3.5" /> Phone Number
                 </Label>
                 <div className="flex gap-2">
-                  {/* Dial-code picker */}
                   <div className="w-[120px] shrink-0">
                     <SearchableSelect
                       options={dialCodeOptions}
@@ -518,31 +630,24 @@ export default function ProfilePage() {
                       renderSelectedLabel={(opt) => getDialCode(opt.value)}
                     />
                   </div>
-                  {/* Number input */}
                   <Input
                     id="phone"
                     type="tel"
                     inputMode="numeric"
-                    className="flex-1 rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 text-stone-800 dark:text-stone-100"
+                    className="flex-1 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
                     placeholder="Enter phone number"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
                   />
                 </div>
-                {dialDisplay && (
-                  <p className="text-xs text-stone-400">
-                    Will save as: <span className="font-semibold">{dialDisplay} {phoneNumber || "…"}</span>
-                  </p>
-                )}
               </div>
 
-              {/* ── Location: Country → State → City ── */}
+              {/* Location: Country → State → City */}
               <div className="space-y-3">
                 <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5" /> Location
                 </Label>
 
-                {/* Country */}
                 <div className="space-y-1">
                   <Label htmlFor="country" className="text-xs text-stone-500">Country</Label>
                   <SearchableSelect
@@ -555,7 +660,6 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                {/* State */}
                 <div className="space-y-1">
                   <Label htmlFor="state" className="text-xs text-stone-500">State / Province</Label>
                   {noStateOptions ? (
@@ -576,7 +680,6 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                {/* City */}
                 <div className="space-y-1">
                   <Label htmlFor="city" className="text-xs text-stone-500">City</Label>
                   {showCityFreeText ? (
@@ -584,7 +687,7 @@ export default function ProfilePage() {
                       <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                       <Input
                         id="city"
-                        className="pl-10 rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 text-stone-800 dark:text-stone-100"
+                        className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
                         placeholder="Enter your city"
                         value={cityFreeText}
                         onChange={(e) => setCityFreeText(e.target.value)}
@@ -606,15 +709,15 @@ export default function ProfilePage() {
               </div>
 
               {/* Save button */}
-              <div className="pt-2">
+              <div className="pt-1">
                 <Button
                   type="submit"
-                  className="btn-3d btn-shine w-full bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2"
+                  className="w-full bg-[#C17A3A] hover:bg-[#a8642e] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors"
                   disabled={saving}
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" /> Saving Changes…
+                      <Loader2 className="size-4 animate-spin" /> Saving…
                     </>
                   ) : (
                     "Save Profile Changes"
@@ -622,59 +725,10 @@ export default function ProfilePage() {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Donation history */}
-        {donations.length > 0 && (
-          <Card className="rounded-2xl border-2 border-orange-200 dark:border-stone-800 bg-white dark:bg-zinc-900 shadow-md overflow-hidden">
-            <CardHeader className="border-b border-orange-100 dark:border-stone-800 bg-gradient-to-r from-orange-50/30 to-transparent p-5">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Heart className="h-4 w-4 text-[#b04a15]" />
-                Donation History
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5">
-              <div className="space-y-2">
-                {donations.slice(0, 6).map((d) => (
-                  <div
-                    key={d.id}
-                    className="flex items-center justify-between rounded-xl border border-orange-100 dark:border-stone-800 p-3 gap-3"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm text-stone-800 dark:text-stone-100 truncate">{d.campaignTitle}</p>
-                      <p className="text-xs text-stone-400 mt-0.5">
-                        {new Date(d.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-bold text-sm text-[#b04a15]">{formatINR(Number(d.amount))}</span>
-                      <Badge
-                        variant={d.status === "COMPLETED" ? "default" : "secondary"}
-                        className="text-xs"
-                      >
-                        {d.status === "COMPLETED" ? "Done" : "Pending"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {donations.length > 6 && (
-                <Link href="/dashboard" className="block mt-3">
-                  <Button variant="ghost" size="sm" className="w-full text-xs text-stone-400 hover:text-[#b04a15]">
-                    View all {donations.length} donations on dashboard
-                  </Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
+          </div>
         )}
-
       </div>
+
     </div>
   );
 }

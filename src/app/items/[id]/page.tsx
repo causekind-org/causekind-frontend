@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { ArrowLeft, Loader2, MapPin, Package, ShieldCheck, X } from "lucide-react";
+import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 
 export default function ItemDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,10 @@ export default function ItemDetailPage() {
   const router = useRouter();
 
   const [item, setItem] = useState<ItemListing | null>(null);
+  const [translatedTitle, translatedDescription] = useDynamicTranslations([
+    item?.title ?? null,
+    item?.description ?? null,
+  ]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -147,10 +152,10 @@ export default function ItemDetailPage() {
             {/* Badges row */}
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="bg-orange-100 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] border-0 font-semibold">
-                {item.category}
+                <TranslatedText text={item.category} />
               </Badge>
               <Badge variant="outline" className="border-orange-200 dark:border-stone-800 text-stone-600 dark:text-stone-400">
-                {item.condition}
+                <TranslatedText text={item.condition} />
               </Badge>
               <Badge className="bg-[#b04a15] text-white border-0 text-xs">
                 <ShieldCheck className="mr-1 h-3 w-3" /> Verified
@@ -159,14 +164,14 @@ export default function ItemDetailPage() {
 
             {/* Title */}
             <h1 className="text-2xl font-extrabold tracking-tight text-[#963c0d] dark:text-white sm:text-3xl leading-tight">
-              {item.title}
+              {translatedTitle ?? item.title}
             </h1>
 
             {/* Meta */}
             <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-stone-500 dark:text-stone-400">
               <span className="flex items-center gap-1">
                 <MapPin className="h-4 w-4 text-[#b04a15] dark:text-[#e07b3a]" />
-                {item.city}
+                <TranslatedText text={item.city} />
                 {item.pincode ? ` – ${item.pincode}` : ""}
               </span>
               <span>Qty: <span className="font-semibold text-stone-700 dark:text-stone-200">{item.quantity}</span></span>
@@ -183,7 +188,7 @@ export default function ItemDetailPage() {
                   Description
                 </p>
                 <p className="text-sm leading-relaxed text-stone-600 dark:text-stone-400 whitespace-pre-line">
-                  {item.description}
+                  {translatedDescription ?? item.description}
                 </p>
               </div>
             )}
@@ -210,10 +215,10 @@ export default function ItemDetailPage() {
                   Requesting
                 </p>
                 <h2 className="mt-0.5 text-lg font-extrabold text-[#1c1108] dark:text-white leading-tight">
-                  {requestTarget.title}
+                  <TranslatedText text={requestTarget.title} />
                 </h2>
                 <p className="text-sm text-stone-500 dark:text-stone-400">
-                  {requestTarget.category} · {requestTarget.condition} · Qty {requestTarget.quantity} · {requestTarget.city}
+                  <TranslatedText text={requestTarget.category} /> · <TranslatedText text={requestTarget.condition} /> · Qty {requestTarget.quantity} · <TranslatedText text={requestTarget.city} />
                 </p>
               </div>
               <button
