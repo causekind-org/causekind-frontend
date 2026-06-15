@@ -176,16 +176,12 @@ export default function CampaignDetailPage() {
   const isOrganizer = !!myProfile && myProfile.id === campaign.doneeId;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 pb-24 lg:pb-8">
-      <Link href="/campaigns" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> {t("backToCampaigns")}
-      </Link>
-
-      <div className="grid gap-8 lg:grid-cols-3">
+    <div className="max-w-6xl mx-auto pb-24 lg:pb-8">
+      <div className="grid gap-0 lg:gap-8 lg:grid-cols-3 lg:px-4 lg:py-8">
         {/* Left — details */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Hero image */}
-          <div className="relative h-64 overflow-hidden rounded-2xl bg-gradient-to-br from-[#b04a15]/15 via-orange-50 dark:via-zinc-800 to-[#1e3a60]/10">
+        <div className="space-y-0 lg:space-y-6 lg:col-span-2">
+          {/* Hero image — full bleed on mobile, rounded on desktop */}
+          <div className="relative h-64 sm:h-80 overflow-hidden bg-gradient-to-br from-[#b04a15]/15 via-orange-50 dark:via-zinc-800 to-[#1e3a60]/10 lg:rounded-2xl">
             {campaign.imageUrl && (
               <Image
                 src={campaign.imageUrl}
@@ -195,25 +191,45 @@ export default function CampaignDetailPage() {
                 className="object-cover"
               />
             )}
+            {/* Back button overlaid on image */}
+            <Link
+              href="/campaigns"
+              className="absolute top-4 left-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm shadow-md text-stone-700 dark:text-stone-200 hover:bg-white dark:hover:bg-zinc-900 transition"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </div>
 
-          <div>
+          {/* Title + meta — padded on mobile */}
+          <div className="px-4 pt-4 lg:px-0 lg:pt-0">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Badge variant="secondary"><TranslatedText text={campaign.category} /></Badge>
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <MapPin className="h-3 w-3" /> <TranslatedText text={campaign.city} />, <TranslatedText text={campaign.state} />
+              <span className="font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                <TranslatedText text={campaign.city} /> · <TranslatedText text={campaign.category} />
               </span>
-              <span className="flex items-center gap-1 text-primary">
+              <span className="flex items-center gap-1 text-[#C17A3A] font-semibold">
                 <ShieldCheck className="h-3 w-3" /> {t("adminVerified")}
               </span>
             </div>
-            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">{translatedTitle ?? campaign.title}</h1>
+            <h1 className="mt-2 text-2xl font-bold sm:text-3xl leading-tight">{translatedTitle ?? campaign.title}</h1>
             <div className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
               <User className="h-3.5 w-3.5" />
               {t("organizedBy")} <span className="font-medium text-foreground">{campaign.doneeName}</span>
             </div>
+
+            {/* Funded inline on mobile */}
+            <div className="mt-4 lg:hidden space-y-2">
+              <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-[#C17A3A] to-[#e07b3a] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="font-bold text-[#C17A3A]">{formatINR(campaign.amountRaised)} {t("raised")}</span>
+                <span className="text-muted-foreground">of {formatINR(campaign.targetAmount)}</span>
+              </div>
+              <p className="text-xs text-stone-400 font-semibold">{pct}% {t("funded")}</p>
+            </div>
           </div>
 
+          <div className="px-4 lg:px-0 space-y-6">
           <Card>
             <CardHeader><CardTitle>{t("aboutCampaign")}</CardTitle></CardHeader>
             <CardContent className="text-sm leading-relaxed text-foreground/80 whitespace-pre-line">
@@ -286,19 +302,21 @@ export default function CampaignDetailPage() {
               <p className="text-sm text-muted-foreground text-center py-4">{t("beFirstToDonate")}</p>
             </CardContent>
           </Card>
+          </div>
         </div>
 
         {/* Right — sticky donate panel */}
-        <div ref={donatePanelRef} id="donate-panel">
+        <div ref={donatePanelRef} id="donate-panel" className="px-4 lg:px-0">
           <Card className="h-fit lg:sticky lg:top-20">
             <CardContent className="space-y-5 p-6">
-              <div>
+              {/* Progress bar — only visible on desktop (mobile shows it inline above) */}
+              <div className="hidden lg:block">
                 <Progress value={pct} className="h-2" />
                 <div className="mt-2 flex justify-between text-sm">
-                  <span className="font-semibold">{formatINR(campaign.amountRaised)} raised</span>
+                  <span className="font-semibold">{formatINR(campaign.amountRaised)} {t("raised")}</span>
                   <span className="text-muted-foreground">of {formatINR(campaign.targetAmount)}</span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{pct}% funded</p>
+                <p className="mt-1 text-xs text-muted-foreground">{pct}% {t("funded")}</p>
               </div>
 
               <div className="space-y-2">

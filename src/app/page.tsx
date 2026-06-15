@@ -5,7 +5,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
-import { Sparkles, Heart, ShieldCheck, HandCoins, MapPin, Award, Coins, Users, Package, ArrowRight } from "lucide-react";
+import { Sparkles, Heart, ShieldCheck, HandCoins, MapPin, Award, Coins, Users, Package, ArrowRight, BookOpen, Shirt } from "lucide-react";
+
+const MOBILE_CATEGORY_IMAGES: Record<string, string[]> = {
+  Medical:    ["/images/medical-1.png", "/images/medical-2.png"],
+  Education:  ["/images/hero-7.jpg"],
+  Livelihood: ["/images/hero-3.jpg"],
+  Community:  ["/images/hero-6.jpg"],
+};
+
+function getMobileCardImage(category: string, id: number): string {
+  const imgs = MOBILE_CATEGORY_IMAGES[category];
+  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.jpg";
+}
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
 import { MockListingsCarousel } from "@/components/MockListingsCarousel";
@@ -99,9 +111,9 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="bg-white dark:bg-zinc-950 text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
-      <div className="relative z-10">
-
+    <div className="bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+      {/* ── Desktop View (lg:block) ── */}
+      <div className="hidden lg:block bg-white dark:bg-zinc-950 relative z-10">
         {/* ── Mobile stats strip ── */}
         <div className="sm:hidden overflow-hidden border-b border-orange-100 bg-white">
           <div className="stats-ticker-track py-3.5">
@@ -351,7 +363,7 @@ export default function HomePage() {
                   {t("inkindSection.subtitle")}
                 </p>
               </Reveal>
-              <Reveal delay={100} className="shrink-0">
+              <Reveal delay={105} className="shrink-0">
                 <Link href="/requests" className="inline-flex">
                   <Button
                     variant="outline"
@@ -425,7 +437,7 @@ export default function HomePage() {
                   {t("listingsSection.subtitle")}
                 </p>
               </Reveal>
-              <Reveal delay={100} className="shrink-0">
+              <Reveal delay={105} className="shrink-0">
                 <Link href="/items" className="inline-flex">
                   <Button
                     variant="outline"
@@ -469,6 +481,302 @@ export default function HomePage() {
               </div>
             </div>
           </Reveal>
+        </section>
+      </div>
+
+      {/* ── Mobile View (lg:hidden) ── */}
+      <div className="lg:hidden min-h-screen pb-24 bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-8">
+        {/* Moving stats ticker — above hero image */}
+        <div className="overflow-hidden bg-[#C17A3A] -mx-4 lg:hidden">
+          <div className="animate-stats-ticker flex gap-0 whitespace-nowrap py-2">
+            {[0, 1].map((copy) => (
+              <div key={copy} className="flex items-center gap-8 px-4 shrink-0">
+                {statItems.map((item) => (
+                  <span key={item.label + copy} className="flex items-center gap-2 text-white">
+                    <item.icon className="w-3.5 h-3.5 opacity-80" />
+                    <span className="text-xs font-bold">{item.value}</span>
+                    <span className="text-[10px] opacity-75 font-medium">{item.label}</span>
+                    <span className="opacity-40 mx-2">·</span>
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Mobile Hero Section ── */}
+        <section className="relative w-full aspect-[4/3] min-h-[280px] rounded-[2rem] overflow-hidden shadow-xs mt-2">
+          {/* Background Image */}
+          <div className="absolute inset-0 w-full h-full">
+            <Image
+              src="/images/hero-1.jpg"
+              alt="Together We Support"
+              fill
+              className="object-cover brightness-[0.75] contrast-[1.05]"
+              style={{ objectPosition: "center 25%" }}
+              priority
+              sizes="100vw"
+            />
+            {/* Dark translucent overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/25 pointer-events-none" />
+          </div>
+
+          {/* Hero Content */}
+          <div className="relative z-10 w-full h-full p-6 flex flex-col justify-between items-start">
+            <div className="bg-[#faf8f3]/85 dark:bg-zinc-900/85 backdrop-blur-xs border border-[#e5e2d5]/30 rounded-full px-3.5 py-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse" />
+              <span className="text-[#b04a15] text-[10px] font-extrabold uppercase tracking-wider">
+                <TranslatedText text="Making Lives Better" />
+              </span>
+            </div>
+
+            <div className="space-y-2.5 max-w-sm">
+              <h1 className="text-white text-xl sm:text-2xl font-black leading-tight tracking-tight">
+                <TranslatedText text="Together We Support, Educate and Heal" />
+              </h1>
+              <p className="text-white/80 text-[11px] sm:text-xs font-semibold leading-relaxed">
+                <TranslatedText text="Every donation helps a family grow stronger, healthier, and more secure." />
+              </p>
+              <Link href="/campaigns" className="inline-block mt-1">
+                <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-950/20">
+                  <TranslatedText text="Explore Campaigns" />
+                </button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Latest Active Campaigns ── */}
+        <section className="space-y-4">
+          <div className="flex items-end justify-between">
+            <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
+              <TranslatedText text="Latest Active Campaigns" />
+            </h2>
+            <Link href="/campaigns" className="text-[10px] font-extrabold text-[#b04a15] uppercase tracking-wider hover:underline">
+              <TranslatedText text="Browse All" /> →
+            </Link>
+          </div>
+
+          <div className="flex gap-4 overflow-x-auto pb-4 px-1 -mx-5 scrollbar-none snap-x snap-mandatory">
+            {loading && (
+              <div className="flex justify-center py-10 w-full">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15]" />
+              </div>
+            )}
+            {error && (
+              <p className="text-stone-500 text-xs py-10 px-4 font-semibold">{error}</p>
+            )}
+            {!loading && !error && campaigns.length === 0 && (
+              <p className="text-stone-400 text-xs py-10 px-4 font-medium">No active campaigns.</p>
+            )}
+            {!loading && !error && campaigns.slice(0, 5).map((campaign) => {
+              const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
+              return (
+                <div
+                  key={campaign.id}
+                  className="bg-white dark:bg-zinc-900 rounded-[1.75rem] p-3.5 border border-[#e8e2d5]/60 dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0 shadow-xs"
+                >
+                  {/* Left Column */}
+                  <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
+                    <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100">
+                      <Image
+                        src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)}
+                        alt={campaign.title}
+                        fill
+                        className="object-cover"
+                        sizes="100px"
+                      />
+                    </div>
+                    <p className="text-[10px] font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug">
+                      <TranslatedText text={campaign.title} />
+                    </p>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="flex-1 flex flex-col justify-between min-w-0">
+                    <div>
+                      <h4 className="text-[11px] font-black text-stone-850 dark:text-stone-100 leading-snug truncate">
+                        <TranslatedText text={campaign.title} />
+                      </h4>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        <span className="bg-[#faf1e1] dark:bg-zinc-850 text-[#b04a15] dark:text-orange-400 font-extrabold text-[8px] px-1.5 py-0.5 rounded tracking-wider uppercase">
+                          <TranslatedText text={campaign.city} />
+                        </span>
+                        <span className="bg-[#faf1e1] dark:bg-zinc-850 text-[#b04a15] dark:text-orange-400 font-extrabold text-[8px] px-1.5 py-0.5 rounded tracking-wider uppercase">
+                          <TranslatedText text={campaign.category} />
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-2.5 space-y-1">
+                      <div className="flex justify-between items-center text-[9px] font-extrabold text-stone-400 uppercase">
+                        <span>Progress</span>
+                        <span className="text-[#b04a15]">{pct}% Funded</span>
+                      </div>
+                      <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
+                        <div className="bg-[#b04a15] h-full rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <p className="text-[9px] text-stone-500 dark:text-stone-400 font-extrabold mt-1">
+                        ₹{formatINR(campaign.amountRaised)} raised of ₹{formatINR(campaign.targetAmount)}
+                      </p>
+                    </div>
+
+                    <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
+                      <button className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold py-2 rounded-lg text-[9px] tracking-wide uppercase transition-all shadow-sm active:scale-95">
+                        <TranslatedText text="Donate Now" />
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── In-Kind Requests ── */}
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <div className="flex items-end justify-between">
+              <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
+                <TranslatedText text="In-Kind Requests" />
+              </h2>
+              <Link href="/requests" className="text-[10px] font-extrabold text-[#b04a15] uppercase tracking-wider hover:underline">
+                <TranslatedText text="Browse All" /> →
+              </Link>
+            </div>
+            <p className="text-[11px] text-stone-400 dark:text-stone-500 font-bold leading-relaxed">
+              <TranslatedText text="Donees request physical items they need..." />
+            </p>
+          </div>
+
+          <div className="flex gap-4 overflow-x-auto pb-4 px-1 -mx-5 scrollbar-none snap-x snap-mandatory">
+            {loading && (
+              <div className="flex justify-center py-10 w-full">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15]" />
+              </div>
+            )}
+            {error && (
+              <p className="text-stone-500 text-xs py-10 px-4 font-semibold">{error}</p>
+            )}
+            {!loading && !error && itemRequests.length === 0 && (
+              <p className="text-stone-400 text-xs py-10 px-4 font-medium">No in-kind requests.</p>
+            )}
+            {!loading && !error && itemRequests.slice(0, 5).map((req) => {
+              // Icon selector logic
+              const titleLower = req.title.toLowerCase();
+              let ReqIcon = Package;
+              if (titleLower.includes("book") || titleLower.includes("school") || titleLower.includes("study")) {
+                ReqIcon = BookOpen;
+              } else if (titleLower.includes("clothe") || titleLower.includes("winter") || titleLower.includes("shirt") || titleLower.includes("jacket")) {
+                ReqIcon = Shirt;
+              }
+
+              return (
+                <div
+                  key={req.id}
+                  className="bg-white dark:bg-zinc-900 rounded-[1.75rem] p-4 border border-[#e8e2d5]/60 dark:border-zinc-800 flex flex-col justify-between w-[240px] snap-start shrink-0 shadow-xs"
+                >
+                  <div className="flex gap-3">
+                    <div className="bg-[#faf1e1] dark:bg-zinc-850 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-[#e8e2d5]/20">
+                      <ReqIcon className="w-5 h-5 text-[#b04a15]" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-black text-stone-850 dark:text-stone-100 leading-snug line-clamp-1">
+                        <TranslatedText text={req.title} />
+                      </h4>
+                      <p className="text-[9px] text-stone-400 font-semibold truncate mt-0.5">
+                        By {req.doneeName}, <TranslatedText text={req.city} />
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3.5 flex items-center justify-between">
+                    <span className="text-[10px] text-stone-550 dark:text-stone-400 font-black">
+                      Qty: <span className="font-extrabold text-stone-800 dark:text-stone-100">{req.quantity}</span>
+                    </span>
+                    <Link href="/requests">
+                      <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-4 py-1.5 rounded-lg text-[10px] tracking-wide uppercase transition-all shadow-sm active:scale-95">
+                        <TranslatedText text="Give" />
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── Community Listings ── */}
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <div className="flex items-end justify-between">
+              <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
+                <TranslatedText text={t("listingsSection.title")} />
+              </h2>
+              <Link href="/items" className="text-[10px] font-extrabold text-[#b04a15] uppercase tracking-wider hover:underline">
+                <TranslatedText text="Browse All" /> →
+              </Link>
+            </div>
+            <p className="text-[11px] text-stone-400 dark:text-stone-500 font-bold leading-relaxed">
+              <TranslatedText text={t("listingsSection.subtitle")} />
+            </p>
+          </div>
+
+          <div className="flex gap-4 overflow-x-auto pb-4 px-1 -mx-5 scrollbar-none snap-x snap-mandatory">
+            {loading && (
+              <div className="flex justify-center py-10 w-full">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15]" />
+              </div>
+            )}
+            {error && (
+              <p className="text-stone-500 text-xs py-10 px-4 font-semibold">{error}</p>
+            )}
+            {!loading && !error && itemListings.length === 0 && (
+              <p className="text-stone-400 text-xs py-10 px-4 font-medium">No listings available.</p>
+            )}
+            {!loading && !error && itemListings.slice(0, 5).map((listing) => {
+              // Icon selector logic
+              const titleLower = listing.title.toLowerCase();
+              let ListIcon = Package;
+              if (titleLower.includes("book") || titleLower.includes("school") || titleLower.includes("study") || titleLower.includes("bag")) {
+                ListIcon = BookOpen;
+              } else if (titleLower.includes("clothe") || titleLower.includes("winter") || titleLower.includes("shirt") || titleLower.includes("jacket") || titleLower.includes("uniform")) {
+                ListIcon = Shirt;
+              }
+
+              return (
+                <div
+                  key={listing.id}
+                  className="bg-white dark:bg-zinc-900 rounded-[1.75rem] p-4 border border-[#e8e2d5]/60 dark:border-zinc-800 flex flex-col justify-between w-[240px] snap-start shrink-0 shadow-xs"
+                >
+                  <div className="flex gap-3">
+                    <div className="bg-[#faf1e1] dark:bg-zinc-850 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-[#e8e2d5]/20">
+                      <ListIcon className="w-5 h-5 text-[#b04a15]" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-black text-stone-850 dark:text-stone-100 leading-snug line-clamp-1">
+                        <TranslatedText text={listing.title} />
+                      </h4>
+                      <p className="text-[9px] text-stone-400 font-semibold truncate mt-0.5">
+                        In <TranslatedText text={listing.city} /> · {listing.condition}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3.5 flex items-center justify-between">
+                    <span className="text-[10px] text-stone-555 dark:text-stone-400 font-black">
+                      Qty: <span className="font-extrabold text-stone-800 dark:text-stone-100">{listing.quantity || 1}</span>
+                    </span>
+                    <Link href="/items">
+                      <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-4 py-1.5 rounded-lg text-[10px] tracking-wide uppercase transition-all shadow-sm active:scale-95">
+                        <TranslatedText text="Claim" />
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </section>
       </div>
     </div>

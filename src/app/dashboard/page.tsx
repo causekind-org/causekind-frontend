@@ -150,11 +150,11 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t("welcomeBack")}, {user.email}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/campaigns" className="w-fit"><Button variant="outline" className="gap-1">{t("donateMoney")}</Button></Link>
-            <Link href="/items/new" className="w-fit"><Button variant="outline" className="gap-1"><Plus className="h-4 w-4" /> {t("listItem")}</Button></Link>
-            <Link href="/campaigns/new" className="w-fit"><Button variant="outline" className="gap-1"><Plus className="h-4 w-4" /> {t("startCampaign")}</Button></Link>
-            <Link href="/requests/new" className="w-fit"><Button className="gap-1"><Plus className="h-4 w-4" /> {t("requestItem")}</Button></Link>
+          <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:flex-wrap">
+            <Link href="/campaigns" className="w-full sm:w-auto"><Button variant="outline" className="w-full gap-1">{t("donateMoney")}</Button></Link>
+            <Link href="/items/new" className="w-full sm:w-auto"><Button variant="outline" className="w-full gap-1"><Plus className="h-4 w-4" /> {t("listItem")}</Button></Link>
+            <Link href="/campaigns/new" className="w-full sm:w-auto"><Button variant="outline" className="w-full gap-1"><Plus className="h-4 w-4" /> {t("startCampaign")}</Button></Link>
+            <Link href="/requests/new" className="w-full sm:w-auto"><Button className="w-full gap-1"><Plus className="h-4 w-4" /> {t("requestItem")}</Button></Link>
           </div>
         </div>
       </div>
@@ -169,9 +169,9 @@ export default function DashboardPage() {
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-11 sm:w-11">
                   <s.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-xs text-muted-foreground sm:text-sm">{s.label}</p>
-                  <p className="text-base font-bold leading-tight sm:text-xl">{s.value}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground sm:text-sm leading-tight line-clamp-2" title={s.label}>{s.label}</p>
+                  <p className="text-base font-bold leading-tight sm:text-xl truncate" title={s.value}>{s.value}</p>
                 </div>
               </CardContent>
             </Card>
