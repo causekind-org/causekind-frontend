@@ -46,7 +46,7 @@ export default async function RootLayout({
               <SiteFooter />
               <MobileBottomNav />
               <FloatingSupportButton />
-              <Toaster richColors position="top-right" toastOptions={{ style: { zIndex: 99999 } }} />
+              <Toaster richColors position="bottom-left" offset={90} toastOptions={{ style: { zIndex: 9999 } }} />
             </AuthProvider>
           </GoogleProvider>
         </NextIntlClientProvider>

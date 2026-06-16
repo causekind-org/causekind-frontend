@@ -2,13 +2,14 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("ck_token");
+  return localStorage.getItem("ck_token") ?? sessionStorage.getItem("ck_token");
 }
 
 function handleUnauthorized() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("ck_token");
-    window.location.href = "/login";
+    sessionStorage.removeItem("ck_token");
+    window.location.href = "/login?expired=1";
   }
 }
 
@@ -328,6 +329,7 @@ export type ItemRequest = {
   doneeName: string;
   createdAt: string;
   imageUrl: string | null;
+  pickupRadiusKm: number | null;
 };
 
 export function getItemRequests() {
@@ -347,6 +349,7 @@ export function createItemRequest(data: {
   pincode?: string;
   description?: string;
   imageUrl?: string | null;
+  pickupRadiusKm?: number;
 }) {
   return request<ItemRequest>("/api/v1/item-requests", {
     method: "POST",
@@ -395,7 +398,7 @@ export type ItemMatch = {
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const token = typeof window !== "undefined" ? (localStorage.getItem("ck_token") ?? sessionStorage.getItem("ck_token")) : null;
   const formData = new FormData();
   formData.append("requestId", String(requestId));
   formData.append("description", description);
@@ -426,7 +429,7 @@ export function donateToRequest(requestId: number, images: File[], description: 
 }
 
 export function analyzeItemImage(image: File): Promise<{ description: string }> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const token = typeof window !== "undefined" ? (localStorage.getItem("ck_token") ?? sessionStorage.getItem("ck_token")) : null;
   const formData = new FormData();
   formData.append("image", image);
   return fetch(`${BASE_URL}/api/v1/matches/analyze-image`, {

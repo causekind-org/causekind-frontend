@@ -1371,3 +1371,11 @@ section:focus-within {
     transform: none !important;
   }
 }
+
+/* ── Sonner toasts: always above sticky navbar (navbar = z-50 / z-index 50) ── */
+[data-sonner-toaster] {
+  z-index: 9999 !important;
+}
+[data-sonner-toast] {
+  z-index: 9999 !important;
+}
