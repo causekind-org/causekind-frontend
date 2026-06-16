@@ -425,12 +425,14 @@ export default function CampaignDetailPage() {
 
       {/* Mobile sticky bottom donate bar */}
       <div
-        className={`lg:hidden fixed inset-x-0 z-40 transition-transform duration-300 ${
+        className={`lg:hidden fixed bottom-0 inset-x-0 z-40 transition-transform duration-300 ${
           showStickyBar ? "translate-y-0" : "translate-y-full"
         }`}
-        style={{ bottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}
       >
-        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-t border-orange-100 dark:border-stone-800 px-4 py-3 flex items-center gap-3 shadow-lg">
+        <div
+          className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-t border-orange-100 dark:border-stone-800 px-4 py-3 flex items-center gap-3 shadow-lg"
+          style={{ marginBottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}
+        >
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 truncate">{translatedTitle ?? campaign.title}</p>
             <div className="flex items-center gap-2 mt-1">
