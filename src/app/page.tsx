@@ -352,6 +352,7 @@ export default function HomePage() {
         />
 
         {/* ── In-Kind Requests Section ── */}
+        {(loading || itemRequests.length > 0) && (
         <section className="bg-white dark:bg-zinc-900 border-b border-orange-100/35 dark:border-stone-850 py-20 text-stone-900 dark:text-stone-100 transition-colors duration-300">
           <div className="mx-auto max-w-7xl px-6">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
@@ -375,10 +376,14 @@ export default function HomePage() {
               </Reveal>
             </div>
 
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-              {(itemRequests.length > 0 ? itemRequests.slice(0, 6) : Array(4).fill(null)).map((req: ItemRequest | null, i) => (
-                <Reveal key={req ? req.id : `skel-${i}`} delay={i * 80}>
-                  {req ? (
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#b04a15]/20 border-t-[#b04a15]" />
+              </div>
+            ) : (
+              <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+                {itemRequests.slice(0, 6).map((req, i) => (
+                  <Reveal key={req.id} delay={i * 80}>
                     <Card className="card-glow bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden h-full flex flex-col">
                       <div className="relative w-full h-24 sm:h-36 bg-orange-50 dark:bg-zinc-800 shrink-0 overflow-hidden">
                         {req.imageUrl ? (
@@ -416,14 +421,13 @@ export default function HomePage() {
                         </div>
                       </CardContent>
                     </Card>
-                  ) : (
-                    <div className="rounded-2xl border border-orange-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-48 animate-pulse" />
-                  )}
-                </Reveal>
-              ))}
-            </div>
+                  </Reveal>
+                ))}
+              </div>
+            )}
           </div>
         </section>
+        )}
 
         {/* ── Community Listings Section ── */}
         {itemListings.length > 0 && <section className="bg-orange-50/30 dark:bg-zinc-950 border-b border-orange-100/35 dark:border-stone-900 py-20 text-stone-900 dark:text-stone-100 transition-colors duration-300">
