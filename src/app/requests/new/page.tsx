@@ -21,8 +21,17 @@ const URGENCIES = [
   { value: "HIGH", label: "High" },
   { value: "CRITICAL", label: "Critical" },
 ];
+const PICKUP_RADII = [
+  { value: "5",      label: "Within 5 km"       },
+  { value: "10",     label: "Within 10 km"      },
+  { value: "15",     label: "Within 15 km"      },
+  { value: "20",     label: "Within 20 km"      },
+  { value: "25",     label: "Within 25 km"      },
+  { value: "50",     label: "Within 50 km"      },
+  { value: "custom", label: "Custom distance…"  },
+];
 
-const empty = { title: "", category: "", quantity: 1, urgency: "NORMAL", city: "", pincode: "", description: "", imageUrl: "" };
+const empty = { title: "", category: "", quantity: 1, urgency: "NORMAL", city: "", pincode: "", description: "", imageUrl: "", pickupRadiusKm: 10 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -38,6 +47,8 @@ export default function NewRequestPage() {
   const router = useRouter();
   const [form, setForm] = useState(empty);
   const [submitting, setSubmitting] = useState(false);
+  const [radiusSel, setRadiusSel] = useState("10");
+  const [customRadius, setCustomRadius] = useState("");
   const photoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -59,9 +70,16 @@ export default function NewRequestPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const finalRadius = radiusSel === "custom"
+      ? (parseInt(customRadius) > 0 ? parseInt(customRadius) : null)
+      : parseInt(radiusSel);
+    if (radiusSel === "custom" && !finalRadius) {
+      toast.error("Please enter a valid pickup distance in km");
+      return;
+    }
     setSubmitting(true);
     try {
-      await createItemRequest({ ...form, quantity: Number(form.quantity), imageUrl: form.imageUrl || null });
+      await createItemRequest({ ...form, quantity: Number(form.quantity), imageUrl: form.imageUrl || null, pickupRadiusKm: finalRadius ?? undefined });
       toast.success("Request submitted for review!");
       router.push("/donee/dashboard");
     } catch (err) {
@@ -109,7 +127,34 @@ export default function NewRequestPage() {
               <Field label="Pincode">
                 <Input placeholder="411001" value={form.pincode} onChange={(e) => set("pincode", e.target.value)} />
               </Field>
+              <Field label="Pickup radius">
+                <Select value={radiusSel} onValueChange={setRadiusSel}>
+                  <SelectTrigger><SelectValue placeholder="How far can you travel?" /></SelectTrigger>
+                  <SelectContent>
+                    {PICKUP_RADII.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {radiusSel === "custom" && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={500}
+                      placeholder="Enter km"
+                      value={customRadius}
+                      onChange={(e) => setCustomRadius(e.target.value)}
+                      className="w-32"
+                    />
+                    <span className="text-sm text-muted-foreground">km from your location</span>
+                  </div>
+                )}
+              </Field>
             </div>
+            <p className="text-xs text-muted-foreground -mt-1">
+              How far are you willing to travel to collect the item from a nearby donor?
+            </p>
             <Field label="Why you need this">
               <Textarea rows={4} placeholder="Be specific. Helps admin verify faster and donors connect with your story." value={form.description} onChange={(e) => set("description", e.target.value)} />
             </Field>

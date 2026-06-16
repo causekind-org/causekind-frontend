@@ -7,6 +7,7 @@ import { Country, State, City } from "country-state-city";
 import {
   getProfile,
   updateProfile,
+  updateLocation,
   getMyDonations,
   getMyCampaigns,
   getMyItemRequests,
@@ -33,6 +34,8 @@ import {
   Award,
   BookOpen,
   Package,
+  Navigation,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -176,6 +179,9 @@ export default function ProfilePage() {
   // Settings panel toggle
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // GPS location
+  const [locStatus, setLocStatus] = useState<"idle" | "requesting" | "saved" | "error">("idle");
+
   // Derived option lists (memoized to avoid re-building every render)
   const countryOptions = buildCountryOptions();
   const dialCodeOptions = buildDialCodeOptions();
@@ -309,6 +315,36 @@ export default function ProfilePage() {
       return [cityFreeText, stateIso, countryIso].filter(Boolean).join(", ");
     }
     return [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
+  }
+
+  function handleUseMyLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser doesn't support GPS location");
+      return;
+    }
+    setLocStatus("requesting");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const updated = await updateLocation(pos.coords.latitude, pos.coords.longitude);
+          setProfile(updated);
+          setLocStatus("saved");
+          toast.success("Location saved! In-kind matching is now enabled.");
+        } catch {
+          setLocStatus("error");
+          toast.error("Failed to save location. Please try again.");
+        }
+      },
+      (err) => {
+        setLocStatus("error");
+        toast.error(
+          err.code === 1
+            ? "Location access denied — please allow it in browser settings."
+            : "Could not get your location. Please try again."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -706,6 +742,51 @@ export default function ProfilePage() {
                     />
                   )}
                 </div>
+              </div>
+
+              {/* GPS Coordinates */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
+                  <Navigation className="w-3.5 h-3.5" /> GPS Location
+                </Label>
+                <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+                  <div className="flex-1 min-w-0">
+                    {profile?.latitude && profile?.longitude ? (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-stone-800">Location saved</p>
+                          <p className="text-[10px] text-stone-400">
+                            {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-stone-800">No GPS location</p>
+                          <p className="text-[10px] text-stone-400">Required for 10 km in-kind matching</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUseMyLocation}
+                    disabled={locStatus === "requesting"}
+                    className="shrink-0 flex items-center gap-1.5 rounded-lg bg-[#b04a15] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#943e11] disabled:opacity-60"
+                  >
+                    {locStatus === "requesting" ? (
+                      <><Loader2 className="w-3 h-3 animate-spin" /> Getting…</>
+                    ) : (
+                      <><Navigation className="w-3 h-3" /> Use GPS</>
+                    )}
+                  </button>
+                </div>
+                <p className="text-[10px] text-stone-400 leading-relaxed">
+                  Your exact coordinates are never shown publicly — only used to match you with nearby donors/donees.
+                </p>
               </div>
 
               {/* Save button */}

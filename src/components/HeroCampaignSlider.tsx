@@ -96,7 +96,7 @@ export function HeroCampaignSlider({
     e.preventDefault();
     e.stopPropagation();
     const token =
-      typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+      typeof window !== "undefined" ? (localStorage.getItem("ck_token") ?? sessionStorage.getItem("ck_token")) : null;
     if (!token) { router.push("/login"); return; }
 
     const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));

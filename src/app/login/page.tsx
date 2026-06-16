@@ -42,6 +42,7 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
   function triggerGoogle() {
@@ -64,7 +65,7 @@ function LoginContent() {
     setLoading(true);
     try {
       const { token } = await login(email, password);
-      setAuth(token);
+      setAuth(token, rememberMe);
       toast.success("Welcome back!");
       router.push("/");
     } catch (err) {
@@ -84,7 +85,7 @@ function LoginContent() {
         sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
         router.push("/register?social=google");
       } else {
-        setAuth(res.token);
+        setAuth(res.token, rememberMe);
         toast.success("Welcome back!");
         router.push("/");
       }
@@ -178,6 +179,22 @@ function LoginContent() {
                 </button>
               </div>
             </div>
+
+            {/* Remember me */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-stone-300 accent-[#b04a15] cursor-pointer"
+              />
+              <span className="text-sm text-stone-600 dark:text-stone-400 group-hover:text-stone-800 dark:group-hover:text-stone-200 transition-colors">
+                Remember me
+              </span>
+              <span className="ml-auto text-xs text-stone-400 dark:text-stone-500">
+                {rememberMe ? "Stay logged in" : "Log out on close"}
+              </span>
+            </label>
 
             {/* Submit */}
             <button
