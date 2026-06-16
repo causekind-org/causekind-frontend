@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { login, googleAuth } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 
 // ── Inline brand SVGs ──────────────────────────────────────────────────────────
 function GoogleIcon() {
@@ -43,12 +43,29 @@ function LoginContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const googleBtnRef = useRef<HTMLDivElement>(null);
 
-  function triggerGoogle() {
-    const btn = googleBtnRef.current?.querySelector<HTMLElement>('div[role="button"], button');
-    btn?.click();
-  }
+  const triggerGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      try {
+        const res = await googleAuth(tokenResponse.access_token);
+        if (res.needsCompletion) {
+          sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
+          sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
+          router.push("/register?social=google");
+        } else {
+          setAuth(res.token, rememberMe);
+          toast.success("Welcome back!");
+          router.push("/");
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Google login failed");
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: () => toast.error("Google sign-in failed"),
+  });
 
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
 
@@ -75,27 +92,6 @@ function LoginContent() {
     }
   }
 
-  async function handleGoogleSuccess(credentialResponse: { credential?: string }) {
-    if (!credentialResponse.credential) return;
-    setGoogleLoading(true);
-    try {
-      const res = await googleAuth(credentialResponse.credential);
-      if (res.needsCompletion) {
-        sessionStorage.setItem("ck_google_token", credentialResponse.credential);
-        sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-        router.push("/register?social=google");
-      } else {
-        setAuth(res.token, rememberMe);
-        toast.success("Welcome back!");
-        router.push("/");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google login failed");
-    } finally {
-      setGoogleLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-[calc(100svh-4rem)] flex">
 
@@ -114,15 +110,6 @@ function LoginContent() {
             <p className="text-sm text-stone-500 dark:text-stone-400">
               {t("subtitle")}
             </p>
-          </div>
-
-          {/* Hidden Google SSO */}
-          <div ref={googleBtnRef} aria-hidden="true" style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => toast.error("Google sign-in failed")}
-              width="300"
-            />
           </div>
 
           {/* Email / Password form */}
@@ -211,7 +198,7 @@ function LoginContent() {
             <button
               type="button"
               disabled={googleLoading}
-              onClick={triggerGoogle}
+              onClick={() => triggerGoogle()}
               className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
             >
               <GoogleIcon />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import Image from "next/image";
@@ -10,7 +10,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { register, googleAuth, googleComplete } from "@/lib/api";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import { Country, State, City } from "country-state-city";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 
@@ -154,7 +154,6 @@ function RegisterContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
-  const googleBtnRef = useRef<HTMLDivElement>(null);
 
   const [dialCountry, setDialCountry] = useState("IN");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -173,10 +172,28 @@ function RegisterContent() {
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
   const showCityFreeText = noStateOptions || noCityOptions;
 
-  function triggerGoogle() {
-    const btn = googleBtnRef.current?.querySelector<HTMLElement>('div[role="button"], button');
-    btn?.click();
-  }
+  const triggerGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      try {
+        const res = await googleAuth(tokenResponse.access_token);
+        if (res.needsCompletion) {
+          sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
+          sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
+          router.push("/register?social=google");
+        } else {
+          setAuth(res.token);
+          toast.success("Welcome back!");
+          router.push("/");
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Google sign-up failed");
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: () => toast.error("Google sign-up failed"),
+  });
 
   function handleCountryChange(iso: string) {
     setCountryIso(iso);
@@ -255,27 +272,6 @@ function RegisterContent() {
     }
   }
 
-  async function handleGoogleSuccess(credentialResponse: { credential?: string }) {
-    if (!credentialResponse.credential) return;
-    setGoogleLoading(true);
-    try {
-      const res = await googleAuth(credentialResponse.credential);
-      if (res.needsCompletion) {
-        sessionStorage.setItem("ck_google_token", credentialResponse.credential);
-        sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-        router.push("/register?social=google");
-      } else {
-        setAuth(res.token);
-        toast.success("Welcome back!");
-        router.push("/");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
-    } finally {
-      setGoogleLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-[calc(100svh-4rem)] flex">
 
@@ -295,17 +291,6 @@ function RegisterContent() {
               {isSocialFlow ? t("googleLinkedSubtitle") : t("createSubtitle")}
             </p>
           </div>
-
-          {/* Hidden Google SSO */}
-          {!isSocialFlow && (
-            <div ref={googleBtnRef} aria-hidden="true" style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast.error("Google sign-up failed")}
-                width="300"
-              />
-            </div>
-          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -463,7 +448,7 @@ function RegisterContent() {
               <button
                 type="button"
                 disabled={googleLoading}
-                onClick={triggerGoogle}
+                onClick={() => triggerGoogle()}
                 className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
               >
                 <GoogleIcon />
