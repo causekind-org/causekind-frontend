@@ -426,7 +426,7 @@ export default function HomePage() {
         </section>
 
         {/* ── Community Listings Section ── */}
-        <section className="bg-orange-50/30 dark:bg-zinc-950 border-b border-orange-100/35 dark:border-stone-900 py-20 text-stone-900 dark:text-stone-100 transition-colors duration-300">
+        {itemListings.length > 0 && <section className="bg-orange-50/30 dark:bg-zinc-950 border-b border-orange-100/35 dark:border-stone-900 py-20 text-stone-900 dark:text-stone-100 transition-colors duration-300">
           <div className="mx-auto max-w-7xl px-6">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
               <Reveal className="space-y-3 max-w-2xl">
@@ -453,7 +453,7 @@ export default function HomePage() {
               <MockListingsCarousel listings={itemListings.slice(0, 8)} />
             </Reveal>
           </div>
-        </section>
+        </section>}
 
         {/* ── CTA ── */}
         <section className="max-w-7xl mx-auto px-6 pt-10 sm:pt-14 pb-20">
