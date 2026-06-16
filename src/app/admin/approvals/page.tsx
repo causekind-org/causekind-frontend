@@ -147,33 +147,7 @@ export default function ApprovalsPage() {
     finally { setProcessing(null); }
   }
 
-  function RejectForm({ id, onConfirm }: { id: number; onConfirm: (id: number) => void }) {
-    return (
-      <div className="space-y-2 pt-1">
-        <Label htmlFor={`reason-${id}`}>Rejection reason</Label>
-        <Input id={`reason-${id}`} placeholder="Explain why…" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
-        <div className="flex gap-2">
-          <Button size="sm" variant="destructive" onClick={() => onConfirm(id)} disabled={processing === id}>
-            {processing === id ? <Loader2 className="size-4 animate-spin" /> : "Confirm reject"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={cancelReject}>Cancel</Button>
-        </div>
-      </div>
-    );
-  }
 
-  function ActionButtons({ id, type, onApprove }: { id: number; type: "campaign" | "listing" | "request" | "match"; onApprove: (id: number) => void }) {
-    return (
-      <div className="flex gap-2 pt-1">
-        <Button size="sm" onClick={() => onApprove(id)} disabled={processing === id} className="gap-1">
-          {processing === id ? <Loader2 className="size-4 animate-spin" /> : <><Check className="h-4 w-4" /> Approve</>}
-        </Button>
-        <Button size="sm" variant="destructive" onClick={() => openReject(id, type)} className="gap-1">
-          <X className="h-4 w-4" /> Reject
-        </Button>
-      </div>
-    );
-  }
 
   if (isLoading) return (
     <div className="flex justify-center items-center min-h-screen">
@@ -227,8 +201,8 @@ export default function ApprovalsPage() {
                     </div>
                     <p className="line-clamp-2 text-sm text-foreground/80">{c.description}</p>
                     {rejectId === c.id && rejectType === "campaign"
-                      ? <RejectForm id={c.id} onConfirm={handleRejectCampaign} />
-                      : <ActionButtons id={c.id} type="campaign" onApprove={handleApproveCampaign} />}
+                      ? <RejectForm id={c.id} rejectReason={rejectReason} setRejectReason={setRejectReason} processing={processing} onConfirm={handleRejectCampaign} cancelReject={cancelReject} />
+                      : <ActionButtons id={c.id} type="campaign" processing={processing} onApprove={handleApproveCampaign} openReject={openReject} />}
                   </CardContent>
                 </Card>
               ))}
@@ -250,8 +224,8 @@ export default function ApprovalsPage() {
                     </div>
                     {r.description && <p className="line-clamp-2 text-sm text-foreground/80">{r.description}</p>}
                     {rejectId === r.id && rejectType === "request"
-                      ? <RejectForm id={r.id} onConfirm={handleRejectRequest} />
-                      : <ActionButtons id={r.id} type="request" onApprove={handleApproveRequest} />}
+                      ? <RejectForm id={r.id} rejectReason={rejectReason} setRejectReason={setRejectReason} processing={processing} onConfirm={handleRejectRequest} cancelReject={cancelReject} />
+                      : <ActionButtons id={r.id} type="request" processing={processing} onApprove={handleApproveRequest} openReject={openReject} />}
                   </CardContent>
                 </Card>
               ))}
@@ -273,8 +247,8 @@ export default function ApprovalsPage() {
                     </div>
                     {l.description && <p className="line-clamp-2 text-sm text-foreground/80">{l.description}</p>}
                     {rejectId === l.id && rejectType === "listing"
-                      ? <RejectForm id={l.id} onConfirm={handleRejectListing} />
-                      : <ActionButtons id={l.id} type="listing" onApprove={handleApproveListing} />}
+                      ? <RejectForm id={l.id} rejectReason={rejectReason} setRejectReason={setRejectReason} processing={processing} onConfirm={handleRejectListing} cancelReject={cancelReject} />
+                      : <ActionButtons id={l.id} type="listing" processing={processing} onApprove={handleApproveListing} openReject={openReject} />}
                   </CardContent>
                 </Card>
               ))}
@@ -344,8 +318,8 @@ export default function ApprovalsPage() {
 
                     <p className="text-xs text-muted-foreground">Approving will share contact numbers between both parties via email.</p>
                     {rejectId === m.id && rejectType === "match"
-                      ? <RejectForm id={m.id} onConfirm={handleRejectMatch} />
-                      : <ActionButtons id={m.id} type="match" onApprove={handleApproveMatch} />}
+                      ? <RejectForm id={m.id} rejectReason={rejectReason} setRejectReason={setRejectReason} processing={processing} onConfirm={handleRejectMatch} cancelReject={cancelReject} />
+                      : <ActionButtons id={m.id} type="match" processing={processing} onApprove={handleApproveMatch} openReject={openReject} />}
                   </CardContent>
                 </Card>
               ))}
@@ -355,3 +329,49 @@ export default function ApprovalsPage() {
     </div>
   );
 }
+
+interface RejectFormProps {
+  id: number;
+  rejectReason: string;
+  setRejectReason: (val: string) => void;
+  processing: number | null;
+  onConfirm: (id: number) => void;
+  cancelReject: () => void;
+}
+
+function RejectForm({ id, rejectReason, setRejectReason, processing, onConfirm, cancelReject }: RejectFormProps) {
+  return (
+    <div className="space-y-2 pt-1">
+      <Label htmlFor={`reason-${id}`}>Rejection reason</Label>
+      <Input id={`reason-${id}`} placeholder="Explain why…" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+      <div className="flex gap-2">
+        <Button size="sm" variant="destructive" onClick={() => onConfirm(id)} disabled={processing === id}>
+          {processing === id ? <Loader2 className="size-4 animate-spin" /> : "Confirm reject"}
+        </Button>
+        <Button size="sm" variant="outline" onClick={cancelReject}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+interface ActionButtonsProps {
+  id: number;
+  type: "campaign" | "listing" | "request" | "match";
+  processing: number | null;
+  onApprove: (id: number) => void;
+  openReject: (id: number, type: "campaign" | "listing" | "request" | "match") => void;
+}
+
+function ActionButtons({ id, type, processing, onApprove, openReject }: ActionButtonsProps) {
+  return (
+    <div className="flex gap-2 pt-1">
+      <Button size="sm" onClick={() => onApprove(id)} disabled={processing === id} className="gap-1">
+        {processing === id ? <Loader2 className="size-4 animate-spin" /> : <><Check className="h-4 w-4" /> Approve</>}
+      </Button>
+      <Button size="sm" variant="destructive" onClick={() => openReject(id, type)} className="gap-1">
+        <X className="h-4 w-4" /> Reject
+      </Button>
+    </div>
+  );
+}
+
