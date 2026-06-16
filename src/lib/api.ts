@@ -13,23 +13,30 @@ function handleUnauthorized() {
   }
 }
 
+type RequestOptions = RequestInit & {
+  /** If true, a 401 response throws but does NOT redirect to login.
+   *  Use for background/optional fetches where one 401 shouldn't kill the whole session. */
+  silent401?: boolean;
+};
+
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestOptions = {}
 ): Promise<T> {
+  const { silent401, ...fetchOptions } = options;
   const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true",
-    ...(options.headers as Record<string, string>),
+    ...(fetchOptions.headers as Record<string, string>),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${BASE_URL}${path}`, { ...fetchOptions, headers });
 
   if (!res.ok) {
     if (res.status === 401) {
-      handleUnauthorized();
+      if (!silent401) handleUnauthorized();
       throw new Error("Session expired. Please log in again.");
     }
     if (res.status === 403) throw new Error("You don't have permission to do that.");
@@ -181,7 +188,7 @@ export function getCampaign(id: number) {
 }
 
 export function getMyCampaigns() {
-  return request<Campaign[]>("/api/v1/campaigns/mine");
+  return request<Campaign[]>("/api/v1/campaigns/mine", { silent401: true });
 }
 
 export function createCampaign(data: {
@@ -250,7 +257,7 @@ export function initiateDonation(campaignId: number, amount: number) {
 }
 
 export function getMyDonations() {
-  return request<Donation[]>("/api/v1/donations/mine");
+  return request<Donation[]>("/api/v1/donations/mine", { silent401: true });
 }
 
 // ── Item Listings ─────────────────────────────────────────────────────────────
@@ -337,7 +344,7 @@ export function getItemRequests() {
 }
 
 export function getMyItemRequests() {
-  return request<ItemRequest[]>("/api/v1/item-requests/mine");
+  return request<ItemRequest[]>("/api/v1/item-requests/mine", { silent401: true });
 }
 
 export function createItemRequest(data: {
@@ -453,7 +460,7 @@ export function requestListing(listingId: number, reason: string) {
 }
 
 export function getMyMatches() {
-  return request<ItemMatch[]>("/api/v1/matches/mine");
+  return request<ItemMatch[]>("/api/v1/matches/mine", { silent401: true });
 }
 
 export function adminGetMatches(status?: string) {
