@@ -3,33 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, MapPin, Package, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Package } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import type { ItemListing } from "@/lib/api";
 
 const INTERVAL = 3000;
 
-const FALLBACK_IMAGES: Record<string, string> = {
-  Education: "/images/hero-7.jpg",
-  Livelihood: "/images/hero-6.jpg",
-  Clothing: "/images/hero-3.jpg",
-  Electronics: "/images/hero-8.jpg",
-  Household: "/images/hero-2.jpg",
-};
-
-const MOCK_LISTINGS = [
-  { id: 1, title: "NCERT Class 10 Books", donorName: "Aarav S.", city: "Mumbai", imageUrl: null, category: "Education" },
-  { id: 2, title: "Warm Winter Blankets", donorName: "Priya K.", city: "Delhi", imageUrl: null, category: "Livelihood" },
-  { id: 3, title: "Used School Bags", donorName: "Rohan M.", city: "Bangalore", imageUrl: null, category: "Clothing" },
-  { id: 4, title: "Dell 22\" LCD Monitor", donorName: "Sanjay D.", city: "Pune", imageUrl: null, category: "Electronics" },
-  { id: 5, title: "Baby Clothes (0-6 Months)", donorName: "Meera R.", city: "Chennai", imageUrl: null, category: "Household" },
-];
 
 type ListingSlide = Pick<ItemListing, "id" | "title" | "category" | "city" | "donorName" | "imageUrl">;
 
 export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }) {
-  const items: ListingSlide[] = listings?.length ? listings : MOCK_LISTINGS;
-  const isReal = Boolean(listings?.length);
+  const items: ListingSlide[] = listings ?? [];
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const [perView, setPerView] = useState(3);
@@ -42,10 +26,6 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
   }, []);
 
   const maxIdx = Math.max(0, items.length - perView);
-
-  const go = useCallback((next: number) => {
-    setIdx(next);
-  }, []);
 
   const next = useCallback(() => {
     setIdx(p => (p >= maxIdx ? 0 : p + 1));
@@ -122,11 +102,6 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
 
                   <div className="mt-auto pt-3 border-t border-orange-50/50 dark:border-stone-800 flex justify-between items-center text-[11px] text-stone-400 font-bold">
                     <span>Available to donate</span>
-                    {!isReal && (
-                      <span className="text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> Preview
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -138,13 +113,9 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
               className="flex-shrink-0 px-3"
               style={{ width: `${pct}%` }}
             >
-              {isReal ? (
-                <Link href={`/items/${item.id}`} className="block h-full">
-                  {cardInner}
-                </Link>
-              ) : (
-                cardInner
-              )}
+              <Link href={`/items/${item.id}`} className="block h-full">
+                {cardInner}
+              </Link>
             </div>
             );
           })}
