@@ -1,0 +1,16 @@
+{
+  "mobileNav": {
+    "home": "Home",
+    "campaigns": "Campaigns",
+    "requests": "Requests",
+    "profile": "Profile",
+    "mobileNavAriaLabel": "Mobile navigation",
+    "donateNow": "Donate now",
+    "getSupport": "Get Support",
+    "emailUs": "Email us",
+    "helpFaq": "Help & FAQ",
+    "helpFaqSub": "Common questions answered",
+    "openSupport": "Open support",
+    "closeSupport": "Close support"
+  }
+}

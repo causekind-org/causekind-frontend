@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { FaqSection } from "@/components/FaqSection";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export const metadata = {
   title: "Help & FAQ — CauseKind",
   description: "Answers to common questions about donating, campaigns, and how CauseKind works.",
 };
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  const t = await getTranslations("help");
+
   return (
     <div className="bg-[#faf8f5] dark:bg-zinc-950 min-h-screen">
 
@@ -23,16 +26,16 @@ export default function HelpPage() {
             className="inline-flex items-center gap-1.5 text-stone-400 hover:text-white text-xs font-semibold mb-8 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Back to home
+            {t("backToHome")}
           </Link>
           <p className="text-xs font-black uppercase tracking-widest text-[#b04a15] mb-3">
-            Help Center
+            {t("helpCenter")}
           </p>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-4">
-            How can we help?
+            {t("headline")}
           </h1>
           <p className="text-base text-stone-400 font-medium leading-relaxed max-w-lg mx-auto">
-            Everything you need to know about giving, receiving, and how CauseKind works.
+            {t("subheadline")}
           </p>
         </div>
       </div>
@@ -44,10 +47,10 @@ export default function HelpPage() {
       <div className="bg-white dark:bg-zinc-900 border-t border-orange-100/60 dark:border-zinc-800 py-16">
         <div className="mx-auto max-w-3xl px-6 text-center space-y-4">
           <h2 className="text-xl font-extrabold text-stone-900 dark:text-white">
-            Still need help?
+            {t("stillNeedHelp")}
           </h2>
           <p className="text-sm text-stone-500 dark:text-stone-400 font-medium">
-            Reach out directly — our team responds within 24 hours.
+            {t("reachOut")}
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-2">
             <a
@@ -55,7 +58,7 @@ export default function HelpPage() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#b04a15] text-white text-sm font-bold hover:bg-[#963c0d] transition-colors shadow-md shadow-[#b04a15]/20"
             >
               <Mail className="w-4 h-4" />
-              Email support
+              {t("emailSupport")}
             </a>
             <a
               href="tel:+917719938619"

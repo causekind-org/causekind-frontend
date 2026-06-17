@@ -41,6 +41,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
+import { useTranslations } from "next-intl";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -147,6 +148,7 @@ function getDialCode(isoCode: string): string {
 export default function ProfilePage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const t = useTranslations("profile");
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -271,7 +273,7 @@ export default function ProfilePage() {
       })
       .catch((err) => {
         console.error(err);
-        toast.error("Failed to load profile details");
+        toast.error(t("errorLoadProfile"));
         const fallback = detectCountryCode();
         setCountryIso(fallback);
         setDialCountry(fallback);
@@ -319,7 +321,7 @@ export default function ProfilePage() {
 
   function handleUseMyLocation() {
     if (!navigator.geolocation) {
-      toast.error("Your browser doesn't support GPS location");
+      toast.error(t("errorNoGps"));
       return;
     }
     setLocStatus("requesting");
@@ -331,7 +333,7 @@ export default function ProfilePage() {
           const updated = await updateLocation(lat, lng);
           setProfile(updated);
           setLocStatus("saved");
-          toast.success("Location saved! In-kind matching is now enabled.");
+          toast.success(t("successLocationSaved"));
 
           // Reverse-geocode to auto-fill the dropdown menus in UI
           try {
@@ -343,7 +345,7 @@ export default function ProfilePage() {
                 const countryCode = address.country_code?.toUpperCase();
                 const stateName = address.state;
                 const cityName = address.city || address.town || address.village || address.suburb;
-                
+
                 if (countryCode) {
                   setDialCountry(countryCode);
                   setCountryIso(countryCode);
@@ -378,15 +380,15 @@ export default function ProfilePage() {
           }
         } catch {
           setLocStatus("error");
-          toast.error("Failed to save location. Please try again.");
+          toast.error(t("errorLocationFailed"));
         }
       },
       (err) => {
         setLocStatus("error");
         toast.error(
           err.code === 1
-            ? "Location access denied — please allow it in browser settings."
-            : "Could not get your location. Please try again."
+            ? t("errorLocationDenied")
+            : t("errorLocationUnavailable")
         );
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -402,15 +404,15 @@ export default function ProfilePage() {
     const cityStr = buildCityString();
 
     if (!fullName.trim()) {
-      toast.error("Please enter your full name");
+      toast.error(t("errorNoName"));
       return;
     }
     if (!rawPhone) {
-      toast.error("Please enter a phone number");
+      toast.error(t("errorNoPhone"));
       return;
     }
     if (!cityStr) {
-      toast.error("Please select or enter your city");
+      toast.error(t("errorNoCity"));
       return;
     }
 
@@ -422,9 +424,9 @@ export default function ProfilePage() {
         city: cityStr,
       });
       setProfile(updated);
-      toast.success("Profile updated successfully!");
+      toast.success(t("successProfileUpdated"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update profile");
+      toast.error(err instanceof Error ? err.message : t("errorUpdateFailed"));
     } finally {
       setSaving(false);
     }
@@ -480,9 +482,9 @@ export default function ProfilePage() {
   );
 
   const badges = [
-    { label: "First Giver", icon: Heart, earned: hasFirstGiver },
-    { label: "Community Hero", icon: Award, earned: hasCommunityHero },
-    { label: "Education Advocate", icon: BookOpen, earned: hasEducationAdvocate },
+    { label: t("badgeFirstGiver"), icon: Heart, earned: hasFirstGiver },
+    { label: t("badgeCommunityHero"), icon: Award, earned: hasCommunityHero },
+    { label: t("badgeEducationAdvocate"), icon: BookOpen, earned: hasEducationAdvocate },
   ];
 
   return (
@@ -490,7 +492,7 @@ export default function ProfilePage() {
 
       {/* ── Page Header ── */}
       <div className="px-5 pt-14 pb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-black text-stone-900">My Impact</h1>
+        <h1 className="text-2xl font-black text-stone-900">{t("myImpact")}</h1>
         <div className="w-10 h-10 rounded-full bg-[#C17A3A] flex items-center justify-center overflow-hidden shrink-0">
           {avatarDataUrl ? (
             <Image
@@ -510,12 +512,12 @@ export default function ProfilePage() {
       <div className="mx-5 mt-2 rounded-3xl overflow-hidden">
         <div className="bg-gradient-to-br from-[#C17A3A] to-[#8B4513] p-6 text-white relative">
           <div className="relative z-10">
-            <p className="text-xs font-bold uppercase tracking-wide opacity-80">Total Impact</p>
+            <p className="text-xs font-bold uppercase tracking-wide opacity-80">{t("totalImpact")}</p>
             <p className="text-4xl font-black leading-tight mt-1">{formatINR(totalGiven)}</p>
-            <p className="text-sm opacity-80 mt-1">Donated</p>
+            <p className="text-sm opacity-80 mt-1">{t("donated")}</p>
             <div className="border-t border-white/30 my-3" />
             <p className="text-sm font-semibold">
-              {inKindCount} In-Kind Item{inKindCount !== 1 ? "s" : ""} Given
+              {inKindCount} {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
             </p>
           </div>
           {/* Decorative illustration */}
@@ -534,10 +536,10 @@ export default function ProfilePage() {
 
       {/* ── Supported Campaigns ── */}
       <div className="px-5 mt-6">
-        <p className="text-lg font-bold text-stone-900 mb-3">Supported Campaigns</p>
+        <p className="text-lg font-bold text-stone-900 mb-3">{t("supportedCampaigns")}</p>
         {supportedCampaigns.length === 0 ? (
           <div className="bg-white rounded-2xl px-4 py-6 shadow-sm text-center">
-            <p className="text-sm text-stone-400">No campaigns supported yet</p>
+            <p className="text-sm text-stone-400">{t("noCampaignsSupported")}</p>
           </div>
         ) : (
           <div className="flex gap-4 overflow-x-auto pb-3 -mx-0 scrollbar-hide">
@@ -562,11 +564,11 @@ export default function ProfilePage() {
                   </div>
                   <div className="px-3 py-2">
                     <p className="text-xs font-bold truncate text-stone-900">{item.title}</p>
-                    <p className="text-[10px] text-stone-400 mt-0.5">Campaign</p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">{t("campaignLabel")}</p>
                     <p className="text-xs font-bold text-[#C17A3A] mt-1">{formatINR(item.amount)}</p>
                     <Link href={`/campaigns/${item.id}`}>
                       <button className="w-full mt-1.5 py-1 bg-[#C17A3A] text-white text-xs rounded-lg font-semibold hover:bg-[#a8642e] transition-colors">
-                        Donate Now
+                        {t("donateNow")}
                       </button>
                     </Link>
                   </div>
@@ -582,7 +584,7 @@ export default function ProfilePage() {
 
         {/* Badges & Recognition */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-bold text-stone-900 mb-3">Badges</p>
+          <p className="text-xs font-bold text-stone-900 mb-3">{t("badges")}</p>
           <div className="grid grid-cols-3 gap-2">
             {badges.map(({ label, icon: Icon, earned }) => (
               <div
@@ -602,9 +604,9 @@ export default function ProfilePage() {
 
         {/* My Requests */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-bold text-stone-900 mb-3">My Requests</p>
+          <p className="text-xs font-bold text-stone-900 mb-3">{t("myRequests")}</p>
           {myRequests.length === 0 ? (
-            <p className="text-xs text-stone-400">No requests yet</p>
+            <p className="text-xs text-stone-400">{t("noRequestsYet")}</p>
           ) : (
             <div className="space-y-0.5">
               {myRequests.slice(0, 3).map((req) => (
@@ -639,7 +641,7 @@ export default function ProfilePage() {
           onClick={() => setSettingsOpen((v) => !v)}
           className="w-full flex items-center justify-between py-3 px-4 bg-white rounded-2xl shadow-sm"
         >
-          <span className="text-sm font-bold text-stone-900">Account Settings</span>
+          <span className="text-sm font-bold text-stone-900">{t("accountSettings")}</span>
           <ChevronDown
             className={`w-4 h-4 text-stone-400 transition-transform duration-200 ${settingsOpen ? "rotate-180" : ""}`}
           />
@@ -661,14 +663,14 @@ export default function ProfilePage() {
               {/* Full Name */}
               <div className="space-y-1.5">
                 <Label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-stone-400">
-                  Full Name
+                  {t("fullNameLabel")}
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                   <Input
                     id="fullName"
                     className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
-                    placeholder="Enter your full name"
+                    placeholder={t("fullNamePlaceholder")}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                   />
@@ -679,10 +681,10 @@ export default function ProfilePage() {
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-stone-400">
-                    Email Address
+                    {t("emailAddress")}
                   </Label>
                   <span className="text-[10px] font-black text-stone-400 uppercase flex items-center gap-1">
-                    <Shield className="w-3 h-3 text-[#C17A3A]" /> System ID
+                    <Shield className="w-3 h-3 text-[#C17A3A]" /> {t("systemId")}
                   </span>
                 </div>
                 <div className="relative">
@@ -699,7 +701,7 @@ export default function ProfilePage() {
               {/* Phone with dial-code dropdown */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5" /> Phone Number
+                  <Phone className="w-3.5 h-3.5" /> {t("phoneNumber")}
                 </Label>
                 <div className="flex gap-2">
                   <div className="w-[120px] shrink-0">
@@ -717,7 +719,7 @@ export default function ProfilePage() {
                     type="tel"
                     inputMode="numeric"
                     className="flex-1 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
-                    placeholder="Enter phone number"
+                    placeholder={t("phonePlaceholder")}
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
                   />
@@ -727,26 +729,26 @@ export default function ProfilePage() {
               {/* Location: Country → State → City */}
               <div className="space-y-3">
                 <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> Location
+                  <MapPin className="w-3.5 h-3.5" /> {t("location")}
                 </Label>
 
                 <div className="space-y-1">
-                  <Label htmlFor="country" className="text-xs text-stone-500">Country</Label>
+                  <Label htmlFor="country" className="text-xs text-stone-500">{t("country")}</Label>
                   <SearchableSelect
                     id="country"
                     options={countryOptions}
                     value={countryIso}
                     onChange={handleCountryChange}
-                    placeholder="Select country"
+                    placeholder={t("selectCountry")}
                     searchPlaceholder="Search country…"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="state" className="text-xs text-stone-500">State / Province</Label>
+                  <Label htmlFor="state" className="text-xs text-stone-500">{t("stateProvince")}</Label>
                   {noStateOptions ? (
                     <p className="text-xs text-stone-400 italic py-1">
-                      No states listed for this country — enter city below.
+                      {t("noStatesListed")}
                     </p>
                   ) : (
                     <SearchableSelect
@@ -754,8 +756,8 @@ export default function ProfilePage() {
                       options={stateOptions}
                       value={stateIso}
                       onChange={handleStateChange}
-                      placeholder="Select state"
-                      disabledPlaceholder="Select country first"
+                      placeholder={t("selectState")}
+                      disabledPlaceholder={t("selectCountryFirst")}
                       disabled={!countryIso}
                       searchPlaceholder="Search state…"
                     />
@@ -763,14 +765,14 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="city" className="text-xs text-stone-500">City</Label>
+                  <Label htmlFor="city" className="text-xs text-stone-500">{t("cityLabel")}</Label>
                   {showCityFreeText ? (
                     <div className="relative">
                       <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                       <Input
                         id="city"
                         className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
-                        placeholder="Enter your city"
+                        placeholder={t("enterCity")}
                         value={cityFreeText}
                         onChange={(e) => setCityFreeText(e.target.value)}
                       />
@@ -781,8 +783,8 @@ export default function ProfilePage() {
                       options={cityOptions}
                       value={cityValue}
                       onChange={setCityValue}
-                      placeholder="Select city"
-                      disabledPlaceholder="Select state first"
+                      placeholder={t("selectCity")}
+                      disabledPlaceholder={t("selectStateFirst")}
                       disabled={!stateIso}
                       searchPlaceholder="Search city…"
                     />
@@ -793,7 +795,7 @@ export default function ProfilePage() {
               {/* GPS Coordinates */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                  <Navigation className="w-3.5 h-3.5" /> GPS Location
+                  <Navigation className="w-3.5 h-3.5" /> {t("gpsLocation")}
                 </Label>
                 <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
                   <div className="flex-1 min-w-0">
@@ -801,7 +803,7 @@ export default function ProfilePage() {
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                         <div>
-                          <p className="text-xs font-bold text-stone-800">Location saved</p>
+                          <p className="text-xs font-bold text-stone-800">{t("locationSaved")}</p>
                           <p className="text-[10px] text-stone-400">
                             {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
                           </p>
@@ -811,8 +813,8 @@ export default function ProfilePage() {
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
                         <div>
-                          <p className="text-xs font-bold text-stone-800">No GPS location</p>
-                          <p className="text-[10px] text-stone-400">Required for 10 km in-kind matching</p>
+                          <p className="text-xs font-bold text-stone-800">{t("noGpsLocation")}</p>
+                          <p className="text-[10px] text-stone-400">{t("gpsMatchingNote")}</p>
                         </div>
                       </div>
                     )}
@@ -824,14 +826,14 @@ export default function ProfilePage() {
                     className="shrink-0 flex items-center gap-1.5 rounded-lg bg-[#b04a15] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#943e11] disabled:opacity-60"
                   >
                     {locStatus === "requesting" ? (
-                      <><Loader2 className="w-3 h-3 animate-spin" /> Getting…</>
+                      <><Loader2 className="w-3 h-3 animate-spin" /> {t("getting")}</>
                     ) : (
-                      <><Navigation className="w-3 h-3" /> Use GPS</>
+                      <><Navigation className="w-3 h-3" /> {t("useGps")}</>
                     )}
                   </button>
                 </div>
                 <p className="text-[10px] text-stone-400 leading-relaxed">
-                  Your exact coordinates are never shown publicly — only used to match you with nearby donors/donees.
+                  {t("gpsPrivacyNote")}
                 </p>
               </div>
 
@@ -844,10 +846,10 @@ export default function ProfilePage() {
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" /> Saving…
+                      <Loader2 className="size-4 animate-spin" /> {t("saving")}
                     </>
                   ) : (
-                    "Save Profile Changes"
+                    t("saveProfileChanges")
                   )}
                 </Button>
               </div>

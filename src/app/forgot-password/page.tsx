@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations("forgotPassword");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -18,7 +20,7 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setLoading(true);
     try { await forgotPassword(email); setSent(true); }
-    catch { toast.error("Something went wrong. Please try again."); }
+    catch { toast.error(t("errorGeneric")); }
     finally { setLoading(false); }
   }
 
@@ -29,30 +31,32 @@ export default function ForgotPasswordPage() {
       </div>
       <Card className="anim-up anim-d1 w-full max-w-md glass-card card-shimmer rounded-2xl border-orange-100 dark:border-stone-850 shadow-xl dark:shadow-none">
         <CardHeader className="space-y-1.5 pb-5">
-          <CardTitle className="text-2xl font-extrabold text-[#963c0d] dark:text-white">Forgot your password?</CardTitle>
-          <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">Enter your email and we&apos;ll send you a link to reset it.</CardDescription>
+          <CardTitle className="text-2xl font-extrabold text-[#963c0d] dark:text-white">{t("title")}</CardTitle>
+          <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">{t("description")}</CardDescription>
         </CardHeader>
         <CardContent>
           {sent ? (
             <div className="space-y-4 text-center">
               <p className="text-sm text-stone-500 dark:text-stone-400 font-medium">
-                If <span className="font-semibold text-stone-800 dark:text-stone-200">{email}</span> is registered, you&apos;ll receive a reset link shortly.
+                {t.rich("sentMessage", {
+                  email: () => <span className="font-semibold text-stone-800 dark:text-stone-200">{email}</span>,
+                })}
               </p>
-              <Link href="/login" className="text-sm font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Back to login</Link>
+              <Link href="/login" className="text-sm font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">{t("backToLogin")}</Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="font-semibold text-stone-700 dark:text-stone-300">Email</Label>
-                <Input id="email" type="email" placeholder="you@example.com" autoComplete="email"
+                <Label htmlFor="email" className="font-semibold text-stone-700 dark:text-stone-300">{t("emailLabel")}</Label>
+                <Input id="email" type="email" placeholder={t("emailPlaceholder")} autoComplete="email"
                   value={email} onChange={e => setEmail(e.target.value)} required
                   className="rounded-xl border-orange-200 dark:border-stone-800 focus-visible:ring-[#b04a15]/20 py-5 font-medium bg-white dark:bg-zinc-900 placeholder:text-stone-400 dark:placeholder:text-stone-600 text-stone-800 dark:text-stone-100" />
               </div>
               <Button type="submit" className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl py-5 font-semibold text-sm" disabled={loading}>
-                {loading ? "Sending…" : "Send reset link"}
+                {loading ? t("sending") : t("sendButton")}
               </Button>
               <p className="text-center text-sm text-stone-500 dark:text-stone-400 font-medium">
-                Remembered it?{" "}<Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Log in</Link>
+                {t("rememberedIt")}{" "}<Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">{t("logIn")}</Link>
               </p>
             </form>
           )}

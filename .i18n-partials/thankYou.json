@@ -1,0 +1,11 @@
+{
+  "thankYou": {
+    "heading": "Thank you for your donation!",
+    "donationConfirmed": "Your donation of <amount></amount> to <campaign></campaign> is confirmed.",
+    "defaultCampaign": "this campaign",
+    "generosityNote": "Your generosity makes a real difference. The campaign organiser has been notified of your donation.",
+    "viewDonations": "View my donations",
+    "browseCampaigns": "Browse more campaigns",
+    "toastSuccess": "Donation confirmed! Thank you for making a difference."
+  }
+}

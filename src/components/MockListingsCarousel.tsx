@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, MapPin, Package } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { ItemListing } from "@/lib/api";
 
 const INTERVAL = 3000;
@@ -59,7 +60,9 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
         >
           {items.map((item) => {
             const cardInner = (
-              <div className="card-glow flex flex-col h-full overflow-hidden glass-card dark:bg-zinc-900/60 rounded-2xl group border-2 border-orange-200 dark:border-orange-900/60 relative">
+              <HoverCard openDelay={300}>
+                <HoverCardTrigger asChild>
+                  <div className="card-glow flex flex-col h-full overflow-hidden glass-card dark:bg-zinc-900/60 rounded-2xl group border-2 border-orange-200 dark:border-orange-900/60 relative cursor-pointer">
                 {/* Image Section */}
                 <div className="relative w-full aspect-video overflow-hidden bg-stone-100 dark:bg-zinc-950 shrink-0">
                   {item.imageUrl ? (
@@ -68,7 +71,7 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
                       alt={item.title}
                       fill
                       sizes="(max-width:640px) 100vw, 33vw"
-                      className="object-contain object-center bg-stone-100 dark:bg-zinc-950 transition-transform duration-700 ease-out group-hover:scale-105"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-zinc-900/60 text-stone-400 dark:text-stone-500 gap-2 font-semibold text-xs">
@@ -105,6 +108,16 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
                   </div>
                 </div>
               </div>
+            </HoverCardTrigger>
+            <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
+              <div className="space-y-2">
+                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                  <TranslatedText text={item.title} />
+                </h4>
+                <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Donated by: {item.donorName}</div>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
             );
 
             return (

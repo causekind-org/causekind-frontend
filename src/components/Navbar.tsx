@@ -484,8 +484,39 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-stone-900 py-6 text-center text-xs text-stone-500 font-medium">
-        © {new Date().getFullYear()} <span className="font-bold text-[#b04a15]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
+      <div className="border-t border-stone-900 py-6 text-center text-xs text-stone-500 font-medium px-4">
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-3">
+          <span className="w-full sm:w-auto mb-2 sm:mb-0">
+            © {new Date().getFullYear()} <span className="font-bold text-[#b04a15]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
+          </span>
+          <Link href="/privacy" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+            Privacy Policy
+          </Link>
+          <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
+          <Link href="/terms" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+            Terms &amp; Conditions
+          </Link>
+          <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
+          <Link href="/refund" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+            Refund &amp; Cancellation Policy
+          </Link>
+          <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
+          <Link href="/razorpay" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+            Razorpay Policies
+          </Link>
+          <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
+          <Link href="/terms#payments" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+            Donation Policy
+          </Link>
+          <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
+          <Link href="/terms#campaigns" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+            Campaign Policy
+          </Link>
+          <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
+          <Link href="/privacy#contact" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+            Contact Us
+          </Link>
+        </div>
       </div>
     </footer>
   );

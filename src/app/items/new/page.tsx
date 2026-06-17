@@ -12,10 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { ImagePlus, Loader2, X, MapPin } from "lucide-react";
 import Image from "next/image";
 import { Country, State, City } from "country-state-city";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
+import { useTranslations } from "next-intl";
 
 const CATEGORIES = ["Education", "Clothing", "Furniture", "Electronics", "Household", "Sports", "Medical aid"];
 const CONDITIONS = ["Like new", "Good", "Fair"];
@@ -53,10 +54,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function NewItemPage() {
+  const t = useTranslations("itemNew");
   const { user } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState(empty);
   const [submitting, setSubmitting] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
 
   // Location cascades states
@@ -121,6 +124,68 @@ export default function NewItemPage() {
     setCityFreeText("");
   }
 
+  function handleGPSLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser doesn't support GPS location");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          const address = data.address;
+          if (address) {
+            const countryCode = address.country_code?.toUpperCase();
+            const stateName = address.state;
+            const cityName = address.city || address.town || address.village || address.suburb;
+            
+            if (countryCode) {
+              setCountryIso(countryCode);
+              const states = State.getStatesOfCountry(countryCode);
+              const matchedState = states.find(
+                (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
+                       s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
+              );
+              if (matchedState) {
+                setStateIso(matchedState.isoCode);
+                const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
+                const matchedCity = cities.find(
+                  (c) => c.name.toLowerCase() === cityName?.toLowerCase()
+                );
+                if (matchedCity) {
+                  setCityValue(matchedCity.name);
+                  setCityFreeText("");
+                } else if (cityName) {
+                  setCityValue("");
+                  setCityFreeText(cityName);
+                }
+              } else {
+                setStateIso("");
+                setCityValue("");
+                if (cityName) setCityFreeText(cityName);
+              }
+              toast.success("Location updated successfully!");
+            }
+          }
+        } catch {
+          toast.error("Failed to detect location details");
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error("Location access denied or unavailable");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   function buildCityString(): string {
     if (showCityFreeText) {
       return [cityFreeText, stateIso, countryIso].filter(Boolean).join(", ");
@@ -145,16 +210,16 @@ export default function NewItemPage() {
     e.preventDefault();
     const cityStr = buildCityString();
     if (!cityStr) {
-      toast.error("Please select or enter your city");
+      toast.error(t("toastCityRequired"));
       return;
     }
     setSubmitting(true);
     try {
       await createItemListing({ ...form, city: cityStr, quantity: Number(form.quantity), imageUrl: form.imageUrl || null });
-      toast.success("Item submitted for review!");
+      toast.success(t("toastSuccess"));
       router.push("/dashboard");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit");
+      toast.error(err instanceof Error ? err.message : t("toastError"));
     } finally {
       setSubmitting(false);
     }
@@ -166,49 +231,62 @@ export default function NewItemPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <Card>
         <CardHeader>
-          <CardTitle>Post an item donation</CardTitle>
+          <CardTitle>{t("cardTitle")}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Once approved, your listing matches with donee requests within 10 km. Contact details are only shared after admin approves the connection.
+            {t("cardSubtitle")}
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Field label="Item name">
-              <Input placeholder="e.g. Children's school books, Grade 4" value={form.title} onChange={(e) => set("title", e.target.value)} required />
+            <Field label={t("fieldItemName")}>
+              <Input placeholder={t("placeholderItemName")} value={form.title} onChange={(e) => set("title", e.target.value)} required />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Category">
+              <Field label={t("fieldCategory")}>
                 <Select value={form.category} onValueChange={(v) => set("category", v)} required>
-                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("placeholderCategory")} /></SelectTrigger>
                   <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Quantity">
+              <Field label={t("fieldQuantity")}>
                 <Input type="number" min={1} value={form.quantity} onChange={(e) => set("quantity", e.target.value)} required />
               </Field>
-              <Field label="Condition">
+              <Field label={t("fieldCondition")}>
                 <Select value={form.condition} onValueChange={(v) => set("condition", v)} required>
-                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("placeholderCondition")} /></SelectTrigger>
                   <SelectContent>{CONDITIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Pickup pincode">
+              <Field label={t("fieldPincode")}>
                 <Input placeholder="411001" value={form.pincode} onChange={(e) => set("pincode", e.target.value)} />
               </Field>
-              <Field label="Country">
+              <Field label={t("fieldCountry")}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                    <MapPin className="w-3.5 h-3.5" /> Use Current Location
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGPSLocation}
+                    disabled={gpsLoading}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#b04a15] hover:underline uppercase disabled:opacity-50"
+                  >
+                    {gpsLoading ? "Detecting..." : "Use GPS 🎯"}
+                  </button>
+                </div>
                 <SearchableSelect
                   id="country"
                   options={countryOptions}
                   value={countryIso}
                   onChange={handleCountryChange}
-                  placeholder="Select country"
-                  searchPlaceholder="Search country…"
+                  placeholder={t("placeholderCountry")}
+                  searchPlaceholder={t("searchCountry")}
                 />
               </Field>
-              <Field label="State / Province">
+              <Field label={t("fieldState")}>
                 {noStateOptions ? (
                   <p className="text-xs text-stone-400 italic py-3 bg-stone-50/50 rounded-xl border border-stone-200 px-3">
-                    No states listed for this country.
+                    {t("noStatesListed")}
                   </p>
                 ) : (
                   <SearchableSelect
@@ -216,18 +294,18 @@ export default function NewItemPage() {
                     options={stateOptions}
                     value={stateIso}
                     onChange={handleStateChange}
-                    placeholder="Select state"
-                    disabledPlaceholder="Select country first"
+                    placeholder={t("placeholderState")}
+                    disabledPlaceholder={t("disabledPlaceholderState")}
                     disabled={!countryIso}
-                    searchPlaceholder="Search state…"
+                    searchPlaceholder={t("searchState")}
                   />
                 )}
               </Field>
-              <Field label="City">
+              <Field label={t("fieldCity")}>
                 {showCityFreeText ? (
                   <Input
                     id="city"
-                    placeholder="Enter city name"
+                    placeholder={t("placeholderCityInput")}
                     value={cityFreeText}
                     onChange={(e) => setCityFreeText(e.target.value)}
                     required
@@ -238,18 +316,18 @@ export default function NewItemPage() {
                     options={cityOptions}
                     value={cityValue}
                     onChange={setCityValue}
-                    placeholder="Select city"
-                    disabledPlaceholder="Select state first"
+                    placeholder={t("placeholderCity")}
+                    disabledPlaceholder={t("disabledPlaceholderCity")}
                     disabled={!stateIso && !noStateOptions}
-                    searchPlaceholder="Search city…"
+                    searchPlaceholder={t("searchCity")}
                   />
                 )}
               </Field>
             </div>
-            <Field label="Description">
-              <Textarea rows={4} placeholder="Brief description, age of item, any defects, pickup preferences…" value={form.description} onChange={(e) => set("description", e.target.value)} />
+            <Field label={t("fieldDescription")}>
+              <Textarea rows={4} placeholder={t("placeholderDescription")} value={form.description} onChange={(e) => set("description", e.target.value)} />
             </Field>
-            <Field label="Photo (optional)">
+            <Field label={t("fieldPhoto")}>
               <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
               {form.imageUrl ? (
                 <div className="group relative aspect-video w-full overflow-hidden rounded-xl border bg-muted">
@@ -261,16 +339,16 @@ export default function NewItemPage() {
               ) : (
                 <button type="button" onClick={() => photoRef.current?.click()} className="flex w-full flex-col items-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
                   <ImagePlus className="h-6 w-6" />
-                  <span className="font-medium">Click to add a photo</span>
-                  <span className="text-xs">Shown on your listing card · JPG or PNG</span>
+                  <span className="font-medium">{t("clickToAddPhoto")}</span>
+                  <span className="text-xs">{t("photoHint")}</span>
                 </button>
               )}
             </Field>
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={submitting}>
-                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : "Submit for review"}
+                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submitForReview")}
               </Button>
-              <Link href="/dashboard"><Button type="button" variant="outline">Cancel</Button></Link>
+              <Link href="/dashboard"><Button type="button" variant="outline">{t("cancel")}</Button></Link>
             </div>
           </form>
         </CardContent>

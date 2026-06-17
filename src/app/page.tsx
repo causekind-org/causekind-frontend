@@ -26,6 +26,7 @@ import { PhoneAnimationSection } from "@/components/PhoneAnimationSection";
 import { getCampaigns, getItemRequests, getItemListings, getPlatformStats, getRecentActivity, type Campaign, type ItemRequest, type ItemListing, type PlatformStats, type RecentActivity } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
@@ -390,15 +391,17 @@ export default function HomePage() {
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
                 {itemRequests.slice(0, 6).map((req, i) => (
                   <Reveal key={req.id} delay={i * 80}>
-                    <Card className="card-glow bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden h-full flex flex-col">
+                    <HoverCard openDelay={300}>
+                      <HoverCardTrigger asChild>
+                        <Card className="card-glow bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden h-full flex flex-col cursor-pointer">
                       <div className="relative w-full h-24 sm:h-36 bg-stone-100 dark:bg-zinc-950 shrink-0 overflow-hidden">
-                        {req.imageUrl ? (
-                          <Image src={req.imageUrl} alt={req.title} fill className="object-contain object-center bg-stone-100 dark:bg-zinc-950" sizes="(max-width: 640px) 50vw, 33vw" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center">
-                            <Package className="h-7 w-7 sm:h-10 sm:w-10 text-orange-200 dark:text-zinc-700" />
-                          </div>
-                        )}
+                        <Image
+                          src={req.imageUrl || getMobileCardImage(req.category, req.id)}
+                          alt={req.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 640px) 50vw, 33vw"
+                        />
                         <div className="absolute top-2 right-2">
                           <span className={`text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase border ${
                             req.urgency === "CRITICAL"
@@ -426,7 +429,20 @@ export default function HomePage() {
                           </Link>
                         </div>
                       </CardContent>
-                    </Card>
+                        </Card>
+                      </HoverCardTrigger>
+                      <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                            <TranslatedText text={req.title} />
+                          </h4>
+                          <p className="text-sm text-stone-500 dark:text-stone-400">
+                            {req.description ? <TranslatedText text={req.description} /> : `Requested by ${req.doneeName}. Qty ${req.quantity} needed.`}
+                          </p>
+                          <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Requested by: {req.doneeName}</div>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
                   </Reveal>
                 ))}
               </div>

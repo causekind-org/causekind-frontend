@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import Link from "next/link";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   Loader2, MapPin, PackageOpen, Search, SearchX, Package, X,
   SlidersHorizontal, BadgeCheck, ChevronDown, Plus, Gift, Truck, Star, Tag
@@ -152,14 +153,16 @@ function ListingCard({
 
   return (
     <Reveal delay={index * 70}>
-      <div className="group bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-stone-100 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full">
+      <HoverCard openDelay={300}>
+        <HoverCardTrigger asChild>
+          <div className="group bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-stone-100 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full cursor-pointer">
         {/* Image section */}
         <Link href={`/items/${item.id}`} className="relative block w-full h-44 overflow-hidden bg-stone-100 dark:bg-zinc-800 shrink-0">
           <Image
             src={imgSrc}
             alt={item.title}
             fill
-            sizes="(max-width: 640px) 100vw, 50vw"
+            sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
             className="object-cover group-hover:scale-[1.06] transition-transform duration-500"
           />
           {/* Bottom gradient */}
@@ -217,7 +220,20 @@ function ListingCard({
             Request Item
           </button>
         </div>
-      </div>
+          </div>
+        </HoverCardTrigger>
+        <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
+          <div className="space-y-2">
+            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
+              {title ?? item.title}
+            </h4>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              {item.description ? <TranslatedText text={item.description} /> : `Donated by ${item.donorName}`}
+            </p>
+            <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Donated by: {item.donorName}</div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
     </Reveal>
   );
 }

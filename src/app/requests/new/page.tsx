@@ -12,26 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { ImagePlus, Loader2, X, MapPin } from "lucide-react";
 import Image from "next/image";
 import { Country, State, City } from "country-state-city";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
+import { useTranslations } from "next-intl";
 
 const CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
-const URGENCIES = [
-  { value: "NORMAL", label: "Normal" },
-  { value: "HIGH", label: "High" },
-  { value: "CRITICAL", label: "Critical" },
-];
-const PICKUP_RADII = [
-  { value: "5",      label: "Within 5 km"       },
-  { value: "10",     label: "Within 10 km"      },
-  { value: "15",     label: "Within 15 km"      },
-  { value: "20",     label: "Within 20 km"      },
-  { value: "25",     label: "Within 25 km"      },
-  { value: "50",     label: "Within 50 km"      },
-  { value: "custom", label: "Custom distance…"  },
-];
 
 const empty = { title: "", category: "", quantity: 1, urgency: "NORMAL", city: "", pincode: "", description: "", imageUrl: "", pickupRadiusKm: 10 };
 
@@ -66,12 +53,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function NewRequestPage() {
+  const t = useTranslations("requestNew");
   const { user } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState(empty);
   const [submitting, setSubmitting] = useState(false);
   const [radiusSel, setRadiusSel] = useState("10");
   const [customRadius, setCustomRadius] = useState("");
+  const [gpsLoading, setGpsLoading] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
 
   // Location cascades states
@@ -89,6 +78,23 @@ export default function NewRequestPage() {
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
   const showCityFreeText = noStateOptions || noCityOptions;
+
+  // Urgency and radius options built from translations
+  const URGENCIES = [
+    { value: "NORMAL", label: t("urgencyNormal") },
+    { value: "HIGH", label: t("urgencyHigh") },
+    { value: "CRITICAL", label: t("urgencyCritical") },
+  ];
+
+  const PICKUP_RADII = [
+    { value: "5",      label: t("radiusWithin5")  },
+    { value: "10",     label: t("radiusWithin10") },
+    { value: "15",     label: t("radiusWithin15") },
+    { value: "20",     label: t("radiusWithin20") },
+    { value: "25",     label: t("radiusWithin25") },
+    { value: "50",     label: t("radiusWithin50") },
+    { value: "custom", label: t("radiusCustom")   },
+  ];
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
@@ -136,6 +142,73 @@ export default function NewRequestPage() {
     setCityFreeText("");
   }
 
+  function handleCityChange(val: string) {
+    setCityValue(val);
+    setCityFreeText("");
+  }
+
+  function handleGPSLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser doesn't support GPS location");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          const address = data.address;
+          if (address) {
+            const countryCode = address.country_code?.toUpperCase();
+            const stateName = address.state;
+            const cityName = address.city || address.town || address.village || address.suburb;
+            
+            if (countryCode) {
+              setCountryIso(countryCode);
+              const states = State.getStatesOfCountry(countryCode);
+              const matchedState = states.find(
+                (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
+                       s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
+              );
+              if (matchedState) {
+                setStateIso(matchedState.isoCode);
+                const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
+                const matchedCity = cities.find(
+                  (c) => c.name.toLowerCase() === cityName?.toLowerCase()
+                );
+                if (matchedCity) {
+                  setCityValue(matchedCity.name);
+                  setCityFreeText("");
+                } else if (cityName) {
+                  setCityValue("");
+                  setCityFreeText(cityName);
+                }
+              } else {
+                setStateIso("");
+                setCityValue("");
+                if (cityName) setCityFreeText(cityName);
+              }
+              toast.success("Location updated successfully!");
+            }
+          }
+        } catch {
+          toast.error("Failed to detect location details");
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error("Location access denied or unavailable");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   function buildCityString(): string {
     if (showCityFreeText) {
       return [cityFreeText, stateIso, countryIso].filter(Boolean).join(", ");
@@ -160,23 +233,23 @@ export default function NewRequestPage() {
     e.preventDefault();
     const cityStr = buildCityString();
     if (!cityStr) {
-      toast.error("Please select or enter your city");
+      toast.error(t("toastCityRequired"));
       return;
     }
     const finalRadius = radiusSel === "custom"
       ? (parseInt(customRadius) > 0 ? parseInt(customRadius) : null)
       : parseInt(radiusSel);
     if (radiusSel === "custom" && !finalRadius) {
-      toast.error("Please enter a valid pickup distance in km");
+      toast.error(t("toastInvalidRadius"));
       return;
     }
     setSubmitting(true);
     try {
       await createItemRequest({ ...form, city: cityStr, quantity: Number(form.quantity), imageUrl: form.imageUrl || null, pickupRadiusKm: finalRadius ?? undefined });
-      toast.success("Request submitted for review!");
+      toast.success(t("toastSuccess"));
       router.push("/donee/dashboard");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit");
+      toast.error(err instanceof Error ? err.message : t("toastError"));
     } finally {
       setSubmitting(false);
     }
@@ -188,49 +261,62 @@ export default function NewRequestPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <Card>
         <CardHeader>
-          <CardTitle>Request an item</CardTitle>
+          <CardTitle>{t("cardTitle")}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Your request appears to nearby donors once admin approves. Donors anywhere in India can also sponsor the item with money.
+            {t("cardSubtitle")}
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Field label="Item name">
-              <Input placeholder="e.g. Foldable wheelchair" value={form.title} onChange={(e) => set("title", e.target.value)} required />
+            <Field label={t("fieldItemName")}>
+              <Input placeholder={t("placeholderItemName")} value={form.title} onChange={(e) => set("title", e.target.value)} required />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Category">
+              <Field label={t("fieldCategory")}>
                 <Select value={form.category} onValueChange={(v) => set("category", v)} required>
-                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("placeholderCategory")} /></SelectTrigger>
                   <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Quantity">
+              <Field label={t("fieldQuantity")}>
                 <Input type="number" min={1} value={form.quantity} onChange={(e) => set("quantity", e.target.value)} required />
               </Field>
-              <Field label="Urgency">
+              <Field label={t("fieldUrgency")}>
                 <Select value={form.urgency} onValueChange={(v) => set("urgency", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{URGENCIES.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Pincode">
+              <Field label={t("fieldPincode")}>
                 <Input placeholder="411001" value={form.pincode} onChange={(e) => set("pincode", e.target.value)} />
               </Field>
-              <Field label="Country">
+              <Field label={t("fieldCountry")}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                    <MapPin className="w-3.5 h-3.5" /> Use Current Location
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGPSLocation}
+                    disabled={gpsLoading}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#b04a15] hover:underline uppercase disabled:opacity-50"
+                  >
+                    {gpsLoading ? "Detecting..." : "Use GPS 🎯"}
+                  </button>
+                </div>
                 <SearchableSelect
                   id="country"
                   options={countryOptions}
                   value={countryIso}
                   onChange={handleCountryChange}
-                  placeholder="Select country"
-                  searchPlaceholder="Search country…"
+                  placeholder={t("placeholderCountry")}
+                  searchPlaceholder={t("searchCountry")}
                 />
               </Field>
-              <Field label="State / Province">
+              <Field label={t("fieldState")}>
                 {noStateOptions ? (
                   <p className="text-xs text-stone-400 italic py-3 bg-stone-50/50 rounded-xl border border-stone-200 px-3">
-                    No states listed for this country.
+                    {t("noStatesListed")}
                   </p>
                 ) : (
                   <SearchableSelect
@@ -238,18 +324,18 @@ export default function NewRequestPage() {
                     options={stateOptions}
                     value={stateIso}
                     onChange={handleStateChange}
-                    placeholder="Select state"
-                    disabledPlaceholder="Select country first"
+                    placeholder={t("placeholderState")}
+                    disabledPlaceholder={t("disabledPlaceholderState")}
                     disabled={!countryIso}
-                    searchPlaceholder="Search state…"
+                    searchPlaceholder={t("searchState")}
                   />
                 )}
               </Field>
-              <Field label="City">
+              <Field label={t("fieldCity")}>
                 {showCityFreeText ? (
                   <Input
                     id="city"
-                    placeholder="Enter city name"
+                    placeholder={t("placeholderCityInput")}
                     value={cityFreeText}
                     onChange={(e) => setCityFreeText(e.target.value)}
                     required
@@ -260,16 +346,16 @@ export default function NewRequestPage() {
                     options={cityOptions}
                     value={cityValue}
                     onChange={setCityValue}
-                    placeholder="Select city"
-                    disabledPlaceholder="Select state first"
+                    placeholder={t("placeholderCity")}
+                    disabledPlaceholder={t("disabledPlaceholderCity")}
                     disabled={!stateIso && !noStateOptions}
-                    searchPlaceholder="Search city…"
+                    searchPlaceholder={t("searchCity")}
                   />
                 )}
               </Field>
-              <Field label="Pickup radius">
+              <Field label={t("fieldPickupRadius")}>
                 <Select value={radiusSel} onValueChange={setRadiusSel}>
-                  <SelectTrigger><SelectValue placeholder="How far can you travel?" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("placeholderPickupRadius")} /></SelectTrigger>
                   <SelectContent>
                     {PICKUP_RADII.map((r) => (
                       <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
@@ -282,23 +368,23 @@ export default function NewRequestPage() {
                       type="number"
                       min={1}
                       max={500}
-                      placeholder="Enter km"
+                      placeholder={t("placeholderCustomKm")}
                       value={customRadius}
                       onChange={(e) => setCustomRadius(e.target.value)}
                       className="w-32"
                     />
-                    <span className="text-sm text-muted-foreground">km from your location</span>
+                    <span className="text-sm text-muted-foreground">{t("kmFromLocation")}</span>
                   </div>
                 )}
               </Field>
             </div>
             <p className="text-xs text-muted-foreground -mt-1">
-              How far are you willing to travel to collect the item from a nearby donor?
+              {t("pickupRadiusHint")}
             </p>
-            <Field label="Why you need this">
-              <Textarea rows={4} placeholder="Be specific. Helps admin verify faster and donors connect with your story." value={form.description} onChange={(e) => set("description", e.target.value)} />
+            <Field label={t("fieldWhyNeeded")}>
+              <Textarea rows={4} placeholder={t("placeholderWhyNeeded")} value={form.description} onChange={(e) => set("description", e.target.value)} />
             </Field>
-            <Field label="Photo (optional)">
+            <Field label={t("fieldPhoto")}>
               <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
               {form.imageUrl ? (
                 <div className="group relative aspect-video w-full overflow-hidden rounded-xl border bg-muted">
@@ -310,16 +396,16 @@ export default function NewRequestPage() {
               ) : (
                 <button type="button" onClick={() => photoRef.current?.click()} className="flex w-full flex-col items-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
                   <ImagePlus className="h-6 w-6" />
-                  <span className="font-medium">Click to add a photo</span>
-                  <span className="text-xs">Shown on your request card · JPG or PNG</span>
+                  <span className="font-medium">{t("clickToAddPhoto")}</span>
+                  <span className="text-xs">{t("photoHint")}</span>
                 </button>
               )}
             </Field>
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={submitting}>
-                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : "Submit for review"}
+                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submitForReview")}
               </Button>
-              <Link href="/donee/dashboard"><Button type="button" variant="outline">Cancel</Button></Link>
+              <Link href="/donee/dashboard"><Button type="button" variant="outline">{t("cancel")}</Button></Link>
             </div>
           </form>
         </CardContent>

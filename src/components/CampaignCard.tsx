@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Target, TrendingUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 type Props = { campaign: Campaign };
 
@@ -34,12 +35,15 @@ export function CampaignCard({ campaign }: Props) {
   const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
 
   return (
-    <Card className="card-3d card-shimmer card-glow flex flex-col h-full overflow-hidden glass-card rounded-2xl group border-stone-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300">
+    <HoverCard openDelay={300}>
+      <HoverCardTrigger asChild>
+        <Card className="card-3d card-shimmer card-glow flex flex-col h-full overflow-hidden glass-card rounded-2xl group border-stone-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 cursor-pointer">
       {/* Top-Heavy Image Container (Flush with top/left/right) */}
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-zinc-950 shrink-0">
         <Image src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)} alt={campaign.title} fill
           sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
-          className="object-contain object-center bg-stone-100 dark:bg-zinc-950 transition-transform duration-700 ease-out group-hover:scale-105" />
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
+        
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         
         {/* Floating Category and Location Glassmorphic tags */}
@@ -103,7 +107,20 @@ export function CampaignCard({ campaign }: Props) {
             </Button>
           </div>
         </div>
-      </div>
-    </Card>
+        </div>
+        </Card>
+      </HoverCardTrigger>
+      <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
+        <div className="space-y-2">
+          <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
+            {title ?? campaign.title}
+          </h4>
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            {description ?? campaign.description}
+          </p>
+          <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Organized by: {campaign.doneeName}</div>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 }

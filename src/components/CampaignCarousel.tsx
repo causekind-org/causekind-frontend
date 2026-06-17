@@ -102,7 +102,7 @@ function HorizontalCampaignCard({
               fill
               unoptimized
               sizes="(max-width: 768px) 100vw, 280px"
-              className="object-contain object-center bg-zinc-950 transition-transform duration-700 ease-out group-hover:scale-105"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             />
             {/* Pulsating Play Button overlay (image-only fallback) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

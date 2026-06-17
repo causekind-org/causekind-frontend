@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { adminGetCampaigns, approveCampaign, rejectCampaign, adminGetItemListings, adminGetItemRequests, adminGetAllDonations, adminGetDonationStats, adminGetMatches, type Campaign, type AdminDonation, type DonationStats } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +18,7 @@ import { BarChart3, CheckCircle, CreditCard, HandCoins, Loader2, MapPin, Package
 
 // Auth guard: show spinner while rehydrating; then check user/role.
 
-const STATUS_OPTIONS = [
-  { value: "ALL", label: "All statuses" },
-  { value: "PENDING_APPROVAL", label: "Pending approval" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
-];
+const STATUS_OPTIONS_VALUES = ["ALL", "PENDING_APPROVAL", "APPROVED", "REJECTED"] as const;
 
 function statusVariant(status: string) {
   if (status === "APPROVED") return "default" as const;
@@ -41,6 +37,7 @@ function formatINR(n: number) {
 }
 
 export default function AdminDashboardPage() {
+  const t = useTranslations("adminDashboard");
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -94,7 +91,7 @@ export default function AdminDashboardPage() {
       setDonations(d);
       setDonationStats(s);
     } catch {
-      toast.error("Failed to load payments");
+      toast.error(t("failedToLoadPayments"));
     } finally {
       setPaymentsLoading(false);
     }
@@ -105,25 +102,25 @@ export default function AdminDashboardPage() {
     try {
       const updated = await approveCampaign(id);
       setCampaigns((prev) => prev.map((c) => (c.id === id ? updated : c)));
-      toast.success("Campaign approved!");
+      toast.success(t("campaignApproved"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to approve");
+      toast.error(err instanceof Error ? err.message : t("failedToApprove"));
     } finally {
       setProcessing(null);
     }
   }
 
   async function handleReject(id: number) {
-    if (!rejectReason.trim()) { toast.error("Enter a rejection reason"); return; }
+    if (!rejectReason.trim()) { toast.error(t("enterRejectionReason")); return; }
     setProcessing(id);
     try {
       const updated = await rejectCampaign(id, rejectReason.trim());
       setCampaigns((prev) => prev.map((c) => (c.id === id ? updated : c)));
       setRejectId(null);
       setRejectReason("");
-      toast.success("Campaign rejected.");
+      toast.success(t("campaignRejected"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to reject");
+      toast.error(err instanceof Error ? err.message : t("failedToReject"));
     } finally {
       setProcessing(null);
     }
@@ -137,10 +134,10 @@ export default function AdminDashboardPage() {
   if (!user) return null;
 
   const stats = [
-    { label: "Verified donees", value: "—", icon: Users },
-    { label: "Active campaigns", value: String(activeCampaignCount), icon: HandCoins },
-    { label: "Pending review", value: String(pendingCampaignCount), icon: Package },
-    { label: "Verified rate", value: "100%", icon: ShieldCheck },
+    { label: t("verifiedDonees"), value: "—", icon: Users },
+    { label: t("activeCampaigns"), value: String(activeCampaignCount), icon: HandCoins },
+    { label: t("pendingReview"), value: String(pendingCampaignCount), icon: Package },
+    { label: t("verifiedRate"), value: "100%", icon: ShieldCheck },
   ];
 
   return (
@@ -148,18 +145,18 @@ export default function AdminDashboardPage() {
       <div className="border-b bg-gradient-to-b from-accent/40 to-transparent">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Admin dashboard</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Verify campaigns, item listings, and connection requests.</p>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
           </div>
           <div className="flex gap-2">
             <Link href="/admin/analytics">
               <Button variant="outline" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
-                Analytics
+                {t("analytics")}
               </Button>
             </Link>
             <Link href="/admin/approvals">
-              <Button>Open approval queue</Button>
+              <Button>{t("openApprovalQueue")}</Button>
             </Link>
           </div>
         </div>
@@ -187,30 +184,30 @@ export default function AdminDashboardPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2 rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
             <CardHeader>
-              <CardTitle>Approval queues</CardTitle>
+              <CardTitle>{t("approvalQueues")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Link href="/admin/approvals" className="block">
                 <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
-                  <p className="font-medium">Campaigns awaiting review</p>
+                  <p className="font-medium">{t("campaignsAwaitingReview")}</p>
                   <Badge>{campaigns.filter((c) => c.status === "PENDING_APPROVAL").length}</Badge>
                 </div>
               </Link>
               <Link href="/admin/approvals" className="block">
                 <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
-                  <p className="font-medium">Item requests pending</p>
+                  <p className="font-medium">{t("itemRequestsPending")}</p>
                   <Badge>{pendingRequests}</Badge>
                 </div>
               </Link>
               <Link href="/admin/approvals" className="block">
                 <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
-                  <p className="font-medium">Donor item listings pending</p>
+                  <p className="font-medium">{t("donorItemListingsPending")}</p>
                   <Badge>{pendingListings}</Badge>
                 </div>
               </Link>
               <Link href="/admin/approvals" className="block">
                 <div className="flex items-center justify-between rounded-lg border p-4 transition hover:bg-accent/40">
-                  <p className="font-medium">Contact share requests</p>
+                  <p className="font-medium">{t("contactShareRequests")}</p>
                   <Badge>{pendingMatches}</Badge>
                 </div>
               </Link>
@@ -220,19 +217,19 @@ export default function AdminDashboardPage() {
           <Card className="rounded-2xl border-stone-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" /> Matching radius
+                <MapPin className="h-4 w-4 text-primary" /> {t("matchingRadius")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Default radius for matching in-kind donors and donees.
+                {t("matchingRadiusDescription")}
               </p>
               <div className="space-y-2">
-                <Label>Radius (km)</Label>
+                <Label>{t("radiusKm")}</Label>
                 <Input defaultValue={10} type="number" min={1} max={100} disabled />
               </div>
-              <Button className="w-full" disabled>Update radius</Button>
-              <p className="text-xs text-muted-foreground">Available when the matching system is live.</p>
+              <Button className="w-full" disabled>{t("updateRadius")}</Button>
+              <p className="text-xs text-muted-foreground">{t("matchingSystemLive")}</p>
             </CardContent>
           </Card>
         </div>
@@ -240,23 +237,23 @@ export default function AdminDashboardPage() {
         {/* Tabs */}
         <Tabs defaultValue="campaigns">
           <TabsList>
-            <TabsTrigger value="campaigns" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">Campaigns</TabsTrigger>
-            <TabsTrigger value="items" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">Item requests</TabsTrigger>
-            <TabsTrigger value="listings" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">Item listings</TabsTrigger>
-            <TabsTrigger value="contacts" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">Contact shares</TabsTrigger>
-            <TabsTrigger value="payments" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white" onClick={loadPayments}>Payments</TabsTrigger>
+            <TabsTrigger value="campaigns" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">{t("tabCampaigns")}</TabsTrigger>
+            <TabsTrigger value="items" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">{t("tabItemRequests")}</TabsTrigger>
+            <TabsTrigger value="listings" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">{t("tabItemListings")}</TabsTrigger>
+            <TabsTrigger value="contacts" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">{t("tabContactShares")}</TabsTrigger>
+            <TabsTrigger value="payments" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white" onClick={loadPayments}>{t("tabPayments")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="campaigns" className="mt-6 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""} shown</p>
+              <p className="text-sm text-muted-foreground">{t("campaignsShown", { count: campaigns.length })}</p>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  {STATUS_OPTIONS_VALUES.map((v) => (
+                    <SelectItem key={v} value={v}>{t(`statusOption_${v}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -267,7 +264,7 @@ export default function AdminDashboardPage() {
                 <Loader2 className="size-8 animate-spin text-muted-foreground" />
               </div>
             ) : campaigns.length === 0 ? (
-              <p className="text-center text-muted-foreground py-20">No campaigns found.</p>
+              <p className="text-center text-muted-foreground py-20">{t("noCampaignsFound")}</p>
             ) : (
               <div className="space-y-4">
                 {campaigns.map((c) => (
@@ -286,27 +283,27 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <p className="text-sm text-foreground/80 line-clamp-2">{c.description}</p>
-                      <p className="text-sm font-medium">Goal: {formatINR(c.targetAmount)}</p>
+                      <p className="text-sm font-medium">{t("goal")}: {formatINR(c.targetAmount)}</p>
 
                       {c.rejectionReason && (
-                        <p className="text-sm text-destructive">Rejection reason: {c.rejectionReason}</p>
+                        <p className="text-sm text-destructive">{t("rejectionReason")}: {c.rejectionReason}</p>
                       )}
 
                       {rejectId === c.id && (
                         <div className="space-y-2 pt-1">
-                          <Label htmlFor={`reason-${c.id}`}>Rejection reason</Label>
+                          <Label htmlFor={`reason-${c.id}`}>{t("rejectionReasonLabel")}</Label>
                           <Input
                             id={`reason-${c.id}`}
-                            placeholder="Explain why this campaign is being rejected…"
+                            placeholder={t("rejectPlaceholder")}
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
                           />
                           <div className="flex gap-2">
                             <Button size="sm" variant="destructive" onClick={() => handleReject(c.id)} disabled={processing === c.id}>
-                              {processing === c.id ? <Loader2 className="size-4 animate-spin" /> : "Confirm reject"}
+                              {processing === c.id ? <Loader2 className="size-4 animate-spin" /> : t("confirmReject")}
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => { setRejectId(null); setRejectReason(""); }}>
-                              Cancel
+                              {t("cancel")}
                             </Button>
                           </div>
                         </div>
@@ -315,10 +312,10 @@ export default function AdminDashboardPage() {
                       {c.status === "PENDING_APPROVAL" && rejectId !== c.id && (
                         <div className="flex gap-2 pt-1">
                           <Button size="sm" className="bg-[#C17A3A] hover:bg-[#a86430] text-white rounded-xl" onClick={() => handleApprove(c.id)} disabled={processing === c.id}>
-                            {processing === c.id ? <Loader2 className="size-4 animate-spin" /> : <><CheckCircle className="size-4" /> Approve</>}
+                            {processing === c.id ? <Loader2 className="size-4 animate-spin" /> : <><CheckCircle className="size-4" /> {t("approve")}</>}
                           </Button>
                           <Button size="sm" variant="destructive" className="rounded-xl" onClick={() => setRejectId(c.id)}>
-                            <XCircle className="size-4" /> Reject
+                            <XCircle className="size-4" /> {t("reject")}
                           </Button>
                         </div>
                       )}
@@ -331,22 +328,22 @@ export default function AdminDashboardPage() {
 
           <TabsContent value="items" className="mt-6">
             <div className="rounded-lg border border-dashed p-16 text-center space-y-3">
-              <p className="text-muted-foreground">Manage item requests from the approval queue.</p>
-              <Link href="/admin/approvals"><Button variant="outline">Go to approval queue</Button></Link>
+              <p className="text-muted-foreground">{t("manageItemRequests")}</p>
+              <Link href="/admin/approvals"><Button variant="outline">{t("goToApprovalQueue")}</Button></Link>
             </div>
           </TabsContent>
 
           <TabsContent value="listings" className="mt-6">
             <div className="rounded-lg border border-dashed p-16 text-center space-y-3">
-              <p className="text-muted-foreground">Manage item listings from the approval queue.</p>
-              <Link href="/admin/approvals"><Button variant="outline">Go to approval queue</Button></Link>
+              <p className="text-muted-foreground">{t("manageItemListings")}</p>
+              <Link href="/admin/approvals"><Button variant="outline">{t("goToApprovalQueue")}</Button></Link>
             </div>
           </TabsContent>
 
           <TabsContent value="contacts" className="mt-6">
             <div className="rounded-lg border border-dashed p-16 text-center space-y-3">
-              <p className="text-muted-foreground">Manage contact share requests from the approval queue.</p>
-              <Link href="/admin/approvals"><Button variant="outline">Go to approval queue</Button></Link>
+              <p className="text-muted-foreground">{t("manageContactShares")}</p>
+              <Link href="/admin/approvals"><Button variant="outline">{t("goToApprovalQueue")}</Button></Link>
             </div>
           </TabsContent>
 
@@ -365,7 +362,7 @@ export default function AdminDashboardPage() {
                           <TrendingUp className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-xs text-stone-400 uppercase tracking-wide">Total collected</p>
+                          <p className="text-xs text-stone-400 uppercase tracking-wide">{t("totalCollected")}</p>
                           <p className="text-xl font-black text-[#C17A3A]">{formatINR(donationStats.totalCollected)}</p>
                         </div>
                       </CardContent>
@@ -376,7 +373,7 @@ export default function AdminDashboardPage() {
                           <CheckCircle className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-xs text-stone-400 uppercase tracking-wide">Completed</p>
+                          <p className="text-xs text-stone-400 uppercase tracking-wide">{t("completed")}</p>
                           <p className="text-xl font-black text-[#C17A3A]">{donationStats.completedTransactions}</p>
                         </div>
                       </CardContent>
@@ -387,7 +384,7 @@ export default function AdminDashboardPage() {
                           <Users className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-xs text-stone-400 uppercase tracking-wide">Unique donors</p>
+                          <p className="text-xs text-stone-400 uppercase tracking-wide">{t("uniqueDonors")}</p>
                           <p className="text-xl font-black text-[#C17A3A]">{donationStats.uniqueDonors}</p>
                         </div>
                       </CardContent>
@@ -398,7 +395,7 @@ export default function AdminDashboardPage() {
                           <CreditCard className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-xs text-stone-400 uppercase tracking-wide">Total transactions</p>
+                          <p className="text-xs text-stone-400 uppercase tracking-wide">{t("totalTransactions")}</p>
                           <p className="text-xl font-black text-[#C17A3A]">{donationStats.totalTransactions}</p>
                         </div>
                       </CardContent>
@@ -407,18 +404,18 @@ export default function AdminDashboardPage() {
                 )}
 
                 {donations.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-20">No donations yet.</p>
+                  <p className="text-center text-muted-foreground py-20">{t("noDonationsYet")}</p>
                 ) : (
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead className="border-b bg-muted/50">
                         <tr>
-                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Date</th>
-                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Donor</th>
-                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Campaign</th>
-                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">Amount</th>
-                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">Payment ID</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("colDate")}</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("colDonor")}</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("colCampaign")}</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">{t("colAmount")}</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("colStatus")}</th>
+                          <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("colPaymentId")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
