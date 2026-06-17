@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { createItemListing } from "@/lib/api";
+import { createItemListing, getProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import Image from "next/image";
+import { Country, State, City } from "country-state-city";
+import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 
 const CATEGORIES = ["Education", "Clothing", "Furniture", "Electronics", "Household", "Sports", "Medical aid"];
 const CONDITIONS = ["Like new", "Good", "Fair"];
 
 const empty = { title: "", category: "", quantity: 1, condition: "", city: "", pincode: "", description: "", imageUrl: "" };
+
+function buildCountryOptions(): SelectOption[] {
+  return Country.getAllCountries().map((c) => ({
+    value: c.isoCode,
+    label: c.name,
+  }));
+}
+
+function buildStateOptions(countryIso: string): SelectOption[] {
+  return State.getStatesOfCountry(countryIso).map((s) => ({
+    value: s.isoCode,
+    label: s.name,
+  }));
+}
+
+function buildCityOptions(countryIso: string, stateIso: string): SelectOption[] {
+  return City.getCitiesOfState(countryIso, stateIso).map((c) => ({
+    value: c.name,
+    label: c.name,
+  }));
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -36,9 +59,74 @@ export default function NewItemPage() {
   const [submitting, setSubmitting] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
 
+  // Location cascades states
+  const [countryIso, setCountryIso] = useState<string>("");
+  const [stateIso, setStateIso] = useState<string>("");
+  const [cityValue, setCityValue] = useState<string>("");
+  const [cityFreeText, setCityFreeText] = useState<string>("");
+
+  // Derived option lists
+  const countryOptions = buildCountryOptions();
+  const stateOptions = countryIso ? buildStateOptions(countryIso) : [];
+  const cityOptions = countryIso && stateIso ? buildCityOptions(countryIso, stateIso) : [];
+
+  // Fallback to free-text for city
+  const noStateOptions = countryIso !== "" && stateOptions.length === 0;
+  const noCityOptions = stateIso !== "" && cityOptions.length === 0;
+  const showCityFreeText = noStateOptions || noCityOptions;
+
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
+
+    // Fetch profile to auto-fill location
+    getProfile()
+      .then((p) => {
+        if (p.city) {
+          const parts = p.city.split(",").map((s) => s.trim());
+          if (parts.length === 3) {
+            const [cCity, cState, cCountry] = parts;
+            setCountryIso(cCountry || "IN");
+            setStateIso(cState || "");
+            const states = State.getStatesOfCountry(cCountry);
+            const cities = City.getCitiesOfState(cCountry, cState);
+            if (cities.some((c) => c.name === cCity)) {
+              setCityValue(cCity);
+            } else {
+              setCityFreeText(cCity);
+            }
+          } else {
+            setCountryIso("IN");
+            setCityFreeText(p.city);
+          }
+        } else {
+          setCountryIso("IN");
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load profile for location prefill:", err);
+        setCountryIso("IN");
+      });
   }, [user, router]);
+
+  function handleCountryChange(iso: string) {
+    setCountryIso(iso);
+    setStateIso("");
+    setCityValue("");
+    setCityFreeText("");
+  }
+
+  function handleStateChange(iso: string) {
+    setStateIso(iso);
+    setCityValue("");
+    setCityFreeText("");
+  }
+
+  function buildCityString(): string {
+    if (showCityFreeText) {
+      return [cityFreeText, stateIso, countryIso].filter(Boolean).join(", ");
+    }
+    return [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
+  }
 
   function set(field: string, value: string | number) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -55,9 +143,14 @@ export default function NewItemPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const cityStr = buildCityString();
+    if (!cityStr) {
+      toast.error("Please select or enter your city");
+      return;
+    }
     setSubmitting(true);
     try {
-      await createItemListing({ ...form, quantity: Number(form.quantity), imageUrl: form.imageUrl || null });
+      await createItemListing({ ...form, city: cityStr, quantity: Number(form.quantity), imageUrl: form.imageUrl || null });
       toast.success("Item submitted for review!");
       router.push("/dashboard");
     } catch (err) {
@@ -99,11 +192,58 @@ export default function NewItemPage() {
                   <SelectContent>{CONDITIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Pickup city">
-                <Input placeholder="Pune" value={form.city} onChange={(e) => set("city", e.target.value)} required />
-              </Field>
               <Field label="Pickup pincode">
                 <Input placeholder="411001" value={form.pincode} onChange={(e) => set("pincode", e.target.value)} />
+              </Field>
+              <Field label="Country">
+                <SearchableSelect
+                  id="country"
+                  options={countryOptions}
+                  value={countryIso}
+                  onChange={handleCountryChange}
+                  placeholder="Select country"
+                  searchPlaceholder="Search country…"
+                />
+              </Field>
+              <Field label="State / Province">
+                {noStateOptions ? (
+                  <p className="text-xs text-stone-400 italic py-3 bg-stone-50/50 rounded-xl border border-stone-200 px-3">
+                    No states listed for this country.
+                  </p>
+                ) : (
+                  <SearchableSelect
+                    id="state"
+                    options={stateOptions}
+                    value={stateIso}
+                    onChange={handleStateChange}
+                    placeholder="Select state"
+                    disabledPlaceholder="Select country first"
+                    disabled={!countryIso}
+                    searchPlaceholder="Search state…"
+                  />
+                )}
+              </Field>
+              <Field label="City">
+                {showCityFreeText ? (
+                  <Input
+                    id="city"
+                    placeholder="Enter city name"
+                    value={cityFreeText}
+                    onChange={(e) => setCityFreeText(e.target.value)}
+                    required
+                  />
+                ) : (
+                  <SearchableSelect
+                    id="city"
+                    options={cityOptions}
+                    value={cityValue}
+                    onChange={setCityValue}
+                    placeholder="Select city"
+                    disabledPlaceholder="Select state first"
+                    disabled={!stateIso && !noStateOptions}
+                    searchPlaceholder="Search city…"
+                  />
+                )}
               </Field>
             </div>
             <Field label="Description">

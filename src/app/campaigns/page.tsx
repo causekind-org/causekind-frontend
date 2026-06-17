@@ -15,12 +15,12 @@ import {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:         ["/images/medical-1.png", "/images/medical-2.png"],
-  Education:       ["/images/hero-7.jpg"],
-  Livelihood:      ["/images/hero-3.jpg"],
-  Community:       ["/images/hero-6.jpg"],
-  "Animal Welfare":["/images/hero-5.jpg"],
-  Environment:     ["/images/hero-8.jpg"],
+  Medical:         ["/images/medical-1.webp", "/images/medical-2.webp"],
+  Education:       ["/images/hero-7.webp"],
+  Livelihood:      ["/images/hero-3.webp"],
+  Community:       ["/images/hero-6.webp"],
+  "Animal Welfare":["/images/hero-5.webp"],
+  Environment:     ["/images/hero-8.webp"],
 };
 
 const ALL_CATEGORIES = [
@@ -42,7 +42,7 @@ function cardImage(c: Campaign, i: number): string {
   if (c.imageUrl) return c.imageUrl;
   const imgs = CATEGORY_IMAGES[c.category];
   if (imgs) return imgs[c.id % imgs.length];
-  return `/images/hero-${(i % 9) + 1}.jpg`;
+  return `/images/hero-${(i % 9) + 1}.webp`;
 }
 
 function formatINR(n: number) {
@@ -528,7 +528,7 @@ export default function CampaignsPage() {
 
       {/* ── Hero Banner ──────────────────────────────────────────────── */}
       <div className="relative h-[240px] sm:h-[300px] overflow-hidden">
-        <Image src="/images/hero-4.jpg" alt="Campaign stories" fill
+        <Image src="/images/hero-4.webp" alt="Campaign stories" fill
           className="object-cover object-center" priority />
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/75" />
         <div className="relative z-10 flex h-full flex-col justify-end px-5 pb-8 sm:px-10 md:px-14 max-w-3xl">

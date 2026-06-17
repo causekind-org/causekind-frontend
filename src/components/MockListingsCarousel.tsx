@@ -61,14 +61,14 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
             const cardInner = (
               <div className="card-glow flex flex-col h-full overflow-hidden glass-card dark:bg-zinc-900/60 rounded-2xl group border-2 border-orange-200 dark:border-orange-900/60 relative">
                 {/* Image Section */}
-                <div className="relative w-full aspect-video overflow-hidden bg-orange-50 dark:bg-zinc-950 shrink-0">
+                <div className="relative w-full aspect-video overflow-hidden bg-stone-100 dark:bg-zinc-950 shrink-0">
                   {item.imageUrl ? (
                     <Image
                       src={item.imageUrl}
                       alt={item.title}
                       fill
                       sizes="(max-width:640px) 100vw, 33vw"
-                      className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+                      className="object-contain object-center bg-stone-100 dark:bg-zinc-950 transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-zinc-900/60 text-stone-400 dark:text-stone-500 gap-2 font-semibold text-xs">

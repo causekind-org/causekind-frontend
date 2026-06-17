@@ -10,7 +10,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { register, googleAuth, googleComplete } from "@/lib/api";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 import { Country, State, City } from "country-state-city";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 
@@ -162,38 +162,100 @@ function RegisterContent() {
   const [stateIso, setStateIso] = useState("");
   const [cityValue, setCityValue] = useState("");
   const [cityFreeText, setCityFreeText] = useState("");
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const dialCodeOptions = buildDialCodeOptions();
   const countryOptions = buildCountryOptions();
   const stateOptions = countryIso ? buildStateOptions(countryIso) : [];
   const cityOptions = countryIso && stateIso ? buildCityOptions(countryIso, stateIso) : [];
 
+  function handleGPSLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser doesn't support GPS location");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          const address = data.address;
+          if (address) {
+            const countryCode = address.country_code?.toUpperCase();
+            const stateName = address.state;
+            const cityName = address.city || address.town || address.village || address.suburb;
+            
+            if (countryCode) {
+              setDialCountry(countryCode);
+              setCountryIso(countryCode);
+              const states = State.getStatesOfCountry(countryCode);
+              const matchedState = states.find(
+                (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
+                       s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
+              );
+              if (matchedState) {
+                setStateIso(matchedState.isoCode);
+                const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
+                const matchedCity = cities.find(
+                  (c) => c.name.toLowerCase() === cityName?.toLowerCase()
+                );
+                if (matchedCity) {
+                  setCityValue(matchedCity.name);
+                  setCityFreeText("");
+                } else if (cityName) {
+                  setCityValue("");
+                  setCityFreeText(cityName);
+                }
+              } else {
+                setStateIso("");
+                setCityValue("");
+                if (cityName) setCityFreeText(cityName);
+              }
+              toast.success("Location updated successfully!");
+            }
+          }
+        } catch {
+          toast.error("Failed to detect location details");
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error("Location access denied or unavailable");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
   const showCityFreeText = noStateOptions || noCityOptions;
 
-  const triggerGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleLoading(true);
-      try {
-        const res = await googleAuth(tokenResponse.access_token);
-        if (res.needsCompletion) {
-          sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
-          sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-          router.push("/register?social=google");
-        } else {
-          setAuth(res.token);
-          toast.success("Welcome back!");
-          router.push("/");
-        }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Google sign-up failed");
-      } finally {
-        setGoogleLoading(false);
+  async function handleGoogleSuccess(credentialResponse: any) {
+    if (!credentialResponse.credential) return;
+    setGoogleLoading(true);
+    try {
+      const res = await googleAuth(credentialResponse.credential);
+      if (res.needsCompletion) {
+        sessionStorage.setItem("ck_google_token", credentialResponse.credential);
+        sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
+        router.push("/register?social=google");
+      } else {
+        setAuth(res.token);
+        toast.success("Welcome back!");
+        router.push("/");
       }
-    },
-    onError: () => toast.error("Google sign-up failed"),
-  });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-up failed");
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
 
   function handleCountryChange(iso: string) {
     setCountryIso(iso);
@@ -218,10 +280,71 @@ function RegisterContent() {
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
 
   useEffect(() => {
-    detectCountryFromIP().then((code) => {
-      setDialCountry(code);
-      setCountryIso(code);
-    });
+    // Try GPS first, fallback to IP detection if GPS is denied/unsupported/fails
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            const address = data.address;
+            if (address) {
+              const countryCode = address.country_code?.toUpperCase();
+              const stateName = address.state;
+              const cityName = address.city || address.town || address.village || address.suburb;
+              
+              if (countryCode) {
+                setDialCountry(countryCode);
+                setCountryIso(countryCode);
+                const states = State.getStatesOfCountry(countryCode);
+                const matchedState = states.find(
+                  (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
+                         s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
+                );
+                if (matchedState) {
+                  setStateIso(matchedState.isoCode);
+                  const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
+                  const matchedCity = cities.find(
+                    (c) => c.name.toLowerCase() === cityName?.toLowerCase()
+                  );
+                  if (matchedCity) {
+                    setCityValue(matchedCity.name);
+                    setCityFreeText("");
+                  } else if (cityName) {
+                    setCityValue("");
+                    setCityFreeText(cityName);
+                  }
+                }
+                return; // successfully handled GPS
+              }
+            }
+          } catch {
+            // fallback to IP on failure
+          }
+          // IP fallback
+          detectCountryFromIP().then((code) => {
+            setDialCountry(code);
+            setCountryIso(code);
+          });
+        },
+        () => {
+          // IP fallback on geolocation denial/failure
+          detectCountryFromIP().then((code) => {
+            setDialCountry(code);
+            setCountryIso(code);
+          });
+        },
+        { enableHighAccuracy: false, timeout: 5000 }
+      );
+    } else {
+      detectCountryFromIP().then((code) => {
+        setDialCountry(code);
+        setCountryIso(code);
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -341,9 +464,19 @@ function RegisterContent() {
 
             {/* Location: Country → State → City */}
             <div className="space-y-3">
-              <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                <MapPin className="w-3.5 h-3.5" /> {t("location")}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                  <MapPin className="w-3.5 h-3.5" /> {t("location")}
+                </label>
+                <button
+                  type="button"
+                  onClick={handleGPSLocation}
+                  disabled={gpsLoading}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#b04a15] hover:underline uppercase disabled:opacity-50"
+                >
+                  {gpsLoading ? "Detecting..." : "Use GPS 🎯"}
+                </button>
+              </div>
 
               <div className="space-y-1">
                 <label className="text-xs text-stone-500 dark:text-stone-400">{t("country")}</label>
@@ -445,15 +578,15 @@ function RegisterContent() {
           {/* Social buttons — only on non-social flow */}
           {!isSocialFlow && (
             <div className="space-y-3">
-              <button
-                type="button"
-                disabled={googleLoading}
-                onClick={() => triggerGoogle()}
-                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
-              >
-                <GoogleIcon />
-                {googleLoading ? t("creating") : t("google")}
-              </button>
+              <div className="w-full flex justify-center [&_iframe]:!w-full [&_iframe]:!min-w-full [&_iframe]:!max-w-full">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => toast.error("Google sign-up failed")}
+                  theme="outline"
+                  size="large"
+                  width="384"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => toast.info("Social sign-in coming soon")}
@@ -483,7 +616,7 @@ function RegisterContent() {
       <div className="hidden lg:flex flex-1 relative p-6">
         <div className="relative w-full h-full rounded-3xl overflow-hidden">
           <Image
-            src="/images/hero-4.jpg"
+            src="/images/hero-4.webp"
             alt="Community members supporting each other"
             fill
             className="object-cover"

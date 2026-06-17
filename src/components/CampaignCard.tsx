@@ -13,15 +13,15 @@ import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTransl
 type Props = { campaign: Campaign };
 
 const CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.png", "/images/medical-2.png"],
-  Education:  ["/images/hero-7.jpg"],
-  Livelihood: ["/images/hero-3.jpg"],
-  Community:  ["/images/hero-6.jpg"],
+  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
+  Education:  ["/images/hero-7.webp"],
+  Livelihood: ["/images/hero-3.webp"],
+  Community:  ["/images/hero-6.webp"],
 };
 
 function getCardImage(category: string, id: number): string {
   const imgs = CATEGORY_IMAGES[category];
-  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.jpg";
+  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.webp";
 }
 
 function formatINR(n: number) {
@@ -36,10 +36,10 @@ export function CampaignCard({ campaign }: Props) {
   return (
     <Card className="card-3d card-shimmer card-glow flex flex-col h-full overflow-hidden glass-card rounded-2xl group border-stone-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300">
       {/* Top-Heavy Image Container (Flush with top/left/right) */}
-      <div className="relative w-full aspect-[16/10] overflow-hidden bg-orange-50 dark:bg-zinc-950 shrink-0">
+      <div className="relative w-full aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-zinc-950 shrink-0">
         <Image src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)} alt={campaign.title} fill
           sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
-          className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105" />
+          className="object-contain object-center bg-stone-100 dark:bg-zinc-950 transition-transform duration-700 ease-out group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         
         {/* Floating Category and Location Glassmorphic tags */}

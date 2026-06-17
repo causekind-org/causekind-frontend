@@ -23,15 +23,15 @@ import { TranslatedText } from "@/hooks/useDynamicTranslation";
 const INTERVAL = 3000; // ms between auto-slides
 
 const CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.png", "/images/medical-2.png"],
-  Education:  ["/images/hero-7.jpg"],
-  Livelihood: ["/images/hero-3.jpg"],
-  Community:  ["/images/hero-6.jpg"],
+  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
+  Education:  ["/images/hero-7.webp"],
+  Livelihood: ["/images/hero-3.webp"],
+  Community:  ["/images/hero-6.webp"],
 };
 
 function getCardImage(category: string, id: number): string {
   const imgs = CATEGORY_IMAGES[category];
-  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.jpg";
+  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.webp";
 }
 
 function formatINR(n: number) {
@@ -102,7 +102,7 @@ function HorizontalCampaignCard({
               fill
               unoptimized
               sizes="(max-width: 768px) 100vw, 280px"
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              className="object-contain object-center bg-zinc-950 transition-transform duration-700 ease-out group-hover:scale-105"
             />
             {/* Pulsating Play Button overlay (image-only fallback) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
