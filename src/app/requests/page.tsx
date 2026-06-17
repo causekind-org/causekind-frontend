@@ -20,6 +20,7 @@ import {
   Plus, ChevronDown, ShieldCheck, Heart, SlidersHorizontal, BadgeCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -403,7 +404,9 @@ function RequestCard({
 
   return (
     <Reveal delay={index * 70}>
-      <div className="group bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-stone-100 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 ease-out flex flex-col h-full">
+      <HoverCard openDelay={300}>
+        <HoverCardTrigger asChild>
+          <div className="group bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-stone-100 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 ease-out flex flex-col h-full">
 
         {/* Image */}
         <div className="relative w-full h-44 sm:h-52 overflow-hidden shrink-0 bg-orange-50 dark:bg-zinc-800">
@@ -414,13 +417,6 @@ function RequestCard({
             className="object-cover group-hover:scale-[1.06] transition-transform duration-500 ease-out"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-          {/* Netflix-style hover overlay */}
-          <div className="absolute inset-0 bg-black/80 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
-            <p className="text-white text-sm line-clamp-5 font-medium mb-1 drop-shadow-md">
-              {r.description ? <TranslatedText text={r.description} /> : `Requested by ${r.doneeName}`}
-            </p>
-            <div className="text-xs text-stone-300 font-semibold drop-shadow-sm">Quantity Needed: {r.quantity}</div>
-          </div>
           {/* Subtle bottom fade */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
 
@@ -488,7 +484,20 @@ function RequestCard({
             Give this item
           </button>
         </div>
-      </div>
+          </div>
+        </HoverCardTrigger>
+        <HoverCardContent side="right" align="start" className="w-80 z-50 p-4 shadow-xl">
+          <div className="space-y-2">
+            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
+              {title ?? r.title}
+            </h4>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              {r.description ? <TranslatedText text={r.description} /> : `Requested by ${r.doneeName}. ${r.quantity} item${r.quantity !== 1 ? "s" : ""} needed.`}
+            </p>
+            <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Quantity Needed: {r.quantity}</div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
     </Reveal>
   );
 }

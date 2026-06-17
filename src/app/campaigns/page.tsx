@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { useRouter } from "next/navigation";
 import { getCampaigns, type Campaign } from "@/lib/api";
 import { Reveal } from "@/components/Reveal";
@@ -72,25 +73,18 @@ function CampaignCard({ c, i, featured = false }: { c: Campaign; i: number; feat
   const pct = Math.min(100, Math.round((c.amountRaised / c.targetAmount) * 100));
   const img = cardImage(c, i);
   return (
-    <Link
-      href={`/campaigns/${c.id}`}
-      className={`group relative overflow-hidden rounded-2xl block shadow-md h-full ${
-        featured ? "min-h-[400px] sm:min-h-[460px]" : "min-h-[200px] sm:min-h-[225px]"
-      }`}
-    >
+    <HoverCard openDelay={300}>
+      <HoverCardTrigger asChild>
+        <Link
+          href={`/campaigns/${c.id}`}
+          className={`group relative overflow-hidden rounded-2xl block shadow-md h-full ${
+            featured ? "min-h-[400px] sm:min-h-[460px]" : "min-h-[200px] sm:min-h-[225px]"
+          }`}
+        >
       <div className="absolute inset-0">
         <Image src={img} alt={c.title} fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width:768px) 100vw, 50vw" />
-      </div>
-      {/* Netflix-style hover overlay */}
-      <div className="absolute inset-0 bg-black/80 flex flex-col justify-center p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none text-center">
-        <p className="text-white text-sm line-clamp-6 font-medium mb-2 drop-shadow-md">
-          {c.description}
-        </p>
-        <div className="text-xs text-stone-300 font-semibold drop-shadow-sm mt-2 border-t border-white/20 pt-2">
-          Organized by: {c.doneeName}
-        </div>
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
       <div className="absolute top-3 left-3 flex items-center gap-1.5">
@@ -117,7 +111,20 @@ function CampaignCard({ c, i, featured = false }: { c: Campaign; i: number; feat
           <span className="text-[#f0b97a] text-xs font-semibold">{pct}%</span>
         </div>
       </div>
-    </Link>
+      </Link>
+      </HoverCardTrigger>
+      <HoverCardContent side="right" align="start" className="w-80 z-50 p-4 shadow-xl">
+        <div className="space-y-2">
+          <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
+            {c.title}
+          </h4>
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            {c.description}
+          </p>
+          <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Organized by: {c.doneeName}</div>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
