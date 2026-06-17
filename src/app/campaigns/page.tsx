@@ -11,6 +11,7 @@ import {
   MapPin, Search, BadgeCheck, ArrowRight,
   HeartHandshake, SearchX, SlidersHorizontal, X, ChevronDown,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ function CampaignCard({ c, i, featured = false }: { c: Campaign; i: number; feat
     >
       <div className="absolute inset-0">
         <Image src={img} alt={c.title} fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-contain object-center bg-stone-100 dark:bg-zinc-950 transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width:768px) 100vw, 50vw" />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
@@ -125,10 +126,12 @@ function SearchWithSuggestions({
   value,
   onChange,
   campaigns,
+  placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
   campaigns: Campaign[];
+  placeholder: string;
 }) {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
@@ -188,7 +191,7 @@ function SearchWithSuggestions({
         <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 pointer-events-none" />
         <Input
           className="pl-9 pr-8 rounded-full border-stone-200 dark:border-stone-700 bg-white dark:bg-zinc-900 shadow-sm h-9 text-sm"
-          placeholder="Search campaigns..."
+          placeholder={placeholder}
           value={value}
           autoComplete="off"
           onChange={(e) => {
@@ -286,7 +289,7 @@ function SearchWithSuggestions({
 
 // ── SortDropdown ──────────────────────────────────────────────────────────────
 
-function SortDropdown({ sort, setSort }: { sort: SortValue; setSort: (s: SortValue) => void }) {
+function SortDropdown({ sort, setSort, sortByLabel, sortLabel }: { sort: SortValue; setSort: (s: SortValue) => void; sortByLabel: string; sortLabel: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -298,16 +301,14 @@ function SortDropdown({ sort, setSort }: { sort: SortValue; setSort: (s: SortVal
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const label = SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "Sort";
-
   return (
     <div ref={ref} className="relative hidden lg:block">
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 hover:border-stone-300 dark:hover:border-stone-600 transition-colors"
       >
-        <span>Sort by:</span>
-        <span className="font-semibold text-stone-700 dark:text-stone-200 ml-0.5">{label}</span>
+        <span>{sortByLabel}</span>
+        <span className="font-semibold text-stone-700 dark:text-stone-200 ml-0.5">{sortLabel}</span>
         <ChevronDown
           className={`h-3 w-3 ml-0.5 text-stone-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
@@ -347,6 +348,10 @@ function FilterPanel({
   sort,
   setSort,
   resetFilters,
+  impactAreaLabel,
+  statusLabel,
+  resetFiltersLabel,
+  emergencyReliefLabel,
 }: {
   categoryCounts:  Record<string, number>;
   filteredCounts:  Record<string, number>;
@@ -355,11 +360,15 @@ function FilterPanel({
   sort:    SortValue;
   setSort: (s: SortValue) => void;
   resetFilters: () => void;
+  impactAreaLabel: string;
+  statusLabel: string;
+  resetFiltersLabel: string;
+  emergencyReliefLabel: string;
 }) {
   return (
     <>
       <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-3">
-        Impact Area
+        {impactAreaLabel}
       </p>
       <div className="space-y-2.5 mb-5">
         {ALL_CATEGORIES.map((cat) => {
@@ -385,7 +394,7 @@ function FilterPanel({
                     : "text-stone-700 dark:text-stone-300 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a]"
                 }`}
               >
-                {cat === "Disaster Relief" ? "Emergency Relief" : cat}
+                {cat === "Disaster Relief" ? emergencyReliefLabel : cat}
               </span>
               <span className="text-[11px] text-stone-400 dark:text-stone-500 tabular-nums">
                 {selectedCategories.length > 0 ? `${matched}/${total}` : `(${total})`}
@@ -398,7 +407,7 @@ function FilterPanel({
       <div className="border-t border-stone-100 dark:border-stone-800 mb-5" />
 
       <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-3">
-        Status
+        {statusLabel}
       </p>
       <div className="space-y-2.5 mb-5">
         {SORT_OPTIONS.map((option) => (
@@ -430,7 +439,7 @@ function FilterPanel({
         onClick={resetFilters}
         className="w-full border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 text-sm font-medium py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors"
       >
-        Reset Filters
+        {resetFiltersLabel}
       </button>
     </>
   );
@@ -439,6 +448,7 @@ function FilterPanel({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CampaignsPage() {
+  const t = useTranslations("campaigns_page");
   const [campaigns, setCampaigns]               = useState<Campaign[]>([]);
   const [loading, setLoading]                   = useState(true);
   const [error, setError]                       = useState("");
@@ -450,9 +460,9 @@ export default function CampaignsPage() {
   useEffect(() => {
     getCampaigns()
       .then(setCampaigns)
-      .catch(() => setError("Could not load campaigns. Please try again."))
+      .catch(() => setError(t("couldNotLoad")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   // Total counts (all campaigns, ignores current filters — for sidebar reference)
   const categoryCounts = useMemo(() => {
@@ -523,6 +533,8 @@ export default function CampaignsPage() {
   const activeFilterCount = selectedCategories.length + (sort !== "urgent" ? 1 : 0);
   const hasActiveFilters  = activeFilterCount > 0 || search.length > 0;
 
+  const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label ?? t("sortBy");
+
   return (
     <div className="min-h-screen bg-[#f7f4f0] dark:bg-zinc-950 text-stone-900 dark:text-stone-100">
 
@@ -533,16 +545,16 @@ export default function CampaignsPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/75" />
         <div className="relative z-10 flex h-full flex-col justify-end px-5 pb-8 sm:px-10 md:px-14 max-w-3xl">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight mb-2">
-            Every donation is a chapter<br className="hidden sm:block" /> in someone's story.
+            {t("heroHeading")}
           </h1>
           <p className="text-white/70 text-sm max-w-md mb-4 leading-relaxed">
-            Behind every campaign is a human heartbeat. Discover stories of resilience, hope, and community.
+            {t("heroSubtitle")}
           </p>
           <a
             href="#campaigns"
             className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/25 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-white/20 transition-colors w-fit"
           >
-            Read Their Stories <ArrowRight className="h-3.5 w-3.5" />
+            {t("readTheirStories")} <ArrowRight className="h-3.5 w-3.5" />
           </a>
         </div>
       </div>
@@ -557,21 +569,21 @@ export default function CampaignsPage() {
             className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-stone-700 dark:text-stone-300 shadow-sm"
           >
             <SlidersHorizontal className="h-4 w-4" />
-            Filters
+            {t("filtersMobile")}
             {activeFilterCount > 0 && (
               <span className="bg-[#b04a15] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
           </button>
-          <SearchWithSuggestions value={search} onChange={setSearch} campaigns={campaigns} />
+          <SearchWithSuggestions value={search} onChange={setSearch} campaigns={campaigns} placeholder={t("searchCampaigns")} />
         </div>
 
         {/* Mobile: collapsible filter panel */}
         {showFilters && (
           <div className="lg:hidden mb-5 bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-stone-100 dark:border-stone-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-stone-900 dark:text-white text-base">Filters</h3>
+              <h3 className="font-bold text-stone-900 dark:text-white text-base">{t("filtersHeading")}</h3>
               <button onClick={() => setShowFilters(false)} className="text-stone-400 hover:text-stone-600">
                 <X className="h-4 w-4" />
               </button>
@@ -584,6 +596,10 @@ export default function CampaignsPage() {
               sort={sort}
               setSort={setSort}
               resetFilters={resetFilters}
+              impactAreaLabel={t("impactArea")}
+              statusLabel={t("statusHeading")}
+              resetFiltersLabel={t("resetFilters")}
+              emergencyReliefLabel={t("emergencyRelief")}
             />
           </div>
         )}
@@ -592,7 +608,7 @@ export default function CampaignsPage() {
 
           {/* Desktop sidebar */}
           <aside className="hidden lg:block w-52 shrink-0 bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-stone-100 dark:border-stone-800 sticky top-20">
-            <h3 className="font-bold text-stone-900 dark:text-white text-base mb-5">Filters</h3>
+            <h3 className="font-bold text-stone-900 dark:text-white text-base mb-5">{t("filtersHeading")}</h3>
             <FilterPanel
               categoryCounts={categoryCounts}
               filteredCounts={filteredCounts}
@@ -601,6 +617,10 @@ export default function CampaignsPage() {
               sort={sort}
               setSort={setSort}
               resetFilters={resetFilters}
+              impactAreaLabel={t("impactArea")}
+              statusLabel={t("statusHeading")}
+              resetFiltersLabel={t("resetFilters")}
+              emergencyReliefLabel={t("emergencyRelief")}
             />
           </aside>
 
@@ -611,25 +631,27 @@ export default function CampaignsPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-xl font-extrabold text-stone-900 dark:text-white tracking-tight">
-                  Active Campaigns
+                  {t("activeCampaigns")}
                 </h2>
                 <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
                   {loading
-                    ? "Loading campaigns…"
-                    : `Showing ${filtered.length} of ${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""}`}
+                    ? t("loadingCampaigns")
+                    : campaigns.length !== 1
+                      ? t("showingCountPlural", { filtered: filtered.length, total: campaigns.length })
+                      : t("showingCount", { filtered: filtered.length, total: campaigns.length })}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {/* Search — desktop only (mobile is in toggle bar) */}
                 <div className="hidden sm:block">
-                  <SearchWithSuggestions value={search} onChange={setSearch} campaigns={campaigns} />
+                  <SearchWithSuggestions value={search} onChange={setSearch} campaigns={campaigns} placeholder={t("searchCampaigns")} />
                 </div>
-                <SortDropdown sort={sort} setSort={setSort} />
+                <SortDropdown sort={sort} setSort={setSort} sortByLabel={t("sortBy")} sortLabel={currentSortLabel} />
                 <Link
                   href="/campaigns/new"
                   className="shrink-0 bg-[#b04a15] hover:bg-[#963c0d] text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
                 >
-                  + Campaign
+                  {t("addCampaign")}
                 </Link>
               </div>
             </div>
@@ -651,7 +673,7 @@ export default function CampaignsPage() {
                     onClick={() => toggleCategory(cat)}
                     className="flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 text-[#b04a15] dark:text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
                   >
-                    {cat === "Disaster Relief" ? "Emergency Relief" : cat}
+                    {cat === "Disaster Relief" ? t("emergencyRelief") : cat}
                     <X className="h-3 w-3 ml-0.5" />
                   </button>
                 ))}
@@ -668,7 +690,7 @@ export default function CampaignsPage() {
                   onClick={resetFilters}
                   className="text-xs text-stone-400 hover:text-[#b04a15] transition-colors underline underline-offset-2"
                 >
-                  Clear all
+                  {t("clearAll")}
                 </button>
               </div>
             )}
@@ -701,16 +723,16 @@ export default function CampaignsPage() {
                     : <SearchX className="w-8 h-8 text-stone-300 dark:text-zinc-600" />}
                 </div>
                 <p className="font-bold text-stone-700 dark:text-stone-300 text-base">
-                  {campaigns.length === 0 ? "No campaigns yet" : "No campaigns match"}
+                  {campaigns.length === 0 ? t("noCampaignsYet") : t("noCampaignsMatch")}
                 </p>
                 <p className="mt-1 text-sm text-stone-400 text-center max-w-xs">
                   {campaigns.length === 0
-                    ? "Be the first to start a campaign and make a difference."
-                    : "Try adjusting your filters or search terms."}
+                    ? t("noCampaignsYetSubtext")
+                    : t("noCampaignsMatchSubtext")}
                 </p>
                 {hasActiveFilters && (
                   <button onClick={resetFilters} className="mt-4 text-sm text-[#b04a15] font-semibold hover:underline">
-                    Reset all filters
+                    {t("resetAllFilters")}
                   </button>
                 )}
               </div>
@@ -730,7 +752,7 @@ export default function CampaignsPage() {
                         href="/campaigns/new"
                         className="flex items-center justify-center gap-2 min-h-[200px] rounded-2xl border-2 border-dashed border-stone-200 dark:border-stone-700 text-stone-400 hover:border-[#e07b3a] hover:text-[#e07b3a] transition-colors text-sm font-semibold"
                       >
-                        <HeartHandshake className="h-5 w-5" /> Start a Campaign
+                        <HeartHandshake className="h-5 w-5" /> {t("startACampaign")}
                       </Link>
                     )}
                   </div>

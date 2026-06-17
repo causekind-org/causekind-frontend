@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   LineChart,
   Line,
@@ -58,6 +59,7 @@ function formatINRShort(n: number) {
 }
 
 export default function AdminAnalyticsPage() {
+  const t = useTranslations("adminAnalytics");
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -168,15 +170,15 @@ export default function AdminAnalyticsPage() {
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to dashboard
+              {t("backToDashboard")}
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Analytics</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Platform performance at a glance.
+              {t("subtitle")}
             </p>
           </div>
           <Badge variant="secondary" className="w-fit h-fit text-xs">
-            {completedDonations.length} completed donations &middot; {campaigns.length} campaigns
+            {t("summaryBadge", { donations: completedDonations.length, campaigns: campaigns.length })}
           </Badge>
         </div>
       </div>
@@ -192,7 +194,7 @@ export default function AdminAnalyticsPage() {
                   <HandCoins className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total raised</p>
+                  <p className="text-sm text-muted-foreground">{t("totalRaised")}</p>
                   <p className="text-xl font-bold">{formatINR(Number(stats.totalCollected))}</p>
                 </div>
               </CardContent>
@@ -204,7 +206,7 @@ export default function AdminAnalyticsPage() {
                   <Users className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Unique donors</p>
+                  <p className="text-sm text-muted-foreground">{t("uniqueDonors")}</p>
                   <p className="text-xl font-bold">{stats.uniqueDonors}</p>
                 </div>
               </CardContent>
@@ -216,7 +218,7 @@ export default function AdminAnalyticsPage() {
                   <TrendingUp className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Avg. donation</p>
+                  <p className="text-sm text-muted-foreground">{t("avgDonation")}</p>
                   <p className="text-xl font-bold">{formatINR(Math.round(avgDonation))}</p>
                 </div>
               </CardContent>
@@ -228,7 +230,7 @@ export default function AdminAnalyticsPage() {
                   <CheckCircle className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Payment success</p>
+                  <p className="text-sm text-muted-foreground">{t("paymentSuccess")}</p>
                   <p className="text-xl font-bold">{successRate}%</p>
                 </div>
               </CardContent>
@@ -240,12 +242,12 @@ export default function AdminAnalyticsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Monthly donation volume</CardTitle>
+              <CardTitle>{t("monthlyDonationVolume")}</CardTitle>
             </CardHeader>
             <CardContent>
               {monthlyTrend.length === 0 ? (
                 <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                  No completed donations yet
+                  {t("noCompletedDonations")}
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={280}>
@@ -264,7 +266,7 @@ export default function AdminAnalyticsPage() {
                       width={64}
                     />
                     <Tooltip
-                      formatter={(value: number) => [formatINR(value), "Amount"]}
+                      formatter={(value: number) => [formatINR(value), t("tooltipAmount")]}
                       contentStyle={{
                         background: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
@@ -289,12 +291,12 @@ export default function AdminAnalyticsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Campaign categories</CardTitle>
+              <CardTitle>{t("campaignCategories")}</CardTitle>
             </CardHeader>
             <CardContent>
               {categoryPie.length === 0 ? (
                 <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                  No approved campaigns yet
+                  {t("noApprovedCampaigns")}
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={280}>
@@ -337,12 +339,12 @@ export default function AdminAnalyticsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Top campaigns by amount raised</CardTitle>
+              <CardTitle>{t("topCampaigns")}</CardTitle>
             </CardHeader>
             <CardContent>
               {topCampaigns.length === 0 ? (
                 <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
-                  No donation data yet
+                  {t("noDonationData")}
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={240}>
@@ -368,7 +370,7 @@ export default function AdminAnalyticsPage() {
                       tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                     />
                     <Tooltip
-                      formatter={(v: number) => [formatINR(v), "Raised"]}
+                      formatter={(v: number) => [formatINR(v), t("tooltipRaised")]}
                       contentStyle={{
                         background: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
@@ -393,13 +395,13 @@ export default function AdminAnalyticsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Campaign pipeline</CardTitle>
+              <CardTitle>{t("campaignPipeline")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-2">
               <div className="flex items-center justify-between rounded-xl border border-green-100 dark:border-green-900/30 bg-green-50/50 dark:bg-green-900/10 p-4">
                 <div className="flex items-center gap-2.5">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium">Approved</span>
+                  <span className="text-sm font-medium">{t("approved")}</span>
                 </div>
                 <span className="text-2xl font-bold text-green-700 dark:text-green-400">
                   {approvedCount}
@@ -409,7 +411,7 @@ export default function AdminAnalyticsPage() {
               <div className="flex items-center justify-between rounded-xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-900/10 p-4">
                 <div className="flex items-center gap-2.5">
                   <Clock className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium">Pending review</span>
+                  <span className="text-sm font-medium">{t("pendingReview")}</span>
                 </div>
                 <span className="text-2xl font-bold text-amber-700 dark:text-amber-400">
                   {pendingCount}
@@ -419,7 +421,7 @@ export default function AdminAnalyticsPage() {
               <div className="flex items-center justify-between rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10 p-4">
                 <div className="flex items-center gap-2.5">
                   <XCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-sm font-medium">Rejected</span>
+                  <span className="text-sm font-medium">{t("rejected")}</span>
                 </div>
                 <span className="text-2xl font-bold text-red-600 dark:text-red-400">
                   {rejectedCount}
@@ -427,9 +429,9 @@ export default function AdminAnalyticsPage() {
               </div>
 
               <div className="rounded-xl border p-4 text-center">
-                <p className="text-xs text-muted-foreground">Approval rate</p>
+                <p className="text-xs text-muted-foreground">{t("approvalRate")}</p>
                 <p className="mt-0.5 text-3xl font-extrabold text-[#b04a15]">{approvalRate}%</p>
-                <p className="text-xs text-muted-foreground">of reviewed campaigns</p>
+                <p className="text-xs text-muted-foreground">{t("ofReviewedCampaigns")}</p>
               </div>
             </CardContent>
           </Card>
@@ -438,12 +440,12 @@ export default function AdminAnalyticsPage() {
         {/* Recent transactions table */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent transactions</CardTitle>
+            <CardTitle>{t("recentTransactions")}</CardTitle>
           </CardHeader>
           <CardContent>
             {donations.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">
-                No transactions yet.
+                {t("noTransactions")}
               </p>
             ) : (
               <div className="overflow-x-auto rounded-lg border">
@@ -451,19 +453,19 @@ export default function AdminAnalyticsPage() {
                   <thead className="border-b bg-muted/50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                        Date
+                        {t("colDate")}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                        Donor
+                        {t("colDonor")}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                        Campaign
+                        {t("colCampaign")}
                       </th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-                        Amount
+                        {t("colAmount")}
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">
-                        Status
+                        {t("colStatus")}
                       </th>
                     </tr>
                   </thead>
@@ -507,7 +509,7 @@ export default function AdminAnalyticsPage() {
                 </table>
                 {donations.length > 20 && (
                   <p className="border-t px-4 py-3 text-center text-xs text-muted-foreground">
-                    Showing 20 of {donations.length} transactions
+                    {t("showingTransactions", { shown: 20, total: donations.length })}
                   </p>
                 )}
               </div>

@@ -411,7 +411,7 @@ function RequestCard({
             src={imgSrc}
             alt={r.title}
             fill
-            className="object-cover group-hover:scale-[1.06] transition-transform duration-500 ease-out"
+            className="object-contain object-center bg-stone-100 dark:bg-zinc-950 group-hover:scale-[1.06] transition-transform duration-500 ease-out"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
           {/* Subtle bottom fade */}

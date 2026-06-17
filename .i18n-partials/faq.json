@@ -1,0 +1,20 @@
+{
+  "faq": {
+    "heading": "Common questions",
+    "subheading": "Everything you need to know before you give.",
+    "stillHaveQuestions": "Still have questions?",
+    "emailUs": "Email us",
+    "q1": "Is it free to use Causekind?",
+    "a1": "Yes, completely free. We charge zero platform fees for donors or recipients. 100% of what you give goes directly to the cause you choose.",
+    "q2": "How do you check campaigns before they go live?",
+    "a2": "Every campaign and item request is reviewed by our team before it appears on the site. We verify the person's identity and confirm that the need is genuine. Anything that doesn't pass our checks is rejected.",
+    "q3": "Can I donate physical items like clothes or books?",
+    "a3": "Yes. Browse the In-Kind Requests section to find people nearby who need specific items. Once you pick a request, you can arrange to hand over the items directly or through one of our listed drop points.",
+    "q4": "How does money get to the campaign?",
+    "a4": "Donations are collected and held securely. Once a campaign reaches its target or its deadline passes, funds are transferred directly to the recipient. You receive a confirmation email at each stage.",
+    "q5": "Can I track where my donation goes?",
+    "a5": "Yes. After donating, you can log in to see the status of your donation and get a verified impact certificate once the funds or items are delivered.",
+    "q6": "Who can post a campaign or request?",
+    "a6": "Anyone can register as a Donee and submit a campaign or item request. Every submission goes through our approval process before it becomes visible to donors."
+  }
+}

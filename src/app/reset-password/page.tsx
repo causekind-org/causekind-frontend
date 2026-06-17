@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { KeyRound } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 function ResetPasswordForm() {
+  const t = useTranslations("resetPassword");
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
@@ -19,24 +21,26 @@ function ResetPasswordForm() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (!token) { toast.error("Invalid reset link."); router.replace("/forgot-password"); } }, [token, router]);
+  useEffect(() => { if (!token) { toast.error(t("errorInvalidLink")); router.replace("/forgot-password"); } }, [token, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (newPassword !== confirm) { toast.error("Passwords do not match."); return; }
-    if (newPassword.length < 8) { toast.error("Password must be at least 8 characters."); return; }
+    if (newPassword !== confirm) { toast.error(t("errorPasswordMismatch")); return; }
+    if (newPassword.length < 8) { toast.error(t("errorPasswordTooShort")); return; }
     setLoading(true);
-    try { await resetPassword(token, newPassword); toast.success("Password reset! Please log in."); router.push("/login"); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "Invalid or expired reset link."); }
+    try { await resetPassword(token, newPassword); toast.success(t("successMessage")); router.push("/login"); }
+    catch (err) { toast.error(err instanceof Error ? err.message : t("errorExpiredLink")); }
     finally { setLoading(false); }
   }
 
+  const fields = [
+    { id: "newPassword", label: t("newPasswordLabel"),     placeholder: t("newPasswordPlaceholder"), value: newPassword, onChange: setNewPassword },
+    { id: "confirm",     label: t("confirmPasswordLabel"), placeholder: t("confirmPasswordPlaceholder"), value: confirm,   onChange: setConfirm },
+  ];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {[
-        { id:"newPassword", label:"New password",         placeholder:"Min. 8 characters",       value:newPassword, onChange:setNewPassword },
-        { id:"confirm",     label:"Confirm new password", placeholder:"Repeat your new password", value:confirm,      onChange:setConfirm },
-      ].map(f => (
+      {fields.map(f => (
         <div key={f.id} className="space-y-2">
           <Label htmlFor={f.id} className="font-semibold text-stone-700 dark:text-stone-300">{f.label}</Label>
           <Input id={f.id} type="password" placeholder={f.placeholder} autoComplete="new-password"
@@ -45,16 +49,17 @@ function ResetPasswordForm() {
         </div>
       ))}
       <Button type="submit" className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl py-5 font-semibold text-sm" disabled={loading}>
-        {loading ? "Resetting…" : "Reset password"}
+        {loading ? t("resetting") : t("resetButton")}
       </Button>
       <p className="text-center text-sm text-stone-500 dark:text-stone-400 font-medium">
-        <Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">Back to login</Link>
+        <Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">{t("backToLogin")}</Link>
       </p>
     </form>
   );
 }
 
 export default function ResetPasswordPage() {
+  const t = useTranslations("resetPassword");
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center bg-[#faf8f4] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300 bg-grid-pattern px-6 py-12">
       <div className="mb-6 logo-icon-3d flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] text-white shadow-md shadow-orange-900/18 shrink-0 anim-scale">
@@ -62,11 +67,11 @@ export default function ResetPasswordPage() {
       </div>
       <Card className="anim-up anim-d1 w-full max-w-md glass-card card-shimmer rounded-2xl border-orange-100 dark:border-stone-850 shadow-xl dark:shadow-none">
         <CardHeader className="space-y-1.5 pb-5">
-          <CardTitle className="text-2xl font-extrabold text-[#963c0d] dark:text-white">Set a new password</CardTitle>
-          <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">Choose a strong password for your account.</CardDescription>
+          <CardTitle className="text-2xl font-extrabold text-[#963c0d] dark:text-white">{t("title")}</CardTitle>
+          <CardDescription className="text-stone-400 dark:text-stone-500 font-medium">{t("description")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Suspense fallback={<p className="text-sm text-stone-500 dark:text-stone-400 font-medium">Loading…</p>}>
+          <Suspense fallback={<p className="text-sm text-stone-500 dark:text-stone-400 font-medium">{t("loading")}</p>}>
             <ResetPasswordForm />
           </Suspense>
         </CardContent>

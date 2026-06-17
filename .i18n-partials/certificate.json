@@ -1,0 +1,17 @@
+{
+  "certificate": {
+    "pageTitle": "Thank-you certificate",
+    "downloadPdf": "Download PDF",
+    "backToDashboard": "Back to dashboard",
+    "certificateType": "Certificate of Gratitude",
+    "thankYouName": "Thank you, Anita Desai",
+    "donationDescription": "For your kind in-kind donation that has reached the donee and made a meaningful difference in someone's life.",
+    "labelItemDonated": "Item donated",
+    "labelDonee": "Donee",
+    "labelDeliveredOn": "Delivered on",
+    "labelCertificateId": "Certificate ID",
+    "verifiedNote": "Verified by CauseKind admin · Delivery proof on file",
+    "brandName": "CauseKind",
+    "tagline": "India's verified giving platform"
+  }
+}

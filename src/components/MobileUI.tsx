@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslations } from "next-intl";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
 export function MobileBottomNav() {
+  const t = useTranslations("mobileNav");
   const pathname = usePathname();
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
@@ -24,10 +26,10 @@ export function MobileBottomNav() {
   const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
 
   const tabs = [
-    { href: "/",          icon: Home,          label: "Home" },
-    { href: "/campaigns", icon: Megaphone,     label: "Campaigns" },
-    { href: "/requests",  icon: ClipboardList, label: "Requests" },
-    { href: user ? "/profile" : "/login", icon: User, label: "Profile" },
+    { href: "/",          icon: Home,          label: t("home") },
+    { href: "/campaigns", icon: Megaphone,     label: t("campaigns") },
+    { href: "/requests",  icon: ClipboardList, label: t("requests") },
+    { href: user ? "/profile" : "/login", icon: User, label: t("profile") },
   ];
 
   const isActive = (href: string) => {
@@ -48,7 +50,7 @@ export function MobileBottomNav() {
       style={{
         bottom: scrolled ? "calc(1rem + env(safe-area-inset-bottom, 0px))" : "0px",
       }}
-      aria-label="Mobile navigation"
+      aria-label={t("mobileNavAriaLabel")}
     >
       <div className="flex items-center justify-around px-2">
 
@@ -79,7 +81,7 @@ export function MobileBottomNav() {
         {/* Centre — Donate CTA Plus Circle */}
         <Link
           href="/donate"
-          aria-label="Donate now"
+          aria-label={t("donateNow")}
           className={`relative -mt-4 flex items-center justify-center w-12 h-12 rounded-full
                      bg-[#C17A3A] hover:bg-[#a86430]
                      shadow-[0_6px_20px_-3px_rgba(193,122,58,0.5)]
@@ -123,6 +125,7 @@ export function MobileBottomNav() {
 
 /* ─── Floating support / chat button (mobile + desktop) ─────────── */
 export function FloatingSupportButton() {
+  const t = useTranslations("mobileNav");
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -170,7 +173,7 @@ export function FloatingSupportButton() {
           ${menuOpen ? "menu-open" : ""}`}
       >
         <div className="p-4 space-y-3">
-          <p className="text-xs font-black text-stone-500 dark:text-zinc-400 uppercase tracking-widest">Get Support</p>
+          <p className="text-xs font-black text-stone-500 dark:text-zinc-400 uppercase tracking-widest">{t("getSupport")}</p>
           <a
             href="mailto:support@causekind.org"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors group"
@@ -179,7 +182,7 @@ export function FloatingSupportButton() {
               <Mail className="w-4 h-4 text-[#b04a15]" />
             </span>
             <div>
-              <p className="text-xs font-bold text-stone-850 dark:text-stone-100">Email us</p>
+              <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("emailUs")}</p>
               <p className="text-[10px] text-stone-400 font-medium">support@causekind.org</p>
             </div>
           </a>
@@ -191,8 +194,8 @@ export function FloatingSupportButton() {
               <Phone className="w-4 h-4 text-[#1e3a60]" />
             </span>
             <div>
-              <p className="text-xs font-bold text-stone-850 dark:text-stone-100">Help & FAQ</p>
-              <p className="text-[10px] text-stone-400 font-medium">Common questions answered</p>
+              <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("helpFaq")}</p>
+              <p className="text-[10px] text-stone-400 font-medium">{t("helpFaqSub")}</p>
             </div>
           </a>
         </div>
@@ -201,7 +204,7 @@ export function FloatingSupportButton() {
       {/* Trigger button */}
       <button
         onClick={() => setOpen(v => !v)}
-        aria-label={open ? "Close support" : "Open support"}
+        aria-label={open ? t("closeSupport") : t("openSupport")}
         className={`floating-support-item fixed bottom-[7.25rem] right-5 lg:bottom-8 z-50
                    w-13 h-13 rounded-full
                    bg-gradient-to-br from-[#1e3a60] to-[#243f6a]

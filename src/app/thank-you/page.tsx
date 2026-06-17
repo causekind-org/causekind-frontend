@@ -7,6 +7,7 @@ import { CheckCircle2, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTranslations } from "next-intl";
 
 function Confetti() {
   const colors = ["#b04a15", "#e07b3a", "#f0b97a", "#1e3a60", "#4a7fba", "#fcd34d"];
@@ -42,12 +43,13 @@ function Confetti() {
 }
 
 function ThankYouContent() {
+  const t = useTranslations("thankYou");
   const params = useSearchParams();
-  const campaign = params.get("campaign") ?? "this campaign";
+  const campaign = params.get("campaign") ?? t("defaultCampaign");
   const amount = Number(params.get("amount") ?? 0);
 
   useEffect(() => {
-    toast.success("Donation confirmed! Thank you for making a difference.", { duration: 5000 });
+    toast.success(t("toastSuccess"), { duration: 5000 });
   }, []);
 
   return (
@@ -59,26 +61,27 @@ function ThankYouContent() {
       <Card className="anim-up anim-d1 w-full max-w-md glass-card card-shimmer rounded-2xl border-orange-100 dark:border-stone-850 shadow-xl dark:shadow-none text-center">
         <CardContent className="pt-8 pb-8 space-y-6">
           <div className="space-y-2">
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#963c0d] dark:text-white">Thank you for your donation!</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-[#963c0d] dark:text-white">{t("heading")}</h1>
             <p className="text-stone-500 dark:text-stone-400 font-medium">
-              Your donation of{" "}
-              <span className="font-semibold text-stone-800 dark:text-stone-200">₹{amount.toLocaleString("en-IN")}</span>{" "}
-              to <span className="font-semibold text-stone-800 dark:text-stone-200">{campaign}</span> is confirmed.
+              {t.rich("donationConfirmed", {
+                amount: () => <span className="font-semibold text-stone-800 dark:text-stone-200">₹{amount.toLocaleString("en-IN")}</span>,
+                campaign: () => <span className="font-semibold text-stone-800 dark:text-stone-200">{campaign}</span>,
+              })}
             </p>
           </div>
           <div className="rounded-xl bg-orange-50 dark:bg-zinc-900/50 border border-orange-100 dark:border-stone-800 p-4 text-sm text-stone-500 dark:text-stone-400 flex items-start gap-2.5">
             <Heart className="h-4 w-4 mt-0.5 shrink-0 text-[#b04a15] dark:text-[#e07b3a]" />
-            <span>Your generosity makes a real difference. The campaign organiser has been notified of your donation.</span>
+            <span>{t("generosityNote")}</span>
           </div>
           <div className="flex flex-col gap-2.5">
             <Link href="/dashboard">
               <Button className="btn-3d btn-shine w-full bg-[#963c0d] hover:bg-[#963c0d] dark:bg-[#b04a15] dark:hover:bg-[#963c0d] text-white rounded-xl py-5 font-semibold text-sm">
-                View my donations
+                {t("viewDonations")}
               </Button>
             </Link>
             <Link href="/campaigns">
               <Button variant="outline" className="btn-3d w-full rounded-xl py-5 font-semibold text-sm border-orange-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 hover:bg-orange-50 dark:hover:bg-zinc-900 transition-all">
-                Browse more campaigns
+                {t("browseCampaigns")}
               </Button>
             </Link>
           </div>
