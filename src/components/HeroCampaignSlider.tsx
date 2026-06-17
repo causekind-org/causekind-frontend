@@ -12,15 +12,15 @@ import { initiateDonation } from "@/lib/api";
 const TIMER_MS = 2600;
 
 const CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.png", "/images/medical-2.png"],
-  Education:  ["/images/hero-7.jpg"],
-  Livelihood: ["/images/hero-3.jpg"],
-  Community:  ["/images/hero-6.jpg"],
+  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
+  Education:  ["/images/hero-7.webp"],
+  Livelihood: ["/images/hero-3.webp"],
+  Community:  ["/images/hero-6.webp"],
 };
 
 function getCardImage(category: string, id: number): string {
   const imgs = CATEGORY_IMAGES[category];
-  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.jpg";
+  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.webp";
 }
 
 /* ─── circular slot distance (−1 = left, 0 = center, +1 = right) ─── */

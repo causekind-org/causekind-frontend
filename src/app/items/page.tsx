@@ -45,17 +45,17 @@ function getConditionStyle(condition: string): { badge: string; accent: string }
 }
 
 const CATEGORY_META: Record<string, { emoji: string; img: string }> = {
-  "Education":   { emoji: "📚", img: "/images/hero-7.jpg" },
-  "Clothing":    { emoji: "👕", img: "/images/hero-1.jpg" },
-  "Furniture":   { emoji: "🪑", img: "/images/hero-2.jpg" },
-  "Electronics": { emoji: "💻", img: "/images/hero-8.jpg" },
-  "Household":   { emoji: "🏠", img: "/images/hero-6.jpg" },
-  "Sports":      { emoji: "⚽", img: "/images/hero-3.jpg" },
-  "Medical aid": { emoji: "🏥", img: "/images/medical-1.png" },
+  "Education":   { emoji: "📚", img: "/images/hero-7.webp" },
+  "Clothing":    { emoji: "👕", img: "/images/hero-1.webp" },
+  "Furniture":   { emoji: "🪑", img: "/images/hero-2.webp" },
+  "Electronics": { emoji: "💻", img: "/images/hero-8.webp" },
+  "Household":   { emoji: "🏠", img: "/images/hero-6.webp" },
+  "Sports":      { emoji: "⚽", img: "/images/hero-3.webp" },
+  "Medical aid": { emoji: "🏥", img: "/images/medical-1.webp" },
 };
 
 function getListingImage(item: ItemListing): string {
-  return item.imageUrl ?? CATEGORY_META[item.category]?.img ?? "/images/hero-1.jpg";
+  return item.imageUrl ?? CATEGORY_META[item.category]?.img ?? "/images/hero-1.webp";
 }
 
 // ─── ListingsHero ─────────────────────────────────────────────────────────────

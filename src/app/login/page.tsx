@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { login, googleAuth } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 
 // ── Inline brand SVGs ──────────────────────────────────────────────────────────
 function GoogleIcon() {
@@ -44,28 +44,26 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  const triggerGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleLoading(true);
-      try {
-        const res = await googleAuth(tokenResponse.access_token);
-        if (res.needsCompletion) {
-          sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
-          sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-          router.push("/register?social=google");
-        } else {
-          setAuth(res.token, rememberMe);
-          toast.success("Welcome back!");
-          router.push("/");
-        }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Google login failed");
-      } finally {
-        setGoogleLoading(false);
+  async function handleGoogleSuccess(credentialResponse: any) {
+    if (!credentialResponse.credential) return;
+    setGoogleLoading(true);
+    try {
+      const res = await googleAuth(credentialResponse.credential);
+      if (res.needsCompletion) {
+        sessionStorage.setItem("ck_google_token", credentialResponse.credential);
+        sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
+        router.push("/register?social=google");
+      } else {
+        setAuth(res.token, rememberMe);
+        toast.success("Welcome back!");
+        router.push("/");
       }
-    },
-    onError: () => toast.error("Google sign-in failed"),
-  });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google login failed");
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
 
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
 
@@ -195,15 +193,15 @@ function LoginContent() {
 
           {/* Social buttons */}
           <div className="space-y-3">
-            <button
-              type="button"
-              disabled={googleLoading}
-              onClick={() => triggerGoogle()}
-              className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
-            >
-              <GoogleIcon />
-              {googleLoading ? t("signingIn") : t("google")}
-            </button>
+            <div className="w-full flex justify-center [&_iframe]:!w-full [&_iframe]:!min-w-full [&_iframe]:!max-w-full">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error("Google sign-in failed")}
+                theme="outline"
+                size="large"
+                width="384"
+              />
+            </div>
             <button
               type="button"
               onClick={() => toast.info("Social sign-in coming soon")}
@@ -233,7 +231,7 @@ function LoginContent() {
       <div className="hidden lg:flex flex-1 relative p-6">
         <div className="relative w-full h-full rounded-3xl overflow-hidden">
           <Image
-            src="/images/hero-4.jpg"
+            src="/images/hero-4.webp"
             alt="People helping each other in the community"
             fill
             className="object-cover"

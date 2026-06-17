@@ -2,21 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { getHeroImages } from "@/app/actions/getHeroImages";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Sparkles, Heart, ShieldCheck, HandCoins, MapPin, Award, Coins, Users, Package, ArrowRight, BookOpen, Shirt } from "lucide-react";
 
 const MOBILE_CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.png", "/images/medical-2.png"],
-  Education:  ["/images/hero-7.jpg"],
-  Livelihood: ["/images/hero-3.jpg"],
-  Community:  ["/images/hero-6.jpg"],
+  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
+  Education:  ["/images/hero-7.webp"],
+  Livelihood: ["/images/hero-3.webp"],
+  Community:  ["/images/hero-6.webp"],
 };
 
 function getMobileCardImage(category: string, id: number): string {
   const imgs = MOBILE_CATEGORY_IMAGES[category];
-  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.jpg";
+  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.webp";
 }
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
@@ -26,26 +27,31 @@ import { getCampaigns, getItemRequests, getItemListings, getPlatformStats, getRe
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const HERO_IMAGES = [
-  "/images/care_nest_hero.png",
-  "/images/hero-1.jpg", "/images/hero-2.jpg", "/images/hero-3.jpg",
-  "/images/hero-4.jpg", "/images/hero-5.jpg", "/images/hero-6.jpg",
-  "/images/hero-7.jpg", "/images/hero-8.jpg", "/images/hero-9.jpg",
-];
-
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
 }
 
 function HeroImageSlider() {
+  const [images, setImages] = useState<string[]>([]);
   const [current, setCurrent] = useState(0);
+
   useEffect(() => {
-    const t = setInterval(() => setCurrent(p => (p + 1) % HERO_IMAGES.length), 6000);
-    return () => clearInterval(t);
+    getHeroImages().then((imgs) => {
+      if (imgs && imgs.length > 0) setImages(imgs);
+    });
   }, []);
+
+  useEffect(() => {
+    if (images.length === 0) return;
+    const t = setInterval(() => setCurrent(p => (p + 1) % images.length), 6000);
+    return () => clearInterval(t);
+  }, [images.length]);
+
+  if (images.length === 0) return null;
+
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {HERO_IMAGES.map((src, i) => (
+      {images.map((src, i) => (
         <div key={src} className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out" style={{ opacity: i === current ? 0.95 : 0 }}>
           <div className={i === current ? (i % 2 === 0 ? "hero-slide-active" : "hero-slide-active-alt") : ""} style={{ position: "absolute", inset: 0 }}>
             <Image src={src} alt="" fill className="object-cover brightness-[0.85] contrast-[1.05]" style={{ objectPosition: "center 30%" }} priority={i === 0} sizes="100vw" />
@@ -385,9 +391,9 @@ export default function HomePage() {
                 {itemRequests.slice(0, 6).map((req, i) => (
                   <Reveal key={req.id} delay={i * 80}>
                     <Card className="card-glow bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden h-full flex flex-col">
-                      <div className="relative w-full h-24 sm:h-36 bg-orange-50 dark:bg-zinc-800 shrink-0 overflow-hidden">
+                      <div className="relative w-full h-24 sm:h-36 bg-stone-100 dark:bg-zinc-950 shrink-0 overflow-hidden">
                         {req.imageUrl ? (
-                          <Image src={req.imageUrl} alt={req.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, 33vw" />
+                          <Image src={req.imageUrl} alt={req.title} fill className="object-contain object-center bg-stone-100 dark:bg-zinc-950" sizes="(max-width: 640px) 50vw, 33vw" />
                         ) : (
                           <div className="flex h-full items-center justify-center">
                             <Package className="h-7 w-7 sm:h-10 sm:w-10 text-orange-200 dark:text-zinc-700" />
@@ -513,7 +519,7 @@ export default function HomePage() {
           {/* Background Image */}
           <div className="absolute inset-0 w-full h-full">
             <Image
-              src="/images/hero-1.jpg"
+              src="/images/hero-1.webp"
               alt="Together We Support"
               fill
               className="object-cover brightness-[0.75] contrast-[1.05]"
@@ -582,12 +588,12 @@ export default function HomePage() {
                 >
                   {/* Left Column */}
                   <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
-                    <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100">
+                    <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
                       <Image
                         src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)}
                         alt={campaign.title}
                         fill
-                        className="object-cover"
+                        className="object-contain object-center"
                         sizes="100px"
                       />
                     </div>

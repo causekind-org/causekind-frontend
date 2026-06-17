@@ -59,15 +59,15 @@ function getCategoryStyle(category: string): { pill: string; border: string } {
 }
 
 const CATEGORY_FALLBACKS: Record<string, string> = {
-  "Medical aid": "/images/medical-1.png",
-  "Education": "/images/hero-7.jpg",
-  "Livelihood": "/images/hero-3.jpg",
-  "Relief": "/images/hero-5.jpg",
-  "Household": "/images/hero-6.jpg",
+  "Medical aid": "/images/medical-1.webp",
+  "Education": "/images/hero-7.webp",
+  "Livelihood": "/images/hero-3.webp",
+  "Relief": "/images/hero-5.webp",
+  "Household": "/images/hero-6.webp",
 };
 
 function getCardImage(r: ItemRequest): string {
-  return r.imageUrl ?? CATEGORY_FALLBACKS[r.category] ?? "/images/hero-1.jpg";
+  return r.imageUrl ?? CATEGORY_FALLBACKS[r.category] ?? "/images/hero-1.webp";
 }
 
 function urgencyVariant(u: string) {
