@@ -121,17 +121,17 @@ export type GoogleAuthResponse =
   | { needsCompletion: false; token: string; userId: number; email: string; role: string }
   | { needsCompletion: true; email: string; fullName: string };
 
-export function googleAuth(idToken: string) {
+export function googleAuth(accessToken: string) {
   return request<GoogleAuthResponse>("/api/v1/auth/google", {
     method: "POST",
-    body: JSON.stringify({ idToken }),
+    body: JSON.stringify({ accessToken }),
   });
 }
 
-export function googleComplete(idToken: string, phone: string, city: string) {
+export function googleComplete(accessToken: string, phone: string, city: string) {
   return request<GoogleAuthResponse>("/api/v1/auth/google", {
     method: "POST",
-    body: JSON.stringify({ idToken, phone, city }),
+    body: JSON.stringify({ accessToken, phone, city }),
   });
 }
 
