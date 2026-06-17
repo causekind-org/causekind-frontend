@@ -110,7 +110,7 @@ export function CampaignCard({ campaign }: Props) {
         </div>
         </Card>
       </HoverCardTrigger>
-      <HoverCardContent side="right" align="start" className="w-80 z-50 p-4 shadow-xl">
+      <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
         <div className="space-y-2">
           <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
             {title ?? campaign.title}
