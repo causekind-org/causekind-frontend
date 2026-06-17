@@ -173,6 +173,7 @@ function RegisterContent() {
   const showCityFreeText = noStateOptions || noCityOptions;
 
   const triggerGoogle = useGoogleLogin({
+    scope: "openid email profile",
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
       try {

@@ -45,6 +45,7 @@ function LoginContent() {
   const [rememberMe, setRememberMe] = useState(true);
 
   const triggerGoogle = useGoogleLogin({
+    scope: "openid email profile",
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
       try {
