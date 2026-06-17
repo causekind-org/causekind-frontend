@@ -153,7 +153,7 @@ function RegisterContent() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
 
   const [dialCountry, setDialCountry] = useState("IN");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -162,11 +162,74 @@ function RegisterContent() {
   const [stateIso, setStateIso] = useState("");
   const [cityValue, setCityValue] = useState("");
   const [cityFreeText, setCityFreeText] = useState("");
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const dialCodeOptions = buildDialCodeOptions();
   const countryOptions = buildCountryOptions();
   const stateOptions = countryIso ? buildStateOptions(countryIso) : [];
   const cityOptions = countryIso && stateIso ? buildCityOptions(countryIso, stateIso) : [];
+
+  function handleGPSLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser doesn't support GPS location");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          const address = data.address;
+          if (address) {
+            const countryCode = address.country_code?.toUpperCase();
+            const stateName = address.state;
+            const cityName = address.city || address.town || address.village || address.suburb;
+            if (countryCode) {
+              setDialCountry(countryCode);
+              setCountryIso(countryCode);
+              const states = State.getStatesOfCountry(countryCode);
+              const matchedState = states.find(
+                (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
+                       s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
+              );
+              if (matchedState) {
+                setStateIso(matchedState.isoCode);
+                const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
+                const matchedCity = cities.find(
+                  (c) => c.name.toLowerCase() === cityName?.toLowerCase()
+                );
+                if (matchedCity) {
+                  setCityValue(matchedCity.name);
+                  setCityFreeText("");
+                } else if (cityName) {
+                  setCityValue("");
+                  setCityFreeText(cityName);
+                }
+              } else {
+                setStateIso("");
+                setCityValue("");
+                if (cityName) setCityFreeText(cityName);
+              }
+              toast.success("Location updated successfully!");
+            }
+          }
+        } catch {
+          toast.error("Failed to detect location details");
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error("Location access denied or unavailable");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
@@ -219,10 +282,67 @@ function RegisterContent() {
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
 
   useEffect(() => {
-    detectCountryFromIP().then((code) => {
-      setDialCountry(code);
-      setCountryIso(code);
-    });
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            const address = data.address;
+            if (address) {
+              const countryCode = address.country_code?.toUpperCase();
+              const stateName = address.state;
+              const cityName = address.city || address.town || address.village || address.suburb;
+              if (countryCode) {
+                setDialCountry(countryCode);
+                setCountryIso(countryCode);
+                const states = State.getStatesOfCountry(countryCode);
+                const matchedState = states.find(
+                  (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
+                         s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
+                );
+                if (matchedState) {
+                  setStateIso(matchedState.isoCode);
+                  const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
+                  const matchedCity = cities.find(
+                    (c) => c.name.toLowerCase() === cityName?.toLowerCase()
+                  );
+                  if (matchedCity) {
+                    setCityValue(matchedCity.name);
+                    setCityFreeText("");
+                  } else if (cityName) {
+                    setCityValue("");
+                    setCityFreeText(cityName);
+                  }
+                }
+                return;
+              }
+            }
+          } catch {
+            // fallback to IP
+          }
+          detectCountryFromIP().then((code) => {
+            setDialCountry(code);
+            setCountryIso(code);
+          });
+        },
+        () => {
+          detectCountryFromIP().then((code) => {
+            setDialCountry(code);
+            setCountryIso(code);
+          });
+        },
+        { enableHighAccuracy: false, timeout: 5000 }
+      );
+    } else {
+      detectCountryFromIP().then((code) => {
+        setDialCountry(code);
+        setCountryIso(code);
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -231,7 +351,7 @@ function RegisterContent() {
       const profile = sessionStorage.getItem("ck_google_profile");
       if (token && profile) {
         const { email, fullName } = JSON.parse(profile);
-        setGoogleIdToken(token);
+        setGoogleToken(token);
         setForm(f => ({ ...f, email: email ?? "", fullName: fullName ?? "" }));
       } else {
         router.replace("/login");
@@ -251,8 +371,8 @@ function RegisterContent() {
 
     setLoading(true);
     try {
-      if (isSocialFlow && googleIdToken) {
-        const res = await googleComplete(googleIdToken, fullPhone, cityStr);
+      if (isSocialFlow && googleToken) {
+        const res = await googleComplete(googleToken, fullPhone, cityStr);
         if (!res.needsCompletion) {
           sessionStorage.removeItem("ck_google_token");
           sessionStorage.removeItem("ck_google_profile");
@@ -342,9 +462,19 @@ function RegisterContent() {
 
             {/* Location: Country → State → City */}
             <div className="space-y-3">
-              <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                <MapPin className="w-3.5 h-3.5" /> {t("location")}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                  <MapPin className="w-3.5 h-3.5" /> {t("location")}
+                </label>
+                <button
+                  type="button"
+                  onClick={handleGPSLocation}
+                  disabled={gpsLoading}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#b04a15] hover:underline uppercase disabled:opacity-50"
+                >
+                  {gpsLoading ? "Detecting..." : "Use GPS 🎯"}
+                </button>
+              </div>
 
               <div className="space-y-1">
                 <label className="text-xs text-stone-500 dark:text-stone-400">{t("country")}</label>
@@ -484,7 +614,7 @@ function RegisterContent() {
       <div className="hidden lg:flex flex-1 relative p-6">
         <div className="relative w-full h-full rounded-3xl overflow-hidden">
           <Image
-            src="/images/hero-4.jpg"
+            src="/images/hero-4.webp"
             alt="Community members supporting each other"
             fill
             className="object-cover"

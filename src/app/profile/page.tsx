@@ -326,10 +326,56 @@ export default function ProfilePage() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const updated = await updateLocation(pos.coords.latitude, pos.coords.longitude);
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const updated = await updateLocation(lat, lng);
           setProfile(updated);
           setLocStatus("saved");
           toast.success("Location saved! In-kind matching is now enabled.");
+
+          // Reverse-geocode to auto-fill the dropdown menus in UI
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+            if (res.ok) {
+              const data = await res.json();
+              const address = data.address;
+              if (address) {
+                const countryCode = address.country_code?.toUpperCase();
+                const stateName = address.state;
+                const cityName = address.city || address.town || address.village || address.suburb;
+                
+                if (countryCode) {
+                  setDialCountry(countryCode);
+                  setCountryIso(countryCode);
+                  const states = State.getStatesOfCountry(countryCode);
+                  const matchedState = states.find(
+                    (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
+                           s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
+                  );
+                  if (matchedState) {
+                    setStateIso(matchedState.isoCode);
+                    const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
+                    const matchedCity = cities.find(
+                      (c) => c.name.toLowerCase() === cityName?.toLowerCase()
+                    );
+                    if (matchedCity) {
+                      setCityValue(matchedCity.name);
+                      setCityFreeText("");
+                    } else if (cityName) {
+                      setCityValue("");
+                      setCityFreeText(cityName);
+                    }
+                  } else {
+                    setStateIso("");
+                    setCityValue("");
+                    if (cityName) setCityFreeText(cityName);
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Reverse geocoding failed", e);
+          }
         } catch {
           setLocStatus("error");
           toast.error("Failed to save location. Please try again.");
@@ -497,7 +543,7 @@ export default function ProfilePage() {
           <div className="flex gap-4 overflow-x-auto pb-3 -mx-0 scrollbar-hide">
             {supportedCampaigns.map((item) => {
               const campaignImage =
-                campaigns.find((c) => c.id === item.id)?.imageUrl || "/images/hero-1.jpg";
+                campaigns.find((c) => c.id === item.id)?.imageUrl || "/images/hero-1.webp";
               return (
                 <div
                   key={item.id}
@@ -510,7 +556,7 @@ export default function ProfilePage() {
                       fill
                       className="object-cover"
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = "/images/hero-1.jpg";
+                        (e.currentTarget as HTMLImageElement).src = "/images/hero-1.webp";
                       }}
                     />
                   </div>

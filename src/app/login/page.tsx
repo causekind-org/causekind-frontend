@@ -234,7 +234,7 @@ function LoginContent() {
       <div className="hidden lg:flex flex-1 relative p-6">
         <div className="relative w-full h-full rounded-3xl overflow-hidden">
           <Image
-            src="/images/hero-4.jpg"
+            src="/images/hero-4.webp"
             alt="People helping each other in the community"
             fill
             className="object-cover"

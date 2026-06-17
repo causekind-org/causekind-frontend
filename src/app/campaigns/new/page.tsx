@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { createCampaign } from "@/lib/api";
+import { createCampaign, getProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,10 +13,33 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImagePlus, Link2, Loader2, Paperclip, Upload, X } from "lucide-react";
+import { Country, State, City } from "country-state-city";
+import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 
 const CATEGORIES = ["Medical", "Education", "Disaster", "Community", "Livelihood"];
 
-const empty = { title: "", category: "", targetAmount: "", city: "", state: "", description: "", imageUrl: "", videoUrl: "" };
+const empty = { title: "", category: "", targetAmount: "", description: "", imageUrl: "", videoUrl: "" };
+
+function buildCountryOptions(): SelectOption[] {
+  return Country.getAllCountries().map((c) => ({
+    value: c.isoCode,
+    label: c.name,
+  }));
+}
+
+function buildStateOptions(countryIso: string): SelectOption[] {
+  return State.getStatesOfCountry(countryIso).map((s) => ({
+    value: s.isoCode,
+    label: s.name,
+  }));
+}
+
+function buildCityOptions(countryIso: string, stateIso: string): SelectOption[] {
+  return City.getCitiesOfState(countryIso, stateIso).map((c) => ({
+    value: c.name,
+    label: c.name,
+  }));
+}
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -43,9 +66,67 @@ export default function NewCampaignPage() {
   const [videoMode, setVideoMode] = useState<"link" | "upload">("link");
   const [videoFileName, setVideoFileName] = useState<string>("");
 
+  // Location cascades states
+  const [countryIso, setCountryIso] = useState<string>("");
+  const [stateIso, setStateIso] = useState<string>("");
+  const [cityValue, setCityValue] = useState<string>("");
+  const [cityFreeText, setCityFreeText] = useState<string>("");
+
+  // Derived option lists
+  const countryOptions = buildCountryOptions();
+  const stateOptions = countryIso ? buildStateOptions(countryIso) : [];
+  const cityOptions = countryIso && stateIso ? buildCityOptions(countryIso, stateIso) : [];
+
+  // Fallback to free-text for city
+  const noStateOptions = countryIso !== "" && stateOptions.length === 0;
+  const noCityOptions = stateIso !== "" && cityOptions.length === 0;
+  const showCityFreeText = noStateOptions || noCityOptions;
+
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
+
+    // Fetch profile to auto-fill location
+    getProfile()
+      .then((p) => {
+        if (p.city) {
+          const parts = p.city.split(",").map((s) => s.trim());
+          if (parts.length === 3) {
+            const [cCity, cState, cCountry] = parts;
+            setCountryIso(cCountry || "IN");
+            setStateIso(cState || "");
+            const states = State.getStatesOfCountry(cCountry);
+            const cities = City.getCitiesOfState(cCountry, cState);
+            if (cities.some((c) => c.name === cCity)) {
+              setCityValue(cCity);
+            } else {
+              setCityFreeText(cCity);
+            }
+          } else {
+            setCountryIso("IN");
+            setCityFreeText(p.city);
+          }
+        } else {
+          setCountryIso("IN");
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load profile for location prefill:", err);
+        setCountryIso("IN");
+      });
   }, [user, router]);
+
+  function handleCountryChange(iso: string) {
+    setCountryIso(iso);
+    setStateIso("");
+    setCityValue("");
+    setCityFreeText("");
+  }
+
+  function handleStateChange(iso: string) {
+    setStateIso(iso);
+    setCityValue("");
+    setCityFreeText("");
+  }
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -95,7 +176,12 @@ export default function NewCampaignPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.title || !form.category || !form.targetAmount || !form.city || !form.state || !form.description) {
+    const finalCity = showCityFreeText ? cityFreeText.trim() : cityValue.trim();
+    const finalState = noStateOptions
+      ? ""
+      : (State.getStatesOfCountry(countryIso).find((s) => s.isoCode === stateIso)?.name || stateIso);
+
+    if (!form.title || !form.category || !form.targetAmount || !finalCity || (!noStateOptions && !finalState) || !form.description) {
       toast.error("Please fill in all required fields.");
       return;
     }
@@ -105,8 +191,8 @@ export default function NewCampaignPage() {
         title: form.title,
         category: form.category,
         targetAmount: parseFloat(form.targetAmount),
-        city: form.city,
-        state: form.state,
+        city: finalCity,
+        state: finalState,
         description: form.description,
         imageUrl: form.imageUrl || null,
         videoUrl: form.videoUrl || null,
@@ -152,11 +238,55 @@ export default function NewCampaignPage() {
                 <Field label="Goal amount (₹)">
                   <Input type="number" min={1} placeholder="500000" value={form.targetAmount} onChange={(e) => set("targetAmount", e.target.value)} required />
                 </Field>
-                <Field label="City">
-                  <Input placeholder="Mumbai" value={form.city} onChange={(e) => set("city", e.target.value)} required />
+                <Field label="Country">
+                  <SearchableSelect
+                    id="country"
+                    options={countryOptions}
+                    value={countryIso}
+                    onChange={handleCountryChange}
+                    placeholder="Select country"
+                    searchPlaceholder="Search country…"
+                  />
                 </Field>
-                <Field label="State" hint="e.g. Maharashtra">
-                  <Input placeholder="Maharashtra" value={form.state} onChange={(e) => set("state", e.target.value)} required />
+                <Field label="State / Province">
+                  {noStateOptions ? (
+                    <p className="text-xs text-stone-400 italic py-3 bg-stone-50/50 rounded-xl border border-stone-200 px-3">
+                      No states listed for this country.
+                    </p>
+                  ) : (
+                    <SearchableSelect
+                      id="state"
+                      options={stateOptions}
+                      value={stateIso}
+                      onChange={handleStateChange}
+                      placeholder="Select state"
+                      disabledPlaceholder="Select country first"
+                      disabled={!countryIso}
+                      searchPlaceholder="Search state…"
+                    />
+                  )}
+                </Field>
+                <Field label="City">
+                  {showCityFreeText ? (
+                    <Input
+                      id="city"
+                      placeholder="Enter city name"
+                      value={cityFreeText}
+                      onChange={(e) => setCityFreeText(e.target.value)}
+                      required
+                    />
+                  ) : (
+                    <SearchableSelect
+                      id="city"
+                      options={cityOptions}
+                      value={cityValue}
+                      onChange={setCityValue}
+                      placeholder="Select city"
+                      disabledPlaceholder="Select state first"
+                      disabled={!stateIso && !noStateOptions}
+                      searchPlaceholder="Search city…"
+                    />
+                  )}
                 </Field>
               </div>
 
@@ -281,7 +411,7 @@ export default function NewCampaignPage() {
 
               {/* Supporting documents */}
               <Field label="Supporting documents" hint="Medical reports, ID proofs, hospital quotes, etc. Helps admin verify faster.">
-                <input ref={docInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple className="hidden" onChange={handleDocs} />
+                <input ref={docInputRef} type="file" accept=".pdf,.webp,.jpeg,.webp,.doc,.docx" multiple className="hidden" onChange={handleDocs} />
                 {docs.length > 0 && (
                   <div className="mb-3 space-y-2">
                     {docs.map((file, i) => (
