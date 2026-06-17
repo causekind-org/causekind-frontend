@@ -395,13 +395,13 @@ export default function HomePage() {
                       <HoverCardTrigger asChild>
                         <Card className="card-glow bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden h-full flex flex-col cursor-pointer">
                       <div className="relative w-full h-24 sm:h-36 bg-stone-100 dark:bg-zinc-950 shrink-0 overflow-hidden">
-                        {req.imageUrl ? (
-                          <Image src={req.imageUrl} alt={req.title} fill className="object-contain object-center bg-stone-100 dark:bg-zinc-950" sizes="(max-width: 640px) 50vw, 33vw" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center">
-                            <Package className="h-7 w-7 sm:h-10 sm:w-10 text-orange-200 dark:text-zinc-700" />
-                          </div>
-                        )}
+                        <Image
+                          src={req.imageUrl || getMobileCardImage(req.category, req.id)}
+                          alt={req.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 640px) 50vw, 33vw"
+                        />
                         <div className="absolute top-2 right-2">
                           <span className={`text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase border ${
                             req.urgency === "CRITICAL"
