@@ -80,8 +80,17 @@ function CampaignCard({ c, i, featured = false }: { c: Campaign; i: number; feat
     >
       <div className="absolute inset-0">
         <Image src={img} alt={c.title} fill
-          className="object-contain object-center bg-stone-100 dark:bg-zinc-950 transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width:768px) 100vw, 50vw" />
+      </div>
+      {/* Netflix-style hover overlay */}
+      <div className="absolute inset-0 bg-black/80 flex flex-col justify-center p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none text-center">
+        <p className="text-white text-sm line-clamp-6 font-medium mb-2 drop-shadow-md">
+          {c.description}
+        </p>
+        <div className="text-xs text-stone-300 font-semibold drop-shadow-sm mt-2 border-t border-white/20 pt-2">
+          Organized by: {c.doneeName}
+        </div>
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
       <div className="absolute top-3 left-3 flex items-center gap-1.5">

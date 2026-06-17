@@ -39,7 +39,18 @@ export function CampaignCard({ campaign }: Props) {
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-zinc-950 shrink-0">
         <Image src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)} alt={campaign.title} fill
           sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
-          className="object-contain object-center bg-stone-100 dark:bg-zinc-950 transition-transform duration-700 ease-out group-hover:scale-105" />
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
+        
+        {/* Netflix-style hover overlay */}
+        <div className="absolute inset-0 bg-black/80 flex flex-col justify-center p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none text-center">
+          <p className="text-white text-sm line-clamp-6 font-medium mb-2 drop-shadow-md">
+            {description ?? campaign.description}
+          </p>
+          <div className="text-xs text-stone-300 font-semibold drop-shadow-sm mt-2 border-t border-white/20 pt-2">
+            Organized by: {campaign.doneeName}
+          </div>
+        </div>
+        
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         
         {/* Floating Category and Location Glassmorphic tags */}

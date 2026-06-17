@@ -68,7 +68,7 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
                       alt={item.title}
                       fill
                       sizes="(max-width:640px) 100vw, 33vw"
-                      className="object-contain object-center bg-stone-100 dark:bg-zinc-950 transition-transform duration-700 ease-out group-hover:scale-105"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-zinc-900/60 text-stone-400 dark:text-stone-500 gap-2 font-semibold text-xs">
@@ -76,6 +76,15 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
                       <span>No Image Uploaded</span>
                     </div>
                   )}
+                  {/* Netflix-style hover overlay */}
+                  <div className="absolute inset-0 bg-black/80 flex flex-col justify-center p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none text-center">
+                    <p className="text-white text-sm line-clamp-3 font-medium mb-2 drop-shadow-md">
+                      <TranslatedText text={item.title} />
+                    </p>
+                    <div className="text-xs text-stone-300 font-semibold drop-shadow-sm mt-2 border-t border-white/20 pt-2">
+                      Donated by: {item.donorName}
+                    </div>
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-stone-950/40 via-transparent to-transparent" />
 
                   {/* Category Badge */}

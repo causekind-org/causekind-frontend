@@ -411,9 +411,16 @@ function RequestCard({
             src={imgSrc}
             alt={r.title}
             fill
-            className="object-contain object-center bg-stone-100 dark:bg-zinc-950 group-hover:scale-[1.06] transition-transform duration-500 ease-out"
+            className="object-cover group-hover:scale-[1.06] transition-transform duration-500 ease-out"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
+          {/* Netflix-style hover overlay */}
+          <div className="absolute inset-0 bg-black/80 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
+            <p className="text-white text-sm line-clamp-5 font-medium mb-1 drop-shadow-md">
+              {r.description ? <TranslatedText text={r.description} /> : `Requested by ${r.doneeName}`}
+            </p>
+            <div className="text-xs text-stone-300 font-semibold drop-shadow-sm">Quantity Needed: {r.quantity}</div>
+          </div>
           {/* Subtle bottom fade */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
 
