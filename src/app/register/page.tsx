@@ -10,7 +10,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { register, googleAuth, googleComplete } from "@/lib/api";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
@@ -123,7 +123,7 @@ function RegisterContent() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
 
   const [dialCountry, setDialCountry] = useState("IN");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -155,7 +155,6 @@ function RegisterContent() {
             const countryCode = address.country_code?.toUpperCase();
             const stateName = address.state;
             const cityName = address.city || address.town || address.village || address.suburb;
-            
             if (countryCode) {
               setDialCountry(countryCode);
               setCountryIso(countryCode);
@@ -196,26 +195,29 @@ function RegisterContent() {
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
   const showCityFreeText = noStateOptions || noCityOptions;
 
-  async function handleGoogleSuccess(credentialResponse: any) {
-    if (!credentialResponse.credential) return;
-    setGoogleLoading(true);
-    try {
-      const res = await googleAuth(credentialResponse.credential);
-      if (res.needsCompletion) {
-        sessionStorage.setItem("ck_google_token", credentialResponse.credential);
-        sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-        router.push("/register?social=google");
-      } else {
-        setAuth(res.token);
-        toast.success("Welcome back!");
-        router.push("/");
+  const triggerGoogle = useGoogleLogin({
+    scope: "openid email profile",
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      try {
+        const res = await googleAuth(tokenResponse.access_token);
+        if (res.needsCompletion) {
+          sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
+          sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
+          router.push("/register?social=google");
+        } else {
+          setAuth(res.token);
+          toast.success("Welcome back!");
+          router.push("/");
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Google sign-up failed");
+      } finally {
+        setGoogleLoading(false);
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-up failed");
-    } finally {
-      setGoogleLoading(false);
-    }
-  }
+    },
+    onError: () => toast.error("Google sign-up failed"),
+  });
 
   function handleCountryChange(iso: string) {
     setCountryIso(iso);
@@ -240,7 +242,6 @@ function RegisterContent() {
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
 
   useEffect(() => {
-    // Try GPS first, fallback to IP detection if GPS is denied/unsupported/fails
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
@@ -255,7 +256,6 @@ function RegisterContent() {
               const countryCode = address.country_code?.toUpperCase();
               const stateName = address.state;
               const cityName = address.city || address.town || address.village || address.suburb;
-              
               if (countryCode) {
                 setDialCountry(countryCode);
                 setCountryIso(countryCode);
@@ -275,20 +275,18 @@ function RegisterContent() {
                   setCityValue("");
                   if (cityName) setCityFreeText(cityName);
                 }
-                return; // successfully handled GPS
+                return;
               }
             }
           } catch {
-            // fallback to IP on failure
+            // fallback to IP
           }
-          // IP fallback
           detectCountryFromIP().then((code) => {
             setDialCountry(code);
             setCountryIso(code);
           });
         },
         () => {
-          // IP fallback on geolocation denial/failure
           detectCountryFromIP().then((code) => {
             setDialCountry(code);
             setCountryIso(code);
@@ -310,7 +308,7 @@ function RegisterContent() {
       const profile = sessionStorage.getItem("ck_google_profile");
       if (token && profile) {
         const { email, fullName } = JSON.parse(profile);
-        setGoogleIdToken(token);
+        setGoogleToken(token);
         setForm(f => ({ ...f, email: email ?? "", fullName: fullName ?? "" }));
       } else {
         router.replace("/login");
@@ -330,8 +328,8 @@ function RegisterContent() {
 
     setLoading(true);
     try {
-      if (isSocialFlow && googleIdToken) {
-        const res = await googleComplete(googleIdToken, fullPhone, cityStr);
+      if (isSocialFlow && googleToken) {
+        const res = await googleComplete(googleToken, fullPhone, cityStr);
         if (!res.needsCompletion) {
           sessionStorage.removeItem("ck_google_token");
           sessionStorage.removeItem("ck_google_profile");
@@ -535,15 +533,15 @@ function RegisterContent() {
           {/* Social buttons — only on non-social flow */}
           {!isSocialFlow && (
             <div className="space-y-3">
-              <div className="w-full flex justify-center [&_iframe]:!w-full [&_iframe]:!min-w-full [&_iframe]:!max-w-full">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => toast.error("Google sign-up failed")}
-                  theme="outline"
-                  size="large"
-                  width="384"
-                />
-              </div>
+              <button
+                type="button"
+                disabled={googleLoading}
+                onClick={() => triggerGoogle()}
+                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
+              >
+                <GoogleIcon />
+                {googleLoading ? t("creating") : t("google")}
+              </button>
               <button
                 type="button"
                 onClick={() => toast.info("Social sign-in coming soon")}
