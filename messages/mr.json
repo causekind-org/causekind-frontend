@@ -186,7 +186,9 @@
     "urgencyMedium": "मध्यम निकड",
     "urgencyHigh": "उच्च निकड",
     "urgencyNormal": "सामान्य निकड",
-    "urgencyCritical": "गंभीर निकड"
+    "urgencyCritical": "गंभीर निकड",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

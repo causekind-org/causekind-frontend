@@ -186,7 +186,9 @@
     "urgencyMedium": "मध्यम तात्कालिकता",
     "urgencyHigh": "उच्च तात्कालिकता",
     "urgencyNormal": "सामान्य तात्कालिकता",
-    "urgencyCritical": "गंभीर तात्कालिकता"
+    "urgencyCritical": "गंभीर तात्कालिकता",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

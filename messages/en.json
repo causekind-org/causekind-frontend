@@ -186,7 +186,9 @@
     "urgencyMedium": "Medium urgency",
     "urgencyHigh": "High urgency",
     "urgencyNormal": "Normal urgency",
-    "urgencyCritical": "Critical urgency"
+    "urgencyCritical": "Critical urgency",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

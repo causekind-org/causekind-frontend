@@ -186,7 +186,9 @@
     "urgencyMedium": "درمیانی عجلت",
     "urgencyHigh": "اعلی عجلت",
     "urgencyNormal": "عام عجلت",
-    "urgencyCritical": "اہم عجلت"
+    "urgencyCritical": "اہم عجلت",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

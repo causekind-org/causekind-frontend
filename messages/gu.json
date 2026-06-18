@@ -186,7 +186,9 @@
     "urgencyMedium": "મધ્યમ તાકીદ",
     "urgencyHigh": "ઉચ્ચ તાકીદ",
     "urgencyNormal": "સામાન્ય તાકીદ",
-    "urgencyCritical": "જટિલ તાકીદ"
+    "urgencyCritical": "જટિલ તાકીદ",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

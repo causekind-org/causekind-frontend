@@ -11,7 +11,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { register, googleAuth, googleComplete } from "@/lib/api";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
-import { Country, State, City } from "country-state-city";
+import { useLocations } from "@/hooks/useLocations";
+import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 
 // ── Inline brand SVGs ──────────────────────────────────────────────────────────
@@ -73,39 +74,8 @@ async function detectCountryFromIP(): Promise<string> {
   return detectCountryCode();
 }
 
-function buildCountryOptions(): SelectOption[] {
-  return Country.getAllCountries().map((c) => ({
-    value: c.isoCode,
-    label: c.name,
-  }));
-}
-
-function buildStateOptions(countryIso: string): SelectOption[] {
-  return State.getStatesOfCountry(countryIso).map((s) => ({
-    value: s.isoCode,
-    label: s.name,
-  }));
-}
-
-function buildCityOptions(countryIso: string, stateIso: string): SelectOption[] {
-  return City.getCitiesOfState(countryIso, stateIso).map((c) => ({
-    value: c.name,
-    label: c.name,
-  }));
-}
-
-function buildDialCodeOptions(): SelectOption[] {
-  return Country.getAllCountries()
-    .filter((c) => c.phonecode)
-    .map((c) => ({
-      value: c.isoCode,
-      label: `${c.name} (+${c.phonecode.replace(/^\+/, "")})`,
-      prefix: c.flag ?? "",
-    }));
-}
-
-function getDialCode(isoCode: string): string {
-  const country = Country.getAllCountries().find((c) => c.isoCode === isoCode);
+function getDialCode(isoCode: string, dialCodes: any[]): string {
+  const country = dialCodes.find((c) => c.value === isoCode);
   if (!country?.phonecode) return "";
   return `+${country.phonecode.replace(/^\+/, "")}`;
 }
@@ -164,10 +134,7 @@ function RegisterContent() {
   const [cityFreeText, setCityFreeText] = useState("");
   const [gpsLoading, setGpsLoading] = useState(false);
 
-  const dialCodeOptions = buildDialCodeOptions();
-  const countryOptions = buildCountryOptions();
-  const stateOptions = countryIso ? buildStateOptions(countryIso) : [];
-  const cityOptions = countryIso && stateIso ? buildCityOptions(countryIso, stateIso) : [];
+  const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
 
   function handleGPSLocation() {
     if (!navigator.geolocation) {
@@ -191,19 +158,12 @@ function RegisterContent() {
             if (countryCode) {
               setDialCountry(countryCode);
               setCountryIso(countryCode);
-              const states = State.getStatesOfCountry(countryCode);
-              const matchedState = states.find(
-                (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
-                       s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
-              );
-              if (matchedState) {
-                setStateIso(matchedState.isoCode);
-                const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
-                const matchedCity = cities.find(
-                  (c) => c.name.toLowerCase() === cityName?.toLowerCase()
-                );
-                if (matchedCity) {
-                  setCityValue(matchedCity.name);
+              const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
+              
+              if (resolvedState) {
+                setStateIso(resolvedState);
+                if (resolvedCity) {
+                  setCityValue(resolvedCity);
                   setCityFreeText("");
                 } else if (cityName) {
                   setCityValue("");
@@ -299,24 +259,21 @@ function RegisterContent() {
               if (countryCode) {
                 setDialCountry(countryCode);
                 setCountryIso(countryCode);
-                const states = State.getStatesOfCountry(countryCode);
-                const matchedState = states.find(
-                  (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
-                         s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
-                );
-                if (matchedState) {
-                  setStateIso(matchedState.isoCode);
-                  const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
-                  const matchedCity = cities.find(
-                    (c) => c.name.toLowerCase() === cityName?.toLowerCase()
-                  );
-                  if (matchedCity) {
-                    setCityValue(matchedCity.name);
+                const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
+                
+                if (resolvedState) {
+                  setStateIso(resolvedState);
+                  if (resolvedCity) {
+                    setCityValue(resolvedCity);
                     setCityFreeText("");
                   } else if (cityName) {
                     setCityValue("");
                     setCityFreeText(cityName);
                   }
+                } else {
+                  setStateIso("");
+                  setCityValue("");
+                  if (cityName) setCityFreeText(cityName);
                 }
                 return;
               }
@@ -365,7 +322,7 @@ function RegisterContent() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const dialCode = getDialCode(dialCountry);
+    const dialCode = getDialCode(dialCountry, dialCodeOptions);
     const fullPhone = dialCode && phoneNumber ? `${dialCode} ${phoneNumber}` : phoneNumber;
     const cityStr = buildCityString();
 
@@ -444,7 +401,7 @@ function RegisterContent() {
                     onChange={setDialCountry}
                     placeholder="+–"
                     searchPlaceholder={t("searchCountry")}
-                    renderSelectedLabel={(opt) => getDialCode(opt.value)}
+                    renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
                   />
                 </div>
                 <input

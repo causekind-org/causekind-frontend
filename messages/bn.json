@@ -186,7 +186,9 @@
     "urgencyMedium": "মাঝারি জরুরী",
     "urgencyHigh": "উচ্চ জরুরী",
     "urgencyNormal": "স্বাভাবিক জরুরী",
-    "urgencyCritical": "গুরুতর জরুরী"
+    "urgencyCritical": "গুরুতর জরুরী",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {
