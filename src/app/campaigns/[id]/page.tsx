@@ -311,9 +311,48 @@ export default function CampaignDetailPage() {
   const isOrganizer = !!myProfile && myProfile.id === campaign.doneeId;
   const presets = recurring && frequency === "daily" ? PRESETS_DAILY : PRESETS_ONETIME;
 
-  // Mocked details matching visual layout
-  const daysLeft = campaign.id % 2 === 0 ? 15 : 21;
-  const donorsCount = campaign.id % 2 === 0 ? 42 : 18;
+  // Mocked details matching visual layout deterministically per campaign
+  const daysLeft = Math.round(10 + (campaign.id * 7) % 25);
+  const donorsCount = Math.round(12 + (campaign.id * 17) % 90);
+
+  const getDeterministicSupporters = (campaignId: number, targetAmount: number) => {
+    const INDIAN_NAMES = [
+      "Anjali S.", "Rahul K.", "Priya M.", "Amit P.", "Sneha R.", "Vijay D.", 
+      "Deepak M.", "Neha G.", "Sanjay T.", "Aarav N.", "Vikram S.", "Riya J.", 
+      "Karan B.", "Aditi V.", "Rohan M.", "Pooja C.", "Rajesh K.", "Meera A."
+    ];
+    const seed = campaignId;
+    const supporters = [];
+    const random = (i: number) => {
+      const x = Math.sin(seed + i) * 10000;
+      return x - Math.floor(x);
+    };
+    for (let i = 0; i < 4; i++) {
+      const nameIndex = Math.floor(random(i) * INDIAN_NAMES.length);
+      const name = i === 3 ? "Anonymous" : INDIAN_NAMES[nameIndex];
+      const minAmount = Math.max(100, Math.round(targetAmount * 0.005));
+      const maxAmount = Math.round(targetAmount * 0.03);
+      const amountVal = Math.round(minAmount + random(i + 10) * (maxAmount - minAmount));
+      const roundedAmount = Math.round(amountVal / 50) * 50;
+      const hours = Math.floor(1 + random(i + 20) * 48);
+      let timeAgo = "";
+      if (hours < 24) {
+        timeAgo = `${hours} hours ago`;
+      } else {
+        const days = Math.floor(hours / 24);
+        timeAgo = `${days} day${days > 1 ? "s" : ""} ago`;
+      }
+      supporters.push({
+        name,
+        amount: roundedAmount || minAmount,
+        timeAgo,
+        initials: name === "Anonymous" ? "A" : name.split(" ").map((n) => n[0]).join("")
+      });
+    }
+    return supporters;
+  };
+
+  const dynamicSupporters = getDeterministicSupporters(campaign.id, campaign.targetAmount);
 
   return (
     <div className="bg-[#FAF8F5] min-h-screen pb-24 text-stone-800 selection:bg-[#8C3D1D]/10 selection:text-[#8C3D1D]">
@@ -506,53 +545,20 @@ export default function CampaignDetailPage() {
             <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 sm:p-8 space-y-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
               <h2 className="text-xl font-bold text-stone-900">Recent Support</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Supporter 1 */}
-                <div className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
-                  <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-sm">
-                    AS
+                {dynamicSupporters.map((supporter, idx) => (
+                  <div key={idx} className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
+                    <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-sm">
+                      {supporter.name === "Anonymous" ? <User className="h-4 w-4 text-stone-500" /> : supporter.initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-bold text-stone-900 ${supporter.name === "Anonymous" ? "italic text-stone-500" : ""}`}>
+                        {supporter.name}
+                      </p>
+                      <p className="text-xs text-stone-500">{supporter.timeAgo}</p>
+                    </div>
+                    <div className="text-sm font-extrabold text-[#8C3D1D]">{formatINR(supporter.amount)}</div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-stone-905">Anjali S.</p>
-                    <p className="text-xs text-stone-500">2 hours ago</p>
-                  </div>
-                  <div className="text-sm font-extrabold text-[#8C3D1D]">₹500</div>
-                </div>
-
-                {/* Supporter 2 */}
-                <div className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
-                  <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-606 text-sm">
-                    RK
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-stone-900">Rahul K.</p>
-                    <p className="text-xs text-stone-500">5 hours ago</p>
-                  </div>
-                  <div className="text-sm font-extrabold text-[#8C3D1D]">₹1,000</div>
-                </div>
-
-                {/* Supporter 3 */}
-                <div className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
-                  <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-606 text-sm">
-                    PM
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-stone-905">Priya M.</p>
-                    <p className="text-xs text-stone-505">1 day ago</p>
-                  </div>
-                  <div className="text-sm font-extrabold text-[#8C3D1D]">₹250</div>
-                </div>
-
-                {/* Supporter 4 */}
-                <div className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
-                  <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-606 text-sm">
-                    <User className="h-4 w-4 text-stone-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-stone-900 italic text-stone-505">Anonymous</p>
-                    <p className="text-xs text-stone-500">2 days ago</p>
-                  </div>
-                  <div className="text-sm font-extrabold text-[#8C3D1D]">₹352</div>
-                </div>
+                ))}
               </div>
 
               <div className="text-center pt-2">
