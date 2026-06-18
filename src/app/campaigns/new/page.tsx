@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImagePlus, Link2, Loader2, Paperclip, Upload, X } from "lucide-react";
-import { Country, State, City } from "country-state-city";
+import { useLocations } from "@/hooks/useLocations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
 
@@ -21,26 +21,7 @@ const CATEGORIES = ["Medical", "Education", "Disaster", "Community", "Livelihood
 
 const empty = { title: "", category: "", targetAmount: "", description: "", imageUrl: "", videoUrl: "" };
 
-function buildCountryOptions(): SelectOption[] {
-  return Country.getAllCountries().map((c) => ({
-    value: c.isoCode,
-    label: c.name,
-  }));
-}
 
-function buildStateOptions(countryIso: string): SelectOption[] {
-  return State.getStatesOfCountry(countryIso).map((s) => ({
-    value: s.isoCode,
-    label: s.name,
-  }));
-}
-
-function buildCityOptions(countryIso: string, stateIso: string): SelectOption[] {
-  return City.getCitiesOfState(countryIso, stateIso).map((c) => ({
-    value: c.name,
-    label: c.name,
-  }));
-}
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -75,9 +56,7 @@ export default function NewCampaignPage() {
   const [cityFreeText, setCityFreeText] = useState<string>("");
 
   // Derived option lists
-  const countryOptions = buildCountryOptions();
-  const stateOptions = countryIso ? buildStateOptions(countryIso) : [];
-  const cityOptions = countryIso && stateIso ? buildCityOptions(countryIso, stateIso) : [];
+  const { countries: countryOptions, states: stateOptions, cities: cityOptions } = useLocations(countryIso, stateIso);
 
   // Fallback to free-text for city
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
@@ -96,9 +75,7 @@ export default function NewCampaignPage() {
             const [cCity, cState, cCountry] = parts;
             setCountryIso(cCountry || "IN");
             setStateIso(cState || "");
-            const states = State.getStatesOfCountry(cCountry);
-            const cities = City.getCitiesOfState(cCountry, cState);
-            if (cities.some((c) => c.name === cCity)) {
+            if (cCity) {
               setCityValue(cCity);
             } else {
               setCityFreeText(cCity);
@@ -181,7 +158,7 @@ export default function NewCampaignPage() {
     const finalCity = showCityFreeText ? cityFreeText.trim() : cityValue.trim();
     const finalState = noStateOptions
       ? ""
-      : (State.getStatesOfCountry(countryIso).find((s) => s.isoCode === stateIso)?.name || stateIso);
+      : (stateOptions.find((s) => s.value === stateIso)?.label || stateIso);
 
     if (!form.title || !form.category || !form.targetAmount || !finalCity || (!noStateOptions && !finalState) || !form.description) {
       toast.error(t("toastRequiredFields"));

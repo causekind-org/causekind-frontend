@@ -14,34 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImagePlus, Loader2, X, MapPin } from "lucide-react";
 import Image from "next/image";
-import { Country, State, City } from "country-state-city";
+import { useLocations } from "@/hooks/useLocations";
+import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
 
 const CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
 
 const empty = { title: "", category: "", quantity: 1, urgency: "NORMAL", city: "", pincode: "", description: "", imageUrl: "", pickupRadiusKm: 10 };
-
-function buildCountryOptions(): SelectOption[] {
-  return Country.getAllCountries().map((c) => ({
-    value: c.isoCode,
-    label: c.name,
-  }));
-}
-
-function buildStateOptions(countryIso: string): SelectOption[] {
-  return State.getStatesOfCountry(countryIso).map((s) => ({
-    value: s.isoCode,
-    label: s.name,
-  }));
-}
-
-function buildCityOptions(countryIso: string, stateIso: string): SelectOption[] {
-  return City.getCitiesOfState(countryIso, stateIso).map((c) => ({
-    value: c.name,
-    label: c.name,
-  }));
-}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -70,9 +50,7 @@ export default function NewRequestPage() {
   const [cityFreeText, setCityFreeText] = useState<string>("");
 
   // Derived option lists
-  const countryOptions = buildCountryOptions();
-  const stateOptions = countryIso ? buildStateOptions(countryIso) : [];
-  const cityOptions = countryIso && stateIso ? buildCityOptions(countryIso, stateIso) : [];
+  const { countries: countryOptions, states: stateOptions, cities: cityOptions } = useLocations(countryIso, stateIso);
 
   // Fallback to free-text for city
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
@@ -108,9 +86,7 @@ export default function NewRequestPage() {
             const [cCity, cState, cCountry] = parts;
             setCountryIso(cCountry || "IN");
             setStateIso(cState || "");
-            const states = State.getStatesOfCountry(cCountry);
-            const cities = City.getCitiesOfState(cCountry, cState);
-            if (cities.some((c) => c.name === cCity)) {
+            if (cCity) {
               setCityValue(cCity);
             } else {
               setCityFreeText(cCity);
@@ -169,19 +145,12 @@ export default function NewRequestPage() {
             
             if (countryCode) {
               setCountryIso(countryCode);
-              const states = State.getStatesOfCountry(countryCode);
-              const matchedState = states.find(
-                (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
-                       s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
-              );
-              if (matchedState) {
-                setStateIso(matchedState.isoCode);
-                const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
-                const matchedCity = cities.find(
-                  (c) => c.name.toLowerCase() === cityName?.toLowerCase()
-                );
-                if (matchedCity) {
-                  setCityValue(matchedCity.name);
+              const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
+              
+              if (resolvedState) {
+                setStateIso(resolvedState);
+                if (resolvedCity) {
+                  setCityValue(resolvedCity);
                   setCityFreeText("");
                 } else if (cityName) {
                   setCityValue("");

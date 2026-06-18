@@ -186,7 +186,9 @@
     "urgencyMedium": "ಮಧ್ಯಮ ತುರ್ತು",
     "urgencyHigh": "ಹೆಚ್ಚಿನ ತುರ್ತು",
     "urgencyNormal": "ಸಾಮಾನ್ಯ ತುರ್ತು",
-    "urgencyCritical": "ನಿರ್ಣಾಯಕ ತುರ್ತು"
+    "urgencyCritical": "ನಿರ್ಣಾಯಕ ತುರ್ತು",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

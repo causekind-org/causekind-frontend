@@ -186,7 +186,9 @@
     "urgencyMedium": "ਮੱਧਮ ਜ਼ਰੂਰੀ",
     "urgencyHigh": "ਉੱਚ ਜ਼ਰੂਰੀ",
     "urgencyNormal": "ਸਧਾਰਣ ਜ਼ਰੂਰੀ",
-    "urgencyCritical": "ਨਾਜ਼ੁਕ ਜ਼ਰੂਰੀ"
+    "urgencyCritical": "ਨਾਜ਼ੁਕ ਜ਼ਰੂਰੀ",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

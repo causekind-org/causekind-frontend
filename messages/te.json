@@ -186,7 +186,9 @@
     "urgencyMedium": "మధ్యస్థ ఆవశ్యకత",
     "urgencyHigh": "అధిక ఆవశ్యకత",
     "urgencyNormal": "సాధారణ ఆవశ్యకత",
-    "urgencyCritical": "క్లిష్టమైన ఆవశ్యకత"
+    "urgencyCritical": "క్లిష్టమైన ఆవశ్యకత",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

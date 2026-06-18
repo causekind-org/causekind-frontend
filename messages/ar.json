@@ -186,7 +186,9 @@
     "urgencyMedium": "إلحاح متوسط",
     "urgencyHigh": "إلحاحية عالية",
     "urgencyNormal": "إلحاح عادي",
-    "urgencyCritical": "الإلحاح الحاسم"
+    "urgencyCritical": "الإلحاح الحاسم",
+    "statusInitiated": "Initiated",
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {

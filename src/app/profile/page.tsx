@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Country, State, City } from "country-state-city";
+import { useLocations } from "@/hooks/useLocations";
+import { resolveLocationFromGPS, getDialCodes } from "@/app/actions/locations";
 import {
   getProfile,
   updateProfile,
@@ -103,44 +104,10 @@ function formatINR(n: number) {
   }).format(n);
 }
 
-// ── country-state-city option builders ───────────────────────────────────────
-
-function buildCountryOptions(): SelectOption[] {
-  return Country.getAllCountries().map((c) => ({
-    value: c.isoCode,
-    label: c.name,
-  }));
-}
-
-function buildStateOptions(countryIso: string): SelectOption[] {
-  return State.getStatesOfCountry(countryIso).map((s) => ({
-    value: s.isoCode,
-    label: s.name,
-  }));
-}
-
-function buildCityOptions(countryIso: string, stateIso: string): SelectOption[] {
-  return City.getCitiesOfState(countryIso, stateIso).map((c) => ({
-    value: c.name,
-    label: c.name,
-  }));
-}
-
-function buildDialCodeOptions(): SelectOption[] {
-  return Country.getAllCountries()
-    .filter((c) => c.phonecode)
-    .map((c) => ({
-      value: c.isoCode,
-      label: `${c.name} (+${c.phonecode.replace(/^\+/, "")})`,
-      prefix: c.flag ?? "",
-    }));
-}
-
-function getDialCode(isoCode: string): string {
-  const country = Country.getAllCountries().find((c) => c.isoCode === isoCode);
+function getDialCode(isoCode: string, dialCodes: any[]): string {
+  const country = dialCodes.find((c) => c.value === isoCode);
   if (!country?.phonecode) return "";
-  const code = country.phonecode.replace(/^\+/, "");
-  return `+${code}`;
+  return `+${country.phonecode}`;
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
@@ -185,10 +152,7 @@ export default function ProfilePage() {
   const [locStatus, setLocStatus] = useState<"idle" | "requesting" | "saved" | "error">("idle");
 
   // Derived option lists (memoized to avoid re-building every render)
-  const countryOptions = buildCountryOptions();
-  const dialCodeOptions = buildDialCodeOptions();
-  const stateOptions = countryIso ? buildStateOptions(countryIso) : [];
-  const cityOptions = countryIso && stateIso ? buildCityOptions(countryIso, stateIso) : [];
+  const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
 
   // Whether we fall back to free-text for city
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
@@ -215,8 +179,9 @@ export default function ProfilePage() {
       getMyCampaigns().catch((): Campaign[] => []),
       getMyItemRequests().catch((): ItemRequest[] => []),
       getMyMatches().catch((): ItemMatch[] => []),
+      getDialCodes(),
     ])
-      .then(([detectedCountry, p, d, c, req, matches]) => {
+      .then(([detectedCountry, p, d, c, req, matches, serverDialCodes]) => {
         setProfile(p);
         setFullName(p.fullName);
         setDonations(d);
@@ -228,11 +193,11 @@ export default function ProfilePage() {
         if (p.phone) {
           const match = p.phone.match(/^(\+\d{1,4})\s*(.*)$/);
           if (match) {
-            const foundCountry = Country.getAllCountries().find(
-              (c) => `+${c.phonecode.replace(/^\+/, "")}` === match[1]
+            const foundCountry = serverDialCodes.find(
+              (c) => `+${c.phonecode}` === match[1]
             );
             if (foundCountry) {
-              setDialCountry(foundCountry.isoCode);
+              setDialCountry(foundCountry.value);
               setPhoneNumber(match[2]);
             } else {
               setPhoneNumber(p.phone);
@@ -249,14 +214,12 @@ export default function ProfilePage() {
             const [cCity, cState, cCountry] = parts;
             setCountryIso(cCountry || detectedCountry);
             setStateIso(cState || "");
-            const states = State.getStatesOfCountry(cCountry);
-            const cities = City.getCitiesOfState(cCountry, cState);
-            if (cities.some((c) => c.name === cCity)) {
+            if (cCity) {
               setCityValue(cCity);
             } else {
               setCityFreeText(cCity);
             }
-            if (states.length === 0) {
+            if (!cState) {
               setCityFreeText(cCity);
             }
           } else {
@@ -349,19 +312,12 @@ export default function ProfilePage() {
                 if (countryCode) {
                   setDialCountry(countryCode);
                   setCountryIso(countryCode);
-                  const states = State.getStatesOfCountry(countryCode);
-                  const matchedState = states.find(
-                    (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
-                           s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
-                  );
-                  if (matchedState) {
-                    setStateIso(matchedState.isoCode);
-                    const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
-                    const matchedCity = cities.find(
-                      (c) => c.name.toLowerCase() === cityName?.toLowerCase()
-                    );
-                    if (matchedCity) {
-                      setCityValue(matchedCity.name);
+                  const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
+                  
+                  if (resolvedState) {
+                    setStateIso(resolvedState);
+                    if (resolvedCity) {
+                      setCityValue(resolvedCity);
                       setCityFreeText("");
                     } else if (cityName) {
                       setCityValue("");
@@ -399,7 +355,7 @@ export default function ProfilePage() {
     e.preventDefault();
 
     const rawPhone = phoneNumber.trim();
-    const dialCode = getDialCode(dialCountry);
+    const dialCode = getDialCode(dialCountry, dialCodeOptions);
     const fullPhone = dialCode ? `${dialCode} ${rawPhone}` : rawPhone;
     const cityStr = buildCityString();
 
@@ -711,7 +667,7 @@ export default function ProfilePage() {
                       onChange={setDialCountry}
                       placeholder="+–"
                       searchPlaceholder="Search country…"
-                      renderSelectedLabel={(opt) => getDialCode(opt.value)}
+                      renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
                     />
                   </div>
                   <Input
