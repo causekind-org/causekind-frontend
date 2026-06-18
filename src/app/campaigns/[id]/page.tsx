@@ -9,6 +9,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { getCampaign, getProfile, initiateDonation, type Campaign, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { generateCampaignAIContent, type AIContentResult } from "@/lib/ai-generator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +38,8 @@ import {
   Bed,
   CheckCircle,
   Mail,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 
 const PRESETS_ONETIME = [500, 1000, 2500, 5000];
@@ -92,9 +94,10 @@ export default function CampaignDetailPage() {
   const [updateText, setUpdateText] = useState("");
   const [postingUpdate, setPostingUpdate] = useState(false);
 
-  // FAQs Accordion States
-  const [faq1Open, setFaq1Open] = useState(false);
-  const [faq2Open, setFaq2Open] = useState(false);
+  // AI Generated breakdown & FAQs
+  const [aiContent, setAiContent] = useState<AIContentResult | null>(null);
+  const [aiGenerating, setAiGenerating] = useState(true);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Sticky Donate Bar
   const [showStickyBar, setShowStickyBar] = useState(true);
@@ -117,6 +120,23 @@ export default function CampaignDetailPage() {
     if (!user) return;
     getProfile().then(setMyProfile).catch(() => {});
   }, [user]);
+
+  useEffect(() => {
+    if (campaign) {
+      setAiGenerating(true);
+      // Simulate premium AI processing visualization
+      const delay = setTimeout(() => {
+        const result = generateCampaignAIContent(
+          translatedTitle ?? campaign.title,
+          translatedDescription ?? campaign.description,
+          campaign.targetAmount
+        );
+        setAiContent(result);
+        setAiGenerating(false);
+      }, 950);
+      return () => clearTimeout(delay);
+    }
+  }, [campaign, translatedTitle, translatedDescription]);
 
   useEffect(() => {
     const el = donatePanelRef.current;
@@ -215,6 +235,27 @@ export default function CampaignDetailPage() {
     } else {
       navigator.clipboard.writeText(shareUrl);
       toast.success("Campaign link copied to clipboard!");
+    }
+  };
+
+  const getBreakdownIcon = (type: string) => {
+    switch (type) {
+      case "surgery":
+        return <Stethoscope className="h-5 w-5" />;
+      case "medication":
+        return <Pill className="h-5 w-5" />;
+      case "post-op":
+        return <Bed className="h-5 w-5" />;
+      case "care":
+        return <Heart className="h-5 w-5" />;
+      case "materials":
+        return <FileText className="h-5 w-5" />;
+      case "logistics":
+        return <Send className="h-5 w-5" />;
+      case "fees":
+        return <ShieldCheck className="h-5 w-5" />;
+      default:
+        return <User className="h-5 w-5" />;
     }
   };
 
@@ -374,43 +415,35 @@ export default function CampaignDetailPage() {
               </div>
             </div>
 
-            {/* Where your money goes */}
+            {/* Where your money goes - AI Dynamic Breakdown */}
             <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 sm:p-8 space-y-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
-              <h2 className="text-xl font-bold text-stone-900">Where your money goes</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Card 1 */}
-                <div className="bg-[#FAF9F5] border border-[#EDECE7] p-5 rounded-2xl text-center flex flex-col items-center justify-center space-y-3">
-                  <div className="h-10 w-10 bg-[#FBEFEA] text-[#8C3D1D] rounded-full flex items-center justify-center">
-                    <Stethoscope className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">Surgery Cost</p>
-                    <p className="text-lg font-extrabold text-[#8C3D1D] mt-0.5">{formatINR(Math.round(campaign.targetAmount * 0.6))}</p>
-                  </div>
-                </div>
-
-                {/* Card 2 */}
-                <div className="bg-[#FAF9F5] border border-[#EDECE7] p-5 rounded-2xl text-center flex flex-col items-center justify-center space-y-3">
-                  <div className="h-10 w-10 bg-[#FBEFEA] text-[#8C3D1D] rounded-full flex items-center justify-center">
-                    <Pill className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">Medication</p>
-                    <p className="text-lg font-extrabold text-[#8C3D1D] mt-0.5">{formatINR(Math.round(campaign.targetAmount * 0.25))}</p>
-                  </div>
-                </div>
-
-                {/* Card 3 */}
-                <div className="bg-[#FAF9F5] border border-[#EDECE7] p-5 rounded-2xl text-center flex flex-col items-center justify-center space-y-3">
-                  <div className="h-10 w-10 bg-[#FBEFEA] text-[#8C3D1D] rounded-full flex items-center justify-center">
-                    <Bed className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">Post-op Care</p>
-                    <p className="text-lg font-extrabold text-[#8C3D1D] mt-0.5">{formatINR(Math.round(campaign.targetAmount * 0.15))}</p>
-                  </div>
-                </div>
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <h2 className="text-xl font-bold text-stone-900">Where your money goes</h2>
+                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-3 rounded-full uppercase tracking-wider select-none">
+                  <Sparkles className="h-3 w-3 animate-pulse text-[#8C3D1D]" /> AI Suggested
+                </span>
               </div>
+
+              {aiGenerating || !aiContent ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                  <Loader2 className="h-7 w-7 text-[#8C3D1D] animate-spin" />
+                  <p className="text-xs text-stone-400 font-bold animate-pulse">AI is parsing campaign objectives...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in fade-in duration-300">
+                  {aiContent.breakdown.map((item, idx) => (
+                    <div key={idx} className="bg-[#FAF9F5] border border-[#EDECE7] p-5 rounded-2xl text-center flex flex-col items-center justify-center space-y-3 hover:shadow-xs transition-shadow">
+                      <div className="h-10 w-10 bg-[#FBEFEA] text-[#8C3D1D] rounded-full flex items-center justify-center shadow-2xs">
+                        {getBreakdownIcon(item.type)}
+                      </div>
+                      <div>
+                        <p className="text-xs text-stone-500 font-bold uppercase tracking-wider line-clamp-1">{item.label}</p>
+                        <p className="text-lg font-extrabold text-[#8C3D1D] mt-0.5">{formatINR(item.amount)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Campaign Updates posting section for Organizer */}
@@ -479,7 +512,7 @@ export default function CampaignDetailPage() {
                     AS
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-stone-900">Anjali S.</p>
+                    <p className="text-sm font-bold text-stone-905">Anjali S.</p>
                     <p className="text-xs text-stone-500">2 hours ago</p>
                   </div>
                   <div className="text-sm font-extrabold text-[#8C3D1D]">₹500</div>
@@ -487,7 +520,7 @@ export default function CampaignDetailPage() {
 
                 {/* Supporter 2 */}
                 <div className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
-                  <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-sm">
+                  <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-606 text-sm">
                     RK
                   </div>
                   <div className="flex-1 min-w-0">
@@ -499,7 +532,7 @@ export default function CampaignDetailPage() {
 
                 {/* Supporter 3 */}
                 <div className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
-                  <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-sm">
+                  <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-606 text-sm">
                     PM
                   </div>
                   <div className="flex-1 min-w-0">
@@ -515,7 +548,7 @@ export default function CampaignDetailPage() {
                     <User className="h-4 w-4 text-stone-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-stone-900 italic text-stone-500">Anonymous</p>
+                    <p className="text-sm font-bold text-stone-900 italic text-stone-505">Anonymous</p>
                     <p className="text-xs text-stone-500">2 days ago</p>
                   </div>
                   <div className="text-sm font-extrabold text-[#8C3D1D]">₹352</div>
@@ -615,43 +648,43 @@ export default function CampaignDetailPage() {
               </button>
             </div>
 
-            {/* FAQ Accordion */}
+            {/* FAQ Accordion - AI Suggested FAQ accordion */}
             <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] space-y-4">
-              <p className="text-[11px] font-extrabold text-stone-400 uppercase tracking-widest">FAQ</p>
-              
-              <div className="space-y-3">
-                {/* FAQ 1 */}
-                <div className="border-b border-[#F2F1EC] pb-3.5">
-                  <button
-                    onClick={() => setFaq1Open(!faq1Open)}
-                    className="w-full flex justify-between items-center text-left font-bold text-stone-800 hover:text-stone-950 text-sm transition-colors"
-                  >
-                    <span>Are donations tax-deductible?</span>
-                    {faq1Open ? <ChevronUp className="h-4 w-4 text-[#8C3D1D]" /> : <ChevronDown className="h-4 w-4 text-stone-400" />}
-                  </button>
-                  {faq1Open && (
-                    <p className="mt-2 text-xs text-stone-500 leading-relaxed transition-all">
-                      Yes! All donations made to this campaign are eligible for tax deduction under Section 80G of the Income Tax Act. A receipt will be sent to your registered email address automatically.
-                    </p>
-                  )}
-                </div>
-
-                {/* FAQ 2 */}
-                <div className="pt-1">
-                  <button
-                    onClick={() => setFaq2Open(!faq2Open)}
-                    className="w-full flex justify-between items-center text-left font-bold text-stone-800 hover:text-stone-950 text-sm transition-colors"
-                  >
-                    <span>How is the money withdrawn?</span>
-                    {faq2Open ? <ChevronUp className="h-4 w-4 text-[#8C3D1D]" /> : <ChevronDown className="h-4 w-4 text-stone-400" />}
-                  </button>
-                  {faq2Open && (
-                    <p className="mt-2 text-xs text-stone-505 leading-relaxed transition-all">
-                      The funds raised are transferred directly to the verified bank account of the beneficiary (or hospital partners supporting this medical cause) after thorough verification processes.
-                    </p>
-                  )}
-                </div>
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <p className="text-[11px] font-extrabold text-stone-400 uppercase tracking-widest">FAQ</p>
+                <span className="flex items-center gap-1 text-[9px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-0.5 px-2 rounded-full uppercase tracking-wider select-none">
+                  <Sparkles className="h-2.5 w-2.5 text-[#8C3D1D]" /> AI Suggested
+                </span>
               </div>
+              
+              {aiGenerating || !aiContent ? (
+                <div className="flex flex-col items-center justify-center py-6 space-y-2">
+                  <Loader2 className="h-5 w-5 text-[#8C3D1D] animate-spin" />
+                  <p className="text-[10px] text-stone-400 font-bold animate-pulse">Drafting questions...</p>
+                </div>
+              ) : (
+                <div className="space-y-3 animate-in fade-in duration-300">
+                  {aiContent.faqs.map((faq, index) => {
+                    const isOpen = openFaqIndex === index;
+                    return (
+                      <div key={index} className={index < aiContent.faqs.length - 1 ? "border-b border-[#F2F1EC] pb-3.5" : "pt-1"}>
+                        <button
+                          onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                          className="w-full flex justify-between items-center text-left font-bold text-stone-800 hover:text-[#8C3D1D] text-sm transition-colors"
+                        >
+                          <span>{faq.q}</span>
+                          {isOpen ? <ChevronUp className="h-4 w-4 text-[#8C3D1D]" /> : <ChevronDown className="h-4 w-4 text-stone-400" />}
+                        </button>
+                        {isOpen && (
+                          <p className="mt-2 text-xs text-stone-500 leading-relaxed animate-in fade-in slide-in-from-top-1 duration-250">
+                            {faq.a}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
           </div>
@@ -783,7 +816,7 @@ export default function CampaignDetailPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-extrabold text-stone-800">{t("addTip")}</p>
-                    <p className="text-xs text-stone-500 mt-0.5">{t("keepFree")}</p>
+                    <p className="text-xs text-stone-505 mt-0.5">{t("keepFree")}</p>
                   </div>
                   <Switch checked={addTip} onCheckedChange={setAddTip} />
                 </div>
