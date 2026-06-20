@@ -736,7 +736,11 @@
     "visionHeadline": "Our Vision",
     "visionText": "To build a transparent and efficient ecosystem where every act of kindness directly reaches the person in need.",
     "missionHeadline": "Our Mission",
-    "missionText": "To simplify in-kind donations, eliminate middlemen, and utilize intelligent matching to direct resources where they matter most."
+    "missionText": "To simplify in-kind donations, eliminate middlemen, and utilize intelligent matching to direct resources where they matter most.",
+    "storyTitle": "Bridging the Gap",
+    "storyText": "CauseKind began with a simple idea: that charity should be direct, localized, and transparent. We noticed that massive amounts of usable items—books, toys, clothes, and electronics—gather dust in homes, while local organizations and students nearby struggle to acquire them. By integrating a geo-radius matching system, we make sharing seamless and immediate.",
+    "communityTitle": "Direct Local Impact",
+    "communityText": "Our platform matches you with verified needs within a 10km to 25km radius. This localized model completely bypasses courier shipping fees, allowing neighbors to support neighbors directly through safe, approved drop-offs."
   },
   "itemDetail": {
     "verified": "Verified",

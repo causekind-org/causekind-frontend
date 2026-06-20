@@ -887,6 +887,10 @@
     "visionHeadline": "Nuestra Visión",
     "visionText": "Construir un ecosistema transparente y eficiente donde cada acto de bondad llegue directamente a la persona necesitada.",
     "missionHeadline": "Nuestra Misión",
-    "missionText": "Simplificar las donaciones en especie, eliminar intermediarios y utilizar el emparejamiento inteligente para dirigir los recursos a donde más importan."
+    "missionText": "Simplificar las donaciones en especie, eliminar intermediarios y utilizar el emparejamiento inteligente para dirigir los recursos a donde más importan.",
+    "storyTitle": "Cerrando la Brecha",
+    "storyText": "CauseKind comenzó con una idea simple: la caridad debe ser directa, localizada y transparente. Nos dimos cuenta de que grandes cantidades de artículos útiles acumulan polvo en los hogares, mientras que los estudiantes locales luchan por adquirirlos. Al integrar un sistema de emparejamiento por radio geográfico, hacemos que compartir sea inmediato y sin problemas.",
+    "communityTitle": "Impacto Local Directo",
+    "communityText": "Nuestra plataforma lo conecta con necesidades verificadas dentro de un radio de 10 km a 25 km, evitando por completo las tarifas de envío."
   }
 }

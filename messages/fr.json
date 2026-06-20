@@ -887,6 +887,10 @@
     "visionHeadline": "Notre Vision",
     "visionText": "Construire un écosystème transparent et efficace où chaque acte de gentillesse atteint directement la personne dans le besoin.",
     "missionHeadline": "Notre Mission",
-    "missionText": "Simplifier les dons en nature, éliminer les intermédiaires et utiliser un ciblage intelligent pour diriger les ressources là où elles comptent le plus."
+    "missionText": "Simplifier les dons en nature, éliminer les intermédiaires et utiliser un ciblage intelligent pour diriger les ressources là où elles comptent le plus.",
+    "storyTitle": "Combler le Fossé",
+    "storyText": "CauseKind a commencé avec une idée simple : la charité doit être directe, locale et transparente. Nous avons remarqué que d'immenses quantités d'objets utilisables accumulent la poussière dans les maisons, tandis que les étudiants locaux luttent pour les acquérir. En intégrant un système de correspondance géographique, nous rendons le partage fluide et immédiat.",
+    "communityTitle": "Impact Local Direct",
+    "communityText": "Notre plateforme vous met en relation avec des besoins vérifiés dans un rayon de 10 à 25 km, évitant ainsi totalement les frais d'expédition."
   }
 }
