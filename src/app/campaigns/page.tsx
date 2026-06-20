@@ -1,5 +1,8 @@
 "use client";
 
+import { FEATURES } from "@/lib/features";
+import { ComingSoon } from "@/components/ComingSoon";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -464,6 +467,11 @@ function FilterPanel({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CampaignsPage() {
+  if (!FEATURES.money) return <ComingSoon feature="campaigns" />;
+  return <CampaignsPageInner />;
+}
+
+function CampaignsPageInner() {
   const t = useTranslations("campaigns_page");
   const [campaigns, setCampaigns]               = useState<Campaign[]>([]);
   const [loading, setLoading]                   = useState(true);

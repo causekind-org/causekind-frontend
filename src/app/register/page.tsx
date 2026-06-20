@@ -119,7 +119,7 @@ function RegisterContent() {
 
   const isSocialFlow = searchParams.get("social") === "google";
 
-  const [form, setForm] = useState({ fullName: "", email: "", password: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", password: "", role: "DONOR" });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -329,7 +329,7 @@ function RegisterContent() {
     setLoading(true);
     try {
       if (isSocialFlow && googleToken) {
-        const res = await googleComplete(googleToken, fullPhone, cityStr);
+        const res = await googleComplete(googleToken, fullPhone, cityStr, form.role);
         if (!res.needsCompletion) {
           sessionStorage.removeItem("ck_google_token");
           sessionStorage.removeItem("ck_google_profile");
@@ -372,6 +372,39 @@ function RegisterContent() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+
+            {/* Role Selection Option */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                Register as
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => set("role", "DONOR")}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                    form.role === "DONOR"
+                      ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
+                      : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/50"
+                  }`}
+                >
+                  <span className="text-sm font-bold">Donor 🎁</span>
+                  <span className="text-[10px] opacity-85 mt-0.5 font-normal">I want to donate items</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set("role", "DONEE")}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                    form.role === "DONEE"
+                      ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
+                      : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/50"
+                  }`}
+                >
+                  <span className="text-sm font-bold">Donee 🤝</span>
+                  <span className="text-[10px] opacity-85 mt-0.5 font-normal">I need to request support</span>
+                </button>
+              </div>
+            </div>
 
             <Field
               id="fullName" label={t("fullName")} placeholder="Jane Doe"

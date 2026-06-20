@@ -6,6 +6,7 @@ import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone } f
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
+import { FEATURES } from "@/lib/features";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
 export function MobileBottomNav() {
@@ -66,6 +67,8 @@ export function MobileBottomNav() {
           </span>
         </Link>
 
+        {FEATURES.money && (
+        <>
         {/* Campaigns */}
         <Link href={tabs[1].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
           <span className={`flex items-center justify-center transition-all duration-200
@@ -93,6 +96,8 @@ export function MobileBottomNav() {
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeLinecap="round" />
           </svg>
         </Link>
+        </>
+        )}
 
         {/* Requests */}
         <Link href={tabs[2].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">

@@ -1,5 +1,8 @@
 "use client";
 
+import { FEATURES } from "@/lib/features";
+import { ComingSoon } from "@/components/ComingSoon";
+
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -92,5 +95,10 @@ function ThankYouContent() {
 }
 
 export default function ThankYouPage() {
+  if (!FEATURES.money) return <ComingSoon feature="donate" />;
+  return <ThankYouPageInner />;
+}
+
+function ThankYouPageInner() {
   return <Suspense><ThankYouContent /></Suspense>;
 }

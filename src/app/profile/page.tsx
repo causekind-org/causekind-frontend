@@ -37,6 +37,10 @@ import {
   Package,
   Navigation,
   CheckCircle2,
+  Gift,
+  Handshake,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -466,18 +470,59 @@ export default function ProfilePage() {
 
       {/* ── Hero Impact Card ── */}
       <div className="mx-5 mt-2 rounded-3xl overflow-hidden">
-        <div className="bg-gradient-to-br from-[#C17A3A] to-[#8B4513] p-6 text-white relative">
+        <div className="bg-gradient-to-br from-[#C17A3A] to-[#8B4513] p-6 text-white relative overflow-hidden">
+          {/* Background shimmer rings */}
+          <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full border border-white/10 pointer-events-none" />
+          <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full border border-white/8 pointer-events-none" />
+
           <div className="relative z-10">
             <p className="text-xs font-bold uppercase tracking-wide opacity-80">{t("totalImpact")}</p>
             <p className="text-4xl font-black leading-tight mt-1">{formatINR(totalGiven)}</p>
             <p className="text-sm opacity-80 mt-1">{t("donated")}</p>
-            <div className="border-t border-white/30 my-3" />
-            <p className="text-sm font-semibold">
-              {inKindCount} {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
-            </p>
+
+            {/* ── In-Kind highlight pill ── */}
+            <div className="mt-4 inline-flex items-center gap-2.5 bg-white/15 backdrop-blur-sm border border-white/25 rounded-2xl px-4 py-2.5">
+              {/* Icon cluster — scales with contribution level */}
+              <div className="flex items-center gap-1">
+                {inKindCount <= 1 ? (
+                  <Package className="w-5 h-5 text-white/90" strokeWidth={2} />
+                ) : inKindCount <= 3 ? (
+                  <>
+                    <Package className="w-4 h-4 text-white/90" strokeWidth={2} />
+                    <Gift className="w-4 h-4 text-white/80" strokeWidth={2} />
+                  </>
+                ) : inKindCount <= 7 ? (
+                  <>
+                    <Package className="w-4 h-4 text-white/90" strokeWidth={2} />
+                    <Gift className="w-4 h-4 text-white/80" strokeWidth={2} />
+                    <Handshake className="w-4 h-4 text-white/70" strokeWidth={2} />
+                  </>
+                ) : (
+                  <>
+                    <Package className="w-4 h-4 text-white/90" strokeWidth={2} />
+                    <Gift className="w-4 h-4 text-white/80" strokeWidth={2} />
+                    <Sparkles className="w-4 h-4 text-yellow-200/80" strokeWidth={2} />
+                  </>
+                )}
+              </div>
+              {/* Count + label */}
+              <div className="flex flex-col leading-none">
+                <span className="text-2xl font-black tabular-nums tracking-tight">{inKindCount}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-0.5">
+                  {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
+                </span>
+              </div>
+              {/* Achievement badge for power contributors */}
+              {inKindCount >= 5 && (
+                <div className="ml-1 flex items-center justify-center h-6 w-6 rounded-full bg-yellow-300/20 border border-yellow-300/40">
+                  <Star className="w-3 h-3 text-yellow-200" strokeWidth={2} fill="currentColor" />
+                </div>
+              )}
+            </div>
           </div>
+
           {/* Decorative illustration */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20">
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-15">
             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="40" cy="20" r="12" fill="white" />
               <path d="M18 70c0-12.15 9.85-22 22-22h0c12.15 0 22 9.85 22 22" stroke="white" strokeWidth="5" strokeLinecap="round" />

@@ -9,6 +9,9 @@ import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
+import { LocationGate } from "@/components/LocationGate";
+import { CookieConsent } from "@/components/CookieConsent";
+import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -47,6 +50,9 @@ export default async function RootLayout({
               <MobileBottomNav />
               <FloatingSupportButton />
               <Toaster richColors position="bottom-left" offset={90} toastOptions={{ style: { zIndex: 9999 } }} />
+              <LocationGate />
+              <CookieConsent />
+              <WelcomeOverlay />
             </AuthProvider>
           </GoogleProvider>
         </NextIntlClientProvider>

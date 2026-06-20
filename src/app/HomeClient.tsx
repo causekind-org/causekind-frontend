@@ -27,6 +27,8 @@ import { getCampaigns, getItemRequests, getItemListings, getPlatformStats, getRe
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { FEATURES } from "@/lib/features";
+import { ComingSoonMagnets } from "@/components/ComingSoonMagnets";
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
@@ -132,6 +134,7 @@ export default function HomeClient({
       {/* ── Desktop View (lg:block) ── */}
       <div className="hidden lg:block bg-white dark:bg-zinc-950 relative z-10">
         {/* ── Mobile stats strip ── */}
+        {FEATURES.money && (
         <div className="sm:hidden overflow-hidden border-b border-orange-100 bg-white">
           <div className="stats-ticker-track py-3.5">
             {[0, 1].map(copy => (
@@ -148,6 +151,7 @@ export default function HomeClient({
             ))}
           </div>
         </div>
+        )}
 
         {/* ── Hero Section ── */}
         <section className="relative w-full max-w-[1440px] mx-auto px-0 sm:px-10 pt-0 sm:pt-8 pb-0">
@@ -190,6 +194,7 @@ export default function HomeClient({
                 </div>
 
                 {/* Hero card */}
+                {FEATURES.money && (
                 <div className="lg:col-span-5 flex justify-end">
                   {(() => {
                     const urgency = currentCampaign?.urgency ?? "NORMAL";
@@ -241,12 +246,14 @@ export default function HomeClient({
                     );
                   })()}
                 </div>
+                )}
               </div>
             </div>
           </div>
         </section>
 
         {/* ── Desktop stats bar ── */}
+        {FEATURES.money && (
         <div className="hidden sm:block border-y border-orange-100/50 dark:border-stone-850 bg-white dark:bg-zinc-950 shadow-xs">
           <div className="flex items-stretch divide-x divide-orange-50 dark:divide-zinc-800 justify-around py-5">
             {[
@@ -265,9 +272,10 @@ export default function HomeClient({
             ))}
           </div>
         </div>
+        )}
 
         {/* ── Live Ticker ── */}
-        {activity.length > 0 && (
+        {FEATURES.money && activity.length > 0 && (
           <div className="border-b border-orange-100/40 dark:border-stone-850/40 bg-orange-50/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
             <span className="shrink-0 ml-6 rounded-full bg-[#963c0d] px-3 py-1 text-[10px] font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#f0b97a]" />
@@ -362,11 +370,13 @@ export default function HomeClient({
         </section>
 
         {/* ── Latest Active Campaigns carousel ── */}
+        {FEATURES.money && (
         <LatestActiveCampaignsSection
           campaigns={campaigns}
           loading={loading}
           error={error}
         />
+        )}
 
         {/* ── In-Kind Requests Section ── */}
         {(loading || itemRequests.length > 0) && (
@@ -491,6 +501,9 @@ export default function HomeClient({
           </div>
         </section>}
 
+        {/* ── Coming Soon Magnets ── */}
+        <ComingSoonMagnets />
+
         {/* ── CTA ── */}
         <section className="max-w-7xl mx-auto px-6 pt-10 sm:pt-14 pb-20">
           <Reveal>
@@ -508,11 +521,13 @@ export default function HomeClient({
                       {t("ctaSection.createAccount")}
                     </Button>
                   </Link>
+                  {FEATURES.money && (
                   <Link href="/campaigns" className="inline-flex">
                     <Button size="lg" variant="outline" className="btn-3d border-stone-700 bg-transparent text-white hover:text-white hover:bg-stone-900/40 rounded-xl font-bold px-6 py-6">
                       {t("ctaSection.browseCampaigns")}
                     </Button>
                   </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -523,6 +538,7 @@ export default function HomeClient({
       {/* ── Mobile View (lg:hidden) ── */}
       <div className="lg:hidden min-h-screen pb-24 bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-8">
         {/* Moving stats ticker — above hero image */}
+        {FEATURES.money && (
         <div className="overflow-hidden bg-[#C17A3A] -mx-4 lg:hidden">
           <div className="animate-stats-ticker flex gap-0 whitespace-nowrap py-2">
             {[0, 1].map((copy) => (
@@ -539,6 +555,7 @@ export default function HomeClient({
             ))}
           </div>
         </div>
+        )}
 
         {/* ── Mobile Hero Section ── */}
         <section className="relative w-full aspect-[4/3] min-h-[280px] rounded-[2rem] overflow-hidden shadow-xs mt-2">
@@ -573,16 +590,19 @@ export default function HomeClient({
               <p className="text-white/80 text-[11px] sm:text-xs font-semibold leading-relaxed">
                 <TranslatedText text="Every donation helps a family grow stronger, healthier, and more secure." />
               </p>
+              {FEATURES.money && (
               <Link href="/campaigns" className="inline-block mt-1">
                 <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-950/20">
                   <TranslatedText text="Explore Campaigns" />
                 </button>
               </Link>
+              )}
             </div>
           </div>
         </section>
 
         {/* ── Latest Active Campaigns ── */}
+        {FEATURES.money && (
         <section className="space-y-4">
           <div className="flex items-end justify-between">
             <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
@@ -668,6 +688,7 @@ export default function HomeClient({
             })}
           </div>
         </section>
+        )}
 
         {/* ── In-Kind Requests ── */}
         <section className="space-y-4">

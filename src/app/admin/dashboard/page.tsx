@@ -66,9 +66,9 @@ export default function AdminDashboardPage() {
       adminGetCampaigns(statusFilter === "ALL" ? undefined : statusFilter),
       adminGetCampaigns("APPROVED"),
       adminGetCampaigns("PENDING_APPROVAL"),
-      adminGetItemListings("PENDING_APPROVAL"),
-      adminGetItemRequests("PENDING_APPROVAL"),
-      adminGetMatches("PENDING"),
+      adminGetItemListings("PENDING_REVIEW"),
+      adminGetItemRequests("PENDING_VERIFICATION"),
+      adminGetMatches("PENDING_APPROVAL"),
     ]).then(([c, approved, pending, l, r, m]) => {
       if (!cancelled) {
         setCampaigns(c);

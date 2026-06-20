@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -197,9 +198,8 @@ export function SiteHeader() {
 
   const navLinks = [
     { href: "/",          label: t("nav.home") },
-    { href: "/campaigns", label: t("nav.campaigns") },
+    ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
     { href: "/requests",  label: t("nav.requests") },
-    { href: "/items",     label: t("nav.listings") },
   ];
 
   /** Whether a nav link is active, keyed by href for exactness. */
@@ -321,8 +321,12 @@ export function SiteHeader() {
                 >
                   {t("nav.signOut")}
                 </button>
-                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                <Donate3DButton />
+                {FEATURES.money && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                    <Donate3DButton />
+                  </>
+                )}
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-4">
@@ -332,8 +336,12 @@ export function SiteHeader() {
                 <Link href="/register" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
                   {t("nav.signUp")}
                 </Link>
-                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                <Donate3DButton />
+                {FEATURES.money && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                    <Donate3DButton />
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -454,8 +462,7 @@ export function SiteFooter() {
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
             {[
-              { href: "/campaigns", l: t("moneyDrives") },
-              { href: "/items",     l: t("itemListings") },
+              ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
               { href: "/requests",  l: t("inkindRequests") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
@@ -468,7 +475,7 @@ export function SiteFooter() {
             {[
               { href: "/register",       l: t("createAccount") },
               { href: "/dashboard",      l: t("myDashboard") },
-              { href: "/campaigns/new",  l: t("startCampaign") },
+              ...(FEATURES.money ? [{ href: "/campaigns/new",  l: t("startCampaign") }] : []),
               { href: "/help",           l: t("helpFaq") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>

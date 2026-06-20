@@ -69,6 +69,7 @@ export function register(data: {
   phone: string;
   city: string;
   password: string;
+  role: string;
 }) {
   return request<{ token: string }>("/api/v1/auth/register", {
     method: "POST",
@@ -124,14 +125,16 @@ export type GoogleAuthResponse =
 export function googleAuth(accessToken: string) {
   return request<GoogleAuthResponse>("/api/v1/auth/google", {
     method: "POST",
-    body: JSON.stringify({ accessToken }),
+    // Backend reads `idToken` for both the ID-token verify and the access-token
+    // userinfo fallback, so the access token must be sent under `idToken`.
+    body: JSON.stringify({ idToken: accessToken, accessToken }),
   });
 }
 
-export function googleComplete(accessToken: string, phone: string, city: string) {
+export function googleComplete(accessToken: string, phone: string, city: string, role: string) {
   return request<GoogleAuthResponse>("/api/v1/auth/google", {
     method: "POST",
-    body: JSON.stringify({ accessToken, phone, city }),
+    body: JSON.stringify({ idToken: accessToken, accessToken, phone, city, role }),
   });
 }
 
@@ -177,6 +180,8 @@ export type Campaign = {
   imageUrl: string | null;
   videoUrl: string | null;
   urgency?: string;
+  doneeEmail?: string;
+  doneePhone?: string;
 };
 
 export function getCampaigns() {
@@ -247,6 +252,7 @@ export type Donation = {
   razorpayPaymentId: string | null;
   status: string;
   createdAt: string;
+  donorName?: string;
 };
 
 export function initiateDonation(campaignId: number, amount: number) {
@@ -258,6 +264,10 @@ export function initiateDonation(campaignId: number, amount: number) {
 
 export function getMyDonations() {
   return request<Donation[]>("/api/v1/donations/mine", { silent401: true });
+}
+
+export function getCampaignDonations(campaignId: number) {
+  return request<Donation[]>(`/api/v1/campaigns/${campaignId}/donations`);
 }
 
 // ── Item Listings ─────────────────────────────────────────────────────────────
@@ -277,6 +287,9 @@ export type ItemListing = {
   donorName: string;
   createdAt: string;
   imageUrl: string | null;
+  maximumDeliveryRadius: number | null;
+  transportPayerPreference: string | null;
+  availabilityExpiry: string | null;
 };
 
 export function getItemListings() {
@@ -296,6 +309,8 @@ export function createItemListing(data: {
   pincode?: string;
   description?: string;
   imageUrl?: string | null;
+  maximumDeliveryRadius?: number;
+  transportPayerPreference?: string;
 }) {
   return request<ItemListing>("/api/v1/items", {
     method: "POST",
@@ -393,7 +408,20 @@ export type ItemMatch = {
   donorCity: string;
   doneeName: string;
   doneeCity: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status:
+    | "PENDING_APPROVAL"
+    | "TRANSPORT_DISCUSSION"
+    | "ARRANGEMENT_AGREED"
+    | "PICKUP_SCHEDULED"
+    | "PICKED_UP"
+    | "IN_TRANSIT"
+    | "DELIVERY_ATTEMPTED"
+    | "DELIVERED_PENDING_CONFIRMATION"
+    | "FULFILLED"
+    | "RESCHEDULED"
+    | "FAILED"
+    | "CANCELLED"
+    | "REJECTED";
   rejectionReason: string | null;
   createdAt: string;
   matchScore: number | null;

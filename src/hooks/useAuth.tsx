@@ -72,6 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.setItem("ck_token", newToken);
       localStorage.removeItem("ck_token");
     }
+    // Mark a fresh login so the landing page can show a one-time role-based welcome.
+    try { sessionStorage.setItem("ck_welcome_pending", "1"); } catch {}
     setToken(newToken);
     setUser(parseJwt(newToken));
   }, []);
