@@ -53,8 +53,8 @@ export function Interactive3dHero({ className = "" }: Props) {
         vx: (Math.random() - 0.5) * 0.4,
         vy: (Math.random() - 0.5) * 0.4,
         vz: (Math.random() - 0.5) * 0.3 - 0.1, // Drifts forward slowly
-        size: Math.random() * 15 + 10,
-        type: Math.random() > 0.4 ? "sphere" : "heart",
+        size: Math.random() * 45 + 35,
+        type: "sphere",
         color: colors[Math.floor(Math.random() * colors.length)],
         pulseSpeed: Math.random() * 0.02 + 0.01,
         pulsePhase: Math.random() * Math.PI * 2,

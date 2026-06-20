@@ -16,7 +16,7 @@ export default async function AboutPage() {
     <div className="bg-[#faf8f5] dark:bg-zinc-950 min-h-screen text-stone-800 dark:text-stone-200">
       
       {/* ── Hero / Header with Interactive 3D Background ── */}
-      <div className="relative overflow-hidden bg-[#120c04] border-b border-stone-850 h-[500px] sm:h-[600px] flex items-center justify-center">
+      <div className="relative overflow-hidden bg-[#120c04] border-b border-stone-850 h-[280px] sm:h-[340px] flex items-center justify-center">
         
         {/* 3D Interactive Canvas Background */}
         <Interactive3dHero className="opacity-95" />
