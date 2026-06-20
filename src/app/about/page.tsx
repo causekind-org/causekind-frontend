@@ -16,7 +16,7 @@ export default async function AboutPage() {
     <div className="bg-[#faf8f5] dark:bg-zinc-950 min-h-screen text-stone-800 dark:text-stone-200">
       
       {/* ── Hero / Header with Interactive 3D Background ── */}
-      <div className="relative overflow-hidden bg-[#120c04] border-b border-stone-850 h-[380px] sm:h-[420px] flex items-center justify-center">
+      <div className="relative overflow-hidden bg-[#120c04] border-b border-stone-850 h-[500px] sm:h-[600px] flex items-center justify-center">
         
         {/* 3D Interactive Canvas Background */}
         <Interactive3dHero className="opacity-95" />
@@ -235,10 +235,10 @@ export default async function AboutPage() {
               </p>
             </div>
             <div className="flex gap-4 pt-8 mt-8 border-t border-stone-800 flex-wrap">
-              <Link href="/register?role=DONOR" className="px-6 py-3 rounded-full bg-[#b04a15] hover:bg-[#963c0d] text-white text-xs font-extrabold uppercase tracking-wider transition-colors shadow-md shadow-[#b04a15]/20">
+              <Link href="/requests" className="px-6 py-3 rounded-full bg-[#b04a15] hover:bg-[#963c0d] text-white text-xs font-extrabold uppercase tracking-wider transition-colors shadow-md shadow-[#b04a15]/20">
                 Become a Donor
               </Link>
-              <Link href="/register?role=DONEE" className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-extrabold uppercase tracking-wider transition-colors">
+              <Link href="/help" className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-extrabold uppercase tracking-wider transition-colors">
                 Receive Support
               </Link>
             </div>
