@@ -354,11 +354,14 @@ function RegisterContent() {
     <div className="min-h-[calc(100svh-4rem)] flex">
 
       {/* ── LEFT: Form panel ───────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-8 sm:py-10 lg:max-w-[520px] lg:px-12 overflow-y-auto">
+      <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-8 sm:py-10 lg:max-w-[520px] lg:px-12 overflow-y-auto relative overflow-hidden">
+        {/* Breathing warmth glows representing community light & hope */}
+        <div className="warmth-glow animate-warmth-1" />
+        <div className="warmth-glow animate-warmth-2" />
 
         <div />
 
-        <div className="w-full max-w-[440px] mx-auto space-y-6">
+        <div className="w-full max-w-[440px] mx-auto space-y-6 relative z-10 animate-auth-fade-slide">
 
           {/* Heading */}
           <div className="space-y-1.5">
@@ -528,15 +531,15 @@ function RegisterContent() {
                 </label>
                 <div className="relative">
                   <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={e => set("password", e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
-                  />
+                     id="password"
+                     type={showPassword ? "text" : "password"}
+                     autoComplete="new-password"
+                     required
+                     placeholder="••••••••"
+                     value={form.password}
+                     onChange={e => set("password", e.target.value)}
+                     className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                   />
                   <button
                     type="button"
                     aria-label={showPassword ? "Hide password" : "Show password"}
@@ -553,7 +556,7 @@ function RegisterContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 text-sm tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 mt-2"
+              className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 mt-2 animate-heartbeat"
             >
               {loading
                 ? t("creating")

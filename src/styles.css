@@ -1379,3 +1379,67 @@ section:focus-within {
 [data-sonner-toast] {
   z-index: 9999 !important;
 }
+
+/* ── Warmth & Heartbeat Animations for Login/Signup ── */
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  14% { transform: scale(1.05); }
+  28% { transform: scale(0.98); }
+  42% { transform: scale(1.03); }
+  70% { transform: scale(1); }
+}
+
+.animate-heartbeat:hover {
+  animation: heartbeat 1.2s ease-in-out infinite;
+}
+
+@keyframes warmth-breath {
+  0%, 100% { opacity: 0.2; transform: scale(1) translate(0, 0); }
+  50% { opacity: 0.45; transform: scale(1.1) translate(10px, -10px); }
+}
+
+.warmth-glow {
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(176, 74, 21, 0.08) 0%, rgba(240, 185, 122, 0.04) 40%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.dark .warmth-glow {
+  background: radial-gradient(circle, rgba(176, 74, 21, 0.12) 0%, rgba(240, 185, 122, 0.06) 40%, transparent 70%);
+  mix-blend-mode: screen;
+}
+
+.animate-warmth-1 {
+  top: -150px;
+  right: -150px;
+  animation: warmth-breath 12s ease-in-out infinite;
+}
+
+.animate-warmth-2 {
+  bottom: -150px;
+  left: -150px;
+  animation: warmth-breath 15s ease-in-out infinite 3s;
+}
+
+@keyframes auth-fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-auth-fade-slide {
+  animation: auth-fade-slide-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-delay-100 { animation-delay: 100ms; }
+.anim-delay-200 { animation-delay: 200ms; }
+.anim-delay-300 { animation-delay: 300ms; }

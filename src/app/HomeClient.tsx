@@ -299,7 +299,7 @@ export default function HomeClient({
         )}
 
         {/* ── Phone Animation Section ── */}
-        <PhoneAnimationSection />
+        {/* <PhoneAnimationSection /> */}
 
         {/* ── Why raise funds through us ── */}
         <section id="trust" className="mx-auto max-w-7xl px-6 py-16 bg-grid-pattern">

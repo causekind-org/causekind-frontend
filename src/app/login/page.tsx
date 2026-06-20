@@ -97,11 +97,14 @@ function LoginContent() {
     <div className="min-h-[calc(100svh-4rem)] flex">
 
       {/* ── LEFT: Form panel ───────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-8 sm:py-10 lg:max-w-[480px] lg:px-12 overflow-y-auto">
+      <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-8 sm:py-10 lg:max-w-[480px] lg:px-12 overflow-y-auto relative overflow-hidden">
+        {/* Breathing warmth glows representing community light & hope */}
+        <div className="warmth-glow animate-warmth-1" />
+        <div className="warmth-glow animate-warmth-2" />
 
         <div />
 
-        <div className="w-full max-w-[400px] mx-auto space-y-7">
+        <div className="w-full max-w-[400px] mx-auto space-y-7 relative z-10 animate-auth-fade-slide">
 
           {/* Heading */}
           <div className="space-y-1.5">
@@ -188,7 +191,7 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 text-sm tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2"
+              className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 animate-heartbeat"
             >
               {loading ? t("signingIn") : t("signIn")}
             </button>

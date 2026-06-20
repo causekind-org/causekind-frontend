@@ -27,7 +27,7 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "CauseKind — Give With Purpose",
   description: "Discover and support verified charity campaigns.",
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: "/logo-filled.png" },
 };
 
 export default async function RootLayout({
