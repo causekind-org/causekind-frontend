@@ -4,20 +4,48 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Cookie, X } from "lucide-react";
 
+// Re-ask after 24 h if user previously declined
+const RE_ASK_DELAY_MS = 24 * 60 * 60 * 1000;
+
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem("ck_cookie_consent") === null) {
-      // Small delay so the entrance animation is visible on first paint
-      const t = setTimeout(() => setVisible(true), 120);
-      return () => clearTimeout(t);
+    const stored = localStorage.getItem("ck_cookie_consent");
+    if (stored === "accepted") return; // accepted — never ask again
+
+    if (stored !== null) {
+      // declined previously — check if enough time has passed
+      try {
+        const data = JSON.parse(stored);
+        if (data.choice === "declined" && typeof data.ts === "number") {
+          if (Date.now() - data.ts < RE_ASK_DELAY_MS) return; // too soon
+          // Time expired — clear and re-ask below
+          localStorage.removeItem("ck_cookie_consent");
+        } else {
+          return; // unknown format, leave alone
+        }
+      } catch {
+        return; // old plain string, not our JSON — leave alone
+      }
     }
+
+    // Show after small delay so entrance animation is visible on first paint
+    const t = setTimeout(() => setVisible(true), 1200);
+    return () => clearTimeout(t);
   }, []);
 
   function dismiss(choice: "accepted" | "declined") {
-    localStorage.setItem("ck_cookie_consent", choice);
+    if (choice === "accepted") {
+      localStorage.setItem("ck_cookie_consent", "accepted");
+    } else {
+      // Store as JSON with timestamp so we can re-ask after the delay
+      localStorage.setItem(
+        "ck_cookie_consent",
+        JSON.stringify({ choice: "declined", ts: Date.now() })
+      );
+    }
     setExiting(true);
     // Wait for exit animation before unmounting
     setTimeout(() => setVisible(false), 380);

@@ -14,6 +14,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
+import { Reveal } from "@/components/Reveal";
 
 // ── Inline brand SVGs ──────────────────────────────────────────────────────────
 function GoogleIcon() {
@@ -133,6 +134,7 @@ function RegisterContent() {
   const [cityValue, setCityValue] = useState("");
   const [cityFreeText, setCityFreeText] = useState("");
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [panelAnimClass, setPanelAnimClass] = useState("");
 
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
 
@@ -240,6 +242,13 @@ function RegisterContent() {
   }
 
   useEffect(() => { if (user) router.replace("/"); }, [user, router]);
+
+  // Read & clear the cross-page transition flag AFTER mount so animation fires with correct class
+  useEffect(() => {
+    const dir = sessionStorage.getItem("ck_auth_direction");
+    setPanelAnimClass(dir === "login-to-register" ? "auth-panel-from-right" : "auth-panel-from-left");
+    if (dir) sessionStorage.removeItem("ck_auth_direction");
+  }, []);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -351,281 +360,348 @@ function RegisterContent() {
   }
 
   return (
-    <div className="min-h-[calc(100svh-4rem)] flex">
+    <div className="min-h-[calc(100svh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
 
-      {/* ── LEFT: Form panel ───────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-8 sm:py-10 lg:max-w-[520px] lg:px-12 overflow-y-auto relative overflow-hidden">
+      {/* ── LEFT: Brand/Image panel — slides in from direction of navigation ── */}
+      <div className={`hidden lg:flex lg:w-[40%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0 ${panelAnimClass}`}>
+        {/* Warmth glows */}
+        <div className="absolute -top-24 left-1/4 h-[350px] w-[350px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 right-1/4 h-[350px] w-[350px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
+        
+        {/* Dot pattern */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.05] pointer-events-none" />
+
+        <div className="relative z-10 flex items-center gap-2 mb-8">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3 py-1">
+            Verified In-Kind
+          </span>
+        </div>
+
+        <div className="relative z-10 space-y-6">
+          <blockquote className="space-y-4">
+            <p className="text-white text-3xl font-extrabold leading-tight tracking-tight font-serif">
+              &ldquo;No one has ever become poor by giving.&rdquo;
+            </p>
+            <footer className="flex items-center gap-2">
+              <span className="block h-px w-8 bg-[#e07b3a]" />
+              <cite className="text-[#f0b97a] text-sm not-italic font-bold">Anne Frank</cite>
+            </footer>
+          </blockquote>
+        </div>
+
+        {/* Decorative graphic / background image */}
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none mix-blend-luminosity">
+          <Image
+            src="/images/hero-4.webp"
+            alt=""
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#120c04] via-transparent to-[#120c04]" />
+        </div>
+
+        <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
+          CauseKind India · 2026
+        </div>
+      </div>
+
+      {/* ── RIGHT: Form panel ── */}
+      <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-10 lg:px-16 overflow-y-auto relative overflow-hidden auth-form-appear">
         {/* Breathing warmth glows representing community light & hope */}
-        <div className="warmth-glow animate-warmth-1" />
-        <div className="warmth-glow animate-warmth-2" />
+        <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-[#1e3a60]/5 blur-3xl pointer-events-none" />
 
         <div />
 
-        <div className="w-full max-w-[440px] mx-auto space-y-6 relative z-10 animate-auth-fade-slide">
-
+        <div className="w-full max-w-[440px] mx-auto space-y-6 relative z-10">
           {/* Heading */}
-          <div className="space-y-1.5">
-            <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-              {isSocialFlow ? `${t("almostThereTitle")} 🎉` : `${t("joinTitle")} 🌱`}
-            </h1>
-            <p className="text-sm text-stone-500 dark:text-stone-400">
-              {isSocialFlow ? t("googleLinkedSubtitle") : t("createSubtitle")}
-            </p>
-          </div>
+          <Reveal>
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Create account</span>
+              <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+                {isSocialFlow ? `${t("almostThereTitle")} 🎉` : `${t("joinTitle")} 🌱`}
+              </h1>
+              <p className="text-sm text-stone-505 dark:text-stone-400">
+                {isSocialFlow ? t("googleLinkedSubtitle") : t("createSubtitle")}
+              </p>
+            </div>
+          </Reveal>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-
-            {/* Role Selection Option */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-                Register as
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => set("role", "DONOR")}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
-                    form.role === "DONOR"
-                      ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
-                      : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/50"
-                  }`}
-                >
-                  <span className="text-sm font-bold">Donor 🎁</span>
-                  <span className="text-[10px] opacity-85 mt-0.5 font-normal">I want to donate items</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => set("role", "DONEE")}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
-                    form.role === "DONEE"
-                      ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
-                      : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/50"
-                  }`}
-                >
-                  <span className="text-sm font-bold">Donee 🤝</span>
-                  <span className="text-[10px] opacity-85 mt-0.5 font-normal">I need to request support</span>
-                </button>
-              </div>
-            </div>
-
-            <Field
-              id="fullName" label={t("fullName")} placeholder="Jane Doe"
-              value={form.fullName} onChange={v => set("fullName", v)}
-              readOnly={isSocialFlow && !!form.fullName}
-              autoComplete="name"
-            />
-
-            <Field
-              id="email" label={t("email")} type="email" placeholder="you@example.com"
-              value={form.email} onChange={v => set("email", v)}
-              readOnly={isSocialFlow}
-              hint={isSocialFlow ? t("googleLinkedHint") : undefined}
-              autoComplete="email"
-            />
-
-            {/* Phone with dial-code */}
-            <div className="space-y-1.5">
-              <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                <Phone className="w-3.5 h-3.5" /> {t("phone")}
-              </label>
-              <div className="flex gap-2">
-                <div className="w-[120px] shrink-0">
-                  <SearchableSelect
-                    options={dialCodeOptions}
-                    value={dialCountry}
-                    onChange={setDialCountry}
-                    placeholder="+–"
-                    searchPlaceholder={t("searchCountry")}
-                    renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
-                  />
-                </div>
-                <input
-                  id="phone"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder={t("phone")}
-                  value={phoneNumber}
-                  onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                  autoComplete="tel"
-                  className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
-                />
-              </div>
-            </div>
-
-            {/* Location: Country → State → City */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                  <MapPin className="w-3.5 h-3.5" /> {t("location")}
-                </label>
-                <button
-                  type="button"
-                  onClick={handleGPSLocation}
-                  disabled={gpsLoading}
-                  className="flex items-center gap-1.5 text-xs font-bold text-[#b04a15] hover:underline uppercase disabled:opacity-50"
-                >
-                  {gpsLoading ? "Detecting..." : "Use GPS 🎯"}
-                </button>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-stone-500 dark:text-stone-400">{t("country")}</label>
-                <SearchableSelect
-                  options={countryOptions}
-                  value={countryIso}
-                  onChange={handleCountryChange}
-                  placeholder={t("selectCountry")}
-                  searchPlaceholder={t("searchCountry")}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-stone-500 dark:text-stone-400">{t("state")}</label>
-                {noStateOptions ? (
-                  <p className="text-xs text-stone-400 italic py-1">{t("noStatesListed")}</p>
-                ) : (
-                  <SearchableSelect
-                    options={stateOptions}
-                    value={stateIso}
-                    onChange={handleStateChange}
-                    placeholder={t("selectState")}
-                    disabledPlaceholder={t("selectCountryFirst")}
-                    disabled={!countryIso}
-                    searchPlaceholder={t("searchState")}
-                  />
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-stone-500 dark:text-stone-400">{t("city")}</label>
-                {showCityFreeText ? (
-                  <input
-                    id="city"
-                    type="text"
-                    placeholder={t("enterCity")}
-                    value={cityFreeText}
-                    onChange={e => setCityFreeText(e.target.value)}
-                    autoComplete="address-level2"
-                    className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
-                  />
-                ) : (
-                  <SearchableSelect
-                    options={cityOptions}
-                    value={cityValue}
-                    onChange={setCityValue}
-                    placeholder={t("selectCity")}
-                    disabledPlaceholder={t("selectStateFirst")}
-                    disabled={!stateIso && !noStateOptions}
-                    searchPlaceholder={t("searchCity")}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Password — only on non-social flow */}
-            {!isSocialFlow && (
+            <Reveal delay={60}>
+              {/* Role Selection Option */}
               <div className="space-y-1.5">
-                <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-                  {t("password")}
+                <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                  Register as
                 </label>
-                <div className="relative">
-                  <input
-                     id="password"
-                     type={showPassword ? "text" : "password"}
-                     autoComplete="new-password"
-                     required
-                     placeholder="••••••••"
-                     value={form.password}
-                     onChange={e => set("password", e.target.value)}
-                     className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
-                   />
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+                    onClick={() => set("role", "DONOR")}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                      form.role === "DONOR"
+                        ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
+                        : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                    }`}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="text-sm font-bold">Donor 🎁</span>
+                    <span className="text-[10px] opacity-85 mt-0.5 font-normal">I want to donate items</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => set("role", "DONEE")}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                      form.role === "DONEE"
+                        ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
+                        : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                    }`}
+                  >
+                    <span className="text-sm font-bold">Donee 🤝</span>
+                    <span className="text-[10px] opacity-85 mt-0.5 font-normal">I need to request support</span>
                   </button>
                 </div>
               </div>
+            </Reveal>
+
+            <Reveal delay={100}>
+              <Field
+                id="fullName" label={t("fullName")} placeholder="Jane Doe"
+                value={form.fullName} onChange={v => set("fullName", v)}
+                readOnly={isSocialFlow && !!form.fullName}
+                autoComplete="name"
+              />
+            </Reveal>
+
+            <Reveal delay={140}>
+              <Field
+                id="email" label={t("email")} type="email" placeholder="you@example.com"
+                value={form.email} onChange={v => set("email", v)}
+                readOnly={isSocialFlow}
+                hint={isSocialFlow ? t("googleLinkedHint") : undefined}
+                autoComplete="email"
+              />
+            </Reveal>
+
+            <Reveal delay={180}>
+              {/* Phone with dial-code */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                  <Phone className="w-3.5 h-3.5" /> {t("phone")}
+                </label>
+                <div className="flex gap-2">
+                  <div className="w-[120px] shrink-0">
+                    <SearchableSelect
+                      options={dialCodeOptions}
+                      value={dialCountry}
+                      onChange={setDialCountry}
+                      placeholder="+–"
+                      searchPlaceholder={t("searchCountry")}
+                      renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
+                    />
+                  </div>
+                  <input
+                    id="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder={t("phone")}
+                    value={phoneNumber}
+                    onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                    autoComplete="tel"
+                    className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                  />
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal delay={220}>
+              {/* Location: Country → State → City */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                    <MapPin className="w-3.5 h-3.5" /> {t("location")}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGPSLocation}
+                    disabled={gpsLoading}
+                    className="relative flex items-center gap-2 text-xs font-black text-[#b04a15] uppercase tracking-wide px-3 py-1.5 rounded-full border border-[#b04a15]/30 hover:bg-[#b04a15]/5 transition-colors disabled:opacity-50"
+                  >
+                    {/* Radar rings — visible only when active (not loading) */}
+                    {!gpsLoading && (
+                      <>
+                        <span className="absolute inset-0 rounded-full border border-[#b04a15]/40 gps-radar-ring" />
+                        <span className="absolute inset-0 rounded-full border border-[#b04a15]/25 gps-radar-ring-2" />
+                      </>
+                    )}
+                    {/* Spinning ring while loading */}
+                    {gpsLoading && (
+                      <span className="absolute inset-0 rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15] animate-spin" />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                      </svg>
+                      {gpsLoading ? "Detecting..." : "Use GPS"}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-505 dark:text-stone-400">{t("country")}</label>
+                    <SearchableSelect
+                      options={countryOptions}
+                      value={countryIso}
+                      onChange={handleCountryChange}
+                      placeholder={t("selectCountry")}
+                      searchPlaceholder={t("searchCountry")}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-505 dark:text-stone-400">{t("state")}</label>
+                    {noStateOptions ? (
+                      <p className="text-xs text-stone-400 italic py-1.5">{t("noStatesListed")}</p>
+                    ) : (
+                      <SearchableSelect
+                        options={stateOptions}
+                        value={stateIso}
+                        onChange={handleStateChange}
+                        placeholder={t("selectState")}
+                        disabledPlaceholder={t("selectCountryFirst")}
+                        disabled={!countryIso}
+                        searchPlaceholder={t("searchState")}
+                      />
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-505 dark:text-stone-400">{t("city")}</label>
+                    {showCityFreeText ? (
+                      <input
+                        id="city"
+                        type="text"
+                        placeholder={t("enterCity")}
+                        value={cityFreeText}
+                        onChange={e => setCityFreeText(e.target.value)}
+                        autoComplete="address-level2"
+                        className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                      />
+                    ) : (
+                      <SearchableSelect
+                        options={cityOptions}
+                        value={cityValue}
+                        onChange={setCityValue}
+                        placeholder={t("selectCity")}
+                        disabledPlaceholder={t("selectStateFirst")}
+                        disabled={!stateIso && !noStateOptions}
+                        searchPlaceholder={t("searchCity")}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Password — only on non-social flow */}
+            {!isSocialFlow && (
+              <Reveal delay={260}>
+                <div className="space-y-1.5">
+                  <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                    {t("password")}
+                  </label>
+                  <div className="relative">
+                    <input
+                       id="password"
+                       type={showPassword ? "text" : "password"}
+                       autoComplete="new-password"
+                       required
+                       placeholder="••••••••"
+                       value={form.password}
+                       onChange={e => set("password", e.target.value)}
+                       className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                     />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </Reveal>
             )}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 mt-2 animate-heartbeat"
-            >
-              {loading
-                ? t("creating")
-                : isSocialFlow
-                  ? t("complete")
-                  : t("submit")}
-            </button>
+            <Reveal delay={300}>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 mt-2 animate-heartbeat"
+              >
+                {loading
+                  ? t("creating")
+                  : isSocialFlow
+                    ? t("complete")
+                    : t("submit")}
+              </button>
+            </Reveal>
           </form>
 
           {/* Social buttons — only on non-social flow */}
           {!isSocialFlow && (
             <div className="space-y-3">
-              <button
-                type="button"
-                disabled={googleLoading}
-                onClick={() => triggerGoogle()}
-                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
-              >
-                <GoogleIcon />
-                {googleLoading ? t("creating") : t("google")}
-              </button>
-              <button
-                type="button"
-                onClick={() => toast.info("Social sign-in coming soon")}
-                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
-              >
-                <FacebookIcon />
-                {t("facebook")}
-              </button>
+              <Reveal delay={340}>
+                <button
+                  type="button"
+                  disabled={googleLoading}
+                  onClick={() => triggerGoogle()}
+                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
+                >
+                  <GoogleIcon />
+                  {googleLoading ? t("creating") : t("google")}
+                </button>
+              </Reveal>
+              <Reveal delay={380}>
+                <button
+                  type="button"
+                  onClick={() => toast.info("Social sign-in coming soon")}
+                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
+                >
+                  <FacebookIcon />
+                  {t("facebook")}
+                </button>
+              </Reveal>
             </div>
           )}
 
           {/* Cross-link */}
-          <p className="text-center text-sm text-stone-500 dark:text-stone-400">
-            {t("haveAccount")}{" "}
-            <Link href="/login" className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2">
-              {t("signIn")}
-            </Link>
-          </p>
+          <Reveal delay={420}>
+            <p className="text-center text-sm text-stone-550 dark:text-stone-400">
+              {t("haveAccount")}{" "}
+              <a
+                href="/login"
+                onClick={(e) => {
+                  e.preventDefault();
+                  sessionStorage.setItem("ck_auth_direction", "register-to-login");
+                  window.location.href = "/login";
+                }}
+                className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2 cursor-pointer"
+              >
+                {t("signIn")}
+              </a>
+            </p>
+          </Reveal>
         </div>
 
         <p className="mt-8 text-center text-xs text-stone-400 dark:text-zinc-600">
           &copy; 2026 CauseKind
         </p>
-      </div>
-
-      {/* ── RIGHT: Image panel (hidden on mobile) ──────────────────────────── */}
-      <div className="hidden lg:flex flex-1 relative p-6">
-        <div className="relative w-full h-full rounded-3xl overflow-hidden">
-          <Image
-            src="/images/hero-4.webp"
-            alt="Community members supporting each other"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40" />
-          <div className="absolute bottom-0 left-0 right-0 p-10">
-            <blockquote className="space-y-3">
-              <p className="text-white text-2xl font-bold leading-snug" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                &ldquo;No one has ever become poor by giving.&rdquo;
-              </p>
-              <footer className="flex items-center gap-2">
-                <span className="block h-px w-8 bg-white/50" />
-                <cite className="text-white/70 text-sm not-italic font-medium">Anne Frank</cite>
-              </footer>
-            </blockquote>
-          </div>
-        </div>
       </div>
 
     </div>
