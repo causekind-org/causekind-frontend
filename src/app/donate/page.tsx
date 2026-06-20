@@ -442,11 +442,6 @@ function DonatePageInner() {
                   <p className="text-sm font-bold text-stone-800 dark:text-stone-100"><TranslatedText text={activeCampaign?.title} /></p>
                   <p className="text-xs text-stone-400 font-medium"><TranslatedText text={activeCampaign?.city} /> · <TranslatedText text={activeCampaign?.category} /></p>
                 </div>
-
-                <div className="border-t border-orange-100 dark:border-zinc-700 pt-3 flex justify-between text-xs font-bold">
-                  <span className="text-stone-400">{t("platformFee")}</span>
-                  <span className="text-emerald-600 font-extrabold">₹0 — {t("platformFeeValue")}</span>
-                </div>
               </div>
 
               <p className="text-xs text-stone-400 dark:text-zinc-600 text-center font-medium leading-relaxed">

@@ -6,7 +6,7 @@ import { Interactive3dHero } from "@/components/Interactive3dHero";
 
 export const metadata = {
   title: "About Us — CauseKind",
-  description: "Learn about CauseKind's mission, story, and how we facilitate zero-fee verified in-kind donations.",
+  description: "Learn about CauseKind's mission, story, and how we facilitate verified in-kind donations.",
 };
 
 export default async function AboutPage() {
@@ -85,7 +85,7 @@ export default async function AboutPage() {
             <div className="grid grid-cols-2 gap-6 pt-4 border-t border-stone-200 dark:border-zinc-800">
               <div>
                 <p className="text-3xl font-black text-[#b04a15]">100%</p>
-                <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mt-1">Zero Platform Fees</p>
+                <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mt-1">Verified Handovers</p>
               </div>
               <div>
                 <p className="text-3xl font-black text-[#1e3a60] dark:text-blue-400">10-25km</p>
@@ -194,10 +194,10 @@ export default async function AboutPage() {
             </div>
             <div>
               <h4 className="font-extrabold text-lg text-stone-900 dark:text-white mb-2">
-                100% Platform Free
+                Secure Platform
               </h4>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
-                We take absolutely zero platform fees or commission cuts. 100% of all contributions reach the target.
+                We facilitate direct connections under strict administrative moderation and location matching.
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-stone-100 dark:border-zinc-800 text-[11px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">

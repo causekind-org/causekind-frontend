@@ -145,7 +145,7 @@ function InKindHero() {
     { icon: ShieldCheck, label: "Admin Verified Needs", color: "text-emerald-400" },
     { icon: MapPin,      label: "Local 10 km Matching", color: "text-[#f0b97a]" },
     { icon: Sparkles,    label: "AI Photo Analysis",    color: "text-blue-400" },
-    { icon: Heart,       label: "Zero Platform Fees",   color: "text-rose-400" },
+    { icon: Heart,       label: "Direct Handovers",   color: "text-rose-400" },
   ];
 
   return (
