@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Heart, Shield, Milestone, Compass, CheckCircle2 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { Interactive3dHero } from "@/components/Interactive3dHero";
 
 export const metadata = {
   title: "About Us — CauseKind",
@@ -15,14 +14,12 @@ export default async function AboutPage() {
   return (
     <div className="bg-[#faf8f5] dark:bg-zinc-950 min-h-screen text-stone-800 dark:text-stone-200">
       
-      {/* ── Hero / Header with Interactive 3D Background ── */}
+      {/* ── Hero / Header with Soft Background Glows ── */}
       <div className="relative overflow-hidden bg-[#120c04] border-b border-stone-850 h-[280px] sm:h-[340px] flex items-center justify-center">
         
-        {/* 3D Interactive Canvas Background */}
-        <Interactive3dHero className="opacity-95" />
-        
-        {/* Warm radial glows on top of canvas for color richness */}
-        <div className="pointer-events-none absolute inset-0 bg-radial-at-c from-transparent via-[#120c04]/40 to-[#120c04] z-10" />
+        {/* Subtle background glows */}
+        <div className="pointer-events-none absolute -top-24 left-1/4 w-[400px] h-[400px] rounded-full bg-[#b04a15]/15 blur-3xl animate-pulse" style={{ animationDuration: '6s' }} />
+        <div className="pointer-events-none absolute -bottom-12 right-1/4 w-[300px] h-[300px] rounded-full bg-[#1e3a60]/15 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
 
         <div className="relative mx-auto max-w-3xl px-6 text-center z-20">
           <Link
