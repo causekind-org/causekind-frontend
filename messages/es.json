@@ -3,6 +3,7 @@
     "home": "Hogar",
     "campaigns": "Campañas",
     "requests": "Solicitudes en especie",
+    "about": "Sobre nosotros",
     "listings": "Listados",
     "signUp": "Inscribirse",
     "logIn": "Acceso",
@@ -877,5 +878,15 @@
     "viewDonations": "Ver mis donaciones",
     "browseCampaigns": "Explorar más campañas",
     "toastSuccess": "¡Donación confirmada! Gracias por marcar la diferencia."
+  },
+  "about": {
+    "backToHome": "Volver al inicio",
+    "aboutUs": "Sobre nosotros",
+    "headline": "Nuestra Misión e Historia",
+    "subheadline": "Conectando corazones amables directamente con necesidades verificadas, sin tarifas.",
+    "visionHeadline": "Nuestra Visión",
+    "visionText": "Construir un ecosistema transparente y eficiente donde cada acto de bondad llegue directamente a la persona necesitada.",
+    "missionHeadline": "Nuestra Misión",
+    "missionText": "Simplificar las donaciones en especie, eliminar intermediarios y utilizar el emparejamiento inteligente para dirigir los recursos a donde más importan."
   }
 }

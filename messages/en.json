@@ -3,6 +3,7 @@
     "home": "Home",
     "campaigns": "Campaigns",
     "requests": "In-Kind Requests",
+    "about": "About Us",
     "listings": "Listings",
     "signUp": "Sign Up",
     "logIn": "Log In",
@@ -726,6 +727,16 @@
     "stillNeedHelp": "Still need help?",
     "reachOut": "Reach out directly — our team responds within 24 hours.",
     "emailSupport": "Email support"
+  },
+  "about": {
+    "backToHome": "Back to home",
+    "aboutUs": "About Us",
+    "headline": "Our Mission & Story",
+    "subheadline": "Connecting kind hearts directly with verified needs, with zero fees.",
+    "visionHeadline": "Our Vision",
+    "visionText": "To build a transparent and efficient ecosystem where every act of kindness directly reaches the person in need.",
+    "missionHeadline": "Our Mission",
+    "missionText": "To simplify in-kind donations, eliminate middlemen, and utilize intelligent matching to direct resources where they matter most."
   },
   "itemDetail": {
     "verified": "Verified",

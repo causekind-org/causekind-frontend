@@ -3,6 +3,7 @@
     "home": "Maison",
     "campaigns": "Campagnes",
     "requests": "Demandes en nature",
+    "about": "À propos",
     "listings": "Annonces",
     "signUp": "S'inscrire",
     "logIn": "Se connecter",
@@ -877,5 +878,15 @@
     "viewDonations": "Voir mes dons",
     "browseCampaigns": "Parcourez plus de campagnes",
     "toastSuccess": "Don confirmé ! Merci d'avoir fait une différence."
+  },
+  "about": {
+    "backToHome": "Retour à l'accueil",
+    "aboutUs": "À propos",
+    "headline": "Notre Mission & Histoire",
+    "subheadline": "Connecter les cœurs généreux directement aux besoins vérifiés, sans frais.",
+    "visionHeadline": "Notre Vision",
+    "visionText": "Construire un écosystème transparent et efficace où chaque acte de gentillesse atteint directement la personne dans le besoin.",
+    "missionHeadline": "Notre Mission",
+    "missionText": "Simplifier les dons en nature, éliminer les intermédiaires et utiliser un ciblage intelligent pour diriger les ressources là où elles comptent le plus."
   }
 }
