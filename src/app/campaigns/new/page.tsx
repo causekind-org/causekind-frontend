@@ -1,5 +1,8 @@
 "use client";
 
+import { FEATURES } from "@/lib/features";
+import { ComingSoon } from "@/components/ComingSoon";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -36,6 +39,11 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 export default function NewCampaignPage() {
+  if (!FEATURES.money) return <ComingSoon feature="campaigns" />;
+  return <NewCampaignPageInner />;
+}
+
+function NewCampaignPageInner() {
   const t = useTranslations("campaignNew");
   const { user } = useAuth();
   const router = useRouter();
@@ -66,9 +74,14 @@ export default function NewCampaignPage() {
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
 
-    // Fetch profile to auto-fill location
+    // Fetch profile to auto-fill location and check role
     getProfile()
       .then((p) => {
+        if (p.role !== "DONEE" && p.role !== "ADMIN") {
+          toast.error("Access denied. Only beneficiaries can start campaigns.");
+          router.push("/dashboard");
+          return;
+        }
         if (p.city) {
           const parts = p.city.split(",").map((s) => s.trim());
           if (parts.length === 3) {
@@ -177,7 +190,7 @@ export default function NewCampaignPage() {
         videoUrl: form.videoUrl || null,
       });
       toast.success(t("toastSuccess"));
-      router.push("/donee/dashboard");
+      router.push("/dashboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("toastError"));
     } finally {
@@ -418,7 +431,7 @@ export default function NewCampaignPage() {
               </div>
 
               <div className="flex flex-wrap justify-end gap-2">
-                <Link href="/donee/dashboard">
+                <Link href="/dashboard">
                   <Button type="button" variant="outline">{t("cancel")}</Button>
                 </Link>
                 <Button type="submit" disabled={submitting}>

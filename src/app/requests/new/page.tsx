@@ -77,9 +77,14 @@ export default function NewRequestPage() {
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
 
-    // Fetch profile to auto-fill location
+    // Fetch profile to auto-fill location and verify role
     getProfile()
       .then((p) => {
+        if (p.role !== "DONEE" && p.role !== "ADMIN") {
+          toast.error("Access denied. Only Beneficiaries (Donees) can post needs.");
+          router.push("/dashboard");
+          return;
+        }
         if (p.city) {
           const parts = p.city.split(",").map((s) => s.trim());
           if (parts.length === 3) {
@@ -216,7 +221,7 @@ export default function NewRequestPage() {
     try {
       await createItemRequest({ ...form, city: cityStr, quantity: Number(form.quantity), imageUrl: form.imageUrl || null, pickupRadiusKm: finalRadius ?? undefined });
       toast.success(t("toastSuccess"));
-      router.push("/donee/dashboard");
+      router.push("/dashboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("toastError"));
     } finally {
@@ -374,7 +379,7 @@ export default function NewRequestPage() {
               <Button type="submit" disabled={submitting}>
                 {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submitForReview")}
               </Button>
-              <Link href="/donee/dashboard"><Button type="button" variant="outline">{t("cancel")}</Button></Link>
+              <Link href="/dashboard"><Button type="button" variant="outline">{t("cancel")}</Button></Link>
             </div>
           </form>
         </CardContent>

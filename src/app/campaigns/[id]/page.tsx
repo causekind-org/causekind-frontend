@@ -1,5 +1,8 @@
 "use client";
 
+import { FEATURES } from "@/lib/features";
+import { ComingSoon } from "@/components/ComingSoon";
+
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -7,7 +10,7 @@ import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTransl
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
-import { getCampaign, getProfile, initiateDonation, type Campaign, type UserProfile } from "@/lib/api";
+import { getCampaign, getProfile, initiateDonation, getCampaignDonations, type Campaign, type UserProfile, type Donation } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { generateCampaignAIContent, type AIContentResult } from "@/lib/ai-generator";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +68,33 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
   );
 }
 
+function getInitials(name?: string) {
+  if (!name) return "S";
+  return name.trim().split(/\s+/).map(part => part[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function timeAgo(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
 export default function CampaignDetailPage() {
+  if (!FEATURES.money) return <ComingSoon feature="campaigns" />;
+  return <CampaignDetailPageInner />;
+}
+
+function CampaignDetailPageInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -79,6 +108,14 @@ export default function CampaignDetailPage() {
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [donationsLoading, setDonationsLoading] = useState(true);
+  const [isAllDonorsModalOpen, setIsAllDonorsModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [sendingContact, setSendingContact] = useState(false);
   
   // Donation States
   const [amount, setAmount] = useState(1000);
@@ -114,6 +151,11 @@ export default function CampaignDetailPage() {
       })
       .catch(() => setError("Campaign not found or not yet approved."))
       .finally(() => setLoading(false));
+
+    getCampaignDonations(Number(id))
+      .then(setDonations)
+      .catch((err) => console.error("Failed to load campaign donations:", err))
+      .finally(() => setDonationsLoading(false));
   }, [id]);
 
   useEffect(() => {
@@ -313,57 +355,28 @@ export default function CampaignDetailPage() {
 
   // Mocked details matching visual layout deterministically per campaign
   const daysLeft = Math.round(10 + (campaign.id * 7) % 25);
-  const donorsCount = Math.round(12 + (campaign.id * 17) % 90);
-
-  const getDeterministicSupporters = (campaignId: number, targetAmount: number) => {
-    const INDIAN_NAMES = [
-      "Anjali S.", "Rahul K.", "Priya M.", "Amit P.", "Sneha R.", "Vijay D.", 
-      "Deepak M.", "Neha G.", "Sanjay T.", "Aarav N.", "Vikram S.", "Riya J.", 
-      "Karan B.", "Aditi V.", "Rohan M.", "Pooja C.", "Rajesh K.", "Meera A."
-    ];
-    const seed = campaignId;
-    const supporters = [];
-    const random = (i: number) => {
-      const x = Math.sin(seed + i) * 10000;
-      return x - Math.floor(x);
-    };
-    for (let i = 0; i < 4; i++) {
-      const nameIndex = Math.floor(random(i) * INDIAN_NAMES.length);
-      const name = i === 3 ? "Anonymous" : INDIAN_NAMES[nameIndex];
-      const minAmount = Math.max(100, Math.round(targetAmount * 0.005));
-      const maxAmount = Math.round(targetAmount * 0.03);
-      const amountVal = Math.round(minAmount + random(i + 10) * (maxAmount - minAmount));
-      const roundedAmount = Math.round(amountVal / 50) * 50;
-      const hours = Math.floor(1 + random(i + 20) * 48);
-      let timeAgo = "";
-      if (hours < 24) {
-        timeAgo = `${hours} hours ago`;
-      } else {
-        const days = Math.floor(hours / 24);
-        timeAgo = `${days} day${days > 1 ? "s" : ""} ago`;
-      }
-      supporters.push({
-        name,
-        amount: roundedAmount || minAmount,
-        timeAgo,
-        initials: name === "Anonymous" ? "A" : name.split(" ").map((n) => n[0]).join("")
-      });
-    }
-    return supporters;
-  };
-
-  const dynamicSupporters = getDeterministicSupporters(campaign.id, campaign.targetAmount);
+  const donorsCount = donations.length;
 
   return (
     <div className="bg-[#FAF8F5] min-h-screen pb-24 text-stone-800 selection:bg-[#8C3D1D]/10 selection:text-[#8C3D1D]">
       {/* Alert Banner */}
-      <div className="bg-[#D3F5DD] text-[#1E5631] px-4 py-3.5 text-center text-sm font-semibold flex items-center justify-center gap-2 border-b border-[#BBECC9]">
-        <span className="flex h-2 w-2 rounded-full bg-[#2E9348] animate-ping" />
-        <span className="flex items-center gap-1.5">
-          <Heart className="h-4 w-4 fill-[#2E9348] text-[#2E9348]" />
-          Just now: Someone donated ₹500 to this campaign!
-        </span>
-      </div>
+      {donations.length > 0 ? (
+        <div className="bg-[#D3F5DD] text-[#1E5631] px-4 py-3.5 text-center text-sm font-semibold flex items-center justify-center gap-2 border-b border-[#BBECC9]">
+          <span className="flex h-2 w-2 rounded-full bg-[#2E9348] animate-ping" />
+          <span className="flex items-center gap-1.5">
+            <Heart className="h-4 w-4 fill-[#2E9348] text-[#2E9348]" />
+            Just now: {donations[0].donorName || "Someone"} donated {formatINR(donations[0].amount)} to this campaign!
+          </span>
+        </div>
+      ) : (
+        <div className="bg-[#FFF4E5] text-[#8C3D1D] px-4 py-3.5 text-center text-sm font-semibold flex items-center justify-center gap-2 border-b border-[#FDD8A5]">
+          <span className="flex h-2 w-2 rounded-full bg-[#E05C38] animate-ping" />
+          <span className="flex items-center gap-1.5">
+            <Heart className="h-4 w-4 fill-[#E05C38] text-[#E05C38]" />
+            Be the first one to support: Make a donation to help this campaign!
+          </span>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-3 items-start">
@@ -476,7 +489,7 @@ export default function CampaignDetailPage() {
                         {getBreakdownIcon(item.type)}
                       </div>
                       <div>
-                        <p className="text-xs text-stone-500 font-bold uppercase tracking-wider line-clamp-1">{item.label}</p>
+                        <p className="text-xs text-stone-500 font-bold uppercase tracking-wider break-words">{item.label}</p>
                         <p className="text-lg font-extrabold text-[#8C3D1D] mt-0.5">{formatINR(item.amount)}</p>
                       </div>
                     </div>
@@ -544,28 +557,46 @@ export default function CampaignDetailPage() {
             {/* Recent Support */}
             <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 sm:p-8 space-y-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
               <h2 className="text-xl font-bold text-stone-900">Recent Support</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {dynamicSupporters.map((supporter, idx) => (
-                  <div key={idx} className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
-                    <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-sm">
-                      {supporter.name === "Anonymous" ? <User className="h-4 w-4 text-stone-500" /> : supporter.initials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-bold text-stone-900 ${supporter.name === "Anonymous" ? "italic text-stone-500" : ""}`}>
-                        {supporter.name}
-                      </p>
-                      <p className="text-xs text-stone-500">{supporter.timeAgo}</p>
-                    </div>
-                    <div className="text-sm font-extrabold text-[#8C3D1D]">{formatINR(supporter.amount)}</div>
+              
+              {donations.length === 0 ? (
+                <div className="text-center py-6 text-stone-500 text-sm font-semibold">
+                  No donations yet. Be the first to support this cause!
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {donations.slice(0, 4).map((donation, idx) => {
+                      const name = donation.donorName || "Someone";
+                      const initials = getInitials(name);
+                      return (
+                        <div key={donation.id || idx} className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
+                          <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-sm select-none">
+                            {initials}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-stone-900 truncate">
+                              {name}
+                            </p>
+                            <p className="text-xs text-stone-500">{timeAgo(donation.createdAt)}</p>
+                          </div>
+                          <div className="text-sm font-extrabold text-[#8C3D1D] shrink-0">{formatINR(donation.amount)}</div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
 
-              <div className="text-center pt-2">
-                <button className="text-[#8C3D1D] hover:text-[#733115] font-bold text-sm flex items-center justify-center gap-1.5 mx-auto hover:underline">
-                  View all {donorsCount} donors &rarr;
-                </button>
-              </div>
+                  {donations.length > 4 && (
+                    <div className="text-center pt-2">
+                      <button 
+                        onClick={() => setIsAllDonorsModalOpen(true)}
+                        className="text-[#8C3D1D] hover:text-[#733115] font-bold text-sm flex items-center justify-center gap-1.5 mx-auto hover:underline"
+                      >
+                        View all {donations.length} donors &rarr;
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
           </div>
@@ -648,7 +679,10 @@ export default function CampaignDetailPage() {
                 </div>
               </div>
 
-              <button className="w-full border border-[#EDECE7] hover:bg-stone-50 text-stone-700 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors">
+              <button 
+                onClick={() => setIsContactModalOpen(true)}
+                className="w-full border border-[#EDECE7] hover:bg-stone-50 text-stone-700 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
+              >
                 <Mail className="h-3.5 w-3.5 text-stone-400" />
                 Contact Organizer
               </button>
@@ -888,6 +922,171 @@ export default function CampaignDetailPage() {
 
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ALL DONORS MODAL OVERLAY */}
+      {isAllDonorsModalOpen && (
+        <div className="fixed inset-0 bg-stone-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-[#EDECE7] flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
+            {/* Close Button */}
+            <button 
+              onClick={() => setIsAllDonorsModalOpen(false)}
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 p-1 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Header */}
+            <div className="mb-5 border-b border-[#F2F1EC] pb-4">
+              <span className="text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
+                Campaign Supporters
+              </span>
+              <h3 className="text-lg font-extrabold text-stone-900 mt-2.5">All {donations.length} Donors</h3>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {donations.map((donation, idx) => {
+                const name = donation.donorName || "Someone";
+                const initials = getInitials(name);
+                return (
+                  <div key={donation.id || idx} className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-3.5 rounded-2xl">
+                    <div className="h-9 w-9 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-xs select-none">
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-stone-900 truncate">
+                        {name}
+                      </p>
+                      <p className="text-xs text-stone-500">{timeAgo(donation.createdAt)}</p>
+                    </div>
+                    <div className="text-sm font-extrabold text-[#8C3D1D] shrink-0">{formatINR(donation.amount)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTACT ORGANIZER MODAL OVERLAY */}
+      {isContactModalOpen && (
+        <div className="fixed inset-0 bg-stone-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-[#EDECE7] flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+            {/* Close Button */}
+            <button 
+              onClick={() => setIsContactModalOpen(false)}
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 p-1 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Header */}
+            <div className="mb-5">
+              <span className="text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
+                Contact Organizer
+              </span>
+              <h3 className="text-lg font-extrabold text-stone-900 mt-2.5">Send a message to {campaign.doneeName}</h3>
+            </div>
+
+            {!user ? (
+              <div className="space-y-4 py-4 text-center">
+                <p className="text-sm text-stone-600">You must be logged in to contact the campaign organizer.</p>
+                <Button 
+                  onClick={() => {
+                    setIsContactModalOpen(false);
+                    router.push(`/login?redirect=/campaigns/${campaign.id}`);
+                  }}
+                  className="bg-[#8C3D1D] hover:bg-[#733115] text-white rounded-xl w-full"
+                >
+                  Log In
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4 flex-1">
+                {/* Direct info cards */}
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  {campaign.doneeEmail && (
+                    <a 
+                      href={`mailto:${campaign.doneeEmail}?subject=Inquiry%20regarding%20${encodeURIComponent(campaign.title)}`}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDECE7] bg-[#FCFAF7] hover:bg-[#FDF0E9] hover:border-[#8C3D1D]/30 transition-all group"
+                    >
+                      <Mail className="h-5 w-5 text-stone-400 group-hover:text-[#8C3D1D] mb-1.5 transition-colors" />
+                      <span className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider">Email</span>
+                      <span className="text-xs text-stone-700 font-bold truncate w-full mt-0.5">{campaign.doneeEmail}</span>
+                    </a>
+                  )}
+                  {campaign.doneePhone && (
+                    <a 
+                      href={`tel:${campaign.doneePhone}`}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDECE7] bg-[#FCFAF7] hover:bg-[#FDF0E9] hover:border-[#8C3D1D]/30 transition-all group"
+                    >
+                      <User className="h-5 w-5 text-stone-400 group-hover:text-[#8C3D1D] mb-1.5 transition-colors" />
+                      <span className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider">Phone</span>
+                      <span className="text-xs text-stone-700 font-bold truncate w-full mt-0.5">{campaign.doneePhone}</span>
+                    </a>
+                  )}
+                </div>
+
+                <div className="h-px bg-[#EDECE7] my-2" />
+
+                {/* Form */}
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="contactSubject" className="text-xs font-bold text-stone-600">Subject</Label>
+                    <Input 
+                      id="contactSubject"
+                      placeholder="e.g. Question about donation receipts"
+                      value={contactSubject}
+                      onChange={(e) => setContactSubject(e.target.value)}
+                      className="rounded-xl border-[#EDECE7] focus-visible:ring-[#8C3D1D]/20 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="contactMessage" className="text-xs font-bold text-stone-600">Message</Label>
+                    <Textarea 
+                      id="contactMessage"
+                      placeholder="Type your message here..."
+                      rows={4}
+                      value={contactMessage}
+                      onChange={(e) => setContactMessage(e.target.value)}
+                      className="rounded-xl border-[#EDECE7] focus-visible:ring-[#8C3D1D]/20 text-sm bg-white resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Submit button */}
+                <button 
+                  onClick={() => {
+                    if (!contactMessage.trim()) {
+                      toast.error("Please enter a message.");
+                      return;
+                    }
+                    setSendingContact(true);
+                    setTimeout(() => {
+                      toast.success("Your message has been sent to the organizer!");
+                      setContactMessage("");
+                      setContactSubject("");
+                      setSendingContact(false);
+                      setIsContactModalOpen(false);
+                    }, 1000);
+                  }}
+                  disabled={sendingContact}
+                  className="w-full bg-[#8C3D1D] hover:bg-[#733115] disabled:bg-stone-300 disabled:cursor-not-allowed text-white py-3 px-6 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all"
+                >
+                  {sendingContact ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Message"
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

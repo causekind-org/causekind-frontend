@@ -22,7 +22,18 @@ import { useTranslations } from "next-intl";
 const CATEGORIES = ["Education", "Clothing", "Furniture", "Electronics", "Household", "Sports", "Medical aid"];
 const CONDITIONS = ["Like new", "Good", "Fair"];
 
-const empty = { title: "", category: "", quantity: 1, condition: "", city: "", pincode: "", description: "", imageUrl: "" };
+const empty = {
+  title: "",
+  category: "",
+  quantity: 1,
+  condition: "",
+  city: "",
+  pincode: "",
+  description: "",
+  imageUrl: "",
+  maximumDeliveryRadius: 25,
+  transportPayerPreference: "TO_BE_DISCUSSED"
+};
 
 
 
@@ -61,9 +72,14 @@ export default function NewItemPage() {
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
 
-    // Fetch profile to auto-fill location
+    // Fetch profile to auto-fill location and verify role
     getProfile()
       .then((p) => {
+        if (p.role !== "DONOR" && p.role !== "ADMIN") {
+          toast.error("Access denied. Only Donors can list items.");
+          router.push("/dashboard");
+          return;
+        }
         if (p.city) {
           const parts = p.city.split(",").map((s) => s.trim());
           if (parts.length === 3) {
@@ -293,6 +309,33 @@ export default function NewItemPage() {
                     searchPlaceholder={t("searchCity")}
                   />
                 )}
+              </Field>
+              <Field label="Maximum Delivery Radius (km)">
+                <Input
+                  type="number"
+                  min={1}
+                  value={form.maximumDeliveryRadius}
+                  onChange={(e) => set("maximumDeliveryRadius", Number(e.target.value))}
+                  required
+                />
+              </Field>
+              <Field label="Transport Payer Preference">
+                <Select
+                  value={form.transportPayerPreference}
+                  onValueChange={(v) => set("transportPayerPreference", v)}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select transport preference" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DONOR_PAYS">Donor Pays (I will pay shipping)</SelectItem>
+                    <SelectItem value="DONEE_PAYS">Donee Pays (Beneficiary collects or pays shipping)</SelectItem>
+                    <SelectItem value="SHARED">Shared (Split transport cost)</SelectItem>
+                    <SelectItem value="SPONSORED">Sponsored (Request platform sponsorship)</SelectItem>
+                    <SelectItem value="TO_BE_DISCUSSED">To be discussed</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
             </div>
             <Field label={t("fieldDescription")}>

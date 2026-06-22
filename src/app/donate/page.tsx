@@ -1,5 +1,8 @@
 "use client";
 
+import { FEATURES } from "@/lib/features";
+import { ComingSoon } from "@/components/ComingSoon";
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -186,6 +189,11 @@ function CampaignDropdown({
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function DonatePage() {
+  if (!FEATURES.money) return <ComingSoon feature="donate" />;
+  return <DonatePageInner />;
+}
+
+function DonatePageInner() {
   const t = useTranslations("donate_page");
   const [amount, setAmount] = useState<number | "">(1000);
   const [custom, setCustom] = useState("");
