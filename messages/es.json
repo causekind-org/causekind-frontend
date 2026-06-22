@@ -3,6 +3,7 @@
     "home": "Hogar",
     "campaigns": "Campañas",
     "requests": "Solicitudes en especie",
+    "about": "Sobre nosotros",
     "listings": "Listados",
     "signUp": "Inscribirse",
     "logIn": "Acceso",
@@ -314,7 +315,7 @@
     "errorUpdateFailed": "No se pudo actualizar el perfil"
   },
   "footer": {
-    "tagline": "La plataforma de donaciones verificada de la India. Cero tarifas para los donantes. El 100% de tu donación va directamente a la causa.",
+    "tagline": "La plataforma de donación verificada de la India que conecta a los donantes directamente con los beneficiarios verificados.",
     "giveBack": "Devolver",
     "getSupport": "Obtenga soporte",
     "trust": "Nuestra promesa de confianza",
@@ -328,7 +329,7 @@
     "startCampaign": "Iniciar una campaña",
     "helpFaq": "Ayuda y preguntas frecuentes",
     "adminVerifiedFull": "Listados verificados por el administrador",
-    "zeroFees": "Tarifas de plataforma cero para donantes",
+    "zeroFees": "Pasarelas de pago seguras",
     "certificates": "Certificados de entrega verificados",
     "rights": "Fabricado con cuidado en la India.",
     "contact": "Contáctenos"
@@ -347,7 +348,7 @@
   },
   "donate_page": {
     "heading": "Dar directamente",
-    "subtitle": "El 100% llega a la causa. Tarifas de plataforma cero.",
+    "subtitle": "Procesamiento 100% seguro.",
     "back": "Atrás",
     "chooseAmount": "Elige cantidad",
     "customPlaceholder": "Ingrese la cantidad personalizada",
@@ -362,7 +363,7 @@
     "tip": "Consejo",
     "verifiedCampaign": "Campaña verificada",
     "instantTransfer": "Transferencia instantánea",
-    "zeroFees": "Tarifas cero",
+    "zeroFees": "Procesamiento seguro",
     "donating": "Donar",
     "tipTo": "Consejo para causar bondad",
     "platformFee": "Tarifa de plataforma",
@@ -450,7 +451,7 @@
     },
     "why": {
       "title": "¿Por qué recaudar fondos a través de nosotros?",
-      "subtitle": "Cada donación se verifica, no tiene costo y se entrega directamente a alguien que realmente la necesita."
+      "subtitle": "Cada donación es verificada y entregada directamente a alguien que realmente la necesita."
     },
     "what": {
       "title": "Lo que ofrecemos",
@@ -475,8 +476,8 @@
     "features": {
       "adminVerified": "Administrador verificado",
       "adminVerifiedDesc": "Nuestro equipo revisa cada solicitud de campaña y artículo antes de su publicación. Nada pasa sin un control real.",
-      "zeroFees": "Tarifas de plataforma cero",
-      "zeroFeesDesc": "No cobramos nada. Cada rupia que donas o cada artículo que das llega a la persona que lo necesita.",
+      "zeroFees": "Plataforma segura",
+      "zeroFeesDesc": "Aseguramos las transacciones y emparejamos los canales de comunicación bajo administración directa.",
       "localMatching": "Coincidencia local",
       "localMatchingDesc": "Las donaciones de artículos se relacionan con personas que se encuentran dentro de un radio de 10 km de usted, lo que hace que la entrega sea simple y rápida.",
       "impactCertificates": "Certificados de Impacto",
@@ -691,8 +692,8 @@
     "subheading": "Todo lo que necesitas saber antes de donar.",
     "stillHaveQuestions": "¿Aún tienes preguntas?",
     "emailUs": "Envíenos un correo electrónico",
-    "q1": "¿Es gratuito utilizar Causekind?",
-    "a1": "Sí, completamente gratis. Cobramos cero tarifas de plataforma para donantes o destinatarios. El 100% de lo que das va directamente a la causa que elijas.",
+    "q1": "¿Es seguro usar Causekind?",
+    "a1": "Sí, completamente seguro. Procesamos todos los pagos a través de pasarelas verificadas como Razorpay, y cada campaña es verificada por nuestro equipo de administración.",
     "q2": "¿Cómo se verifican las campañas antes de que se publiquen?",
     "a2": "Nuestro equipo revisa cada solicitud de campaña y artículo antes de que aparezca en el sitio. Verificamos la identidad de la persona y confirmamos que la necesidad es genuina. Todo lo que no pase nuestros controles será rechazado.",
     "q3": "¿Puedo donar artículos físicos como ropa o libros?",
@@ -877,5 +878,19 @@
     "viewDonations": "Ver mis donaciones",
     "browseCampaigns": "Explorar más campañas",
     "toastSuccess": "¡Donación confirmada! Gracias por marcar la diferencia."
+  },
+  "about": {
+    "backToHome": "Volver al inicio",
+    "aboutUs": "Sobre nosotros",
+    "headline": "Nuestra Misión e Historia",
+    "subheadline": "Conectando corazones amables directamente con necesidades verificadas.",
+    "visionHeadline": "Nuestra Visión",
+    "visionText": "Construir un ecosistema transparente y eficiente donde cada acto de bondad llegue directamente a la persona necesitada.",
+    "missionHeadline": "Nuestra Misión",
+    "missionText": "Simplificar las donaciones en especie, eliminar intermediarios y utilizar el emparejamiento inteligente para dirigir los recursos a donde más importan.",
+    "storyTitle": "Cerrando la Brecha",
+    "storyText": "CauseKind comenzó con una idea simple: la caridad debe ser directa, localizada y transparente. Nos dimos cuenta de que grandes cantidades de artículos útiles acumulan polvo en los hogares, mientras que los estudiantes locales luchan por adquirirlos. Al integrar un sistema de emparejamiento por radio geográfico, hacemos que compartir sea inmediato y sin problemas.",
+    "communityTitle": "Impacto Local Directo",
+    "communityText": "Nuestra plataforma lo conecta con necesidades verificadas dentro de un radio de 10 km a 25 km, evitando por completo las tarifas de envío."
   }
 }

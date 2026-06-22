@@ -98,7 +98,7 @@ function Section({
   return (
     <Reveal className="scroll-mt-28">
       <section id={id} className="scroll-mt-28">
-        <div className="mb-5 flex items-center gap-4">
+        <div className="mb-5 flex items-center gap-4 border-l-4 border-[#b04a15] pl-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#b04a15] to-[#e07b3a] text-white shadow-lg shadow-[#b04a15]/25">
             <Icon className="h-5 w-5" />
           </span>
@@ -111,7 +111,8 @@ function Section({
             </h2>
           </div>
         </div>
-        <div className="space-y-4 rounded-3xl border border-stone-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-8">
+        <div className="space-y-4 rounded-3xl border border-stone-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-8 relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-24 h-24 bg-[#b04a15]/5 rounded-full blur-xl pointer-events-none" />
           {children}
         </div>
       </section>
@@ -225,7 +226,7 @@ export default function PrivacyPolicyPage() {
 
       {/* ── Body: sticky TOC + content ──────────────────────────────────────── */}
       <div className="mx-auto max-w-6xl px-6 py-12 lg:py-16">
-        <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-12">
+        <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-12">
           {/* TOC (desktop) */}
           <aside className="hidden lg:block">
             <div className="sticky top-24">

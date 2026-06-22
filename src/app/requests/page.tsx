@@ -34,12 +34,21 @@ const URGENCY_LEVELS = [
 ];
 
 const REQ_SORT_OPTIONS = [
+  { value: "nearest" as const, label: "Nearest First" },
   { value: "urgent"  as const, label: "Most Urgent"   },
   { value: "newest"  as const, label: "Just Added"    },
   { value: "qty"     as const, label: "High Quantity" },
 ];
 
-type ReqSortValue = "urgent" | "newest" | "qty";
+type ReqSortValue = "nearest" | "urgent" | "newest" | "qty";
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 const CATEGORY_ICONS: Record<string, string> = {
   "Medical aid": "🏥",
@@ -145,7 +154,7 @@ function InKindHero() {
     { icon: ShieldCheck, label: "Admin Verified Needs", color: "text-emerald-400" },
     { icon: MapPin,      label: "Local 10 km Matching", color: "text-[#f0b97a]" },
     { icon: Sparkles,    label: "AI Photo Analysis",    color: "text-blue-400" },
-    { icon: Heart,       label: "Zero Platform Fees",   color: "text-rose-400" },
+    { icon: Heart,       label: "Direct Handovers",   color: "text-rose-400" },
   ];
 
   return (
@@ -154,7 +163,7 @@ function InKindHero() {
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setActive(true)}
       onMouseLeave={() => setActive(false)}
-      className="relative w-full min-h-[260px] sm:min-h-[300px] overflow-hidden select-none"
+      className="relative w-full min-h-[360px] sm:min-h-[420px] overflow-hidden select-none"
       style={{ background: "linear-gradient(135deg, #1c0905 0%, #2d1008 42%, #0f1d30 100%)" }}
     >
       {/* Mouse-tracking warm glow — follows cursor */}
@@ -197,48 +206,53 @@ function InKindHero() {
         <HandCoins className="h-20 w-20 text-white" />
       </div>
 
-      {/* ── Main content (centred) ── */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center h-full min-h-[260px] sm:min-h-[300px] px-5 py-8 sm:py-10">
-
-        {/* Label badge */}
-        <div className="inline-flex items-center gap-2 bg-[#b04a15]/20 border border-[#b04a15]/35 rounded-full px-4 py-1.5 mb-6 anim-up anim-d1">
-          <HandCoins className="h-3.5 w-3.5 text-[#f0b97a]" />
-          <span className="text-[#f0b97a] text-[11px] font-black uppercase tracking-widest">In-Kind Giving</span>
-        </div>
-
-        {/* Headline */}
-        <h1 className="text-white text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold leading-tight tracking-tight mb-4 anim-up anim-d2">
-          In-Kind{" "}
-          <span className="text-gradient-terra">Requests</span>
-        </h1>
-
-        {/* Subtitle */}
-        <p className="text-white/70 text-sm sm:text-base lg:text-lg leading-relaxed mb-3 max-w-xl anim-up anim-d3">
-          Your unused items hold the power to transform lives. Connect directly with verified community members in need — no cash, no platform fees, just pure human kindness turned into real impact.
-        </p>
-
-        {/* How it works — one-liner */}
-        <p className="text-white/45 text-xs sm:text-sm mb-8 anim-up anim-d3">
-          Browse a verified need below → offer to give → admin connects you both.
-        </p>
-
-        {/* Feature pills */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-10 anim-up anim-d4">
-          {INFO_PILLS.map(({ icon: Icon, label, color }) => (
-            <div
-              key={label}
-              className="flex items-center gap-2 bg-white/8 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2"
-            >
-              <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} />
-              <span className="text-white/75 text-xs font-semibold whitespace-nowrap">{label}</span>
+      {/* ── Main content (asymmetric) ── */}
+      <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 lg:py-20 h-full flex flex-col justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-10 items-center">
+          {/* Left panel: heading and badge */}
+          <div className="text-left space-y-6">
+            {/* Label badge */}
+            <div className="inline-flex items-center gap-2 bg-[#b04a15]/20 border border-[#b04a15]/35 rounded-full px-4 py-1.5 anim-up anim-d1">
+              <HandCoins className="h-3.5 w-3.5 text-[#f0b97a]" />
+              <span className="text-[#f0b97a] text-[11px] font-black uppercase tracking-widest">In-Kind Giving</span>
             </div>
-          ))}
-        </div>
 
-        {/* Scroll cue */}
-        <div className="flex flex-col items-center gap-1.5 anim-up anim-d5">
-          <span className="text-white/30 text-[11px] font-medium uppercase tracking-widest">Browse needs</span>
-          <ChevronDown className="h-4 w-4 text-white/30 animate-bounce-slow" />
+            {/* Headline */}
+            <h1 className="text-white text-4xl sm:text-5xl lg:text-[4rem] font-extrabold leading-none tracking-tight anim-up anim-d2">
+              In-Kind <span className="text-gradient-terra block sm:inline">Requests</span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-white/70 text-sm sm:text-base leading-relaxed max-w-xl anim-up anim-d3">
+              Your unused items hold the power to transform lives. Connect directly with verified community members in need — no cash, no platform fees, just pure human kindness turned into real impact.
+            </p>
+
+            {/* Scroll cue */}
+            <div className="flex items-center gap-2 anim-up anim-d5">
+              <span className="text-white/30 text-[11px] font-medium uppercase tracking-widest">Browse needs</span>
+              <ChevronDown className="h-4 w-4 text-white/30 animate-bounce-slow" />
+            </div>
+          </div>
+
+          {/* Right panel: Feature pills in an offset list */}
+          <div className="relative space-y-3 lg:pl-10">
+            <div className="absolute -left-4 top-0 w-1 bg-gradient-to-b from-[#b04a15] to-[#f0b97a] h-full hidden lg:block" />
+            <div className="flex flex-col gap-3 anim-up anim-d4">
+              {INFO_PILLS.map(({ icon: Icon, label, color }, idx) => (
+                <div
+                  key={label}
+                  className={`flex items-center gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 transition-all duration-300 hover:bg-white/10 hover:translate-x-2 ${
+                    idx % 2 === 0 ? "ml-0" : "lg:ml-6"
+                  }`}
+                >
+                  <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                    <Icon className={`h-5 w-5 ${color}`} />
+                  </div>
+                  <span className="text-white/80 text-sm font-bold">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -403,88 +417,105 @@ function RequestCard({
   const catStyle = getCategoryStyle(r.category);
   const imgSrc = getCardImage(r);
 
+  const borderColors: Record<string, string> = {
+    "Medical aid": "bg-blue-500",
+    "Education":   "bg-amber-500",
+    "Livelihood":  "bg-green-500",
+    "Relief":      "bg-violet-500",
+    "Household":   "bg-rose-500",
+  };
+  const leftBorderBg = borderColors[r.category] ?? "bg-[#b04a15]";
+
   return (
     <Reveal delay={index * 70}>
       <HoverCard openDelay={300}>
         <HoverCardTrigger asChild>
-          <div className="group bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-stone-100 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 ease-out flex flex-col h-full">
+          <div className={`group bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-stone-100 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 ease-out flex flex-col h-full relative ${
+            index % 2 === 0 ? "lg:translate-y-2" : "lg:-translate-y-2"
+          }`}>
+            {/* Left Accent Stripe */}
+            <div className={`absolute left-0 top-0 bottom-0 w-[4px] z-10 ${leftBorderBg}`} />
 
-        {/* Image */}
-        <div className="relative w-full h-44 sm:h-52 overflow-hidden shrink-0 bg-orange-50 dark:bg-zinc-800">
-          <Image
-            src={imgSrc}
-            alt={r.title}
-            fill
-            className="object-cover group-hover:scale-[1.06] transition-transform duration-500 ease-out"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
-          {/* Subtle bottom fade */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
+            {/* Image */}
+            <div className="relative w-full h-44 sm:h-52 overflow-hidden shrink-0 bg-orange-50 dark:bg-zinc-800 pl-[4px]">
+              <Image
+                src={imgSrc}
+                alt={r.title}
+                fill
+                className="object-cover group-hover:scale-[1.06] transition-transform duration-500 ease-out"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+              {/* Subtle bottom fade */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
 
-          {/* Verified Need badge — top-left */}
-          <div className="absolute top-3 left-3">
-            <div className="flex items-center gap-1.5 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-md shadow-emerald-900/20">
-              <CheckCircle2 className="h-3 w-3 shrink-0" />
-              Verified Need
+              {/* Verified Need badge — top-left */}
+              <div className="absolute top-3 left-3">
+                <div className="flex items-center gap-1.5 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-md shadow-emerald-900/20">
+                  <CheckCircle2 className="h-3 w-3 shrink-0" />
+                  Verified Need
+                </div>
+              </div>
+
+              {/* Urgency overlay — top-right */}
+              {r.urgency !== "NORMAL" && (
+                <div className="absolute top-3 right-3">
+                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase border backdrop-blur-sm shadow-sm ${
+                    r.urgency === "CRITICAL"
+                      ? "bg-red-500/20 border-red-400/50 text-red-100"
+                      : "bg-amber-500/20 border-amber-400/50 text-amber-100"
+                  }`}>
+                    {r.urgency === "CRITICAL" ? "Urgent" : "High Priority"}
+                  </span>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Urgency overlay — top-right */}
-          {r.urgency !== "NORMAL" && (
-            <div className="absolute top-3 right-3">
-              <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase border backdrop-blur-sm shadow-sm ${
-                r.urgency === "CRITICAL"
-                  ? "bg-red-500/20 border-red-400/50 text-red-100"
-                  : "bg-amber-500/20 border-amber-400/50 text-amber-100"
-              }`}>
-                {r.urgency === "CRITICAL" ? "Urgent" : "High Priority"}
+            {/* Card body */}
+            <div className="p-5 flex flex-col flex-1 gap-3 relative pl-[20px]">
+              {/* Giant ghost step number */}
+              <span className="absolute bottom-4 right-4 text-7xl font-black text-stone-100/60 dark:text-zinc-800/30 select-none pointer-events-none font-serif">
+                {(index + 1).toString().padStart(2, "0")}
               </span>
+
+              {/* Category + location */}
+              <div className="flex items-center justify-between gap-2 relative z-10">
+                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border ${catStyle.pill} ${catStyle.border}`}>
+                  <span className="text-sm leading-none">{CATEGORY_ICONS[r.category] ?? "📦"}</span>
+                  <TranslatedText text={r.category} />
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-stone-400 dark:text-stone-500 font-medium shrink-0">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <TranslatedText text={r.city} />
+                </span>
+              </div>
+
+              {/* Title */}
+              <h3 className="text-[15px] font-extrabold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 relative z-10">
+                {title ?? r.title}
+              </h3>
+
+              {/* Description */}
+              <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed line-clamp-2 font-medium flex-1 relative z-10">
+                {r.description ? (
+                  <TranslatedText text={r.description} />
+                ) : (
+                  `Requested by ${r.doneeName}. ${r.quantity} item${r.quantity !== 1 ? "s" : ""} needed.`
+                )}
+              </p>
+
+              {/* Progress bar */}
+              <div className="pt-1 relative z-10">
+                <AnimatedBar met={0} total={r.quantity} />
+              </div>
+
+              {/* CTA */}
+              <button
+                onClick={() => onGive(r)}
+                className="w-full mt-1 bg-[#b04a15] hover:bg-[#963c0d] active:bg-[#7d3209] text-white font-bold py-3 rounded-xl text-sm transition-all duration-150 active:scale-[0.98] shadow-sm shadow-orange-900/15 btn-shine relative z-10"
+              >
+                Give this item
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* Card body */}
-        <div className="p-5 flex flex-col flex-1 gap-3">
-
-          {/* Category + location */}
-          <div className="flex items-center justify-between gap-2">
-            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border ${catStyle.pill} ${catStyle.border}`}>
-              <span className="text-sm leading-none">{CATEGORY_ICONS[r.category] ?? "📦"}</span>
-              <TranslatedText text={r.category} />
-            </span>
-            <span className="flex items-center gap-1 text-[11px] text-stone-400 dark:text-stone-500 font-medium shrink-0">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <TranslatedText text={r.city} />
-            </span>
-          </div>
-
-          {/* Title */}
-          <h3 className="text-[15px] font-extrabold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2">
-            {title ?? r.title}
-          </h3>
-
-          {/* Description */}
-          <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed line-clamp-2 font-medium flex-1">
-            {r.description ? (
-              <TranslatedText text={r.description} />
-            ) : (
-              `Requested by ${r.doneeName}. ${r.quantity} item${r.quantity !== 1 ? "s" : ""} needed.`
-            )}
-          </p>
-
-          {/* Progress bar */}
-          <div className="pt-1">
-            <AnimatedBar met={0} total={r.quantity} />
-          </div>
-
-          {/* CTA */}
-          <button
-            onClick={() => onGive(r)}
-            className="w-full mt-1 bg-[#b04a15] hover:bg-[#963c0d] active:bg-[#7d3209] text-white font-bold py-3 rounded-xl text-sm transition-all duration-150 active:scale-[0.98] shadow-sm shadow-orange-900/15 btn-shine"
-          >
-            Give this item
-          </button>
-        </div>
           </div>
         </HoverCardTrigger>
         <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
@@ -529,7 +560,7 @@ export default function RequestsPage() {
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedUrgencies, setSelectedUrgencies] = useState<string[]>([]);
-  const [sort, setSort] = useState<ReqSortValue>("urgent");
+  const [sort, setSort] = useState<ReqSortValue>("nearest");
   const [showFilters, setShowFilters] = useState(false);
 
   // AI-generated in-kind stat (dynamic, based on total requests)
@@ -592,7 +623,22 @@ export default function RequestsPage() {
       const matchU = selectedUrgencies.length === 0 || selectedUrgencies.includes(r.urgency);
       return matchQ && matchC && matchU;
     });
-    if (sort === "urgent") {
+    if (sort === "nearest") {
+      const lat = myProfile?.latitude;
+      const lon = myProfile?.longitude;
+      if (lat && lon) {
+        result = [...result].sort((a, b) => {
+          const dA = a.latitude && a.longitude ? haversineKm(lat, lon, a.latitude, a.longitude) : 99999;
+          const dB = b.latitude && b.longitude ? haversineKm(lat, lon, b.latitude, b.longitude) : 99999;
+          return dA - dB;
+        });
+      }
+      // If no user location, fall back to urgency ordering
+      else {
+        const ord: Record<string, number> = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
+        result = [...result].sort((a, b) => (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2));
+      }
+    } else if (sort === "urgent") {
       const ord: Record<string, number> = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
       result = [...result].sort((a, b) => (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2));
     } else if (sort === "newest") {
@@ -610,10 +656,10 @@ export default function RequestsPage() {
   const resetFilters = () => {
     setSelectedCategories([]);
     setSelectedUrgencies([]);
-    setSort("urgent");
+    setSort("nearest");
     setSearch("");
   };
-  const activeFilterCount = selectedCategories.length + selectedUrgencies.length + (sort !== "urgent" ? 1 : 0);
+  const activeFilterCount = selectedCategories.length + selectedUrgencies.length + (sort !== "nearest" ? 1 : 0);
   const hasActiveFilters = activeFilterCount > 0 || search.length > 0;
 
   // ── Donate modal handlers ─────────────────────────────────────────────────
@@ -751,11 +797,11 @@ export default function RequestsPage() {
             </div>
           )}
 
-          {/* ── Main flex layout: sidebar + right pane ── */}
-          <div className="flex gap-6 items-start">
+          {/* ── Main asymmetric grid layout: sidebar + right pane ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8 items-start">
 
             {/* Desktop sidebar */}
-            <aside className="hidden lg:block w-52 sticky top-20 bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-stone-100 dark:border-stone-800 shrink-0">
+            <aside className="hidden lg:block sticky top-20 bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-stone-100 dark:border-stone-800 shrink-0">
               <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200 mb-5">Filters</h3>
               <RequestFilterPanel
                 categoryCounts={categoryCounts}
@@ -771,7 +817,7 @@ export default function RequestsPage() {
             </aside>
 
             {/* Right pane */}
-            <div className="flex-1 min-w-0 space-y-4">
+            <div className="min-w-0 space-y-4">
 
               {/* Header row */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -798,6 +844,8 @@ export default function RequestsPage() {
                       onChange={e => setSearch(e.target.value)}
                     />
                   </div>
+                  {/* Only DONEEs can post a need — hide for DONOR */}
+                  {user?.role !== "DONOR" && (
                   <Reveal delay={80}>
                     <Link href="/requests/new">
                       <Button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-bold rounded-xl px-4 py-2 h-auto gap-1.5 text-sm btn-shine shadow-sm shadow-orange-900/20 shrink-0">
@@ -806,6 +854,7 @@ export default function RequestsPage() {
                       </Button>
                     </Link>
                   </Reveal>
+                  )}
                 </div>
               </div>
 
@@ -879,11 +928,13 @@ export default function RequestsPage() {
                       <p className="mt-1 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">
                         Community members haven&apos;t posted any needs yet. Be the first to help!
                       </p>
+                      {user?.role !== "DONOR" && (
                       <Link href="/requests/new" className="mt-6">
                         <Button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-bold rounded-xl px-6">
                           Post a Need
                         </Button>
                       </Link>
+                      )}
                     </>
                   ) : (
                     <>

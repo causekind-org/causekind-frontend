@@ -3,6 +3,7 @@
     "home": "Home",
     "campaigns": "Campaigns",
     "requests": "In-Kind Requests",
+    "about": "About Us",
     "listings": "Listings",
     "signUp": "Sign Up",
     "logIn": "Log In",
@@ -314,7 +315,7 @@
     "errorUpdateFailed": "Failed to update profile"
   },
   "footer": {
-    "tagline": "India's verified giving platform. Zero fees for donors. 100% of your donation goes directly to the cause.",
+    "tagline": "India's verified giving platform connecting donors directly with verified recipients.",
     "giveBack": "Give Back",
     "getSupport": "Get Support",
     "trust": "Our Trust Promise",
@@ -328,7 +329,7 @@
     "startCampaign": "Start a campaign",
     "helpFaq": "Help & FAQ",
     "adminVerifiedFull": "Admin-verified listings",
-    "zeroFees": "Zero platform fees for donors",
+    "zeroFees": "Secure payment gateways",
     "certificates": "Verified delivery certificates",
     "rights": "Made with care in India.",
     "contact": "Contact us"
@@ -347,7 +348,7 @@
   },
   "donate_page": {
     "heading": "Give Directly",
-    "subtitle": "100% reaches the cause. Zero platform fees.",
+    "subtitle": "100% secure processing.",
     "back": "Back",
     "chooseAmount": "Choose amount",
     "customPlaceholder": "Enter custom amount",
@@ -362,7 +363,7 @@
     "tip": "Tip",
     "verifiedCampaign": "Verified campaign",
     "instantTransfer": "Instant transfer",
-    "zeroFees": "Zero fees",
+    "zeroFees": "Secure Processing",
     "donating": "Donating",
     "tipTo": "Tip to CauseKind",
     "platformFee": "Platform fee",
@@ -450,7 +451,7 @@
     },
     "why": {
       "title": "Why raise funds through us",
-      "subtitle": "Every donation is verified, zero-fee, and delivered directly to someone who truly needs it."
+      "subtitle": "Every donation is verified and delivered directly to someone who truly needs it."
     },
     "what": {
       "title": "What we Provide",
@@ -475,8 +476,8 @@
     "features": {
       "adminVerified": "Admin Verified",
       "adminVerifiedDesc": "Every campaign and item request is reviewed by our team before it goes live. Nothing gets through without a real check.",
-      "zeroFees": "Zero Platform Fees",
-      "zeroFeesDesc": "We charge nothing. Every rupee you donate or every item you give reaches the person who needs it.",
+      "zeroFees": "Secure Platform",
+      "zeroFeesDesc": "We secure transactions and match communication channels under direct administration.",
       "localMatching": "Local Matching",
       "localMatchingDesc": "Item donations are matched with people within 10 km of you, making drop-offs simple and quick.",
       "impactCertificates": "Impact Certificates",
@@ -692,8 +693,8 @@
     "subheading": "Everything you need to know before you give.",
     "stillHaveQuestions": "Still have questions?",
     "emailUs": "Email us",
-    "q1": "Is it free to use Causekind?",
-    "a1": "Yes, completely free. We charge zero platform fees for donors or recipients. 100% of what you give goes directly to the cause you choose.",
+    "q1": "Is it secure to use Causekind?",
+    "a1": "Yes, completely secure. We process all payments through verified gateways like Razorpay, and every campaign is verified by our admin team.",
     "q2": "How do you check campaigns before they go live?",
     "a2": "Every campaign and item request is reviewed by our team before it appears on the site. We verify the person's identity and confirm that the need is genuine. Anything that doesn't pass our checks is rejected.",
     "q3": "Can I donate physical items like clothes or books?",
@@ -726,6 +727,20 @@
     "stillNeedHelp": "Still need help?",
     "reachOut": "Reach out directly — our team responds within 24 hours.",
     "emailSupport": "Email support"
+  },
+  "about": {
+    "backToHome": "Back to home",
+    "aboutUs": "About Us",
+    "headline": "Our Mission & Story",
+    "subheadline": "Connecting kind hearts directly with verified needs.",
+    "visionHeadline": "Our Vision",
+    "visionText": "To build a transparent and efficient ecosystem where every act of kindness directly reaches the person in need.",
+    "missionHeadline": "Our Mission",
+    "missionText": "To simplify in-kind donations, eliminate middlemen, and utilize intelligent matching to direct resources where they matter most.",
+    "storyTitle": "Bridging the Gap",
+    "storyText": "CauseKind began with a simple idea: that charity should be direct, localized, and transparent. We noticed that massive amounts of usable items—books, toys, clothes, and electronics—gather dust in homes, while local organizations and students nearby struggle to acquire them. By integrating a geo-radius matching system, we make sharing seamless and immediate.",
+    "communityTitle": "Direct Local Impact",
+    "communityText": "Our platform matches you with verified needs within a 10km to 25km radius. This localized model completely bypasses courier shipping fees, allowing neighbors to support neighbors directly through safe, approved drop-offs."
   },
   "itemDetail": {
     "verified": "Verified",

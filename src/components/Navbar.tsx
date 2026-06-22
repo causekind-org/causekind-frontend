@@ -201,6 +201,7 @@ export function SiteHeader() {
     { href: "/",          label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
     { href: "/requests",  label: t("nav.requests") },
+    { href: "/about",     label: t("nav.about") },
   ];
 
   /** Whether a nav link is active, keyed by href for exactness. */

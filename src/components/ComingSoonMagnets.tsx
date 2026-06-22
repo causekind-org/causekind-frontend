@@ -203,15 +203,24 @@ const CARDS: CardDef[] = [
     baseRotation: 2,
     floatDelay: "1.4s",
   },
+  {
+    title: "CSR Partnerships",
+    gradient: `linear-gradient(145deg, #14532d 0%, #166534 45%, #15803d 100%)`,
+    tapeColor: GOLD,
+    baseRotation: -1.5,
+    floatDelay: "2.6s",
+  },
 ];
 
 /* ─── Individual magnet card ─────────────────────────────────────────────── */
 function MagnetCard({
   card,
   reducedMotion,
+  sectionRef,
 }: {
   card: CardDef;
   reducedMotion: boolean;
+  sectionRef: React.RefObject<HTMLElement | null>;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -219,6 +228,7 @@ function MagnetCard({
   const dragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const dragOffset = useRef({ x: 0, y: 0 });
+  const accumulatedOffset = useRef({ x: 0, y: 0 });
 
   // 3D tilt state (hover)
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
@@ -231,8 +241,30 @@ function MagnetCard({
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (dragging.current) {
-        const dx = e.clientX - dragStart.current.x;
-        const dy = e.clientY - dragStart.current.y;
+        let dx = e.clientX - dragStart.current.x + accumulatedOffset.current.x;
+        let dy = e.clientY - dragStart.current.y + accumulatedOffset.current.y;
+
+        // ── Clamp so the card never leaves the section ──────────────────────
+        if (wrapRef.current && sectionRef.current) {
+          const cardRect    = wrapRef.current.getBoundingClientRect();
+          const sectionRect = sectionRef.current.getBoundingClientRect();
+          // How far can the card travel before its edges touch the section edges?
+          const cardW = cardRect.width;
+          const cardH = cardRect.height;
+          // The card's current client position (ignoring accumulated drag)
+          const originLeft = cardRect.left - accumulatedOffset.current.x + (accumulatedOffset.current.x - (dragOffset.current.x !== dx ? 0 : accumulatedOffset.current.x));
+          // Simpler: compute the card's original (un-dragged) centre from its current rect
+          const baseLeft = cardRect.left - dragOffset.current.x;
+          const baseTop  = cardRect.top  - dragOffset.current.y;
+          // Max/min dx so the card stays inside section
+          const minDx = sectionRect.left - baseLeft;
+          const maxDx = sectionRect.right  - baseLeft - cardW;
+          const minDy = sectionRect.top  - baseTop;
+          const maxDy = sectionRect.bottom - baseTop - cardH;
+          dx = Math.min(Math.max(dx, minDx), maxDx);
+          dy = Math.min(Math.max(dy, minDy), maxDy);
+        }
+
         dragOffset.current = { x: dx, y: dy };
         setDragPos({ x: dx, y: dy });
         return;
@@ -245,7 +277,7 @@ function MagnetCard({
       const ry = ((e.clientX - cx) / (rect.width / 2)) * 12;
       setTilt({ rx, ry });
     },
-    [reducedMotion]
+    [reducedMotion, sectionRef]
   );
 
   const handlePointerEnter = useCallback(() => {
@@ -261,7 +293,6 @@ function MagnetCard({
     (e: React.PointerEvent<HTMLDivElement>) => {
       dragging.current = true;
       dragStart.current = { x: e.clientX, y: e.clientY };
-      dragOffset.current = { x: 0, y: 0 };
       setIsDragging(true);
       setIsReleasing(false);
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -274,7 +305,7 @@ function MagnetCard({
     dragging.current = false;
     setIsDragging(false);
     setIsReleasing(true);
-    setDragPos({ x: 0, y: 0 });
+    accumulatedOffset.current = { x: dragOffset.current.x, y: dragOffset.current.y };
     // Remove releasing flag after spring transition completes
     const t = window.setTimeout(() => setIsReleasing(false), 500);
     return () => window.clearTimeout(t);
@@ -292,10 +323,7 @@ function MagnetCard({
     isHover && !isDragging && !reducedMotion
       ? `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`
       : "";
-  const translateDrag =
-    isDragging || isReleasing
-      ? `translate(${dragPos.x}px, ${dragPos.y}px)`
-      : "";
+  const translateDrag = `translate(${dragPos.x}px, ${dragPos.y}px)`;
 
   const transform = [perspective, translateDrag, baseRot, tiltRot]
     .filter(Boolean)
@@ -338,6 +366,8 @@ function MagnetCard({
         boxShadow: shadow,
         borderRadius: "14px",
         willChange: "transform",
+        // Pass base transform to the floating keyframe animation so it floats where it's dropped
+        ["--ck-base-transform" as any]: `${perspective} ${translateDrag} rotate(${card.baseRotation}deg)`,
       }}
     >
       {/* Tape accent */}
@@ -362,6 +392,7 @@ function MagnetCard({
 /* ─── Main exported section ─────────────────────────────────────────────── */
 export function ComingSoonMagnets() {
   const [reducedMotion, setReducedMotion] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -373,6 +404,7 @@ export function ComingSoonMagnets() {
 
   return (
     <section
+      ref={sectionRef}
       className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 overflow-hidden"
       style={{ padding: "80px 24px 96px" }}
     >
@@ -423,6 +455,7 @@ export function ComingSoonMagnets() {
             key={card.title}
             card={card}
             reducedMotion={reducedMotion}
+            sectionRef={sectionRef}
           />
         ))}
       </div>

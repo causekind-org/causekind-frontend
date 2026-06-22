@@ -1,0 +1,8 @@
+feat: UI overhaul - asymmetric design, auth-aware CTAs, interactive Coming Soon cards
+
+- Asymmetric layout across HomeClient, about, dashboard, privacy, terms, refund, donate, certificate, forgot-password, reset-password, help pages
+- Auth-aware donor CTAs: hide Join as Donor/Become a Donor for logged-in users (BeTheChangeSection, HomeClient, AboutCtaCard)
+- ComingSoonMagnets: cards stick to drop position, bounded within section bounds, new CSR Partnerships card added
+- CursorGlowHero: interactive cursor-reactive glow on About Us hero section
+- CookieConsent: re-ask logic fixed with timestamp-based 24h cooldown
+- BeTheChangeSection: new animated flip-in cards, slide-in pills, count-up stats on scroll

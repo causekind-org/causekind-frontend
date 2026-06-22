@@ -352,6 +352,8 @@ export type ItemRequest = {
   createdAt: string;
   imageUrl: string | null;
   pickupRadiusKm: number | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export function getItemRequests() {
