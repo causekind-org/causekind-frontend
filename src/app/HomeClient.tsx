@@ -186,8 +186,8 @@ export default function HomeClient({
         {/* Hero — cycling background images + quote slider */}
         <HeroSection
           currentCampaign={currentCampaign}
-          translatedTitle={translatedCampaignTitle}
-          translatedDesc={translatedCampaignDesc}
+          translatedTitle={translatedCampaignTitle ?? null}
+          translatedDesc={translatedCampaignDesc ?? null}
         />
 
         {/* Stats bar + live ticker — only when money feature enabled */}
