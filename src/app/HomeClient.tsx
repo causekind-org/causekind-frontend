@@ -6,6 +6,7 @@ import { getHeroImages } from "@/app/actions/getHeroImages";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
+import { useAuth } from "@/hooks/useAuth";
 import { Sparkles, Heart, ShieldCheck, HandCoins, MapPin, Award, Coins, Users, Package, ArrowRight, BookOpen, Shirt } from "lucide-react";
 
 const MOBILE_CATEGORY_IMAGES: Record<string, string[]> = {
@@ -23,13 +24,70 @@ import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
 import { MockListingsCarousel } from "@/components/MockListingsCarousel";
 import { PhoneAnimationSection } from "@/components/PhoneAnimationSection";
+import { BeTheChangeSection } from "@/components/BeTheChangeSection";
 import { getCampaigns, getItemRequests, getItemListings, getPlatformStats, getRecentActivity, type Campaign, type ItemRequest, type ItemListing, type PlatformStats, type RecentActivity } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { FEATURES } from "@/lib/features";
+import { ComingSoonMagnets } from "@/components/ComingSoonMagnets";
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+}
+
+const HERO_QUOTES = [
+  { text: "The smallest act of kindness is worth more than the grandest intention.", author: "Oscar Wilde" },
+  { text: "We make a living by what we get, but we make a life by what we give.", author: "Winston Churchill" },
+  { text: "No one has ever become poor by giving.", author: "Anne Frank" },
+  { text: "Give, but give until it hurts.", author: "Mother Teresa" },
+  { text: "The purpose of life is not to be happy — it is to be useful.", author: "Ralph Waldo Emerson" },
+  { text: "Alone we can do so little; together we can do so much.", author: "Helen Keller" },
+];
+
+function HeroQuoteSlider() {
+  const [idx, setIdx] = useState(0);
+  const [phase, setPhase] = useState<"enter" | "visible" | "exit">("enter");
+
+  useEffect(() => {
+    // enter → visible (after 850ms animation)
+    const enterTimer = setTimeout(() => setPhase("visible"), 900);
+    return () => clearTimeout(enterTimer);
+  }, [idx]);
+
+  useEffect(() => {
+    if (phase !== "visible") return;
+    // stay visible 5 s then exit
+    const visibleTimer = setTimeout(() => setPhase("exit"), 5000);
+    return () => clearTimeout(visibleTimer);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "exit") return;
+    // exit animation 550ms then advance
+    const exitTimer = setTimeout(() => {
+      setIdx(i => (i + 1) % HERO_QUOTES.length);
+      setPhase("enter");
+    }, 600);
+    return () => clearTimeout(exitTimer);
+  }, [phase]);
+
+  const quote = HERO_QUOTES[idx];
+  const cls = phase === "enter" ? "hero-quote-enter" : phase === "exit" ? "hero-quote-exit" : "";
+
+  return (
+    <div className="relative h-[96px] sm:h-[76px] overflow-hidden">
+      <div key={idx} className={`absolute inset-0 flex flex-col justify-center ${cls}`}>
+        <p className="text-white/70 text-sm sm:text-base leading-relaxed font-medium italic line-clamp-3">
+          &ldquo;{quote.text}&rdquo;
+        </p>
+        <span className="mt-1 flex items-center gap-2 text-[#f0b97a] text-[11px] font-black uppercase tracking-wider">
+          <span className="block h-px w-5 bg-[#e07b3a]" />
+          {quote.author}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 function HeroImageSlider() {
@@ -84,6 +142,7 @@ export default function HomeClient({
   const tHero = useTranslations("hero");
   const tStats = useTranslations("stats");
   const tCommon = useTranslations("common");
+  const { user } = useAuth();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -114,10 +173,10 @@ export default function HomeClient({
     { icon: Award, title: t("features.impactCertificates"), desc: t("features.impactCertificatesDesc"), color: "from-amber-500/10 to-yellow-500/10 text-amber-700" },
   ];
 
+  // Step 01 (Verified Campaigns) removed — monetary campaigns are coming soon
   const provide = [
-    { step: "01", icon: ShieldCheck, title: t("provide.verifiedCampaigns"), desc: t("provide.verifiedCampaignsDesc") },
-    { step: "02", icon: Heart, title: t("provide.moneyOrItems"), desc: t("provide.moneyOrItemsDesc") },
-    { step: "03", icon: Package, title: t("provide.localDropoffs"), desc: t("provide.localDropoffsDesc") },
+    { step: "01", icon: Heart, title: t("provide.moneyOrItems"), desc: t("provide.moneyOrItemsDesc") },
+    { step: "02", icon: Package, title: t("provide.localDropoffs"), desc: t("provide.localDropoffsDesc") },
   ];
 
   const statItems = [
@@ -132,6 +191,7 @@ export default function HomeClient({
       {/* ── Desktop View (lg:block) ── */}
       <div className="hidden lg:block bg-white dark:bg-zinc-950 relative z-10">
         {/* ── Mobile stats strip ── */}
+        {FEATURES.money && (
         <div className="sm:hidden overflow-hidden border-b border-orange-100 bg-white">
           <div className="stats-ticker-track py-3.5">
             {[0, 1].map(copy => (
@@ -148,6 +208,7 @@ export default function HomeClient({
             ))}
           </div>
         </div>
+        )}
 
         {/* ── Hero Section ── */}
         <section className="relative w-full max-w-[1440px] mx-auto px-0 sm:px-10 pt-0 sm:pt-8 pb-0">
@@ -184,12 +245,14 @@ export default function HomeClient({
                   <h1 className="text-white font-extrabold leading-[1.08] tracking-tight text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] max-w-2xl font-jakarta">
                     {tHero("headline")}
                   </h1>
-                  <p className="text-white/85 text-sm sm:text-base leading-relaxed max-w-lg font-medium">
-                    {tHero("subtext")}
-                  </p>
+                  {/* Motivational quote slideshow — clip-reveal animation */}
+                  <div className="max-w-lg w-full">
+                    <HeroQuoteSlider />
+                  </div>
                 </div>
 
                 {/* Hero card */}
+                {FEATURES.money && (
                 <div className="lg:col-span-5 flex justify-end">
                   {(() => {
                     const urgency = currentCampaign?.urgency ?? "NORMAL";
@@ -241,12 +304,14 @@ export default function HomeClient({
                     );
                   })()}
                 </div>
+                )}
               </div>
             </div>
           </div>
         </section>
 
         {/* ── Desktop stats bar ── */}
+        {FEATURES.money && (
         <div className="hidden sm:block border-y border-orange-100/50 dark:border-stone-850 bg-white dark:bg-zinc-950 shadow-xs">
           <div className="flex items-stretch divide-x divide-orange-50 dark:divide-zinc-800 justify-around py-5">
             {[
@@ -265,9 +330,10 @@ export default function HomeClient({
             ))}
           </div>
         </div>
+        )}
 
         {/* ── Live Ticker ── */}
-        {activity.length > 0 && (
+        {FEATURES.money && activity.length > 0 && (
           <div className="border-b border-orange-100/40 dark:border-stone-850/40 bg-orange-50/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
             <span className="shrink-0 ml-6 rounded-full bg-[#963c0d] px-3 py-1 text-[10px] font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#f0b97a]" />
@@ -291,98 +357,153 @@ export default function HomeClient({
         )}
 
         {/* ── Phone Animation Section ── */}
-        <PhoneAnimationSection />
+        {/* <PhoneAnimationSection /> */}
 
-        {/* ── Why raise funds through us ── */}
-        <section id="trust" className="mx-auto max-w-7xl px-6 py-16 bg-grid-pattern">
-          <Reveal className="mx-auto max-w-2xl text-center space-y-3 mb-10">
-            <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">{t("why.title")}</h2>
-            <p className="text-base text-stone-500 dark:text-stone-400 font-medium">{t("why.subtitle")}</p>
+        {/* ── Why raise funds through us — ASYMMETRIC STAGGERED GRID ── */}
+        <section id="trust" className="mx-auto max-w-7xl px-6 py-20">
+          {/* Left-flush heading, no centering */}
+          <Reveal className="mb-14">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+              <div>
+                <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-2 block">Why CauseKind</span>
+                <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">{t("why.title")}</h2>
+              </div>
+              <p className="text-base text-stone-500 dark:text-stone-400 font-medium max-w-sm lg:text-right">{t("why.subtitle")}</p>
+            </div>
           </Reveal>
-          <div className="grid gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f, i) => (
-              <Reveal key={f.title} delay={i * 90}>
-                <div className="sm:hidden flex items-start gap-4 px-4 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-orange-100/60 dark:border-zinc-800 shadow-xs">
-                  <div className={`flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${f.color} shadow-xs`}>
-                    <f.icon className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-snug">{f.title}</p>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 font-medium leading-relaxed mt-0.5">{f.desc}</p>
-                  </div>
+
+          {/* Mobile: simple list */}
+          <div className="sm:hidden flex flex-col gap-3">
+            {features.map((f) => (
+              <div key={f.title} className="flex items-start gap-4 px-4 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-orange-100/60 dark:border-zinc-800 shadow-xs">
+                <div className={`flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${f.color} shadow-xs`}>
+                  <f.icon className="h-4.5 w-4.5" />
                 </div>
-                <Card className="hidden sm:flex card-3d card-shimmer card-glow glass-card border-orange-100/50 rounded-2xl overflow-hidden p-6 flex-col justify-between h-full">
-                  <CardContent className="p-0 space-y-4">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${f.color} shadow-xs`}>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-snug">{f.title}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 font-medium leading-relaxed mt-0.5">{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: asymmetric col widths — tall | short | short | tall */}
+          <div className="hidden sm:grid grid-cols-4 gap-4 items-start">
+            {features.map((f, i) => {
+              const isTall = i === 0 || i === 3;
+              return (
+                <Reveal key={f.title} delay={i * 90}>
+                  <div
+                    className={`relative rounded-3xl border bg-white dark:bg-zinc-900 border-[#e5e2d5]/60 dark:border-stone-800 p-7 flex flex-col gap-5 overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
+                      isTall ? "min-h-[340px]" : "min-h-[240px]"
+                    }`}
+                  >
+                    {/* Left accent stripe */}
+                    <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-3xl" style={{ background: i % 2 === 0 ? '#b04a15' : '#1e3a60' }} />
+                    {/* Giant background step number */}
+                    <span className="absolute right-3 bottom-3 text-[5rem] font-black leading-none select-none pointer-events-none opacity-[0.04] dark:opacity-[0.06]">
+                      0{i + 1}
+                    </span>
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${f.color} shadow-sm`}>
                       <f.icon className="h-5 w-5" />
                     </div>
-                    <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">{f.title}</h3>
-                    <p className="text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed">{f.desc}</p>
-                  </CardContent>
-                </Card>
-              </Reveal>
-            ))}
+                    <div className="space-y-2">
+                      <h3 className="text-base font-extrabold text-stone-900 dark:text-stone-100 leading-snug">{f.title}</h3>
+                      <p className="text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed">{f.desc}</p>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
           </div>
         </section>
 
-        {/* ── What we Provide ── */}
-        <section id="how" className="bg-orange-50/40 dark:bg-zinc-900/20 border-y border-orange-100/35 dark:border-stone-850/30 py-16">
+        {/* ── What we Provide — ASYMMETRIC: large left + stacked right ── */}
+        <section id="how" className="relative bg-[#120c04] border-y border-stone-800/60 py-20 overflow-hidden">
+          {/* Decorative off-center glow */}
+          <div className="pointer-events-none absolute -top-32 left-[10%] w-[500px] h-[500px] rounded-full bg-[#b04a15]/8 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 right-[5%] w-[380px] h-[380px] rounded-full bg-[#1e3a60]/10 blur-3xl" />
+
           <div className="mx-auto max-w-7xl px-6">
-            <Reveal className="mx-auto max-w-2xl text-center space-y-3 mb-10">
-              <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">{t("what.title")}</h2>
-              <p className="text-base text-stone-500 dark:text-stone-400 font-medium">{t("what.subtitle")}</p>
+            {/* Heading — right-flush on desktop */}
+            <Reveal className="mb-14">
+              <div className="flex flex-col lg:flex-row-reverse lg:items-end lg:justify-between gap-4">
+                <div className="lg:text-right">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-[#f0b97a] mb-2 block">How it works</span>
+                  <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-[1.05]">{t("what.title")}</h2>
+                </div>
+                <p className="text-base text-stone-400 font-medium max-w-sm">{t("what.subtitle")}</p>
+              </div>
             </Reveal>
-            <div className="grid gap-3 sm:gap-6 md:grid-cols-3">
+
+            {/* Desktop: two equal cards side by side (Step 01 removed) */}
+            <div className="hidden md:grid md:grid-cols-2 gap-6 items-stretch">
               {provide.map((s, i) => (
-                <Reveal key={s.title} delay={i * 100}>
-                  <div className="md:hidden flex items-start gap-4 px-4 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-orange-100/60 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-                    <span className="absolute right-3 top-2 text-3xl font-black text-orange-100 dark:text-zinc-800/50 select-none leading-none">{s.step}</span>
-                    <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-[#963c0d] text-white shadow-sm shadow-stone-900/20">
-                      <s.icon className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="min-w-0 pr-6">
-                      <p className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-snug">{s.title}</p>
-                      <p className="text-xs text-stone-500 dark:text-stone-400 font-medium leading-relaxed mt-0.5">{s.desc}</p>
-                    </div>
-                  </div>
-                  <Card className="hidden md:block card-3d card-shimmer card-glow glass-card rounded-2xl border-white/80 p-6 relative overflow-hidden h-full">
-                    <div className="absolute right-4 top-4 text-4xl font-black text-orange-100 dark:text-zinc-800/60 select-none">{s.step}</div>
-                    <CardContent className="p-0 space-y-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#963c0d] text-white shadow-md shadow-stone-900/20">
-                        <s.icon className="h-5 w-5" />
+                <Reveal key={s.title} delay={i * 140}>
+                  <div className="relative rounded-3xl bg-white/5 border border-white/10 p-10 flex flex-col justify-between min-h-[340px] overflow-hidden group hover:bg-white/8 transition-all duration-300">
+                    <div className="absolute -right-8 -bottom-8 text-[9rem] font-black text-white/[0.03] leading-none select-none">{s.step}</div>
+                    <div className="space-y-5">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${i === 0 ? "bg-[#b04a15] shadow-[#b04a15]/30" : "bg-[#1e3a60] shadow-[#1e3a60]/30"}`}>
+                        <s.icon className="h-7 w-7 text-white" />
                       </div>
-                      <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">{s.title}</h3>
-                      <p className="text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed">{s.desc}</p>
-                    </CardContent>
-                  </Card>
+                      <div>
+                        <h3 className="text-2xl font-extrabold text-white mb-3">{s.title}</h3>
+                        <p className="text-stone-400 font-medium leading-relaxed">{s.desc}</p>
+                      </div>
+                    </div>
+                    <div className="mt-8 pt-6 border-t border-white/10 text-xs font-bold text-[#f0b97a] uppercase tracking-widest">Step {s.step}</div>
+                  </div>
                 </Reveal>
+              ))}
+            </div>
+
+            {/* Mobile: simple vertical */}
+            <div className="md:hidden flex flex-col gap-4">
+              {provide.map((s) => (
+                <div key={s.title} className="flex items-start gap-4 px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 relative overflow-hidden">
+                  <span className="absolute right-3 top-2 text-3xl font-black text-white/10 select-none leading-none">{s.step}</span>
+                  <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-[#b04a15] text-white shadow-sm">
+                    <s.icon className="h-4.5 w-4.5" />
+                  </div>
+                  <div className="min-w-0 pr-6">
+                    <p className="text-sm font-bold text-white leading-snug">{s.title}</p>
+                    <p className="text-xs text-stone-400 font-medium leading-relaxed mt-0.5">{s.desc}</p>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
         {/* ── Latest Active Campaigns carousel ── */}
+        {FEATURES.money && (
         <LatestActiveCampaignsSection
           campaigns={campaigns}
           loading={loading}
           error={error}
         />
+        )}
 
-        {/* ── In-Kind Requests Section ── */}
+        {/* ── In-Kind Requests Section — ASYMMETRIC HEADER ── */}
         {(loading || itemRequests.length > 0) && (
         <section className="bg-white dark:bg-zinc-900 border-b border-orange-100/35 dark:border-stone-850 py-20 text-stone-900 dark:text-stone-100 transition-colors duration-300">
           <div className="mx-auto max-w-7xl px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
-              <Reveal className="space-y-3 max-w-2xl">
-                <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">
-                  {t("inkindSection.title")}
-                </h2>
-                <p className="text-base text-stone-500 dark:text-stone-400 font-medium">
-                  {t("inkindSection.subtitle")}
-                </p>
-              </Reveal>
-              <Reveal delay={105} className="shrink-0">
-                <Link href="/requests" className="inline-flex">
+            {/* Asymmetric header: large left-flush title with offset right link */}
+            <Reveal className="mb-14">
+              <div className="grid lg:grid-cols-[1fr_auto] gap-6 items-end">
+                <div>
+                  <div className="flex items-center gap-4 mb-3">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">In-Kind Giving</span>
+                    <span className="h-px flex-1 bg-[#b04a15]/20" />
+                  </div>
+                  <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
+                    {t("inkindSection.title")}
+                  </h2>
+                  <p className="text-base text-stone-500 dark:text-stone-400 font-medium mt-3 max-w-xl">
+                    {t("inkindSection.subtitle")}
+                  </p>
+                </div>
+                <Link href="/requests" className="inline-flex shrink-0">
                   <Button
                     variant="outline"
                     className="btn-3d border-orange-200 dark:border-stone-850 hover:bg-orange-50 dark:hover:bg-zinc-800 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200"
@@ -390,139 +511,164 @@ export default function HomeClient({
                     {t("inkindSection.browseAll")} <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-              </Reveal>
-            </div>
+              </div>
+            </Reveal>
 
             {loading ? (
               <div className="flex justify-center py-20">
                 <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#b04a15]/20 border-t-[#b04a15]" />
               </div>
             ) : (
-              <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-                {itemRequests.slice(0, 6).map((req, i) => (
-                  <Reveal key={req.id} delay={i * 80}>
-                    <HoverCard openDelay={300}>
-                      <HoverCardTrigger asChild>
-                        <Card className="card-glow bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden h-full flex flex-col cursor-pointer">
-                      <div className="relative w-full h-24 sm:h-36 bg-stone-100 dark:bg-zinc-950 shrink-0 overflow-hidden">
-                        <Image
-                          src={req.imageUrl || getMobileCardImage(req.category, req.id)}
-                          alt={req.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          sizes="(max-width: 640px) 50vw, 33vw"
-                        />
-                        <div className="absolute top-2 right-2">
-                          <span className={`text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase border ${
-                            req.urgency === "CRITICAL"
-                              ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
-                              : req.urgency === "HIGH"
-                              ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
-                              : "bg-stone-100 border-stone-200 text-stone-500 dark:text-stone-400"
-                          }`}>
-                            {tCommon("urgency" + req.urgency.charAt(0) + req.urgency.slice(1).toLowerCase())}
-                          </span>
-                        </div>
-                      </div>
-                      <CardContent className="p-3 sm:p-5 flex flex-col flex-1 gap-2">
-                        <div>
-                          <h3 className="text-xs sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2"><TranslatedText text={req.title} /></h3>
-                          <p className="text-[10px] sm:text-xs text-stone-400 font-semibold mt-0.5 truncate">By {req.doneeName} · <TranslatedText text={req.city} /></p>
-                        </div>
-                        {req.description && (
-                          <p className="hidden sm:block text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed line-clamp-2"><TranslatedText text={req.description} /></p>
-                        )}
-                        <div className="mt-auto pt-2 border-t border-orange-50 dark:border-zinc-800 flex justify-between items-center">
-                          <span className="text-[10px] sm:text-xs text-stone-400 font-semibold">Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span></span>
-                          <Link href="/requests" className="inline-flex">
-                            <span className="text-[#b04a15] font-extrabold uppercase text-[9px] sm:text-[10px] tracking-wider hover:underline">Give →</span>
-                          </Link>
-                        </div>
-                      </CardContent>
-                        </Card>
-                      </HoverCardTrigger>
-                      <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
-                            <TranslatedText text={req.title} />
-                          </h4>
-                          <p className="text-sm text-stone-500 dark:text-stone-400">
-                            {req.description ? <TranslatedText text={req.description} /> : `Requested by ${req.doneeName}. Qty ${req.quantity} needed.`}
-                          </p>
-                          <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Requested by: {req.doneeName}</div>
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
-                  </Reveal>
-                ))}
+              /* Asymmetric masonry: featured large + staggered heights */
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+                {itemRequests.slice(0, 6).map((req, i) => {
+                  const isFeatured = i === 0;
+                  const isTall = i === 0 || i === 3;
+                  return (
+                    <Reveal key={req.id} delay={i * 90} className={isFeatured ? "col-span-2 lg:col-span-1 row-span-2 lg:row-span-1" : ""}>
+                      <HoverCard openDelay={300}>
+                        <HoverCardTrigger asChild>
+                          <Card className={`card-glow inkind-card-featured bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden flex flex-col cursor-pointer group transition-all duration-300 ${isFeatured ? "lg:min-h-[320px]" : isTall ? "min-h-[280px]" : "min-h-[220px]"}`}>
+                            <div className={`relative w-full bg-stone-100 dark:bg-zinc-950 shrink-0 overflow-hidden ${isFeatured ? "h-40 sm:h-52" : "h-28 sm:h-36"}`}>
+                              <Image
+                                src={req.imageUrl || getMobileCardImage(req.category, req.id)}
+                                alt={req.title}
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                sizes="(max-width: 640px) 50vw, 33vw"
+                              />
+                              {/* Gradient overlay on featured */}
+                              {isFeatured && (
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                              )}
+                              <div className="absolute top-2 right-2">
+                                <span className={`text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase border ${
+                                  req.urgency === "CRITICAL"
+                                    ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
+                                    : req.urgency === "HIGH"
+                                    ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                                    : "bg-stone-100/90 border-stone-200 text-stone-500 dark:text-stone-400"
+                                }`}>
+                                  {tCommon("urgency" + req.urgency.charAt(0) + req.urgency.slice(1).toLowerCase())}
+                                </span>
+                              </div>
+                              {/* Category dot */}
+                              {isFeatured && (
+                                <div className="absolute bottom-3 left-3">
+                                  <span className="text-[10px] font-black text-white/80 uppercase tracking-wider bg-black/30 backdrop-blur-sm rounded-full px-2.5 py-1">
+                                    {req.category}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <CardContent className={`flex flex-col flex-1 gap-2 ${isFeatured ? "p-4 sm:p-5" : "p-3 sm:p-4"}`}>
+                              <div>
+                                <h3 className={`font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 ${isFeatured ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}>
+                                  <TranslatedText text={req.title} />
+                                </h3>
+                                <p className="text-[10px] sm:text-xs text-stone-400 font-semibold mt-0.5 truncate">
+                                  By {req.doneeName} · <TranslatedText text={req.city} />
+                                </p>
+                              </div>
+                              {req.description && isFeatured && (
+                                <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed line-clamp-2">
+                                  <TranslatedText text={req.description} />
+                                </p>
+                              )}
+                              <div className="mt-auto pt-2 border-t border-orange-50 dark:border-zinc-800 flex justify-between items-center">
+                                <span className="text-[10px] sm:text-xs text-stone-400 font-semibold">
+                                  Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span>
+                                </span>
+                                <Link href="/requests" className="inline-flex">
+                                  <span className="text-[#b04a15] font-extrabold uppercase text-[9px] sm:text-[10px] tracking-wider hover:underline">
+                                    Give →
+                                  </span>
+                                </Link>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </HoverCardTrigger>
+                        <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                              <TranslatedText text={req.title} />
+                            </h4>
+                            <p className="text-sm text-stone-500 dark:text-stone-400">
+                              {req.description ? <TranslatedText text={req.description} /> : `Requested by ${req.doneeName}. Qty ${req.quantity} needed.`}
+                            </p>
+                            <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Requested by: {req.doneeName}</div>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </Reveal>
+                  );
+                })}
               </div>
             )}
           </div>
         </section>
         )}
 
-        {/* ── Community Listings Section ── */}
-        {itemListings.length > 0 && <section className="bg-orange-50/30 dark:bg-zinc-950 border-b border-orange-100/35 dark:border-stone-900 py-20 text-stone-900 dark:text-stone-100 transition-colors duration-300">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
-              <Reveal className="space-y-3 max-w-2xl">
-                <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-4xl">
-                  {t("listingsSection.title")}
-                </h2>
-                <p className="text-base text-stone-500 dark:text-stone-400 font-medium">
-                  {t("listingsSection.subtitle")}
-                </p>
-              </Reveal>
-              <Reveal delay={105} className="shrink-0">
-                <Link href="/items" className="inline-flex">
-                  <Button
-                    variant="outline"
-                    className="btn-3d border-orange-200 dark:border-stone-850 hover:bg-orange-50 dark:hover:bg-zinc-900 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200"
-                  >
-                    {t("listingsSection.browseAll")} <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </Reveal>
-            </div>
+        {/* ── Community Listings Section ── HIDDEN: re-enable when listings go live */}
+        {/* itemListings.length > 0 && <section ...>...</section> */}
 
-            <Reveal delay={200}>
-              <MockListingsCarousel listings={itemListings.slice(0, 8)} />
-            </Reveal>
-          </div>
-        </section>}
+        {/* ── Be the Change Section ── */}
+        <BeTheChangeSection />
 
-        {/* ── CTA ── */}
+        {/* ── Coming Soon Magnets ── */}
+        <ComingSoonMagnets />
+
+        {/* ── CTA — ASYMMETRIC DIAGONAL SPLIT, hidden when logged in ── */}
+        {!user && (
         <section className="max-w-7xl mx-auto px-6 pt-10 sm:pt-14 pb-20">
           <Reveal>
-            <div className="relative rounded-3xl overflow-hidden bg-[#120c04] text-white px-8 py-16 text-center border border-stone-800 shadow-2xl">
-              <div className="absolute top-0 right-0 h-48 w-48 bg-[#b04a15]/12 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 h-48 w-48 bg-[#1e3a60]/12 rounded-full blur-3xl" />
-              <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-                <h2 className="text-3xl font-extrabold sm:text-4xl">{t("ctaSection.headline")}</h2>
-                <p className="text-stone-400 text-base leading-relaxed font-medium">
-                  {t("ctaSection.subtext")}
-                </p>
-                <div className="flex flex-wrap justify-center gap-4 pt-2">
-                  <Link href="/register" className="inline-flex">
-                    <Button size="lg" className="btn-3d btn-shine bg-[#b04a15] hover:bg-[#963c0d] text-white shadow-md shadow-orange-900/25 rounded-xl font-bold px-6 py-6">
+            <div className="relative rounded-3xl overflow-hidden border border-stone-800 shadow-2xl grid lg:grid-cols-[3fr_2fr] min-h-[280px]">
+              {/* Left panel — headline */}
+              <div className="relative bg-[#120c04] px-10 py-14 flex flex-col justify-between z-10">
+                <div className="pointer-events-none absolute -top-20 -left-20 w-[320px] h-[320px] rounded-full bg-[#b04a15]/10 blur-3xl" />
+                <div className="relative">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-[#f0b97a] mb-4 block">Get started</span>
+                  <h2 className="text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-4">{t("ctaSection.headline")}</h2>
+                  <p className="text-stone-400 text-sm leading-relaxed font-medium max-w-sm">{t("ctaSection.subtext")}</p>
+                </div>
+                <div className="flex flex-wrap gap-3 mt-8">
+                  <Link href="/register">
+                    <Button size="lg" className="btn-3d btn-shine bg-[#b04a15] hover:bg-[#963c0d] text-white shadow-md shadow-orange-900/25 rounded-xl font-bold px-6">
                       {t("ctaSection.createAccount")}
                     </Button>
                   </Link>
-                  <Link href="/campaigns" className="inline-flex">
-                    <Button size="lg" variant="outline" className="btn-3d border-stone-700 bg-transparent text-white hover:text-white hover:bg-stone-900/40 rounded-xl font-bold px-6 py-6">
-                      {t("ctaSection.browseCampaigns")}
-                    </Button>
-                  </Link>
+                  {FEATURES.money && (
+                    <Link href="/campaigns">
+                      <Button size="lg" variant="outline" className="btn-3d border-stone-700 bg-transparent text-white hover:text-white hover:bg-stone-900/40 rounded-xl font-bold px-6">
+                        {t("ctaSection.browseCampaigns")}
+                      </Button>
+                    </Link>
+                  )}
                 </div>
+              </div>
+
+              {/* Right panel — visual accent */}
+              <div className="relative bg-[#b04a15]/90 hidden lg:flex items-center justify-center overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#e07b3a]/30 to-[#120c04]/60" />
+                <div className="relative z-10 text-center px-8">
+                  <span className="text-7xl font-black text-white/10 leading-none block">♥</span>
+                  <p className="text-white font-extrabold text-lg mt-2 leading-tight">Join thousands<br/>making a difference</p>
+                  <p className="text-white/70 text-sm mt-2 font-medium">100% verified · local · direct</p>
+                </div>
+                {/* Decorative circles */}
+                <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/5" />
+                <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-black/20" />
               </div>
             </div>
           </Reveal>
         </section>
+        )}
       </div>
 
       {/* ── Mobile View (lg:hidden) ── */}
       <div className="lg:hidden min-h-screen pb-24 bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-8">
         {/* Moving stats ticker — above hero image */}
+        {FEATURES.money && (
         <div className="overflow-hidden bg-[#C17A3A] -mx-4 lg:hidden">
           <div className="animate-stats-ticker flex gap-0 whitespace-nowrap py-2">
             {[0, 1].map((copy) => (
@@ -539,6 +685,7 @@ export default function HomeClient({
             ))}
           </div>
         </div>
+        )}
 
         {/* ── Mobile Hero Section ── */}
         <section className="relative w-full aspect-[4/3] min-h-[280px] rounded-[2rem] overflow-hidden shadow-xs mt-2">
@@ -573,16 +720,19 @@ export default function HomeClient({
               <p className="text-white/80 text-[11px] sm:text-xs font-semibold leading-relaxed">
                 <TranslatedText text="Every donation helps a family grow stronger, healthier, and more secure." />
               </p>
+              {FEATURES.money && (
               <Link href="/campaigns" className="inline-block mt-1">
                 <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-950/20">
                   <TranslatedText text="Explore Campaigns" />
                 </button>
               </Link>
+              )}
             </div>
           </div>
         </section>
 
         {/* ── Latest Active Campaigns ── */}
+        {FEATURES.money && (
         <section className="space-y-4">
           <div className="flex items-end justify-between">
             <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
@@ -668,6 +818,7 @@ export default function HomeClient({
             })}
           </div>
         </section>
+        )}
 
         {/* ── In-Kind Requests ── */}
         <section className="space-y-4">
@@ -742,78 +893,11 @@ export default function HomeClient({
           </div>
         </section>
 
-        {/* ── Community Listings ── */}
-        <section className="space-y-4">
-          <div className="space-y-1">
-            <div className="flex items-end justify-between">
-              <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
-                <TranslatedText text={t("listingsSection.title")} />
-              </h2>
-              <Link href="/items" className="text-[10px] font-extrabold text-[#b04a15] uppercase tracking-wider hover:underline">
-                <TranslatedText text="Browse All" /> →
-              </Link>
-            </div>
-            <p className="text-[11px] text-stone-400 dark:text-stone-500 font-bold leading-relaxed">
-              <TranslatedText text={t("listingsSection.subtitle")} />
-            </p>
-          </div>
+        {/* ── Community Listings ── HIDDEN: re-enable when listings go live */}
+        {/* <section className="space-y-4">...</section> */}
 
-          <div className="flex gap-4 overflow-x-auto pb-4 px-1 -mx-5 scrollbar-none snap-x snap-mandatory">
-            {loading && (
-              <div className="flex justify-center py-10 w-full">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15]" />
-              </div>
-            )}
-            {error && (
-              <p className="text-stone-500 text-xs py-10 px-4 font-semibold">{error}</p>
-            )}
-            {!loading && !error && itemListings.length === 0 && (
-              <p className="text-stone-400 text-xs py-10 px-4 font-medium">No listings available.</p>
-            )}
-            {!loading && !error && itemListings.slice(0, 5).map((listing) => {
-              // Icon selector logic
-              const titleLower = listing.title.toLowerCase();
-              let ListIcon = Package;
-              if (titleLower.includes("book") || titleLower.includes("school") || titleLower.includes("study") || titleLower.includes("bag")) {
-                ListIcon = BookOpen;
-              } else if (titleLower.includes("clothe") || titleLower.includes("winter") || titleLower.includes("shirt") || titleLower.includes("jacket") || titleLower.includes("uniform")) {
-                ListIcon = Shirt;
-              }
-
-              return (
-                <div
-                  key={listing.id}
-                  className="bg-white dark:bg-zinc-900 rounded-[1.75rem] p-4 border border-[#e8e2d5]/60 dark:border-zinc-800 flex flex-col justify-between w-[240px] snap-start shrink-0 shadow-xs"
-                >
-                  <div className="flex gap-3">
-                    <div className="bg-[#faf1e1] dark:bg-zinc-850 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-[#e8e2d5]/20">
-                      <ListIcon className="w-5 h-5 text-[#b04a15]" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-black text-stone-850 dark:text-stone-100 leading-snug line-clamp-1">
-                        <TranslatedText text={listing.title} />
-                      </h4>
-                      <p className="text-[9px] text-stone-400 font-semibold truncate mt-0.5">
-                        In <TranslatedText text={listing.city} /> · {listing.condition}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3.5 flex items-center justify-between">
-                    <span className="text-[10px] text-stone-555 dark:text-stone-400 font-black">
-                      Qty: <span className="font-extrabold text-stone-800 dark:text-stone-100">{listing.quantity || 1}</span>
-                    </span>
-                    <Link href="/items">
-                      <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-4 py-1.5 rounded-lg text-[10px] tracking-wide uppercase transition-all shadow-sm active:scale-95">
-                        <TranslatedText text="Claim" />
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        {/* ── Be the Change ── */}
+        <BeTheChangeSection />
       </div>
     </div>
   );

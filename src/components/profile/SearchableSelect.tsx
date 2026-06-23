@@ -104,7 +104,7 @@ export function SearchableSelect({
   );
 
   return (
-    <div ref={containerRef} className="relative" id={id}>
+    <div ref={containerRef} className={`relative ${open ? "searchable-select-open z-50" : ""}`} id={id}>
       {/* Trigger */}
       <button
         type="button"

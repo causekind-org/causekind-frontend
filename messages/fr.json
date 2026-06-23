@@ -3,6 +3,8 @@
     "home": "Maison",
     "campaigns": "Campagnes",
     "requests": "Demandes en nature",
+    "about": "À propos",
+    "blog": "Blogue",
     "listings": "Annonces",
     "signUp": "S'inscrire",
     "logIn": "Se connecter",
@@ -228,6 +230,7 @@
       "complete": "Inscription complète",
       "haveAccount": "Vous avez déjà un compte ?",
       "signIn": "Se connecter",
+      "logIn": "Se connecter",
       "google": "Continuer avec Google",
       "facebook": "Continuer avec Facebook",
       "googleLinkedHint": "Lié depuis votre compte Google",
@@ -314,9 +317,10 @@
     "errorUpdateFailed": "Échec de la mise à jour du profil"
   },
   "footer": {
-    "tagline": "La plateforme de dons vérifiée en Inde. Zéro frais pour les donateurs. 100% de votre don va directement à la cause.",
+    "tagline": "La plateforme de don vérifiée de l'Inde reliant directement les donateurs aux bénéficiaires vérifiés.",
     "giveBack": "Redonner",
     "getSupport": "Obtenir de l'aide",
+    "blog": "Lisez notre blog",
     "trust": "Notre promesse de confiance",
     "adminVerified": "Administrateur vérifié",
     "razorpaySecured": "Razorpay Sécurisé",
@@ -328,7 +332,7 @@
     "startCampaign": "Démarrer une campagne",
     "helpFaq": "Aide et FAQ",
     "adminVerifiedFull": "Annonces vérifiées par l'administrateur",
-    "zeroFees": "Zéro frais de plateforme pour les donateurs",
+    "zeroFees": "Passerelles de paiement sécurisées",
     "certificates": "Certificats de livraison vérifiés",
     "rights": "Fabriqué avec soin en Inde.",
     "contact": "Contactez-nous"
@@ -347,7 +351,7 @@
   },
   "donate_page": {
     "heading": "Donnez directement",
-    "subtitle": "100% atteint la cause. Zéro frais de plateforme.",
+    "subtitle": "Traitement 100% sécurisé.",
     "back": "Dos",
     "chooseAmount": "Choisissez le montant",
     "customPlaceholder": "Entrez le montant personnalisé",
@@ -362,7 +366,7 @@
     "tip": "Conseil",
     "verifiedCampaign": "Campagne vérifiée",
     "instantTransfer": "Transfert instantané",
-    "zeroFees": "Zéro frais",
+    "zeroFees": "Traitement sécurisé",
     "donating": "Faire un don",
     "tipTo": "Astuce pour CauseKind",
     "platformFee": "Frais de plateforme",
@@ -450,7 +454,7 @@
     },
     "why": {
       "title": "Pourquoi lever des fonds par notre intermédiaire",
-      "subtitle": "Chaque don est vérifié, sans frais et remis directement à quelqu'un qui en a vraiment besoin."
+      "subtitle": "Chaque don est vérifié et livré directement à quelqu'un qui en a vraiment besoin."
     },
     "what": {
       "title": "Ce que nous proposons",
@@ -475,8 +479,8 @@
     "features": {
       "adminVerified": "Administrateur vérifié",
       "adminVerifiedDesc": "Chaque campagne et demande d'article est examinée par notre équipe avant d'être mise en ligne. Rien ne passe sans un véritable contrôle.",
-      "zeroFees": "Zéro frais de plateforme",
-      "zeroFeesDesc": "Nous ne facturons rien. Chaque roupie que vous donnez ou chaque article que vous donnez parvient à la personne qui en a besoin.",
+      "zeroFees": "Plateforme sécurisée",
+      "zeroFeesDesc": "Nous sécurisons les transactions et faisons correspondre les canaux de communication sous administration directe.",
       "localMatching": "Correspondance locale",
       "localMatchingDesc": "Les dons d'articles sont jumelés à des personnes dans un rayon de 10 km autour de vous, ce qui rend les dépôts simples et rapides.",
       "impactCertificates": "Certificats d'impact",
@@ -691,8 +695,8 @@
     "subheading": "Tout ce que vous devez savoir avant de donner.",
     "stillHaveQuestions": "Vous avez encore des questions ?",
     "emailUs": "Envoyez-nous un courriel",
-    "q1": "Est-il gratuit d’utiliser Causekind ?",
-    "a1": "Oui, totalement gratuit. Nous ne facturons aucun frais de plateforme aux donateurs ou aux destinataires. 100% de ce que vous donnez va directement à la cause que vous choisissez.",
+    "q1": "Est-il sûr d'utiliser Causekind?",
+    "a1": "Oui, tout à fait sécurisé. Nous traitons tous les paiements via des passerelles vérifiées comme Razorpay, et chaque campagne est vérifiée par notre équipe administrative.",
     "q2": "Comment vérifier les campagnes avant leur mise en ligne ?",
     "a2": "Chaque campagne et demande d'article est examinée par notre équipe avant d'apparaître sur le site. Nous vérifions l'identité de la personne et confirmons que le besoin est réel. Tout ce qui ne passe pas nos contrôles est rejeté.",
     "q3": "Puis-je donner des objets physiques comme des vêtements ou des livres ?",
@@ -725,6 +729,20 @@
     "stillNeedHelp": "Vous avez encore besoin d'aide ?",
     "reachOut": "Contactez-nous directement : notre équipe répond dans les 24 heures.",
     "emailSupport": "Assistance par e-mail"
+  },
+  "about": {
+    "backToHome": "Retour à l'accueil",
+    "aboutUs": "À propos",
+    "headline": "Notre Mission & Histoire",
+    "subheadline": "Connecter les cœurs généreux directement aux besoins vérifiés.",
+    "visionHeadline": "Notre Vision",
+    "visionText": "Construire un écosystème transparent et efficace où chaque acte de gentillesse atteint directement la personne dans le besoin.",
+    "missionHeadline": "Notre Mission",
+    "missionText": "Simplifier les dons en nature, éliminer les intermédiaires et utiliser un ciblage intelligent pour diriger les ressources là où elles comptent le plus.",
+    "storyTitle": "Combler le Fossé",
+    "storyText": "CauseKind a commencé avec une idée simple : la charité doit être directe, locale et transparente. Nous avons remarqué que d'immenses quantités d'objets utilisables accumulent la poussière dans les maisons, tandis que les étudiants locaux luttent pour les acquérir. En intégrant un système de correspondance géographique, nous rendons le partage fluide et immédiat.",
+    "communityTitle": "Impact Local Direct",
+    "communityText": "Notre plateforme vous met en relation avec des besoins vérifiés dans un rayon de 10 km, évitant ainsi totalement les frais d'expédition."
   },
   "itemDetail": {
     "verified": "Vérifié",

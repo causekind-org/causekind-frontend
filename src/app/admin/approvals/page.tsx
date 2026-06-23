@@ -47,9 +47,9 @@ export default function ApprovalsPage() {
 
     Promise.all([
       adminGetCampaigns("PENDING_APPROVAL"),
-      adminGetItemListings("PENDING_APPROVAL"),
-      adminGetItemRequests("PENDING_APPROVAL"),
-      adminGetMatches("PENDING"),
+      adminGetItemListings("PENDING_REVIEW"),
+      adminGetItemRequests("PENDING_VERIFICATION"),
+      adminGetMatches("PENDING_APPROVAL"),
     ])
       .then(([c, l, r, m]) => { setCampaigns(c); setListings(l); setRequests(r); setMatches(m); })
       .catch(() => toast.error(t("failedToLoadQueues")))

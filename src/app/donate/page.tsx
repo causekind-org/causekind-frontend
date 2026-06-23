@@ -1,11 +1,15 @@
 "use client";
 
+import { FEATURES } from "@/lib/features";
+import { ComingSoon } from "@/components/ComingSoon";
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Heart, Zap, Shield, ChevronRight, ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import { getCampaigns, type Campaign } from "@/lib/api";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
+import { Reveal } from "@/components/Reveal";
 
 const QUICK_AMOUNTS = [500, 1000, 2500, 5000];
 const TIP_PCTS = [5, 10, 15] as const;
@@ -186,6 +190,11 @@ function CampaignDropdown({
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function DonatePage() {
+  if (!FEATURES.money) return <ComingSoon feature="donate" />;
+  return <DonatePageInner />;
+}
+
+function DonatePageInner() {
   const t = useTranslations("donate_page");
   const [amount, setAmount] = useState<number | "">(1000);
   const [custom, setCustom] = useState("");
@@ -265,7 +274,10 @@ export default function DonatePage() {
 
       {/* ── Card ── */}
       <div className="mx-auto max-w-lg px-5 pt-8">
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-stone-200/80 dark:border-zinc-800 shadow-lg overflow-hidden">
+        <Reveal>
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-stone-200/80 dark:border-zinc-800 shadow-lg overflow-hidden relative border-l-4 border-l-[#C17A3A]">
+            {/* Subtle warmth background glow */}
+            <div className="absolute -top-12 -right-12 w-24 h-24 bg-[#C17A3A]/5 rounded-full blur-xl pointer-events-none" />
 
           {step === "pick" ? (
             <div className="p-6 space-y-6">
@@ -434,11 +446,6 @@ export default function DonatePage() {
                   <p className="text-sm font-bold text-stone-800 dark:text-stone-100"><TranslatedText text={activeCampaign?.title} /></p>
                   <p className="text-xs text-stone-400 font-medium"><TranslatedText text={activeCampaign?.city} /> · <TranslatedText text={activeCampaign?.category} /></p>
                 </div>
-
-                <div className="border-t border-orange-100 dark:border-zinc-700 pt-3 flex justify-between text-xs font-bold">
-                  <span className="text-stone-400">{t("platformFee")}</span>
-                  <span className="text-emerald-600 font-extrabold">₹0 — {t("platformFeeValue")}</span>
-                </div>
               </div>
 
               <p className="text-xs text-stone-400 dark:text-zinc-600 text-center font-medium leading-relaxed">
@@ -454,7 +461,8 @@ export default function DonatePage() {
               </Link>
             </div>
           )}
-        </div>
+          </div>
+        </Reveal>
       </div>
     </div>
   );

@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -28,19 +30,19 @@ import {
 
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
+  const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
   return (
     <span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2 hover:opacity-95 transition-all duration-200`}
     >
       {!hideIcon && (
-        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 sm:h-8 sm:w-8 text-[#b04a15] dark:text-orange-400 shrink-0" xmlns="http://www.w3.org/2000/svg">
-          {/* Heart/hands outer cradle */}
-          <path d="M12 21.5C7.5 18 4.5 14.5 4.5 10.5C4.5 7.5 6.5 5.5 9.5 5.5C10.8 5.5 11.6 6 12 6.5C12.4 6 13.2 5.5 14.5 5.5C17.5 5.5 19.5 7.5 19.5 10.5C19.5 14.5 16.5 18 12 21.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          {/* Plant sprout */}
-          <path d="M12 18V9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M12 12C12 12 9.5 11 9 9.5C8.5 8 9.5 7 11 8.5C12 9.5 12 11 12 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2" />
-          <path d="M12 14C12 14 14.5 13 15 11.5C15.5 10 14.5 9 13 10.5C12 11.5 12 13 12 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2" />
-        </svg>
+        <Image
+          src="/logo-outline.png"
+          alt="CauseKind Logo"
+          width={dimensions[size].w}
+          height={dimensions[size].h}
+          className="shrink-0"
+        />
       )}
       <span className="flex items-center text-stone-900 dark:text-stone-100 font-extrabold text-base sm:text-xl">
         <span className="tracking-tight">Cause</span>
@@ -67,8 +69,8 @@ function Donate3DButton() {
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
     setTilt({
-      x: ((e.clientY - rect.top  - rect.height / 2) / (rect.height / 2)) * -14,
-      y: ((e.clientX - rect.left - rect.width  / 2) / (rect.width  / 2)) *  14,
+      x: ((e.clientY - rect.top - rect.height / 2) / (rect.height / 2)) * -14,
+      y: ((e.clientX - rect.left - rect.width / 2) / (rect.width / 2)) * 14,
     });
   }
 
@@ -196,10 +198,11 @@ export function SiteHeader() {
   const t = useTranslations();
 
   const navLinks = [
-    { href: "/",          label: t("nav.home") },
-    { href: "/campaigns", label: t("nav.campaigns") },
-    { href: "/requests",  label: t("nav.requests") },
-    { href: "/items",     label: t("nav.listings") },
+    { href: "/", label: t("nav.home") },
+    ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
+    { href: "/requests", label: t("nav.requests") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/blog", label: t("nav.blog") },
   ];
 
   /** Whether a nav link is active, keyed by href for exactness. */
@@ -235,9 +238,9 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className="sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30 transition-all duration-200">
+      <header className="sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30 shadow-[0_2px_20px_rgba(0,0,0,0.07)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.35)] transition-all duration-200">
         {/* Mobile Header (lg:hidden) */}
-        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30">
+        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
           <button
             onClick={() => setOpen(true)}
             aria-label="Open menu"
@@ -271,11 +274,10 @@ export function SiteHeader() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-2 font-semibold ${
-                    active
+                  className={`text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-2 font-semibold ${active
                       ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6] dark:bg-zinc-800 border border-[#e5e2d5] dark:border-zinc-700 shadow-2xs"
                       : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
-                  }`}
+                    }`}
                 >
                   {active && <span className="w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
                   {link.label}
@@ -321,8 +323,12 @@ export function SiteHeader() {
                 >
                   {t("nav.signOut")}
                 </button>
-                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                <Donate3DButton />
+                {FEATURES.money && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                    <Donate3DButton />
+                  </>
+                )}
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-4">
@@ -332,8 +338,12 @@ export function SiteHeader() {
                 <Link href="/register" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
                   {t("nav.signUp")}
                 </Link>
-                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                <Donate3DButton />
+                {FEATURES.money && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
+                    <Donate3DButton />
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -366,11 +376,10 @@ export function SiteHeader() {
             <div className="flex flex-col gap-1 py-4 overflow-y-auto flex-1">
               {navLinks.map((link, i) => (
                 <Link key={link.href} href={link.href} onClick={() => setOpen(false)}
-                  className={`text-xl font-bold py-3 px-2 rounded-xl transition-all duration-200 ${
-                    isActive(link.href)
+                  className={`text-xl font-bold py-3 px-2 rounded-xl transition-all duration-200 ${isActive(link.href)
                       ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6]/50 dark:bg-zinc-900"
                       : "text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-900/40"
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </Link>
@@ -454,9 +463,8 @@ export function SiteFooter() {
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
             {[
-              { href: "/campaigns", l: t("moneyDrives") },
-              { href: "/items",     l: t("itemListings") },
-              { href: "/requests",  l: t("inkindRequests") },
+              ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
+              { href: "/requests", l: t("inkindRequests") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
@@ -466,10 +474,11 @@ export function SiteFooter() {
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
             {[
-              { href: "/register",       l: t("createAccount") },
-              { href: "/dashboard",      l: t("myDashboard") },
-              { href: "/campaigns/new",  l: t("startCampaign") },
-              { href: "/help",           l: t("helpFaq") },
+              { href: "/register", l: t("createAccount") },
+              { href: "/dashboard", l: t("myDashboard") },
+              ...(FEATURES.money ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
+              { href: "/help", l: t("helpFaq") },
+              { href: "/blog", l: t("blog") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
@@ -510,7 +519,7 @@ export function SiteFooter() {
           </Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
           <Link href="/terms#campaigns" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
-            Campaign Policy
+            Campaign Policy (Coming Soon)
           </Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
           <Link href="/privacy#contact" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">

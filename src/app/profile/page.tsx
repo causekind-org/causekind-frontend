@@ -20,6 +20,7 @@ import {
   type ItemMatch,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,12 +38,17 @@ import {
   Package,
   Navigation,
   CheckCircle2,
+  Gift,
+  Handshake,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
+import { Reveal } from "@/components/Reveal";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -431,389 +437,452 @@ export default function ProfilePage() {
   const supportedCampaigns = Array.from(campaignMap.values());
 
   // Badge eligibility
-  const hasFirstGiver = completedDonations.length > 0;
-  const hasCommunityHero = campaignsSupported >= 3;
-  const hasEducationAdvocate = completedDonations.some((d) =>
-    d.campaignTitle?.toLowerCase().includes("education")
-  );
+  const hasFirstGiver = FEATURES.money ? completedDonations.length > 0 : inKindCount > 0;
+  const hasCommunityHero = FEATURES.money ? campaignsSupported >= 3 : inKindCount >= 3;
+  const hasEducationAdvocate = FEATURES.money
+    ? completedDonations.some((d) => d.campaignTitle?.toLowerCase().includes("education"))
+    : myRequests.some((r) => r.category?.toLowerCase().includes("education"));
 
   const badges = [
-    { label: t("badgeFirstGiver"), icon: Heart, earned: hasFirstGiver },
-    { label: t("badgeCommunityHero"), icon: Award, earned: hasCommunityHero },
-    { label: t("badgeEducationAdvocate"), icon: BookOpen, earned: hasEducationAdvocate },
+    { label: "First Giver", icon: Heart, earned: hasFirstGiver },
+    { label: "Community Hero", icon: Sparkles, earned: hasCommunityHero },
+    { label: "Education Advocate", icon: Star, earned: hasEducationAdvocate },
   ];
 
   return (
-    <div className="bg-[#F7F0E8] min-h-screen pb-28">
-
-      {/* ── Page Header ── */}
-      <div className="px-5 pt-14 pb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-black text-stone-900">{t("myImpact")}</h1>
-        <div className="w-10 h-10 rounded-full bg-[#C17A3A] flex items-center justify-center overflow-hidden shrink-0">
-          {avatarDataUrl ? (
-            <Image
-              src={avatarDataUrl}
-              alt={initials}
-              width={40}
-              height={40}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-white font-bold text-sm">{initials}</span>
-          )}
-        </div>
-      </div>
-
-      {/* ── Hero Impact Card ── */}
-      <div className="mx-5 mt-2 rounded-3xl overflow-hidden">
-        <div className="bg-gradient-to-br from-[#C17A3A] to-[#8B4513] p-6 text-white relative">
-          <div className="relative z-10">
-            <p className="text-xs font-bold uppercase tracking-wide opacity-80">{t("totalImpact")}</p>
-            <p className="text-4xl font-black leading-tight mt-1">{formatINR(totalGiven)}</p>
-            <p className="text-sm opacity-80 mt-1">{t("donated")}</p>
-            <div className="border-t border-white/30 my-3" />
-            <p className="text-sm font-semibold">
-              {inKindCount} {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
-            </p>
-          </div>
-          {/* Decorative illustration */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20">
-            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="40" cy="20" r="12" fill="white" />
-              <path d="M18 70c0-12.15 9.85-22 22-22h0c12.15 0 22 9.85 22 22" stroke="white" strokeWidth="5" strokeLinecap="round" />
-              <circle cx="16" cy="28" r="8" fill="white" />
-              <path d="M2 62c0-8.84 5.37-16 12-16" stroke="white" strokeWidth="4" strokeLinecap="round" />
-              <circle cx="64" cy="28" r="8" fill="white" />
-              <path d="M78 62c0-8.84-5.37-16-12-16" stroke="white" strokeWidth="4" strokeLinecap="round" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Supported Campaigns ── */}
-      <div className="px-5 mt-6">
-        <p className="text-lg font-bold text-stone-900 mb-3">{t("supportedCampaigns")}</p>
-        {supportedCampaigns.length === 0 ? (
-          <div className="bg-white rounded-2xl px-4 py-6 shadow-sm text-center">
-            <p className="text-sm text-stone-400">{t("noCampaignsSupported")}</p>
-          </div>
-        ) : (
-          <div className="flex gap-4 overflow-x-auto pb-3 -mx-0 scrollbar-hide">
-            {supportedCampaigns.map((item) => {
-              const campaignImage =
-                campaigns.find((c) => c.id === item.id)?.imageUrl || "/images/hero-1.webp";
-              return (
-                <div
-                  key={item.id}
-                  className="w-48 shrink-0 bg-white rounded-2xl shadow-sm overflow-hidden"
-                >
-                  <div className="h-28 w-full relative">
-                    <Image
-                      src={campaignImage}
-                      alt={item.title}
-                      fill
-                      className="object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = "/images/hero-1.webp";
-                      }}
-                    />
-                  </div>
-                  <div className="px-3 py-2">
-                    <p className="text-xs font-bold truncate text-stone-900">{item.title}</p>
-                    <p className="text-[10px] text-stone-400 mt-0.5">{t("campaignLabel")}</p>
-                    <p className="text-xs font-bold text-[#C17A3A] mt-1">{formatINR(item.amount)}</p>
-                    <Link href={`/campaigns/${item.id}`}>
-                      <button className="w-full mt-1.5 py-1 bg-[#C17A3A] text-white text-xs rounded-lg font-semibold hover:bg-[#a8642e] transition-colors">
-                        {t("donateNow")}
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ── Two-column grid: Badges + My Requests ── */}
-      <div className="px-5 mt-6 grid grid-cols-2 gap-4">
-
-        {/* Badges & Recognition */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-bold text-stone-900 mb-3">{t("badges")}</p>
-          <div className="grid grid-cols-3 gap-2">
-            {badges.map(({ label, icon: Icon, earned }) => (
-              <div
-                key={label}
-                className={`flex flex-col items-center ${earned ? "" : "opacity-40"}`}
-              >
-                <div className="w-10 h-10 rounded-full bg-[#C17A3A]/10 flex items-center justify-center">
-                  <Icon className="w-5 h-5 text-[#C17A3A]" />
-                </div>
-                <p className="text-[9px] font-semibold text-stone-600 text-center mt-1 leading-tight">
-                  {label}
+    <div className="bg-[#F7F0E8] min-h-screen pb-28 pt-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        
+        {/* Main Grid: Asymmetric 1fr / 3fr Split */}
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
+          
+          {/* LEFT: Sticky User Card */}
+          <aside className="lg:sticky lg:top-24 bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 space-y-6 relative overflow-hidden">
+            {/* Left accent stripe */}
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#C17A3A]" />
+            
+            {/* Avatar & Initials */}
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-20 h-20 rounded-full bg-[#C17A3A] flex items-center justify-center overflow-hidden shadow-md">
+                {avatarDataUrl ? (
+                  <Image
+                    src={avatarDataUrl}
+                    alt={initials}
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-bold text-2xl">{initials}</span>
+                )}
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-stone-900 dark:text-white leading-tight">
+                  {fullName || profile?.fullName}
+                </h2>
+                <p className="text-xs text-[#b04a15] font-black uppercase tracking-wider mt-1">
+                  {profile?.role ?? "DONOR"}
                 </p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* My Requests */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-bold text-stone-900 mb-3">{t("myRequests")}</p>
-          {myRequests.length === 0 ? (
-            <p className="text-xs text-stone-400">{t("noRequestsYet")}</p>
-          ) : (
-            <div className="space-y-0.5">
-              {myRequests.slice(0, 3).map((req) => (
-                <div key={req.id} className="flex items-center gap-2 py-1.5">
-                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-stone-100 shrink-0 flex items-center justify-center">
-                    {req.imageUrl ? (
-                      <Image
-                        src={req.imageUrl}
-                        alt={req.title}
-                        width={32}
-                        height={32}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Package className="w-4 h-4 text-stone-400" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold truncate text-stone-900">{req.title}</p>
-                    <p className="text-[10px] text-stone-400 truncate">{req.city}</p>
-                  </div>
-                </div>
-              ))}
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* ── Account Settings ── */}
-      <div className="px-5 mt-6 mb-6">
-        <button
-          onClick={() => setSettingsOpen((v) => !v)}
-          className="w-full flex items-center justify-between py-3 px-4 bg-white rounded-2xl shadow-sm"
-        >
-          <span className="text-sm font-bold text-stone-900">{t("accountSettings")}</span>
-          <ChevronDown
-            className={`w-4 h-4 text-stone-400 transition-transform duration-200 ${settingsOpen ? "rotate-180" : ""}`}
-          />
-        </button>
-
-        {settingsOpen && (
-          <div className="bg-white rounded-2xl p-5 mt-3 shadow-sm">
-            <form onSubmit={handleSave} className="space-y-5">
-
-              {/* Avatar */}
-              <div className="flex justify-center">
-                <AvatarUpload
-                  imageDataUrl={avatarDataUrl}
-                  initials={initials}
-                  onImageChange={handleAvatarChange}
-                />
+            <div className="border-t border-stone-100 dark:border-zinc-800 pt-4 space-y-3">
+              <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
+                <Mail className="w-3.5 h-3.5 text-[#C17A3A]" />
+                <span className="truncate">{profile?.email}</span>
               </div>
-
-              {/* Full Name */}
-              <div className="space-y-1.5">
-                <Label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-stone-400">
-                  {t("fullNameLabel")}
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                  <Input
-                    id="fullName"
-                    className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
-                    placeholder={t("fullNamePlaceholder")}
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
+              {profile?.phone && (
+                <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
+                  <Phone className="w-3.5 h-3.5 text-[#C17A3A]" />
+                  <span>{profile.phone}</span>
                 </div>
-              </div>
-
-              {/* Email (read-only) */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-stone-400">
-                    {t("emailAddress")}
-                  </Label>
-                  <span className="text-[10px] font-black text-stone-400 uppercase flex items-center gap-1">
-                    <Shield className="w-3 h-3 text-[#C17A3A]" /> {t("systemId")}
-                  </span>
+              )}
+              {profile?.city && (
+                <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
+                  <MapPin className="w-3.5 h-3.5 text-[#C17A3A]" />
+                  <span>{profile.city}</span>
                 </div>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                  <Input
-                    id="email"
-                    className="pl-10 rounded-xl border-stone-200 py-5 font-medium bg-stone-50 text-stone-400 cursor-not-allowed"
-                    value={profile?.email || ""}
-                    disabled
-                  />
-                </div>
-              </div>
+              )}
+            </div>
 
-              {/* Phone with dial-code dropdown */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5" /> {t("phoneNumber")}
-                </Label>
-                <div className="flex gap-2">
-                  <div className="w-[120px] shrink-0">
-                    <SearchableSelect
-                      options={dialCodeOptions}
-                      value={dialCountry}
-                      onChange={setDialCountry}
-                      placeholder="+–"
-                      searchPlaceholder="Search country…"
-                      renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
-                    />
-                  </div>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    inputMode="numeric"
-                    className="flex-1 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
-                    placeholder={t("phonePlaceholder")}
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                  />
-                </div>
-              </div>
+            <button
+              onClick={() => setSettingsOpen((v) => !v)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/15 text-[#C17A3A] text-xs font-bold rounded-xl transition-all"
+            >
+              <span>{settingsOpen ? "Close Settings" : "Account Settings"}</span>
+            </button>
+          </aside>
 
-              {/* Location: Country → State → City */}
-              <div className="space-y-3">
-                <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> {t("location")}
-                </Label>
+          {/* RIGHT: Main content */}
+          <div className="space-y-8">
+            
+            {/* Page Title */}
+            <div className="flex items-baseline justify-between gap-4">
+              <h1 className="text-3xl font-black text-stone-900 dark:text-white tracking-tight">
+                {t("myImpact")}
+              </h1>
+            </div>
 
-                <div className="space-y-1">
-                  <Label htmlFor="country" className="text-xs text-stone-500">{t("country")}</Label>
-                  <SearchableSelect
-                    id="country"
-                    options={countryOptions}
-                    value={countryIso}
-                    onChange={handleCountryChange}
-                    placeholder={t("selectCountry")}
-                    searchPlaceholder="Search country…"
-                  />
-                </div>
+            {/* ── Hero Impact Card ── */}
+            <div className="rounded-3xl overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-br from-[#C17A3A] to-[#8B4513] p-8 text-white relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full border border-white/10 pointer-events-none" />
+                <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full border border-white/8 pointer-events-none" />
 
-                <div className="space-y-1">
-                  <Label htmlFor="state" className="text-xs text-stone-500">{t("stateProvince")}</Label>
-                  {noStateOptions ? (
-                    <p className="text-xs text-stone-400 italic py-1">
-                      {t("noStatesListed")}
-                    </p>
-                  ) : (
-                    <SearchableSelect
-                      id="state"
-                      options={stateOptions}
-                      value={stateIso}
-                      onChange={handleStateChange}
-                      placeholder={t("selectState")}
-                      disabledPlaceholder={t("selectCountryFirst")}
-                      disabled={!countryIso}
-                      searchPlaceholder="Search state…"
-                    />
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="city" className="text-xs text-stone-500">{t("cityLabel")}</Label>
-                  {showCityFreeText ? (
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                      <Input
-                        id="city"
-                        className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
-                        placeholder={t("enterCity")}
-                        value={cityFreeText}
-                        onChange={(e) => setCityFreeText(e.target.value)}
-                      />
-                    </div>
-                  ) : (
-                    <SearchableSelect
-                      id="city"
-                      options={cityOptions}
-                      value={cityValue}
-                      onChange={setCityValue}
-                      placeholder={t("selectCity")}
-                      disabledPlaceholder={t("selectStateFirst")}
-                      disabled={!stateIso}
-                      searchPlaceholder="Search city…"
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* GPS Coordinates */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                  <Navigation className="w-3.5 h-3.5" /> {t("gpsLocation")}
-                </Label>
-                <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
-                  <div className="flex-1 min-w-0">
-                    {profile?.latitude && profile?.longitude ? (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <div>
-                          <p className="text-xs font-bold text-stone-800">{t("locationSaved")}</p>
-                          <p className="text-[10px] text-stone-400">
-                            {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-                        <div>
-                          <p className="text-xs font-bold text-stone-800">{t("noGpsLocation")}</p>
-                          <p className="text-[10px] text-stone-400">{t("gpsMatchingNote")}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleUseMyLocation}
-                    disabled={locStatus === "requesting"}
-                    className="shrink-0 flex items-center gap-1.5 rounded-lg bg-[#b04a15] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#943e11] disabled:opacity-60"
-                  >
-                    {locStatus === "requesting" ? (
-                      <><Loader2 className="w-3 h-3 animate-spin" /> {t("getting")}</>
-                    ) : (
-                      <><Navigation className="w-3 h-3" /> {t("useGps")}</>
-                    )}
-                  </button>
-                </div>
-                <p className="text-[10px] text-stone-400 leading-relaxed">
-                  {t("gpsPrivacyNote")}
-                </p>
-              </div>
-
-              {/* Save button */}
-              <div className="pt-1">
-                <Button
-                  type="submit"
-                  className="w-full bg-[#C17A3A] hover:bg-[#a8642e] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors"
-                  disabled={saving}
-                >
-                  {saving ? (
+                <div className="relative z-10 flex flex-col sm:flex-row justify-between sm:items-center gap-6">
+                  {FEATURES.money ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" /> {t("saving")}
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest opacity-80">{t("totalImpact")}</p>
+                        <p className="text-5xl font-black leading-none mt-2 tracking-tight">{formatINR(totalGiven)}</p>
+                        <p className="text-xs opacity-75 mt-1">{t("donated")}</p>
+                      </div>
+
+                      <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Package className="w-5 h-5 text-white/90" strokeWidth={2} />
+                          {inKindCount > 1 && <Gift className="w-4 h-4 text-white/80" strokeWidth={2} />}
+                        </div>
+                        <div className="flex flex-col leading-none">
+                          <span className="text-3xl font-black tabular-nums tracking-tight">{inKindCount}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">
+                            {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
+                          </span>
+                        </div>
+                      </div>
                     </>
                   ) : (
-                    t("saveProfileChanges")
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest opacity-80">IN-KIND IMPACT</p>
+                      <p className="text-5xl font-black leading-none mt-2 tracking-tight">{inKindCount}</p>
+                      <p className="text-xs opacity-75 mt-1">
+                        {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
+                      </p>
+                    </div>
                   )}
-                </Button>
+                </div>
               </div>
-            </form>
-          </div>
-        )}
-      </div>
+            </div>
 
+            {/* Badges and My Requests Row (Asymmetric cards) */}
+            <div className="grid grid-cols-1 md:grid-cols-[4fr_5fr] gap-6">
+              
+              {/* Badges Card */}
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50/50 dark:bg-zinc-850/20 rounded-bl-full pointer-events-none" />
+                <h3 className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-wider mb-5 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-[#C17A3A]" /> {t("badges")}
+                </h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {badges.map(({ label, icon: Icon, earned }) => (
+                    <div
+                      key={label}
+                      className={`flex flex-col items-center transition-all ${earned ? "scale-100" : "opacity-35 scale-95"}`}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-[#C17A3A]/10 flex items-center justify-center shadow-sm">
+                        <Icon className="w-6 h-6 text-[#C17A3A]" />
+                      </div>
+                      <p className="text-[10px] font-extrabold text-stone-600 dark:text-stone-400 text-center mt-2 leading-tight">
+                        {label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* My Requests Card */}
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 relative">
+                <h3 className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-wider mb-5 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-[#C17A3A]" /> {t("myRequests")}
+                </h3>
+                {myRequests.length === 0 ? (
+                  <p className="text-xs text-stone-400 dark:text-stone-505 py-4 font-medium">{t("noRequestsYet")}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {myRequests.slice(0, 3).map((req) => (
+                      <div key={req.id} className="flex items-center gap-3 py-1.5 border-b border-stone-50 dark:border-zinc-800 last:border-0">
+                        <div className="w-9 h-9 rounded-xl overflow-hidden bg-stone-50 dark:bg-zinc-800 shrink-0 flex items-center justify-center relative">
+                          {req.imageUrl ? (
+                            <Image
+                              src={req.imageUrl}
+                              alt={req.title}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <Package className="w-5 h-5 text-stone-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold truncate text-stone-900 dark:text-stone-100">{req.title}</p>
+                          <p className="text-[10px] text-stone-400 truncate mt-0.5">{req.city} · Qty: {req.quantity}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Deduplicated Supported Campaigns */}
+            {FEATURES.money && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t("supportedCampaigns")}</h3>
+                {supportedCampaigns.length === 0 ? (
+                  <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-stone-100 dark:border-zinc-800 text-center">
+                    <p className="text-sm text-stone-400 dark:text-stone-500 font-medium">{t("noCampaignsSupported")}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {supportedCampaigns.map((item) => {
+                      const campaignImage =
+                        campaigns.find((c) => c.id === item.id)?.imageUrl || "/images/hero-1.webp";
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm overflow-hidden border border-stone-100 dark:border-zinc-800 hover:shadow-md transition-shadow"
+                        >
+                          <div className="h-28 w-full relative">
+                            <Image
+                              src={campaignImage}
+                              alt={item.title}
+                              fill
+                              className="object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = "/images/hero-1.webp";
+                              }}
+                            />
+                          </div>
+                          <div className="p-4">
+                            <p className="text-xs font-bold truncate text-stone-900 dark:text-stone-100">{item.title}</p>
+                            <p className="text-[10px] text-stone-405 mt-0.5">{t("campaignLabel")}</p>
+                            <p className="text-xs font-black text-[#C17A3A] mt-2">{formatINR(item.amount)}</p>
+                            <Link href={`/campaigns/${item.id}`} className="block mt-3">
+                              <button className="w-full py-2 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/15 text-[#C17A3A] text-xs rounded-xl font-bold transition-all">
+                                {t("donateNow")}
+                              </button>
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Account Settings Forms */}
+            {settingsOpen && (
+              <Reveal>
+                <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 space-y-6">
+                  <h3 className="text-lg font-black text-stone-900 dark:text-white tracking-tight">Account Configuration</h3>
+                  
+                  <form onSubmit={handleSave} className="space-y-5">
+                    {/* Avatar Upload */}
+                    <div className="flex justify-center">
+                      <AvatarUpload
+                        imageDataUrl={avatarDataUrl}
+                        initials={initials}
+                        onImageChange={handleAvatarChange}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {/* Full Name */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-stone-400">
+                          {t("fullNameLabel")}
+                        </Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                          <Input
+                            id="fullName"
+                            className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
+                            placeholder={t("fullNamePlaceholder")}
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Email (read-only) */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-stone-400">
+                          {t("emailAddress")}
+                        </Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                          <Input
+                            id="email"
+                            className="pl-10 rounded-xl border-stone-200 py-5 font-medium bg-stone-50 dark:bg-zinc-800 text-stone-400 cursor-not-allowed"
+                            value={profile?.email || ""}
+                            disabled
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Phone with dial-code dropdown */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5" /> {t("phoneNumber")}
+                      </Label>
+                      <div className="flex gap-2">
+                        <div className="w-[120px] shrink-0">
+                          <SearchableSelect
+                            options={dialCodeOptions}
+                            value={dialCountry}
+                            onChange={setDialCountry}
+                            placeholder="+–"
+                            searchPlaceholder="Search country…"
+                            renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
+                          />
+                        </div>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          inputMode="numeric"
+                          className="flex-1 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
+                          placeholder={t("phonePlaceholder")}
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Location Selection */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="space-y-1">
+                        <Label htmlFor="country" className="text-xs text-stone-500">{t("country")}</Label>
+                        <SearchableSelect
+                          id="country"
+                          options={countryOptions}
+                          value={countryIso}
+                          onChange={handleCountryChange}
+                          placeholder={t("selectCountry")}
+                          searchPlaceholder="Search country…"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="state" className="text-xs text-stone-500">{t("stateProvince")}</Label>
+                        {noStateOptions ? (
+                          <p className="text-xs text-stone-400 italic py-2">
+                            {t("noStatesListed")}
+                          </p>
+                        ) : (
+                          <SearchableSelect
+                            id="state"
+                            options={stateOptions}
+                            value={stateIso}
+                            onChange={handleStateChange}
+                            placeholder={t("selectState")}
+                            disabledPlaceholder={t("selectCountryFirst")}
+                            disabled={!countryIso}
+                            searchPlaceholder="Search state…"
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="city" className="text-xs text-stone-500">{t("cityLabel")}</Label>
+                        {showCityFreeText ? (
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                            <Input
+                              id="city"
+                              className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
+                              placeholder={t("enterCity")}
+                              value={cityFreeText}
+                              onChange={(e) => setCityFreeText(e.target.value)}
+                            />
+                          </div>
+                        ) : (
+                          <SearchableSelect
+                            id="city"
+                            options={cityOptions}
+                            value={cityValue}
+                            onChange={setCityValue}
+                            placeholder={t("selectCity")}
+                            disabledPlaceholder={t("selectStateFirst")}
+                            disabled={!stateIso}
+                            searchPlaceholder="Search city…"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* GPS Coordinates */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
+                        <Navigation className="w-3.5 h-3.5" /> {t("gpsLocation")}
+                      </Label>
+                      <div className="flex items-center gap-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/20 p-3">
+                        <div className="flex-1 min-w-0">
+                          {profile?.latitude && profile?.longitude ? (
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                              <div>
+                                <p className="text-xs font-bold text-stone-850 dark:text-white">{t("locationSaved")}</p>
+                                <p className="text-[10px] text-stone-400">
+                                  {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
+                              <div>
+                                <p className="text-xs font-bold text-stone-850 dark:text-white">{t("noGpsLocation")}</p>
+                                <p className="text-[10px] text-stone-400">{t("gpsMatchingNote")}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleUseMyLocation}
+                          disabled={locStatus === "requesting"}
+                          className="shrink-0 flex items-center gap-1.5 rounded-lg bg-[#b04a15] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#943e11] disabled:opacity-60"
+                        >
+                          {locStatus === "requesting" ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> {t("getting")}</>
+                          ) : (
+                            <><Navigation className="w-3 h-3" /> {t("useGps")}</>
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-stone-400 leading-relaxed">
+                        {t("gpsPrivacyNote")}
+                      </p>
+                    </div>
+
+                    {/* Save button */}
+                    <div className="pt-2">
+                      <Button
+                        type="submit"
+                        className="w-full bg-[#C17A3A] hover:bg-[#a8642e] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors"
+                        disabled={saving}
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="size-4 animate-spin" /> {t("saving")}
+                          </>
+                        ) : (
+                          t("saveProfileChanges")
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </Reveal>
+            )}
+
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
