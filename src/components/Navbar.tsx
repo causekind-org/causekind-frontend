@@ -10,6 +10,8 @@ import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutDashboard, Log
 import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/NotificationBell";
+import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -288,6 +290,9 @@ export function SiteHeader() {
 
           {/* Right buttons */}
           <div className="flex items-center gap-3 sm:gap-4">
+            <GlobalSearch />
+            <SearchTrigger />
+            <NotificationBell />
             {/* Animated Sleek Theme Toggle */}
             <LanguageSwitcher />
 

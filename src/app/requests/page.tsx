@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DoneeRequestsPage } from "./donee-view";
+import { ShareButton } from "@/components/ShareButton";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -537,18 +538,21 @@ function RequestCard({
             </span>
           </div>
 
-          {/* CTA */}
-          <button
-            onClick={() => onGive(r)}
-            className="w-full bg-[#b04a15] hover:bg-[#963c0d] active:scale-[0.98]
+          {/* Share + CTA row */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onGive(r)}
+              className="flex-1 bg-[#b04a15] hover:bg-[#963c0d] active:scale-[0.98]
                        text-white font-bold py-3 rounded-2xl text-sm
                        flex items-center justify-center gap-2 transition-all duration-150
                        shadow-sm shadow-orange-900/15 btn-shine group/btn"
           >
             <Heart className="w-4 h-4 group-hover/btn:fill-white/60 transition-all duration-200 shrink-0" />
-            Give this item
-            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform duration-200 shrink-0" />
-          </button>
+              Give this item
+              <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform duration-200 shrink-0" />
+            </button>
+            <ShareButton title={r.title} path="/requests" className="flex-none border border-stone-200 dark:border-zinc-700 rounded-2xl p-3 hover:border-[#b04a15]/40" />
+          </div>
         </div>
       </div>
     </Reveal>
@@ -575,7 +579,13 @@ export default function RequestsPage() {
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const cat = new URLSearchParams(window.location.search).get("category");
+      if (cat) return [cat];
+    }
+    return [];
+  });
   const [selectedUrgencies,  setSelectedUrgencies]  = useState<string[]>([]);
   const [sort, setSort]           = useState<ReqSortValue>("nearest");
   const [showFilters, setShowFilters] = useState(false);
