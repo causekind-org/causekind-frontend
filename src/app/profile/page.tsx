@@ -20,6 +20,7 @@ import {
   type ItemMatch,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -436,11 +437,11 @@ export default function ProfilePage() {
   const supportedCampaigns = Array.from(campaignMap.values());
 
   // Badge eligibility
-  const hasFirstGiver = completedDonations.length > 0;
-  const hasCommunityHero = campaignsSupported >= 3;
-  const hasEducationAdvocate = completedDonations.some((d) =>
-    d.campaignTitle?.toLowerCase().includes("education")
-  );
+  const hasFirstGiver = FEATURES.money ? completedDonations.length > 0 : inKindCount > 0;
+  const hasCommunityHero = FEATURES.money ? campaignsSupported >= 3 : inKindCount >= 3;
+  const hasEducationAdvocate = FEATURES.money
+    ? completedDonations.some((d) => d.campaignTitle?.toLowerCase().includes("education"))
+    : myRequests.some((r) => r.category?.toLowerCase().includes("education"));
 
   const badges = [
     { label: "First Giver", icon: Heart, earned: hasFirstGiver },
@@ -529,24 +530,36 @@ export default function ProfilePage() {
                 <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full border border-white/8 pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col sm:flex-row justify-between sm:items-center gap-6">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest opacity-80">{t("totalImpact")}</p>
-                    <p className="text-5xl font-black leading-none mt-2 tracking-tight">{formatINR(totalGiven)}</p>
-                    <p className="text-xs opacity-75 mt-1">{t("donated")}</p>
-                  </div>
+                  {FEATURES.money ? (
+                    <>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest opacity-80">{t("totalImpact")}</p>
+                        <p className="text-5xl font-black leading-none mt-2 tracking-tight">{formatINR(totalGiven)}</p>
+                        <p className="text-xs opacity-75 mt-1">{t("donated")}</p>
+                      </div>
 
-                  <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 shrink-0">
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Package className="w-5 h-5 text-white/90" strokeWidth={2} />
-                      {inKindCount > 1 && <Gift className="w-4 h-4 text-white/80" strokeWidth={2} />}
-                    </div>
-                    <div className="flex flex-col leading-none">
-                      <span className="text-3xl font-black tabular-nums tracking-tight">{inKindCount}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">
+                      <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Package className="w-5 h-5 text-white/90" strokeWidth={2} />
+                          {inKindCount > 1 && <Gift className="w-4 h-4 text-white/80" strokeWidth={2} />}
+                        </div>
+                        <div className="flex flex-col leading-none">
+                          <span className="text-3xl font-black tabular-nums tracking-tight">{inKindCount}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">
+                            {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest opacity-80">IN-KIND IMPACT</p>
+                      <p className="text-5xl font-black leading-none mt-2 tracking-tight">{inKindCount}</p>
+                      <p className="text-xs opacity-75 mt-1">
                         {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
-                      </span>
+                      </p>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -613,49 +626,51 @@ export default function ProfilePage() {
             </div>
 
             {/* Deduplicated Supported Campaigns */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t("supportedCampaigns")}</h3>
-              {supportedCampaigns.length === 0 ? (
-                <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-stone-100 dark:border-zinc-800 text-center">
-                  <p className="text-sm text-stone-400 dark:text-stone-500 font-medium">{t("noCampaignsSupported")}</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {supportedCampaigns.map((item) => {
-                    const campaignImage =
-                      campaigns.find((c) => c.id === item.id)?.imageUrl || "/images/hero-1.webp";
-                    return (
-                      <div
-                        key={item.id}
-                        className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm overflow-hidden border border-stone-100 dark:border-zinc-800 hover:shadow-md transition-shadow"
-                      >
-                        <div className="h-28 w-full relative">
-                          <Image
-                            src={campaignImage}
-                            alt={item.title}
-                            fill
-                            className="object-cover"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = "/images/hero-1.webp";
-                            }}
-                          />
+            {FEATURES.money && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t("supportedCampaigns")}</h3>
+                {supportedCampaigns.length === 0 ? (
+                  <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-stone-100 dark:border-zinc-800 text-center">
+                    <p className="text-sm text-stone-400 dark:text-stone-500 font-medium">{t("noCampaignsSupported")}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {supportedCampaigns.map((item) => {
+                      const campaignImage =
+                        campaigns.find((c) => c.id === item.id)?.imageUrl || "/images/hero-1.webp";
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm overflow-hidden border border-stone-100 dark:border-zinc-800 hover:shadow-md transition-shadow"
+                        >
+                          <div className="h-28 w-full relative">
+                            <Image
+                              src={campaignImage}
+                              alt={item.title}
+                              fill
+                              className="object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = "/images/hero-1.webp";
+                              }}
+                            />
+                          </div>
+                          <div className="p-4">
+                            <p className="text-xs font-bold truncate text-stone-900 dark:text-stone-100">{item.title}</p>
+                            <p className="text-[10px] text-stone-405 mt-0.5">{t("campaignLabel")}</p>
+                            <p className="text-xs font-black text-[#C17A3A] mt-2">{formatINR(item.amount)}</p>
+                            <Link href={`/campaigns/${item.id}`} className="block mt-3">
+                              <button className="w-full py-2 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/15 text-[#C17A3A] text-xs rounded-xl font-bold transition-all">
+                                {t("donateNow")}
+                              </button>
+                            </Link>
+                          </div>
                         </div>
-                        <div className="p-4">
-                          <p className="text-xs font-bold truncate text-stone-900 dark:text-stone-100">{item.title}</p>
-                          <p className="text-[10px] text-stone-405 mt-0.5">{t("campaignLabel")}</p>
-                          <p className="text-xs font-black text-[#C17A3A] mt-2">{formatINR(item.amount)}</p>
-                          <Link href={`/campaigns/${item.id}`} className="block mt-3">
-                            <button className="w-full py-2 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/15 text-[#C17A3A] text-xs rounded-xl font-bold transition-all">
-                              {t("donateNow")}
-                            </button>
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Account Settings Forms */}
             {settingsOpen && (

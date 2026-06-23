@@ -17,7 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
-  Phone, Mail
+  Phone, Mail, Handshake, CheckCircle2, Heart
 } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
@@ -62,6 +62,248 @@ function getRequestStatusBadge(status: string) {
     REJECTED: { label: "Rejected", variant: "destructive" },
   };
   return map[status] ?? { label: status, variant: "outline" as const };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Dedicated Donee Dashboard — shown instead of the donor layout for DONEE role
+───────────────────────────────────────────────────────────────────────────── */
+function DoneeDashboard({
+  user,
+  myProfile,
+  itemRequests,
+  doneeMatches,
+}: {
+  user: { email: string; role: string };
+  myProfile: UserProfile;
+  itemRequests: ItemRequest[];
+  doneeMatches: ItemMatch[];
+}) {
+  const activeRequests = itemRequests.filter(
+    r => !["FULFILLED", "REJECTED", "EXPIRED"].includes(r.status)
+  );
+  const fulfilledRequests = itemRequests.filter(r => r.status === "FULFILLED");
+  const activeMatches = doneeMatches.filter(
+    m => !["FULFILLED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)
+  );
+
+  return (
+    <div className="min-h-screen bg-[#eef3f9] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-16">
+
+      {/* ── Hero header — ink/blue theme ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0d1e36] via-[#1e3a60] to-[#0a2040] text-white py-12 px-4 shadow-lg">
+        <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[#f0b97a]/6 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b97a]/25 to-transparent" />
+
+        <div className="mx-auto max-w-5xl relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-1.5 bg-[#f0b97a]/15 border border-[#f0b97a]/30 rounded-full px-3 py-1 text-xs text-[#f0b97a] font-bold uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5" /> Verified Donee
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+                Your Needs
+              </h1>
+              <p className="text-white/55 text-sm">
+                {activeRequests.length > 0
+                  ? `${activeRequests.length} active request${activeRequests.length !== 1 ? "s" : ""} · Scanning for matches near you`
+                  : `Hello, ${myProfile.fullName?.split(" ")[0] || user.email.split("@")[0]} — start by posting a need`}
+              </p>
+            </div>
+            <Link href="/requests/new">
+              <Button className="bg-[#f0b97a] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-2xl px-6 py-3 h-auto text-sm flex items-center gap-2 shadow-xl shadow-[#f0b97a]/20 shrink-0">
+                <Plus className="w-4 h-4" /> Post a Need
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+
+        {/* ── Profile strip ── */}
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-4 flex items-center gap-4 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-[#1e3a60]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-lg text-[#1e3a60] dark:text-blue-400 shrink-0">
+            {getInitials(myProfile.fullName)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-extrabold text-stone-900 dark:text-white truncate">{myProfile.fullName}</p>
+            <p className="text-xs text-stone-400 truncate">{user.email}</p>
+          </div>
+          {myProfile.city && (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 shrink-0">
+              <MapPin className="w-3.5 h-3.5 text-[#1e3a60]" />
+              {myProfile.city}
+            </div>
+          )}
+          <Link href="/profile">
+            <Button variant="ghost" size="sm" className="text-xs text-stone-400 hover:text-[#1e3a60] dark:hover:text-blue-400 shrink-0">
+              Edit Profile
+            </Button>
+          </Link>
+        </div>
+
+        {/* ── Stats row ── */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div
+            className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-5 shadow-sm flex items-center gap-4"
+            style={{ borderLeft: "3px solid #1e3a60" }}
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#1e3a60]/10 flex items-center justify-center text-[#1e3a60] shrink-0">
+              <Package className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Needs Posted</p>
+              <p className="text-2xl font-black text-stone-900 dark:text-white">{itemRequests.length}</p>
+            </div>
+          </div>
+
+          <div
+            className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-5 shadow-sm flex items-center gap-4"
+            style={{ borderLeft: "3px solid #f0b97a" }}
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#f0b97a]/15 flex items-center justify-center text-[#b04a15] shrink-0">
+              <Handshake className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Active Matches</p>
+              <p className="text-2xl font-black text-stone-900 dark:text-white">{activeMatches.length}</p>
+            </div>
+          </div>
+
+          <div
+            className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-5 shadow-sm flex items-center gap-4"
+            style={{ borderLeft: "3px solid #10b981" }}
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-zinc-800 flex items-center justify-center text-emerald-600 shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Needs Fulfilled</p>
+              <p className="text-2xl font-black text-stone-900 dark:text-white">{fulfilledRequests.length}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Requests + Matches grid ── */}
+        <div className="grid gap-6 lg:grid-cols-2">
+
+          {/* My Requests */}
+          <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#1e3a60]" />
+            <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none leading-none">01</div>
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4 relative z-10">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Package className="w-4 h-4 text-[#1e3a60]" /> My Requests
+              </CardTitle>
+              <Link href="/requests/new">
+                <Button variant="ghost" size="sm" className="text-xs font-bold text-[#1e3a60] hover:text-[#1e3a60]">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> New
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="relative z-10 pt-4">
+              {itemRequests.length === 0 ? (
+                <div className="py-10 text-center space-y-3">
+                  <div className="w-14 h-14 bg-[#1e3a60]/10 rounded-2xl flex items-center justify-center mx-auto">
+                    <Heart className="w-6 h-6 text-[#1e3a60]" />
+                  </div>
+                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No needs posted yet</p>
+                  <p className="text-xs text-stone-400 max-w-[220px] mx-auto">Tell us what you need — books, clothes, medical supplies — and we&apos;ll find donors nearby.</p>
+                  <Link href="/requests/new">
+                    <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="divide-y dark:divide-zinc-800">
+                  {itemRequests.map(r => {
+                    const badge = getRequestStatusBadge(r.status);
+                    return (
+                      <div key={r.id} className="py-3 flex items-start justify-between gap-3 group hover:bg-stone-50 dark:hover:bg-zinc-800/40 px-1 rounded-xl transition-all">
+                        <div className="min-w-0">
+                          <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors truncate">
+                            <TranslatedText text={r.title} />
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5 flex-wrap">
+                            <span><TranslatedText text={r.category} /></span>
+                            <span>·</span>
+                            <span>Qty: {r.quantity}</span>
+                            <span>·</span>
+                            <span className="capitalize">{r.urgency.toLowerCase()}</span>
+                          </div>
+                        </div>
+                        <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap shrink-0">{badge.label}</Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Match Status */}
+          <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#f0b97a]" />
+            <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none leading-none">02</div>
+            <CardHeader className="border-b pb-4 relative z-10">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Handshake className="w-4 h-4 text-[#b04a15]" /> Match Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10 pt-4">
+              {doneeMatches.length === 0 ? (
+                <div className="py-10 text-center space-y-3">
+                  <div className="w-14 h-14 bg-[#f0b97a]/15 rounded-2xl flex items-center justify-center mx-auto">
+                    <Handshake className="w-6 h-6 text-[#b04a15]" />
+                  </div>
+                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No matches yet</p>
+                  <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Our system is scanning donor inventories for items that match your needs. Check back soon.</p>
+                </div>
+              ) : (
+                <div className="divide-y dark:divide-zinc-800 space-y-3">
+                  {doneeMatches.map(m => {
+                    const badge = getFulfilmentStatusBadge(m.status);
+                    return (
+                      <div key={m.id} className="pt-3 first:pt-0 space-y-2 group px-1 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all pb-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors truncate">
+                              <TranslatedText text={m.listingTitle || "Matched item"} />
+                            </p>
+                            <p className="text-xs text-stone-400 mt-0.5 truncate">For: <TranslatedText text={m.requestTitle || ""} /></p>
+                          </div>
+                          <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap shrink-0">{badge.label}</Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-xs bg-stone-50 dark:bg-zinc-950 p-2.5 rounded-xl">
+                          <div>
+                            <p className="text-stone-400">Donor</p>
+                            <p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p>
+                          </div>
+                          {m.matchScore && (
+                            <div className="text-right">
+                              <p className="text-stone-400">AI Match</p>
+                              <p className="font-bold text-[#1e3a60] dark:text-blue-400">{m.matchScore}%</p>
+                            </div>
+                          )}
+                        </div>
+                        {m.status === "TRANSPORT_DISCUSSION" && (
+                          <div className="flex justify-end pt-1">
+                            <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold rounded-lg">
+                              Contact Donor (Masked)
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -121,6 +363,18 @@ export default function DashboardPage() {
       <div className="flex justify-center items-center min-h-[400px]">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+
+  // Dedicated donee UI
+  if (myProfile?.role === "DONEE") {
+    return (
+      <DoneeDashboard
+        user={user}
+        myProfile={myProfile}
+        itemRequests={itemRequests}
+        doneeMatches={doneeMatches}
+      />
     );
   }
 

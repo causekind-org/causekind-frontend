@@ -12,8 +12,8 @@ const STEPS = [
     accentBg: "bg-[#b04a15]",
     accentText: "text-[#b04a15]",
     accentRing: "ring-[#b04a15]/30",
-    title: "Discover Causes",
-    desc: "Browse real campaigns and item requests near you. Every listing is reviewed by our team before it goes live.",
+    title: "Discover Needs",
+    desc: "Browse verified needs and item requests near you. Every listing is reviewed by our team before it goes live.",
   },
   {
     number: "02",
@@ -22,7 +22,7 @@ const STEPS = [
     accentText: "text-rose-500",
     accentRing: "ring-rose-400/30",
     title: "Choose How to Give",
-    desc: "Donate money to a campaign, or give physical items like books or clothes to someone nearby.",
+    desc: "Support local verified needs by giving physical items like clothes, books, or appliances to someone nearby.",
   },
   {
     number: "03",
@@ -91,7 +91,7 @@ function DetailScreen() {
     <div className="flex flex-col h-full pb-3 bg-white">
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-stone-50">
         <ArrowLeft className="w-3 h-3 text-stone-500" />
-        <span className="text-[9px] font-bold text-stone-700">Campaign</span>
+        <span className="text-[9px] font-bold text-stone-700">In-Kind Request</span>
       </div>
       <div className="w-full h-[72px] bg-gradient-to-br from-orange-400 via-amber-400 to-orange-600 relative shrink-0">
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
@@ -100,17 +100,17 @@ function DetailScreen() {
         </div>
       </div>
       <div className="px-3 pt-2 flex flex-col flex-1">
-        <h3 className="text-[10px] font-black text-stone-900 leading-tight mb-1.5">Child Education Fund · Mumbai</h3>
+        <h3 className="text-[10px] font-black text-stone-900 leading-tight mb-1.5">School Kit Support · Mumbai</h3>
         <div className="flex items-center justify-between text-[7px] mb-1">
-          <span className="text-stone-400 font-medium">Amount Raised</span>
-          <span className="font-black text-[#b04a15]">₹32,500</span>
+          <span className="text-stone-400 font-medium">Kits Contributed</span>
+          <span className="font-black text-[#b04a15]">65 Kits</span>
         </div>
         <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden mb-1">
           <div className="h-full bg-gradient-to-r from-[#b04a15] to-[#e07b3a] rounded-full" style={{ width: "65%" }} />
         </div>
-        <p className="text-[7px] text-stone-400 font-medium mb-auto">Goal: ₹50,000 · 65% funded</p>
+        <p className="text-[7px] text-stone-400 font-medium mb-auto">Goal: 100 Kits · 65% completed</p>
         <div className="w-full h-7 mt-2 bg-[#b04a15] rounded-xl flex items-center justify-center gap-1 shadow-md shadow-[#b04a15]/20">
-          <span className="text-white text-[8px] font-black">Donate Now</span>
+          <span className="text-white text-[8px] font-black">Support Now</span>
           <ChevronRight className="w-2.5 h-2.5 text-white" />
         </div>
       </div>
@@ -123,14 +123,14 @@ function DonateScreen() {
     <div className="flex flex-col h-full px-3 py-2.5 bg-white">
       <div className="flex items-center gap-1.5 mb-3 pb-2 border-b border-stone-50">
         <ArrowLeft className="w-3 h-3 text-stone-500" />
-        <span className="text-[9px] font-bold text-stone-700">Select Amount</span>
+        <span className="text-[9px] font-bold text-stone-700">Select Quantity</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5 mb-2.5">
         {[
-          { label: "₹100", active: false },
-          { label: "₹500", active: true },
-          { label: "₹1,000", active: false },
-          { label: "₹2,500", active: false },
+          { label: "1 Kit", active: false },
+          { label: "5 Kits", active: true },
+          { label: "10 Kits", active: false },
+          { label: "25 Kits", active: false },
         ].map((a) => (
           <div
             key={a.label}
@@ -144,10 +144,10 @@ function DonateScreen() {
         ))}
       </div>
       <div className="flex items-center border border-stone-200 rounded-xl px-2.5 h-7 mb-auto gap-1">
-        <span className="text-[8px] text-stone-400 font-medium">₹ Custom amount</span>
+        <span className="text-[8px] text-stone-400 font-medium">Custom quantity</span>
       </div>
       <div className="mt-3 w-full h-7 bg-[#b04a15] rounded-xl flex items-center justify-center shadow-md shadow-[#b04a15]/20">
-        <span className="text-white text-[8px] font-black">Confirm ₹500</span>
+        <span className="text-white text-[8px] font-black">Confirm 5 Kits</span>
       </div>
     </div>
   );

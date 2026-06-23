@@ -125,6 +125,7 @@ function RegisterContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const [dialCountry, setDialCountry] = useState("IN");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -342,13 +343,13 @@ function RegisterContent() {
         if (!res.needsCompletion) {
           sessionStorage.removeItem("ck_google_token");
           sessionStorage.removeItem("ck_google_profile");
-          setAuth(res.token);
+          setAuth(res.token, rememberMe);
           toast.success("Account created! Welcome to CauseKind.");
           router.push("/");
         }
       } else {
         const { token } = await register({ ...form, phone: fullPhone, city: cityStr });
-        setAuth(token);
+        setAuth(token, rememberMe);
         toast.success("Account created!");
         router.push("/");
       }
@@ -637,6 +638,23 @@ function RegisterContent() {
               </Reveal>
             )}
 
+            <Reveal delay={285}>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-stone-300 accent-[#b04a15] cursor-pointer"
+                />
+                <span className="text-sm text-stone-600 dark:text-stone-400 group-hover:text-stone-800 dark:group-hover:text-stone-200 transition-colors">
+                  Remember me
+                </span>
+                <span className="ml-auto text-xs text-stone-400 dark:text-stone-500">
+                  {rememberMe ? "Stay logged in" : "Log out on close"}
+                </span>
+              </label>
+            </Reveal>
+
             <Reveal delay={300}>
               {/* Submit */}
               <button
@@ -668,14 +686,19 @@ function RegisterContent() {
                 </button>
               </Reveal>
               <Reveal delay={380}>
-                <button
-                  type="button"
-                  onClick={() => toast.info("Social sign-in coming soon")}
-                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
-                >
-                  <FacebookIcon />
-                  {t("facebook")}
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-4 py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
+                  >
+                    <FacebookIcon />
+                    {t("facebook")}
+                  </button>
+                  <span className="absolute -top-2 -right-2 text-[9px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[#b04a15] border border-[#e07b3a]/40 shadow-sm pointer-events-none select-none">
+                    Coming Soon
+                  </span>
+                </div>
               </Reveal>
             </div>
           )}
@@ -693,7 +716,7 @@ function RegisterContent() {
                 }}
                 className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2 cursor-pointer"
               >
-                {t("signIn")}
+                {t("logIn")}
               </a>
             </p>
           </Reveal>

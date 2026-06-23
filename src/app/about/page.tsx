@@ -67,8 +67,8 @@ export default async function AboutPage() {
                   <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mt-1">Verified Handovers</p>
                 </div>
                 <div>
-                  <p className="text-4xl font-black text-[#1e3a60] dark:text-blue-400">25km</p>
-                  <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mt-1">Local Radius</p>
+                  <p className="text-4xl font-black text-[#1e3a60] dark:text-blue-400">10km</p>
+                  <p className="text-xs font-bold text-stone-505 dark:text-stone-400 uppercase tracking-wider mt-1">Local Radius</p>
                 </div>
                 <div>
                   <p className="text-4xl font-black text-[#b04a15]">14+</p>
@@ -212,7 +212,7 @@ export default async function AboutPage() {
               </div>
               <h4 className="font-extrabold text-lg text-stone-900 dark:text-white mb-2">Verified Needs Only</h4>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
-                Our team reviews every listing, campaign, and request manually. Safe, verified, direct support.
+                Our team reviews every listing and request manually. Safe, verified, direct support.
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-stone-100 dark:border-zinc-800 text-[11px] font-bold text-stone-400 uppercase tracking-widest">

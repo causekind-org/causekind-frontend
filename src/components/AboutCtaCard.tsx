@@ -25,7 +25,7 @@ export function AboutCtaCard() {
           Want to join the movement?
         </h3>
         <p className="text-stone-400 max-w-xl leading-relaxed text-sm font-medium">
-          Register as a Donor to start listing spare supplies and funding verified local campaigns, or sign up as a Donee to seek support for your educational, medical, or family causes.
+          Register as a Donor to start listing spare supplies and help verified needs in your community, or sign up as a Donee to seek support for your educational, medical, or family causes.
         </p>
       </div>
       <div className="flex gap-4 pt-8 mt-8 border-t border-stone-800 flex-wrap relative z-10">

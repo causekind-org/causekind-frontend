@@ -4,6 +4,7 @@
     "campaigns": "Campañas",
     "requests": "Solicitudes en especie",
     "about": "Sobre nosotros",
+    "blog": "Blog",
     "listings": "Listados",
     "signUp": "Inscribirse",
     "logIn": "Acceso",
@@ -229,6 +230,7 @@
       "complete": "Registro completo",
       "haveAccount": "¿Ya tienes una cuenta?",
       "signIn": "Iniciar sesión",
+      "logIn": "Iniciar sesión",
       "google": "Continuar con Google",
       "facebook": "Continuar con Facebook",
       "googleLinkedHint": "Vinculado desde tu cuenta de Google",
@@ -318,6 +320,7 @@
     "tagline": "La plataforma de donación verificada de la India que conecta a los donantes directamente con los beneficiarios verificados.",
     "giveBack": "Devolver",
     "getSupport": "Obtenga soporte",
+    "blog": "Lee nuestro Blog",
     "trust": "Nuestra promesa de confianza",
     "adminVerified": "Administrador verificado",
     "razorpaySecured": "Razorpay asegurado",
@@ -727,6 +730,20 @@
     "reachOut": "Comuníquese directamente: nuestro equipo responde dentro de las 24 horas.",
     "emailSupport": "Soporte por correo electrónico"
   },
+  "about": {
+    "backToHome": "Volver al inicio",
+    "aboutUs": "Sobre nosotros",
+    "headline": "Nuestra Misión e Historia",
+    "subheadline": "Conectando corazones amables directamente con necesidades verificadas.",
+    "visionHeadline": "Nuestra Visión",
+    "visionText": "Construir un ecosistema transparente y eficiente donde cada acto de bondad llegue directamente a la persona necesitada.",
+    "missionHeadline": "Nuestra Misión",
+    "missionText": "Simplificar las donaciones en especie, eliminar intermediarios y utilizar el emparejamiento inteligente para dirigir los recursos a donde más importan.",
+    "storyTitle": "Cerrando la Brecha",
+    "storyText": "CauseKind comenzó con una idea simple: la caridad debe ser directa, localizada y transparente. Nos dimos cuenta de que grandes cantidades de artículos útiles acumulan polvo en los hogares, mientras que los estudiantes locales luchan por adquirirlos. Al integrar un sistema de emparejamiento por radio geográfico, hacemos que compartir sea inmediato y sin problemas.",
+    "communityTitle": "Impacto Local Directo",
+    "communityText": "Nuestra plataforma lo conecta con necesidades verificadas dentro de un radio de 10 km, evitando por completo las tarifas de envío."
+  },
   "itemDetail": {
     "verified": "Verificado",
     "noPhoto": "Sin foto",
@@ -878,19 +895,5 @@
     "viewDonations": "Ver mis donaciones",
     "browseCampaigns": "Explorar más campañas",
     "toastSuccess": "¡Donación confirmada! Gracias por marcar la diferencia."
-  },
-  "about": {
-    "backToHome": "Volver al inicio",
-    "aboutUs": "Sobre nosotros",
-    "headline": "Nuestra Misión e Historia",
-    "subheadline": "Conectando corazones amables directamente con necesidades verificadas.",
-    "visionHeadline": "Nuestra Visión",
-    "visionText": "Construir un ecosistema transparente y eficiente donde cada acto de bondad llegue directamente a la persona necesitada.",
-    "missionHeadline": "Nuestra Misión",
-    "missionText": "Simplificar las donaciones en especie, eliminar intermediarios y utilizar el emparejamiento inteligente para dirigir los recursos a donde más importan.",
-    "storyTitle": "Cerrando la Brecha",
-    "storyText": "CauseKind comenzó con una idea simple: la caridad debe ser directa, localizada y transparente. Nos dimos cuenta de que grandes cantidades de artículos útiles acumulan polvo en los hogares, mientras que los estudiantes locales luchan por adquirirlos. Al integrar un sistema de emparejamiento por radio geográfico, hacemos que compartir sea inmediato y sin problemas.",
-    "communityTitle": "Impacto Local Directo",
-    "communityText": "Nuestra plataforma lo conecta con necesidades verificadas dentro de un radio de 10 km a 25 km, evitando por completo las tarifas de envío."
   }
 }

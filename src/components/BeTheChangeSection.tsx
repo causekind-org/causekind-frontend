@@ -84,42 +84,41 @@ function FlipCard({
         transition: `opacity 0.65s ease ${delay}ms, transform 0.65s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms`,
       }}
     >
-      {/* Left accent stripe — animates separately after card flips in */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl card-stripe-pop"
-        style={{
-          background: accent,
-          animationDelay: `${delay + 280}ms`,
-          animationDuration: "0.5s",
-        }}
-      />
-
-      <div
-        className={`h-full rounded-2xl border p-6 flex flex-col gap-4 bg-white dark:bg-zinc-900
-                   border-[#e5e2d5]/60 dark:border-stone-800 pl-7
-                   hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-default
-                   ${size === "large" ? "justify-between" : ""}`}
+        className={`h-full rounded-2xl border border-[#e5e2d5]/60 dark:border-stone-800
+                   bg-white dark:bg-zinc-900 overflow-hidden flex flex-row
+                   hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-default`}
       >
-        {/* Icon */}
+        {/* Integrated left accent stripe */}
         <div
-          className={`w-11 h-11 rounded-xl flex items-center justify-center ${size === "large" ? "w-14 h-14 rounded-2xl" : ""}`}
-          style={{ background: `${accent}18`, color: accent }}
-        >
-          <Icon className={size === "large" ? "w-7 h-7" : "w-5 h-5"} />
-        </div>
-        <div className="flex-1">
-          <h3 className={`font-extrabold text-stone-900 dark:text-white leading-snug mb-2 ${size === "large" ? "text-lg" : "text-sm"}`}>
-            {title}
-          </h3>
-          <p className={`text-stone-500 dark:text-stone-400 leading-relaxed font-medium ${size === "large" ? "text-sm" : "text-xs"}`}>
-            {desc}
-          </p>
-        </div>
-        {/* Accent dot */}
-        <span
-          className="w-2 h-2 rounded-full self-end"
-          style={{ background: accent, opacity: 0.4 }}
+          className="w-[3px] shrink-0 card-stripe-pop"
+          style={{
+            background: accent,
+            animationDelay: `${delay + 280}ms`,
+            animationDuration: "0.5s",
+          }}
         />
+        {/* Card content */}
+        <div className={`flex-1 p-6 flex flex-col gap-4 ${size === "large" ? "justify-between" : ""}`}>
+          <div
+            className={`w-11 h-11 rounded-xl flex items-center justify-center ${size === "large" ? "w-14 h-14 rounded-2xl" : ""}`}
+            style={{ background: `${accent}18`, color: accent }}
+          >
+            <Icon className={size === "large" ? "w-7 h-7" : "w-5 h-5"} />
+          </div>
+          <div className="flex-1">
+            <h3 className={`font-extrabold text-stone-900 dark:text-white leading-snug mb-2 ${size === "large" ? "text-lg" : "text-sm"}`}>
+              {title}
+            </h3>
+            <p className={`text-stone-500 dark:text-stone-400 leading-relaxed font-medium ${size === "large" ? "text-sm" : "text-xs"}`}>
+              {desc}
+            </p>
+          </div>
+          <span
+            className="w-2 h-2 rounded-full self-end"
+            style={{ background: accent, opacity: 0.4 }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -201,7 +200,7 @@ export function BeTheChangeSection() {
     {
       icon: MapPin,
       title: "Hyper-local matching engine",
-      desc: "Donors and donees within 10–25 km are matched first — ensuring your donation reaches the closest family in need.",
+      desc: "Donors and donees within 10 km are matched first — ensuring your donation reaches the closest family in need.",
       accent: INK,
       delay: 100,
       size: "normal" as const,

@@ -287,7 +287,7 @@ body {
 
 .reveal-visible {
   opacity: 1;
-  transform: perspective(1000px) translateY(0px) rotateX(0deg) scale(1);
+  transform: none;
   transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1530,4 +1530,33 @@ section:focus-within {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* ── Donee Requests page ── */
+@keyframes float-card {
+  0%, 100% { transform: translateY(0px) rotate(-1deg); }
+  50%       { transform: translateY(-14px) rotate(0.5deg); }
+}
+.float-card { animation: float-card 4.5s ease-in-out infinite; }
+
+/* ── In-Kind Requests page ── */
+@keyframes critical-ring-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+  50%       { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+}
+.ring-urgent { animation: critical-ring-pulse 1.8s ease-in-out infinite; }
+
+@keyframes need-board-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-8px) rotate(0.5deg); }
+}
+.need-board-float { animation: need-board-float 5s ease-in-out infinite; }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Stacking context z-index fix for searchable selects inside Reveal/grid ── */
+div:has(.searchable-select-open) {
+  z-index: 99 !important;
+  position: relative !important;
 }

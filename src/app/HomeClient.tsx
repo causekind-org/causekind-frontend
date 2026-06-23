@@ -76,9 +76,9 @@ function HeroQuoteSlider() {
   const cls = phase === "enter" ? "hero-quote-enter" : phase === "exit" ? "hero-quote-exit" : "";
 
   return (
-    <div className="relative h-[72px] sm:h-[60px] overflow-hidden">
+    <div className="relative h-[96px] sm:h-[76px] overflow-hidden">
       <div key={idx} className={`absolute inset-0 flex flex-col justify-center ${cls}`}>
-        <p className="text-white/70 text-sm sm:text-base leading-relaxed font-medium italic line-clamp-2">
+        <p className="text-white/70 text-sm sm:text-base leading-relaxed font-medium italic line-clamp-3">
           &ldquo;{quote.text}&rdquo;
         </p>
         <span className="mt-1 flex items-center gap-2 text-[#f0b97a] text-[11px] font-black uppercase tracking-wider">
