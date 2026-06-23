@@ -6,8 +6,8 @@ import { X, PackagePlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
 
-const SHOW_DELAY_MS = 9_000;
-const VISIBLE_MS = 6_000;
+const SHOW_DELAY_MS = 10_000;
+const VISIBLE_MS = 15_000;
 const SLIDE_MS = 420;
 
 export function DonorListingPrompt() {
