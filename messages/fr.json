@@ -4,6 +4,7 @@
     "campaigns": "Campagnes",
     "requests": "Demandes en nature",
     "about": "À propos",
+    "blog": "Blogue",
     "listings": "Annonces",
     "signUp": "S'inscrire",
     "logIn": "Se connecter",
@@ -229,6 +230,7 @@
       "complete": "Inscription complète",
       "haveAccount": "Vous avez déjà un compte ?",
       "signIn": "Se connecter",
+      "logIn": "Se connecter",
       "google": "Continuer avec Google",
       "facebook": "Continuer avec Facebook",
       "googleLinkedHint": "Lié depuis votre compte Google",
@@ -318,6 +320,7 @@
     "tagline": "La plateforme de don vérifiée de l'Inde reliant directement les donateurs aux bénéficiaires vérifiés.",
     "giveBack": "Redonner",
     "getSupport": "Obtenir de l'aide",
+    "blog": "Lisez notre blog",
     "trust": "Notre promesse de confiance",
     "adminVerified": "Administrateur vérifié",
     "razorpaySecured": "Razorpay Sécurisé",
@@ -727,6 +730,20 @@
     "reachOut": "Contactez-nous directement : notre équipe répond dans les 24 heures.",
     "emailSupport": "Assistance par e-mail"
   },
+  "about": {
+    "backToHome": "Retour à l'accueil",
+    "aboutUs": "À propos",
+    "headline": "Notre Mission & Histoire",
+    "subheadline": "Connecter les cœurs généreux directement aux besoins vérifiés.",
+    "visionHeadline": "Notre Vision",
+    "visionText": "Construire un écosystème transparent et efficace où chaque acte de gentillesse atteint directement la personne dans le besoin.",
+    "missionHeadline": "Notre Mission",
+    "missionText": "Simplifier les dons en nature, éliminer les intermédiaires et utiliser un ciblage intelligent pour diriger les ressources là où elles comptent le plus.",
+    "storyTitle": "Combler le Fossé",
+    "storyText": "CauseKind a commencé avec une idée simple : la charité doit être directe, locale et transparente. Nous avons remarqué que d'immenses quantités d'objets utilisables accumulent la poussière dans les maisons, tandis que les étudiants locaux luttent pour les acquérir. En intégrant un système de correspondance géographique, nous rendons le partage fluide et immédiat.",
+    "communityTitle": "Impact Local Direct",
+    "communityText": "Notre plateforme vous met en relation avec des besoins vérifiés dans un rayon de 10 km, évitant ainsi totalement les frais d'expédition."
+  },
   "itemDetail": {
     "verified": "Vérifié",
     "noPhoto": "Aucune photo",
@@ -878,19 +895,5 @@
     "viewDonations": "Voir mes dons",
     "browseCampaigns": "Parcourez plus de campagnes",
     "toastSuccess": "Don confirmé ! Merci d'avoir fait une différence."
-  },
-  "about": {
-    "backToHome": "Retour à l'accueil",
-    "aboutUs": "À propos",
-    "headline": "Notre Mission & Histoire",
-    "subheadline": "Connecter les cœurs généreux directement aux besoins vérifiés.",
-    "visionHeadline": "Notre Vision",
-    "visionText": "Construire un écosystème transparent et efficace où chaque acte de gentillesse atteint directement la personne dans le besoin.",
-    "missionHeadline": "Notre Mission",
-    "missionText": "Simplifier les dons en nature, éliminer les intermédiaires et utiliser un ciblage intelligent pour diriger les ressources là où elles comptent le plus.",
-    "storyTitle": "Combler le Fossé",
-    "storyText": "CauseKind a commencé avec une idée simple : la charité doit être directe, locale et transparente. Nous avons remarqué que d'immenses quantités d'objets utilisables accumulent la poussière dans les maisons, tandis que les étudiants locaux luttent pour les acquérir. En intégrant un système de correspondance géographique, nous rendons le partage fluide et immédiat.",
-    "communityTitle": "Impact Local Direct",
-    "communityText": "Notre plateforme vous met en relation avec des besoins vérifiés dans un rayon de 10 à 25 km, évitant ainsi totalement les frais d'expédition."
   }
 }

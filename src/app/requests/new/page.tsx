@@ -232,15 +232,48 @@ export default function NewRequestPage() {
   if (!user) return null;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("cardTitle")}</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {t("cardSubtitle")}
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
+      {/* ── LEFT PANEL: Asymmetric info stripe ── */}
+      <div className="hidden lg:flex lg:w-[35%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0">
+        {/* Warm glow circles */}
+        <div className="absolute -top-24 left-1/4 h-[300px] w-[300px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 right-1/4 h-[300px] w-[300px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.04] pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col gap-6">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3 py-1 self-start">
+            Verified Support
+          </span>
+          <h2 className="text-white text-3xl font-extrabold leading-tight tracking-tight font-serif mt-4">
+            Request Support 🌱
+          </h2>
+          <p className="text-stone-300 text-sm leading-relaxed font-medium">
+            Describe the physical items you need (like textbooks, blankets, medical kits, or toys) and specify where they are needed. Verified nearby donors will match and deliver them to your location.
           </p>
-        </CardHeader>
-        <CardContent>
+        </div>
+
+        <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
+          CauseKind India · 2026
+        </div>
+      </div>
+
+      {/* ── RIGHT PANEL: Scrollable Form ── */}
+      <div className="flex-1 px-6 py-10 lg:px-16 overflow-y-auto relative bg-white dark:bg-zinc-950">
+        {/* Ambient glows */}
+        <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-[#1e3a60]/5 blur-3xl pointer-events-none" />
+
+        <div className="max-w-[540px] mx-auto space-y-6 relative z-10">
+          <div className="space-y-1.5 mb-6">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">In-Kind Support</span>
+            <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+              {t("cardTitle")}
+            </h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              {t("cardSubtitle")}
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <Field label={t("fieldItemName")}>
               <Input placeholder={t("placeholderItemName")} value={form.title} onChange={(e) => set("title", e.target.value)} required />
@@ -264,10 +297,10 @@ export default function NewRequestPage() {
               <Field label={t("fieldPincode")}>
                 <Input placeholder="411001" value={form.pincode} onChange={(e) => set("pincode", e.target.value)} />
               </Field>
-              <Field label={t("fieldCountry")}>
-                <div className="flex items-center justify-between mb-1.5">
+              <div className="sm:col-span-2 space-y-1.5">
+                <div className="flex items-center justify-between">
                   <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                    <MapPin className="w-3.5 h-3.5" /> Use Current Location
+                    <MapPin className="w-3.5 h-3.5" /> Location Selection
                   </label>
                   <button
                     type="button"
@@ -278,83 +311,92 @@ export default function NewRequestPage() {
                     {gpsLoading ? "Detecting..." : "Use GPS 🎯"}
                   </button>
                 </div>
-                <SearchableSelect
-                  id="country"
-                  options={countryOptions}
-                  value={countryIso}
-                  onChange={handleCountryChange}
-                  placeholder={t("placeholderCountry")}
-                  searchPlaceholder={t("searchCountry")}
-                />
-              </Field>
-              <Field label={t("fieldState")}>
-                {noStateOptions ? (
-                  <p className="text-xs text-stone-400 italic py-3 bg-stone-50/50 rounded-xl border border-stone-200 px-3">
-                    {t("noStatesListed")}
-                  </p>
-                ) : (
-                  <SearchableSelect
-                    id="state"
-                    options={stateOptions}
-                    value={stateIso}
-                    onChange={handleStateChange}
-                    placeholder={t("placeholderState")}
-                    disabledPlaceholder={t("disabledPlaceholderState")}
-                    disabled={!countryIso}
-                    searchPlaceholder={t("searchState")}
-                  />
-                )}
-              </Field>
-              <Field label={t("fieldCity")}>
-                {showCityFreeText ? (
-                  <Input
-                    id="city"
-                    placeholder={t("placeholderCityInput")}
-                    value={cityFreeText}
-                    onChange={(e) => setCityFreeText(e.target.value)}
-                    required
-                  />
-                ) : (
-                  <SearchableSelect
-                    id="city"
-                    options={cityOptions}
-                    value={cityValue}
-                    onChange={setCityValue}
-                    placeholder={t("placeholderCity")}
-                    disabledPlaceholder={t("disabledPlaceholderCity")}
-                    disabled={!stateIso && !noStateOptions}
-                    searchPlaceholder={t("searchCity")}
-                  />
-                )}
-              </Field>
-              <Field label={t("fieldPickupRadius")}>
-                <Select value={radiusSel} onValueChange={setRadiusSel}>
-                  <SelectTrigger><SelectValue placeholder={t("placeholderPickupRadius")} /></SelectTrigger>
-                  <SelectContent>
-                    {PICKUP_RADII.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {radiusSel === "custom" && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={500}
-                      placeholder={t("placeholderCustomKm")}
-                      value={customRadius}
-                      onChange={(e) => setCustomRadius(e.target.value)}
-                      className="w-32"
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("fieldCountry")}</label>
+                    <SearchableSelect
+                      id="country"
+                      options={countryOptions}
+                      value={countryIso}
+                      onChange={handleCountryChange}
+                      placeholder={t("placeholderCountry")}
+                      searchPlaceholder={t("searchCountry")}
                     />
-                    <span className="text-sm text-muted-foreground">{t("kmFromLocation")}</span>
                   </div>
-                )}
-              </Field>
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("fieldState")}</label>
+                    {noStateOptions ? (
+                      <p className="text-xs text-stone-400 italic py-2">
+                        {t("noStatesListed")}
+                      </p>
+                    ) : (
+                      <SearchableSelect
+                        id="state"
+                        options={stateOptions}
+                        value={stateIso}
+                        onChange={handleStateChange}
+                        placeholder={t("placeholderState")}
+                        disabledPlaceholder={t("disabledPlaceholderState")}
+                        disabled={!countryIso}
+                        searchPlaceholder={t("searchState")}
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("fieldCity")}</label>
+                    {showCityFreeText ? (
+                      <Input
+                        id="city"
+                        placeholder={t("placeholderCityInput")}
+                        value={cityFreeText}
+                        onChange={(e) => setCityFreeText(e.target.value)}
+                        required
+                      />
+                    ) : (
+                      <SearchableSelect
+                        id="city"
+                        options={cityOptions}
+                        value={cityValue}
+                        onChange={handleCityChange}
+                        placeholder={t("placeholderCity")}
+                        disabledPlaceholder={t("disabledPlaceholderCity")}
+                        disabled={!stateIso && !noStateOptions}
+                        searchPlaceholder={t("searchCity")}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="sm:col-span-2 space-y-1.5">
+                <Field label={t("fieldPickupRadius")}>
+                  <Select value={radiusSel} onValueChange={setRadiusSel}>
+                    <SelectTrigger><SelectValue placeholder={t("placeholderPickupRadius")} /></SelectTrigger>
+                    <SelectContent>
+                      {PICKUP_RADII.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {radiusSel === "custom" && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={500}
+                        placeholder={t("placeholderCustomKm")}
+                        value={customRadius}
+                        onChange={(e) => setCustomRadius(e.target.value)}
+                        className="w-32"
+                      />
+                      <span className="text-sm text-muted-foreground">{t("kmFromLocation")}</span>
+                    </div>
+                  )}
+                </Field>
+                <p className="text-[11px] text-stone-400">
+                  {t("pickupRadiusHint")}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground -mt-1">
-              {t("pickupRadiusHint")}
-            </p>
             <Field label={t("fieldWhyNeeded")}>
               <Textarea rows={4} placeholder={t("placeholderWhyNeeded")} value={form.description} onChange={(e) => set("description", e.target.value)} />
             </Field>
@@ -375,15 +417,19 @@ export default function NewRequestPage() {
                 </button>
               )}
             </Field>
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={submitting}>
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" disabled={submitting} className="btn-3d bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl px-6 py-2.5 font-bold">
                 {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submitForReview")}
               </Button>
-              <Link href="/dashboard"><Button type="button" variant="outline">{t("cancel")}</Button></Link>
+              <Link href="/dashboard">
+                <Button type="button" variant="outline" className="btn-3d rounded-xl px-6 py-2.5 font-semibold text-stone-600">
+                  {t("cancel")}
+                </Button>
+              </Link>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

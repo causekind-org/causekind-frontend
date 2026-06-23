@@ -43,7 +43,7 @@ function getConfig(role: string | undefined): OverlayConfig {
         icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
         headline: "Welcome to CauseKind",
         subline:
-          "You're all set. Explore campaigns, manage requests, and help build a kinder community.",
+          "You're all set. Explore nearby needs, manage requests, and help build a kinder community.",
         accentBg: "bg-[#f0b97a]",
         iconWrapBg: "bg-[#f0b97a]/20",
         iconColor: "text-[#b04a15]",

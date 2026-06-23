@@ -4,6 +4,7 @@
     "campaigns": "Campaigns",
     "requests": "In-Kind Requests",
     "about": "About Us",
+    "blog": "Blog",
     "listings": "Listings",
     "signUp": "Sign Up",
     "logIn": "Log In",
@@ -229,6 +230,7 @@
       "complete": "Complete registration",
       "haveAccount": "Already have an account?",
       "signIn": "Sign in",
+      "logIn": "Log in",
       "google": "Continue with Google",
       "facebook": "Continue with Facebook",
       "googleLinkedHint": "Linked from your Google account",
@@ -318,6 +320,7 @@
     "tagline": "India's verified giving platform connecting donors directly with verified recipients.",
     "giveBack": "Give Back",
     "getSupport": "Get Support",
+    "blog": "Read our Blog",
     "trust": "Our Trust Promise",
     "adminVerified": "Admin Verified",
     "razorpaySecured": "Razorpay Secured",
@@ -740,7 +743,7 @@
     "storyTitle": "Bridging the Gap",
     "storyText": "CauseKind began with a simple idea: that charity should be direct, localized, and transparent. We noticed that massive amounts of usable items—books, toys, clothes, and electronics—gather dust in homes, while local organizations and students nearby struggle to acquire them. By integrating a geo-radius matching system, we make sharing seamless and immediate.",
     "communityTitle": "Direct Local Impact",
-    "communityText": "Our platform matches you with verified needs within a 10km to 25km radius. This localized model completely bypasses courier shipping fees, allowing neighbors to support neighbors directly through safe, approved drop-offs."
+    "communityText": "Our platform matches you with verified needs within a 10km radius. This localized model completely bypasses courier shipping fees, allowing neighbors to support neighbors directly through safe, approved drop-offs."
   },
   "itemDetail": {
     "verified": "Verified",

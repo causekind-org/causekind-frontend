@@ -69,8 +69,8 @@ function Donate3DButton() {
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
     setTilt({
-      x: ((e.clientY - rect.top  - rect.height / 2) / (rect.height / 2)) * -14,
-      y: ((e.clientX - rect.left - rect.width  / 2) / (rect.width  / 2)) *  14,
+      x: ((e.clientY - rect.top - rect.height / 2) / (rect.height / 2)) * -14,
+      y: ((e.clientX - rect.left - rect.width / 2) / (rect.width / 2)) * 14,
     });
   }
 
@@ -198,10 +198,11 @@ export function SiteHeader() {
   const t = useTranslations();
 
   const navLinks = [
-    { href: "/",          label: t("nav.home") },
+    { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    { href: "/requests",  label: t("nav.requests") },
-    { href: "/about",     label: t("nav.about") },
+    { href: "/requests", label: t("nav.requests") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/blog", label: t("nav.blog") },
   ];
 
   /** Whether a nav link is active, keyed by href for exactness. */
@@ -237,9 +238,9 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className="sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30 transition-all duration-200">
+      <header className="sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30 shadow-[0_2px_20px_rgba(0,0,0,0.07)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.35)] transition-all duration-200">
         {/* Mobile Header (lg:hidden) */}
-        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30">
+        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
           <button
             onClick={() => setOpen(true)}
             aria-label="Open menu"
@@ -273,11 +274,10 @@ export function SiteHeader() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-2 font-semibold ${
-                    active
+                  className={`text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-2 font-semibold ${active
                       ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6] dark:bg-zinc-800 border border-[#e5e2d5] dark:border-zinc-700 shadow-2xs"
                       : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
-                  }`}
+                    }`}
                 >
                   {active && <span className="w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
                   {link.label}
@@ -376,11 +376,10 @@ export function SiteHeader() {
             <div className="flex flex-col gap-1 py-4 overflow-y-auto flex-1">
               {navLinks.map((link, i) => (
                 <Link key={link.href} href={link.href} onClick={() => setOpen(false)}
-                  className={`text-xl font-bold py-3 px-2 rounded-xl transition-all duration-200 ${
-                    isActive(link.href)
+                  className={`text-xl font-bold py-3 px-2 rounded-xl transition-all duration-200 ${isActive(link.href)
                       ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6]/50 dark:bg-zinc-900"
                       : "text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-900/40"
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </Link>
@@ -465,7 +464,7 @@ export function SiteFooter() {
           <ul className="space-y-3 text-stone-400 font-medium">
             {[
               ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
-              { href: "/requests",  l: t("inkindRequests") },
+              { href: "/requests", l: t("inkindRequests") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
@@ -475,10 +474,11 @@ export function SiteFooter() {
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
             {[
-              { href: "/register",       l: t("createAccount") },
-              { href: "/dashboard",      l: t("myDashboard") },
-              ...(FEATURES.money ? [{ href: "/campaigns/new",  l: t("startCampaign") }] : []),
-              { href: "/help",           l: t("helpFaq") },
+              { href: "/register", l: t("createAccount") },
+              { href: "/dashboard", l: t("myDashboard") },
+              ...(FEATURES.money ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
+              { href: "/help", l: t("helpFaq") },
+              { href: "/blog", l: t("blog") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
@@ -519,7 +519,7 @@ export function SiteFooter() {
           </Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
           <Link href="/terms#campaigns" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
-            Campaign Policy
+            Campaign Policy (Coming Soon)
           </Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
           <Link href="/privacy#contact" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">

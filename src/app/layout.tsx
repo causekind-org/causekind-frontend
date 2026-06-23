@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 import { LocationGate } from "@/components/LocationGate";
 import { CookieConsent } from "@/components/CookieConsent";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
+import { DonorListingPrompt } from "@/components/DonorListingPrompt";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -53,6 +54,7 @@ export default async function RootLayout({
               <LocationGate />
               <CookieConsent />
               <WelcomeOverlay />
+              <DonorListingPrompt />
             </AuthProvider>
           </GoogleProvider>
         </NextIntlClientProvider>
