@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { HandHeart, Sparkles, X, Stethoscope, BookOpen, Sprout, Users, Home } from "lucide-react";
+import { HandHeart, Sparkles, X, Stethoscope, BookOpen, Sprout, Users, Home, Terminal, ShieldCheck, Database, Lock, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 
@@ -215,6 +215,125 @@ function DefaultWelcomeView({ user, exiting, dismiss }: { user: any; exiting: bo
   );
 }
 
+// ── Super Admin — "command center boot-up" ──────────────────────────────────────
+function SuperAdminWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
+  const bootLines = [
+    { icon: Terminal,     text: "Initializing CauseKind core…",       delay: 0.2 },
+    { icon: Lock,         text: "Authenticating super-admin keys…",   delay: 0.6 },
+    { icon: Database,     text: "Mounting database control surfaces…", delay: 1.0 },
+    { icon: ShieldCheck,  text: "Elevating privileges → ROOT",         delay: 1.4 },
+    { icon: CheckCircle2, text: "All systems online.",                 delay: 1.8 },
+  ];
+
+  return (
+    <div
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden bg-[#05070d] ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
+      onClick={dismiss}
+    >
+      {/* Animated grid backdrop */}
+      <div className="absolute inset-0 sa-grid-bg sa-grid-pulse pointer-events-none" />
+      {/* Ambient glows */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-[#b04a15]/15 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[360px] h-[360px] rounded-full bg-[#1e3a60]/20 blur-[120px] pointer-events-none" />
+      {/* Scanline sweep */}
+      <div className="absolute left-0 right-0 top-0 h-12 bg-gradient-to-b from-[#f0b97a]/25 to-transparent sa-boot-scanline pointer-events-none" />
+
+      <button onClick={dismiss} className="absolute top-6 right-6 text-white/30 hover:text-white hover:rotate-90 transition-all duration-300 p-2 z-10">
+        <X className="w-7 h-7" />
+      </button>
+
+      <div className="relative z-10 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        {/* Boot log */}
+        <div className="font-mono text-[13px] space-y-2 mb-8">
+          {bootLines.map((l, i) => (
+            <div key={i} className="sa-line-in flex items-center gap-2.5 text-emerald-400/90" style={{ animationDelay: `${l.delay}s` }}>
+              <l.icon className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-stone-300">{l.text}</span>
+              <span className="text-emerald-400 ml-auto">[ ok ]</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ACCESS GRANTED */}
+        <div className="text-center">
+          <h1 className="sa-access-granted text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#f0b97a] via-[#e07b3a] to-[#f0b97a] tracking-[0.35em] uppercase">
+            Access Granted
+          </h1>
+          <p className="mt-4 font-mono text-xs text-stone-500">
+            Entering Command Center<span className="sa-caret">_</span>
+          </p>
+        </div>
+
+        {/* Enter button */}
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={dismiss}
+            className="font-mono text-xs uppercase tracking-widest px-6 py-2.5 rounded-lg border border-[#f0b97a]/40 text-[#f0b97a] hover:bg-[#f0b97a]/10 hover:border-[#f0b97a]/70 transition-all active:scale-95"
+          >
+            &gt; Enter
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Normal Admin — warm aurora welcome ──────────────────────────────────────────
+function AdminWelcomeView({ user, exiting, dismiss }: { user: { email?: string } | null; exiting: boolean; dismiss: () => void }) {
+  const name = user?.email?.split("@")[0] ?? "Admin";
+  const cards = [
+    { icon: ShieldCheck,  label: "Review",  color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+    { icon: CheckCircle2, label: "Approve", color: "text-[#b04a15]",                          bg: "bg-[#b04a15]/10" },
+    { icon: Users,        label: "Connect", color: "text-[#1e3a60] dark:text-blue-400",       bg: "bg-[#1e3a60]/10" },
+  ];
+
+  return (
+    <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-stone-950/55 dark:bg-black/65 backdrop-blur-sm ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`} onClick={dismiss}>
+      <div className={`relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden ${exiting ? "ck-card-exit" : "ck-card-enter"}`} onClick={e => e.stopPropagation()}>
+        {/* Aurora top band */}
+        <div className="ck-aurora h-2 w-full" />
+
+        <button onClick={dismiss} className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-all active:scale-95 z-10">
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="px-8 pt-8 pb-9 flex flex-col items-center text-center gap-5">
+          <span className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#b04a15] to-[#e07b3a] text-white shadow-lg shadow-orange-900/20">
+            <ShieldCheck className="w-8 h-8" />
+          </span>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-extrabold text-stone-900 dark:text-stone-50 tracking-tight capitalize">
+              Welcome back, {name} 👋
+            </h2>
+            <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed max-w-[300px]">
+              Your approval desk is ready. Review and action donor &amp; donee requests, listings, and donations.
+            </p>
+          </div>
+
+          {/* Cards fanning in */}
+          <div className="flex gap-3 pt-1">
+            {cards.map((c, i) => (
+              <div key={c.label} className="ck-card-fan flex flex-col items-center gap-2 px-4 py-3 rounded-2xl border border-stone-100 dark:border-zinc-800" style={{ animationDelay: `${0.15 + i * 0.12}s` }}>
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${c.bg} ${c.color}`}>
+                  <c.icon className="w-4.5 h-4.5" />
+                </span>
+                <span className="text-[11px] font-bold text-stone-600 dark:text-stone-300">{c.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={dismiss} className="mt-2 px-8 py-2.5 rounded-full bg-[#b04a15] hover:bg-[#963c0d] text-white text-sm font-bold active:scale-95 transition-all duration-200">
+            Open dashboard
+          </button>
+          <div className="w-full h-[3px] bg-stone-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+            <div className="h-full bg-[#b04a15] rounded-full" style={{ animation: "ck-progress-drain 3.5s linear forwards", transformOrigin: "left center" }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function WelcomeOverlay() {
   const { user, isLoading } = useAuth();
   const [show, setShow] = useState(false);
@@ -237,17 +356,19 @@ export function WelcomeOverlay() {
       return;
     }
     setShow(true);
+    // DONOR view is interactive (category picker) — no auto-dismiss.
     if (user.role !== "DONOR") {
-      const t = setTimeout(() => dismiss(), 3500);
+      const delay = user.role === "SUPER_ADMIN" ? 4200 : 3500;
+      const t = setTimeout(() => dismiss(), delay);
       return () => clearTimeout(t);
     }
   }, [isLoading, user, dismiss]);
 
   if (!show) return null;
 
-  if (user?.role === "DONOR") {
-    return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
-  }
+  if (user?.role === "DONOR")       return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
+  if (user?.role === "SUPER_ADMIN") return <SuperAdminWelcomeView exiting={exiting} dismiss={dismiss} />;
+  if (user?.role === "ADMIN")       return <AdminWelcomeView user={user} exiting={exiting} dismiss={dismiss} />;
 
   return <DefaultWelcomeView user={user} exiting={exiting} dismiss={dismiss} />;
 }

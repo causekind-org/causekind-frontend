@@ -145,6 +145,12 @@ export default function AdminDashboardPage() {
       <div className="border-b bg-gradient-to-b from-accent/40 to-transparent">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[#b04a15]/10 border border-[#b04a15]/20 px-3 py-1 mb-2">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#b04a15]" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#b04a15]">
+                Welcome back, {user?.email?.split("@")[0] ?? "Admin"}
+              </span>
+            </div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
           </div>
@@ -173,7 +179,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div>
                   <p className="text-xs text-stone-400 uppercase tracking-wide">{s.label}</p>
-                  <p className="text-xl font-black text-[#C17A3A]">{s.value}</p>
+                  <p className="text-xl font-black text-[#b04a15]">{s.value}</p>
                 </div>
               </CardContent>
             </Card>
@@ -237,11 +243,11 @@ export default function AdminDashboardPage() {
         {/* Tabs */}
         <Tabs defaultValue="campaigns">
           <TabsList>
-            <TabsTrigger value="campaigns" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">{t("tabCampaigns")}</TabsTrigger>
-            <TabsTrigger value="items" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">{t("tabItemRequests")}</TabsTrigger>
-            <TabsTrigger value="listings" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">{t("tabItemListings")}</TabsTrigger>
-            <TabsTrigger value="contacts" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white">{t("tabContactShares")}</TabsTrigger>
-            <TabsTrigger value="payments" className="data-[state=active]:bg-[#C17A3A] data-[state=active]:text-white" onClick={loadPayments}>{t("tabPayments")}</TabsTrigger>
+            <TabsTrigger value="campaigns" className="data-[state=active]:bg-[#b04a15] data-[state=active]:text-white">{t("tabCampaigns")}</TabsTrigger>
+            <TabsTrigger value="items" className="data-[state=active]:bg-[#b04a15] data-[state=active]:text-white">{t("tabItemRequests")}</TabsTrigger>
+            <TabsTrigger value="listings" className="data-[state=active]:bg-[#b04a15] data-[state=active]:text-white">{t("tabItemListings")}</TabsTrigger>
+            <TabsTrigger value="contacts" className="data-[state=active]:bg-[#b04a15] data-[state=active]:text-white">{t("tabContactShares")}</TabsTrigger>
+            <TabsTrigger value="payments" className="data-[state=active]:bg-[#b04a15] data-[state=active]:text-white" onClick={loadPayments}>{t("tabPayments")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="campaigns" className="mt-6 space-y-4">
@@ -311,7 +317,7 @@ export default function AdminDashboardPage() {
 
                       {c.status === "PENDING_APPROVAL" && rejectId !== c.id && (
                         <div className="flex gap-2 pt-1">
-                          <Button size="sm" className="bg-[#C17A3A] hover:bg-[#a86430] text-white rounded-xl" onClick={() => handleApprove(c.id)} disabled={processing === c.id}>
+                          <Button size="sm" className="bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl" onClick={() => handleApprove(c.id)} disabled={processing === c.id}>
                             {processing === c.id ? <Loader2 className="size-4 animate-spin" /> : <><CheckCircle className="size-4" /> {t("approve")}</>}
                           </Button>
                           <Button size="sm" variant="destructive" className="rounded-xl" onClick={() => setRejectId(c.id)}>
@@ -363,7 +369,7 @@ export default function AdminDashboardPage() {
                         </div>
                         <div>
                           <p className="text-xs text-stone-400 uppercase tracking-wide">{t("totalCollected")}</p>
-                          <p className="text-xl font-black text-[#C17A3A]">{formatINR(donationStats.totalCollected)}</p>
+                          <p className="text-xl font-black text-[#b04a15]">{formatINR(donationStats.totalCollected)}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -374,7 +380,7 @@ export default function AdminDashboardPage() {
                         </div>
                         <div>
                           <p className="text-xs text-stone-400 uppercase tracking-wide">{t("completed")}</p>
-                          <p className="text-xl font-black text-[#C17A3A]">{donationStats.completedTransactions}</p>
+                          <p className="text-xl font-black text-[#b04a15]">{donationStats.completedTransactions}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -385,7 +391,7 @@ export default function AdminDashboardPage() {
                         </div>
                         <div>
                           <p className="text-xs text-stone-400 uppercase tracking-wide">{t("uniqueDonors")}</p>
-                          <p className="text-xl font-black text-[#C17A3A]">{donationStats.uniqueDonors}</p>
+                          <p className="text-xl font-black text-[#b04a15]">{donationStats.uniqueDonors}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -396,7 +402,7 @@ export default function AdminDashboardPage() {
                         </div>
                         <div>
                           <p className="text-xs text-stone-400 uppercase tracking-wide">{t("totalTransactions")}</p>
-                          <p className="text-xl font-black text-[#C17A3A]">{donationStats.totalTransactions}</p>
+                          <p className="text-xl font-black text-[#b04a15]">{donationStats.totalTransactions}</p>
                         </div>
                       </CardContent>
                     </Card>

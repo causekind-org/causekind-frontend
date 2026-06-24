@@ -32,6 +32,22 @@ function FacebookIcon() {
   );
 }
 
+// Decode the role claim from a JWT so we can route admins to the right home.
+function roleFromToken(token: string): string | null {
+  try {
+    return JSON.parse(atob(token.split(".")[1])).role ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Role-based landing destination after auth.
+function homeForRole(role: string | null): string {
+  if (role === "SUPER_ADMIN") return "/super-admin";
+  if (role === "ADMIN") return "/admin/dashboard";
+  return "/";
+}
+
 // ── Main content ───────────────────────────────────────────────────────────────
 function LoginContent() {
   const t = useTranslations("auth.login");
@@ -60,7 +76,7 @@ function LoginContent() {
         } else {
           setAuth(res.token, rememberMe);
           toast.success("Welcome back!");
-          router.push("/");
+          router.push(homeForRole(roleFromToken(res.token)));
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Google login failed");
@@ -95,7 +111,7 @@ function LoginContent() {
       const { token } = await login(email, password);
       setAuth(token, rememberMe);
       toast.success("Welcome back!");
-      router.push("/");
+      router.push(homeForRole(roleFromToken(token)));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Invalid credentials");
     } finally {

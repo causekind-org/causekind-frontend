@@ -57,6 +57,9 @@ export function MobileBottomNav() {
     return pathname.startsWith(href);
   };
 
+  // Hidden inside the super-admin command center (by path or role).
+  if (pathname?.startsWith("/super-admin") || user?.role === "SUPER_ADMIN") return null;
+
   return (
     <nav
       className={`fixed z-50 lg:hidden transition-all duration-300 ease-in-out
@@ -144,6 +147,8 @@ export function MobileBottomNav() {
 /* ─── Floating support / chat button (mobile + desktop) ─────────── */
 export function FloatingSupportButton() {
   const t = useTranslations("mobileNav");
+  const pathname = usePathname();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -169,6 +174,9 @@ export function FloatingSupportButton() {
       window.removeEventListener("ck-mobile-menu-toggle", handleMenuToggle);
     };
   }, []);
+
+  // Hidden inside the super-admin command center (by path or role).
+  if (pathname?.startsWith("/super-admin") || user?.role === "SUPER_ADMIN") return null;
 
   return (
     <>

@@ -555,3 +555,59 @@ export function adminGetAllDonations() {
 export function adminGetDonationStats() {
   return request<DonationStats>("/api/v1/admin/donations/stats");
 }
+
+// ── Super Admin — full DB control ───────────────────────────────────────────────
+
+export type SuperAdminEntity =
+  | "users" | "campaigns" | "donations" | "item-requests" | "item-listings" | "matches";
+
+export type SuperAdminRow = Record<string, unknown>;
+
+export type SuperAdminOverview = {
+  counts: Record<string, number>;
+  roleBreakdown: Record<string, number>;
+  totalRaised: number;
+};
+
+export type SqlResult = {
+  type?: "read" | "write";
+  columns?: string[];
+  rows?: Record<string, unknown>[];
+  rowCount?: number;
+  affectedRows?: number;
+  error?: string;
+};
+
+export function superAdminOverview() {
+  return request<SuperAdminOverview>("/api/v1/super-admin/overview");
+}
+
+export function superAdminList(entity: SuperAdminEntity, q?: string) {
+  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+  return request<SuperAdminRow[]>(`/api/v1/super-admin/${entity}${qs}`);
+}
+
+export function superAdminUpdate(entity: SuperAdminEntity, id: number, body: Record<string, unknown>) {
+  return request<SuperAdminRow>(`/api/v1/super-admin/${entity}/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminDelete(entity: SuperAdminEntity, id: number) {
+  return request<void>(`/api/v1/super-admin/${entity}/${id}`, { method: "DELETE" });
+}
+
+export function superAdminCreateUser(body: Record<string, unknown>) {
+  return request<SuperAdminRow>("/api/v1/super-admin/users", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminRunSql(query: string) {
+  return request<SqlResult>("/api/v1/super-admin/sql", {
+    method: "POST",
+    body: JSON.stringify({ query }),
+  });
+}
