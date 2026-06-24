@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { HandHeart, Sparkles, X, Stethoscope, BookOpen, Sprout, Users, Home, Terminal, ShieldCheck, Database, Lock, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 type OverlayConfig = {
@@ -336,8 +337,10 @@ function AdminWelcomeView({ user, exiting, dismiss }: { user: { email?: string }
 
 export function WelcomeOverlay() {
   const { user, isLoading } = useAuth();
+  const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [exiting, setExiting] = useState(false);
+  const isAdminDash = !!pathname?.startsWith("/admin/dashboard");
 
   const dismiss = useCallback(() => {
     setExiting(true);
@@ -348,6 +351,7 @@ export function WelcomeOverlay() {
   }, []);
 
   useEffect(() => {
+    if (isAdminDash) return;
     if (isLoading) return;
     const pending = sessionStorage.getItem("ck_welcome_pending");
     if (pending !== "1") return;
@@ -362,13 +366,13 @@ export function WelcomeOverlay() {
       const t = setTimeout(() => dismiss(), delay);
       return () => clearTimeout(t);
     }
-  }, [isLoading, user, dismiss]);
+  }, [isLoading, user, dismiss, isAdminDash]);
 
-  if (!show) return null;
+  if (isAdminDash || !show) return null;
 
   if (user?.role === "DONOR")       return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
   if (user?.role === "SUPER_ADMIN") return <SuperAdminWelcomeView exiting={exiting} dismiss={dismiss} />;
-  if (user?.role === "ADMIN")       return <AdminWelcomeView user={user} exiting={exiting} dismiss={dismiss} />;
+  if (user?.role === "ADMIN")       return null;
 
   return <DefaultWelcomeView user={user} exiting={exiting} dismiss={dismiss} />;
 }

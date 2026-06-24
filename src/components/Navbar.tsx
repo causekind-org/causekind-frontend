@@ -201,7 +201,10 @@ export function SiteHeader() {
 
   // Super-admin command center is full-screen & self-contained — hide public chrome.
   // Hide by path AND by role so there's no flash before the redirect kicks in.
-  const hideChrome = pathname?.startsWith("/super-admin") || user?.role === "SUPER_ADMIN";
+  const hideChrome =
+    pathname?.startsWith("/super-admin") ||
+    pathname?.startsWith("/admin/dashboard") ||
+    user?.role === "SUPER_ADMIN";
 
   const navLinks = [
     { href: "/", label: t("nav.home") },
@@ -452,7 +455,11 @@ export function SiteFooter() {
   const t = useTranslations("footer");
   const pathname = usePathname();
   const { user } = useAuth();
-  if (pathname?.startsWith("/super-admin") || user?.role === "SUPER_ADMIN") return null;
+  if (
+    pathname?.startsWith("/super-admin") ||
+    pathname?.startsWith("/admin/dashboard") ||
+    user?.role === "SUPER_ADMIN"
+  ) return null;
   return (
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
       <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 md:grid-cols-4">

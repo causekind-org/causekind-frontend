@@ -74,9 +74,10 @@ function LoginContent() {
           sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
           router.push("/register?social=google");
         } else {
+          // Fix #4: cookie set by server; use role from response directly
           setAuth(res.token, rememberMe);
           toast.success("Welcome back!");
-          router.push(homeForRole(roleFromToken(res.token)));
+          router.push(homeForRole(res.role));
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Google login failed");
@@ -108,10 +109,11 @@ function LoginContent() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { token } = await login(email, password);
-      setAuth(token, rememberMe);
+      // Fix #4: backend sets httpOnly cookie; we only use email+role from response
+      const res = await login(email, password, rememberMe);
+      setAuth(res.token, rememberMe); // shim — token discarded inside setAuth, only email/role kept
       toast.success("Welcome back!");
-      router.push(homeForRole(roleFromToken(token)));
+      router.push(homeForRole(res.role));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Invalid credentials");
     } finally {

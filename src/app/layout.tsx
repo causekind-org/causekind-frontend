@@ -14,6 +14,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { DonorListingPrompt } from "@/components/DonorListingPrompt";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
+import { AdminRedirect } from "@/components/AdminRedirect";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -46,6 +47,7 @@ export default async function RootLayout({
           <GoogleProvider>
             <AuthProvider>
               <SuperAdminRedirect />
+              <AdminRedirect />
               <ScrollProgress />
               <SiteHeader />
               <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>

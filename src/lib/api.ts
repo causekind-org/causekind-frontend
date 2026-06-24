@@ -1,14 +1,11 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("ck_token") ?? sessionStorage.getItem("ck_token");
-}
-
 function handleUnauthorized() {
   if (typeof window !== "undefined") {
+    // Fix #4: clear legacy token keys from old sessions that pre-date cookie auth
     localStorage.removeItem("ck_token");
     sessionStorage.removeItem("ck_token");
+    localStorage.removeItem("ck_user");
     window.location.href = "/login?expired=1";
   }
 }
@@ -24,15 +21,24 @@ async function request<T>(
   options: RequestOptions = {}
 ): Promise<T> {
   const { silent401, ...fetchOptions } = options;
-  const token = getToken();
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
+    // Fix #14: ngrok dev header is no longer sent to production — only in local dev.
+    ...(process.env.NODE_ENV === "development"
+      ? { "ngrok-skip-browser-warning": "true" }
+      : {}),
     ...(fetchOptions.headers as Record<string, string>),
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...fetchOptions, headers });
+  // Fix #4: credentials:"include" makes the browser attach the httpOnly session
+  // cookie automatically. We no longer read the JWT from localStorage or send an
+  // Authorization header — the cookie does that job, and JavaScript can't steal it.
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...fetchOptions,
+    headers,
+    credentials: "include",
+  });
 
   if (!res.ok) {
     if (res.status === 401) {
@@ -56,11 +62,13 @@ async function request<T>(
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-export function login(email: string, password: string) {
-  return request<{ token: string }>("/api/v1/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+// Fix #4: login now returns email + role from the JSON body; the JWT itself is
+// delivered as an httpOnly cookie — the frontend never sees or stores the token.
+export function login(email: string, password: string, rememberMe = false) {
+  return request<{ token: string; email: string; role: string; userId: number }>(
+    "/api/v1/auth/login",
+    { method: "POST", body: JSON.stringify({ email, password, rememberMe }) }
+  );
 }
 
 export function register(data: {
@@ -71,10 +79,14 @@ export function register(data: {
   password: string;
   role: string;
 }) {
-  return request<{ token: string }>("/api/v1/auth/register", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  return request<{ token: string; email: string; role: string; userId: number }>(
+    "/api/v1/auth/register",
+    { method: "POST", body: JSON.stringify(data) }
+  );
+}
+
+export function serverLogout() {
+  return request<void>("/api/v1/auth/logout", { method: "POST" });
 }
 
 // ── Platform Stats ────────────────────────────────────────────────────────────

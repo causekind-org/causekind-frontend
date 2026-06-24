@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usePathname } from "next/navigation";
 import { updateLocation } from "@/lib/api";
 import { detectLocationFromServer } from "@/app/actions/locations";
 
@@ -11,10 +12,13 @@ type ModalState = "hidden" | "visible" | "loading";
 
 export function LocationGate() {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [state, setState] = useState<ModalState>("hidden");
   const [shown, setShown] = useState(false);
+  const isAdminPath = !!pathname?.startsWith("/admin/dashboard") || !!pathname?.startsWith("/super-admin");
 
   useEffect(() => {
+    if (isAdminPath) return;
     if (typeof window === "undefined") return;
     if (localStorage.getItem("ck_location_prompted")) return;
 
@@ -24,11 +28,11 @@ export function LocationGate() {
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isAdminPath]);
 
   // When a previously logged-out visitor who shared a location signs in, sync it to their account.
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
+    if (isAdminPath || !user || typeof window === "undefined") return;
     const pending = localStorage.getItem("ck_pending_location");
     if (!pending) return;
     try {
@@ -43,7 +47,7 @@ export function LocationGate() {
     } catch {
       localStorage.removeItem("ck_pending_location");
     }
-  }, [user]);
+  }, [user, isAdminPath]);
 
   const dismiss = useCallback(() => {
     localStorage.setItem("ck_location_prompted", "1");
@@ -119,7 +123,7 @@ export function LocationGate() {
     );
   }, [user, dismiss]);
 
-  if (!shown || state === "hidden") return null;
+  if (isAdminPath || !shown || state === "hidden") return null;
 
   return (
     <>
