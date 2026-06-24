@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Nunito } from "next/font/google";
+import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
 import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -15,7 +15,7 @@ import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { DonorListingPrompt } from "@/components/DonorListingPrompt";
 
 const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
+  variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
 });
 
@@ -23,6 +23,26 @@ const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
   weight: ["700", "800", "900"],
+});
+
+const sourceSerif4 = Source_Serif_4({
+  variable: "--font-source-serif-4",
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+});
+
+const robotoMono = Roboto_Mono({
+  variable: "--font-roboto-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -40,7 +60,13 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${plusJakarta.className} ${nunito.variable} antialiased`}>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        />
+      </head>
+      <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>
             <AuthProvider>

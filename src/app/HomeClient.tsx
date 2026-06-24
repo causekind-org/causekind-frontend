@@ -91,15 +91,15 @@ function HeroQuoteSlider() {
 }
 
 function HeroImageSlider() {
-  const [images, setImages] = useState<string[]>(["/images/hero-4.webp"]);
+  const [images, setImages] = useState<string[]>(["/images/IMG on Home/(1).png"]);
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     getHeroImages().then((imgs) => {
       if (imgs && imgs.length > 0) {
-        // Ensure hero-4 is at the front so it doesn't flicker if it was currently showing
-        const otherImgs = imgs.filter(i => !i.includes("hero-4.webp"));
-        setImages(["/images/hero-4.webp", ...otherImgs]);
+        // Ensure (1).png is at the front so it doesn't flicker if it was currently showing
+        const otherImgs = imgs.filter(i => !i.includes("(1).png"));
+        setImages(["/images/IMG on Home/(1).png", ...otherImgs]);
       }
     });
   }, []);

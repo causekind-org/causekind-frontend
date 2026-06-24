@@ -393,7 +393,7 @@ function RegisterContent() {
         {/* Decorative graphic / background image */}
         <div className="absolute inset-0 opacity-[0.25] pointer-events-none mix-blend-luminosity">
           <Image
-            src="/images/hero-4.webp"
+            src="/Change_stories.jpg"
             alt=""
             fill
             className="object-cover"
@@ -678,7 +678,13 @@ function RegisterContent() {
                 <button
                   type="button"
                   disabled={googleLoading}
-                  onClick={() => triggerGoogle()}
+                  onClick={() => {
+                    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+                      toast.error("Google Sign-In is not configured.");
+                      return;
+                    }
+                    triggerGoogle();
+                  }}
                   className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
                 >
                   <GoogleIcon />
