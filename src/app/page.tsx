@@ -7,7 +7,7 @@ import {
 } from "@/lib/api";
 import HomeClient from "./HomeClient";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR cache for 60 seconds
 
 export default async function HomePage() {
   // Fetch initial data concurrently on the server
