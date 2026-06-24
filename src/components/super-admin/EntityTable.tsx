@@ -16,7 +16,6 @@ export type Column = {
   editable?: boolean;
   type?: ColumnType;
   options?: string[];
-  /** Shown in the table grid (default true). Set false for edit-only fields. */
   inTable?: boolean;
 };
 
@@ -30,7 +29,7 @@ function fmt(v: unknown): string {
   return s.length > 60 ? s.slice(0, 57) + "…" : s;
 }
 
-/* ── Edit / Create modal ─────────────────────────────────────────────────── */
+/* ── Edit / Create modal — always dark overlay regardless of theme ─────────── */
 function RowForm({
   title, columns, initial, onClose, onSave, saving,
 }: {
@@ -108,7 +107,7 @@ function RowForm({
   );
 }
 
-/* ── Delete confirm ──────────────────────────────────────────────────────── */
+/* ── Delete confirm — always dark overlay ────────────────────────────────── */
 function DeleteConfirm({ row, onCancel, onConfirm, deleting }: { row: SuperAdminRow; onCancel: () => void; onConfirm: () => void; deleting: boolean; }) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onCancel} style={{ animation: "fadeIn 0.15s ease forwards" }}>
@@ -131,13 +130,14 @@ function DeleteConfirm({ row, onCancel, onConfirm, deleting }: { row: SuperAdmin
 
 /* ── Main table ──────────────────────────────────────────────────────────── */
 export function EntityTable({
-  entity, title, columns, canCreate = false, createColumns,
+  entity, title, columns, canCreate = false, createColumns, isDark = true,
 }: {
   entity: SuperAdminEntity;
   title: string;
   columns: Column[];
   canCreate?: boolean;
   createColumns?: Column[];
+  isDark?: boolean;
 }) {
   const [rows, setRows] = useState<SuperAdminRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -206,32 +206,75 @@ export function EntityTable({
     }
   }
 
+  // ── Theme tokens ──
+  const t = isDark ? {
+    title:       "text-white",
+    subtitle:    "text-stone-500",
+    search:      "bg-white/5 border-white/10 text-white placeholder:text-stone-600 focus:border-[#f0b97a]/50",
+    refreshBtn:  "border-white/10 text-stone-400 hover:text-white hover:bg-white/5",
+    table:       "border-white/10 bg-[#0b0f1a]",
+    thead:       "bg-white/[0.03] border-b border-white/10",
+    theadTh:     "text-stone-500",
+    divider:     "divide-y divide-white/5",
+    rowHover:    "hover:bg-white/[0.03]",
+    cellId:      "text-stone-500",
+    cell:        "text-stone-300",
+    skeleton:    "bg-white/5",
+    empty:       "text-stone-500",
+    editHover:   "hover:text-[#f0b97a] hover:bg-[#f0b97a]/10",
+    deleteHover: "hover:text-red-400 hover:bg-red-500/10",
+    iconMuted:   "text-stone-400",
+    newBtn:      "bg-[#f0b97a] hover:bg-[#e0a96a] text-stone-950",
+  } : {
+    title:       "text-stone-900",
+    subtitle:    "text-stone-400",
+    search:      "bg-white border-stone-200 text-stone-900 placeholder:text-stone-400 focus:border-[#b04a15]/50",
+    refreshBtn:  "border-stone-200 text-stone-500 hover:text-stone-800 hover:bg-stone-100",
+    table:       "border-stone-200 bg-white",
+    thead:       "bg-stone-50 border-b border-stone-200",
+    theadTh:     "text-stone-500",
+    divider:     "divide-y divide-stone-100",
+    rowHover:    "hover:bg-stone-50",
+    cellId:      "text-stone-400",
+    cell:        "text-stone-700",
+    skeleton:    "bg-stone-100",
+    empty:       "text-stone-500",
+    editHover:   "hover:text-[#b04a15] hover:bg-[#b04a15]/10",
+    deleteHover: "hover:text-red-600 hover:bg-red-50",
+    iconMuted:   "text-stone-400",
+    newBtn:      "bg-[#b04a15] hover:bg-[#963c0d] text-white",
+  };
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h2 className="text-lg font-black text-white tracking-tight">{title}</h2>
-          <p className="text-xs text-stone-500">{rows.length} row{rows.length !== 1 ? "s" : ""}</p>
+          <h2 className={`text-lg font-black tracking-tight ${t.title}`}>{title}</h2>
+          <p className={`text-xs ${t.subtitle}`}>{rows.length} row{rows.length !== 1 ? "s" : ""}</p>
         </div>
         <div className="flex items-center gap-2 ml-auto">
-          <form
-            onSubmit={e => { e.preventDefault(); load(search); }}
-            className="relative"
-          >
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-500" />
+          <form onSubmit={e => { e.preventDefault(); load(search); }} className="relative">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${t.iconMuted}`} />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search…"
-              className="pl-9 pr-3 py-2 w-44 sm:w-56 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-[#f0b97a]/50"
+              className={`pl-9 pr-3 py-2 w-44 sm:w-56 rounded-lg border text-sm focus:outline-none transition-colors ${t.search}`}
             />
           </form>
-          <button onClick={() => load(search)} className="p-2 rounded-lg border border-white/10 text-stone-400 hover:text-white hover:bg-white/5 transition-colors" title="Refresh">
+          <button
+            onClick={() => load(search)}
+            className={`p-2 rounded-lg border transition-colors ${t.refreshBtn}`}
+            title="Refresh"
+          >
             <RefreshCw className="w-4 h-4" />
           </button>
           {canCreate && (
-            <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 bg-[#f0b97a] hover:bg-[#e0a96a] text-stone-950 font-bold px-4 py-2 rounded-lg text-sm transition-colors">
+            <button
+              onClick={() => setCreating(true)}
+              className={`flex items-center gap-1.5 font-bold px-4 py-2 rounded-lg text-sm transition-colors ${t.newBtn}`}
+            >
               <Plus className="w-4 h-4" /> New
             </button>
           )}
@@ -239,43 +282,73 @@ export function EntityTable({
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl border border-white/10 overflow-hidden bg-[#0b0f1a]">
+      <div className={`rounded-2xl border overflow-hidden ${t.table}`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-white/[0.03] border-b border-white/10">
+            <thead className={t.thead}>
               <tr>
                 {tableCols.map(c => (
-                  <th key={c.key} className="px-4 py-3 text-left font-bold text-[11px] uppercase tracking-wider text-stone-500 whitespace-nowrap">{c.label}</th>
+                  <th key={c.key} className={`px-4 py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                    {c.label}
+                  </th>
                 ))}
-                <th className="px-4 py-3 text-right font-bold text-[11px] uppercase tracking-wider text-stone-500">Actions</th>
+                <th className={`px-4 py-3 text-right font-bold text-[11px] uppercase tracking-wider ${t.theadTh}`}>
+                  Actions
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className={t.divider}>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {tableCols.map(c => <td key={c.key} className="px-4 py-3"><div className="h-3.5 bg-white/5 rounded animate-pulse" /></td>)}
-                    <td className="px-4 py-3"><div className="h-3.5 w-16 bg-white/5 rounded animate-pulse ml-auto" /></td>
+                    {tableCols.map(c => (
+                      <td key={c.key} className="px-4 py-3">
+                        <div className={`h-3.5 rounded animate-pulse ${t.skeleton}`} />
+                      </td>
+                    ))}
+                    <td className="px-4 py-3">
+                      <div className={`h-3.5 w-16 rounded animate-pulse ml-auto ${t.skeleton}`} />
+                    </td>
                   </tr>
                 ))
               ) : rows.length === 0 ? (
-                <tr><td colSpan={tableCols.length + 1} className="px-4 py-16 text-center text-stone-500 text-sm">No rows found.</td></tr>
+                <tr>
+                  <td colSpan={tableCols.length + 1} className={`px-4 py-16 text-center text-sm ${t.empty}`}>
+                    No rows found.
+                  </td>
+                </tr>
               ) : (
                 rows.map((row, i) => (
-                  <tr key={String(row.id)} className="sa-row-cascade hover:bg-white/[0.03] transition-colors" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
+                  <tr
+                    key={String(row.id)}
+                    className={`sa-row-cascade transition-colors ${t.rowHover}`}
+                    style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
+                  >
                     {tableCols.map(c => (
-                      <td key={c.key} className="px-4 py-3 text-stone-300 whitespace-nowrap">
+                      <td key={c.key} className={`px-4 py-3 whitespace-nowrap ${t.cell}`}>
                         {c.key === "id"
-                          ? <span className="font-mono text-stone-500">#{fmt(row[c.key])}</span>
+                          ? <span className={`font-mono ${t.cellId}`}>#{fmt(row[c.key])}</span>
                           : c.type === "boolean"
-                            ? <span className={`text-xs font-bold ${row[c.key] ? "text-emerald-400" : "text-stone-500"}`}>{fmt(row[c.key])}</span>
+                            ? <span className={`text-xs font-bold ${row[c.key] ? "text-emerald-500" : t.iconMuted}`}>{fmt(row[c.key])}</span>
                             : fmt(row[c.key])}
                       </td>
                     ))}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => setEditRow(row)} className="p-1.5 rounded-lg text-stone-400 hover:text-[#f0b97a] hover:bg-[#f0b97a]/10 transition-colors" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => setDeleteRow(row)} className="p-1.5 rounded-lg text-stone-400 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button
+                          onClick={() => setEditRow(row)}
+                          className={`p-1.5 rounded-lg transition-colors ${t.iconMuted} ${t.editHover}`}
+                          title="Edit"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteRow(row)}
+                          className={`p-1.5 rounded-lg transition-colors ${t.iconMuted} ${t.deleteHover}`}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

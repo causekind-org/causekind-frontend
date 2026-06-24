@@ -57,8 +57,12 @@ export function MobileBottomNav() {
     return pathname.startsWith(href);
   };
 
-  // Hidden inside the super-admin command center (by path or role).
-  if (pathname?.startsWith("/super-admin") || user?.role === "SUPER_ADMIN") return null;
+  // Hidden inside the super-admin command center and admin dashboard (by path or role).
+  if (
+    pathname?.startsWith("/super-admin") ||
+    pathname?.startsWith("/admin/dashboard") ||
+    user?.role === "SUPER_ADMIN"
+  ) return null;
 
   return (
     <nav
@@ -175,8 +179,12 @@ export function FloatingSupportButton() {
     };
   }, []);
 
-  // Hidden inside the super-admin command center (by path or role).
-  if (pathname?.startsWith("/super-admin") || user?.role === "SUPER_ADMIN") return null;
+  // Hidden inside the super-admin command center and admin dashboard (by path or role).
+  if (
+    pathname?.startsWith("/super-admin") ||
+    pathname?.startsWith("/admin/dashboard") ||
+    user?.role === "SUPER_ADMIN"
+  ) return null;
 
   return (
     <>

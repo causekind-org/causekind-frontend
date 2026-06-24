@@ -3,15 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Cookie, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 // Re-ask after 24 h if user previously declined
 const RE_ASK_DELAY_MS = 24 * 60 * 60 * 1000;
 
 export function CookieConsent() {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
+  const isAdminPath = !!pathname?.startsWith("/admin/dashboard") || !!pathname?.startsWith("/super-admin");
 
   useEffect(() => {
+    if (isAdminPath) return; // don't run on isolated admin pages
+
     const stored = localStorage.getItem("ck_cookie_consent");
     if (stored === "accepted") return; // accepted — never ask again
 
@@ -34,7 +39,7 @@ export function CookieConsent() {
     // Show after small delay so entrance animation is visible on first paint
     const t = setTimeout(() => setVisible(true), 1200);
     return () => clearTimeout(t);
-  }, []);
+  }, [isAdminPath]);
 
   function dismiss(choice: "accepted" | "declined") {
     if (choice === "accepted") {
@@ -51,7 +56,7 @@ export function CookieConsent() {
     setTimeout(() => setVisible(false), 380);
   }
 
-  if (!visible) return null;
+  if (isAdminPath || !visible) return null;
 
   return (
     <>

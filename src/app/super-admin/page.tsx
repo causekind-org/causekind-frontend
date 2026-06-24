@@ -9,7 +9,59 @@ import { SqlConsole } from "@/components/super-admin/SqlConsole";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
+  Sun, Moon, AlertTriangle,
 } from "lucide-react";
+
+// ── Theme tokens ──────────────────────────────────────────────────────────────
+type Th = {
+  root: string; sidebar: string; topbar: string; divider: string; card: string;
+  textPrimary: string; textMuted: string; textDim: string; textDimmer: string;
+  navActive: string; navInactive: string; signout: string;
+  accent: string; roleBar: string; toggleBtn: string; sqlLabel: string;
+  roleText: string; barGradient: string;
+};
+
+const DARK: Th = {
+  root:        "bg-[#05070d] text-white",
+  sidebar:     "bg-[#080b14]/80 backdrop-blur-sm",
+  topbar:      "bg-[#05070d]/80 backdrop-blur-md",
+  divider:     "border-white/10",
+  card:        "bg-white/[0.03] border-white/10",
+  textPrimary: "text-white",
+  textMuted:   "text-stone-400",
+  textDim:     "text-stone-500",
+  textDimmer:  "text-stone-600",
+  navActive:   "bg-[#f0b97a]/10 text-[#f0b97a] border-[#f0b97a]/20",
+  navInactive: "text-stone-400 hover:text-white hover:bg-white/5 border-transparent",
+  signout:     "text-stone-400 hover:text-red-400 hover:bg-red-500/10",
+  accent:      "#f0b97a",
+  roleBar:     "bg-white/5",
+  toggleBtn:   "bg-white/10 hover:bg-white/15 text-[#f0b97a]",
+  sqlLabel:    "text-red-400/70",
+  roleText:    "text-stone-400",
+  barGradient: "from-[#b04a15] to-[#f0b97a]",
+};
+
+const LIGHT: Th = {
+  root:        "bg-[#faf7f2] text-stone-900",
+  sidebar:     "bg-white",
+  topbar:      "bg-white/95 backdrop-blur-md",
+  divider:     "border-stone-200",
+  card:        "bg-white border-stone-200 shadow-sm",
+  textPrimary: "text-stone-900",
+  textMuted:   "text-stone-500",
+  textDim:     "text-stone-500",
+  textDimmer:  "text-stone-400",
+  navActive:   "bg-[#b04a15]/10 text-[#b04a15] border-[#b04a15]/20",
+  navInactive: "text-stone-600 hover:text-stone-900 hover:bg-stone-100 border-transparent",
+  signout:     "text-stone-500 hover:text-red-600 hover:bg-red-50",
+  accent:      "#b04a15",
+  roleBar:     "bg-stone-100",
+  toggleBtn:   "bg-stone-100 hover:bg-stone-200 text-stone-600",
+  sqlLabel:    "text-red-600/70",
+  roleText:    "text-stone-500",
+  barGradient: "from-[#b04a15] to-[#e07b3a]",
+};
 
 // ── Enum option sets (mirror backend enums) ──────────────────────────────────
 const ROLES = ["DONOR", "DONEE", "ADMIN", "SUPER_ADMIN"];
@@ -40,7 +92,6 @@ const USER_CREATE_COLS: Column[] = [
   { key: "city", label: "City", editable: true },
   { key: "role", label: "Role", editable: true, type: "select", options: ROLES },
 ];
-
 const CAMPAIGN_COLS: Column[] = [
   { key: "id", label: "ID" },
   { key: "title", label: "Title", editable: true },
@@ -54,7 +105,6 @@ const CAMPAIGN_COLS: Column[] = [
   { key: "description", label: "Description", editable: true, type: "textarea", inTable: false },
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];
-
 const DONATION_COLS: Column[] = [
   { key: "id", label: "ID" },
   { key: "donorName", label: "Donor" },
@@ -65,7 +115,6 @@ const DONATION_COLS: Column[] = [
   { key: "razorpayOrderId", label: "Order ID" },
   { key: "razorpayPaymentId", label: "Payment ID", editable: true, type: "text", inTable: false },
 ];
-
 const REQUEST_COLS: Column[] = [
   { key: "id", label: "ID" },
   { key: "title", label: "Title", editable: true },
@@ -79,7 +128,6 @@ const REQUEST_COLS: Column[] = [
   { key: "description", label: "Description", editable: true, type: "textarea", inTable: false },
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];
-
 const LISTING_COLS: Column[] = [
   { key: "id", label: "ID" },
   { key: "title", label: "Title", editable: true },
@@ -93,7 +141,6 @@ const LISTING_COLS: Column[] = [
   { key: "description", label: "Description", editable: true, type: "textarea", inTable: false },
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];
-
 const MATCH_COLS: Column[] = [
   { key: "id", label: "ID" },
   { key: "matchType", label: "Type" },
@@ -107,13 +154,13 @@ const MATCH_COLS: Column[] = [
 ];
 
 const NAV = [
-  { key: "overview",      label: "Overview",   icon: LayoutDashboard },
-  { key: "users",         label: "Users",      icon: Users },
-  { key: "campaigns",     label: "Campaigns",  icon: Megaphone },
-  { key: "donations",     label: "Donations",  icon: CreditCard },
-  { key: "item-requests", label: "Requests",   icon: ClipboardList },
-  { key: "item-listings", label: "Listings",   icon: Package },
-  { key: "matches",       label: "Matches",    icon: Handshake },
+  { key: "overview",      label: "Overview",    icon: LayoutDashboard },
+  { key: "users",         label: "Users",       icon: Users },
+  { key: "campaigns",     label: "Campaigns",   icon: Megaphone },
+  { key: "donations",     label: "Donations",   icon: CreditCard },
+  { key: "item-requests", label: "Requests",    icon: ClipboardList },
+  { key: "item-listings", label: "Listings",    icon: Package },
+  { key: "matches",       label: "Matches",     icon: Handshake },
   { key: "sql",           label: "SQL Console", icon: Terminal },
 ] as const;
 
@@ -136,23 +183,40 @@ function useCountUp(target: number, ms = 900) {
   return val;
 }
 
-function StatTile({ label, value, icon: Icon, delay, accent = "#f0b97a" }: { label: string; value: number; icon: React.ElementType; delay: number; accent?: string }) {
+function StatTile({
+  label, value, icon: Icon, delay, accent = "#f0b97a", th,
+}: {
+  label: string; value: number; icon: React.ElementType; delay: number; accent?: string; th: Th;
+}) {
   const v = useCountUp(value);
   return (
-    <div className="sa-count-glow relative rounded-2xl border border-white/10 bg-white/[0.03] p-5 overflow-hidden" style={{ animationDelay: `${delay}ms` }}>
-      <div className="absolute -bottom-8 -right-8 w-28 h-28 rounded-full blur-2xl pointer-events-none" style={{ background: `${accent}22` }} />
+    <div
+      className={`sa-count-glow relative rounded-2xl border p-5 overflow-hidden ${th.card}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div
+        className="absolute -bottom-8 -right-8 w-28 h-28 rounded-full blur-2xl pointer-events-none"
+        style={{ background: `${accent}22` }}
+      />
       <div className="flex items-center justify-between mb-3 relative z-10">
-        <span className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${accent}1a`, color: accent }}>
+        <span
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: `${accent}1a`, color: accent }}
+        >
           <Icon className="w-5 h-5" />
         </span>
       </div>
-      <p className="text-3xl font-black text-white tabular-nums leading-none relative z-10">{v.toLocaleString("en-IN")}</p>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500 mt-1.5 relative z-10">{label}</p>
+      <p className={`text-3xl font-black tabular-nums leading-none relative z-10 ${th.textPrimary}`}>
+        {v.toLocaleString("en-IN")}
+      </p>
+      <p className={`text-[11px] font-bold uppercase tracking-wider mt-1.5 relative z-10 ${th.textDim}`}>
+        {label}
+      </p>
     </div>
   );
 }
 
-function OverviewSection() {
+function OverviewSection({ th }: { th: Th }) {
   const [data, setData] = useState<SuperAdminOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -160,32 +224,36 @@ function OverviewSection() {
     superAdminOverview().then(setData).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-7 h-7 animate-spin text-[#f0b97a]" /></div>;
-  if (!data) return <p className="text-stone-500 text-sm">Failed to load overview.</p>;
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <Loader2 className="w-7 h-7 animate-spin" style={{ color: th.accent }} />
+    </div>
+  );
+  if (!data) return <p className={`text-sm ${th.textDim}`}>Failed to load overview.</p>;
 
   const c = data.counts;
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-lg font-black text-white tracking-tight">Database Overview</h2>
-        <p className="text-xs text-stone-500">Live snapshot of every table.</p>
+        <h2 className={`text-lg font-black tracking-tight ${th.textPrimary}`}>Database Overview</h2>
+        <p className={`text-xs ${th.textDim}`}>Live snapshot of every table.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatTile label="Users"        value={c["users"] ?? 0}          icon={Users}        delay={0}   accent="#f0b97a" />
-        <StatTile label="Campaigns"    value={c["campaigns"] ?? 0}      icon={Megaphone}    delay={60}  accent="#e07b3a" />
-        <StatTile label="Donations"    value={c["donations"] ?? 0}      icon={CreditCard}   delay={120} accent="#4ade80" />
-        <StatTile label="Requests"     value={c["item-requests"] ?? 0}  icon={ClipboardList} delay={180} accent="#60a5fa" />
-        <StatTile label="Listings"     value={c["item-listings"] ?? 0}  icon={Package}      delay={240} accent="#a78bfa" />
-        <StatTile label="Matches"      value={c["matches"] ?? 0}        icon={Handshake}    delay={300} accent="#f472b6" />
+        <StatTile label="Users"     value={c["users"] ?? 0}         icon={Users}        delay={0}   accent="#f0b97a" th={th} />
+        <StatTile label="Campaigns" value={c["campaigns"] ?? 0}     icon={Megaphone}    delay={60}  accent="#e07b3a" th={th} />
+        <StatTile label="Donations" value={c["donations"] ?? 0}     icon={CreditCard}   delay={120} accent="#4ade80" th={th} />
+        <StatTile label="Requests"  value={c["item-requests"] ?? 0} icon={ClipboardList} delay={180} accent="#60a5fa" th={th} />
+        <StatTile label="Listings"  value={c["item-listings"] ?? 0} icon={Package}      delay={240} accent="#a78bfa" th={th} />
+        <StatTile label="Matches"   value={c["matches"] ?? 0}       icon={Handshake}    delay={300} accent="#f472b6" th={th} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Role breakdown */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className={`rounded-2xl border p-5 ${th.card}`}>
           <div className="flex items-center gap-2 mb-4">
-            <Database className="w-4 h-4 text-[#f0b97a]" />
-            <h3 className="text-sm font-bold text-white">Users by role</h3>
+            <Database className="w-4 h-4" style={{ color: th.accent }} />
+            <h3 className={`text-sm font-bold ${th.textPrimary}`}>Users by role</h3>
           </div>
           <div className="space-y-3">
             {Object.entries(data.roleBreakdown).map(([role, count]) => {
@@ -194,11 +262,14 @@ function OverviewSection() {
               return (
                 <div key={role}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="font-mono text-stone-400">{role}</span>
-                    <span className="font-bold text-white">{count}</span>
+                    <span className={`font-mono ${th.roleText}`}>{role}</span>
+                    <span className={`font-bold ${th.textPrimary}`}>{count}</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-[#b04a15] to-[#f0b97a] transition-all duration-700" style={{ width: `${pct}%` }} />
+                  <div className={`h-1.5 rounded-full overflow-hidden ${th.roleBar}`}>
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r ${th.barGradient} transition-all duration-700`}
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
               );
@@ -207,15 +278,15 @@ function OverviewSection() {
         </div>
 
         {/* Total raised */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex flex-col justify-center">
+        <div className={`rounded-2xl border p-5 flex flex-col justify-center ${th.card}`}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white">Total raised (completed)</h3>
+            <h3 className={`text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
           </div>
           <p className="text-4xl font-black text-emerald-400 tabular-nums">
             ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
           </p>
-          <p className="text-xs text-stone-500 mt-1">Across all completed donations.</p>
+          <p className={`text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
         </div>
       </div>
     </div>
@@ -228,6 +299,22 @@ export default function SuperAdminPage() {
   const router = useRouter();
   const [section, setSection] = useState<SectionKey>("overview");
 
+  // Theme
+  const [isDark, setIsDark] = useState(true);
+  const th = isDark ? DARK : LIGHT;
+
+  // SQL warning modal
+  const [sqlModalOpen, setSqlModalOpen] = useState(false);
+  const [sqlAck, setSqlAck] = useState(false);
+
+  function handleNavClick(key: SectionKey) {
+    if (key === "sql" && !sqlAck) {
+      setSqlModalOpen(true);
+      return;
+    }
+    setSection(key);
+  }
+
   useEffect(() => {
     if (isLoading) return;
     if (!user) { router.replace("/login"); return; }
@@ -236,16 +323,28 @@ export default function SuperAdminPage() {
 
   const content = useMemo(() => {
     switch (section) {
-      case "overview":      return <OverviewSection />;
-      case "users":         return <EntityTable entity="users"         title="Users"        columns={USER_COLS} canCreate createColumns={USER_CREATE_COLS} />;
-      case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"    columns={CAMPAIGN_COLS} />;
-      case "donations":     return <EntityTable entity="donations"     title="Donations"    columns={DONATION_COLS} />;
-      case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS} />;
-      case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS} />;
-      case "matches":       return <EntityTable entity="matches"       title="Matches"      columns={MATCH_COLS} />;
-      case "sql":           return <SqlConsole />;
+      case "overview":      return <OverviewSection th={th} />;
+      case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark} />;
+      case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
+      case "donations":     return <EntityTable entity="donations"     title="Donations"     columns={DONATION_COLS} isDark={isDark} />;
+      case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS}   isDark={isDark} />;
+      case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS}   isDark={isDark} />;
+      case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
+      case "sql":           return <SqlConsole isDark={isDark} />;
     }
-  }, [section]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, isDark]);
+
+  // Theme toggle button (reused in sidebar + topbar)
+  const ThemeToggle = (
+    <button
+      onClick={() => setIsDark(d => !d)}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${th.toggleBtn}`}
+    >
+      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    </button>
+  );
 
   if (isLoading || !user || user.role !== "SUPER_ADMIN") {
     return (
@@ -256,71 +355,95 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#05070d] text-white relative">
-      {/* Animated grid backdrop */}
-      <div className="fixed inset-0 sa-grid-bg opacity-40 pointer-events-none" />
-      <div className="fixed top-0 left-1/3 w-[500px] h-[500px] rounded-full bg-[#b04a15]/10 blur-[150px] pointer-events-none" />
+    <div className={`min-h-screen relative ${th.root}`}>
+      {/* Animated grid backdrop (dark only) */}
+      {isDark && (
+        <>
+          <div className="fixed inset-0 sa-grid-bg opacity-40 pointer-events-none" />
+          <div className="fixed top-0 left-1/3 w-[500px] h-[500px] rounded-full bg-[#b04a15]/10 blur-[150px] pointer-events-none" />
+        </>
+      )}
+      {/* Light mode subtle warm glow */}
+      {!isDark && (
+        <div className="fixed top-0 right-0 w-[600px] h-[400px] rounded-full bg-[#b04a15]/5 blur-[120px] pointer-events-none" />
+      )}
 
       <div className="relative z-10 flex min-h-screen">
         {/* ── Sidebar (desktop) ── */}
-        <aside className="hidden lg:flex w-60 shrink-0 flex-col border-r border-white/10 bg-[#080b14]/80 backdrop-blur-sm">
-          <div className="px-5 py-5 border-b border-white/10">
+        <aside className={`hidden lg:flex w-60 shrink-0 flex-col border-r ${th.divider} ${th.sidebar}`}>
+          <div className={`px-5 py-5 border-b ${th.divider}`}>
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#b04a15] to-[#f0b97a] flex items-center justify-center shrink-0">
-                <ShieldAlert className="w-4.5 h-4.5 text-white" />
+                <ShieldAlert className="w-4 h-4 text-white" />
               </span>
               <div>
-                <p className="text-sm font-black tracking-tight leading-none">Command Center</p>
-                <p className="text-[10px] text-stone-500 mt-0.5">Super Admin</p>
+                <p className={`text-sm font-black tracking-tight leading-none ${th.textPrimary}`}>Command Center</p>
+                <p className={`text-[10px] mt-0.5 ${th.textDim}`}>Super Admin</p>
               </div>
             </div>
           </div>
+
           <nav className="flex-1 p-3 space-y-1">
             {NAV.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
-                onClick={() => setSection(key)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  section === key
-                    ? "bg-[#f0b97a]/10 text-[#f0b97a] border border-[#f0b97a]/20"
-                    : "text-stone-400 hover:text-white hover:bg-white/5 border border-transparent"
+                onClick={() => handleNavClick(key)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  section === key ? th.navActive : th.navInactive
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 {label}
-                {key === "sql" && <span className="ml-auto text-[9px] font-black uppercase text-red-400/70">danger</span>}
+                {key === "sql" && (
+                  <span className={`ml-auto text-[9px] font-black uppercase ${th.sqlLabel}`}>danger</span>
+                )}
               </button>
             ))}
           </nav>
-          <div className="p-3 border-t border-white/10">
-            <p className="text-[10px] text-stone-600 px-3 mb-2 truncate font-mono">{user.email}</p>
-            <button onClick={() => { logout(); router.push("/login"); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-stone-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-              <LogOut className="w-4 h-4" /> Sign out
-            </button>
+
+          <div className={`p-3 border-t ${th.divider}`}>
+            <p className={`text-[10px] px-3 mb-2 truncate font-mono ${th.textDimmer}`}>{user.email}</p>
+            <div className="flex items-center gap-1.5">
+              {ThemeToggle}
+              <button
+                onClick={() => { logout(); router.push("/login"); }}
+                className={`flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${th.signout}`}
+              >
+                <LogOut className="w-4 h-4" /> Sign out
+              </button>
+            </div>
           </div>
         </aside>
 
         {/* ── Main column ── */}
         <div className="flex-1 min-w-0 flex flex-col">
           {/* Topbar */}
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 px-5 py-3.5 border-b border-white/10 bg-[#05070d]/80 backdrop-blur-md">
+          <header className={`sticky top-0 z-20 flex items-center justify-between gap-3 px-5 py-3.5 border-b ${th.divider} ${th.topbar}`}>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-mono text-stone-400">root@causekind</span>
+              <span className={`text-xs font-mono ${th.textMuted}`}>root@causekind</span>
             </div>
-            <button onClick={() => { logout(); router.push("/login"); }} className="lg:hidden flex items-center gap-1.5 text-xs font-semibold text-stone-400 hover:text-red-400 transition-colors">
-              <LogOut className="w-3.5 h-3.5" /> Sign out
-            </button>
+            <div className="flex items-center gap-2">
+              {ThemeToggle}
+              <button
+                onClick={() => { logout(); router.push("/login"); }}
+                className={`lg:hidden flex items-center gap-1.5 text-xs font-semibold transition-colors ${th.signout}`}
+              >
+                <LogOut className="w-3.5 h-3.5" /> Sign out
+              </button>
+            </div>
           </header>
 
           {/* Mobile nav strip */}
-          <div className="lg:hidden flex gap-1.5 overflow-x-auto scrollbar-hide px-4 py-3 border-b border-white/10">
+          <div className={`lg:hidden flex gap-1.5 overflow-x-auto scrollbar-hide px-4 py-3 border-b ${th.divider}`}>
             {NAV.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
-                onClick={() => setSection(key)}
+                onClick={() => handleNavClick(key)}
                 className={`flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
-                  section === key ? "bg-[#f0b97a]/10 text-[#f0b97a]" : "text-stone-400 hover:text-white"
+                  section === key
+                    ? isDark ? "bg-[#f0b97a]/10 text-[#f0b97a]" : "bg-[#b04a15]/10 text-[#b04a15]"
+                    : th.textMuted + " hover:text-white"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" /> {label}
@@ -334,6 +457,75 @@ export default function SuperAdminPage() {
           </main>
         </div>
       </div>
+
+      {/* ── SQL Warning Modal ─────────────────────────────────────────────── */}
+      {sqlModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setSqlModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md mx-4 rounded-2xl border border-red-500/40 bg-[#0f0a0d] shadow-2xl p-6 space-y-5"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5.5 h-5.5 text-red-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-white leading-tight">SQL Console — Danger Zone</h2>
+                <p className="text-xs text-stone-500 mt-0.5">Direct production database access</p>
+              </div>
+            </div>
+
+            {/* Warning body */}
+            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] px-4 py-3.5 space-y-2">
+              <p className="text-sm text-stone-200 leading-relaxed">
+                <span className="font-black text-red-400">Warning:</span> Changes made here are{" "}
+                <span className="font-bold text-white underline decoration-red-500/50">permanent and cannot be undone</span>.
+              </p>
+              <p className="text-sm text-stone-400 leading-relaxed">
+                Queries run directly against the live database. Destructive operations such as{" "}
+                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                  UPDATE
+                </code>{" "}
+                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                  DELETE
+                </code>{" "}
+                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                  DROP
+                </code>{" "}
+                bypass all application safeguards.
+              </p>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Only proceed if you fully understand the consequences. This action has been logged.
+            </p>
+
+            {/* Actions */}
+            <div className="flex gap-2.5 pt-1">
+              <button
+                onClick={() => {
+                  setSqlAck(true);
+                  setSqlModalOpen(false);
+                  setSection("sql");
+                }}
+                className="flex-1 bg-red-700/80 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-colors"
+              >
+                I understand — proceed
+              </button>
+              <button
+                onClick={() => setSqlModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-stone-400 hover:text-white border border-white/10 hover:bg-white/5 transition-colors"
+              >
+                Go back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
