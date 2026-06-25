@@ -53,7 +53,17 @@ async function request<T>(
     }
     if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
     const body = await res.json().catch(() => ({}));
-    throw new Error(body?.message ?? body?.title ?? "Something went wrong. Please try again.");
+    const msg =
+      body?.message ??
+      body?.detail ??
+      (Array.isArray(body?.errors) && body.errors.length > 0
+        ? body.errors.map((e: { defaultMessage?: string; field?: string }) =>
+            e.field ? `${e.field}: ${e.defaultMessage}` : e.defaultMessage
+          ).join(", ")
+        : null) ??
+      (body?.title !== "Bad Request" ? body?.title : null) ??
+      `Something went wrong (${res.status})`;
+    throw new Error(msg);
   }
 
   if (res.status === 204) return undefined as T;
