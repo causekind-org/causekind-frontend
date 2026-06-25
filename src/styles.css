@@ -1657,3 +1657,39 @@ div:has(.searchable-select-open) {
 .ck-card-enter { animation: ck-card-in 0.42s cubic-bezier(0.22,1,0.36,1) both; }
 .ck-card-exit  { animation: ck-card-out 0.38s cubic-bezier(0.4,0,1,1) both; }
 @keyframes ck-progress-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ── CauseKind Animated Logo ── */
+@keyframes ck-logo-heartbeat {
+  0%, 70%, 100% { transform: scale(1) rotate(0deg); }
+  15%            { transform: scale(1.18) rotate(-10deg); }
+  35%            { transform: scale(0.93) rotate(5deg); }
+  50%            { transform: scale(1.1)  rotate(-4deg); }
+}
+.ck-logo-heart-anim {
+  display: block;
+  animation: ck-logo-heartbeat 3.6s ease-in-out 0.8s infinite;
+  transform-origin: center;
+}
+@keyframes ck-kind-shine {
+  0%   { background-position: 150% center; }
+  100% { background-position: -150% center; }
+}
+.ck-logo-kind-shimmer {
+  background: linear-gradient(
+    90deg,
+    #b04a15 0%,
+    #b04a15 25%,
+    #f0a56a 45%,
+    #fcd5a8 52%,
+    #f0a56a 59%,
+    #b04a15 75%,
+    #b04a15 100%
+  );
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ck-kind-shine 4s linear 1.4s infinite;
+}
+
+/* ── CauseKind Logo SVG: all animation handled by Web Animations API in LogoSVG.tsx ── */
