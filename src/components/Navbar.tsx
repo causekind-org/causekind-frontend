@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutDashboard, LogOut, Globe, ChevronRight, Heart } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, Heart, HandHeart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyProfile, getMyMatches, type UserProfile } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
@@ -32,27 +32,66 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
+const logoLetterVariants = {
+  hidden: { opacity: 0, y: 6 },
+  visible: { opacity: 1, y: 0 },
+};
+const logoStagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.15 } },
+};
+
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
   return (
-    <span
-      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2 hover:opacity-95 transition-all duration-200`}
+    <motion.span
+      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
+      aria-label="CauseKind"
+      whileHover={{ scale: 1.03 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       {!hideIcon && (
-        <Image
-          src="/logo-outline.png"
-          alt="CauseKind Logo"
-          width={dimensions[size].w}
-          height={dimensions[size].h}
+        <motion.div
           className="shrink-0"
-        />
+          initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.05 }}
+        >
+          <LogoVideo size={dimensions[size].w} />
+        </motion.div>
       )}
-      <span className="flex items-center text-stone-900 dark:text-stone-100 font-extrabold text-base sm:text-xl">
-        <span className="tracking-tight">Cause</span>
-        <span className="text-[#b04a15] dark:text-orange-400">Kind</span>
+
+      <span className="flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
+        {/* "Cause" — stagger letter reveal */}
+        <motion.span
+          className="text-stone-900 dark:text-stone-100 tracking-tight flex"
+          variants={logoStagger}
+          initial="hidden"
+          animate="visible"
+        >
+          {"Cause".split("").map((l, i) => (
+            <motion.span
+              key={i}
+              variants={logoLetterVariants}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {l}
+            </motion.span>
+          ))}
+        </motion.span>
+
+        {/* "Kind" — slides in as one word after "Cause", then shimmers */}
+        <motion.span
+          className="ck-logo-kind-shimmer"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.44 }}
+        >
+          Kind
+        </motion.span>
       </span>
-    </span>
+    </motion.span>
   );
 }
 
@@ -426,23 +465,23 @@ export function SiteHeader() {
                 exit={{ x: "100%", rotateY: 15, opacity: 0.9 }}
                 transition={{ type: "spring", damping: 26, stiffness: 210 }}
                 style={{ perspective: "1200px" }}
-                className="fixed right-0 top-0 bottom-0 z-[9995] w-[88%] max-w-[390px] bg-gradient-to-b from-[#faf8f5] via-[#faf8f5] to-[#edf4f9] dark:from-zinc-950 dark:via-zinc-950 dark:to-[#0e1726] border-l border-[#e5e2d5]/60 dark:border-zinc-800 shadow-2xl p-6 sm:p-8 flex flex-col justify-between overflow-y-auto scrollbar-hide"
+                className="fixed right-0 top-0 bottom-0 z-[9995] w-[88%] max-w-[390px] bg-gradient-to-b from-[#f0f6fa] via-[#faf8f5] to-[#edf4f9] dark:from-zinc-950 dark:via-zinc-950 dark:to-[#0e1726] border-l border-[#e5e2d5]/40 dark:border-zinc-850 shadow-2xl p-6 sm:p-8 flex flex-col justify-between overflow-y-auto scrollbar-hide"
               >
                 {/* Close Button on top right */}
                 <button
                   onClick={() => setIsSidebarOpen(false)}
                   aria-label="Close menu"
-                  className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-450 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-colors z-10"
+                  className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-400 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-colors z-10"
                 >
                   <X className="w-5 h-5" />
                 </button>
 
-                <div className="flex flex-col flex-1 items-center">
+                <div className="flex flex-col flex-1 items-center w-full">
                   {/* 1. Profile Block */}
                   {user && (
                     <div className="flex flex-col items-center mt-6 w-full text-center">
                       <div className="relative">
-                        <div className="w-24 h-24 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-850 shadow-md">
+                        <div className="w-24 h-24 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shadow-md">
                           {avatarDataUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -466,39 +505,39 @@ export function SiteHeader() {
                         </div>
                       </div>
 
-                      <div className="space-y-1.5 mt-4">
-                        <h3 className="text-xl font-extrabold text-stone-900 dark:text-white leading-tight">
+                      <div className="space-y-2 mt-4 flex flex-col items-center">
+                        <h3 className="text-xl font-bold text-stone-850 dark:text-white leading-tight">
                           {profile?.fullName || user.email.split("@")[0]}
                         </h3>
                         
-                        <div className="inline-flex items-center gap-1 bg-[#b04a15]/10 dark:bg-orange-950/20 text-[#b04a15] dark:text-orange-400 text-[10px] sm:text-xs font-black px-4.5 py-1.5 rounded-full">
-                          <span className="text-[10px] text-[#b04a15] dark:text-orange-400">♥</span>
+                        <div className="inline-flex items-center gap-1 bg-[#fbeee9] dark:bg-orange-950/20 text-[#8d4332] dark:text-orange-400 text-xs font-bold px-3 py-1 rounded-full">
+                          <Heart className="w-3 h-3 fill-current text-[#8d4332] dark:text-orange-400 shrink-0" />
                           <span>{user.role === "DONOR" ? "Community Hero" : user.role === "ADMIN" ? "Administrator" : "Community Member"}</span>
                         </div>
 
-                        <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mt-1">
-                          Lives Touched: <span className="font-extrabold text-[#b04a15] dark:text-orange-400">{inKindCount > 0 ? (inKindCount * 12 + 5) : 0}</span>
+                        <p className="text-[14px] sm:text-base font-semibold text-stone-500 dark:text-stone-400 mt-2">
+                          Lives Touched: <span className="font-bold text-[#b04a15] dark:text-orange-400">{inKindCount > 0 ? (inKindCount * 12 + 5) : 0}</span>
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {/* Divider */}
-                  <div className="w-full h-px bg-stone-200/50 dark:bg-zinc-800/50 my-6" />
+                  {/* Spacer between profile and nav links */}
+                  <div className="w-full mt-10" />
 
                   {/* 2. Menu Navigation List */}
-                  <div className="w-full flex flex-col gap-2">
+                  <div className="w-full flex flex-col gap-6">
                     {/* Mobile Navigation Links */}
-                    <div className="lg:hidden flex flex-col gap-1 w-full pb-4 border-b border-stone-200/50 dark:border-zinc-800/50">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500 px-1 mb-2">Navigation</span>
+                    <div className="lg:hidden flex flex-col gap-2 w-full pb-4">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500 px-1 mb-1">Navigation</span>
                       {navLinks.map((link) => (
                         <Link
                           key={link.href}
                           href={link.href}
                           onClick={() => setIsSidebarOpen(false)}
-                          className={`text-sm font-bold py-2.5 px-3 rounded-xl transition-all duration-200 ${
+                          className={`text-sm font-bold py-2 px-1 rounded-xl transition-all duration-200 ${
                             isActive(link.href)
-                              ? "text-[#b04a15] dark:text-orange-400 bg-stone-150/40 dark:bg-zinc-900/40"
+                              ? "text-[#b04a15] dark:text-orange-400"
                               : "text-stone-500 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-orange-400"
                           }`}
                         >
@@ -507,7 +546,7 @@ export function SiteHeader() {
                       ))}
                     </div>
 
-                    <span className="hidden lg:block text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500 px-1 mb-2">Workspace</span>
+                    <span className="hidden lg:block text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500 px-1">Workspace</span>
 
                     {user ? (
                       <>
@@ -517,17 +556,17 @@ export function SiteHeader() {
                             setIsSidebarOpen(false);
                             router.push(dashHref);
                           }}
-                          className={`relative w-full flex items-center gap-3.5 py-3.5 px-2.5 rounded-xl transition-all duration-200 ${
+                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent ${
                             isActive(dashHref)
-                              ? "text-[#b04a15] dark:text-orange-400 font-extrabold"
-                              : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-250 font-medium"
+                              ? "text-[#b04a15] dark:text-orange-400 font-bold"
+                              : "text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
                           }`}
                         >
-                          <LayoutDashboard className={`w-5 h-5 shrink-0 ${isActive(dashHref) ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
-                          <span className="text-sm">Dashboard</span>
+                          <LayoutGrid className={`w-5.5 h-5.5 shrink-0 ${isActive(dashHref) ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
+                          <span className="text-[15px]">Dashboard</span>
                           
                           {isActive(dashHref) && (
-                            <svg className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
+                            <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
                               <path d="M2 2 C 8 8, 8 22, 2 28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                             </svg>
                           )}
@@ -539,17 +578,17 @@ export function SiteHeader() {
                             setIsSidebarOpen(false);
                             router.push("/profile");
                           }}
-                          className={`relative w-full flex items-center gap-3.5 py-3.5 px-2.5 rounded-xl transition-all duration-200 ${
+                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent ${
                             isActive("/profile")
-                              ? "text-[#b04a15] dark:text-orange-400 font-extrabold"
-                              : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-250 font-medium"
+                              ? "text-[#b04a15] dark:text-orange-400 font-bold"
+                              : "text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
                           }`}
                         >
-                          <User className={`w-5 h-5 shrink-0 ${isActive("/profile") ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
-                          <span className="text-sm">My Profile</span>
+                          <User className={`w-5.5 h-5.5 shrink-0 ${isActive("/profile") ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
+                          <span className="text-[15px]">My Profile</span>
                           
                           {isActive("/profile") && (
-                            <svg className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
+                            <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
                               <path d="M2 2 C 8 8, 8 22, 2 28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                             </svg>
                           )}
@@ -563,10 +602,10 @@ export function SiteHeader() {
                             setIsSidebarOpen(false);
                             router.push("/login");
                           }}
-                          className={`relative w-full flex items-center gap-3.5 py-3.5 px-2.5 rounded-xl transition-all duration-200 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-250 font-medium`}
+                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium`}
                         >
-                          <LogIn className="w-5 h-5 shrink-0 text-stone-400" />
-                          <span className="text-sm">{t("nav.logIn")}</span>
+                          <LogIn className="w-5.5 h-5.5 shrink-0 text-stone-400" />
+                          <span className="text-[15px]">{t("nav.logIn")}</span>
                         </button>
 
                         {/* Sign Up Link */}
@@ -575,19 +614,19 @@ export function SiteHeader() {
                             setIsSidebarOpen(false);
                             router.push("/register");
                           }}
-                          className={`relative w-full flex items-center gap-3.5 py-3.5 px-2.5 rounded-xl transition-all duration-200 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-250 font-medium`}
+                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium`}
                         >
-                          <UserPlus className="w-5 h-5 shrink-0 text-stone-400" />
-                          <span className="text-sm">{t("nav.signUp")}</span>
+                          <UserPlus className="w-5.5 h-5.5 shrink-0 text-stone-400" />
+                          <span className="text-[15px]">{t("nav.signUp")}</span>
                         </button>
                       </>
                     )}
 
-                    {/* Language Link switcher row */}
-                    <div className="relative w-full flex items-center justify-between py-3.5 px-2.5">
+                    {/* Language Switcher row */}
+                    <div className="relative w-full flex items-center justify-between py-2 px-1">
                       <div className="flex items-center gap-3.5">
-                        <Globe className="w-5 h-5 shrink-0 text-stone-400" />
-                        <span className="text-sm text-stone-600 dark:text-stone-400 font-medium">Language</span>
+                        <Globe className="w-5.5 h-5.5 shrink-0 text-stone-400" />
+                        <span className="text-[15px] text-stone-500 dark:text-stone-400 font-medium">Language</span>
                       </div>
                       <div onClick={e => e.stopPropagation()}>
                         <LanguageSwitcher />
@@ -597,35 +636,33 @@ export function SiteHeader() {
                 </div>
 
                 {/* 3. Bottom Cards Section */}
-                <div className="w-full mt-8 space-y-5">
+                <div className="w-full mt-8 space-y-6">
                   {/* Daily Kindness Goal Card */}
                   {user && (
-                    <div className="bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xs rounded-3xl p-4 flex items-center justify-between border border-stone-200/60 dark:border-zinc-800 shadow-xs">
+                    <div className="bg-[#eaeaea]/45 dark:bg-zinc-900/50 rounded-[24px] p-5 flex items-center justify-between shadow-xs">
                       <div>
-                        <p className="text-xs font-black text-stone-800 dark:text-stone-250">Daily Kindness Goal</p>
-                        <p className="text-[10px] text-stone-400 dark:text-stone-500 font-bold mt-1">80% complete</p>
+                        <p className="text-xs sm:text-[13px] font-bold text-stone-800 dark:text-stone-200">Daily Kindness Goal</p>
+                        <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-semibold mt-1">80% complete</p>
                       </div>
                       <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                         <svg className="w-full h-full transform -rotate-90">
-                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" className="text-stone-100 dark:text-zinc-800" fill="transparent" />
-                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" className="text-[#b04a15]" strokeDasharray="125.6" strokeDashoffset="25.12" fill="transparent" strokeLinecap="round" />
+                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" className="text-stone-250/20 dark:text-zinc-800/40" fill="transparent" />
+                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" className="text-[#b04a15]" strokeDasharray="125.6" strokeDashoffset="25.12" fill="transparent" strokeLinecap="round" />
                         </svg>
-                        <Heart className="absolute w-4 h-4 text-[#b04a15] fill-[#b04a15]" />
+                        <Heart className="absolute w-3.5 h-3.5 text-[#b04a15] fill-[#b04a15]" />
                       </div>
                     </div>
                   )}
 
                   {/* Latest Impact Card */}
                   {user && (
-                    <div className="flex items-start gap-3 bg-emerald-50/20 dark:bg-emerald-950/10 border border-emerald-100/30 dark:border-emerald-900/20 rounded-2xl p-4">
-                      <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                        </svg>
+                    <div className="flex items-start gap-3.5 mt-6 px-1">
+                      <div className="h-9 w-9 rounded-full bg-[#e3efe9] dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <HandHeart className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">Latest Impact</p>
-                        <p className="text-[11px] text-stone-500 dark:text-stone-400 font-semibold leading-relaxed mt-1">
+                        <p className="text-xs sm:text-[13px] font-bold text-[#1b8a5a] dark:text-emerald-400">Latest Impact</p>
+                        <p className="text-xs sm:text-[13px] text-stone-550 dark:text-stone-400 font-medium leading-relaxed mt-1">
                           {user.role === "DONOR"
                             ? "You helped 3 families yesterday with essential supplies."
                             : "Your request was matched with a donor in your neighborhood!"}
@@ -635,13 +672,13 @@ export function SiteHeader() {
                   )}
 
                   {/* Footer Signout and Mobile Theme Toggle */}
-                  <div className="border-t border-[#e5e2d5]/60 dark:border-zinc-800/80 pt-4 space-y-4">
+                  <div className="pt-2 space-y-4">
                     {/* Mobile Theme switcher */}
                     <div className="lg:hidden flex items-center justify-between">
                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Theme</span>
                       <button
                         onClick={toggleTheme}
-                        className="relative flex items-center justify-center w-9 h-9 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-750 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all active:scale-95 bg-white dark:bg-zinc-900"
+                        className="relative flex items-center justify-center w-9 h-9 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-755 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all active:scale-95 bg-white dark:bg-zinc-900"
                         aria-label="Toggle theme"
                       >
                         <div className="relative w-4 h-4 flex items-center justify-center">
@@ -654,7 +691,7 @@ export function SiteHeader() {
                     {user && (
                       <button
                         onClick={() => { setIsSidebarOpen(false); requestLogout(); }}
-                        className="flex items-center justify-center gap-2 text-stone-500 hover:text-red-500 dark:text-stone-400 dark:hover:text-red-400 text-sm font-semibold transition-all py-3 w-full"
+                        className="flex items-center justify-center gap-2 text-stone-500 hover:text-stone-850 dark:text-stone-400 dark:hover:text-white text-sm font-semibold transition-all py-3 w-full"
                       >
                         <LogOut className="w-4 h-4 shrink-0" /> {t("nav.signOut")}
                       </button>
