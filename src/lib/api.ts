@@ -65,7 +65,7 @@ async function request<T>(
 // Fix #4: login now returns email + role from the JSON body; the JWT itself is
 // delivered as an httpOnly cookie — the frontend never sees or stores the token.
 export function login(email: string, password: string, rememberMe = false) {
-  return request<{ token: string; email: string; role: string; userId: number }>(
+  return request<{ token: null; email: string; role: string; userId: number }>(
     "/api/v1/auth/login",
     { method: "POST", body: JSON.stringify({ email, password, rememberMe }) }
   );
@@ -79,7 +79,7 @@ export function register(data: {
   password: string;
   role: string;
 }) {
-  return request<{ token: string; email: string; role: string; userId: number }>(
+  return request<{ token: null; email: string; role: string; userId: number }>(
     "/api/v1/auth/register",
     { method: "POST", body: JSON.stringify(data) }
   );
@@ -131,7 +131,7 @@ export function resetPassword(token: string, newPassword: string) {
 }
 
 export type GoogleAuthResponse =
-  | { needsCompletion: false; token: string; userId: number; email: string; role: string }
+  | { needsCompletion: false; userId: number; email: string; role: string }
   | { needsCompletion: true; email: string; fullName: string };
 
 export function googleAuth(accessToken: string) {
@@ -227,7 +227,7 @@ export function createCampaign(data: {
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export function adminGetCampaigns(status?: string) {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<Campaign[]>(`/api/v1/admin/campaigns${qs}`);
 }
 
@@ -331,7 +331,7 @@ export function createItemListing(data: {
 }
 
 export function adminGetItemListings(status?: string) {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<ItemListing[]>(`/api/v1/admin/items${qs}`);
 }
 
@@ -368,8 +368,15 @@ export type ItemRequest = {
   longitude: number | null;
 };
 
-export function getItemRequests() {
-  return request<ItemRequest[]>("/api/v1/item-requests");
+export function getItemRequests(categories?: string[], lat?: number, lng?: number) {
+  const params = new URLSearchParams();
+  if (categories && categories.length > 0) {
+    categories.forEach(c => params.append("categories", c));
+  }
+  if (lat !== undefined && lat !== null) params.append("lat", String(lat));
+  if (lng !== undefined && lng !== null) params.append("lng", String(lng));
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return request<ItemRequest[]>(`/api/v1/item-requests${qs}`);
 }
 
 export function getMyItemRequests() {
@@ -386,6 +393,8 @@ export function createItemRequest(data: {
   description?: string;
   imageUrl?: string | null;
   pickupRadiusKm?: number;
+  latitude: number;
+  longitude: number;
 }) {
   return request<ItemRequest>("/api/v1/item-requests", {
     method: "POST",
@@ -394,7 +403,7 @@ export function createItemRequest(data: {
 }
 
 export function adminGetItemRequests(status?: string) {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<ItemRequest[]>(`/api/v1/admin/item-requests${qs}`);
 }
 
@@ -423,6 +432,8 @@ export type ItemMatch = {
   doneeName: string;
   doneeCity: string;
   status:
+    | "DONOR_REVIEW"
+    | "DONOR_REJECTED"
     | "PENDING_APPROVAL"
     | "TRANSPORT_DISCUSSION"
     | "ARRANGEMENT_AGREED"
@@ -447,18 +458,13 @@ export type ItemMatch = {
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
-  const token = typeof window !== "undefined" ? (localStorage.getItem("ck_token") ?? sessionStorage.getItem("ck_token")) : null;
   const formData = new FormData();
   formData.append("requestId", String(requestId));
   formData.append("description", description);
   images.forEach((img) => formData.append("images", img));
-
   return fetch(`${BASE_URL}/api/v1/matches/donate`, {
     method: "POST",
-    headers: {
-      "Authorization": token ? `Bearer ${token}` : "",
-      "ngrok-skip-browser-warning": "true",
-    },
+    credentials: "include",
     body: formData,
   }).then(async (res) => {
     if (!res.ok) {
@@ -477,19 +483,26 @@ export function donateToRequest(requestId: number, images: File[], description: 
   });
 }
 
+export function donorAcceptMatch(id: number) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/donor-accept`, { method: "POST" });
+}
+
+export function donorRejectMatch(id: number, reason?: string) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/donor-reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason ?? null }),
+  });
+}
+
 export function analyzeItemImage(image: File): Promise<{ description: string }> {
-  const token = typeof window !== "undefined" ? (localStorage.getItem("ck_token") ?? sessionStorage.getItem("ck_token")) : null;
   const formData = new FormData();
   formData.append("image", image);
   return fetch(`${BASE_URL}/api/v1/matches/analyze-image`, {
     method: "POST",
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "ngrok-skip-browser-warning": "true",
-    },
+    credentials: "include",
     body: formData,
   }).then(async (res) => {
-    if (!res.ok) throw new Error("Analysis failed");
+    if (!res.ok) throw new Error("Image analysis failed");
     return res.json() as Promise<{ description: string }>;
   });
 }
@@ -506,7 +519,7 @@ export function getMyMatches() {
 }
 
 export function adminGetMatches(status?: string) {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<ItemMatch[]>(`/api/v1/admin/matches${qs}`);
 }
 

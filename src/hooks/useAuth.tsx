@@ -61,9 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetch(`${BASE}/api/v1/users/me`, { credentials: "include" })
       .then(res => {
         if (res.ok) return res.json();
-        // 401 means the httpOnly cookie is gone / expired — clear cached metadata
-        localStorage.removeItem(USER_KEY);
-        setUserState(null);
+        if (res.status === 401) {
+          localStorage.removeItem(USER_KEY);
+          setUserState(null);
+        }
         return null;
       })
       .then(data => {
