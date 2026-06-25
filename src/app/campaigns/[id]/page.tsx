@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { FEATURES } from "@/lib/features";
+import { ComingSoon } from "@/components/ComingSoon";
+
+import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import Link from "next/link";
-import { getCampaign, type Campaign } from "@/lib/api";
-import { DonateButton } from "@/components/DonateButton";
+import Image from "next/image";
+import { toast } from "sonner";
+import { getCampaign, getProfile, initiateDonation, getCampaignDonations, type Campaign, type UserProfile, type Donation } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { generateCampaignAIContent, type AIContentResult } from "@/lib/ai-generator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +20,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, MapPin, ShieldCheck, User, Users } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  ArrowLeft,
+  MapPin,
+  MessageSquare,
+  Send,
+  ShieldCheck,
+  User,
+  Users,
+  Heart,
+  Share2,
+  Lock,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Stethoscope,
+  Pill,
+  Bed,
+  CheckCircle,
+  Mail,
+  Loader2,
+  Sparkles
+} from "lucide-react";
 
 const PRESETS_ONETIME = [500, 1000, 2500, 5000];
 const PRESETS_DAILY = [5, 10, 20, 50, 100];
 
+type CampaignUpdate = {
+  id: string;
+  content: string;
+  createdAt: string;
+  userName: string;
+};
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -24,35 +61,277 @@ function formatINR(n: number) {
 
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
-    <div className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
-      <span className={bold ? "" : "text-muted-foreground"}>{label}</span>
+    <div className={`flex justify-between ${bold ? "font-semibold text-stone-900" : "text-stone-600"}`}>
+      <span>{label}</span>
       <span>{value}</span>
     </div>
   );
 }
 
+function getInitials(name?: string) {
+  if (!name) return "S";
+  return name.trim().split(/\s+/).map(part => part[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function timeAgo(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
 export default function CampaignDetailPage() {
+  if (!FEATURES.money) return <ComingSoon feature="campaigns" />;
+  return <CampaignDetailPageInner />;
+}
+
+function CampaignDetailPageInner() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { user } = useAuth();
+  const t = useTranslations("campaigns");
+
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [translatedTitle, translatedDescription] = useDynamicTranslations([
+    campaign?.title ?? null,
+    campaign?.description ?? null,
+  ]);
+  const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [donationsLoading, setDonationsLoading] = useState(true);
+  const [isAllDonorsModalOpen, setIsAllDonorsModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [sendingContact, setSendingContact] = useState(false);
+  
+  // Donation States
   const [amount, setAmount] = useState(1000);
   const [recurring, setRecurring] = useState(false);
   const [frequency, setFrequency] = useState<"daily" | "monthly" | "yearly">("monthly");
   const [addTip, setAddTip] = useState(true);
   const [tipPct, setTipPct] = useState(10);
+  const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  // Campaign updates
+  const [updates, setUpdates] = useState<CampaignUpdate[]>([]);
+  const [updateText, setUpdateText] = useState("");
+  const [postingUpdate, setPostingUpdate] = useState(false);
+
+  // AI Generated breakdown & FAQs
+  const [aiContent, setAiContent] = useState<AIContentResult | null>(null);
+  const [aiGenerating, setAiGenerating] = useState(true);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  // Sticky Donate Bar
+  const [showStickyBar, setShowStickyBar] = useState(true);
+  const donatePanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getCampaign(Number(id))
-      .then(setCampaign)
+      .then((c) => {
+        setCampaign(c);
+        try {
+          const stored = localStorage.getItem(`ck_updates_${id}`);
+          if (stored) setUpdates(JSON.parse(stored));
+        } catch {}
+      })
       .catch(() => setError("Campaign not found or not yet approved."))
       .finally(() => setLoading(false));
+
+    getCampaignDonations(Number(id))
+      .then(setDonations)
+      .catch((err) => console.error("Failed to load campaign donations:", err))
+      .finally(() => setDonationsLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!user) return;
+    getProfile().then(setMyProfile).catch(() => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (campaign) {
+      setAiGenerating(true);
+      // Simulate premium AI processing visualization
+      const delay = setTimeout(() => {
+        const result = generateCampaignAIContent(
+          translatedTitle ?? campaign.title,
+          translatedDescription ?? campaign.description,
+          campaign.targetAmount
+        );
+        setAiContent(result);
+        setAiGenerating(false);
+      }, 950);
+      return () => clearTimeout(delay);
+    }
+  }, [campaign, translatedTitle, translatedDescription]);
+
+  useEffect(() => {
+    const el = donatePanelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [campaign]);
+
+  function postUpdate() {
+    if (!updateText.trim() || !campaign) return;
+    setPostingUpdate(true);
+    const newUpdate: CampaignUpdate = {
+      id: Date.now().toString(),
+      content: updateText.trim(),
+      createdAt: new Date().toISOString(),
+      userName: myProfile?.fullName || user?.email || "Organizer",
+    };
+    const next = [newUpdate, ...updates];
+    setUpdates(next);
+    try {
+      localStorage.setItem(`ck_updates_${id}`, JSON.stringify(next));
+    } catch {}
+    setUpdateText("");
+    setPostingUpdate(false);
+    toast.success("Update posted!");
+  }
+
+  function loadRazorpayScript(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+
+  async function handleDonateCheckout() {
+    if (!user) {
+      router.push(`/login?redirect=/campaigns/${id}`);
+      return;
+    }
+    if (!campaign) return;
+    if (!amount || isNaN(amount) || amount < 1) {
+      toast.error("Enter a valid amount (minimum ₹1)");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        toast.error("Could not load Razorpay. Check your connection.");
+        return;
+      }
+      const order = await initiateDonation(campaign.id, total);
+      const rzp = new window.Razorpay({
+        key: order.razorpayKeyId,
+        amount: order.amountInPaise,
+        currency: order.currency,
+        name: "CauseKind",
+        description: campaign.title,
+        order_id: order.razorpayOrderId,
+        prefill: { email: user.email },
+        theme: { color: "#8C3D1D" },
+        handler: () => {
+          setIsDonateModalOpen(false);
+          router.push(
+            `/thank-you?campaign=${encodeURIComponent(campaign.title)}&amount=${total}&campaignId=${campaign.id}`
+          );
+        },
+        modal: { ondismiss: () => toast.info("Payment cancelled.") },
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
+
+  const handleShare = () => {
+    const shareUrl = window.location.href;
+    const shareTitle = campaign?.title || "Support this Campaign on CauseKind";
+    if (navigator.share) {
+      navigator
+        .share({
+          title: shareTitle,
+          url: shareUrl,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Campaign link copied to clipboard!");
+    }
+  };
+
+  const getBreakdownIcon = (type: string) => {
+    switch (type) {
+      case "surgery":
+        return <Stethoscope className="h-5 w-5" />;
+      case "medication":
+        return <Pill className="h-5 w-5" />;
+      case "post-op":
+        return <Bed className="h-5 w-5" />;
+      case "care":
+        return <Heart className="h-5 w-5" />;
+      case "materials":
+        return <FileText className="h-5 w-5" />;
+      case "logistics":
+        return <Send className="h-5 w-5" />;
+      case "fees":
+        return <ShieldCheck className="h-5 w-5" />;
+      default:
+        return <User className="h-5 w-5" />;
+    }
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="h-5 w-40 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse mb-6" />
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <div className="h-64 rounded-2xl bg-stone-100 dark:bg-zinc-800 animate-pulse" />
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="h-5 w-20 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+                <div className="h-5 w-28 bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+              </div>
+              <div className="h-8 w-3/4 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+              <div className="h-4 w-40 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+            </div>
+            <div className="rounded-2xl border border-stone-100 dark:border-zinc-800 p-6 space-y-3">
+              <div className="h-5 w-40 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-4 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" style={{ width: `${65 + i * 5}%` }} />
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-stone-100 dark:border-zinc-800 p-6 space-y-4">
+            <div className="h-2 w-full bg-stone-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+            <div className="h-4 w-32 bg-stone-100 dark:bg-zinc-800 rounded animate-pulse" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-10 w-full bg-stone-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+            ))}
+            <div className="h-12 w-full bg-stone-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -71,172 +350,746 @@ export default function CampaignDetailPage() {
   const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
   const tip = addTip ? Math.round((amount * tipPct) / 100) : 0;
   const total = amount + tip;
-  const fee = Math.round(amount * 0.05);
-  const beneficiary = amount - fee;
-  const periodLabel = frequency === "daily" ? "/day" : frequency === "monthly" ? "/month" : "/year";
+  const isOrganizer = !!myProfile && myProfile.id === campaign.doneeId;
   const presets = recurring && frequency === "daily" ? PRESETS_DAILY : PRESETS_ONETIME;
 
+  // Mocked details matching visual layout deterministically per campaign
+  const daysLeft = Math.round(10 + (campaign.id * 7) % 25);
+  const donorsCount = donations.length;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <Link href="/campaigns" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to campaigns
-      </Link>
-
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Left — details */}
-        <div className="space-y-6 lg:col-span-2">
-          <div className="h-64 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/30 via-accent to-secondary" />
-
-          <div>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Badge variant="secondary">{campaign.category}</Badge>
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <MapPin className="h-3 w-3" /> {campaign.city}, {campaign.state}
-              </span>
-              <span className="flex items-center gap-1 text-primary">
-                <ShieldCheck className="h-3 w-3" /> Admin verified
-              </span>
-            </div>
-            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">{campaign.title}</h1>
-            <div className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <User className="h-3.5 w-3.5" />
-              Organized by <span className="font-medium text-foreground">{campaign.doneeName}</span>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader><CardTitle>About this campaign</CardTitle></CardHeader>
-            <CardContent className="text-sm leading-relaxed text-foreground/80 whitespace-pre-line">
-              {campaign.description}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-4 w-4" /> Recent donors
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-4">Be the first to donate to this campaign!</p>
-            </CardContent>
-          </Card>
+    <div className="bg-[#FAF8F5] min-h-screen pb-24 text-stone-800 selection:bg-[#8C3D1D]/10 selection:text-[#8C3D1D]">
+      {/* Alert Banner */}
+      {donations.length > 0 ? (
+        <div className="bg-[#D3F5DD] text-[#1E5631] px-4 py-3.5 text-center text-sm font-semibold flex items-center justify-center gap-2 border-b border-[#BBECC9]">
+          <span className="flex h-2 w-2 rounded-full bg-[#2E9348] animate-ping" />
+          <span className="flex items-center gap-1.5">
+            <Heart className="h-4 w-4 fill-[#2E9348] text-[#2E9348]" />
+            Just now: {donations[0].donorName || "Someone"} donated {formatINR(donations[0].amount)} to this campaign!
+          </span>
         </div>
+      ) : (
+        <div className="bg-[#FFF4E5] text-[#8C3D1D] px-4 py-3.5 text-center text-sm font-semibold flex items-center justify-center gap-2 border-b border-[#FDD8A5]">
+          <span className="flex h-2 w-2 rounded-full bg-[#E05C38] animate-ping" />
+          <span className="flex items-center gap-1.5">
+            <Heart className="h-4 w-4 fill-[#E05C38] text-[#E05C38]" />
+            Be the first one to support: Make a donation to help this campaign!
+          </span>
+        </div>
+      )}
 
-        {/* Right — sticky donate panel */}
-        <Card className="h-fit lg:sticky lg:top-20">
-          <CardContent className="space-y-5 p-6">
-            <div>
-              <Progress value={pct} className="h-2" />
-              <div className="mt-2 flex justify-between text-sm">
-                <span className="font-semibold">{formatINR(campaign.amountRaised)} raised</span>
-                <span className="text-muted-foreground">of {formatINR(campaign.targetAmount)}</span>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{pct}% funded</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="amount">Donation amount (₹)</Label>
-              <Input
-                id="amount"
-                type="number"
-                min={1}
-                value={amount}
-                onChange={(e) => setAmount(Number(e.target.value) || 0)}
-              />
-              <div className="flex flex-wrap gap-2">
-                {presets.map((p) => (
-                  <Button
-                    key={p}
-                    size="sm"
-                    variant={amount === p ? "default" : "outline"}
-                    onClick={() => setAmount(p)}
-                  >
-                    ₹{p.toLocaleString("en-IN")}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Recurring toggle */}
-            <div className="rounded-lg border bg-accent/30 p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Make it recurring</p>
-                  <p className="text-xs text-muted-foreground">Give a little, regularly. Cancel anytime.</p>
-                </div>
-                <Switch checked={recurring} onCheckedChange={setRecurring} />
-              </div>
-              {recurring && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {(["daily", "monthly", "yearly"] as const).map((f) => (
-                    <Button
-                      key={f}
-                      size="sm"
-                      variant={frequency === f ? "default" : "outline"}
-                      onClick={() => setFrequency(f)}
-                      className="capitalize"
-                    >
-                      {f}
-                    </Button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Tip toggle */}
-            <div className="rounded-lg border bg-accent/30 p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Add a tip to CauseKind</p>
-                  <p className="text-xs text-muted-foreground">Helps keep this platform free.</p>
-                </div>
-                <Switch checked={addTip} onCheckedChange={setAddTip} />
-              </div>
-              {addTip && (
-                <div className="mt-3 flex gap-2">
-                  {[5, 10, 15].map((p) => (
-                    <Button
-                      key={p}
-                      size="sm"
-                      variant={tipPct === p ? "default" : "outline"}
-                      onClick={() => setTipPct(p)}
-                    >
-                      {p}%
-                    </Button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Fee breakdown */}
-            {amount > 0 && (
-              <div className="space-y-1 rounded-lg border p-3 text-sm">
-                <Row label="Donation" value={formatINR(amount)} />
-                {addTip && <Row label={`Tip (${tipPct}%)`} value={formatINR(tip)} />}
-                <div className="my-1 h-px bg-border" />
-                <Row
-                  label={recurring ? `You pay${periodLabel}` : "You pay (Razorpay)"}
-                  value={`${formatINR(total)}${recurring ? periodLabel : ""}`}
-                  bold
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="grid gap-8 lg:grid-cols-3 items-start">
+          
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Hero Image */}
+            <div className="relative h-64 sm:h-96 w-full overflow-hidden rounded-3xl bg-stone-200 border border-[#EDECE7] shadow-sm">
+              {campaign.imageUrl ? (
+                <Image
+                  src={campaign.imageUrl}
+                  alt={campaign.title}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  className="object-cover transition-transform duration-500 hover:scale-[1.01]"
                 />
-                <p className="pt-2 text-xs text-muted-foreground">
-                  Donee receives {formatINR(beneficiary)} after 5% platform fee ({formatINR(fee)}){recurring ? " each cycle" : ""}.
-                </p>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#8C3D1D]/10 to-orange-50 flex items-center justify-center">
+                  <Heart className="h-16 w-16 text-[#8C3D1D]/30" />
+                </div>
+              )}
+              
+              {/* Back Button */}
+              <Link
+                href="/campaigns"
+                className="absolute top-4 left-4 z-10 flex items-center justify-center w-10 h-10 rounded-full bg-white/90 shadow-md text-stone-700 hover:bg-white transition-all hover:scale-105"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </div>
+
+            {/* Badges & Title */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="bg-[#FDF0E9] text-[#8C3D1D] font-bold text-xs py-1 px-3 rounded-full uppercase tracking-wider">
+                  <TranslatedText text={campaign.category} />
+                </span>
+                <span className="bg-[#EFEFEF] text-stone-600 font-bold text-xs py-1 px-3 rounded-full uppercase tracking-wider">
+                  <TranslatedText text={campaign.city} />
+                </span>
+                <span className="flex items-center gap-1 text-xs text-stone-400 font-semibold">
+                  <ShieldCheck className="h-4 w-4 text-[#8C3D1D]" /> Admin Verified
+                </span>
+              </div>
+              
+              <h1 className="text-3xl font-extrabold sm:text-4xl text-stone-900 leading-tight tracking-tight">
+                {translatedTitle ?? campaign.title}
+              </h1>
+            </div>
+
+            {/* Progress Card */}
+            <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                <div>
+                  <span className="text-3xl font-extrabold text-[#8C3D1D]">{formatINR(campaign.amountRaised)}</span>
+                  <span className="text-sm text-stone-500 font-medium ml-2">raised of {formatINR(campaign.targetAmount)} goal</span>
+                </div>
+                <div className="text-sm font-bold text-[#8C3D1D] uppercase tracking-wide shrink-0">
+                  {pct}% Funded
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full bg-[#F3F1EC] rounded-full h-3.5 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-[#8C3D1D] to-[#BA5C38] rounded-full transition-all duration-700" 
+                  style={{ width: `${pct}%` }} 
+                />
+              </div>
+
+              {/* Progress Footer */}
+              <div className="flex justify-between items-center pt-4 border-t border-[#F2F1EC] text-sm text-stone-600 font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-stone-400" />
+                  {donorsCount} Donors
+                </span>
+                <span>{daysLeft} Days left</span>
+              </div>
+            </div>
+
+            {/* About Campaign */}
+            <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 sm:p-8 space-y-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
+              <h2 className="text-xl font-bold text-stone-900">About the Campaign</h2>
+              <div className="text-sm sm:text-base leading-relaxed text-stone-700 whitespace-pre-line">
+                {translatedDescription ?? campaign.description}
+              </div>
+            </div>
+
+            {/* Where your money goes - AI Dynamic Breakdown */}
+            <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 sm:p-8 space-y-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <h2 className="text-xl font-bold text-stone-900">Where your money goes</h2>
+                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-3 rounded-full uppercase tracking-wider select-none">
+                  <Sparkles className="h-3 w-3 animate-pulse text-[#8C3D1D]" /> AI Suggested
+                </span>
+              </div>
+
+              {aiGenerating || !aiContent ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                  <Loader2 className="h-7 w-7 text-[#8C3D1D] animate-spin" />
+                  <p className="text-xs text-stone-400 font-bold animate-pulse">AI is parsing campaign objectives...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in fade-in duration-300">
+                  {aiContent.breakdown.map((item, idx) => (
+                    <div key={idx} className="bg-[#FAF9F5] border border-[#EDECE7] p-5 rounded-2xl text-center flex flex-col items-center justify-center space-y-3 hover:shadow-xs transition-shadow">
+                      <div className="h-10 w-10 bg-[#FBEFEA] text-[#8C3D1D] rounded-full flex items-center justify-center shadow-2xs">
+                        {getBreakdownIcon(item.type)}
+                      </div>
+                      <div>
+                        <p className="text-xs text-stone-500 font-bold uppercase tracking-wider break-words">{item.label}</p>
+                        <p className="text-lg font-extrabold text-[#8C3D1D] mt-0.5">{formatINR(item.amount)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Campaign Updates posting section for Organizer */}
+            {isOrganizer && (
+              <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] space-y-4">
+                <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-[#8C3D1D]" />
+                  Organizer Updates
+                </h2>
+                <div className="space-y-3 p-4 rounded-2xl bg-[#FCFAF6] border border-[#EDECE7]">
+                  <p className="text-xs font-semibold text-[#8C3D1D]">{t("postUpdate")}</p>
+                  <Textarea
+                    placeholder="Share progress, milestones, or a thank-you with your donors…"
+                    rows={3}
+                    value={updateText}
+                    onChange={(e) => setUpdateText(e.target.value)}
+                    className="rounded-xl border-[#EDECE7] focus-visible:ring-[#8C3D1D]/20 resize-none text-sm bg-white"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      onClick={postUpdate}
+                      disabled={!updateText.trim() || postingUpdate}
+                      className="bg-[#8C3D1D] hover:bg-[#733115] text-white rounded-xl gap-1.5 font-bold px-4"
+                    >
+                      <Send className="h-3.5 w-3.5" /> Post update
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 
-            <DonateButton
-              campaignId={campaign.id}
-              campaignTitle={campaign.title}
-              amount={total}
-            />
-            <p className="text-center text-xs text-muted-foreground">
-              Secured by Razorpay · Cards · UPI · Netbanking{recurring ? " · eMandate" : ""}
-            </p>
-          </CardContent>
-        </Card>
+            {/* Updates list if present */}
+            {updates.length > 0 && (
+              <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] space-y-4">
+                <h2 className="text-lg font-bold text-stone-955">Milestones & Progress</h2>
+                <div className="space-y-3">
+                  {updates.map((u) => (
+                    <div key={u.id} className="rounded-2xl border border-[#EDECE7] p-4 space-y-2 bg-[#FCFAF7]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#8C3D1D]">{u.userName}</span>
+                        <span className="text-xs text-stone-400">
+                          {new Date(u.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
+                        <TranslatedText text={u.content} />
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Support */}
+            <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 sm:p-8 space-y-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
+              <h2 className="text-xl font-bold text-stone-900">Recent Support</h2>
+              
+              {donations.length === 0 ? (
+                <div className="text-center py-6 text-stone-500 text-sm font-semibold">
+                  No donations yet. Be the first to support this cause!
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {donations.slice(0, 4).map((donation, idx) => {
+                      const name = donation.donorName || "Someone";
+                      const initials = getInitials(name);
+                      return (
+                        <div key={donation.id || idx} className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-4 rounded-2xl">
+                          <div className="h-10 w-10 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-sm select-none">
+                            {initials}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-stone-900 truncate">
+                              {name}
+                            </p>
+                            <p className="text-xs text-stone-500">{timeAgo(donation.createdAt)}</p>
+                          </div>
+                          <div className="text-sm font-extrabold text-[#8C3D1D] shrink-0">{formatINR(donation.amount)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {donations.length > 4 && (
+                    <div className="text-center pt-2">
+                      <button 
+                        onClick={() => setIsAllDonorsModalOpen(true)}
+                        className="text-[#8C3D1D] hover:text-[#733115] font-bold text-sm flex items-center justify-center gap-1.5 mx-auto hover:underline"
+                      >
+                        View all {donations.length} donors &rarr;
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+          </div>
+
+          {/* RIGHT COLUMN (Sticky Sidebar) */}
+          <div ref={donatePanelRef} id="donate-panel" className="space-y-6 lg:sticky lg:top-24">
+            
+            {/* Main Action Card */}
+            <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] space-y-4">
+              
+              {/* Primary Action Button */}
+              <button 
+                onClick={() => setIsDonateModalOpen(true)}
+                className="w-full bg-[#8C3D1D] hover:bg-[#733115] text-white py-4 px-6 font-bold text-lg rounded-2xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all duration-150 shadow-md shadow-[#8c3d1d]/10"
+              >
+                <Heart className="h-5 w-5 fill-white" />
+                Donate Now
+              </button>
+
+              {/* Secondary Share Button */}
+              <button 
+                onClick={handleShare}
+                className="w-full border border-[#EDECE7] text-stone-700 font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 hover:bg-stone-50 hover:scale-[1.01] transition-all duration-150"
+              >
+                <Share2 className="h-5 w-5 text-stone-505" />
+                Share Campaign
+              </button>
+
+              {/* Trust & Security Info */}
+              <div className="pt-4 border-t border-[#F2F1EC] space-y-3.5">
+                <p className="text-[11px] font-extrabold text-stone-400 uppercase tracking-widest">Trust & Security</p>
+                
+                <div className="flex items-start gap-3">
+                  <div className="h-5 w-5 text-emerald-600 bg-emerald-50 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-stone-900">Identity Verified Organizer</p>
+                    <p className="text-stone-500">Government ID & bank verified details.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="h-5 w-5 text-stone-600 bg-stone-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                    <Lock className="h-3 w-3" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-stone-900">Secure SSL Payment</p>
+                    <p className="text-stone-505">256-bit encrypted transactions via Razorpay.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="h-5 w-5 text-stone-600 bg-stone-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                    <FileText className="h-3 w-3" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-stone-900">Tax Deductible Receipt Available</p>
+                    <p className="text-stone-500">Claim 80G tax exemptions instantly.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Campaign Organizer */}
+            <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] space-y-4">
+              <p className="text-[11px] font-extrabold text-stone-400 uppercase tracking-widest">Campaign Organizer</p>
+              
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 bg-gradient-to-tr from-[#8C3D1D]/35 to-orange-100 text-[#8C3D1D] rounded-full flex items-center justify-center font-bold text-lg border border-[#EDECE7]">
+                  {campaign.doneeName.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-stone-950 text-base">{campaign.doneeName}</h4>
+                  <p className="text-xs text-stone-505 flex items-center gap-0.5">
+                    <MapPin className="h-3.5 w-3.5 text-stone-400" />
+                    {campaign.city || "India"}
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setIsContactModalOpen(true)}
+                className="w-full border border-[#EDECE7] hover:bg-stone-50 text-stone-700 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Mail className="h-3.5 w-3.5 text-stone-400" />
+                Contact Organizer
+              </button>
+            </div>
+
+            {/* FAQ Accordion - AI Suggested FAQ accordion */}
+            <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] space-y-4">
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <p className="text-[11px] font-extrabold text-stone-400 uppercase tracking-widest">FAQ</p>
+                <span className="flex items-center gap-1 text-[9px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-0.5 px-2 rounded-full uppercase tracking-wider select-none">
+                  <Sparkles className="h-2.5 w-2.5 text-[#8C3D1D]" /> AI Suggested
+                </span>
+              </div>
+              
+              {aiGenerating || !aiContent ? (
+                <div className="flex flex-col items-center justify-center py-6 space-y-2">
+                  <Loader2 className="h-5 w-5 text-[#8C3D1D] animate-spin" />
+                  <p className="text-[10px] text-stone-400 font-bold animate-pulse">Drafting questions...</p>
+                </div>
+              ) : (
+                <div className="space-y-3 animate-in fade-in duration-300">
+                  {aiContent.faqs.map((faq, index) => {
+                    const isOpen = openFaqIndex === index;
+                    return (
+                      <div key={index} className={index < aiContent.faqs.length - 1 ? "border-b border-[#F2F1EC] pb-3.5" : "pt-1"}>
+                        <button
+                          onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                          className="w-full flex justify-between items-center text-left font-bold text-stone-800 hover:text-[#8C3D1D] text-sm transition-colors"
+                        >
+                          <span>{faq.q}</span>
+                          {isOpen ? <ChevronUp className="h-4 w-4 text-[#8C3D1D]" /> : <ChevronDown className="h-4 w-4 text-stone-400" />}
+                        </button>
+                        {isOpen && (
+                          <p className="mt-2 text-xs text-stone-500 leading-relaxed animate-in fade-in slide-in-from-top-1 duration-250">
+                            {faq.a}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+          </div>
+
+        </div>
       </div>
+
+      {/* Mobile Sticky Bottom Donate Bar */}
+      <div
+        className={`lg:hidden fixed bottom-0 inset-x-0 z-40 transition-transform duration-300 ${
+          showStickyBar ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div
+          className="bg-white/95 backdrop-blur-sm border-t border-[#EDECE7] px-4 py-3.5 flex items-center gap-3 shadow-xl"
+          style={{ marginBottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-stone-900 truncate">{translatedTitle ?? campaign.title}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-1.5 bg-stone-105 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#8C3D1D] to-[#BA5C38] rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-stone-400 font-bold shrink-0">{pct}%</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsDonateModalOpen(true)}
+            className="bg-[#8C3D1D] hover:bg-[#733115] text-white rounded-xl px-5 py-2.5 text-sm font-extrabold shrink-0 shadow-md transition-all active:scale-95"
+          >
+            Donate ₹{amount.toLocaleString("en-IN")}
+          </button>
+        </div>
+      </div>
+
+      {/* DONATION MODAL OVERLAY */}
+      {isDonateModalOpen && (
+        <div className="fixed inset-0 bg-stone-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-[#EDECE7] flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+            
+            {/* Close Button */}
+            <button 
+              onClick={() => setIsDonateModalOpen(false)}
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 p-1 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Header */}
+            <div className="mb-5">
+              <span className="text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
+                Support this campaign
+              </span>
+              <h3 className="text-lg font-extrabold text-stone-900 mt-2.5 line-clamp-1">{translatedTitle ?? campaign.title}</h3>
+            </div>
+
+            <div className="space-y-5 flex-1">
+              
+              {/* Amount Input */}
+              <div className="space-y-2">
+                <Label htmlFor="amount" className="font-bold text-stone-700">Donation Amount (INR)</Label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-extrabold text-stone-400">₹</span>
+                  <Input
+                    id="amount"
+                    type="number"
+                    min={1}
+                    value={amount || ""}
+                    onChange={(e) => setAmount(Number(e.target.value) || 0)}
+                    className="pl-8 py-6 rounded-2xl border-[#EDECE7] focus-visible:ring-[#8C3D1D]/20 text-lg font-extrabold text-[#8C3D1D]"
+                  />
+                </div>
+
+                {/* Preset Options */}
+                <div className="grid grid-cols-4 gap-2">
+                  {presets.map((p) => (
+                    <Button
+                      key={p}
+                      size="sm"
+                      variant={amount === p ? "default" : "outline"}
+                      onClick={() => setAmount(p)}
+                      className={`rounded-xl border-[#EDECE7] font-bold text-xs ${
+                        amount === p 
+                          ? "bg-[#8C3D1D] hover:bg-[#733115] text-white" 
+                          : "hover:bg-stone-50 text-stone-700"
+                      }`}
+                    >
+                      ₹{p.toLocaleString("en-IN")}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recurring Toggle */}
+              <div className="rounded-2xl border border-[#EDECE7] bg-[#FAF9F5] p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-extrabold text-stone-800">{t("makeRecurring")}</p>
+                    <p className="text-xs text-stone-500 mt-0.5">{t("giveRegularly")}</p>
+                  </div>
+                  <Switch checked={recurring} onCheckedChange={setRecurring} />
+                </div>
+                {recurring && (
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {(["daily", "monthly", "yearly"] as const).map((f) => (
+                      <Button
+                        key={f}
+                        size="sm"
+                        variant={frequency === f ? "default" : "outline"}
+                        onClick={() => setFrequency(f)}
+                        className={`capitalize font-bold text-xs rounded-xl ${
+                          frequency === f 
+                            ? "bg-[#8C3D1D] hover:bg-[#733115] text-white" 
+                            : "hover:bg-stone-50 text-stone-700"
+                        }`}
+                      >
+                        {f}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tip Slider Section */}
+              <div className="rounded-2xl border border-[#EDECE7] bg-[#FAF9F5] p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-extrabold text-stone-800">{t("addTip")}</p>
+                    <p className="text-xs text-stone-505 mt-0.5">{t("keepFree")}</p>
+                  </div>
+                  <Switch checked={addTip} onCheckedChange={setAddTip} />
+                </div>
+                {addTip && (
+                  <div className="flex gap-2 pt-1">
+                    {[5, 10, 15].map((p) => (
+                      <Button
+                        key={p}
+                        size="sm"
+                        variant={tipPct === p ? "default" : "outline"}
+                        onClick={() => setTipPct(p)}
+                        className={`font-bold text-xs rounded-xl px-4 ${
+                          tipPct === p 
+                            ? "bg-[#8C3D1D] hover:bg-[#733115] text-white" 
+                            : "hover:bg-stone-50 text-stone-700"
+                        }`}
+                      >
+                        {p}%
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Donation Calculations */}
+              {amount > 0 && (
+                <div className="space-y-2 rounded-2xl border border-[#EDECE7] p-4 text-sm bg-stone-50">
+                  <Row label="Donation Amount" value={formatINR(amount)} />
+                  {addTip && <Row label={`Tip to Platform (${tipPct}%)`} value={formatINR(tip)} />}
+                  <div className="my-1.5 h-px bg-[#EDECE7]" />
+                  <Row
+                    label="Total Amount"
+                    value={formatINR(total)}
+                    bold
+                  />
+                  <p className="pt-1 text-[11px] text-stone-400 font-medium leading-relaxed">
+                    Donee receives {formatINR(amount - Math.round(amount * 0.05))} after 5% platform service charges ({formatINR(Math.round(amount * 0.05))}).
+                  </p>
+                </div>
+              )}
+
+              {/* Checkout Button */}
+              <button 
+                onClick={handleDonateCheckout}
+                disabled={checkoutLoading || amount <= 0}
+                className="w-full bg-[#8C3D1D] hover:bg-[#733115] disabled:bg-stone-300 disabled:cursor-not-allowed text-white py-3.5 px-6 font-bold text-base rounded-2xl flex items-center justify-center gap-2 transition-all"
+              >
+                {checkoutLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Opening Razorpay Checkout...
+                  </>
+                ) : user ? (
+                  `Pay ${formatINR(total)}`
+                ) : (
+                  "Log in to Donate"
+                )}
+              </button>
+
+              <p className="text-center text-[10px] text-stone-400 font-bold">
+                Secured by Razorpay · UPI · Cards · Netbanking
+              </p>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ALL DONORS MODAL OVERLAY */}
+      {isAllDonorsModalOpen && (
+        <div className="fixed inset-0 bg-stone-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-[#EDECE7] flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
+            {/* Close Button */}
+            <button 
+              onClick={() => setIsAllDonorsModalOpen(false)}
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 p-1 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Header */}
+            <div className="mb-5 border-b border-[#F2F1EC] pb-4">
+              <span className="text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
+                Campaign Supporters
+              </span>
+              <h3 className="text-lg font-extrabold text-stone-900 mt-2.5">All {donations.length} Donors</h3>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {donations.map((donation, idx) => {
+                const name = donation.donorName || "Someone";
+                const initials = getInitials(name);
+                return (
+                  <div key={donation.id || idx} className="flex items-center gap-4 bg-[#FAF9F5] border border-[#EDECE7] p-3.5 rounded-2xl">
+                    <div className="h-9 w-9 bg-[#E8E6DF] rounded-full flex items-center justify-center font-bold text-stone-600 text-xs select-none">
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-stone-900 truncate">
+                        {name}
+                      </p>
+                      <p className="text-xs text-stone-500">{timeAgo(donation.createdAt)}</p>
+                    </div>
+                    <div className="text-sm font-extrabold text-[#8C3D1D] shrink-0">{formatINR(donation.amount)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTACT ORGANIZER MODAL OVERLAY */}
+      {isContactModalOpen && (
+        <div className="fixed inset-0 bg-stone-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-[#EDECE7] flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+            {/* Close Button */}
+            <button 
+              onClick={() => setIsContactModalOpen(false)}
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 p-1 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Header */}
+            <div className="mb-5">
+              <span className="text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
+                Contact Organizer
+              </span>
+              <h3 className="text-lg font-extrabold text-stone-900 mt-2.5">Send a message to {campaign.doneeName}</h3>
+            </div>
+
+            {!user ? (
+              <div className="space-y-4 py-4 text-center">
+                <p className="text-sm text-stone-600">You must be logged in to contact the campaign organizer.</p>
+                <Button 
+                  onClick={() => {
+                    setIsContactModalOpen(false);
+                    router.push(`/login?redirect=/campaigns/${campaign.id}`);
+                  }}
+                  className="bg-[#8C3D1D] hover:bg-[#733115] text-white rounded-xl w-full"
+                >
+                  Log In
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4 flex-1">
+                {/* Direct info cards */}
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  {campaign.doneeEmail && (
+                    <a 
+                      href={`mailto:${campaign.doneeEmail}?subject=Inquiry%20regarding%20${encodeURIComponent(campaign.title)}`}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDECE7] bg-[#FCFAF7] hover:bg-[#FDF0E9] hover:border-[#8C3D1D]/30 transition-all group"
+                    >
+                      <Mail className="h-5 w-5 text-stone-400 group-hover:text-[#8C3D1D] mb-1.5 transition-colors" />
+                      <span className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider">Email</span>
+                      <span className="text-xs text-stone-700 font-bold truncate w-full mt-0.5">{campaign.doneeEmail}</span>
+                    </a>
+                  )}
+                  {campaign.doneePhone && (
+                    <a 
+                      href={`tel:${campaign.doneePhone}`}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDECE7] bg-[#FCFAF7] hover:bg-[#FDF0E9] hover:border-[#8C3D1D]/30 transition-all group"
+                    >
+                      <User className="h-5 w-5 text-stone-400 group-hover:text-[#8C3D1D] mb-1.5 transition-colors" />
+                      <span className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider">Phone</span>
+                      <span className="text-xs text-stone-700 font-bold truncate w-full mt-0.5">{campaign.doneePhone}</span>
+                    </a>
+                  )}
+                </div>
+
+                <div className="h-px bg-[#EDECE7] my-2" />
+
+                {/* Form */}
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="contactSubject" className="text-xs font-bold text-stone-600">Subject</Label>
+                    <Input 
+                      id="contactSubject"
+                      placeholder="e.g. Question about donation receipts"
+                      value={contactSubject}
+                      onChange={(e) => setContactSubject(e.target.value)}
+                      className="rounded-xl border-[#EDECE7] focus-visible:ring-[#8C3D1D]/20 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="contactMessage" className="text-xs font-bold text-stone-600">Message</Label>
+                    <Textarea 
+                      id="contactMessage"
+                      placeholder="Type your message here..."
+                      rows={4}
+                      value={contactMessage}
+                      onChange={(e) => setContactMessage(e.target.value)}
+                      className="rounded-xl border-[#EDECE7] focus-visible:ring-[#8C3D1D]/20 text-sm bg-white resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Submit button */}
+                <button 
+                  onClick={() => {
+                    if (!contactMessage.trim()) {
+                      toast.error("Please enter a message.");
+                      return;
+                    }
+                    setSendingContact(true);
+                    setTimeout(() => {
+                      toast.success("Your message has been sent to the organizer!");
+                      setContactMessage("");
+                      setContactSubject("");
+                      setSendingContact(false);
+                      setIsContactModalOpen(false);
+                    }, 1000);
+                  }}
+                  disabled={sendingContact}
+                  className="w-full bg-[#8C3D1D] hover:bg-[#733115] disabled:bg-stone-300 disabled:cursor-not-allowed text-white py-3 px-6 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all"
+                >
+                  {sendingContact ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Message"
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,25 +1,57 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("ck_token");
+function handleUnauthorized() {
+  if (typeof window !== "undefined") {
+    // Fix #4: clear legacy token keys from old sessions that pre-date cookie auth
+    localStorage.removeItem("ck_token");
+    sessionStorage.removeItem("ck_token");
+    localStorage.removeItem("ck_user");
+    window.location.href = "/login?expired=1";
+  }
 }
+
+type RequestOptions = RequestInit & {
+  /** If true, a 401 response throws but does NOT redirect to login.
+   *  Use for background/optional fetches where one 401 shouldn't kill the whole session. */
+  silent401?: boolean;
+};
 
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestOptions = {}
 ): Promise<T> {
-  const token = getToken();
+  const { silent401, ...fetchOptions } = options;
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
-    ...(options.headers as Record<string, string>),
+    // Fix #14: ngrok dev header is no longer sent to production — only in local dev.
+    ...(process.env.NODE_ENV === "development"
+      ? { "ngrok-skip-browser-warning": "true" }
+      : {}),
+    ...(fetchOptions.headers as Record<string, string>),
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  // Fix #4: credentials:"include" makes the browser attach the httpOnly session
+  // cookie automatically. We no longer read the JWT from localStorage or send an
+  // Authorization header — the cookie does that job, and JavaScript can't steal it.
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...fetchOptions,
+    headers,
+    credentials: "include",
+  });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      if (!silent401) handleUnauthorized();
+      throw new Error("Session expired. Please log in again.");
+    }
+    if (res.status === 403) throw new Error("You don't have permission to do that.");
+    if (res.status === 404) throw new Error("The requested item was not found.");
+    if (res.status === 409) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.message ?? "This action has already been done.");
+    }
+    if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
     const body = await res.json().catch(() => ({}));
     const msg =
       body?.message ??
@@ -40,11 +72,13 @@ async function request<T>(
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-export function login(email: string, password: string) {
-  return request<{ token: string }>("/api/v1/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+// Fix #4: login now returns email + role from the JSON body; the JWT itself is
+// delivered as an httpOnly cookie — the frontend never sees or stores the token.
+export function login(email: string, password: string, rememberMe = false) {
+  return request<{ token: null; email: string; role: string; userId: number }>(
+    "/api/v1/auth/login",
+    { method: "POST", body: JSON.stringify({ email, password, rememberMe }) }
+  );
 }
 
 export function register(data: {
@@ -53,11 +87,16 @@ export function register(data: {
   phone: string;
   city: string;
   password: string;
+  role: string;
 }) {
-  return request<{ token: string }>("/api/v1/auth/register", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  return request<{ token: null; email: string; role: string; userId: number }>(
+    "/api/v1/auth/register",
+    { method: "POST", body: JSON.stringify(data) }
+  );
+}
+
+export function serverLogout() {
+  return request<void>("/api/v1/auth/logout", { method: "POST" });
 }
 
 // ── Platform Stats ────────────────────────────────────────────────────────────
@@ -101,6 +140,48 @@ export function resetPassword(token: string, newPassword: string) {
   });
 }
 
+export type GoogleAuthResponse =
+  | { needsCompletion: false; userId: number; email: string; role: string }
+  | { needsCompletion: true; email: string; fullName: string };
+
+export function googleAuth(accessToken: string) {
+  return request<GoogleAuthResponse>("/api/v1/auth/google", {
+    method: "POST",
+    // Backend reads `idToken` for both the ID-token verify and the access-token
+    // userinfo fallback, so the access token must be sent under `idToken`.
+    body: JSON.stringify({ idToken: accessToken, accessToken }),
+  });
+}
+
+export function googleComplete(accessToken: string, phone: string, city: string, role: string) {
+  return request<GoogleAuthResponse>("/api/v1/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ idToken: accessToken, accessToken, phone, city, role }),
+  });
+}
+
+export type UserProfile = {
+  id: number;
+  email: string;
+  fullName: string;
+  phone: string;
+  city: string | null;
+  role: string;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+export function getProfile() {
+  return request<UserProfile>("/api/v1/auth/me");
+}
+
+export function updateProfile(data: { fullName?: string; phone?: string; city?: string }) {
+  return request<UserProfile>("/api/v1/auth/me", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
 // ── Campaigns ─────────────────────────────────────────────────────────────────
 
 export type Campaign = {
@@ -118,6 +199,11 @@ export type Campaign = {
   doneeName: string;
   createdAt: string;
   updatedAt: string;
+  imageUrl: string | null;
+  videoUrl: string | null;
+  urgency?: string;
+  doneeEmail?: string;
+  doneePhone?: string;
 };
 
 export function getCampaigns() {
@@ -129,7 +215,7 @@ export function getCampaign(id: number) {
 }
 
 export function getMyCampaigns() {
-  return request<Campaign[]>("/api/v1/campaigns/mine");
+  return request<Campaign[]>("/api/v1/campaigns/mine", { silent401: true });
 }
 
 export function createCampaign(data: {
@@ -139,6 +225,8 @@ export function createCampaign(data: {
   targetAmount: number;
   city: string;
   state: string;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
 }) {
   return request<Campaign>("/api/v1/campaigns", {
     method: "POST",
@@ -149,7 +237,7 @@ export function createCampaign(data: {
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export function adminGetCampaigns(status?: string) {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<Campaign[]>(`/api/v1/admin/campaigns${qs}`);
 }
 
@@ -186,6 +274,7 @@ export type Donation = {
   razorpayPaymentId: string | null;
   status: string;
   createdAt: string;
+  donorName?: string;
 };
 
 export function initiateDonation(campaignId: number, amount: number) {
@@ -196,7 +285,11 @@ export function initiateDonation(campaignId: number, amount: number) {
 }
 
 export function getMyDonations() {
-  return request<Donation[]>("/api/v1/donations/mine");
+  return request<Donation[]>("/api/v1/donations/mine", { silent401: true });
+}
+
+export function getCampaignDonations(campaignId: number) {
+  return request<Donation[]>(`/api/v1/campaigns/${campaignId}/donations`);
 }
 
 // ── Item Listings ─────────────────────────────────────────────────────────────
@@ -215,6 +308,10 @@ export type ItemListing = {
   donorId: number;
   donorName: string;
   createdAt: string;
+  imageUrl: string | null;
+  maximumDeliveryRadius: number | null;
+  transportPayerPreference: string | null;
+  availabilityExpiry: string | null;
 };
 
 export function getItemListings() {
@@ -233,6 +330,9 @@ export function createItemListing(data: {
   city: string;
   pincode?: string;
   description?: string;
+  imageUrl?: string | null;
+  maximumDeliveryRadius?: number;
+  transportPayerPreference?: string;
 }) {
   return request<ItemListing>("/api/v1/items", {
     method: "POST",
@@ -241,7 +341,7 @@ export function createItemListing(data: {
 }
 
 export function adminGetItemListings(status?: string) {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<ItemListing[]>(`/api/v1/admin/items${qs}`);
 }
 
@@ -272,14 +372,25 @@ export type ItemRequest = {
   doneeId: number;
   doneeName: string;
   createdAt: string;
+  imageUrl: string | null;
+  pickupRadiusKm: number | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
-export function getItemRequests() {
-  return request<ItemRequest[]>("/api/v1/item-requests");
+export function getItemRequests(categories?: string[], lat?: number, lng?: number) {
+  const params = new URLSearchParams();
+  if (categories && categories.length > 0) {
+    categories.forEach(c => params.append("categories", c));
+  }
+  if (lat !== undefined && lat !== null) params.append("lat", String(lat));
+  if (lng !== undefined && lng !== null) params.append("lng", String(lng));
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return request<ItemRequest[]>(`/api/v1/item-requests${qs}`);
 }
 
 export function getMyItemRequests() {
-  return request<ItemRequest[]>("/api/v1/item-requests/mine");
+  return request<ItemRequest[]>("/api/v1/item-requests/mine", { silent401: true });
 }
 
 export function createItemRequest(data: {
@@ -290,6 +401,10 @@ export function createItemRequest(data: {
   city: string;
   pincode?: string;
   description?: string;
+  imageUrl?: string | null;
+  pickupRadiusKm?: number;
+  latitude: number;
+  longitude: number;
 }) {
   return request<ItemRequest>("/api/v1/item-requests", {
     method: "POST",
@@ -298,7 +413,7 @@ export function createItemRequest(data: {
 }
 
 export function adminGetItemRequests(status?: string) {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<ItemRequest[]>(`/api/v1/admin/item-requests${qs}`);
 }
 
@@ -317,34 +432,104 @@ export function adminRejectItemRequest(id: number, reason: string) {
 
 export type ItemMatch = {
   id: number;
-  listingId: number;
-  listingTitle: string;
-  requestId: number;
-  requestTitle: string;
+  matchType: "DONATE_TO_REQUEST" | "REQUEST_LISTING";
+  listingId: number | null;
+  listingTitle: string | null;
+  requestId: number | null;
+  requestTitle: string | null;
   donorName: string;
   donorCity: string;
   doneeName: string;
   doneeCity: string;
-  status: string;
+  status:
+    | "DONOR_REVIEW"
+    | "DONOR_REJECTED"
+    | "PENDING_APPROVAL"
+    | "TRANSPORT_DISCUSSION"
+    | "ARRANGEMENT_AGREED"
+    | "PICKUP_SCHEDULED"
+    | "PICKED_UP"
+    | "IN_TRANSIT"
+    | "DELIVERY_ATTEMPTED"
+    | "DELIVERED_PENDING_CONFIRMATION"
+    | "FULFILLED"
+    | "RESCHEDULED"
+    | "FAILED"
+    | "CANCELLED"
+    | "REJECTED";
   rejectionReason: string | null;
   createdAt: string;
+  matchScore: number | null;
+  donorImages: string[];
+  donorItemDescription: string | null;
+  doneeReason: string | null;
   donorContact: string | null;
   doneeContact: string | null;
 };
 
-export function createMatch(listingId: number, requestId: number) {
-  return request<ItemMatch>("/api/v1/matches", {
+export function donateToRequest(requestId: number, images: File[], description: string) {
+  const formData = new FormData();
+  formData.append("requestId", String(requestId));
+  formData.append("description", description);
+  images.forEach((img) => formData.append("images", img));
+  return fetch(`${BASE_URL}/api/v1/matches/donate`, {
     method: "POST",
-    body: JSON.stringify({ listingId, requestId }),
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      if (res.status === 401) { handleUnauthorized(); throw new Error("Session expired. Please log in again."); }
+      if (res.status === 403) throw new Error("You don't have permission to do that.");
+      if (res.status === 409) throw new Error("You have already offered to donate for this request.");
+      if (res.status === 400) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message ?? "Please check your details and try again.");
+      }
+      if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.message ?? body?.title ?? "Something went wrong. Please try again.");
+    }
+    return res.json() as Promise<ItemMatch>;
+  });
+}
+
+export function donorAcceptMatch(id: number) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/donor-accept`, { method: "POST" });
+}
+
+export function donorRejectMatch(id: number, reason?: string) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/donor-reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason ?? null }),
+  });
+}
+
+export function analyzeItemImage(image: File): Promise<{ description: string }> {
+  const formData = new FormData();
+  formData.append("image", image);
+  return fetch(`${BASE_URL}/api/v1/matches/analyze-image`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) throw new Error("Image analysis failed");
+    return res.json() as Promise<{ description: string }>;
+  });
+}
+
+export function requestListing(listingId: number, reason: string) {
+  return request<ItemMatch>("/api/v1/matches/request", {
+    method: "POST",
+    body: JSON.stringify({ listingId, reason }),
   });
 }
 
 export function getMyMatches() {
-  return request<ItemMatch[]>("/api/v1/matches/mine");
+  return request<ItemMatch[]>("/api/v1/matches/mine", { silent401: true });
 }
 
 export function adminGetMatches(status?: string) {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<ItemMatch[]>(`/api/v1/admin/matches${qs}`);
 }
 
@@ -356,5 +541,108 @@ export function adminRejectMatch(id: number, reason: string) {
   return request<ItemMatch>(`/api/v1/admin/matches/${id}/reject`, {
     method: "PATCH",
     body: JSON.stringify({ reason }),
+  });
+}
+
+// ── User profile ──────────────────────────────────────────────────────────────
+
+export function getMyProfile() {
+  return request<UserProfile>("/api/v1/users/me");
+}
+
+export function updateLocation(latitude: number, longitude: number) {
+  return request<UserProfile>("/api/v1/users/location", {
+    method: "PUT",
+    body: JSON.stringify({ latitude, longitude }),
+  });
+}
+
+// ── Admin Donations ───────────────────────────────────────────────────────────
+
+export type AdminDonation = {
+  id: number;
+  donorName: string;
+  donorEmail: string;
+  campaignId: number;
+  campaignTitle: string;
+  amount: number;
+  currency: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string | null;
+  status: "INITIATED" | "COMPLETED" | "FAILED";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DonationStats = {
+  totalTransactions: number;
+  completedTransactions: number;
+  failedTransactions: number;
+  initiatedTransactions: number;
+  uniqueDonors: number;
+  totalCollected: number;
+};
+
+export function adminGetAllDonations() {
+  return request<AdminDonation[]>("/api/v1/admin/donations");
+}
+
+export function adminGetDonationStats() {
+  return request<DonationStats>("/api/v1/admin/donations/stats");
+}
+
+// ── Super Admin — full DB control ───────────────────────────────────────────────
+
+export type SuperAdminEntity =
+  | "users" | "campaigns" | "donations" | "item-requests" | "item-listings" | "matches";
+
+export type SuperAdminRow = Record<string, unknown>;
+
+export type SuperAdminOverview = {
+  counts: Record<string, number>;
+  roleBreakdown: Record<string, number>;
+  totalRaised: number;
+};
+
+export type SqlResult = {
+  type?: "read" | "write";
+  columns?: string[];
+  rows?: Record<string, unknown>[];
+  rowCount?: number;
+  affectedRows?: number;
+  error?: string;
+};
+
+export function superAdminOverview() {
+  return request<SuperAdminOverview>("/api/v1/super-admin/overview");
+}
+
+export function superAdminList(entity: SuperAdminEntity, q?: string) {
+  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+  return request<SuperAdminRow[]>(`/api/v1/super-admin/${entity}${qs}`);
+}
+
+export function superAdminUpdate(entity: SuperAdminEntity, id: number, body: Record<string, unknown>) {
+  return request<SuperAdminRow>(`/api/v1/super-admin/${entity}/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminDelete(entity: SuperAdminEntity, id: number) {
+  return request<void>(`/api/v1/super-admin/${entity}/${id}`, { method: "DELETE" });
+}
+
+export function superAdminCreateUser(body: Record<string, unknown>) {
+  return request<SuperAdminRow>("/api/v1/super-admin/users", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminRunSql(query: string) {
+  return request<SqlResult>("/api/v1/super-admin/sql", {
+    method: "POST",
+    body: JSON.stringify({ query }),
   });
 }

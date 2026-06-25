@@ -1,0 +1,27 @@
+{
+  "itemDetail": {
+    "verified": "Verified",
+    "noPhoto": "No photo",
+    "qty": "Qty:",
+    "by": "By",
+    "description": "Description",
+    "requestThisItem": "Request this item",
+    "backToListings": "Back to listings",
+    "listingNotFound": "Listing not found",
+    "listingNotFoundSubtext": "This item may have been removed or is no longer available.",
+    "requesting": "Requesting",
+    "whyNeedLabel": "Why do you need this item?",
+    "reasonPlaceholder": "Explain your situation and why this item would help you. E.g. I am a student who recently lost my bag and urgently need a replacement for school…",
+    "reasonCharCount": "{count}/1000 characters (min 20)",
+    "adminReviewNotice": "Admin will review your reason and approve if valid. Contact details are shared only after approval.",
+    "cancel": "Cancel",
+    "submitting": "Submitting…",
+    "submitRequest": "Submit request",
+    "closeModal": "Close modal",
+    "setLocationToast": "Please set your location in your profile before requesting items.",
+    "setLocation": "Set location",
+    "toastReasonTooShort": "Please explain in at least 20 characters why you need this item",
+    "toastSuccess": "Request submitted! Admin will review and connect you with the donor if approved.",
+    "toastError": "Failed to submit request"
+  }
+}

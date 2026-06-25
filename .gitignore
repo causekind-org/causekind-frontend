@@ -19,3 +19,10 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Vercel local config — not needed in repo, GitHub integration handles deploys
+.vercel/
+
+# Claude
+.claude/
+

@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Nunito } from "next/font/google";
+import { Plus_Jakarta_Sans, Nunito } from "next/font/google";
 import "@/styles.css";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { AuthProvider } from "@/hooks/useAuth";
+import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
+import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
+import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
+import { LocationGate } from "@/components/LocationGate";
+import { CookieConsent } from "@/components/CookieConsent";
+import { WelcomeOverlay } from "@/components/WelcomeOverlay";
+import { DonorListingPrompt } from "@/components/DonorListingPrompt";
+import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
+import { AdminRedirect } from "@/components/AdminRedirect";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
@@ -24,22 +30,38 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "CauseKind — Give With Purpose",
   description: "Discover and support verified charity campaigns.",
+  icons: { icon: "/logo-filled.png" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const messages = await getMessages();
+
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}>
-        <AuthProvider>
-          <SiteHeader />
-          <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
-          <SiteFooter />
-          <Toaster richColors position="top-right" />
-        </AuthProvider>
+      <body className={`${plusJakarta.className} ${nunito.variable} antialiased`}>
+        <NextIntlClientProvider messages={messages}>
+          <GoogleProvider>
+            <AuthProvider>
+              <SuperAdminRedirect />
+              <AdminRedirect />
+              <ScrollProgress />
+              <SiteHeader />
+              <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
+              <SiteFooter />
+              <MobileBottomNav />
+              <FloatingSupportButton />
+              <Toaster richColors position="bottom-left" offset={90} toastOptions={{ style: { zIndex: 9999 } }} />
+              <LocationGate />
+              <CookieConsent />
+              <WelcomeOverlay />
+              <DonorListingPrompt />
+            </AuthProvider>
+          </GoogleProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
