@@ -18,6 +18,7 @@ import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
+import { getRandomDemoListing } from "@/data/demoListings";
 
 const CATEGORIES = ["Education", "Clothing", "Furniture", "Electronics", "Household", "Sports", "Medical aid"];
 const CONDITIONS = ["Like new", "Good", "Fair"];
@@ -248,7 +249,34 @@ export default function NewItemPage() {
 
         <div className="max-w-[540px] mx-auto space-y-6 relative z-10">
           <div className="space-y-1.5 mb-6">
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Donate Items</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Donate Items</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const demo = getRandomDemoListing();
+                  setForm((f) => ({
+                    ...f,
+                    title: demo.title,
+                    category: demo.category,
+                    quantity: demo.quantity,
+                    condition: demo.condition,
+                    pincode: demo.pincode,
+                    description: demo.description,
+                    maximumDeliveryRadius: demo.maximumDeliveryRadius,
+                    transportPayerPreference: demo.transportPayerPreference,
+                  }));
+                  setCountryIso(demo.countryIso);
+                  setStateIso(demo.stateIso);
+                  setCityValue(demo.cityValue);
+                  setCityFreeText("");
+                  toast.success("Demo data filled! Edit before submitting.");
+                }}
+                className="text-[11px] font-bold text-[#b04a15] border border-[#b04a15]/40 bg-[#b04a15]/5 hover:bg-[#b04a15]/10 rounded-full px-3 py-1 transition-colors"
+              >
+                ✦ Try Demo
+              </button>
+            </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
               {t("cardTitle")}
             </h1>

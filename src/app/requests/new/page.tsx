@@ -41,6 +41,8 @@ export default function NewRequestPage() {
   const [radiusSel, setRadiusSel] = useState("10");
   const [customRadius, setCustomRadius] = useState("");
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsBlocked, setGpsBlocked] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
 
   // Location cascades states
@@ -110,6 +112,12 @@ export default function NewRequestPage() {
       });
   }, [user, router]);
 
+  useEffect(() => {
+    if (user) {
+      handleGPSLocation(true);
+    }
+  }, [user]);
+
   function handleCountryChange(iso: string) {
     setCountryIso(iso);
     setStateIso("");
@@ -128,17 +136,20 @@ export default function NewRequestPage() {
     setCityFreeText("");
   }
 
-  function handleGPSLocation() {
+  function handleGPSLocation(isAuto = false) {
     if (!navigator.geolocation) {
       toast.error("Your browser doesn't support GPS location");
+      setGpsBlocked(true);
       return;
     }
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setGpsCoords({ lat, lng });
+        setGpsBlocked(false);
         try {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
           if (!res.ok) throw new Error();
           const data = await res.json();
@@ -166,18 +177,19 @@ export default function NewRequestPage() {
                 setCityValue("");
                 if (cityName) setCityFreeText(cityName);
               }
-              toast.success("Location updated successfully!");
+              if (!isAuto) toast.success("Location updated successfully!");
             }
           }
         } catch {
-          toast.error("Failed to detect location details");
+          if (!isAuto) toast.error("Failed to detect location details");
         } finally {
           setGpsLoading(false);
         }
       },
       () => {
         setGpsLoading(false);
-        toast.error("Location access denied or unavailable");
+        setGpsBlocked(true);
+        toast.error("Location access denied. You must allow GPS access to post needs.");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -205,6 +217,10 @@ export default function NewRequestPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!gpsCoords) {
+      toast.error("Please allow GPS location access to submit this request.");
+      return;
+    }
     const cityStr = buildCityString();
     if (!cityStr) {
       toast.error(t("toastCityRequired"));
@@ -219,7 +235,15 @@ export default function NewRequestPage() {
     }
     setSubmitting(true);
     try {
-      await createItemRequest({ ...form, city: cityStr, quantity: Number(form.quantity), imageUrl: form.imageUrl || null, pickupRadiusKm: finalRadius ?? undefined });
+      await createItemRequest({
+        ...form,
+        city: cityStr,
+        quantity: Number(form.quantity),
+        imageUrl: form.imageUrl || null,
+        pickupRadiusKm: finalRadius ?? undefined,
+        latitude: gpsCoords.lat,
+        longitude: gpsCoords.lng
+      });
       toast.success(t("toastSuccess"));
       router.push("/dashboard");
     } catch (err) {
@@ -230,6 +254,31 @@ export default function NewRequestPage() {
   }
 
   if (!user) return null;
+
+  if (gpsBlocked) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-[#faf8f5] dark:bg-zinc-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-6 bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-250 dark:border-zinc-800 shadow-xl">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center text-red-500">
+            <MapPin className="w-8 h-8 animate-bounce" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Location Access Required</h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              Causekind requires your GPS location to connect your request with nearby donors. Please enable location permissions in your browser to proceed.
+            </p>
+          </div>
+          <Button 
+            onClick={() => handleGPSLocation(false)} 
+            disabled={gpsLoading}
+            className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2"
+          >
+            {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection 🎯"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
@@ -304,7 +353,7 @@ export default function NewRequestPage() {
                   </label>
                   <button
                     type="button"
-                    onClick={handleGPSLocation}
+                    onClick={() => handleGPSLocation(false)}
                     disabled={gpsLoading}
                     className="flex items-center gap-1.5 text-xs font-bold text-[#b04a15] hover:underline uppercase disabled:opacity-50"
                   >

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import {
   getMyItemListings, getMyItemRequests, getMyMatches, getMyProfile,
+  donorAcceptMatch, donorRejectMatch,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
-  Phone, Mail, Handshake, CheckCircle2, Heart
+  Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown
 } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
@@ -29,8 +30,11 @@ function getInitials(name: string): string {
   return ((words[0][0] ?? "") + (words[words.length - 1][0] ?? "")).toUpperCase();
 }
 
+
 function getFulfilmentStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+    DONOR_REVIEW: { label: "⚠ Awaiting Your Confirmation", variant: "outline" },
+    DONOR_REJECTED: { label: "Donor Declined", variant: "destructive" },
     PENDING_APPROVAL: { label: "Pending Admin Approval", variant: "outline" },
     TRANSPORT_DISCUSSION: { label: "Discussion Enabled", variant: "secondary" },
     ARRANGEMENT_AGREED: { label: "Delivery Agreed", variant: "secondary" },
@@ -274,22 +278,12 @@ function DoneeDashboard({
                           <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap shrink-0">{badge.label}</Badge>
                         </div>
                         <div className="flex justify-between items-center text-xs bg-stone-50 dark:bg-zinc-950 p-2.5 rounded-xl">
-                          <div>
-                            <p className="text-stone-400">Donor</p>
-                            <p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p>
-                          </div>
-                          {m.matchScore && (
-                            <div className="text-right">
-                              <p className="text-stone-400">AI Match</p>
-                              <p className="font-bold text-[#1e3a60] dark:text-blue-400">{m.matchScore}%</p>
-                            </div>
-                          )}
+                          <div><p className="text-stone-400">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
+                          {m.matchScore && (<div className="text-right"><p className="text-stone-400">AI Match</p><p className="font-bold text-[#1e3a60] dark:text-blue-400">{m.matchScore}%</p></div>)}
                         </div>
                         {m.status === "TRANSPORT_DISCUSSION" && (
                           <div className="flex justify-end pt-1">
-                            <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold rounded-lg">
-                              Contact Donor (Masked)
-                            </Button>
+                            <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold rounded-lg">Contact Donor (Masked)</Button>
                           </div>
                         )}
                       </div>
@@ -299,6 +293,7 @@ function DoneeDashboard({
               )}
             </CardContent>
           </Card>
+
         </div>
 
       </div>
@@ -318,6 +313,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"donor" | "donee">("donor");
 
+  // Donor review state
+  const [declineMatchId, setDeclineMatchId] = useState<number | null>(null);
+  const [declineReason, setDeclineReason] = useState("");
+  const [reviewLoading, setReviewLoading] = useState<number | null>(null);
+
+  const refreshMatches = async () => {
+    try { const fresh = await getMyMatches(); setMatches(fresh); } catch { /* silent */ }
+  };
+
   useEffect(() => {
     if (isLoading) return;
     if (!user) { router.push("/login"); return; }
@@ -325,19 +329,16 @@ export default function DashboardPage() {
     Promise.all([
       getMyProfile().then((p) => {
         setMyProfile(p);
-        if (p.role === "DONEE") {
-          setActiveTab("donee");
-        }
+        if (p.role === "DONEE") setActiveTab("donee");
       }),
       getMyItemListings().then(setItemListings),
       getMyItemRequests().then(setItemRequests),
-      getMyMatches().then(setMatches)
+      getMyMatches().then(setMatches),
     ])
       .catch(() => toast.error("Failed to load dashboard data"))
       .finally(() => setLoading(false));
   }, [user, isLoading, router]);
 
-  // Split matches based on current user's role
   const donorMatches = useMemo(() => {
     if (!myProfile) return [];
     return matches.filter(m => m.donorName === myProfile.fullName);
@@ -524,6 +525,7 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
+
                   <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-emerald-500" />
                     <CardContent className="flex items-center gap-4 p-5">
@@ -604,6 +606,7 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
+
                   {/* Donor Matches */}
                   <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-emerald-500" />
@@ -621,36 +624,56 @@ export default function DashboardPage() {
                         <div className="divide-y space-y-4">
                           {donorMatches.map((m) => {
                             const badge = getFulfilmentStatusBadge(m.status);
+                            const isDonorReview = m.status === "DONOR_REVIEW";
+                            const isDeclining = declineMatchId === m.id;
                             return (
-                              <div key={m.id} className="pt-4 first:pt-0 space-y-2 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
+                              <div key={m.id} className={`pt-4 first:pt-0 space-y-2 group p-2 rounded-xl transition-all ${isDonorReview ? "border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/20" : "hover:bg-stone-50 dark:hover:bg-zinc-800/40"}`}>
+                                {isDonorReview && (
+                                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs font-bold pb-1">
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                    Action Required — Please confirm this donation
+                                  </div>
+                                )}
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
-                                    <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-emerald-500 transition-colors">
+                                    <p className={`font-bold text-sm text-stone-900 dark:text-stone-100 transition-colors ${isDonorReview ? "" : "group-hover:text-emerald-500"}`}>
                                       Matched need for: <TranslatedText text={m.requestTitle || "Requested Need"} />
                                     </p>
                                     <p className="text-xs text-stone-400 mt-0.5">Matched with item: <TranslatedText text={m.listingTitle || ""} /></p>
                                   </div>
                                   <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">{badge.label}</Badge>
                                 </div>
-                                
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
-                                  <div>
-                                    <p className="text-stone-500">Recipient Donee</p>
-                                    <p className="font-semibold text-stone-700 dark:text-stone-300">{m.doneeName}</p>
-                                  </div>
-                                  {m.matchScore && (
-                                    <div className="text-right">
-                                      <p className="text-stone-500">AI Score</p>
-                                      <p className="font-bold text-[#b04a15]">{m.matchScore}%</p>
-                                    </div>
-                                  )}
+                                  <div><p className="text-stone-500">Recipient Donee</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.doneeName}</p></div>
+                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[#b04a15]">{m.matchScore}%</p></div>)}
                                 </div>
-
+                                {isDonorReview && (
+                                  <div className="space-y-2 pt-1">
+                                    {!isDeclining ? (
+                                      <div className="flex gap-2">
+                                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success("Match accepted! Admin will review shortly."); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to accept match"); } finally { setReviewLoading(null); }}} className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                          {reviewLoading === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5" />} Accept
+                                        </button>
+                                        <button disabled={reviewLoading === m.id} onClick={() => { setDeclineMatchId(m.id); setDeclineReason(""); }} className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                          <ThumbsDown className="w-3.5 h-3.5" /> Decline
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        <input type="text" placeholder="Optional reason for declining..." value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-xs border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
+                                        <div className="flex gap-2">
+                                          <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined); toast.success("Match declined. We're finding the next best donor."); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to decline match"); } finally { setReviewLoading(null); }}} className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                            {reviewLoading === m.id ? "Declining..." : "Confirm Decline"}
+                                          </button>
+                                          <button onClick={() => setDeclineMatchId(null)} className="px-3 py-2 text-xs text-stone-500 hover:text-stone-800 rounded-lg border border-stone-200 dark:border-zinc-700">Cancel</button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                                 {m.status === "TRANSPORT_DISCUSSION" && (
                                   <div className="flex justify-end gap-2 pt-1">
-                                    <Button size="sm" className="bg-[#b04a15] text-white text-xs font-bold rounded-lg flex items-center gap-1">
-                                      Call Recipient (Masked)
-                                    </Button>
+                                    <Button size="sm" className="bg-[#b04a15] text-white text-xs font-bold rounded-lg flex items-center gap-1">Call Recipient (Masked)</Button>
                                   </div>
                                 )}
                               </div>
@@ -752,7 +775,7 @@ export default function DashboardPage() {
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-emerald-500" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">02</div>
                     <CardHeader className="border-b pb-4 mb-4 relative z-10">
-                      <CardTitle className="text-base font-bold">Matches & Handover Status</CardTitle>
+                      <CardTitle className="text-base font-bold">Matches &amp; Handover Status</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 relative z-10">
                       {doneeMatches.length === 0 ? (
@@ -775,25 +798,13 @@ export default function DashboardPage() {
                                   </div>
                                   <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">{badge.label}</Badge>
                                 </div>
-
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
-                                  <div>
-                                    <p className="text-stone-500">Donor</p>
-                                    <p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p>
-                                  </div>
-                                  {m.matchScore && (
-                                    <div className="text-right">
-                                      <p className="text-stone-500">AI Score</p>
-                                      <p className="font-bold text-[#b04a15]">{m.matchScore}%</p>
-                                    </div>
-                                  )}
+                                  <div><p className="text-stone-500">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
+                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[#b04a15]">{m.matchScore}%</p></div>)}
                                 </div>
-
                                 {m.status === "TRANSPORT_DISCUSSION" && (
                                   <div className="flex justify-end gap-2 pt-1">
-                                    <Button size="sm" className="bg-[#b04a15] text-white text-xs font-bold rounded-lg flex items-center gap-1">
-                                      Call Donor (Masked)
-                                    </Button>
+                                    <Button size="sm" className="bg-[#b04a15] text-white text-xs font-bold rounded-lg flex items-center gap-1">Call Donor (Masked)</Button>
                                   </div>
                                 )}
                               </div>

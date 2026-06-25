@@ -32,15 +32,6 @@ function FacebookIcon() {
   );
 }
 
-// Decode the role claim from a JWT so we can route admins to the right home.
-function roleFromToken(token: string): string | null {
-  try {
-    return JSON.parse(atob(token.split(".")[1])).role ?? null;
-  } catch {
-    return null;
-  }
-}
-
 // Role-based landing destination after auth.
 function homeForRole(role: string | null): string {
   if (role === "SUPER_ADMIN") return "/super-admin";
@@ -51,7 +42,7 @@ function homeForRole(role: string | null): string {
 // ── Main content ───────────────────────────────────────────────────────────────
 function LoginContent() {
   const t = useTranslations("auth.login");
-  const { setAuth, user } = useAuth();
+  const { setUser, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -75,7 +66,7 @@ function LoginContent() {
           router.push("/register?social=google");
         } else {
           // Fix #4: cookie set by server; use role from response directly
-          setAuth(res.token, rememberMe);
+          setUser({ email: res.email, role: res.role });
           toast.success("Welcome back!");
           router.push(homeForRole(res.role));
         }
@@ -111,7 +102,7 @@ function LoginContent() {
     try {
       // Fix #4: backend sets httpOnly cookie; we only use email+role from response
       const res = await login(email, password, rememberMe);
-      setAuth(res.token, rememberMe); // shim — token discarded inside setAuth, only email/role kept
+      setUser({ email: res.email, role: res.role });
       toast.success("Welcome back!");
       router.push(homeForRole(res.role));
     } catch (err) {
