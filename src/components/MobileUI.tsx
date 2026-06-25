@@ -26,6 +26,22 @@ export function MobileBottomNav() {
 
   const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
 
+  // Centre + button — smart routing based on feature flag + role
+  const centerHref = FEATURES.money
+    ? "/donate"
+    : user?.role === "DONOR"
+      ? "/items/new"
+      : user?.role === "DONEE"
+        ? "/requests/new"
+        : "/register";
+  const centerLabel = FEATURES.money
+    ? t("donateNow")
+    : user?.role === "DONOR"
+      ? "List Item"
+      : user?.role === "DONEE"
+        ? "Post Need"
+        : "Join";
+
   const tabs = [
     { href: "/",          icon: Home,          label: t("home") },
     { href: "/campaigns", icon: Megaphone,     label: t("campaigns") },
@@ -40,6 +56,13 @@ export function MobileBottomNav() {
     }
     return pathname.startsWith(href);
   };
+
+  // Hidden inside the super-admin command center and admin dashboard (by path or role).
+  if (
+    pathname?.startsWith("/super-admin") ||
+    pathname?.startsWith("/admin/dashboard") ||
+    user?.role === "SUPER_ADMIN"
+  ) return null;
 
   return (
     <nav
@@ -58,55 +81,52 @@ export function MobileBottomNav() {
         {/* Home */}
         <Link href={tabs[0].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
           <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[0].href) ? "text-[#C17A3A]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[0].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
             <Home className="w-5.5 h-5.5" />
           </span>
           <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[0].href) ? "text-[#C17A3A]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[0].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
             Home
           </span>
         </Link>
 
         {FEATURES.money && (
-        <>
-        {/* Campaigns */}
-        <Link href={tabs[1].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-          <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[1].href) ? "text-[#C17A3A]" : "text-stone-500 dark:text-stone-300"}`}>
-            <Megaphone className="w-5.5 h-5.5" />
-          </span>
-          <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[1].href) ? "text-[#C17A3A]" : "text-stone-500 dark:text-stone-300"}`}>
-            Campaigns
-          </span>
-        </Link>
+          /* Campaigns tab — only shown when money feature is enabled */
+          <Link href={tabs[1].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
+            <span className={`flex items-center justify-center transition-all duration-200
+              ${isActive(tabs[1].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+              <Megaphone className="w-5.5 h-5.5" />
+            </span>
+            <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
+              ${isActive(tabs[1].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+              Campaigns
+            </span>
+          </Link>
+        )}
 
-        {/* Centre — Donate CTA Plus Circle */}
+        {/* Centre + button — always visible, smart route based on role */}
         <Link
-          href="/donate"
-          aria-label={t("donateNow")}
+          href={centerHref}
+          aria-label={centerLabel}
           className={`relative -mt-4 flex items-center justify-center w-12 h-12 rounded-full
-                     bg-[#C17A3A] hover:bg-[#a86430]
-                     shadow-[0_6px_20px_-3px_rgba(193,122,58,0.5)]
-                     border-2 active:scale-95 transition-transform duration-150 shrink-0
+                     bg-[#b04a15] hover:bg-[#963c0d]
+                     shadow-[0_6px_20px_-3px_rgba(176,74,21,0.55)]
+                     border-2 active:scale-95 transition-all duration-150 shrink-0
                      ${scrolled ? "border-[#faf8f3]/50 dark:border-zinc-950/50" : "border-[#faf8f3] dark:border-zinc-950"}`}
         >
-          {/* Plus icon */}
           <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-white" strokeWidth={3}>
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeLinecap="round" />
           </svg>
         </Link>
-        </>
-        )}
 
         {/* Requests */}
         <Link href={tabs[2].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
           <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[2].href) ? "text-[#C17A3A]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[2].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
             <ClipboardList className="w-5.5 h-5.5" />
           </span>
           <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[2].href) ? "text-[#C17A3A]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[2].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
             Requests
           </span>
         </Link>
@@ -114,11 +134,11 @@ export function MobileBottomNav() {
         {/* Profile */}
         <Link href={tabs[3].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
           <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[3].href) ? "text-[#C17A3A]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[3].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
             <User className="w-5.5 h-5.5" />
           </span>
           <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[3].href) ? "text-[#C17A3A]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[3].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
             Profile
           </span>
         </Link>
@@ -131,6 +151,8 @@ export function MobileBottomNav() {
 /* ─── Floating support / chat button (mobile + desktop) ─────────── */
 export function FloatingSupportButton() {
   const t = useTranslations("mobileNav");
+  const pathname = usePathname();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -156,6 +178,13 @@ export function FloatingSupportButton() {
       window.removeEventListener("ck-mobile-menu-toggle", handleMenuToggle);
     };
   }, []);
+
+  // Hidden inside the super-admin command center and admin dashboard (by path or role).
+  if (
+    pathname?.startsWith("/super-admin") ||
+    pathname?.startsWith("/admin/dashboard") ||
+    user?.role === "SUPER_ADMIN"
+  ) return null;
 
   return (
     <>

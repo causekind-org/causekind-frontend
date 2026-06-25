@@ -149,8 +149,6 @@ export default function ApprovalsPage() {
     finally { setProcessing(null); }
   }
 
-
-
   if (isLoading) return (
     <div className="flex justify-center items-center min-h-screen">
       <Loader2 className="size-8 animate-spin text-stone-400" />
@@ -287,8 +285,6 @@ export default function ApprovalsPage() {
                       </div>
                       <Badge variant="secondary">{t("pending")}</Badge>
                     </div>
-
-                    {/* Donor uploaded images for DONATE_TO_REQUEST */}
                     {m.matchType === "DONATE_TO_REQUEST" && m.donorImages.length > 0 && (
                       <div>
                         <p className="mb-2 text-xs font-medium text-muted-foreground">{t("donorItemPhotos")}</p>
@@ -296,28 +292,22 @@ export default function ApprovalsPage() {
                           {m.donorImages.map((url, i) => (
                             // eslint-disable-next-line @next/next/no-img-element
                             <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                              <img src={url} alt={t("itemPhotoAlt", { n: i + 1 })}
-                                className="h-20 w-20 rounded-lg border object-cover hover:opacity-80 transition" />
+                              <img src={url} alt={t("itemPhotoAlt", { n: i + 1 })} className="h-20 w-20 rounded-lg border object-cover hover:opacity-80 transition" />
                             </a>
                           ))}
                         </div>
                       </div>
                     )}
-
-                    {/* Donor description */}
                     {m.donorItemDescription && (
                       <div className="rounded-md bg-accent/40 px-3 py-2 text-sm">
                         <span className="font-medium">{t("donorDescription")}: </span>{m.donorItemDescription}
                       </div>
                     )}
-
-                    {/* Donee reason for REQUEST_LISTING */}
                     {m.doneeReason && (
                       <div className="rounded-md bg-accent/40 px-3 py-2 text-sm">
                         <span className="font-medium">{t("doneeReason")}: </span>{m.doneeReason}
                       </div>
                     )}
-
                     <p className="text-xs text-muted-foreground">{t("approveMatchNote")}</p>
                     {rejectId === m.id && rejectType === "match"
                       ? <RejectForm id={m.id} rejectReason={rejectReason} setRejectReason={setRejectReason} processing={processing} onConfirm={handleRejectMatch} cancelReject={cancelReject} />
@@ -326,6 +316,7 @@ export default function ApprovalsPage() {
                 </Card>
               ))}
           </TabsContent>
+
         </Tabs>
       </div>
     </div>

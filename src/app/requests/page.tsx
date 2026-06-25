@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { useDynamicTranslation, useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
-import { getItemRequests, donateToRequest, getMyProfile, analyzeItemImage, type ItemRequest, type UserProfile } from "@/lib/api";
+import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
+import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Reveal } from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
@@ -428,131 +428,224 @@ function RequestFilterPanel({
   );
 }
 
-// ── Request card (full redesign) ──────────────────────────────────────────────
+// ── Bento card variants ───────────────────────────────────────────────────────
 
-function RequestCard({
-  r,
-  index,
-  onGive,
-}: {
-  r: ItemRequest;
-  index: number;
-  onGive: (r: ItemRequest) => void;
-}) {
-  const [title] = useDynamicTranslations([r.title]);
-  const isCritical = r.urgency === "CRITICAL";
-  const isHigh     = r.urgency === "HIGH";
-  const col        = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
-  const Icon       = CAT_ICON[r.category] ?? Package;
-  const imgSrc     = getCardImage(r);
-  const initial    = (r.doneeName?.[0] ?? "?").toUpperCase();
+function TallRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
+  const col    = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
+  const Icon   = CAT_ICON[r.category] ?? Package;
+  const imgSrc = getCardImage(r);
+  const isCrit = r.urgency === "CRITICAL";
+  const isHigh = r.urgency === "HIGH";
 
   return (
-    <Reveal delay={index * 60}>
+    <Reveal>
       <div
-        className={`group relative bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden
-                   transition-all duration-300 ease-out cursor-default
-                   hover:shadow-2xl hover:-translate-y-1.5
-                   ${isCritical
-                     ? "border-2 border-red-400/60 dark:border-red-700/60 shadow-sm ring-urgent"
-                     : "border border-stone-100 dark:border-zinc-800/80 shadow-sm"
-                   }`}
+        onClick={() => onGive(r)}
+        className="relative h-full min-h-[340px] rounded-3xl overflow-hidden cursor-pointer group"
       >
-        {/* ── Image zone ── */}
-        <div className="relative h-52 overflow-hidden">
-          <Image
-            src={imgSrc}
-            alt={r.title}
-            fill
-            className="object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
+        <Image src={imgSrc} alt={r.title} fill className="object-cover transition-transform duration-700 group-hover:scale-[1.04]" sizes="(max-width: 1024px) 100vw, 45vw" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-black/10 pointer-events-none" />
 
-          {/* Bottom-up gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/20 pointer-events-none" />
-
-          {/* Verified badge — top left */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-emerald-500 text-white rounded-full px-2.5 py-1 text-[10px] font-black shadow-lg">
-            <CheckCircle2 className="w-3 h-3 shrink-0" />
-            Verified
-          </div>
-
-          {/* Urgency badge — top right */}
-          {(isCritical || isHigh) && (
-            <div className="absolute top-3 right-3">
-              <span className={`flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-full backdrop-blur-sm border ${
-                isCritical
-                  ? "bg-red-500/30 border-red-400/60 text-red-100 shadow-lg shadow-red-900/30"
-                  : "bg-amber-500/25 border-amber-400/50 text-amber-100"
-              }`}>
-                <AlertTriangle className="w-3 h-3 shrink-0" />
-                {isCritical ? "Urgent" : "High Priority"}
-              </span>
-            </div>
-          )}
-
-          {/* Overlaid bottom row: quantity + category */}
-          <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-10 flex items-end justify-between">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-5xl font-black text-white leading-none drop-shadow-lg tabular-nums">{r.quantity}</span>
-              <span className="text-white/65 text-[11px] font-bold pb-1">needed</span>
-            </div>
-            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold border backdrop-blur-sm ${col.pill}`}>
-              <Icon className="w-3.5 h-3.5 shrink-0" />
-              <TranslatedText text={r.category} />
-            </div>
-          </div>
+        {/* Top-left: verified badge */}
+        <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-black px-2.5 py-1 rounded-full">
+          <CheckCircle2 className="w-3 h-3 shrink-0" /> Verified
         </div>
 
-        {/* ── Card body ── */}
-        <div className="p-5 space-y-3.5">
-
-          {/* City */}
-          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 dark:text-stone-500 font-medium">
-            <MapPin className="w-3 h-3 shrink-0" />
-            <TranslatedText text={r.city} />
+        {/* Top-right: urgency */}
+        {(isCrit || isHigh) && (
+          <div className={`absolute top-4 right-4 flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full backdrop-blur-sm ${isCrit ? "bg-red-500/90 text-white" : "bg-amber-500/90 text-white"}`}>
+            <AlertTriangle className="w-3 h-3 shrink-0" /> {isCrit ? "Urgent" : "High"}
           </div>
+        )}
 
-          {/* Title */}
-          <h3 className="text-[15px] font-extrabold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2
-                         group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors duration-200">
-            {title ?? r.title}
+        {/* Bottom content */}
+        <div className="absolute bottom-0 left-0 right-0 p-5 space-y-2">
+          <div className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm border ${col.pill}`}>
+            <Icon className="w-3 h-3 shrink-0" /> <TranslatedText text={r.category} />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-3 h-3 text-white/50" />
+            <span className="text-white/50 text-[10px] font-medium"><TranslatedText text={r.city} /></span>
+          </div>
+          <h3 className="text-white font-extrabold text-[1.2rem] leading-snug line-clamp-2">
+            <TranslatedText text={r.title} />
           </h3>
-
-          {/* Description */}
           {r.description && (
-            <p className="text-xs text-stone-400 dark:text-stone-500 leading-relaxed line-clamp-2 font-medium">
+            <p className="text-white/60 text-xs leading-relaxed line-clamp-2">
               <TranslatedText text={r.description} />
             </p>
           )}
-
-          {/* Requester */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-[#b04a15]/12 dark:bg-[#b04a15]/20 text-[#b04a15]
-                           flex items-center justify-center text-[10px] font-black shrink-0 border border-[#b04a15]/20">
-              {initial}
-            </div>
-            <span className="text-[11px] text-stone-400 dark:text-stone-500 font-medium truncate">
-              requested by {r.doneeName}
-            </span>
+          <div className="flex items-center gap-3 pt-0.5">
+            <span className="text-white/70 text-xs font-semibold tabular-nums">{r.quantity} items needed</span>
+            <span className="text-white/25">·</span>
+            <span className="text-white/40 text-[10px]">by {r.doneeName}</span>
           </div>
-
-          {/* CTA */}
           <button
-            onClick={() => onGive(r)}
-            className="w-full bg-[#b04a15] hover:bg-[#963c0d] active:scale-[0.98]
-                       text-white font-bold py-3 rounded-2xl text-sm
-                       flex items-center justify-center gap-2 transition-all duration-150
-                       shadow-sm shadow-orange-900/15 btn-shine group/btn"
+            onClick={(e) => { e.stopPropagation(); onGive(r); }}
+            className="w-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/25 text-white text-sm font-bold py-3 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98]"
           >
-            <Heart className="w-4 h-4 group-hover/btn:fill-white/60 transition-all duration-200 shrink-0" />
-            Give this item
-            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform duration-200 shrink-0" />
+            <Heart className="w-4 h-4 shrink-0" /> Give this item
           </button>
         </div>
       </div>
     </Reveal>
   );
+}
+
+function ImageRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
+  const col    = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
+  const Icon   = CAT_ICON[r.category] ?? Package;
+  const imgSrc = getCardImage(r);
+
+  return (
+    <Reveal>
+      <div
+        className="h-full rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 shadow-sm flex flex-col cursor-pointer group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+        onClick={() => onGive(r)}
+      >
+        {/* Image section */}
+        <div className="relative flex-[5] overflow-hidden min-h-0">
+          <Image src={imgSrc} alt={r.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 1024px) 100vw, 40vw" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+          <div className={`absolute top-3 left-3 flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm border ${col.pill}`}>
+            <Icon className="w-3 h-3 shrink-0" /> <TranslatedText text={r.category} />
+          </div>
+          {r.urgency === "CRITICAL" && (
+            <div className="absolute top-3 right-3 flex items-center gap-1 bg-red-500/90 text-white text-[10px] font-black px-2 py-0.5 rounded-full backdrop-blur-sm">
+              <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> Urgent
+            </div>
+          )}
+          <div className="absolute bottom-3 left-3 flex items-baseline gap-1">
+            <span className="text-white font-black text-base tabular-nums">{r.quantity}</span>
+            <span className="text-white/60 text-[10px]">needed</span>
+          </div>
+        </div>
+        {/* Text section */}
+        <div className="flex-[4] p-4 flex flex-col justify-between min-h-0">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#b04a15] dark:text-[#e07b3a] mb-1.5">
+              <TranslatedText text={r.category} />
+            </p>
+            <h3 className="font-extrabold text-stone-900 dark:text-stone-100 text-sm leading-snug line-clamp-2 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors">
+              <TranslatedText text={r.title} />
+            </h3>
+            {r.description && (
+              <p className="text-xs text-stone-400 mt-1 line-clamp-2 leading-relaxed">
+                <TranslatedText text={r.description} />
+              </p>
+            )}
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-stone-50 dark:border-zinc-800">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+              <span className="text-[10px] text-stone-400"><TranslatedText text={r.city} /></span>
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); onGive(r); }} className="flex items-center gap-1 text-[10px] font-extrabold text-[#b04a15] dark:text-[#e07b3a] hover:underline">
+              Give <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+function DarkRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
+  const Icon = CAT_ICON[r.category] ?? Package;
+  const bg   = r.urgency === "CRITICAL" ? "bg-[#b04a15]"
+             : r.urgency === "HIGH"     ? "bg-[#7a3410]"
+             :                            "bg-[#1e3a60]";
+
+  return (
+    <Reveal>
+      <div className={`h-full rounded-3xl ${bg} p-5 flex flex-col justify-between`}>
+        <div>
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+              <Icon className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-white/40 text-[9px] font-black uppercase tracking-widest text-right">
+              {r.urgency === "CRITICAL" ? "Critical" : r.urgency === "HIGH" ? "High Priority" : r.category}
+            </span>
+          </div>
+          <h3 className="text-white font-extrabold text-base leading-snug line-clamp-2">
+            <TranslatedText text={r.title} />
+          </h3>
+          {r.description && (
+            <p className="text-white/55 text-xs mt-2 line-clamp-3 leading-relaxed">
+              <TranslatedText text={r.description} />
+            </p>
+          )}
+          <div className="flex items-center gap-1.5 mt-2">
+            <MapPin className="w-3 h-3 text-white/40 shrink-0" />
+            <span className="text-white/40 text-[10px]"><TranslatedText text={r.city} /></span>
+          </div>
+        </div>
+        <button
+          onClick={() => onGive(r)}
+          className="mt-4 w-full bg-white/20 hover:bg-white/30 border border-white/20 text-white text-sm font-extrabold py-2.5 rounded-2xl transition-all duration-200 active:scale-[0.98]"
+        >
+          Contribute
+        </button>
+      </div>
+    </Reveal>
+  );
+}
+
+function IconRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
+  const col  = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
+  const Icon = CAT_ICON[r.category] ?? Package;
+
+  return (
+    <Reveal>
+      <div
+        className="h-full rounded-3xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 shadow-sm p-4 flex flex-col justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+        onClick={() => onGive(r)}
+      >
+        <div>
+          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-3 ${col.pill.split(" ").slice(0, 2).join(" ")}`}>
+            <Icon className={`w-5 h-5 ${col.pill.split(" ")[1] ?? "text-stone-600"}`} />
+          </div>
+          <h3 className="font-extrabold text-stone-900 dark:text-stone-100 text-sm leading-snug line-clamp-2">
+            <TranslatedText text={r.title} />
+          </h3>
+          <p className="text-[10px] text-stone-400 mt-1 line-clamp-2 font-medium leading-relaxed">
+            {r.description
+              ? <TranslatedText text={r.description} />
+              : `Requested by ${r.doneeName}.`}
+          </p>
+        </div>
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+              <span className="text-[10px] text-stone-400"><TranslatedText text={r.city} /></span>
+            </div>
+            <span className="text-[10px] font-black text-[#b04a15] tabular-nums">{r.quantity} needed</span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden bg-stone-100 dark:bg-zinc-800">
+            <div
+              className={`h-full rounded-full ${col.bar} transition-all duration-500`}
+              style={{ width: `${r.urgency === "CRITICAL" ? 82 : r.urgency === "HIGH" ? 56 : 28}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-stone-400 mt-1 font-medium">
+            {r.urgency === "CRITICAL" ? "Urgently needed" : r.urgency === "HIGH" ? "High priority" : "Accepting contributions"}
+          </p>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+// Cycles: image → dark → icon across groups so adjacent cards never repeat the same style
+function SmallBentoCard({
+  r, groupIdx, pos, onGive,
+}: { r: ItemRequest; groupIdx: number; pos: 0 | 1; onGive: (r: ItemRequest) => void }) {
+  const v = (groupIdx * 2 + pos) % 3;
+  if (v === 1) return <DarkRequestCard r={r} onGive={onGive} />;
+  if (v === 2) return <IconRequestCard r={r} onGive={onGive} />;
+  return <ImageRequestCard r={r} onGive={onGive} />;
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -563,19 +656,53 @@ export default function RequestsPage() {
   const router   = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isAllowed = !!user && (user.role === "DONOR" || user.role === "ADMIN");
-
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.replace("/login?redirect=/requests"); }
     // DONEEs now get their own view — no redirect
   }, [user, authLoading, router]);
 
+  // ── Per-visit category picker modal (DONOR only) ──────────────────────────
+  // Shows every time a donor lands on this page. Picks a category (or skips).
+  const [showCatModal, setShowCatModal] = useState(false);
+  const [tempSelected, setTempSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Show the modal after auth resolves, only for donors, on every page mount/visit
+    if (!authLoading && user?.role === "DONOR") {
+      setShowCatModal(true);
+    }
+  }, [authLoading, user?.role]);
+
   const [requests,  setRequests]  = useState<ItemRequest[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const cat = new URLSearchParams(window.location.search).get("category");
+      if (cat) return [cat];
+      const saved = localStorage.getItem("causekind_donor_category");
+      if (saved) {
+        if (saved === "ALL") return [];
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (e) {
+          return [saved];
+        }
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (showCatModal) {
+      setTempSelected(selectedCategories);
+    }
+  }, [showCatModal, selectedCategories]);
   const [selectedUrgencies,  setSelectedUrgencies]  = useState<string[]>([]);
   const [sort, setSort]           = useState<ReqSortValue>("nearest");
   const [showFilters, setShowFilters] = useState(false);
@@ -590,16 +717,68 @@ export default function RequestsPage() {
   const [analyzing,     setAnalyzing]     = useState(false);
   const [aiGenerated,   setAiGenerated]   = useState(false);
 
-  // Load data
+  // ── GPS and Profile load ───────────────────────────────────────────────────
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsBlocked, setGpsBlocked] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(true);
+
+  const requestGps = () => {
+    if (!navigator.geolocation) {
+      toast.error("Your browser doesn't support GPS location");
+      setGpsBlocked(true);
+      setGpsLoading(false);
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setGpsCoords({ lat, lng });
+        setGpsBlocked(false);
+        setGpsLoading(false);
+        if (user && user.role !== "DONEE") {
+          try {
+            await updateLocation(lat, lng);
+            const p = await getMyProfile();
+            setMyProfile(p);
+          } catch (e) {
+            console.error("Failed to update profile location:", e);
+          }
+        }
+      },
+      (err) => {
+        console.error("GPS retrieval error:", err);
+        setGpsBlocked(true);
+        setGpsLoading(false);
+        toast.error("Location access denied. You must allow GPS access to view nearby requests.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   useEffect(() => {
-    const fetches: Promise<unknown>[] = [
-      getItemRequests()
-        .then(setRequests)
-        .catch(() => toast.error("Failed to load item requests")),
-    ];
-    if (user) fetches.push(getMyProfile().then(setMyProfile).catch(() => {}));
-    Promise.all(fetches).finally(() => setLoading(false));
+    if (!authLoading && user && user.role !== "DONEE") {
+      requestGps();
+    }
+  }, [user, authLoading]);
+
+  // Load profile details separately
+  useEffect(() => {
+    if (user && user.role !== "DONEE") {
+      getMyProfile().then(setMyProfile).catch(() => {});
+    }
   }, [user]);
+
+  // Load requests based on GPS and category selection
+  useEffect(() => {
+    if (!user || user.role === "DONEE" || !gpsCoords) return;
+    setLoading(true);
+    getItemRequests(selectedCategories, gpsCoords.lat, gpsCoords.lng)
+      .then(setRequests)
+      .catch(() => toast.error("Failed to load item requests"))
+      .finally(() => setLoading(false));
+  }, [user, gpsCoords, selectedCategories]);
 
   // ── Derived counts ────────────────────────────────────────────────────────
 
@@ -623,10 +802,10 @@ export default function RequestsPage() {
     });
     if (sort === "nearest") {
       const lat = myProfile?.latitude, lon = myProfile?.longitude;
-      if (lat && lon) {
+      if (lat != null && lon != null) {
         out = [...out].sort((a, b) => {
-          const dA = a.latitude && a.longitude ? haversineKm(lat, lon, a.latitude, a.longitude) : 99999;
-          const dB = b.latitude && b.longitude ? haversineKm(lat, lon, b.latitude, b.longitude) : 99999;
+          const dA = a.latitude != null && a.longitude != null ? haversineKm(lat, lon, a.latitude, a.longitude) : 99999;
+          const dB = b.latitude != null && b.longitude != null ? haversineKm(lat, lon, b.latitude, b.longitude) : 99999;
           return dA - dB;
         });
       } else {
@@ -644,12 +823,22 @@ export default function RequestsPage() {
     return out;
   }, [requests, search, selectedCategories, selectedUrgencies, sort, myProfile]);
 
-  const toggleCategory = (cat: string) =>
-    setSelectedCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories(prev => {
+      const next = prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("causekind_donor_category", JSON.stringify(next));
+      }
+      return next;
+    });
+  };
   const toggleUrgency  = (u: string) =>
     setSelectedUrgencies(prev => prev.includes(u) ? prev.filter(x => x !== u) : [...prev, u]);
   const resetFilters   = () => {
     setSelectedCategories([]);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("causekind_donor_category", JSON.stringify([]));
+    }
     setSelectedUrgencies([]);
     setSort("nearest");
     setSearch("");
@@ -662,7 +851,7 @@ export default function RequestsPage() {
 
   function openDonateModal(req: ItemRequest) {
     if (!user) { router.push("/login"); return; }
-    if (!myProfile?.latitude || !myProfile?.longitude) {
+    if (myProfile?.latitude == null || myProfile?.longitude == null) {
       toast.error("Please set your location in your profile before donating.", {
         action: { label: "Set location", onClick: () => router.push("/profile") },
       });
@@ -694,13 +883,15 @@ export default function RequestsPage() {
     if (images.length + files.length > 3) { toast.error("Maximum 3 images allowed"); return; }
     const next = [...images, ...files];
     setImages(next);
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
     setImagePreviews(next.map(f => URL.createObjectURL(f)));
-    if (next.length > 0) runAnalysis(next[0]);
+    if (files.length > 0) runAnalysis(files[0]);
   }
 
   function removeImage(i: number) {
     const next = images.filter((_, idx) => idx !== i);
     setImages(next);
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
     setImagePreviews(next.map(f => URL.createObjectURL(f)));
   }
 
@@ -733,20 +924,158 @@ export default function RequestsPage() {
   // Dedicated donee portal
   if (user.role === "DONEE") return <DoneeRequestsPage />;
 
+  if (gpsBlocked) {
+    return (
+      <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-6 bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-250 dark:border-zinc-800 shadow-xl">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center text-red-500">
+            <MapPin className="w-8 h-8 animate-bounce" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Location Access Required</h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              Causekind requires your GPS location to display the closest in-kind needs from your community. Please enable location permissions in your browser to proceed.
+            </p>
+          </div>
+          <button 
+            onClick={requestGps} 
+            disabled={gpsLoading}
+            className="w-full bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-50 text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+          >
+            {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection 🎯"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
 
+      {/* ── Per-visit category picker modal (DONOR only) ── */}
+      {showCatModal && user?.role === "DONOR" && (
+        <div
+          className="fixed inset-0 z-[9990] flex items-end sm:items-center justify-center p-4 bg-stone-950/80 backdrop-blur-xl"
+          style={{ animation: "fadeIn 0.3s ease both" }}
+          onClick={() => setShowCatModal(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-[#18120c] rounded-3xl border border-white/10 shadow-2xl p-7 flex flex-col gap-6"
+            style={{ animation: "slideUpModal 0.4s cubic-bezier(0.16,1,0.3,1) both" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[#b04a15] mb-2">What do you want to give?</p>
+              <h2 className="text-2xl font-black text-white leading-tight">Choose categories</h2>
+              <p className="text-stone-400 text-sm mt-1">We&apos;ll show you the most urgent local needs.</p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { name: "Medical aid", Icon: Stethoscope, col: "text-sky-400",     bg: "bg-sky-400/10",     border: "border-sky-400/30",    active: "ring-2 ring-sky-400" },
+                { name: "Education",   Icon: BookOpen,    col: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/30",  active: "ring-2 ring-amber-400" },
+                { name: "Livelihood",  Icon: Sprout,      col: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30",active: "ring-2 ring-emerald-400" },
+                { name: "Relief",      Icon: Users,       col: "text-violet-400",  bg: "bg-violet-400/10",  border: "border-violet-400/30", active: "ring-2 ring-violet-400" },
+                { name: "Household",   Icon: Home,        col: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/30",   active: "ring-2 ring-rose-400" },
+                { name: "List Item",   Icon: Package,     col: "text-[#f0b97a]",   bg: "bg-[#f0b97a]/10",   border: "border-[#f0b97a]/30",  active: "ring-2 ring-[#f0b97a]" },
+              ].map(({ name, Icon, col, bg, border, active }) => {
+                const isSelected = tempSelected.includes(name);
+                return (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      if (name === "List Item") {
+                        setShowCatModal(false);
+                        router.push("/items/new");
+                        return;
+                      }
+                      setTempSelected(prev =>
+                        prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
+                      );
+                    }}
+                    className={`group flex flex-col items-center gap-2.5 py-4 px-2 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5
+                               ${isSelected ? `${active} ${bg} brightness-125` : `${border} ${bg} opacity-70 hover:opacity-100`}`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl ${bg} border ${border} flex items-center justify-center`}>
+                      <Icon className={`w-5 h-5 ${col}`} />
+                    </div>
+                    <span className={`text-xs font-bold ${col} text-center leading-tight`}>{name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setSelectedCategories(tempSelected);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("causekind_donor_category", JSON.stringify(tempSelected));
+                  }
+                  setShowCatModal(false);
+                }}
+                className="w-full bg-[#b04a15] hover:bg-[#963c0d] active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-md shadow-orange-950/40"
+              >
+                {tempSelected.length > 0 ? `Apply Selection (${tempSelected.length})` : "Apply Selection (All)"}
+              </button>
+
+              <button
+                onClick={() => { 
+                  setSelectedCategories([]); 
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("causekind_donor_category", JSON.stringify([]));
+                  }
+                  setShowCatModal(false); 
+                }}
+                className="text-stone-500 hover:text-stone-300 text-sm font-semibold text-center transition-colors underline underline-offset-4 mt-2"
+              >
+                Show all needs
+              </button>
+            </div>
+          </div>
+
+          <style>{`
+            @keyframes slideUpModal {
+              from { opacity: 0; transform: translateY(40px) scale(0.97); }
+              to   { opacity: 1; transform: translateY(0) scale(1); }
+            }
+          `}</style>
+        </div>
+      )}
+
       {/* ── Hero ── */}
       <RequestsHero total={requests.length} critical={criticalCount} catCounts={catCounts} />
+
+      {/* ── Donor action strip ── */}
+      <div className="sticky top-0 z-20 bg-[#f2ede7]/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-stone-200 dark:border-zinc-800 shadow-sm">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center justify-between gap-3 h-14">
+          <div className="flex items-center gap-1">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-[#b04a15] text-white shadow-sm">
+              <HandCoins className="w-4 h-4" /> In-Kind Requests
+            </button>
+          </div>
+          <Link
+            href="/items/new"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border-2 border-[#b04a15] text-[#b04a15] hover:bg-[#b04a15] hover:text-white transition-all duration-200"
+          >
+            <Plus className="w-4 h-4" /> List an Item
+          </Link>
+        </div>
+      </div>
 
       {/* ── Category quick-filter bar ── */}
       <CategoryBar
         catCounts={catCounts}
         selected={selectedCategories}
         onToggle={toggleCategory}
-        onClearAll={() => setSelectedCategories([])}
+        onClearAll={() => {
+          setSelectedCategories([]);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("causekind_donor_category", JSON.stringify([]));
+          }
+        }}
         total={requests.length}
       />
 
@@ -880,8 +1209,8 @@ export default function RequestsPage() {
 
             {/* Grid / skeletons / empty state */}
             {loading ? (
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => <RequestCardSkeleton key={i} />)}
+              <div className="grid gap-5 sm:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, i) => <RequestCardSkeleton key={i} />)}
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 px-8 bg-white dark:bg-zinc-900 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm">
@@ -911,10 +1240,62 @@ export default function RequestsPage() {
                 )}
               </div>
             ) : (
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 pb-20">
-                {filtered.map((r, i) => (
-                  <RequestCard key={r.id} r={r} index={i} onGive={openDonateModal} />
-                ))}
+              <div className="pb-20 space-y-5">
+                {/* Mobile / tablet: simple 2-col grid */}
+                <div className="lg:hidden grid gap-4 sm:grid-cols-2">
+                  {filtered.map((r) => (
+                    <ImageRequestCard key={r.id} r={r} onGive={openDonateModal} />
+                  ))}
+                </div>
+
+                {/* Desktop: asymmetric bento — groups of 3, alternating tall-left / tall-right */}
+                <div className="hidden lg:block space-y-5">
+                  {Array.from({ length: Math.ceil(filtered.length / 3) }, (_, gi) => {
+                    const chunk = filtered.slice(gi * 3, gi * 3 + 3);
+                    // Partial last group always uses even pattern so tall card is never missing
+                    const isEven = gi % 2 === 0 || chunk.length < 3;
+
+                    return (
+                      <div key={gi} className="flex gap-5" style={{ minHeight: 520 }}>
+                        {isEven ? (
+                          /* Even: tall left, up to 2 smalls stacked right */
+                          <>
+                            <div className="flex-1 min-w-0">
+                              <TallRequestCard r={chunk[0]} onGive={openDonateModal} />
+                            </div>
+                            {chunk.length > 1 && (
+                              <div className="flex-1 min-w-0 flex flex-col gap-5">
+                                <div className="flex-1 min-h-0">
+                                  <SmallBentoCard r={chunk[1]} groupIdx={gi} pos={0} onGive={openDonateModal} />
+                                </div>
+                                {chunk[2] && (
+                                  <div className="flex-1 min-h-0">
+                                    <SmallBentoCard r={chunk[2]} groupIdx={gi} pos={1} onGive={openDonateModal} />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          /* Odd: 2 smalls stacked left, tall right */
+                          <>
+                            <div className="flex-1 min-w-0 flex flex-col gap-5">
+                              <div className="flex-1 min-h-0">
+                                <SmallBentoCard r={chunk[0]} groupIdx={gi} pos={0} onGive={openDonateModal} />
+                              </div>
+                              <div className="flex-1 min-h-0">
+                                <SmallBentoCard r={chunk[1]} groupIdx={gi} pos={1} onGive={openDonateModal} />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <TallRequestCard r={chunk[2]} onGive={openDonateModal} />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -929,18 +1310,14 @@ export default function RequestsPage() {
           style={{ animation: "fadeIn 0.2s ease forwards" }}
         >
           <div className="w-full max-w-4xl overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl flex flex-col md:flex-row h-auto md:max-h-[88vh]">
-
-            {/* Left visual panel */}
             <div
               className="relative hidden md:flex md:w-[42%] flex-col justify-between p-8 text-white select-none overflow-hidden"
               style={{ backgroundImage: "url('/images/kindness_banner.png')", backgroundSize: "cover", backgroundPosition: "center" }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30 pointer-events-none" />
-
               <div className="relative z-10 space-y-4">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-[#f0b97a] bg-white/10 backdrop-blur-md border border-white/20 py-1.5 px-3.5 rounded-full uppercase tracking-wider">
-                  <Heart className="w-3 h-3 fill-[#f0b97a]" />
-                  Give Back
+                  <Heart className="w-3 h-3 fill-[#f0b97a]" /> Give Back
                 </span>
                 <h2 className="text-2xl font-extrabold leading-snug tracking-tight">
                   You&apos;re giving<br />
@@ -950,8 +1327,6 @@ export default function RequestsPage() {
                   Upload photos of your item and a short description. Our admin will verify and connect you with the recipient.
                 </p>
               </div>
-
-              {/* Stats card */}
               <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 mt-8 space-y-2">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -964,46 +1339,28 @@ export default function RequestsPage() {
               </div>
             </div>
 
-            {/* Right form panel */}
             <div className="w-full md:w-[58%] p-6 sm:p-8 flex flex-col overflow-y-auto max-h-[90vh] md:max-h-[88vh] relative">
-              <button
-                onClick={closeDonateModal}
-                className="absolute right-4 top-4 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-800 hover:text-stone-600 transition z-10"
-              >
+              <button onClick={closeDonateModal} className="absolute right-4 top-4 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-800 hover:text-stone-600 transition z-10">
                 <X className="h-4 w-4" />
               </button>
-
               <div className="flex-1 flex flex-col justify-center max-w-[380px] mx-auto w-full space-y-5">
-
                 <div>
                   <h3 className="text-2xl font-extrabold text-stone-900 dark:text-white">Give your item</h3>
                   <p className="text-xs text-stone-400 mt-1">Show us what you&apos;re giving so we can find it a perfect home.</p>
                 </div>
-
-                {/* Upload */}
                 <div>
-                  <Label className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 block">
-                    Photos of item
-                  </Label>
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-orange-200 dark:border-zinc-700 hover:border-[#b04a15] rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all bg-orange-50/20 dark:bg-zinc-800/20 hover:bg-orange-50/40"
-                  >
+                  <Label className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 block">Photos of item</Label>
+                  <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-orange-200 dark:border-zinc-700 hover:border-[#b04a15] rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all bg-orange-50/20 dark:bg-zinc-800/20 hover:bg-orange-50/40">
                     {imagePreviews.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2 w-full mb-1" onClick={e => e.stopPropagation()}>
                         {imagePreviews.map((src, i) => (
                           <div key={i} className="relative aspect-square overflow-hidden rounded-xl border border-orange-100 dark:border-zinc-700 shadow-sm bg-white">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={src} alt="" className="h-full w-full object-cover" />
-                            <button
-                              onClick={() => removeImage(i)}
-                              className="absolute right-1 top-1 rounded-full bg-black/70 p-0.5 text-white hover:bg-black transition"
-                            >
+                            <button onClick={() => removeImage(i)} className="absolute right-1 top-1 rounded-full bg-black/70 p-0.5 text-white hover:bg-black transition">
                               <X className="h-2.5 w-2.5" />
                             </button>
-                            {i === 0 && (
-                              <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[8px] text-white">AI scans</span>
-                            )}
+                            {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[8px] text-white">AI scans</span>}
                           </div>
                         ))}
                       </div>
@@ -1017,8 +1374,6 @@ export default function RequestsPage() {
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
                 </div>
-
-                {/* AI toggle */}
                 <div className="flex items-center justify-between p-3.5 rounded-2xl bg-stone-50 dark:bg-zinc-800/40 border border-stone-150 dark:border-zinc-800">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center shrink-0">
@@ -1029,20 +1384,10 @@ export default function RequestsPage() {
                       <p className="text-[10px] text-stone-400">We&apos;ll generate a description from your photo</p>
                     </div>
                   </div>
-                  <Switch
-                    checked={aiGenerated || analyzing}
-                    onCheckedChange={val => {
-                      if (val && images.length > 0) runAnalysis(images[0]);
-                      else if (!val) setAiGenerated(false);
-                    }}
-                  />
+                  <Switch checked={aiGenerated || analyzing} onCheckedChange={val => { if (val && images.length > 0) runAnalysis(images[0]); else if (!val) setAiGenerated(false); }} />
                 </div>
-
-                {/* Description */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="desc" className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider block">
-                    Item description
-                  </Label>
+                  <Label htmlFor="desc" className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider block">Item description</Label>
                   <div className="relative">
                     {analyzing && (
                       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs">
@@ -1050,38 +1395,19 @@ export default function RequestsPage() {
                         <p className="text-[11px] font-bold text-stone-700 dark:text-stone-300">Analysing your photo…</p>
                       </div>
                     )}
-                    <Textarea
-                      id="desc"
-                      rows={3}
-                      value={description}
-                      onChange={e => { setDescription(e.target.value); setAiGenerated(false); }}
-                      placeholder="Describe the item, its condition, and any notes…"
-                      className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 text-sm resize-none"
-                      disabled={analyzing}
-                    />
+                    <Textarea id="desc" rows={3} value={description} onChange={e => { setDescription(e.target.value); setAiGenerated(false); }} placeholder="Describe the item, its condition, and any notes…" className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 text-sm resize-none" disabled={analyzing} />
                   </div>
                   <div className="flex justify-between text-[10px] text-stone-400 font-semibold">
                     <span>{description.length >= 20 ? "✓ Minimum met" : `${description.length}/20 min`}</span>
                     <span>{description.length}/1000</span>
                   </div>
                 </div>
-
-                {/* Submit */}
-                <button
-                  onClick={handleSubmitDonate}
-                  disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20}
-                  className="w-full bg-[#b04a15] hover:bg-[#963c0d] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine"
-                >
-                  {submitting ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</>
-                  ) : (
-                    <><Heart className="h-4 w-4" /> Complete Donation <ArrowRight className="h-4 w-4" /></>
-                  )}
+                <button onClick={handleSubmitDonate} disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20} className="w-full bg-[#b04a15] hover:bg-[#963c0d] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine">
+                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : <><Heart className="h-4 w-4" /> Complete Donation <ArrowRight className="h-4 w-4" /></>}
                 </button>
-
                 <div className="flex justify-between text-[10px] text-stone-400 font-bold border-t border-stone-100 dark:border-zinc-800 pt-4">
                   <div className="flex gap-3">
-                    <Link href="/help"    className="hover:text-[#b04a15] transition-colors">Help</Link>
+                    <Link href="/help" className="hover:text-[#b04a15] transition-colors">Help</Link>
                     <Link href="/privacy" className="hover:text-[#b04a15] transition-colors">Privacy</Link>
                   </div>
                   <span>© 2026 CauseKind</span>

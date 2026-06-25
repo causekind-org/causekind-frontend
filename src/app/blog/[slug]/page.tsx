@@ -3,6 +3,7 @@
 import React, { useState, use } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import DOMPurify from "isomorphic-dompurify";
 import { blogPosts } from "../../../data/blogData";
 import { AnimatedWrapper } from "../../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
@@ -190,7 +191,8 @@ export default function BlogReadingPage({ params }: PageProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-              dangerouslySetInnerHTML={{ __html: post.content || "" }}
+              // Fix #3: sanitize HTML before injection — strips <script>, onerror, etc.
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || "") }}
             />
 
             {/* Right Sidebar: Next For You */}

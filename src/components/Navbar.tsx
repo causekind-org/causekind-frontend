@@ -2,14 +2,18 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, Heart, HandHeart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { getMyProfile, getMyMatches, type UserProfile } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/NotificationBell";
+import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -28,27 +32,66 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
+const logoLetterVariants = {
+  hidden: { opacity: 0, y: 6 },
+  visible: { opacity: 1, y: 0 },
+};
+const logoStagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.15 } },
+};
+
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
   return (
-    <span
-      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2 hover:opacity-95 transition-all duration-200`}
+    <motion.span
+      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
+      aria-label="CauseKind"
+      whileHover={{ scale: 1.03 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       {!hideIcon && (
-        <Image
-          src="/logo-outline.png"
-          alt="CauseKind Logo"
-          width={dimensions[size].w}
-          height={dimensions[size].h}
+        <motion.div
           className="shrink-0"
-        />
+          initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.05 }}
+        >
+          <LogoVideo size={dimensions[size].w} />
+        </motion.div>
       )}
-      <span className="flex items-center text-stone-900 dark:text-stone-100 font-extrabold text-base sm:text-xl">
-        <span className="tracking-tight">Cause</span>
-        <span className="text-[#b04a15] dark:text-orange-400">Kind</span>
+
+      <span className="flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
+        {/* "Cause" — stagger letter reveal */}
+        <motion.span
+          className="text-stone-900 dark:text-stone-100 tracking-tight flex"
+          variants={logoStagger}
+          initial="hidden"
+          animate="visible"
+        >
+          {"Cause".split("").map((l, i) => (
+            <motion.span
+              key={i}
+              variants={logoLetterVariants}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {l}
+            </motion.span>
+          ))}
+        </motion.span>
+
+        {/* "Kind" — slides in as one word after "Cause", then shimmers */}
+        <motion.span
+          className="ck-logo-kind-shimmer"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.44 }}
+        >
+          Kind
+        </motion.span>
       </span>
-    </span>
+    </motion.span>
   );
 }
 
@@ -140,12 +183,87 @@ function Donate3DButton() {
   );
 }
 
+function Sidebar3DItem({
+  children,
+  onClick,
+  href,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  href?: string;
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = ((e.clientX - rect.left - rect.width / 2) / (rect.width / 2)) * 10;
+    const y = ((e.clientY - rect.top - rect.height / 2) / (rect.height / 2)) * -10;
+    setTilt({ x, y });
+  }
+
+  const content = (
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setTilt({ x: 0, y: 0 }); }}
+      style={{
+        perspective: "600px",
+        transform: hovered
+          ? `rotateX(${tilt.y}deg) rotateY(${tilt.x}deg) scale(1.02) translateZ(8px)`
+          : "rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px)",
+        transition: hovered ? "transform 0.08s ease-out" : "transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1)",
+        transformStyle: "preserve-3d",
+      }}
+      className={`relative group rounded-2xl border border-stone-200 dark:border-zinc-800/80 p-4 transition-all duration-200 cursor-pointer bg-white dark:bg-zinc-900/60 hover:bg-[#b04a15]/5 dark:hover:bg-orange-950/10 hover:border-[#b04a15]/30 dark:hover:border-orange-500/20 shadow-xs ${className}`}
+    >
+      <div className="relative z-10 flex items-center gap-3">
+        {children}
+      </div>
+      {hovered && (
+        <span className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none z-0">
+          <span className="donate-navbar-shimmer" />
+        </span>
+      )}
+    </div>
+  );
+
+  if (href) {
+    return <Link href={href} onClick={onClick} className="block">{content}</Link>;
+  }
+  return <div onClick={onClick}>{content}</div>;
+}
+
 export function SiteHeader() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [inKindCount, setInKindCount] = useState(0);
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && isSidebarOpen) {
+      const savedAvatar = localStorage.getItem(`ck_profile_image_${user.email}`);
+      setAvatarDataUrl(savedAvatar);
+
+      getMyProfile()
+        .then(setProfile)
+        .catch(() => {});
+
+      getMyMatches()
+        .then(matches => setInKindCount(matches.length))
+        .catch(() => {});
+    }
+  }, [user, isSidebarOpen]);
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -167,19 +285,19 @@ export function SiteHeader() {
   useEffect(() => {
     const html = window.document.documentElement;
     const body = window.document.body;
-    if (open) {
+    if (isSidebarOpen) {
       html.classList.add("mobile-menu-open");
       body.classList.add("mobile-menu-open");
     } else {
       html.classList.remove("mobile-menu-open");
       body.classList.remove("mobile-menu-open");
     }
-    window.dispatchEvent(new CustomEvent("ck-mobile-menu-toggle", { detail: { open } }));
+    window.dispatchEvent(new CustomEvent("ck-mobile-menu-toggle", { detail: { open: isSidebarOpen } }));
     return () => {
       html.classList.remove("mobile-menu-open");
       body.classList.remove("mobile-menu-open");
     };
-  }, [open]);
+  }, [isSidebarOpen]);
 
   const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
@@ -192,10 +310,17 @@ export function SiteHeader() {
   function confirmLogout() {
     logout();
     router.push("/");
-    setOpen(false);
+    setIsSidebarOpen(false);
   }
 
   const t = useTranslations();
+
+  // Super-admin command center is full-screen & self-contained — hide public chrome.
+  // Hide by path AND by role so there's no flash before the redirect kicks in.
+  const hideChrome =
+    pathname?.startsWith("/super-admin") ||
+    pathname?.startsWith("/admin/dashboard") ||
+    user?.role === "SUPER_ADMIN";
 
   const navLinks = [
     { href: "/", label: t("nav.home") },
@@ -210,6 +335,8 @@ export function SiteHeader() {
     if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(href + "/");
   }
+
+  if (hideChrome) return null;
 
   // Shared icon-button class (matches the theme toggle button exactly)
   const iconBtnCls =
@@ -242,7 +369,7 @@ export function SiteHeader() {
         {/* Mobile Header (lg:hidden) */}
         <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
           <button
-            onClick={() => setOpen(true)}
+            onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
             className="flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
@@ -288,9 +415,11 @@ export function SiteHeader() {
 
           {/* Right buttons */}
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Animated Sleek Theme Toggle */}
-            <LanguageSwitcher />
+            <GlobalSearch />
+            <SearchTrigger />
+            <NotificationBell />
 
+            {/* Sleek Theme Toggle */}
             <button
               onClick={toggleTheme}
               className={iconBtnCls}
@@ -303,135 +432,276 @@ export function SiteHeader() {
               </div>
             </button>
 
-            {user ? (
-              <div className="hidden sm:flex items-center gap-3">
-                <Link href={dashHref} className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
-                  {t("nav.dashboard")}
-                </Link>
-                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                <Link href="/profile" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-405 dark:hover:text-orange-400 transition-colors">
-                  {t("nav.profile")}
-                </Link>
-                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                <span className="text-sm font-semibold text-[#b04a15] dark:text-orange-400 max-w-[120px] truncate" title={user.email}>
-                  {user.email.split("@")[0]}
-                </span>
-                <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                <button
-                  onClick={requestLogout}
-                  className="text-sm font-semibold text-stone-500 hover:text-red-600 dark:text-stone-400 dark:hover:text-red-400 transition-colors"
-                >
-                  {t("nav.signOut")}
-                </button>
-                {FEATURES.money && (
-                  <>
-                    <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                    <Donate3DButton />
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="hidden sm:flex items-center gap-4">
-                <Link href="/login" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
-                  {t("nav.logIn")}
-                </Link>
-                <Link href="/register" className="text-sm font-semibold text-stone-600 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400 transition-colors">
-                  {t("nav.signUp")}
-                </Link>
-                {FEATURES.money && (
-                  <>
-                    <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700" />
-                    <Donate3DButton />
-                  </>
-                )}
-              </div>
-            )}
+            {/* Hamburger menu trigger */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className={iconBtnCls}
+              aria-label="Open workspace menu"
+            >
+              <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
+            </button>
+
+            {FEATURES.money && <Donate3DButton />}
           </div>
         </div>
 
-        {/* Mobile overlay */}
-        <div className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-          onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-stone-950/40 backdrop-blur-xs" />
-        </div>
+        {/* ── Unified Side Drawer with 3D Animations ── */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsSidebarOpen(false)}
+                className="fixed inset-0 z-[9990] bg-stone-950/40 dark:bg-black/60 backdrop-blur-xs"
+              />
 
-        {/* Mobile drawer */}
-        <div className={`lg:hidden fixed top-0 right-0 bottom-0 z-50 w-[85%] max-w-sm bg-[#faf8f5] dark:bg-zinc-950 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "translate-x-0" : "translate-x-full"}`}>
-          <div className="flex flex-col h-full p-6">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-[#e5e2d5]/60 dark:border-stone-850/30">
-              <Link href="/" onClick={() => setOpen(false)}>
-                <CareNestLogo size="md" />
-              </Link>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Close menu"
-                className="flex items-center justify-center w-9 h-9 rounded-full text-stone-750 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+              {/* Sidebar Container */}
+              <motion.div
+                initial={{ x: "100%", rotateY: 15, opacity: 0.9, transformOrigin: "right center" }}
+                animate={{ x: 0, rotateY: 0, opacity: 1 }}
+                exit={{ x: "100%", rotateY: 15, opacity: 0.9 }}
+                transition={{ type: "spring", damping: 26, stiffness: 210 }}
+                style={{ perspective: "1200px" }}
+                className="fixed right-0 top-0 bottom-0 z-[9995] w-[88%] max-w-[390px] bg-gradient-to-b from-[#f0f6fa] via-[#faf8f5] to-[#edf4f9] dark:from-zinc-950 dark:via-zinc-950 dark:to-[#0e1726] border-l border-[#e5e2d5]/40 dark:border-zinc-850 shadow-2xl p-6 sm:p-8 flex flex-col justify-between overflow-y-auto scrollbar-hide"
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Navigation links */}
-            <div className="flex flex-col gap-1 py-4 overflow-y-auto flex-1">
-              {navLinks.map((link, i) => (
-                <Link key={link.href} href={link.href} onClick={() => setOpen(false)}
-                  className={`text-xl font-bold py-3 px-2 rounded-xl transition-all duration-200 ${isActive(link.href)
-                      ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6]/50 dark:bg-zinc-900"
-                      : "text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-900/40"
-                    }`}
+                {/* Close Button on top right */}
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  aria-label="Close menu"
+                  className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-400 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-colors z-10"
                 >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
+                  <X className="w-5 h-5" />
+                </button>
 
-            {/* Divider & Preferences */}
-            <div className="border-t border-[#e5e2d5]/60 dark:border-stone-850/30 pt-4 mt-auto space-y-4">
-              {/* Preferences */}
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Preferences</span>
-                <div className="flex items-center gap-2">
-                  <LanguageSwitcher />
-                  <button
-                    onClick={toggleTheme}
-                    className="relative flex items-center justify-center w-8 h-8 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-750 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all active:scale-95 bg-white dark:bg-zinc-900"
-                    aria-label="Toggle theme"
-                  >
-                    <div className="relative w-4 h-4 flex items-center justify-center">
-                      <Sun className={`w-3.5 h-3.5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
-                      <Moon className={`w-3.5 h-3.5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 transform ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
-                    </div>
-                  </button>
-                </div>
-              </div>
+                <div className="flex flex-col flex-1 items-center w-full">
+                  {/* 1. Profile Block */}
+                  {user && (
+                    <div className="flex flex-col items-center mt-6 w-full text-center">
+                      <div className="relative">
+                        <div className="w-24 h-24 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shadow-md">
+                          {avatarDataUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={avatarDataUrl}
+                              alt="Profile Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-[#b04a15]/10 flex items-center justify-center text-2xl font-black text-[#b04a15] dark:text-orange-400 uppercase">
+                              {user.email[0]}
+                            </div>
+                          )}
+                        </div>
+                        {/* Green checkmark badge */}
+                        <div className="absolute bottom-0 right-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 flex items-center justify-center shadow-xs">
+                          <div className="w-4.5 h-4.5 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
 
-              {/* Profile or Auth actions */}
-              <div className="flex flex-col gap-2 pt-2">
-                {user ? (
-                  <>
-                    <div className="text-xs font-bold text-stone-400 truncate mb-1 px-1">{user.email}</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Link href={dashHref} onClick={() => setOpen(false)} className="flex items-center justify-center gap-1 text-xs font-bold py-2 border rounded-xl bg-white dark:bg-zinc-900 text-stone-750 dark:text-stone-200 hover:bg-stone-50"><Shield className="w-3.5 h-3.5" /> Dashboard</Link>
-                      <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center justify-center gap-1 text-xs font-bold py-2 border rounded-xl bg-white dark:bg-zinc-900 text-stone-750 dark:text-stone-200 hover:bg-stone-50"><User className="w-3.5 h-3.5" /> Profile</Link>
+                      <div className="space-y-2 mt-4 flex flex-col items-center">
+                        <h3 className="text-xl font-bold text-stone-850 dark:text-white leading-tight">
+                          {profile?.fullName || user.email.split("@")[0]}
+                        </h3>
+                        
+                        <div className="inline-flex items-center gap-1 bg-[#fbeee9] dark:bg-orange-950/20 text-[#8d4332] dark:text-orange-400 text-xs font-bold px-3 py-1 rounded-full">
+                          <Heart className="w-3 h-3 fill-current text-[#8d4332] dark:text-orange-400 shrink-0" />
+                          <span>{user.role === "DONOR" ? "Community Hero" : user.role === "ADMIN" ? "Administrator" : "Community Member"}</span>
+                        </div>
+
+                        <p className="text-[14px] sm:text-base font-semibold text-stone-500 dark:text-stone-400 mt-2">
+                          Lives Touched: <span className="font-bold text-[#b04a15] dark:text-orange-400">{inKindCount > 0 ? (inKindCount * 12 + 5) : 0}</span>
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => { setOpen(false); requestLogout(); }}
-                      className="flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/20 dark:bg-red-950/10 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 w-full"
-                    >
-                      <LogOut className="w-3.5 h-3.5" /> {t("nav.signOut")}
-                    </button>
-                  </>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Link href="/login" onClick={() => setOpen(false)} className="flex items-center justify-center gap-1 text-xs font-bold py-2.5 border rounded-xl bg-white dark:bg-zinc-900 text-stone-750 dark:text-stone-250 hover:bg-stone-50"><LogIn className="w-3.5 h-3.5" /> {t("nav.logIn")}</Link>
-                    <Link href="/register" onClick={() => setOpen(false)} className="flex items-center justify-center gap-1 text-xs font-bold py-2.5 border rounded-xl bg-[#b04a15] text-white hover:bg-[#963c0d]"><UserPlus className="w-3.5 h-3.5" /> {t("nav.signUp")}</Link>
+                  )}
+
+                  {/* Spacer between profile and nav links */}
+                  <div className="w-full mt-10" />
+
+                  {/* 2. Menu Navigation List */}
+                  <div className="w-full flex flex-col gap-6">
+                    {/* Mobile Navigation Links */}
+                    <div className="lg:hidden flex flex-col gap-2 w-full pb-4">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500 px-1 mb-1">Navigation</span>
+                      {navLinks.map((link) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className={`text-sm font-bold py-2 px-1 rounded-xl transition-all duration-200 ${
+                            isActive(link.href)
+                              ? "text-[#b04a15] dark:text-orange-400"
+                              : "text-stone-500 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-orange-400"
+                          }`}
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+
+                    <span className="hidden lg:block text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500 px-1">Workspace</span>
+
+                    {user ? (
+                      <>
+                        {/* Dashboard Link */}
+                        <button
+                          onClick={() => {
+                            setIsSidebarOpen(false);
+                            router.push(dashHref);
+                          }}
+                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent ${
+                            isActive(dashHref)
+                              ? "text-[#b04a15] dark:text-orange-400 font-bold"
+                              : "text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
+                          }`}
+                        >
+                          <LayoutGrid className={`w-5.5 h-5.5 shrink-0 ${isActive(dashHref) ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
+                          <span className="text-[15px]">Dashboard</span>
+                          
+                          {isActive(dashHref) && (
+                            <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
+                              <path d="M2 2 C 8 8, 8 22, 2 28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                            </svg>
+                          )}
+                        </button>
+
+                        {/* My Profile Link */}
+                        <button
+                          onClick={() => {
+                            setIsSidebarOpen(false);
+                            router.push("/profile");
+                          }}
+                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent ${
+                            isActive("/profile")
+                              ? "text-[#b04a15] dark:text-orange-400 font-bold"
+                              : "text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
+                          }`}
+                        >
+                          <User className={`w-5.5 h-5.5 shrink-0 ${isActive("/profile") ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
+                          <span className="text-[15px]">My Profile</span>
+                          
+                          {isActive("/profile") && (
+                            <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
+                              <path d="M2 2 C 8 8, 8 22, 2 28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                            </svg>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Log In Link */}
+                        <button
+                          onClick={() => {
+                            setIsSidebarOpen(false);
+                            router.push("/login");
+                          }}
+                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium`}
+                        >
+                          <LogIn className="w-5.5 h-5.5 shrink-0 text-stone-400" />
+                          <span className="text-[15px]">{t("nav.logIn")}</span>
+                        </button>
+
+                        {/* Sign Up Link */}
+                        <button
+                          onClick={() => {
+                            setIsSidebarOpen(false);
+                            router.push("/register");
+                          }}
+                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium`}
+                        >
+                          <UserPlus className="w-5.5 h-5.5 shrink-0 text-stone-400" />
+                          <span className="text-[15px]">{t("nav.signUp")}</span>
+                        </button>
+                      </>
+                    )}
+
+                    {/* Language Switcher row */}
+                    <div className="relative w-full flex items-center justify-between py-2 px-1">
+                      <div className="flex items-center gap-3.5">
+                        <Globe className="w-5.5 h-5.5 shrink-0 text-stone-400" />
+                        <span className="text-[15px] text-stone-500 dark:text-stone-400 font-medium">Language</span>
+                      </div>
+                      <div onClick={e => e.stopPropagation()}>
+                        <LanguageSwitcher />
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+                </div>
+
+                {/* 3. Bottom Cards Section */}
+                <div className="w-full mt-8 space-y-6">
+                  {/* Daily Kindness Goal Card */}
+                  {user && (
+                    <div className="bg-[#eaeaea]/45 dark:bg-zinc-900/50 rounded-[24px] p-5 flex items-center justify-between shadow-xs">
+                      <div>
+                        <p className="text-xs sm:text-[13px] font-bold text-stone-800 dark:text-stone-200">Daily Kindness Goal</p>
+                        <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-semibold mt-1">80% complete</p>
+                      </div>
+                      <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                        <svg className="w-full h-full transform -rotate-90">
+                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" className="text-stone-250/20 dark:text-zinc-800/40" fill="transparent" />
+                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" className="text-[#b04a15]" strokeDasharray="125.6" strokeDashoffset="25.12" fill="transparent" strokeLinecap="round" />
+                        </svg>
+                        <Heart className="absolute w-3.5 h-3.5 text-[#b04a15] fill-[#b04a15]" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Latest Impact Card */}
+                  {user && (
+                    <div className="flex items-start gap-3.5 mt-6 px-1">
+                      <div className="h-9 w-9 rounded-full bg-[#e3efe9] dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <HandHeart className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-[13px] font-bold text-[#1b8a5a] dark:text-emerald-400">Latest Impact</p>
+                        <p className="text-xs sm:text-[13px] text-stone-550 dark:text-stone-400 font-medium leading-relaxed mt-1">
+                          {user.role === "DONOR"
+                            ? "You helped 3 families yesterday with essential supplies."
+                            : "Your request was matched with a donor in your neighborhood!"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer Signout and Mobile Theme Toggle */}
+                  <div className="pt-2 space-y-4">
+                    {/* Mobile Theme switcher */}
+                    <div className="lg:hidden flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Theme</span>
+                      <button
+                        onClick={toggleTheme}
+                        className="relative flex items-center justify-center w-9 h-9 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-755 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all active:scale-95 bg-white dark:bg-zinc-900"
+                        aria-label="Toggle theme"
+                      >
+                        <div className="relative w-4 h-4 flex items-center justify-center">
+                          <Sun className={`w-3.5 h-3.5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
+                          <Moon className={`w-3.5 h-3.5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 transform ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
+                        </div>
+                      </button>
+                    </div>
+
+                    {user && (
+                      <button
+                        onClick={() => { setIsSidebarOpen(false); requestLogout(); }}
+                        className="flex items-center justify-center gap-2 text-stone-500 hover:text-stone-850 dark:text-stone-400 dark:hover:text-white text-sm font-semibold transition-all py-3 w-full"
+                      >
+                        <LogOut className="w-4 h-4 shrink-0" /> {t("nav.signOut")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </header>
     </>
   );
@@ -439,6 +709,13 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   const t = useTranslations("footer");
+  const pathname = usePathname();
+  const { user } = useAuth();
+  if (
+    pathname?.startsWith("/super-admin") ||
+    pathname?.startsWith("/admin/dashboard") ||
+    user?.role === "SUPER_ADMIN"
+  ) return null;
   return (
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
       <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 md:grid-cols-4">

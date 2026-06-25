@@ -114,7 +114,7 @@ function Field({
 // ── Main content ───────────────────────────────────────────────────────────────
 function RegisterContent() {
   const t = useTranslations("auth.register");
-  const { setAuth, user } = useAuth();
+  const { setUser, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -209,7 +209,7 @@ function RegisterContent() {
           sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
           router.push("/register?social=google");
         } else {
-          setAuth(res.token);
+          setUser({ email: res.email, role: res.role });
           toast.success("Welcome back!");
           router.push("/");
         }
@@ -343,13 +343,13 @@ function RegisterContent() {
         if (!res.needsCompletion) {
           sessionStorage.removeItem("ck_google_token");
           sessionStorage.removeItem("ck_google_profile");
-          setAuth(res.token, rememberMe);
+          setUser({ email: res.email, role: res.role });
           toast.success("Account created! Welcome to CauseKind.");
           router.push("/");
         }
       } else {
-        const { token } = await register({ ...form, phone: fullPhone, city: cityStr });
-        setAuth(token, rememberMe);
+        const res = await register({ ...form, phone: fullPhone, city: cityStr });
+        setUser({ email: res.email, role: res.role });
         toast.success("Account created!");
         router.push("/");
       }

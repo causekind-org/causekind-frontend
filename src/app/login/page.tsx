@@ -32,10 +32,17 @@ function FacebookIcon() {
   );
 }
 
+// Role-based landing destination after auth.
+function homeForRole(role: string | null): string {
+  if (role === "SUPER_ADMIN") return "/super-admin";
+  if (role === "ADMIN") return "/admin/dashboard";
+  return "/";
+}
+
 // ── Main content ───────────────────────────────────────────────────────────────
 function LoginContent() {
   const t = useTranslations("auth.login");
-  const { setAuth, user } = useAuth();
+  const { setUser, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -58,9 +65,10 @@ function LoginContent() {
           sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
           router.push("/register?social=google");
         } else {
-          setAuth(res.token, rememberMe);
+          // Fix #4: cookie set by server; use role from response directly
+          setUser({ email: res.email, role: res.role });
           toast.success("Welcome back!");
-          router.push("/");
+          router.push(homeForRole(res.role));
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Google login failed");
@@ -92,10 +100,11 @@ function LoginContent() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { token } = await login(email, password);
-      setAuth(token, rememberMe);
+      // Fix #4: backend sets httpOnly cookie; we only use email+role from response
+      const res = await login(email, password, rememberMe);
+      setUser({ email: res.email, role: res.role });
       toast.success("Welcome back!");
-      router.push("/");
+      router.push(homeForRole(res.role));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Invalid credentials");
     } finally {

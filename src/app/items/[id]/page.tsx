@@ -29,7 +29,6 @@ export default function ItemDetailPage() {
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-
   const [requestTarget, setRequestTarget] = useState<ItemListing | null>(null);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -58,9 +57,7 @@ export default function ItemDetailPage() {
     if (!item) return;
     if (!user) { router.push("/login"); return; }
     if (!myProfile?.latitude || !myProfile?.longitude) {
-      toast.error(t("setLocationToast"), {
-        action: { label: t("setLocation"), onClick: () => router.push("/profile") },
-      });
+      toast.error(t("setLocationToast"), { action: { label: t("setLocation"), onClick: () => router.push("/profile") } });
       return;
     }
     setRequestTarget(item);
@@ -74,10 +71,7 @@ export default function ItemDetailPage() {
 
   async function handleSubmitRequest() {
     if (!requestTarget) return;
-    if (reason.trim().length < 20) {
-      toast.error(t("toastReasonTooShort"));
-      return;
-    }
+    if (reason.trim().length < 20) { toast.error(t("toastReasonTooShort")); return; }
     setSubmitting(true);
     try {
       await requestListing(requestTarget.id, reason.trim());
@@ -279,15 +273,13 @@ export default function ItemDetailPage() {
         </div>
       </div>
 
-      {/* Request modal — same flow as /items */}
+      {/* Request modal */}
       {requestTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-[#faf8f4] dark:bg-zinc-900 shadow-2xl">
             <div className="relative border-b border-orange-100 dark:border-stone-800 bg-gradient-to-r from-[#b04a15]/10 to-transparent px-5 py-4">
               <div className="pr-8">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#b04a15] dark:text-[#ff8a65]">
-                  {t("requesting")}
-                </p>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#b04a15] dark:text-[#ff8a65]">{t("requesting")}</p>
                 <h2 className="mt-0.5 text-lg font-extrabold text-[#1c1108] dark:text-white leading-tight">
                   <TranslatedText text={requestTarget.title} />
                 </h2>
@@ -295,55 +287,26 @@ export default function ItemDetailPage() {
                   <TranslatedText text={requestTarget.category} /> · <TranslatedText text={requestTarget.condition} /> · Qty {requestTarget.quantity} · <TranslatedText text={requestTarget.city} />
                 </p>
               </div>
-              <button
-                onClick={closeRequestModal}
-                className="absolute right-4 top-4 rounded-lg p-1.5 text-stone-400 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-stone-600 transition"
-                aria-label={t("closeModal")}
-              >
+              <button onClick={closeRequestModal} className="absolute right-4 top-4 rounded-lg p-1.5 text-stone-400 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-stone-600 transition" aria-label={t("closeModal")}>
                 <X className="h-4 w-4" />
               </button>
             </div>
-
             <div className="space-y-4 p-5">
               <div>
                 <Label htmlFor="reason" className="mb-2 block font-semibold text-stone-700 dark:text-stone-300">
                   {t("whyNeedLabel")} <span className="text-red-500">*</span>
                 </Label>
-                <Textarea
-                  id="reason"
-                  placeholder={t("reasonPlaceholder")}
-                  rows={4}
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="rounded-xl border-orange-200 dark:border-stone-700 focus-visible:ring-[#b04a15]/20 resize-none"
-                />
-                <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">
-                  {t("reasonCharCount", { count: reason.length })}
-                </p>
+                <Textarea id="reason" placeholder={t("reasonPlaceholder")} rows={4} value={reason} onChange={(e) => setReason(e.target.value)} className="rounded-xl border-orange-200 dark:border-stone-700 focus-visible:ring-[#b04a15]/20 resize-none" />
+                <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">{t("reasonCharCount", { count: reason.length })}</p>
               </div>
               <div className="flex items-start gap-3 rounded-xl border border-[#b04a15]/20 bg-[#b04a15]/5 px-4 py-3">
-                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-                  {t("adminReviewNotice")}
-                </p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">{t("adminReviewNotice")}</p>
               </div>
             </div>
-
             <div className="flex items-center justify-between border-t border-orange-100 dark:border-stone-800 bg-orange-50/30 dark:bg-zinc-950/30 px-5 py-4">
-              <Button variant="ghost" onClick={closeRequestModal} disabled={submitting}>
-                {t("cancel")}
-              </Button>
-              <Button
-                onClick={handleSubmitRequest}
-                disabled={submitting}
-                className="btn-3d btn-shine bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl px-6 font-semibold"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("submitting")}
-                  </>
-                ) : (
-                  t("submitRequest")
-                )}
+              <Button variant="ghost" onClick={closeRequestModal} disabled={submitting}>{t("cancel")}</Button>
+              <Button onClick={handleSubmitRequest} disabled={submitting} className="btn-3d btn-shine bg-[#1c1108] hover:bg-[#2d1f0a] dark:bg-[#b04a15] dark:hover:bg-[#8f3b10] text-white rounded-xl px-6 font-semibold">
+                {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submitRequest")}
               </Button>
             </div>
           </div>
