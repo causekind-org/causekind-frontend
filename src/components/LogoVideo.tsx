@@ -3,7 +3,7 @@
 export function LogoVideo({ size = 32 }: { size?: number }) {
   return (
     <div
-      className="relative overflow-hidden rounded-lg bg-transparent shrink-0"
+      className="relative overflow-hidden bg-transparent shrink-0"
       style={{ width: size, height: size }}
     >
       <video
