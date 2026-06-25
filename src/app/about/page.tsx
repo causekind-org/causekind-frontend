@@ -119,30 +119,32 @@ export default async function AboutPage() {
             </p>
           </div>
 
-          {/* Vision — indented right, smaller */}
-          <div className="grid md:grid-cols-[2fr_3fr] gap-8 items-start mb-8">
-            <div className="md:ml-[8%] bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col gap-6 group hover:bg-white/8 transition-all duration-300">
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#b04a15] rounded-l-3xl" style={{position:'relative',width:'4px',height:'40px',background:'#b04a15',borderRadius:'4px'}} />
-              <div className="p-3 w-fit rounded-xl bg-[#b04a15]/15 text-[#f0b97a]">
-                <Compass className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-extrabold text-white mb-3">{t("visionHeadline")}</h3>
-                <p className="text-stone-400 leading-relaxed font-medium text-sm">{t("visionText")}</p>
+          {/* Vision & Mission Cards */}
+          <div className="grid md:grid-cols-2 gap-8 items-stretch mb-8">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-10 flex flex-col justify-between gap-6 group hover:bg-white/8 transition-all duration-300">
+              <div className="flex flex-col gap-6">
+                <div className="p-3 w-fit rounded-xl bg-[#b04a15]/15 text-[#f0b97a]">
+                  <Compass className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-extrabold text-white mb-3">{t("visionHeadline")}</h3>
+                  <p className="text-stone-400 leading-relaxed font-medium text-sm sm:text-base">{t("visionText")}</p>
+                </div>
               </div>
               <div className="text-xs font-bold text-[#f0b97a] uppercase tracking-wider">
                 Transparent Ecosystem →
               </div>
             </div>
 
-            {/* Mission — full width right, taller */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-10 flex flex-col gap-6 group hover:bg-white/8 transition-all duration-300">
-              <div className="p-3 w-fit rounded-xl bg-[#1e3a60]/30 text-blue-300">
-                <Milestone className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-extrabold text-white mb-3">{t("missionHeadline")}</h3>
-                <p className="text-stone-400 leading-relaxed font-medium text-base">{t("missionText")}</p>
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-10 flex flex-col justify-between gap-6 group hover:bg-white/8 transition-all duration-300">
+              <div className="flex flex-col gap-6">
+                <div className="p-3 w-fit rounded-xl bg-[#1e3a60]/30 text-blue-300">
+                  <Milestone className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-extrabold text-white mb-3">{t("missionHeadline")}</h3>
+                  <p className="text-stone-400 leading-relaxed font-medium text-sm sm:text-base">{t("missionText")}</p>
+                </div>
               </div>
               <div className="text-xs font-bold text-blue-400 uppercase tracking-wider">
                 Direct Resource Distribution →
@@ -170,7 +172,7 @@ export default async function AboutPage() {
           <div className="bg-white dark:bg-zinc-900 border border-[#e5e2d5]/60 dark:border-stone-800 rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 grid sm:grid-cols-2">
             <div className="relative min-h-[240px]">
               <Image
-                src="/community_donation.png"
+                src="/distribution.png"
                 alt="Community donation packing"
                 fill
                 className="object-cover"

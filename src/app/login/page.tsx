@@ -152,7 +152,7 @@ function LoginContent() {
         {/* Decorative graphic / background image */}
         <div className="absolute inset-0 opacity-[0.25] pointer-events-none mix-blend-luminosity">
           <Image
-            src="/images/hero-4.webp"
+            src="/Change_stories.jpg"
             alt=""
             fill
             className="object-cover"
@@ -179,7 +179,7 @@ function LoginContent() {
           <Reveal>
             <div className="space-y-1.5">
               <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Welcome back</span>
-              <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-55">
+              <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
                 {t("title")} 👋
               </h1>
               <p className="text-sm text-stone-505 dark:text-stone-400">
@@ -282,7 +282,13 @@ function LoginContent() {
               <button
                 type="button"
                 disabled={googleLoading}
-                onClick={() => triggerGoogle()}
+                onClick={() => {
+                  if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+                    toast.error("Google Sign-In is not configured.");
+                    return;
+                  }
+                  triggerGoogle();
+                }}
                 className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
               >
                 <GoogleIcon />
