@@ -79,7 +79,7 @@ function LoginContent() {
     onError: () => toast.error("Google sign-in failed"),
   });
 
-  useEffect(() => { if (user) router.replace("/"); }, [user, router]);
+  useEffect(() => { if (user) router.replace(homeForRole(user.role)); }, [user, router]);
 
   useEffect(() => {
     const dir = sessionStorage.getItem("ck_auth_direction");
