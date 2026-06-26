@@ -16,6 +16,11 @@ import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { Reveal } from "@/components/Reveal";
 
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return <p className="text-xs text-destructive mt-1">{msg}</p>;
+}
+
 // ── Inline brand SVGs ──────────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
@@ -121,6 +126,7 @@ function RegisterContent() {
   const isSocialFlow = searchParams.get("social") === "google";
 
   const [form, setForm] = useState({ fullName: "", email: "", password: "", role: "DONOR" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -328,10 +334,28 @@ function RegisterContent() {
 
   if (user) return null;
 
-  function set(field: string, value: string) { setForm(f => ({ ...f, [field]: value })); }
+  function set(field: string, value: string) {
+    setForm(f => ({ ...f, [field]: value }));
+    if (errors[field]) setErrors(e => ({ ...e, [field]: "" }));
+  }
+
+  function validate(): boolean {
+    const e: Record<string, string> = {};
+    if (!form.fullName.trim() || form.fullName.trim().length < 2)
+      e.fullName = "Full name must be at least 2 characters";
+    if (!phoneNumber || !/^\d+$/.test(phoneNumber))
+      e.phone = "Enter a valid phone number";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      e.email = "Enter a valid email address";
+    if (!isSocialFlow && form.password.length < 8)
+      e.password = "Password must be at least 8 characters";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validate()) return;
     const dialCode = getDialCode(dialCountry, dialCodeOptions);
     const fullPhone = dialCode && phoneNumber ? `${dialCode} ${phoneNumber}` : phoneNumber;
     const cityStr = buildCityString();
@@ -393,7 +417,7 @@ function RegisterContent() {
         {/* Decorative graphic / background image */}
         <div className="absolute inset-0 opacity-[0.25] pointer-events-none mix-blend-luminosity">
           <Image
-            src="/images/hero-4.webp"
+            src="/Change_stories.jpg"
             alt=""
             fill
             className="object-cover"
@@ -467,22 +491,28 @@ function RegisterContent() {
             </Reveal>
 
             <Reveal delay={100}>
-              <Field
-                id="fullName" label={t("fullName")} placeholder="Jane Doe"
-                value={form.fullName} onChange={v => set("fullName", v)}
-                readOnly={isSocialFlow && !!form.fullName}
-                autoComplete="name"
-              />
+              <div className="space-y-1">
+                <Field
+                  id="fullName" label={t("fullName")} placeholder="Jane Doe"
+                  value={form.fullName} onChange={v => set("fullName", v)}
+                  readOnly={isSocialFlow && !!form.fullName}
+                  autoComplete="name"
+                />
+                <FieldError msg={errors.fullName} />
+              </div>
             </Reveal>
 
             <Reveal delay={140}>
-              <Field
-                id="email" label={t("email")} type="email" placeholder="you@example.com"
-                value={form.email} onChange={v => set("email", v)}
-                readOnly={isSocialFlow}
-                hint={isSocialFlow ? t("googleLinkedHint") : undefined}
-                autoComplete="email"
-              />
+              <div className="space-y-1">
+                <Field
+                  id="email" label={t("email")} type="email" placeholder="you@example.com"
+                  value={form.email} onChange={v => set("email", v)}
+                  readOnly={isSocialFlow}
+                  hint={isSocialFlow ? t("googleLinkedHint") : undefined}
+                  autoComplete="email"
+                />
+                <FieldError msg={errors.email} />
+              </div>
             </Reveal>
 
             <Reveal delay={180}>
@@ -513,6 +543,7 @@ function RegisterContent() {
                     className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
                   />
                 </div>
+                <FieldError msg={errors.phone} />
               </div>
             </Reveal>
 
@@ -634,6 +665,7 @@ function RegisterContent() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  <FieldError msg={errors.password} />
                 </div>
               </Reveal>
             )}
@@ -678,7 +710,13 @@ function RegisterContent() {
                 <button
                   type="button"
                   disabled={googleLoading}
-                  onClick={() => triggerGoogle()}
+                  onClick={() => {
+                    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+                      toast.error("Google Sign-In is not configured.");
+                      return;
+                    }
+                    triggerGoogle();
+                  }}
                   className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
                 >
                   <GoogleIcon />

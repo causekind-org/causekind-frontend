@@ -65,18 +65,18 @@ export default async function HelpPage() {
               </p>
             </div>
 
-            {/* Right: contact buttons stacked, left-aligned */}
+            {/* Right: contact buttons stacked, unified width and alignment */}
             <div className="py-16 lg:pl-16 flex flex-col justify-center gap-4">
               <a
                 href="mailto:support@causekind.org"
-                className="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-[#b04a15] text-white text-sm font-bold hover:bg-[#963c0d] transition-colors shadow-md shadow-[#b04a15]/20 w-fit"
+                className="flex w-full sm:w-72 items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-[#b04a15] text-white text-sm font-bold hover:bg-[#963c0d] transition-colors shadow-md shadow-[#b04a15]/20"
               >
                 <Mail className="w-4 h-4" />
                 {t("emailSupport")}
               </a>
               <a
                 href="tel:+917719938619"
-                className="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 text-stone-700 dark:text-stone-300 text-sm font-bold border border-[#e5e2d5] dark:border-zinc-700 hover:border-[#b04a15]/40 transition-colors w-fit"
+                className="flex w-full sm:w-72 items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 text-stone-700 dark:text-stone-300 text-sm font-bold border border-[#e5e2d5] dark:border-zinc-700 hover:border-[#b04a15]/40 transition-colors"
               >
                 <Phone className="w-4 h-4" />
                 +91 77199 38619
@@ -85,7 +85,7 @@ export default async function HelpPage() {
                 href="https://wa.me/917719938619"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 text-stone-700 dark:text-stone-300 text-sm font-bold border border-[#e5e2d5] dark:border-zinc-700 hover:border-[#b04a15]/40 transition-colors w-fit"
+                className="flex w-full sm:w-72 items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 text-stone-700 dark:text-stone-300 text-sm font-bold border border-[#e5e2d5] dark:border-zinc-700 hover:border-[#b04a15]/40 transition-colors"
               >
                 <MessageCircle className="w-4 h-4 text-[#b04a15]" />
                 WhatsApp Us

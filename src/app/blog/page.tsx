@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { blogPosts, insiderTips } from "../../data/blogData";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
+import { Search } from "lucide-react";
 import { getRecentActivity, type RecentActivity } from "@/lib/api";
 
 function timeAgo(date: Date): string {
@@ -71,13 +72,71 @@ export default function BlogListingPage() {
     return () => clearInterval(interval);
   }, [liveFeed.length]);
 
-  // Search filtering
-  const filteredPosts = blogPosts.filter(
-    (post) =>
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Advanced relevance-based search ranking
+  const getSearchScore = (post: typeof blogPosts[0], query: string) => {
+    if (!query) return 0;
+    const cleanQuery = query.toLowerCase().trim();
+    if (cleanQuery === "") return 0;
+
+    let score = 0;
+    const title = post.title.toLowerCase();
+    const desc = post.description.toLowerCase();
+    const cat = post.category.toLowerCase();
+    const content = (post.content || "").toLowerCase();
+
+    // 1. Exact full match in title
+    if (title === cleanQuery) {
+      score += 1000;
+    }
+    // 2. Query is a substring of the title
+    if (title.includes(cleanQuery)) {
+      score += 500;
+    }
+    // 3. Query is a substring of the description
+    if (desc.includes(cleanQuery)) {
+      score += 250;
+    }
+
+    // 4. Individual word matches
+    const words = cleanQuery.split(/\s+/).filter(Boolean);
+    words.forEach((word) => {
+      // Title word boundary match
+      const wordRegex = new RegExp(`\\b${word}\\b`, 'i');
+      if (wordRegex.test(title)) {
+        score += 150;
+      } else if (title.includes(word)) {
+        score += 80;
+      }
+
+      // Description word boundary match
+      if (wordRegex.test(desc)) {
+        score += 60;
+      } else if (desc.includes(word)) {
+        score += 30;
+      }
+
+      // Category match
+      if (cat.includes(word)) {
+        score += 100;
+      }
+
+      // Content match
+      if (content.includes(word)) {
+        score += 20;
+      }
+    });
+
+    return score;
+  };
+
+  // Search filtering & dynamic relevance sorting
+  const filteredPosts = searchQuery.trim() === ""
+    ? blogPosts
+    : blogPosts
+        .map((post) => ({ post, score: getSearchScore(post, searchQuery) }))
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map((item) => item.post);
 
   return (
     <div className="pt-24 pb-16 bg-[#faf8f5] dark:bg-[#0c0a09]">
@@ -106,7 +165,7 @@ export default function BlogListingPage() {
             <AnimatedWrapper delay={0.3} duration={0.55} direction="left">
               <div className="flex items-center gap-4 bg-white dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs">
                 <div className="relative flex items-center">
-                  <span className="absolute left-3 text-stone-400 dark:text-stone-500 text-sm">🔍</span>
+                  <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
                   <input
                     className="pl-9 pr-4 py-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-850 rounded-full text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] transition-all w-full md:w-64"
                     placeholder="Search stories..."
@@ -212,14 +271,14 @@ export default function BlogListingPage() {
 
           {/* List remaining filtered posts */}
           {filteredPosts.length > 1 && (
-            <StaggerContainer inView delayStart={0.05} staggerDelay={0.12} className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <StaggerContainer inView delayStart={0.05} staggerDelay={0.12} className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
               {filteredPosts.slice(1).map((post) => (
-                <motion.div key={post.slug} variants={itemVariants}>
+                <motion.div key={post.slug} variants={itemVariants} className="h-full">
                   <Link
                     href={`/blog/${post.slug}`}
-                    className="group bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden hover:shadow-[0_20px_40px_rgba(30,58,96,0.04)] transition-all duration-500 hover:-translate-y-1 block"
+                    className="group bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden hover:shadow-[0_20px_40px_rgba(30,58,96,0.04)] transition-all duration-500 hover:-translate-y-1 flex flex-col h-full"
                   >
-                    <div className="aspect-[16/9] overflow-hidden relative">
+                    <div className="aspect-[16/9] overflow-hidden relative flex-shrink-0">
                       <img
                         alt={post.title}
                         className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
@@ -231,14 +290,14 @@ export default function BlogListingPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="p-6">
+                    <div className="p-6 flex flex-col flex-1">
                       <h3 className="font-bold text-lg md:text-xl text-stone-900 dark:text-stone-100 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors">
                         {post.title}
                       </h3>
-                      <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm mb-4 line-clamp-2 leading-relaxed">
+                      <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm mb-4 line-clamp-2 leading-relaxed flex-1">
                         {post.description}
                       </p>
-                      <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400">
+                      <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400 mt-auto">
                         <span>{post.readTime}</span>
                         <span className="flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
                           Read Story →

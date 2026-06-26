@@ -144,7 +144,7 @@ export default function ResetPasswordPage() {
         {/* Decorative graphic / background image */}
         <div className="absolute inset-0 opacity-[0.25] pointer-events-none mix-blend-luminosity">
           <Image
-            src="/images/hero-4.webp"
+            src="/Change_stories.jpg"
             alt=""
             fill
             className="object-cover"
