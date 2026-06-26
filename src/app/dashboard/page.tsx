@@ -7,7 +7,7 @@ import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import {
   getMyItemListings, getMyItemRequests, getMyMatches, getMyProfile,
-  donorAcceptMatch, donorRejectMatch,
+  donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -76,12 +76,42 @@ function DoneeDashboard({
   myProfile,
   itemRequests,
   doneeMatches,
+  onRefresh,
 }: {
   user: { email: string; role: string };
   myProfile: UserProfile;
   itemRequests: ItemRequest[];
   doneeMatches: ItemMatch[];
+  onRefresh: () => Promise<void>;
 }) {
+  const [matchActionLoading, setMatchActionLoading] = useState<number | null>(null);
+
+  const handleDoneeAccept = async (id: number) => {
+    setMatchActionLoading(id);
+    try {
+      await doneeAcceptMatch(id);
+      toast.success("Match accepted! Logistics will be arranged next.");
+      await onRefresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to accept match");
+    } finally {
+      setMatchActionLoading(null);
+    }
+  };
+
+  const handleDoneeReject = async (id: number) => {
+    setMatchActionLoading(id);
+    try {
+      await doneeRejectMatch(id);
+      toast.success("Match declined.");
+      await onRefresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to decline match");
+    } finally {
+      setMatchActionLoading(null);
+    }
+  };
+
   const activeRequests = itemRequests.filter(
     r => !["FULFILLED", "REJECTED", "EXPIRED"].includes(r.status)
   );
@@ -281,6 +311,27 @@ function DoneeDashboard({
                           <div><p className="text-stone-400">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
                           {m.matchScore && (<div className="text-right"><p className="text-stone-400">AI Match</p><p className="font-bold text-[#1e3a60] dark:text-blue-400">{m.matchScore}%</p></div>)}
                         </div>
+                        {m.status === "AWAITING_DONEE_CONFIRMATION" && (
+                          <div className="flex gap-2 pt-1">
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg"
+                              disabled={matchActionLoading === m.id}
+                              onClick={() => handleDoneeAccept(m.id)}
+                            >
+                              {matchActionLoading === m.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3 mr-1" />Accept</>}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold rounded-lg"
+                              disabled={matchActionLoading === m.id}
+                              onClick={() => handleDoneeReject(m.id)}
+                            >
+                              {matchActionLoading === m.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><X className="w-3 h-3 mr-1" />Decline</>}
+                            </Button>
+                          </div>
+                        )}
                         {m.status === "TRANSPORT_DISCUSSION" && (
                           <div className="flex justify-end pt-1">
                             <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold rounded-lg">Contact Donor (Masked)</Button>
@@ -374,6 +425,7 @@ export default function DashboardPage() {
         myProfile={myProfile}
         itemRequests={itemRequests}
         doneeMatches={doneeMatches}
+        onRefresh={refreshMatches}
       />
     );
   }
