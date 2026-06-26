@@ -7,7 +7,7 @@ import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import {
   getMyItemListings, getMyItemRequests, getMyMatches, getMyProfile,
-  donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch,
+  donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -720,6 +720,29 @@ export default function DashboardPage() {
                                         </div>
                                       </div>
                                     )}
+                                  </div>
+                                )}
+                                {m.status === "DONEE_ACCEPTED" && (
+                                  <div className="space-y-1 pt-1">
+                                    <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                                      <Check className="w-3 h-3" /> Donee confirmed — please give your final confirmation
+                                    </p>
+                                    <button
+                                      disabled={reviewLoading === m.id}
+                                      onClick={async () => {
+                                        setReviewLoading(m.id);
+                                        try {
+                                          await donorConfirmMatch(m.id);
+                                          toast.success("Donation confirmed! Logistics will be arranged next.");
+                                          await refreshMatches();
+                                        } catch (e: unknown) {
+                                          toast.error(e instanceof Error ? e.message : "Failed to confirm");
+                                        } finally { setReviewLoading(null); }
+                                      }}
+                                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all"
+                                    >
+                                      {reviewLoading === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Confirm Donation</>}
+                                    </button>
                                   </div>
                                 )}
                                 {m.status === "TRANSPORT_DISCUSSION" && (
