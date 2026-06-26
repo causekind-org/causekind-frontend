@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ import {
 import Link from "next/link";
 import { DoneeRequestsPage } from "./donee-view";
 
-// â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Constants ──────────────────────────────────────────────────────────────────
 
 const ITEM_REQ_CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
 
@@ -41,7 +41,7 @@ const REQ_SORT_OPTIONS = [
 
 type ReqSortValue = "nearest" | "urgent" | "newest" | "qty";
 
-// â”€â”€ Category design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Category design tokens ────────────────────────────────────────────────────
 
 const CAT_ICON: Record<string, React.ElementType> = {
   "Medical aid": Stethoscope,
@@ -102,7 +102,7 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// â”€â”€ Skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function RequestCardSkeleton() {
   return (
@@ -122,7 +122,7 @@ function RequestCardSkeleton() {
   );
 }
 
-// â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Hero ──────────────────────────────────────────────────────────────────────
 
 function RequestsHero({
   total,
@@ -184,7 +184,7 @@ function RequestsHero({
       <div className="relative z-10 mx-auto max-w-6xl px-6 py-14 lg:py-20">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
 
-          {/* â”€â”€ Left: headline â”€â”€ */}
+          {/* ── Left: headline ── */}
           <div className="space-y-7">
 
             {/* Live badge */}
@@ -206,7 +206,7 @@ function RequestsHero({
 
             {/* Subtitle */}
             <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-md anim-up anim-d3">
-              Real people nearby need specific items â€” not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.
+              Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.
             </p>
 
             {/* Live stats */}
@@ -238,7 +238,7 @@ function RequestsHero({
             </div>
           </div>
 
-          {/* â”€â”€ Right: category need-board â”€â”€ */}
+          {/* ── Right: category need-board ── */}
           <div className="hidden lg:grid grid-cols-2 gap-3 need-board-float">
             {/* Top: "Needs Board" label */}
             <div className="col-span-2 flex items-center gap-2 mb-1">
@@ -276,7 +276,7 @@ function RequestsHero({
   );
 }
 
-// â”€â”€ Category quick-filter bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Category quick-filter bar ────────────────────────────────────────────────
 
 function CategoryBar({
   catCounts,
@@ -341,7 +341,7 @@ function CategoryBar({
   );
 }
 
-// â”€â”€ Filter sidebar panel (urgency + sort only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Filter sidebar panel (urgency + sort only) ────────────────────────────────
 
 function RequestFilterPanel({
   selectedUrgencies,
@@ -428,7 +428,7 @@ function RequestFilterPanel({
   );
 }
 
-// â”€â”€ Bento card variants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Bento card variants ───────────────────────────────────────────────────────
 
 function TallRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
   const col    = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
@@ -477,7 +477,7 @@ function TallRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemReques
           )}
           <div className="flex items-center gap-3 pt-0.5">
             <span className="text-white/70 text-xs font-semibold tabular-nums">{r.quantity} items needed</span>
-            <span className="text-white/25">Â·</span>
+            <span className="text-white/25">·</span>
             <span className="text-white/40 text-[10px]">by {r.doneeName}</span>
           </div>
           <button
@@ -638,7 +638,7 @@ function IconRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemReques
   );
 }
 
-// Cycles: image â†’ dark â†’ icon across groups so adjacent cards never repeat the same style
+// Cycles: image → dark → icon across groups so adjacent cards never repeat the same style
 function SmallBentoCard({
   r, groupIdx, pos, onGive,
 }: { r: ItemRequest; groupIdx: number; pos: 0 | 1; onGive: (r: ItemRequest) => void }) {
@@ -648,7 +648,7 @@ function SmallBentoCard({
   return <ImageRequestCard r={r} onGive={onGive} />;
 }
 
-// â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function RequestsPage() {
   const t        = useTranslations("requests");
@@ -659,10 +659,10 @@ export default function RequestsPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.replace("/login?redirect=/requests"); }
-    // DONEEs now get their own view â€” no redirect
+    // DONEEs now get their own view — no redirect
   }, [user, authLoading, router]);
 
-  // â”€â”€ Per-visit category picker modal (DONOR only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Per-visit category picker modal (DONOR only) ──────────────────────────
   // Shows every time a donor lands on this page. Picks a category (or skips).
   const [showCatModal, setShowCatModal] = useState(false);
   const [tempSelected, setTempSelected] = useState<string[]>([]);
@@ -717,7 +717,7 @@ export default function RequestsPage() {
   const [analyzing,     setAnalyzing]     = useState(false);
   const [aiGenerated,   setAiGenerated]   = useState(false);
 
-  // â”€â”€ GPS and Profile load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── GPS and Profile load ───────────────────────────────────────────────────
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsBlocked, setGpsBlocked] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(true);
@@ -748,7 +748,7 @@ export default function RequestsPage() {
         }
       },
       (err) => {
-        console.error("GPS retrieval error â€” code:", err.code, "| message:", err.message);
+        console.error("GPS retrieval error — code:", err.code, "| message:", err.message);
         setGpsBlocked(true);
         setGpsLoading(false);
         const msg =
@@ -785,7 +785,7 @@ export default function RequestsPage() {
       .finally(() => setLoading(false));
   }, [user, gpsCoords, selectedCategories]);
 
-  // â”€â”€ Derived counts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Derived counts ────────────────────────────────────────────────────────
 
   const catCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -795,7 +795,7 @@ export default function RequestsPage() {
 
   const criticalCount = useMemo(() => requests.filter(r => r.urgency === "CRITICAL").length, [requests]);
 
-  // â”€â”€ Filtered + sorted requests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Filtered + sorted requests ────────────────────────────────────────────
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -852,7 +852,7 @@ export default function RequestsPage() {
   const advancedFilterCount = selectedUrgencies.length + (sort !== "nearest" ? 1 : 0);
   const hasActiveFilters    = selectedCategories.length > 0 || advancedFilterCount > 0 || search.length > 0;
 
-  // â”€â”€ Donate modal handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Donate modal handlers ─────────────────────────────────────────────────
 
   function openDonateModal(req: ItemRequest) {
     if (!user) { router.push("/login"); return; }
@@ -877,7 +877,7 @@ export default function RequestsPage() {
       const { description: aiDesc } = await analyzeItemImage(file);
       if (aiDesc) { setDescription(aiDesc); setAiGenerated(true); }
     } catch {
-      toast.error("AI analysis failed â€” please describe the item manually.");
+      toast.error("AI analysis failed — please describe the item manually.");
     } finally {
       setAnalyzing(false);
     }
@@ -916,7 +916,7 @@ export default function RequestsPage() {
     }
   }
 
-  // â”€â”€ Guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Guard ─────────────────────────────────────────────────────────────────
 
   if (authLoading || !user) {
     return (
@@ -947,25 +947,25 @@ export default function RequestsPage() {
             disabled={gpsLoading}
             className="w-full bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-50 text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
           >
-            {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection ðŸŽ¯"}
+            {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection 🎯"}
           </button>
           <div className="text-xs text-stone-400 dark:text-stone-500 bg-stone-50 dark:bg-zinc-800 rounded-xl p-3 text-left space-y-1">
             <p className="font-semibold text-stone-600 dark:text-stone-300">If retry doesn&apos;t work:</p>
-            <p>ðŸ”’ Click the <strong>lock icon</strong> in your browser&apos;s address bar</p>
-            <p>ðŸ“ Set <strong>Location</strong> to <strong>Allow</strong></p>
-            <p>ðŸ”„ Then reload this page</p>
+            <p>🔒 Click the <strong>lock icon</strong> in your browser&apos;s address bar</p>
+            <p>📍 Set <strong>Location</strong> to <strong>Allow</strong></p>
+            <p>🔄 Then reload this page</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
 
-      {/* â”€â”€ Per-visit category picker modal (DONOR only) â”€â”€ */}
+      {/* ── Per-visit category picker modal (DONOR only) ── */}
       {showCatModal && user?.role === "DONOR" && (
         <div
           className="fixed inset-0 z-[9990] flex items-end sm:items-center justify-center p-4 bg-stone-950/80 backdrop-blur-xl"
@@ -1056,10 +1056,10 @@ export default function RequestsPage() {
         </div>
       )}
 
-      {/* â”€â”€ Hero â”€â”€ */}
+      {/* ── Hero ── */}
       <RequestsHero total={requests.length} critical={criticalCount} catCounts={catCounts} />
 
-      {/* â”€â”€ Donor action strip â”€â”€ */}
+      {/* ── Donor action strip ── */}
       <div className="sticky top-0 z-20 bg-[#f2ede7]/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-stone-200 dark:border-zinc-800 shadow-sm">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center justify-between gap-3 h-14">
           <div className="flex items-center gap-1">
@@ -1076,7 +1076,7 @@ export default function RequestsPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Category quick-filter bar â”€â”€ */}
+      {/* ── Category quick-filter bar ── */}
       <CategoryBar
         catCounts={catCounts}
         selected={selectedCategories}
@@ -1090,7 +1090,7 @@ export default function RequestsPage() {
         total={requests.length}
       />
 
-      {/* â”€â”€ Main content â”€â”€ */}
+      {/* ── Main content ── */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
 
         {/* Mobile: advanced filter toggle + search */}
@@ -1111,7 +1111,7 @@ export default function RequestsPage() {
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
             <Input
               className="pl-9 h-10 rounded-full border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 bg-white dark:bg-zinc-900 text-sm shadow-xs"
-              placeholder="Search needsâ€¦"
+              placeholder="Search needs…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -1173,7 +1173,7 @@ export default function RequestsPage() {
                   <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
                   <Input
                     className="pl-9 h-9 rounded-full border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 bg-white dark:bg-zinc-900 text-sm"
-                    placeholder="Search requestsâ€¦"
+                    placeholder="Search requests…"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
@@ -1259,7 +1259,7 @@ export default function RequestsPage() {
                   ))}
                 </div>
 
-                {/* Desktop: asymmetric bento â€” groups of 3, alternating tall-left / tall-right */}
+                {/* Desktop: asymmetric bento — groups of 3, alternating tall-left / tall-right */}
                 <div className="hidden lg:block space-y-5">
                   {Array.from({ length: Math.ceil(filtered.length / 3) }, (_, gi) => {
                     const chunk = filtered.slice(gi * 3, gi * 3 + 3);
@@ -1314,7 +1314,7 @@ export default function RequestsPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Donate modal â”€â”€ */}
+      {/* ── Donate modal ── */}
       {donateTarget && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
@@ -1381,7 +1381,7 @@ export default function RequestsPage() {
                       </div>
                     )}
                     <p className="text-xs font-extrabold text-stone-800 dark:text-stone-200">Click to upload photos</p>
-                    <p className="text-[10px] text-stone-400 mt-0.5">JPG, PNG â€” up to 10 MB each</p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">JPG, PNG — up to 10 MB each</p>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
                 </div>
@@ -1403,25 +1403,25 @@ export default function RequestsPage() {
                     {analyzing && (
                       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs">
                         <Loader2 className="h-4 w-4 text-[#b04a15] animate-spin" />
-                        <p className="text-[11px] font-bold text-stone-700 dark:text-stone-300">Analysing your photoâ€¦</p>
+                        <p className="text-[11px] font-bold text-stone-700 dark:text-stone-300">Analysing your photo…</p>
                       </div>
                     )}
-                    <Textarea id="desc" rows={3} value={description} onChange={e => { setDescription(e.target.value); setAiGenerated(false); }} placeholder="Describe the item, its condition, and any notesâ€¦" className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 text-sm resize-none" disabled={analyzing} />
+                    <Textarea id="desc" rows={3} value={description} onChange={e => { setDescription(e.target.value); setAiGenerated(false); }} placeholder="Describe the item, its condition, and any notes…" className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 text-sm resize-none" disabled={analyzing} />
                   </div>
                   <div className="flex justify-between text-[10px] text-stone-400 font-semibold">
-                    <span>{description.length >= 20 ? "âœ“ Minimum met" : `${description.length}/20 min`}</span>
+                    <span>{description.length >= 20 ? "✓ Minimum met" : `${description.length}/20 min`}</span>
                     <span>{description.length}/1000</span>
                   </div>
                 </div>
                 <button onClick={handleSubmitDonate} disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20} className="w-full bg-[#b04a15] hover:bg-[#963c0d] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine">
-                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submittingâ€¦</> : <><Heart className="h-4 w-4" /> Complete Donation <ArrowRight className="h-4 w-4" /></>}
+                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : <><Heart className="h-4 w-4" /> Complete Donation <ArrowRight className="h-4 w-4" /></>}
                 </button>
                 <div className="flex justify-between text-[10px] text-stone-400 font-bold border-t border-stone-100 dark:border-zinc-800 pt-4">
                   <div className="flex gap-3">
                     <Link href="/help" className="hover:text-[#b04a15] transition-colors">Help</Link>
                     <Link href="/privacy" className="hover:text-[#b04a15] transition-colors">Privacy</Link>
                   </div>
-                  <span>Â© 2026 CauseKind</span>
+                  <span>© 2026 CauseKind</span>
                 </div>
               </div>
             </div>
@@ -1431,4 +1431,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-

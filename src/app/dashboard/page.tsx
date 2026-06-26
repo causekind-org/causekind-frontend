@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -33,7 +33,7 @@ function getInitials(name: string): string {
 
 function getFulfilmentStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-    DONOR_REVIEW: { label: "âš  Awaiting Your Confirmation", variant: "outline" },
+    DONOR_REVIEW: { label: "⚠ Awaiting Your Confirmation", variant: "outline" },
     DONOR_REJECTED: { label: "Donor Declined", variant: "destructive" },
     PENDING_APPROVAL: { label: "Pending Admin Approval", variant: "outline" },
     TRANSPORT_DISCUSSION: { label: "Discussion Enabled", variant: "secondary" },
@@ -68,9 +68,9 @@ function getRequestStatusBadge(status: string) {
   return map[status] ?? { label: status, variant: "outline" as const };
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   Dedicated Donee Dashboard â€” shown instead of the donor layout for DONEE role
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────────────────────────────────────────────────────────────────
+   Dedicated Donee Dashboard — shown instead of the donor layout for DONEE role
+───────────────────────────────────────────────────────────────────────────── */
 function DoneeDashboard({
   user,
   myProfile,
@@ -93,7 +93,7 @@ function DoneeDashboard({
   return (
     <div className="min-h-screen bg-[#eef3f9] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-16">
 
-      {/* â”€â”€ Hero header â€” ink/blue theme â”€â”€ */}
+      {/* ── Hero header — ink/blue theme ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#0d1e36] via-[#1e3a60] to-[#0a2040] text-white py-12 px-4 shadow-lg">
         <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[#f0b97a]/6 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b97a]/25 to-transparent" />
@@ -109,8 +109,8 @@ function DoneeDashboard({
               </h1>
               <p className="text-white/55 text-sm">
                 {activeRequests.length > 0
-                  ? `${activeRequests.length} active request${activeRequests.length !== 1 ? "s" : ""} Â· Scanning for matches near you`
-                  : `Hello, ${myProfile.fullName?.split(" ")[0] || user.email.split("@")[0]} â€” start by posting a need`}
+                  ? `${activeRequests.length} active request${activeRequests.length !== 1 ? "s" : ""} · Scanning for matches near you`
+                  : `Hello, ${myProfile.fullName?.split(" ")[0] || user.email.split("@")[0]} — start by posting a need`}
               </p>
             </div>
             <Link href="/requests/new">
@@ -124,7 +124,7 @@ function DoneeDashboard({
 
       <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
 
-        {/* â”€â”€ Profile strip â”€â”€ */}
+        {/* ── Profile strip ── */}
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-4 flex items-center gap-4 shadow-sm">
           <div className="w-12 h-12 rounded-xl bg-[#1e3a60]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-lg text-[#1e3a60] dark:text-blue-400 shrink-0">
             {getInitials(myProfile.fullName)}
@@ -146,7 +146,7 @@ function DoneeDashboard({
           </Link>
         </div>
 
-        {/* â”€â”€ Stats row â”€â”€ */}
+        {/* ── Stats row ── */}
         <div className="grid gap-4 sm:grid-cols-3">
           <div
             className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-5 shadow-sm flex items-center gap-4"
@@ -188,7 +188,7 @@ function DoneeDashboard({
           </div>
         </div>
 
-        {/* â”€â”€ Requests + Matches grid â”€â”€ */}
+        {/* ── Requests + Matches grid ── */}
         <div className="grid gap-6 lg:grid-cols-2">
 
           {/* My Requests */}
@@ -212,7 +212,7 @@ function DoneeDashboard({
                     <Heart className="w-6 h-6 text-[#1e3a60]" />
                   </div>
                   <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No needs posted yet</p>
-                  <p className="text-xs text-stone-400 max-w-[220px] mx-auto">Tell us what you need â€” books, clothes, medical supplies â€” and we&apos;ll find donors nearby.</p>
+                  <p className="text-xs text-stone-400 max-w-[220px] mx-auto">Tell us what you need — books, clothes, medical supplies — and we&apos;ll find donors nearby.</p>
                   <Link href="/requests/new">
                     <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
                   </Link>
@@ -229,9 +229,9 @@ function DoneeDashboard({
                           </p>
                           <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5 flex-wrap">
                             <span><TranslatedText text={r.category} /></span>
-                            <span>Â·</span>
+                            <span>·</span>
                             <span>Qty: {r.quantity}</span>
-                            <span>Â·</span>
+                            <span>·</span>
                             <span className="capitalize">{r.urgency.toLowerCase()}</span>
                           </div>
                         </div>
@@ -585,11 +585,11 @@ export default function DashboardPage() {
                                 <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors"><TranslatedText text={l.title} /></p>
                                 <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
                                   <span><TranslatedText text={l.city} /></span>
-                                  <span>â€¢</span>
+                                  <span>•</span>
                                   <span>Qty: {l.quantity}</span>
                                   {l.maximumDeliveryRadius && (
                                     <>
-                                      <span>â€¢</span>
+                                      <span>•</span>
                                       <span>Radius: {l.maximumDeliveryRadius}km</span>
                                     </>
                                   )}
@@ -630,7 +630,7 @@ export default function DashboardPage() {
                                 {isDonorReview && (
                                   <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs font-bold pb-1">
                                     <AlertTriangle className="w-3.5 h-3.5" />
-                                    Action Required â€” Please confirm this donation
+                                    Action Required — Please confirm this donation
                                   </div>
                                 )}
                                 <div className="flex items-start justify-between gap-3">
@@ -752,9 +752,9 @@ export default function DashboardPage() {
                                   <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors"><TranslatedText text={r.title} /></p>
                                   <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
                                     <span><TranslatedText text={r.category} /></span>
-                                    <span>â€¢</span>
+                                    <span>•</span>
                                     <span>Qty: {r.quantity}</span>
-                                    <span>â€¢</span>
+                                    <span>•</span>
                                     <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
                                   </div>
                                 </div>
@@ -826,4 +826,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

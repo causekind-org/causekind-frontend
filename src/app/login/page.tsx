@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -12,7 +12,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { Reveal } from "@/components/Reveal";
 
-// â”€â”€ Inline brand SVGs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Inline brand SVGs ──────────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -39,7 +39,7 @@ function homeForRole(role: string | null): string {
   return "/";
 }
 
-// â”€â”€ Main content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main content ───────────────────────────────────────────────────────────────
 function LoginContent() {
   const t = useTranslations("auth.login");
   const { setUser, user } = useAuth();
@@ -51,7 +51,7 @@ function LoginContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  // Start with no animation class â€” set AFTER mount so the correct direction is known
+  // Start with no animation class — set AFTER mount so the correct direction is known
   const [panelAnimClass, setPanelAnimClass] = useState("");
 
   const triggerGoogle = useGoogleLogin({
@@ -126,7 +126,7 @@ function LoginContent() {
   return (
     <div className="min-h-[calc(100svh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
 
-      {/* â”€â”€ LEFT: Brand/Image panel â€” slides in from direction of navigation â”€â”€ */}
+      {/* ── LEFT: Brand/Image panel — slides in from direction of navigation ── */}
       <div className={`hidden lg:flex lg:w-[40%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0 ${panelAnimClass}`}>
         {/* Warmth glows */}
         <div className="absolute -top-24 left-1/4 h-[350px] w-[350px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
@@ -166,11 +166,11 @@ function LoginContent() {
         </div>
 
         <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          CauseKind India Â· 2026
+          CauseKind India · 2026
         </div>
       </div>
 
-      {/* â”€â”€ RIGHT: Form panel â€” fades in â”€â”€ */}
+      {/* ── RIGHT: Form panel — fades in ── */}
       <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-10 lg:px-16 overflow-y-auto relative overflow-hidden auth-form-appear">
         {/* Breathing warmth glows representing community light & hope */}
         <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
@@ -184,7 +184,7 @@ function LoginContent() {
             <div className="space-y-1.5">
               <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Welcome back</span>
               <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-                {t("title")} ðŸ‘‹
+                {t("title")} 👋
               </h1>
               <p className="text-sm text-stone-505 dark:text-stone-400">
                 {t("subtitle")}
@@ -233,7 +233,7 @@ function LoginContent() {
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     required
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
@@ -349,4 +349,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-

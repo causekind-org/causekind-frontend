@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -23,7 +23,7 @@ function getCardImage(category: string, id: number): string {
   return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.webp";
 }
 
-/* â”€â”€â”€ circular slot distance (âˆ’1 = left, 0 = center, +1 = right) â”€â”€â”€ */
+/* ─── circular slot distance (−1 = left, 0 = center, +1 = right) ─── */
 function slotOf(i: number, idx: number, total: number): number {
   if (total <= 1) return i === idx ? 0 : 99;
   let d = ((i - idx) % total + total) % total;
@@ -31,7 +31,7 @@ function slotOf(i: number, idx: number, total: number): number {
   return d;
 }
 
-/* â”€â”€â”€ Glassmorphism arrow (No scale popup animation on hover) â”€â”€â”€ */
+/* ─── Glassmorphism arrow (No scale popup animation on hover) ─── */
 function GlassArrow({
   dir,
   onClick,
@@ -61,7 +61,7 @@ function GlassArrow({
   );
 }
 
-/* â”€â”€â”€ Main hero carousel â”€â”€â”€ */
+/* ─── Main hero carousel ─── */
 export function HeroCampaignSlider({
   campaigns,
   loading,
@@ -136,7 +136,7 @@ export function HeroCampaignSlider({
     }
   }
 
-  /* â”€â”€ loading skeleton â”€â”€ */
+  /* ── loading skeleton ── */
   if (loading)
     return (
       <div className="flex items-center justify-center h-[220px] sm:h-[260px] md:h-[320px] w-full max-w-[95%] sm:max-w-[540px] md:max-w-[760px] lg:max-w-[1100px] xl:max-w-[1240px]">
@@ -152,7 +152,7 @@ export function HeroCampaignSlider({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* â”€â”€ Card track â€” overflow visible so side cards peek â”€â”€ */}
+      {/* ── Card track — overflow visible so side cards peek ── */}
       <div className="relative h-[220px] sm:h-[260px] md:h-[320px] overflow-visible">
         {campaigns.map((c, i) => {
           const slot = slotOf(i, idx, campaigns.length);
@@ -195,7 +195,7 @@ export function HeroCampaignSlider({
                   "transform 0.65s cubic-bezier(0.16,1,0.3,1), opacity 0.60s ease, filter 0.60s ease",
               }}
             >
-              {/* â”€â”€ Light cream card â”€â”€ */}
+              {/* ── Light cream card ── */}
               <div className="h-full rounded-[24px] sm:rounded-[32px] flex flex-row text-stone-900 overflow-hidden shadow-xl"
                 style={{
                   background: "#fffbf7",
@@ -240,8 +240,8 @@ export function HeroCampaignSlider({
                     {/* Progress bar */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10px] sm:text-[11px] font-bold text-stone-600">
-                        <span>â‚¹{new Intl.NumberFormat("en-IN").format(c.amountRaised)} raised</span>
-                        <span>Target: â‚¹{new Intl.NumberFormat("en-IN").format(c.targetAmount)}</span>
+                        <span>₹{new Intl.NumberFormat("en-IN").format(c.amountRaised)} raised</span>
+                        <span>Target: ₹{new Intl.NumberFormat("en-IN").format(c.targetAmount)}</span>
                         <span className="text-[#e07b3a]">{pct}%</span>
                       </div>
                       <div className="h-[5px] rounded-full overflow-hidden bg-stone-200/60">
@@ -300,7 +300,7 @@ export function HeroCampaignSlider({
         })}
       </div>
 
-      {/* â”€â”€ Glassmorphism arrows â”€â”€ */}
+      {/* ── Glassmorphism arrows ── */}
       {campaigns.length > 1 && (
         <>
           <GlassArrow dir="left" onClick={prev} />
@@ -308,7 +308,7 @@ export function HeroCampaignSlider({
         </>
       )}
 
-      {/* â”€â”€ Dot indicators â”€â”€ */}
+      {/* ── Dot indicators ── */}
       {campaigns.length > 1 && (
         <div className="flex justify-center gap-1.5 mt-4">
           {campaigns.map((_, i) => (
@@ -329,4 +329,3 @@ export function HeroCampaignSlider({
     </div>
   );
 }
-
