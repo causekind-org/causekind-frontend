@@ -27,16 +27,16 @@ import { DoneeRequestsPage } from "./donee-view";
 const ITEM_REQ_CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
 
 const URGENCY_LEVELS = [
-  { value: "CRITICAL", label: "Critical",  dot: "bg-red-500"    },
-  { value: "HIGH",     label: "High",      dot: "bg-amber-500"  },
-  { value: "NORMAL",   label: "Normal",    dot: "bg-stone-400"  },
+  { value: "CRITICAL", label: "Critical", dot: "bg-red-500" },
+  { value: "HIGH", label: "High", dot: "bg-amber-500" },
+  { value: "NORMAL", label: "Normal", dot: "bg-stone-400" },
 ];
 
 const REQ_SORT_OPTIONS = [
   { value: "nearest" as const, label: "Nearest First" },
-  { value: "urgent"  as const, label: "Most Urgent"   },
-  { value: "newest"  as const, label: "Just Added"    },
-  { value: "qty"     as const, label: "High Quantity" },
+  { value: "urgent" as const, label: "Most Urgent" },
+  { value: "newest" as const, label: "Just Added" },
+  { value: "qty" as const, label: "High Quantity" },
 ];
 
 type ReqSortValue = "nearest" | "urgent" | "newest" | "qty";
@@ -45,51 +45,51 @@ type ReqSortValue = "nearest" | "urgent" | "newest" | "qty";
 
 const CAT_ICON: Record<string, React.ElementType> = {
   "Medical aid": Stethoscope,
-  "Education":   BookOpen,
-  "Livelihood":  Sprout,
-  "Relief":      Users,
-  "Household":   Home,
+  "Education": BookOpen,
+  "Livelihood": Sprout,
+  "Relief": Users,
+  "Household": Home,
 };
 
 const CAT_COLOR: Record<string, { pill: string; bar: string; dot: string; gradient: string }> = {
   "Medical aid": {
-    pill:     "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800/60",
-    bar:      "bg-sky-500",
-    dot:      "bg-sky-500",
+    pill: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800/60",
+    bar: "bg-sky-500",
+    dot: "bg-sky-500",
     gradient: "from-sky-600/80",
   },
   "Education": {
-    pill:     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/60",
-    bar:      "bg-amber-500",
-    dot:      "bg-amber-500",
+    pill: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/60",
+    bar: "bg-amber-500",
+    dot: "bg-amber-500",
     gradient: "from-amber-600/80",
   },
   "Livelihood": {
-    pill:     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/60",
-    bar:      "bg-emerald-500",
-    dot:      "bg-emerald-500",
+    pill: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/60",
+    bar: "bg-emerald-500",
+    dot: "bg-emerald-500",
     gradient: "from-emerald-600/80",
   },
   "Relief": {
-    pill:     "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800/60",
-    bar:      "bg-violet-500",
-    dot:      "bg-violet-500",
+    pill: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800/60",
+    bar: "bg-violet-500",
+    dot: "bg-violet-500",
     gradient: "from-violet-600/80",
   },
   "Household": {
-    pill:     "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/60",
-    bar:      "bg-rose-500",
-    dot:      "bg-rose-500",
+    pill: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/60",
+    bar: "bg-rose-500",
+    dot: "bg-rose-500",
     gradient: "from-rose-600/80",
   },
 };
 
 const CAT_FALLBACK: Record<string, string> = {
   "Medical aid": "/images/medical-1.webp",
-  "Education":   "/images/hero-7.webp",
-  "Livelihood":  "/images/hero-3.webp",
-  "Relief":      "/images/hero-5.webp",
-  "Household":   "/images/hero-6.webp",
+  "Education": "/images/hero-7.webp",
+  "Livelihood": "/images/hero-3.webp",
+  "Relief": "/images/hero-5.webp",
+  "Household": "/images/hero-6.webp",
 };
 
 function getCardImage(r: ItemRequest): string {
@@ -299,11 +299,10 @@ function CategoryBar({
           {/* All */}
           <button
             onClick={onClearAll}
-            className={`flex items-center gap-1.5 shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
-              selected.length === 0
+            className={`flex items-center gap-1.5 shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${selected.length === 0
                 ? "bg-[#b04a15] text-white shadow-sm shadow-orange-900/25"
                 : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-700"
-            }`}
+              }`}
           >
             All
             <span className={`tabular-nums text-[10px] font-black ${selected.length === 0 ? "text-white/60" : "text-stone-400"}`}>{total}</span>
@@ -312,10 +311,10 @@ function CategoryBar({
           <div className="w-px h-5 bg-stone-200 dark:bg-zinc-700 shrink-0 mx-0.5" />
 
           {ITEM_REQ_CATEGORIES.map(cat => {
-            const Icon  = CAT_ICON[cat] ?? Package;
+            const Icon = CAT_ICON[cat] ?? Package;
             const count = catCounts[cat] ?? 0;
-            const act   = selected.includes(cat);
-            const col   = CAT_COLOR[cat];
+            const act = selected.includes(cat);
+            const col = CAT_COLOR[cat];
 
             return (
               <button
@@ -325,9 +324,9 @@ function CategoryBar({
                 className={`flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-xs font-bold border transition-all duration-200
                             disabled:opacity-35 disabled:cursor-not-allowed
                             ${act
-                              ? "bg-[#b04a15] text-white border-transparent shadow-sm shadow-orange-900/20"
-                              : `${col.pill} hover:opacity-80`
-                            }`}
+                    ? "bg-[#b04a15] text-white border-transparent shadow-sm shadow-orange-900/20"
+                    : `${col.pill} hover:opacity-80`
+                  }`}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span>{cat}</span>
@@ -369,9 +368,8 @@ function RequestFilterPanel({
           {URGENCY_LEVELS.map(({ value, label, dot }) => (
             <label
               key={value}
-              className={`flex items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
-                active(value) ? "bg-[#b04a15]/8 dark:bg-[#b04a15]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
-              }`}
+              className={`flex items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${active(value) ? "bg-[#b04a15]/8 dark:bg-[#b04a15]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
+                }`}
             >
               <input
                 type="checkbox"
@@ -380,9 +378,8 @@ function RequestFilterPanel({
                 className="accent-[#b04a15] shrink-0"
               />
               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
-              <span className={`text-sm font-semibold transition-colors ${
-                active(value) ? "text-[#b04a15] dark:text-[#e07b3a]" : "text-stone-700 dark:text-stone-300"
-              }`}>
+              <span className={`text-sm font-semibold transition-colors ${active(value) ? "text-[#b04a15] dark:text-[#e07b3a]" : "text-stone-700 dark:text-stone-300"
+                }`}>
                 {label}
               </span>
             </label>
@@ -397,9 +394,8 @@ function RequestFilterPanel({
           {REQ_SORT_OPTIONS.map(opt => (
             <label
               key={opt.value}
-              className={`flex items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
-                activeSort(opt.value) ? "bg-[#b04a15]/8 dark:bg-[#b04a15]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
-              }`}
+              className={`flex items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${activeSort(opt.value) ? "bg-[#b04a15]/8 dark:bg-[#b04a15]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
+                }`}
             >
               <input
                 type="radio"
@@ -408,9 +404,8 @@ function RequestFilterPanel({
                 onChange={() => setSort(opt.value)}
                 className="accent-[#b04a15] shrink-0"
               />
-              <span className={`text-sm font-semibold transition-colors ${
-                activeSort(opt.value) ? "text-[#b04a15] dark:text-[#e07b3a]" : "text-stone-700 dark:text-stone-300"
-              }`}>
+              <span className={`text-sm font-semibold transition-colors ${activeSort(opt.value) ? "text-[#b04a15] dark:text-[#e07b3a]" : "text-stone-700 dark:text-stone-300"
+                }`}>
                 {opt.label}
               </span>
             </label>
@@ -431,8 +426,8 @@ function RequestFilterPanel({
 // ── Bento card variants ───────────────────────────────────────────────────────
 
 function TallRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
-  const col    = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
-  const Icon   = CAT_ICON[r.category] ?? Package;
+  const col = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
+  const Icon = CAT_ICON[r.category] ?? Package;
   const imgSrc = getCardImage(r);
   const isCrit = r.urgency === "CRITICAL";
   const isHigh = r.urgency === "HIGH";
@@ -493,8 +488,8 @@ function TallRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemReques
 }
 
 function ImageRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
-  const col    = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
-  const Icon   = CAT_ICON[r.category] ?? Package;
+  const col = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
+  const Icon = CAT_ICON[r.category] ?? Package;
   const imgSrc = getCardImage(r);
 
   return (
@@ -552,9 +547,9 @@ function ImageRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemReque
 
 function DarkRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
   const Icon = CAT_ICON[r.category] ?? Package;
-  const bg   = r.urgency === "CRITICAL" ? "bg-[#b04a15]"
-             : r.urgency === "HIGH"     ? "bg-[#7a3410]"
-             :                            "bg-[#1e3a60]";
+  const bg = r.urgency === "CRITICAL" ? "bg-[#b04a15]"
+    : r.urgency === "HIGH" ? "bg-[#7a3410]"
+      : "bg-[#1e3a60]";
 
   return (
     <Reveal>
@@ -593,7 +588,7 @@ function DarkRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemReques
 }
 
 function IconRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
-  const col  = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
+  const col = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
   const Icon = CAT_ICON[r.category] ?? Package;
 
   return (
@@ -650,10 +645,14 @@ function SmallBentoCard({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+// Resets to false on every full page load (new tab / F5 / Ctrl+F5) because the
+// JS bundle re-executes. Stays true across SPA navigations within the same session.
+let _catModalShownThisLoad = false;
+
 export default function RequestsPage() {
-  const t        = useTranslations("requests");
+  const t = useTranslations("requests");
   const { user, isLoading: authLoading } = useAuth();
-  const router   = useRouter();
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -663,19 +662,24 @@ export default function RequestsPage() {
   }, [user, authLoading, router]);
 
   // ── Per-visit category picker modal (DONOR only) ──────────────────────────
-  // Show on every visit/navigation to this page.
+  // Show on every full page load (new tab, F5, Ctrl+F5, hard reset).
+  // Does NOT fire on SPA navigation — the module-level flag persists in memory
+  // across router.push() calls but resets to false when the JS bundle re-executes.
   const [showCatModal, setShowCatModal] = useState(false);
   const [tempSelected, setTempSelected] = useState<string[]>([]);
 
   useEffect(() => {
     if (authLoading || user?.role !== "DONOR") return;
-    setShowCatModal(true);
+    if (!_catModalShownThisLoad) {
+      _catModalShownThisLoad = true;
+      setShowCatModal(true);
+    }
   }, [authLoading, user?.role]);
 
-  const [requests,  setRequests]  = useState<ItemRequest[]>([]);
+  const [requests, setRequests] = useState<ItemRequest[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
-  const [loading,   setLoading]   = useState(true);
-  const [search,    setSearch]    = useState("");
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       const cat = new URLSearchParams(window.location.search).get("category");
@@ -701,19 +705,19 @@ export default function RequestsPage() {
       setTempSelected(selectedCategories);
     }
   }, [showCatModal, selectedCategories]);
-  const [selectedUrgencies,  setSelectedUrgencies]  = useState<string[]>([]);
-  const [sort, setSort]           = useState<ReqSortValue>("nearest");
+  const [selectedUrgencies, setSelectedUrgencies] = useState<string[]>([]);
+  const [sort, setSort] = useState<ReqSortValue>("nearest");
   const [showFilters, setShowFilters] = useState(false);
 
   // Donate modal state
-  const [donateTarget,  setDonateTarget]  = useState<ItemRequest | null>(null);
-  const modalTitle                         = useDynamicTranslation(donateTarget?.title ?? null);
-  const [description,   setDescription]   = useState("");
-  const [images,        setImages]        = useState<File[]>([]);
+  const [donateTarget, setDonateTarget] = useState<ItemRequest | null>(null);
+  const modalTitle = useDynamicTranslation(donateTarget?.title ?? null);
+  const [description, setDescription] = useState("");
+  const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [submitting,    setSubmitting]    = useState(false);
-  const [analyzing,     setAnalyzing]     = useState(false);
-  const [aiGenerated,   setAiGenerated]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiGenerated, setAiGenerated] = useState(false);
 
   // ── GPS and Profile load ───────────────────────────────────────────────────
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -751,9 +755,9 @@ export default function RequestsPage() {
         setGpsLoading(false);
         const msg =
           err.code === 1 ? "Location access denied. Please allow GPS in browser settings." :
-          err.code === 2 ? "Location unavailable. Check your device GPS." :
-          err.code === 3 ? "Location request timed out. Please retry." :
-          "Location access denied. You must allow GPS access to view nearby requests.";
+            err.code === 2 ? "Location unavailable. Check your device GPS." :
+              err.code === 3 ? "Location request timed out. Please retry." :
+                "Location access denied. You must allow GPS access to view nearby requests.";
         toast.error(msg);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -769,7 +773,7 @@ export default function RequestsPage() {
   // Load profile details separately
   useEffect(() => {
     if (user && user.role !== "DONEE") {
-      getMyProfile().then(setMyProfile).catch(() => {});
+      getMyProfile().then(setMyProfile).catch(() => { });
     }
   }, [user]);
 
@@ -800,7 +804,7 @@ export default function RequestsPage() {
     let out = requests.filter(r => {
       const mQ = !q || r.title.toLowerCase().includes(q) || r.city.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
       const mC = selectedCategories.length === 0 || selectedCategories.includes(r.category);
-      const mU = selectedUrgencies.length  === 0 || selectedUrgencies.includes(r.urgency);
+      const mU = selectedUrgencies.length === 0 || selectedUrgencies.includes(r.urgency);
       return mQ && mC && mU;
     });
     if (sort === "nearest") {
@@ -835,9 +839,9 @@ export default function RequestsPage() {
       return next;
     });
   };
-  const toggleUrgency  = (u: string) =>
+  const toggleUrgency = (u: string) =>
     setSelectedUrgencies(prev => prev.includes(u) ? prev.filter(x => x !== u) : [...prev, u]);
-  const resetFilters   = () => {
+  const resetFilters = () => {
     setSelectedCategories([]);
     if (typeof window !== "undefined") {
       localStorage.setItem("causekind_donor_category", JSON.stringify([]));
@@ -848,7 +852,7 @@ export default function RequestsPage() {
   };
 
   const advancedFilterCount = selectedUrgencies.length + (sort !== "nearest" ? 1 : 0);
-  const hasActiveFilters    = selectedCategories.length > 0 || advancedFilterCount > 0 || search.length > 0;
+  const hasActiveFilters = selectedCategories.length > 0 || advancedFilterCount > 0 || search.length > 0;
 
   // ── Donate modal handlers ─────────────────────────────────────────────────
 
@@ -983,12 +987,12 @@ export default function RequestsPage() {
 
             <div className="grid grid-cols-3 gap-3">
               {[
-                { name: "Medical aid", Icon: Stethoscope, col: "text-sky-400",     bg: "bg-sky-400/10",     border: "border-sky-400/30",    active: "ring-2 ring-sky-400" },
-                { name: "Education",   Icon: BookOpen,    col: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/30",  active: "ring-2 ring-amber-400" },
-                { name: "Livelihood",  Icon: Sprout,      col: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30",active: "ring-2 ring-emerald-400" },
-                { name: "Relief",      Icon: Users,       col: "text-violet-400",  bg: "bg-violet-400/10",  border: "border-violet-400/30", active: "ring-2 ring-violet-400" },
-                { name: "Household",   Icon: Home,        col: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/30",   active: "ring-2 ring-rose-400" },
-                { name: "List Item",   Icon: Package,     col: "text-[#f0b97a]",   bg: "bg-[#f0b97a]/10",   border: "border-[#f0b97a]/30",  active: "ring-2 ring-[#f0b97a]" },
+                { name: "Medical aid", Icon: Stethoscope, col: "text-sky-400", bg: "bg-sky-400/10", border: "border-sky-400/30", active: "ring-2 ring-sky-400" },
+                { name: "Education", Icon: BookOpen, col: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30", active: "ring-2 ring-amber-400" },
+                { name: "Livelihood", Icon: Sprout, col: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30", active: "ring-2 ring-emerald-400" },
+                { name: "Relief", Icon: Users, col: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/30", active: "ring-2 ring-violet-400" },
+                { name: "Household", Icon: Home, col: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/30", active: "ring-2 ring-rose-400" },
+                { name: "List Item", Icon: Package, col: "text-[#f0b97a]", bg: "bg-[#f0b97a]/10", border: "border-[#f0b97a]/30", active: "ring-2 ring-[#f0b97a]" },
               ].map(({ name, Icon, col, bg, border, active }) => {
                 const isSelected = tempSelected.includes(name);
                 return (
@@ -1031,12 +1035,12 @@ export default function RequestsPage() {
               </button>
 
               <button
-                onClick={() => { 
-                  setSelectedCategories([]); 
+                onClick={() => {
+                  setSelectedCategories([]);
                   if (typeof window !== "undefined") {
                     localStorage.setItem("causekind_donor_category", JSON.stringify([]));
                   }
-                  setShowCatModal(false); 
+                  setShowCatModal(false);
                 }}
                 className="text-stone-500 hover:text-stone-300 text-sm font-semibold text-center transition-colors underline underline-offset-4 mt-2"
               >
