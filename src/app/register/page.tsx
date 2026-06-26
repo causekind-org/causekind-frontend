@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { register, googleAuth, googleComplete } from "@/lib/api";
@@ -21,7 +21,7 @@ function FieldError({ msg }: { msg?: string }) {
   return <p className="text-xs text-destructive mt-1">{msg}</p>;
 }
 
-// ── Inline brand SVGs ──────────────────────────────────────────────────────────
+// â”€â”€ Inline brand SVGs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -41,7 +41,7 @@ function FacebookIcon() {
   );
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function detectCountryCode(): string {
   if (typeof window === "undefined") return "IN";
@@ -86,7 +86,7 @@ function getDialCode(isoCode: string, dialCodes: any[]): string {
   return `+${country.phonecode.replace(/^\+/, "")}`;
 }
 
-// ── Input component ──────────────────────────────────────────────────────────────
+// â”€â”€ Input component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Field({
   id, label, type = "text", placeholder, value, onChange, required = true,
   readOnly = false, hint, autoComplete,
@@ -116,7 +116,7 @@ function Field({
   );
 }
 
-// ── Main content ───────────────────────────────────────────────────────────────
+// â”€â”€ Main content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function RegisterContent() {
   const t = useTranslations("auth.register");
   const { setUser, user } = useAuth();
@@ -387,7 +387,7 @@ function RegisterContent() {
   return (
     <div className="min-h-[calc(100svh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
 
-      {/* ── LEFT: Brand/Image panel — slides in from direction of navigation ── */}
+      {/* â”€â”€ LEFT: Brand/Image panel â€” slides in from direction of navigation â”€â”€ */}
       <div className={`hidden lg:flex lg:w-[40%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0 ${panelAnimClass}`}>
         {/* Warmth glows */}
         <div className="absolute -top-24 left-1/4 h-[350px] w-[350px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
@@ -427,11 +427,11 @@ function RegisterContent() {
         </div>
 
         <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          CauseKind India · 2026
+          CauseKind India Â· 2026
         </div>
       </div>
 
-      {/* ── RIGHT: Form panel ── */}
+      {/* â”€â”€ RIGHT: Form panel â”€â”€ */}
       <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-10 lg:px-16 overflow-y-auto relative overflow-hidden auth-form-appear">
         {/* Breathing warmth glows representing community light & hope */}
         <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
@@ -445,7 +445,7 @@ function RegisterContent() {
             <div className="space-y-1.5">
               <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Create account</span>
               <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-                {isSocialFlow ? `${t("almostThereTitle")} 🎉` : `${t("joinTitle")} 🌱`}
+                {isSocialFlow ? `${t("almostThereTitle")} ðŸŽ‰` : `${t("joinTitle")} ðŸŒ±`}
               </h1>
               <p className="text-sm text-stone-505 dark:text-stone-400">
                 {isSocialFlow ? t("googleLinkedSubtitle") : t("createSubtitle")}
@@ -471,7 +471,7 @@ function RegisterContent() {
                         : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
                     }`}
                   >
-                    <span className="text-sm font-bold">Donor 🎁</span>
+                    <span className="text-sm font-bold">Donor ðŸŽ</span>
                     <span className="text-[10px] opacity-85 mt-0.5 font-normal">I want to donate items</span>
                   </button>
                   <button
@@ -483,7 +483,7 @@ function RegisterContent() {
                         : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
                     }`}
                   >
-                    <span className="text-sm font-bold">Donee 🤝</span>
+                    <span className="text-sm font-bold">Donee ðŸ¤</span>
                     <span className="text-[10px] opacity-85 mt-0.5 font-normal">I need to request support</span>
                   </button>
                 </div>
@@ -527,7 +527,7 @@ function RegisterContent() {
                       options={dialCodeOptions}
                       value={dialCountry}
                       onChange={setDialCountry}
-                      placeholder="+–"
+                      placeholder="+â€“"
                       searchPlaceholder={t("searchCountry")}
                       renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
                     />
@@ -548,7 +548,7 @@ function RegisterContent() {
             </Reveal>
 
             <Reveal delay={220}>
-              {/* Location: Country → State → City */}
+              {/* Location: Country â†’ State â†’ City */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
@@ -560,7 +560,7 @@ function RegisterContent() {
                     disabled={gpsLoading}
                     className="relative flex items-center gap-2 text-xs font-black text-[#b04a15] uppercase tracking-wide px-3 py-1.5 rounded-full border border-[#b04a15]/30 hover:bg-[#b04a15]/5 transition-colors disabled:opacity-50"
                   >
-                    {/* Radar rings — visible only when active (not loading) */}
+                    {/* Radar rings â€” visible only when active (not loading) */}
                     {!gpsLoading && (
                       <>
                         <span className="absolute inset-0 rounded-full border border-[#b04a15]/40 gps-radar-ring" />
@@ -638,7 +638,7 @@ function RegisterContent() {
               </div>
             </Reveal>
 
-            {/* Password — only on non-social flow */}
+            {/* Password â€” only on non-social flow */}
             {!isSocialFlow && (
               <Reveal delay={260}>
                 <div className="space-y-1.5">
@@ -651,7 +651,7 @@ function RegisterContent() {
                        type={showPassword ? "text" : "password"}
                        autoComplete="new-password"
                        required
-                       placeholder="••••••••"
+                       placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                        value={form.password}
                        onChange={e => set("password", e.target.value)}
                        className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
@@ -703,7 +703,7 @@ function RegisterContent() {
             </Reveal>
           </form>
 
-          {/* Social buttons — only on non-social flow */}
+          {/* Social buttons â€” only on non-social flow */}
           {!isSocialFlow && (
             <div className="space-y-3">
               <Reveal delay={340}>
@@ -776,3 +776,4 @@ export default function RegisterPage() {
     </Suspense>
   );
 }
+

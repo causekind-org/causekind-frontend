@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { createItemRequest, getProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -273,7 +273,7 @@ export default function NewRequestPage() {
             disabled={gpsLoading}
             className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2"
           >
-            {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection 🎯"}
+            {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection ðŸŽ¯"}
           </Button>
         </div>
       </div>
@@ -282,7 +282,7 @@ export default function NewRequestPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
-      {/* ── LEFT PANEL: Asymmetric info stripe ── */}
+      {/* â”€â”€ LEFT PANEL: Asymmetric info stripe â”€â”€ */}
       <div className="hidden lg:flex lg:w-[35%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0">
         {/* Warm glow circles */}
         <div className="absolute -top-24 left-1/4 h-[300px] w-[300px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
@@ -294,7 +294,7 @@ export default function NewRequestPage() {
             Verified Support
           </span>
           <h2 className="text-white text-3xl font-extrabold leading-tight tracking-tight font-serif mt-4">
-            Request Support 🌱
+            Request Support ðŸŒ±
           </h2>
           <p className="text-stone-300 text-sm leading-relaxed font-medium">
             Describe the physical items you need (like textbooks, blankets, medical kits, or toys) and specify where they are needed. Verified nearby donors will match and deliver them to your location.
@@ -302,11 +302,11 @@ export default function NewRequestPage() {
         </div>
 
         <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          CauseKind India · 2026
+          CauseKind India Â· 2026
         </div>
       </div>
 
-      {/* ── RIGHT PANEL: Scrollable Form ── */}
+      {/* â”€â”€ RIGHT PANEL: Scrollable Form â”€â”€ */}
       <div className="flex-1 px-6 py-10 lg:px-16 overflow-y-auto relative bg-white dark:bg-zinc-950">
         {/* Ambient glows */}
         <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
@@ -357,7 +357,7 @@ export default function NewRequestPage() {
                     disabled={gpsLoading}
                     className="flex items-center gap-1.5 text-xs font-bold text-[#b04a15] hover:underline uppercase disabled:opacity-50"
                   >
-                    {gpsLoading ? "Detecting..." : "Use GPS 🎯"}
+                    {gpsLoading ? "Detecting..." : "Use GPS ðŸŽ¯"}
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -482,3 +482,4 @@ export default function NewRequestPage() {
     </div>
   );
 }
+

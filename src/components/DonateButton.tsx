@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAuth } from "@/hooks/useAuth";
 import { initiateDonation } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ export function DonateButton({ campaignId, campaignTitle, amount }: Props) {
       return;
     }
     if (!amount || isNaN(amount) || amount < 1) {
-      toast.error("Enter a valid amount (minimum ₹1)");
+      toast.error("Enter a valid amount (minimum â‚¹1)");
       return;
     }
     setLoading(true);
@@ -81,12 +81,13 @@ export function DonateButton({ campaignId, campaignTitle, amount }: Props) {
   return (
     <Button className="w-full" size="lg" onClick={handleDonate} disabled={loading}>
       {loading ? (
-        <><Loader2 className="h-4 w-4 animate-spin" /> Opening checkout…</>
+        <><Loader2 className="h-4 w-4 animate-spin" /> Opening checkoutâ€¦</>
       ) : user ? (
-        `Donate ₹${amount.toLocaleString("en-IN")}`
+        `Donate â‚¹${amount.toLocaleString("en-IN")}`
       ) : (
         "Log in to donate"
       )}
     </Button>
   );
 }
+

@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
@@ -195,7 +195,7 @@ export default function ApprovalsPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium">{c.title}</p>
-                        <p className="text-sm text-muted-foreground">{c.doneeName} · {c.city}, {c.state} · {t("goal")} {formatINR(c.targetAmount)}</p>
+                        <p className="text-sm text-muted-foreground">{c.doneeName} Â· {c.city}, {c.state} Â· {t("goal")} {formatINR(c.targetAmount)}</p>
                       </div>
                       <Badge variant="secondary">{t("pending")}</Badge>
                     </div>
@@ -218,7 +218,7 @@ export default function ApprovalsPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium">{r.title}</p>
-                        <p className="text-sm text-muted-foreground">{r.doneeName} · {r.city} · {r.category} · {t("qty")} {r.quantity} · {r.urgency} {t("urgency")}</p>
+                        <p className="text-sm text-muted-foreground">{r.doneeName} Â· {r.city} Â· {r.category} Â· {t("qty")} {r.quantity} Â· {r.urgency} {t("urgency")}</p>
                       </div>
                       <Badge variant="secondary">{t("pending")}</Badge>
                     </div>
@@ -241,7 +241,7 @@ export default function ApprovalsPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium">{l.title}</p>
-                        <p className="text-sm text-muted-foreground">{l.donorName} · {l.city} · {l.category} · {l.condition} · {t("qty")} {l.quantity}</p>
+                        <p className="text-sm text-muted-foreground">{l.donorName} Â· {l.city} Â· {l.category} Â· {l.condition} Â· {t("qty")} {l.quantity}</p>
                       </div>
                       <Badge variant="secondary">{t("pending")}</Badge>
                     </div>
@@ -265,7 +265,7 @@ export default function ApprovalsPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant={m.matchType === "DONATE_TO_REQUEST" ? "default" : "secondary"} className="text-xs">
-                            {m.matchType === "DONATE_TO_REQUEST" ? "Donate → Request" : "Request → Listing"}
+                            {m.matchType === "DONATE_TO_REQUEST" ? "Donate â†’ Request" : "Request â†’ Listing"}
                           </Badge>
                           {m.matchScore != null && (
                             <Badge variant={m.matchScore >= 60 ? "default" : m.matchScore >= 30 ? "secondary" : "outline"}
@@ -280,7 +280,7 @@ export default function ApprovalsPage() {
                             : `${m.doneeName} requested "${m.listingTitle}"`}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {t("matchDonor")}: {m.donorName} ({m.donorCity}) · {t("matchDonee")}: {m.doneeName} ({m.doneeCity})
+                          {t("matchDonor")}: {m.donorName} ({m.donorCity}) Â· {t("matchDonee")}: {m.doneeName} ({m.doneeCity})
                         </p>
                       </div>
                       <Badge variant="secondary">{t("pending")}</Badge>
@@ -369,4 +369,5 @@ function ActionButtons({ id, type, processing, onApprove, openReject }: ActionBu
     </div>
   );
 }
+
 

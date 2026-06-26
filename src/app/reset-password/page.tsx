@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { resetPassword } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, KeyRound } from "lucide-react";
@@ -114,7 +114,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-[calc(100svh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
 
-      {/* ── LEFT: Asymmetric Brand/Image panel (hidden on mobile) ──────────────────────────── */}
+      {/* â”€â”€ LEFT: Asymmetric Brand/Image panel (hidden on mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="hidden lg:flex lg:w-[40%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0">
         {/* Warmth glows */}
         <div className="absolute -top-24 left-1/4 h-[350px] w-[350px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
@@ -154,11 +154,11 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          CauseKind India · 2026
+          CauseKind India Â· 2026
         </div>
       </div>
 
-      {/* ── RIGHT: Form panel ───────────────────────────────────────────────── */}
+      {/* â”€â”€ RIGHT: Form panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-10 lg:px-16 overflow-y-auto relative overflow-hidden">
         {/* Breathing warmth glows */}
         <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
@@ -200,3 +200,4 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
+

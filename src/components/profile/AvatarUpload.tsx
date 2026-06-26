@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useRef } from "react";
 import { Camera } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface AvatarUploadProps {
   imageDataUrl: string | null;
@@ -62,7 +62,7 @@ export function AvatarUpload({ imageDataUrl, initials, onImageChange }: AvatarUp
           </div>
         )}
 
-        {/* Camera button — overlapping bottom-right edge */}
+        {/* Camera button â€” overlapping bottom-right edge */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -82,7 +82,7 @@ export function AvatarUpload({ imageDataUrl, initials, onImageChange }: AvatarUp
         />
       </div>
 
-      {/* Remove photo link — only when image exists */}
+      {/* Remove photo link â€” only when image exists */}
       {imageDataUrl && (
         <button
           type="button"
@@ -95,3 +95,4 @@ export function AvatarUpload({ imageDataUrl, initials, onImageChange }: AvatarUp
     </div>
   );
 }
+

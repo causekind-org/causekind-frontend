@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
   adminGetItemListings, adminApproveItemListing, adminRejectItemListing, type ItemListing,
@@ -164,7 +164,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen flex bg-[#12101a]">
-      {/* ── DARK LEFT SIDEBAR ────────────────────────────────────────────────── */}
+      {/* â”€â”€ DARK LEFT SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <aside className="hidden lg:flex w-[296px] shrink-0 flex-col min-h-screen fixed left-0 top-0 bottom-0 z-10 border-r border-white/[0.07]"
         style={{ background: "linear-gradient(180deg, #17141f 0%, #12101a 100%)" }}>
 
@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Queue count pills — each doubles as tab selector */}
+        {/* Queue count pills â€” each doubles as tab selector */}
         <div className="px-5 pt-5 space-y-2 flex-1">
           <p className="text-[10px] font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Pending Review</p>
           {TABS.map(({ key, label, count, icon: Icon, color }) => (
@@ -245,7 +245,7 @@ export default function AdminDashboardPage() {
         </div>
       </aside>
 
-      {/* ── CREAM RIGHT PANEL ────────────────────────────────────────────────── */}
+      {/* â”€â”€ CREAM RIGHT PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <main className="flex-1 lg:pl-[296px] min-w-0 flex flex-col bg-[#faf7f2]">
 
         {/* Mobile top bar */}
@@ -281,7 +281,7 @@ export default function AdminDashboardPage() {
                   ? "Loading..."
                   : total > 0
                     ? `${total} item${total !== 1 ? "s" : ""} awaiting your review`
-                    : "All clear — nothing pending"}
+                    : "All clear â€” nothing pending"}
               </p>
             </div>
 
@@ -329,7 +329,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* ── Cards feed ── */}
+        {/* â”€â”€ Cards feed â”€â”€ */}
         <div className="flex-1 px-7 lg:px-10 py-8 max-w-3xl space-y-4">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-28">
@@ -345,7 +345,7 @@ export default function AdminDashboardPage() {
                     <ApprovalCard
                       key={c.id} id={c.id}
                       title={c.title}
-                      meta={[c.doneeName, `${c.city}${c.state ? `, ${c.state}` : ""}`, c.category, `Goal ${formatINR(c.targetAmount)}`].filter(Boolean).join(" · ")}
+                      meta={[c.doneeName, `${c.city}${c.state ? `, ${c.state}` : ""}`, c.category, `Goal ${formatINR(c.targetAmount)}`].filter(Boolean).join(" Â· ")}
                       description={c.description}
                       isRejecting={rejectId === c.id && rejectType === "campaign"}
                       rejectReason={rejectReason} setRejectReason={setRejectReason}
@@ -365,7 +365,7 @@ export default function AdminDashboardPage() {
                     <ApprovalCard
                       key={r.id} id={r.id}
                       title={r.title}
-                      meta={[r.doneeName, r.city, r.category, `Qty ${r.quantity}`, r.urgency].filter(Boolean).join(" · ")}
+                      meta={[r.doneeName, r.city, r.category, `Qty ${r.quantity}`, r.urgency].filter(Boolean).join(" Â· ")}
                       description={r.description}
                       isRejecting={rejectId === r.id && rejectType === "request"}
                       rejectReason={rejectReason} setRejectReason={setRejectReason}
@@ -385,7 +385,7 @@ export default function AdminDashboardPage() {
                     <ApprovalCard
                       key={l.id} id={l.id}
                       title={l.title}
-                      meta={[l.donorName, l.city, l.category, l.condition, `Qty ${l.quantity}`].filter(Boolean).join(" · ")}
+                      meta={[l.donorName, l.city, l.category, l.condition, `Qty ${l.quantity}`].filter(Boolean).join(" Â· ")}
                       description={l.description}
                       isRejecting={rejectId === l.id && rejectType === "listing"}
                       rejectReason={rejectReason} setRejectReason={setRejectReason}
@@ -409,7 +409,7 @@ export default function AdminDashboardPage() {
                           ? `${m.donorName} wants to donate for "${m.requestTitle ?? ""}"`
                           : `${m.doneeName ?? ""} requested "${m.listingTitle ?? ""}"`
                       }
-                      meta={`Donor: ${m.donorName} (${m.donorCity ?? "—"}) · Donee: ${m.doneeName ?? "—"} (${m.doneeCity ?? "—"})`}
+                      meta={`Donor: ${m.donorName} (${m.donorCity ?? "â€”"}) Â· Donee: ${m.doneeName ?? "â€”"} (${m.doneeCity ?? "â€”"})`}
                       description={m.donorItemDescription ?? m.doneeReason}
                       badge={m.matchScore != null ? `AI ${m.matchScore.toFixed(0)}%` : undefined}
                       isRejecting={rejectId === m.id && rejectType === "match"}
@@ -430,7 +430,7 @@ export default function AdminDashboardPage() {
   );
 }
 
-// ── Reusable approval card ────────────────────────────────────────────────────
+// â”€â”€ Reusable approval card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface ApprovalCardProps {
   id: number;
@@ -456,7 +456,7 @@ function ApprovalCard({
   return (
     <div className="group bg-white rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden">
       <div className="flex">
-        {/* Left accent stripe — asymmetric visual signature */}
+        {/* Left accent stripe â€” asymmetric visual signature */}
         <div className="w-1 shrink-0" style={{ background: "linear-gradient(180deg, #b04a15 0%, #e07b3a 60%, #f0b97a 100%)" }} />
 
         <div className="flex-1 min-w-0 p-5 space-y-3">
@@ -541,7 +541,8 @@ function AllClearState({ label }: { label: string }) {
         <Check className="w-8 h-8 text-emerald-600" />
       </div>
       <p className="text-stone-700 font-bold">{label}</p>
-      <p className="text-sm text-stone-400 mt-1">All caught up — great work!</p>
+      <p className="text-sm text-stone-400 mt-1">All caught up â€” great work!</p>
     </div>
   );
 }
+
