@@ -116,6 +116,16 @@ export function getPlatformStats() {
   return request<PlatformStats>("/api/v1/stats");
 }
 
+export type InKindStats = {
+  itemsListed: number;
+  needsPosted: number;
+  verifiedHandovers: number;
+};
+
+export function getInKindStats() {
+  return request<InKindStats>("/api/v1/stats/in-kind");
+}
+
 export type RecentActivity = {
   type: "DONATION" | "CAMPAIGN";
   campaignTitle: string;

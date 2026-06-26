@@ -663,15 +663,13 @@ export default function RequestsPage() {
   }, [user, authLoading, router]);
 
   // ── Per-visit category picker modal (DONOR only) ──────────────────────────
-  // Shows every time a donor lands on this page. Picks a category (or skips).
+  // Show on every visit/navigation to this page.
   const [showCatModal, setShowCatModal] = useState(false);
   const [tempSelected, setTempSelected] = useState<string[]>([]);
 
   useEffect(() => {
-    // Show the modal after auth resolves, only for donors, on every page mount/visit
-    if (!authLoading && user?.role === "DONOR") {
-      setShowCatModal(true);
-    }
+    if (authLoading || user?.role !== "DONOR") return;
+    setShowCatModal(true);
   }, [authLoading, user?.role]);
 
   const [requests,  setRequests]  = useState<ItemRequest[]>([]);

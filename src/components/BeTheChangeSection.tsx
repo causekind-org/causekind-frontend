@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { getInKindStats, type InKindStats } from "@/lib/api";
+import { locales } from "@/i18n/config";
 import {
   Shield,
   Heart,
@@ -15,6 +17,7 @@ import {
   Stethoscope,
   Home,
   ArrowRight,
+  Languages,
 } from "lucide-react";
 
 /* ─── Brand tokens ─────────────────────────────────────────────────── */
@@ -124,30 +127,68 @@ function FlipCard({
   );
 }
 
-/* ─── Animated stat counter ─────────────────────────────────────────── */
-function StatCounter({
+/* ─── Animated number — counts up once data + viewport are ready ─────── */
+function StatValue({
   value,
   suffix,
-  label,
-  color,
   start,
+  className,
 }: {
   value: number;
   suffix?: string;
-  label: string;
-  color: string;
   start: boolean;
+  className?: string;
 }) {
   const count = useCountUp(value, 1800, start);
   return (
-    <div className="flex flex-col">
-      <span className="text-4xl lg:text-5xl font-black tabular-nums leading-none" style={{ color }}>
-        {count.toLocaleString("en-IN")}
-        {suffix}
+    <span className={`tabular-nums ${className ?? ""}`}>
+      {count.toLocaleString("en-IN")}
+      {suffix}
+    </span>
+  );
+}
+
+/* ─── Loading shimmer shown until the live counts arrive ────────────── */
+function StatSkeleton({ className }: { className?: string }) {
+  return (
+    <span className={`inline-block rounded-lg bg-current opacity-10 animate-pulse ${className ?? ""}`} />
+  );
+}
+
+/* ─── Supporting bento stat tile ────────────────────────────────────── */
+function StatTile({
+  icon: Icon,
+  accent,
+  label,
+  value,
+  loading,
+  start,
+}: {
+  icon: React.ElementType;
+  accent: string;
+  label: string;
+  value: number;
+  loading: boolean;
+  start: boolean;
+}) {
+  return (
+    <div className="rounded-3xl border border-[#e5e2d5]/60 dark:border-stone-800 bg-white dark:bg-zinc-900 shadow-lg shadow-stone-900/5 p-6 flex flex-col justify-between min-h-[110px]">
+      <span
+        className="w-11 h-11 rounded-xl flex items-center justify-center"
+        style={{ background: `${accent}18`, color: accent }}
+      >
+        <Icon className="w-5 h-5" />
       </span>
-      <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mt-2">
-        {label}
-      </span>
+      <div className="mt-4">
+        <div className="text-4xl lg:text-5xl font-black leading-none" style={{ color: accent }}>
+          {loading
+            ? <StatSkeleton className="h-9 w-20 align-middle" />
+            : <StatValue value={value} start={start} />}
+        </div>
+        <p className="mt-2 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+          {label}
+        </p>
+      </div>
     </div>
   );
 }
@@ -187,6 +228,20 @@ export function BeTheChangeSection() {
   const { ref: statsRef, inView: statsInView } = useInView(0.3);
   const { ref: pillsRef, inView: pillsInView } = useInView(0.2);
   const { user } = useAuth();
+
+  // ── Live in-kind impact numbers (real data, never hardcoded) ──────────
+  const [stats, setStats] = useState<InKindStats | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getInKindStats()
+      .then((s) => { if (alive) setStats(s); })
+      .catch(() => {}); // section still renders; counters just stay in skeleton
+    return () => { alive = false; };
+  }, []);
+
+  // Languages is a real platform fact derived from the configured locales.
+  const languageCount = locales.length;
+  const countersReady = statsInView && stats !== null;
 
   const cards = [
     {
@@ -316,28 +371,75 @@ export function BeTheChangeSection() {
           </div>
         </div>
 
-        {/* ── Animated counters — LEFT-BORDER OFFSET STRIP ── */}
+        {/* ── Live impact stats — ASYMMETRIC BENTO, all real data ── */}
         <div
           ref={statsRef}
-          className="rounded-3xl border border-[#e5e2d5]/60 dark:border-stone-800
-                     bg-white dark:bg-zinc-900
-                     shadow-lg shadow-stone-900/5 overflow-hidden
-                     grid lg:grid-cols-[auto_1fr] items-stretch"
+          className="grid gap-4 lg:grid-cols-[1.5fr_1fr_1fr] lg:grid-rows-2"
         >
-          {/* Thick left terracotta accent bar */}
-          <div className="hidden lg:block w-2 bg-[#b04a15]" />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-[#e5e2d5]/60 dark:divide-stone-800">
-            <div className="px-8 py-10">
-              <StatCounter value={14}   suffix="+"  label="Languages Supported"   color={TERRACOTTA} start={statsInView} />
+          {/* HERO tile (tall, spans both rows) — Verified Handovers */}
+          <div
+            className="relative lg:row-span-2 rounded-3xl p-8 flex flex-col justify-between overflow-hidden text-white min-h-[230px]"
+            style={{ background: `linear-gradient(150deg, ${INK} 0%, #16273f 55%, #0f1d30 100%)` }}
+          >
+            <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full" style={{ background: `radial-gradient(circle, ${TERRACOTTA}40 0%, transparent 70%)` }} />
+            <div className="relative flex items-center justify-between">
+              <span className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.12)" }}>
+                <Handshake className="w-6 h-6 text-[#f0b97a]" />
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/70">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </span>
+                Live
+              </span>
             </div>
-            <div className="px-8 py-10">
-              <StatCounter value={500}  suffix="+"  label="In-Kind Items Listed"   color={INK}        start={statsInView} />
+            <div className="relative mt-8">
+              <div className="text-6xl lg:text-7xl font-black leading-none">
+                {stats === null
+                  ? <StatSkeleton className="h-14 w-28 align-middle text-white" />
+                  : <StatValue value={stats.verifiedHandovers} start={countersReady} />}
+              </div>
+              <p className="mt-3 text-sm font-bold text-white/80">Verified Handovers</p>
+              <p className="mt-1 text-xs text-white/45 leading-relaxed max-w-[15rem]">
+                Completed donor-to-donee deliveries, each confirmed with a digital handover certificate.
+              </p>
             </div>
-            <div className="px-8 py-10">
-              <StatCounter value={25}         label="KM Local Radius"             color={TERRACOTTA} start={statsInView} />
-            </div>
-            <div className="px-8 py-10">
-              <StatCounter value={100} suffix="%" label="Verified Handovers"      color={INK}        start={statsInView} />
+          </div>
+
+          {/* In-Kind Items Listed */}
+          <StatTile
+            icon={Package}
+            accent={TERRACOTTA}
+            label="In-Kind Items Listed"
+            loading={stats === null}
+            value={stats?.itemsListed ?? 0}
+            start={countersReady}
+          />
+
+          {/* Community Needs Posted */}
+          <StatTile
+            icon={Heart}
+            accent={INK}
+            label="Community Needs"
+            loading={stats === null}
+            value={stats?.needsPosted ?? 0}
+            start={countersReady}
+          />
+
+          {/* Languages Supported — real, derived from configured locales (wide) */}
+          <div className="lg:col-span-2 rounded-3xl border border-[#e5e2d5]/60 dark:border-stone-800 bg-white dark:bg-zinc-900 shadow-lg shadow-stone-900/5 p-6 flex items-center gap-5">
+            <span className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center" style={{ background: `${TERRACOTTA}18`, color: TERRACOTTA }}>
+              <Languages className="w-6 h-6" />
+            </span>
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="text-4xl lg:text-5xl font-black leading-none" style={{ color: TERRACOTTA }}>
+                <StatValue value={languageCount} suffix="+" start={statsInView} />
+              </span>
+              <div>
+                <p className="text-sm font-extrabold text-stone-900 dark:text-stone-100">Languages Supported</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">Give and receive in your own language.</p>
+              </div>
             </div>
           </div>
         </div>
