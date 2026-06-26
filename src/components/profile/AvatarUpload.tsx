@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { Camera } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface AvatarUploadProps {
   imageDataUrl: string | null;

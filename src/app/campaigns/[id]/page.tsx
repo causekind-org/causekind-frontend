@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import Link from "next/link";
 import Image from "next/image";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { getCampaign, getProfile, initiateDonation, getCampaignDonations, type Campaign, type UserProfile, type Donation } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { generateCampaignAIContent, type AIContentResult } from "@/lib/ai-generator";
@@ -228,7 +228,7 @@ function CampaignDetailPageInner() {
     }
     if (!campaign) return;
     if (!amount || isNaN(amount) || amount < 1) {
-      toast.error("Enter a valid amount (minimum ₹1)");
+      toast.error("Enter a valid amount (minimum â‚¹1)");
       return;
     }
     setCheckoutLoading(true);
@@ -508,7 +508,7 @@ function CampaignDetailPageInner() {
                 <div className="space-y-3 p-4 rounded-2xl bg-[#FCFAF6] border border-[#EDECE7]">
                   <p className="text-xs font-semibold text-[#8C3D1D]">{t("postUpdate")}</p>
                   <Textarea
-                    placeholder="Share progress, milestones, or a thank-you with your donors…"
+                    placeholder="Share progress, milestones, or a thank-you with your donorsâ€¦"
                     rows={3}
                     value={updateText}
                     onChange={(e) => setUpdateText(e.target.value)}
@@ -758,7 +758,7 @@ function CampaignDetailPageInner() {
             onClick={() => setIsDonateModalOpen(true)}
             className="bg-[#8C3D1D] hover:bg-[#733115] text-white rounded-xl px-5 py-2.5 text-sm font-extrabold shrink-0 shadow-md transition-all active:scale-95"
           >
-            Donate ₹{amount.toLocaleString("en-IN")}
+            Donate â‚¹{amount.toLocaleString("en-IN")}
           </button>
         </div>
       </div>
@@ -790,7 +790,7 @@ function CampaignDetailPageInner() {
               <div className="space-y-2">
                 <Label htmlFor="amount" className="font-bold text-stone-700">Donation Amount (INR)</Label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-extrabold text-stone-400">₹</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-extrabold text-stone-400">â‚¹</span>
                   <Input
                     id="amount"
                     type="number"
@@ -815,7 +815,7 @@ function CampaignDetailPageInner() {
                           : "hover:bg-stone-50 text-stone-700"
                       }`}
                     >
-                      ₹{p.toLocaleString("en-IN")}
+                      â‚¹{p.toLocaleString("en-IN")}
                     </Button>
                   ))}
                 </div>
@@ -917,7 +917,7 @@ function CampaignDetailPageInner() {
               </button>
 
               <p className="text-center text-[10px] text-stone-400 font-bold">
-                Secured by Razorpay · UPI · Cards · Netbanking
+                Secured by Razorpay Â· UPI Â· Cards Â· Netbanking
               </p>
 
             </div>
@@ -1093,3 +1093,4 @@ function CampaignDetailPageInner() {
     </div>
   );
 }
+

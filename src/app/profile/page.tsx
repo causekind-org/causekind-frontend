@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS, getDialCodes } from "@/app/actions/locations";
 import {

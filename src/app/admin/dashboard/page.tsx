@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
   adminGetItemListings, adminApproveItemListing, adminRejectItemListing, type ItemListing,
