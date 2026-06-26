@@ -91,6 +91,10 @@ function LoginContent() {
   useEffect(() => {
     if (searchParams.get("expired") === "1") {
       toast.error(t("sessionExpired"));
+      // Remove ?expired=1 from URL so re-submitting wrong password doesn't re-trigger this toast
+      const url = new URL(window.location.href);
+      url.searchParams.delete("expired");
+      window.history.replaceState({}, "", url.toString());
     }
   }, [searchParams, t]);
 

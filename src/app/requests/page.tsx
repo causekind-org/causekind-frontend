@@ -748,10 +748,15 @@ export default function RequestsPage() {
         }
       },
       (err) => {
-        console.error("GPS retrieval error:", err);
+        console.error("GPS retrieval error — code:", err.code, "| message:", err.message);
         setGpsBlocked(true);
         setGpsLoading(false);
-        toast.error("Location access denied. You must allow GPS access to view nearby requests.");
+        const msg =
+          err.code === 1 ? "Location access denied. Please allow GPS in browser settings." :
+          err.code === 2 ? "Location unavailable. Check your device GPS." :
+          err.code === 3 ? "Location request timed out. Please retry." :
+          "Location access denied. You must allow GPS access to view nearby requests.";
+        toast.error(msg);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -937,13 +942,19 @@ export default function RequestsPage() {
               Causekind requires your GPS location to display the closest in-kind needs from your community. Please enable location permissions in your browser to proceed.
             </p>
           </div>
-          <button 
-            onClick={requestGps} 
+          <button
+            onClick={requestGps}
             disabled={gpsLoading}
             className="w-full bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-50 text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
           >
             {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection 🎯"}
           </button>
+          <div className="text-xs text-stone-400 dark:text-stone-500 bg-stone-50 dark:bg-zinc-800 rounded-xl p-3 text-left space-y-1">
+            <p className="font-semibold text-stone-600 dark:text-stone-300">If retry doesn&apos;t work:</p>
+            <p>🔒 Click the <strong>lock icon</strong> in your browser&apos;s address bar</p>
+            <p>📍 Set <strong>Location</strong> to <strong>Allow</strong></p>
+            <p>🔄 Then reload this page</p>
+          </div>
         </div>
       </div>
     );

@@ -42,8 +42,11 @@ async function request<T>(
 
   if (!res.ok) {
     if (res.status === 401) {
+      // Read body first — login endpoint returns "Bad credentials" here, not a session expiry
+      const body401 = await res.json().catch(() => ({}));
+      const msg401 = body401?.message ?? body401?.title;
       if (!silent401) handleUnauthorized();
-      throw new Error("Session expired. Please log in again.");
+      throw new Error(msg401 ?? "Invalid email or password. Please try again.");
     }
     if (res.status === 403) throw new Error("You don't have permission to do that.");
     if (res.status === 404) throw new Error("The requested item was not found.");

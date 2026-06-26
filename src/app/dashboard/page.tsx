@@ -330,12 +330,11 @@ export default function DashboardPage() {
       getMyProfile().then((p) => {
         setMyProfile(p);
         if (p.role === "DONEE") setActiveTab("donee");
-      }),
-      getMyItemListings().then(setItemListings),
-      getMyItemRequests().then(setItemRequests),
-      getMyMatches().then(setMatches),
+      }).catch(() => {}),
+      getMyItemListings().then(setItemListings).catch(() => setItemListings([])),
+      getMyItemRequests().then(setItemRequests).catch(() => setItemRequests([])),
+      getMyMatches().then(setMatches).catch(() => setMatches([])),
     ])
-      .catch(() => toast.error("Failed to load dashboard data"))
       .finally(() => setLoading(false));
   }, [user, isLoading, router]);
 

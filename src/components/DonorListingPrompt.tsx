@@ -6,7 +6,7 @@ import { X, PackagePlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
 
-const SHOW_DELAY_MS = 120_000; // 2 min before first appearance
+const SHOW_DELAY_MS = 30_000; // 30 sec before first appearance
 const VISIBLE_MS    = 10_000;  // 10 sec on screen
 const SLIDE_MS      = 420;
 const DISMISS_KEY   = "ck_list_prompt_dismissed";

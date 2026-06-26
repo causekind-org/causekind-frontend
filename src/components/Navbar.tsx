@@ -752,7 +752,7 @@ export function SiteFooter() {
           <ul className="space-y-3 text-stone-400 font-medium">
             {[
               { href: "/register", l: t("createAccount") },
-              { href: "/dashboard", l: t("myDashboard") },
+              { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
               ...(FEATURES.money ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
               { href: "/help", l: t("helpFaq") },
               { href: "/blog", l: t("blog") },

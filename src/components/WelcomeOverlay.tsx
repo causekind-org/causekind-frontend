@@ -75,13 +75,9 @@ function Sparkles12({ color }: { color: string }) {
 }
 
 function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
-  const router = useRouter();
 
   function go() {
-    // Clear the pending flag and navigate — the route change itself unmounts the overlay
-    // so we skip the 400ms exit animation to avoid fighting the navigation transition.
-    sessionStorage.removeItem("ck_welcome_pending");
-    router.push("/requests");
+    dismiss();
   }
 
   return (
