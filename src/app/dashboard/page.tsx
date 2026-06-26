@@ -341,7 +341,7 @@ function DoneeDashboard({
                             <Button size="sm" onClick={async () => { try { await requestCallMasking(m.id); toast.success("Call request sent!"); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed"); } }} className="bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold rounded-lg"><Phone className="w-3 h-3 mr-1" />Contact Donor (Masked)</Button>
                           </div>
                         )}
-                        {(m.status === "DELIVERED_PENDING_CONFIRMATION" || m.status === "IN_TRANSIT" || m.status === "PICKED_UP") && (
+                        {(m.status === "DELIVERED_PENDING_CONFIRMATION" || m.status === "IN_TRANSIT" || m.status === "PICKED_UP" || m.status === "LOGISTICS_CONFIRMED") && (
                           <div className="pt-1 space-y-2">
                             <p className="text-xs font-semibold text-emerald-700">Item is on the way — enter the OTP from the donor to confirm receipt</p>
                             {verifyMatchId === m.id ? (
