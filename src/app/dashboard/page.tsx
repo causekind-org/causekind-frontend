@@ -315,6 +315,18 @@ function DoneeDashboard({
                           <div><p className="text-stone-400">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
                           {m.matchScore && (<div className="text-right"><p className="text-stone-400">AI Match</p><p className="font-bold text-[#1e3a60] dark:text-blue-400">{m.matchScore}%</p></div>)}
                         </div>
+                        {m.handoverMethod && (
+                          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900 rounded-xl p-2.5 space-y-1.5 text-xs">
+                            <p className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1"><Calendar className="w-3 h-3" /> Pickup Details</p>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-stone-600 dark:text-stone-400">
+                              <div><span className="text-stone-400">Method: </span><span className="font-medium">{m.handoverMethod.replace(/_/g, " ")}</span></div>
+                              {m.pickupDateTime && <div><span className="text-stone-400">When: </span><span className="font-medium">{new Date(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span></div>}
+                              {m.handoverAddress && <div className="col-span-2"><span className="text-stone-400">Address: </span><span className="font-medium">{m.handoverAddress}</span></div>}
+                              {m.transportArrangedBy && <div><span className="text-stone-400">Transport by: </span><span className="font-medium">{m.transportArrangedBy.replace(/_/g, " ")}</span></div>}
+                              {m.fulfilmentNotes && <div className="col-span-2"><span className="text-stone-400">Notes: </span><span className="font-medium">{m.fulfilmentNotes}</span></div>}
+                            </div>
+                          </div>
+                        )}
                         {m.status === "AWAITING_DONEE_CONFIRMATION" && (
                           <div className="flex gap-2 pt-1">
                             <Button
