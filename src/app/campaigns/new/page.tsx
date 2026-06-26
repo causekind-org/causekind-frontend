@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
@@ -445,4 +445,3 @@ function NewCampaignPageInner() {
     </div>
   );
 }
-

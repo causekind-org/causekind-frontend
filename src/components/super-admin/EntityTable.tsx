@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
@@ -20,16 +20,16 @@ export type Column = {
 };
 
 function fmt(v: unknown): string {
-  if (v === null || v === undefined) return "â€”";
+  if (v === null || v === undefined) return "—";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) {
     return new Date(v).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
   }
   const s = String(v);
-  return s.length > 60 ? s.slice(0, 57) + "â€¦" : s;
+  return s.length > 60 ? s.slice(0, 57) + "…" : s;
 }
 
-/* â”€â”€ Edit / Create modal â€” always dark overlay regardless of theme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Edit / Create modal — always dark overlay regardless of theme ─────────── */
 function RowForm({
   title, columns, initial, onClose, onSave, saving,
 }: {
@@ -75,7 +75,7 @@ function RowForm({
                   onChange={e => set(c.key, e.target.value)}
                   className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#f0b97a]/50"
                 >
-                  <option value="" className="bg-[#0e1320]">â€”</option>
+                  <option value="" className="bg-[#0e1320]">—</option>
                   {c.options?.map(o => <option key={o} value={o} className="bg-[#0e1320]">{o}</option>)}
                 </select>
               ) : c.type === "textarea" ? (
@@ -107,7 +107,7 @@ function RowForm({
   );
 }
 
-/* â”€â”€ Delete confirm â€” always dark overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Delete confirm — always dark overlay ────────────────────────────────── */
 function DeleteConfirm({ row, onCancel, onConfirm, deleting }: { row: SuperAdminRow; onCancel: () => void; onConfirm: () => void; deleting: boolean; }) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onCancel} style={{ animation: "fadeIn 0.15s ease forwards" }}>
@@ -128,7 +128,7 @@ function DeleteConfirm({ row, onCancel, onConfirm, deleting }: { row: SuperAdmin
   );
 }
 
-/* â”€â”€ Main table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Main table ──────────────────────────────────────────────────────────── */
 export function EntityTable({
   entity, title, columns, canCreate = false, createColumns, isDark = true,
 }: {
@@ -206,7 +206,7 @@ export function EntityTable({
     }
   }
 
-  // â”€â”€ Theme tokens â”€â”€
+  // ── Theme tokens ──
   const t = isDark ? {
     title:       "text-white",
     subtitle:    "text-stone-500",
@@ -259,7 +259,7 @@ export function EntityTable({
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Searchâ€¦"
+              placeholder="Search…"
               className={`pl-9 pr-3 py-2 w-44 sm:w-56 rounded-lg border text-sm focus:outline-none transition-colors ${t.search}`}
             />
           </form>
@@ -371,4 +371,3 @@ export function EntityTable({
     </div>
   );
 }
-

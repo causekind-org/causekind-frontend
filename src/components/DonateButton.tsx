@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -43,7 +43,7 @@ export function DonateButton({ campaignId, campaignTitle, amount }: Props) {
       return;
     }
     if (!amount || isNaN(amount) || amount < 1) {
-      toast.error("Enter a valid amount (minimum â‚¹1)");
+      toast.error("Enter a valid amount (minimum ₹1)");
       return;
     }
     setLoading(true);
@@ -81,13 +81,12 @@ export function DonateButton({ campaignId, campaignTitle, amount }: Props) {
   return (
     <Button className="w-full" size="lg" onClick={handleDonate} disabled={loading}>
       {loading ? (
-        <><Loader2 className="h-4 w-4 animate-spin" /> Opening checkoutâ€¦</>
+        <><Loader2 className="h-4 w-4 animate-spin" /> Opening checkout…</>
       ) : user ? (
-        `Donate â‚¹${amount.toLocaleString("en-IN")}`
+        `Donate ₹${amount.toLocaleString("en-IN")}`
       ) : (
         "Log in to donate"
       )}
     </Button>
   );
 }
-

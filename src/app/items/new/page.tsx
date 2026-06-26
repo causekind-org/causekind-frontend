@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -217,7 +217,7 @@ export default function NewItemPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
-      {/* â”€â”€ LEFT PANEL: Asymmetric info stripe â”€â”€ */}
+      {/* ── LEFT PANEL: Asymmetric info stripe ── */}
       <div className="hidden lg:flex lg:w-[35%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0">
         {/* Warm glow circles */}
         <div className="absolute -top-24 left-1/4 h-[300px] w-[300px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
@@ -229,7 +229,7 @@ export default function NewItemPage() {
             Verified Giving
           </span>
           <h2 className="text-white text-3xl font-extrabold leading-tight tracking-tight font-serif mt-4">
-            List an Item ðŸŽ
+            List an Item 🎁
           </h2>
           <p className="text-stone-300 text-sm leading-relaxed font-medium">
             Offer physical items you no longer use (like textbooks, clothes, electronics, or household goods). Nearby beneficiaries in need will be matched to receive them directly.
@@ -237,11 +237,11 @@ export default function NewItemPage() {
         </div>
 
         <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          CauseKind India Â· 2026
+          CauseKind India · 2026
         </div>
       </div>
 
-      {/* â”€â”€ RIGHT PANEL: Scrollable Form â”€â”€ */}
+      {/* ── RIGHT PANEL: Scrollable Form ── */}
       <div className="flex-1 px-6 py-10 lg:px-16 overflow-y-auto relative bg-white dark:bg-zinc-950">
         {/* Ambient glows */}
         <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
@@ -274,7 +274,7 @@ export default function NewItemPage() {
                 }}
                 className="text-[11px] font-bold text-[#b04a15] border border-[#b04a15]/40 bg-[#b04a15]/5 hover:bg-[#b04a15]/10 rounded-full px-3 py-1 transition-colors"
               >
-                âœ¦ Try Demo
+                ✦ Try Demo
               </button>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -319,7 +319,7 @@ export default function NewItemPage() {
                     disabled={gpsLoading}
                     className="flex items-center gap-1.5 text-xs font-bold text-[#b04a15] hover:underline uppercase disabled:opacity-50"
                   >
-                    {gpsLoading ? "Detecting..." : "Use GPS ðŸŽ¯"}
+                    {gpsLoading ? "Detecting..." : "Use GPS 🎯"}
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -442,4 +442,3 @@ export default function NewItemPage() {
     </div>
   );
 }
-
