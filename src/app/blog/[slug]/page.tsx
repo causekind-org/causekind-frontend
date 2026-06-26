@@ -51,8 +51,39 @@ export default function BlogReadingPage({ params }: PageProps) {
   // Filter out the current post from recommendations
   const recommendedPosts = blogPosts.filter((p) => p.slug !== slug).slice(0, 2);
 
+  const postSchemaData = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.causekind.com/blog/${post.slug}`
+    },
+    "headline": post.title,
+    "description": post.description,
+    "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
+    "author": {
+      "@type": "Person",
+      "name": post.author,
+      "image": post.authorImage
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "CauseKind",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.causekind.com/logo.png"
+      }
+    },
+    "datePublished": post.publishedDate === "June 2026" ? "2026-06-01" : "2026-06-26",
+    "url": `https://www.causekind.com/blog/${post.slug}`
+  };
+
   return (
     <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-24`}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(postSchemaData) }}
+      />
       {/* Main Content Area */}
       <main className="pb-xl">
         <article>
