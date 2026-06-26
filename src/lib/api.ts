@@ -569,7 +569,7 @@ export function saveMatchLogistics(id: number, data: {
   notes?: string;
 }) {
   return request<ItemMatch>(`/api/v1/matches/${id}/logistics`, {
-    method: "PUT",
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
