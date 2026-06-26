@@ -649,6 +649,21 @@ export function adminRejectMatch(id: number, reason: string) {
   });
 }
 
+export type StatusHistoryEntry = {
+  id: number;
+  entityType: string;
+  entityId: number;
+  fromStatus: string;
+  toStatus: string;
+  changedByEmail: string;
+  note: string | null;
+  changedAt: string;
+};
+
+export function adminGetMatchHistory(id: number) {
+  return request<StatusHistoryEntry[]>(`/api/v1/admin/matches/${id}/history`);
+}
+
 // ── User profile ──────────────────────────────────────────────────────────────
 
 export function getMyProfile() {
