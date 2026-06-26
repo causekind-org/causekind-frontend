@@ -743,7 +743,7 @@ export default function RequestsPage() {
             const p = await getMyProfile();
             setMyProfile(p);
           } catch (e) {
-            console.error("Failed to update profile location:", e);
+            console.warn("Failed to update profile location:", e);
           }
         }
       },
