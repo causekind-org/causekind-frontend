@@ -85,6 +85,7 @@ export default async function RootLayout({
                 position="top-center"
                 offset={16}
                 visibleToasts={1}
+                style={{ zIndex: 2147483647 }}
                 toastOptions={{ style: { zIndex: 2147483647 } }}
               />
               <LocationGate />
