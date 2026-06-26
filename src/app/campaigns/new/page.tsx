@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
@@ -6,7 +6,7 @@ import { ComingSoon } from "@/components/ComingSoon";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { createCampaign, getProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -445,3 +445,4 @@ function NewCampaignPageInner() {
     </div>
   );
 }
+

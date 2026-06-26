@@ -80,7 +80,13 @@ export default async function RootLayout({
               <SiteFooter />
               <MobileBottomNav />
               <FloatingSupportButton />
-              <Toaster richColors position="bottom-left" offset={90} toastOptions={{ style: { zIndex: 9999 } }} />
+              <Toaster
+                richColors
+                position="top-center"
+                offset={16}
+                visibleToasts={1}
+                toastOptions={{ style: { zIndex: 2147483647 } }}
+              />
               <LocationGate />
               <CookieConsent />
               <WelcomeOverlay />

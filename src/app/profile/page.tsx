@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS, getDialCodes } from "@/app/actions/locations";
 import {
@@ -50,7 +50,7 @@ import { SearchableSelect, type SelectOption } from "@/components/profile/Search
 import { useTranslations } from "next-intl";
 import { Reveal } from "@/components/Reveal";
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** Derive a 1-2 letter ISO country code from navigator.language / Intl API (sync fallback) */
 function detectCountryCode(): string {
@@ -74,7 +74,7 @@ function detectCountryCode(): string {
   return "IN";
 }
 
-/** IP-based country detection — falls back to detectCountryCode() on error */
+/** IP-based country detection â€” falls back to detectCountryCode() on error */
 async function detectCountryFromIP(): Promise<string> {
   try {
     const res = await fetch("https://ipwho.is/?output=json&fields=country_code", {
@@ -116,7 +116,7 @@ function getDialCode(isoCode: string, dialCodes: any[]): string {
   return `+${country.phonecode}`;
 }
 
-// ── component ─────────────────────────────────────────────────────────────────
+// â”€â”€ component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -195,7 +195,7 @@ export default function ProfilePage() {
         setMyRequests(req);
         setInKindCount(matches.length);
 
-        // Parse phone: if stored with dial code prefix "+XX …" split it out
+        // Parse phone: if stored with dial code prefix "+XX â€¦" split it out
         if (p.phone) {
           const match = p.phone.match(/^(\+\d{1,4})\s*(.*)$/);
           if (match) {
@@ -523,7 +523,7 @@ export default function ProfilePage() {
               </h1>
             </div>
 
-            {/* ── Hero Impact Card ── */}
+            {/* â”€â”€ Hero Impact Card â”€â”€ */}
             <div className="rounded-3xl overflow-hidden shadow-sm">
               <div className="bg-gradient-to-br from-[#C17A3A] to-[#8B4513] p-8 text-white relative overflow-hidden">
                 <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full border border-white/10 pointer-events-none" />
@@ -615,7 +615,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold truncate text-stone-900 dark:text-stone-100">{req.title}</p>
-                          <p className="text-[10px] text-stone-400 truncate mt-0.5">{req.city} · Qty: {req.quantity}</p>
+                          <p className="text-[10px] text-stone-400 truncate mt-0.5">{req.city} Â· Qty: {req.quantity}</p>
                         </div>
                       </div>
                     ))}
@@ -734,8 +734,8 @@ export default function ProfilePage() {
                             options={dialCodeOptions}
                             value={dialCountry}
                             onChange={setDialCountry}
-                            placeholder="+–"
-                            searchPlaceholder="Search country…"
+                            placeholder="+â€“"
+                            searchPlaceholder="Search countryâ€¦"
                             renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
                           />
                         </div>
@@ -761,7 +761,7 @@ export default function ProfilePage() {
                           value={countryIso}
                           onChange={handleCountryChange}
                           placeholder={t("selectCountry")}
-                          searchPlaceholder="Search country…"
+                          searchPlaceholder="Search countryâ€¦"
                         />
                       </div>
 
@@ -780,7 +780,7 @@ export default function ProfilePage() {
                             placeholder={t("selectState")}
                             disabledPlaceholder={t("selectCountryFirst")}
                             disabled={!countryIso}
-                            searchPlaceholder="Search state…"
+                            searchPlaceholder="Search stateâ€¦"
                           />
                         )}
                       </div>
@@ -807,7 +807,7 @@ export default function ProfilePage() {
                             placeholder={t("selectCity")}
                             disabledPlaceholder={t("selectStateFirst")}
                             disabled={!stateIso}
-                            searchPlaceholder="Search city…"
+                            searchPlaceholder="Search cityâ€¦"
                           />
                         )}
                       </div>
@@ -886,3 +886,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
