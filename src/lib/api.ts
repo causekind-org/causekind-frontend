@@ -301,6 +301,7 @@ export type ItemListing = {
   id: number;
   title: string;
   category: string;
+  subcategory: string | null;
   quantity: number;
   condition: string;
   city: string;
@@ -315,6 +316,10 @@ export type ItemListing = {
   maximumDeliveryRadius: number | null;
   transportPayerPreference: string | null;
   availabilityExpiry: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  pickupAvailability: string | null;
+  recipientRestrictions: string | null;
 };
 
 export function getItemListings() {
@@ -328,6 +333,7 @@ export function getMyItemListings() {
 export function createItemListing(data: {
   title: string;
   category: string;
+  subcategory?: string;
   quantity: number;
   condition: string;
   city: string;
@@ -336,6 +342,10 @@ export function createItemListing(data: {
   imageUrl?: string | null;
   maximumDeliveryRadius?: number;
   transportPayerPreference?: string;
+  latitude?: number;
+  longitude?: number;
+  pickupAvailability?: string;
+  recipientRestrictions?: string;
 }) {
   return request<ItemListing>("/api/v1/items", {
     method: "POST",
@@ -448,6 +458,10 @@ export type ItemMatch = {
     | "DONOR_REVIEW"
     | "DONOR_REJECTED"
     | "PENDING_APPROVAL"
+    | "AWAITING_DONEE_CONFIRMATION"
+    | "DONEE_ACCEPTED"
+    | "BOTH_PARTIES_ACCEPTED"
+    | "LOGISTICS_CONFIRMED"
     | "TRANSPORT_DISCUSSION"
     | "ARRANGEMENT_AGREED"
     | "PICKUP_SCHEDULED"
@@ -455,6 +469,7 @@ export type ItemMatch = {
     | "IN_TRANSIT"
     | "DELIVERY_ATTEMPTED"
     | "DELIVERED_PENDING_CONFIRMATION"
+    | "COMPLETED"
     | "FULFILLED"
     | "RESCHEDULED"
     | "FAILED"
@@ -468,6 +483,25 @@ export type ItemMatch = {
   doneeReason: string | null;
   donorContact: string | null;
   doneeContact: string | null;
+  // Logistics
+  handoverMethod: string | null;
+  transportArrangedBy: string | null;
+  transportCostBornBy: string | null;
+  pickupDateTime: string | null;
+  expectedDeliveryDate: string | null;
+  packagingResponsibility: string | null;
+  handoverAddress: string | null;
+  deliveryAddress: string | null;
+  allocatedQuantity: number | null;
+  reservationExpiry: string | null;
+  fulfilmentNotes: string | null;
+  // Delivery verification
+  deliveryOtpVerified: boolean;
+  deliveryVerificationMethod: string | null;
+  deliveryProofUrl: string | null;
+  verifiedDeliveryCertificate: string | null;
+  // Call masking
+  callMaskingRequested: boolean;
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
@@ -505,6 +539,74 @@ export function donorRejectMatch(id: number, reason?: string) {
     method: "POST",
     body: JSON.stringify({ reason: reason ?? null }),
   });
+}
+
+export function doneeAcceptMatch(id: number) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/donee-accept`, { method: "POST" });
+}
+
+export function doneeRejectMatch(id: number, reason?: string) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/donee-reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason ?? null }),
+  });
+}
+
+export function donorConfirmMatch(id: number) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/donor-confirm`, { method: "POST" });
+}
+
+export function saveMatchLogistics(id: number, data: {
+  handoverMethod?: string;
+  transportArrangedBy?: string;
+  transportCostBornBy?: string;
+  pickupDateTime?: string;
+  expectedDeliveryDate?: string;
+  packagingResponsibility?: string;
+  handoverAddress?: string;
+  deliveryAddress?: string;
+  allocatedQuantity?: number;
+  notes?: string;
+}) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/logistics`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function requestCallMasking(id: number) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/request-call`, { method: "POST" });
+}
+
+export function generateDeliveryOtp(id: number): Promise<{ otp: string }> {
+  return request<{ otp: string }>(`/api/v1/matches/${id}/generate-otp`, { method: "POST" });
+}
+
+export function verifyDeliveryMatch(id: number, data: {
+  verificationMethod: string;
+  otp?: string;
+  proofUrl?: string;
+  notes?: string;
+}) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/verify-delivery`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function reconfirmAvailability(id: number) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/reconfirm`, { method: "POST" });
+}
+
+export function updateMatchFulfilmentStatus(id: number, status: string, note?: string) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, note: note ?? null }),
+  });
+}
+
+export function confirmReceiptMatch(id: number) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/confirm-receipt`, { method: "POST" });
 }
 
 export function analyzeItemImage(image: File): Promise<{ description: string }> {
