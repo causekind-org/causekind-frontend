@@ -6,14 +6,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { blogPosts, insiderTips } from "../../data/blogData";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
+import { getRecentActivity, type RecentActivity } from "@/lib/api";
+
+function timeAgo(date: Date): string {
+  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (mins < 1) return "JUST NOW";
+  if (mins < 60) return `${mins} MINUTE${mins > 1 ? "S" : ""} AGO`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} HOUR${hrs > 1 ? "S" : ""} AGO`;
+  return `${Math.floor(hrs / 24)} DAYS AGO`;
+}
+
+function activityToFeedItem(a: RecentActivity, i: number) {
+  const text = a.type === "DONATION"
+    ? `donated ₹${a.amount?.toLocaleString("en-IN") ?? ""} to "${a.campaignTitle}".`
+    : `posted a new campaign: "${a.campaignTitle}".`;
+  const name = a.type === "DONATION" ? `Donor from ${a.city || "India"}` : `${a.city || "India"} fundraiser`;
+  return { id: i, time: timeAgo(new Date(Date.now() - i * 8 * 60000)), user: name, text };
+}
 
 export default function BlogListingPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [liveFeed, setLiveFeed] = useState([
-    { id: 1, time: "2 MINUTES AGO", user: "Rohan S.", text: "donated a laptop to a student in Dadar." },
-    { id: 2, time: "15 MINUTES AGO", user: "Prerna Foundation", text: "reached 100% textbook matching goals." },
-    { id: 3, time: "42 MINUTES AGO", user: "Ananya M.", text: "shared \"From Clutter to Impact\" with 15 friends." },
-  ]);
+  const [liveFeed, setLiveFeed] = useState<{ id: number; time: string; user: string; text: string }[]>([]);
 
   // Carousel state for Insider Tips section
   const [tipIndex, setTipIndex] = useState(0);
@@ -24,20 +38,38 @@ export default function BlogListingPage() {
     setTipIndex(next);
   };
 
-  // Micro-interaction for live impact feed (cycling items)
+  // Fetch real recent activity for live feed
   useEffect(() => {
+    getRecentActivity()
+      .then(data => {
+        if (data.length > 0) {
+          setLiveFeed(data.slice(0, 3).map(activityToFeedItem));
+        } else {
+          setLiveFeed([
+            { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing — be the first donor in your area!" },
+          ]);
+        }
+      })
+      .catch(() => {
+        setLiveFeed([
+          { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing — be the first donor in your area!" },
+        ]);
+      });
+  }, []);
+
+  // Cycle through live feed items
+  useEffect(() => {
+    if (liveFeed.length < 2) return;
     const interval = setInterval(() => {
       setLiveFeed((prev) => {
         const next = [...prev];
         const last = next.pop();
-        if (last) {
-          next.unshift(last);
-        }
+        if (last) next.unshift(last);
         return next;
       });
     }, 8000);
     return () => clearInterval(interval);
-  }, []);
+  }, [liveFeed.length]);
 
   // Search filtering
   const filteredPosts = blogPosts.filter(

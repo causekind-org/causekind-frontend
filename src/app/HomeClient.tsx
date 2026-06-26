@@ -69,6 +69,75 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// ── Mobile hero — cycling background images (same 6s rhythm as desktop) ──────
+
+const MOBILE_HERO_IMAGES = [
+  "/images/hero-1.webp",
+  "/images/hero-2.webp",
+  "/images/hero-3.webp",
+  "/images/hero-4.webp",
+  "/images/hero-5.webp",
+  "/images/hero-6.webp",
+  "/images/hero-7.webp",
+];
+
+function MobileHeroSlider() {
+  const [idx, setIdx] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % MOBILE_HERO_IMAGES.length);
+        setFading(false);
+      }, 500);
+    }, 6000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <section className="relative w-full aspect-[4/3] min-h-[280px] rounded-[2rem] overflow-hidden shadow-xs mt-2">
+      <div className="absolute inset-0 w-full h-full">
+        <Image
+          key={idx}
+          src={MOBILE_HERO_IMAGES[idx]}
+          alt="Together We Support"
+          fill
+          className="object-cover brightness-[0.75] contrast-[1.05] transition-opacity duration-500"
+          style={{ objectPosition: "center 25%", opacity: fading ? 0 : 1 }}
+          priority={idx === 0}
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/25 pointer-events-none" />
+      </div>
+      <div className="relative z-10 w-full h-full p-6 flex flex-col justify-between items-start">
+        <div className="bg-[#faf8f3]/85 dark:bg-zinc-900/85 backdrop-blur-xs border border-[#e5e2d5]/30 rounded-full px-3.5 py-1 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse" />
+          <span className="text-[#b04a15] text-[10px] font-extrabold uppercase tracking-wider">
+            <TranslatedText text="Making Lives Better" />
+          </span>
+        </div>
+        <div className="space-y-2.5 max-w-sm">
+          <h1 className="text-white text-xl sm:text-2xl font-black leading-tight tracking-tight">
+            <TranslatedText text="Together We Support, Educate and Heal" />
+          </h1>
+          <p className="text-white/80 text-[11px] sm:text-xs font-semibold leading-relaxed">
+            <TranslatedText text="Every donation helps a family grow stronger, healthier, and more secure." />
+          </p>
+          {FEATURES.money && (
+            <Link href="/campaigns" className="inline-block mt-1">
+              <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-950/20">
+                <TranslatedText text="Explore Campaigns" />
+              </button>
+            </Link>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function HomeClient({
@@ -147,10 +216,10 @@ export default function HomeClient({
   }, [itemRequests, selectedCategory, myProfile]);
 
   const statItems = [
-    { value: stats ? `₹${formatINR(stats.totalRaised)}` : "₹5,652", label: useTranslations("stats")("totalRaised"),    icon: Coins,    color: "text-[#b04a15]" },
-    { value: stats ? stats.activeCampaigns               : "3",       label: useTranslations("stats")("activeCampaigns"), icon: Heart,    color: "text-[#b04a15]" },
-    { value: stats ? stats.totalDonations                : "24",      label: useTranslations("stats")("donations"),       icon: Sparkles, color: "text-[#b04a15]" },
-    { value: stats ? stats.uniqueDonors                  : "18",      label: useTranslations("stats")("donors"),          icon: Users,    color: "text-[#b04a15]" },
+    { value: stats ? `₹${formatINR(stats.totalRaised)}` : "—", label: useTranslations("stats")("totalRaised"),    icon: Coins,    color: "text-[#b04a15]" },
+    { value: stats ? stats.activeCampaigns               : "—", label: useTranslations("stats")("activeCampaigns"), icon: Heart,    color: "text-[#b04a15]" },
+    { value: stats ? stats.totalDonations                : "—", label: useTranslations("stats")("donations"),       icon: Sparkles, color: "text-[#b04a15]" },
+    { value: stats ? stats.uniqueDonors                  : "—", label: useTranslations("stats")("donors"),          icon: Users,    color: "text-[#b04a15]" },
   ];
 
   return (
@@ -209,8 +278,8 @@ export default function HomeClient({
           <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
         )}
 
-        {/* In-Kind Requests section */}
-        {(loading || itemRequests.length > 0) && (
+        {/* In-Kind Requests section — hidden from landing page; shown only via WelcomeOverlay filter */}
+        {false && (loading || itemRequests.length > 0) && (
           <section id="inkind-requests-section" className="bg-white dark:bg-zinc-900 border-b border-orange-100/35 dark:border-stone-850 py-20">
             <div className="mx-auto max-w-7xl px-6">
               <Reveal className="mb-14">
@@ -224,7 +293,7 @@ export default function HomeClient({
                       {selectedCategory ? `${selectedCategory} Needs Near You` : t("inkindSection.title")}
                     </h2>
                     <p className="text-base text-stone-500 dark:text-stone-400 font-medium mt-3 max-w-xl">
-                      {selectedCategory ? `Showing ${selectedCategory.toLowerCase()} requests sorted by distance.` : t("inkindSection.subtitle")}
+                      {selectedCategory ? `Showing ${(selectedCategory ?? "").toLowerCase()} requests sorted by distance.` : t("inkindSection.subtitle")}
                     </p>
                   </div>
                   <Link href="/requests" className="inline-flex shrink-0">
@@ -342,36 +411,8 @@ export default function HomeClient({
           </div>
         )}
 
-        {/* Mobile Hero */}
-        <section className="relative w-full aspect-[4/3] min-h-[280px] rounded-[2rem] overflow-hidden shadow-xs mt-2">
-          <div className="absolute inset-0 w-full h-full">
-            <Image src="/images/hero-1.webp" alt="Together We Support" fill className="object-cover brightness-[0.75] contrast-[1.05]" style={{ objectPosition: "center 25%" }} priority sizes="100vw" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/25 pointer-events-none" />
-          </div>
-          <div className="relative z-10 w-full h-full p-6 flex flex-col justify-between items-start">
-            <div className="bg-[#faf8f3]/85 dark:bg-zinc-900/85 backdrop-blur-xs border border-[#e5e2d5]/30 rounded-full px-3.5 py-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse" />
-              <span className="text-[#b04a15] text-[10px] font-extrabold uppercase tracking-wider">
-                <TranslatedText text="Making Lives Better" />
-              </span>
-            </div>
-            <div className="space-y-2.5 max-w-sm">
-              <h1 className="text-white text-xl sm:text-2xl font-black leading-tight tracking-tight">
-                <TranslatedText text="Together We Support, Educate and Heal" />
-              </h1>
-              <p className="text-white/80 text-[11px] sm:text-xs font-semibold leading-relaxed">
-                <TranslatedText text="Every donation helps a family grow stronger, healthier, and more secure." />
-              </p>
-              {FEATURES.money && (
-                <Link href="/campaigns" className="inline-block mt-1">
-                  <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-950/20">
-                    <TranslatedText text="Explore Campaigns" />
-                  </button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </section>
+        {/* Mobile Hero — cycling images every 6s */}
+        <MobileHeroSlider />
 
         {/* Mobile Campaigns horizontal scroll */}
         {FEATURES.money && (
