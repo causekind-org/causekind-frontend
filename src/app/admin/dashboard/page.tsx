@@ -233,6 +233,16 @@ export default function AdminDashboardPage() {
           ))}
         </div>
 
+        {/* Quick links */}
+        <div className="px-5 pb-3 pt-2 space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Reports</p>
+          <a href="/admin/matches"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-stone-400 hover:text-white hover:bg-white/5 transition-all border border-white/[0.05]">
+            <Handshake className="w-4 h-4 shrink-0 text-teal-400" />
+            Match History
+          </a>
+        </div>
+
         {/* Sign out */}
         <div className="px-5 pb-7 pt-5 border-t border-white/[0.07] mt-auto">
           <button
