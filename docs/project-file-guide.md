@@ -1,6 +1,6 @@
 # CauseKind Frontend — Project File Guide
 
-_Last updated: 2026-06-11 (friend UI/UX v2 merge)_
+_Last updated: 2026-06-27 (donor flow 1 — spec implementation)_
 
 ## Tech Stack
 - Next.js 15 (App Router), TypeScript, Tailwind CSS
@@ -19,18 +19,18 @@ _Last updated: 2026-06-11 (friend UI/UX v2 merge)_
 | `register/page.tsx` | `/register` | Registration form |
 | `forgot-password/page.tsx` | `/forgot-password` | Password reset request |
 | `reset-password/page.tsx` | `/reset-password` | Password reset (token from email link) |
-| `dashboard/page.tsx` | `/dashboard` | Donor dashboard — my listings, matches, donations |
-| `donee/dashboard/page.tsx` | `/donee/dashboard` | Donee dashboard — my requests, matches |
+| `dashboard/page.tsx` | `/dashboard` | Donor dashboard — listings with spec status journey tracker (DRAFT→SUBMITTED→AI_SCREENING→ELIGIBLE_FOR_MATCHING), admin notes for NEEDS_INFORMATION, matches & handover flow |
+| `donee/dashboard/page.tsx` | `/donee/dashboard` | Redirects to `/dashboard` — donee view is the `DoneeDashboard` component inside `dashboard/page.tsx` |
 | `profile/page.tsx` | `/profile` | Editable profile (name, phone, city) — friend's design |
 | `campaigns/page.tsx` | `/campaigns` | Browse all approved campaigns |
 | `campaigns/new/page.tsx` | `/campaigns/new` | Create campaign form with image upload |
 | `campaigns/[id]/page.tsx` | `/campaigns/:id` | Campaign detail + Razorpay donate flow |
 | `items/page.tsx` | `/items` | Browse item listings; "Request this item" modal (location-gated) |
-| `items/new/page.tsx` | `/items/new` | Create item listing with image upload |
+| `items/new/page.tsx` | `/items/new` | **4-step multi-step donor listing form** — Step 1 Item Details, Step 2 Photos (min 2), Step 3 Location & Delivery (GPS, pickup days/slots, drop-off), Step 4 Declarations (8 mandatory). Auto-saves draft via PATCH on each Next, submits via POST /:id/submit |
 | `requests/page.tsx` | `/requests` | Browse item requests; AI photo detection + donate modal |
 | `requests/new/page.tsx` | `/requests/new` | Create item request |
 | `admin/dashboard/page.tsx` | `/admin/dashboard` | Admin overview |
-| `admin/approvals/page.tsx` | `/admin/approvals` | Approve/reject campaigns, items, requests, matches |
+| `admin/approvals/page.tsx` | `/admin/approvals` | Approve/reject campaigns, items, requests, matches. Items tab fetches SUBMITTED status, shows photos/defect grid, has **Needs Info** action (sends admin note back to donor → NEEDS_INFORMATION) |
 | `certificate/page.tsx` | `/certificate` | Donation certificate generator |
 | `help/page.tsx` | `/help` | FAQ / help page |
 | `thank-you/page.tsx` | `/thank-you` | Post-donation thank you page |
