@@ -7,7 +7,8 @@ import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
-  adminGetItemListings, adminApproveItemListing, adminRejectItemListing, type ItemListing,
+  adminGetItemListings, adminApproveItemListing, adminRejectItemListing,
+  adminMarkListingNeedsInformation, type ItemListing,
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest, type ItemRequest,
   adminGetMatches, adminApproveMatch, adminRejectMatch, type ItemMatch,
 } from "@/lib/api";
@@ -18,7 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, MessageSquare, X } from "lucide-react";
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -38,6 +39,8 @@ export default function ApprovalsPage() {
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectType, setRejectType] = useState<"campaign" | "listing" | "request" | "match" | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [needsInfoId, setNeedsInfoId] = useState<number | null>(null);
+  const [needsInfoNote, setNeedsInfoNote] = useState("");
   const [processing, setProcessing] = useState<number | null>(null);
 
   useEffect(() => {
@@ -47,7 +50,7 @@ export default function ApprovalsPage() {
 
     Promise.all([
       adminGetCampaigns("PENDING_APPROVAL"),
-      adminGetItemListings("PENDING_REVIEW"),
+      adminGetItemListings("SUBMITTED"),
       adminGetItemRequests("PENDING_VERIFICATION"),
       adminGetMatches("PENDING_APPROVAL"),
     ])
@@ -58,8 +61,22 @@ export default function ApprovalsPage() {
 
   function openReject(id: number, type: "campaign" | "listing" | "request" | "match") {
     setRejectId(id); setRejectType(type); setRejectReason("");
+    setNeedsInfoId(null);
   }
   function cancelReject() { setRejectId(null); setRejectType(null); setRejectReason(""); }
+
+  async function handleNeedsInformation(id: number) {
+    if (!needsInfoNote.trim()) { toast.error("Please enter the information needed from the donor."); return; }
+    setProcessing(id);
+    try {
+      await adminMarkListingNeedsInformation(id, needsInfoNote.trim());
+      setListings((p) => p.filter((l) => l.id !== id));
+      setNeedsInfoId(null);
+      setNeedsInfoNote("");
+      toast.success("Listing returned to donor for more information.");
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
+    finally { setProcessing(null); }
+  }
 
   async function handleApproveCampaign(id: number) {
     setProcessing(id);
@@ -241,14 +258,82 @@ export default function ApprovalsPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium">{l.title}</p>
-                        <p className="text-sm text-muted-foreground">{l.donorName} · {l.city} · {l.category} · {l.condition} · {t("qty")} {l.quantity}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {l.donorName} · {l.city} · {l.category}
+                          {l.subcategory && ` / ${l.subcategory}`}
+                          {l.condition && ` · ${l.condition}`}
+                          {l.brand && ` · ${l.brand}`}
+                          {l.model && ` ${l.model}`}
+                          {` · Qty ${l.quantity}`}
+                        </p>
                       </div>
-                      <Badge variant="secondary">{t("pending")}</Badge>
+                      <Badge variant="secondary">SUBMITTED</Badge>
                     </div>
-                    {l.description && <p className="line-clamp-2 text-sm text-foreground/80">{l.description}</p>}
+
+                    {/* Photos */}
+                    {(l.imageUrl || l.imageUrls) && (
+                      <div className="flex gap-2 flex-wrap">
+                        {[l.imageUrl, ...(l.imageUrls ? l.imageUrls.split("|") : [])].filter(Boolean).map((url, i) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <a key={i} href={url!} target="_blank" rel="noopener noreferrer">
+                            <img src={url!} alt={`Photo ${i + 1}`} className="h-20 w-20 rounded-lg border object-cover hover:opacity-80 transition" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Detail grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-stone-50 dark:bg-zinc-900 rounded-lg p-3">
+                      {l.approximateAge && <div><span className="text-stone-400">Age: </span><span className="font-medium">{l.approximateAge}</span></div>}
+                      {l.workingStatus && <div><span className="text-stone-400">Working: </span><span className="font-medium">{l.workingStatus.replace(/_/g, " ")}</span></div>}
+                      {l.dimensions && <div><span className="text-stone-400">Size: </span><span className="font-medium">{l.dimensions}</span></div>}
+                      {l.approximateWeight && <div><span className="text-stone-400">Weight: </span><span className="font-medium">{l.approximateWeight}</span></div>}
+                      {l.locality && <div><span className="text-stone-400">Locality: </span><span className="font-medium">{l.locality}</span></div>}
+                      {l.pincode && <div><span className="text-stone-400">PIN: </span><span className="font-medium">{l.pincode}</span></div>}
+                    </div>
+
+                    {l.knownDefects && l.knownDefects !== "NONE" && (
+                      <div className="rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 px-3 py-2 text-sm">
+                        <span className="font-semibold text-amber-700 dark:text-amber-400">Known defects: </span>
+                        <span className="text-stone-700 dark:text-stone-300">{l.knownDefects}</span>
+                      </div>
+                    )}
+
+                    {l.description && <p className="line-clamp-3 text-sm text-foreground/80">{l.description}</p>}
+
+                    {l.declarationsAccepted && (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✓ All mandatory declarations accepted by donor</p>
+                    )}
+
                     {rejectId === l.id && rejectType === "listing"
                       ? <RejectForm id={l.id} rejectReason={rejectReason} setRejectReason={setRejectReason} processing={processing} onConfirm={handleRejectListing} cancelReject={cancelReject} />
-                      : <ActionButtons id={l.id} type="listing" processing={processing} onApprove={handleApproveListing} openReject={openReject} />}
+                      : needsInfoId === l.id
+                      ? (
+                        <div className="space-y-2 pt-1">
+                          <Label htmlFor={`ni-${l.id}`}>What information does the donor need to provide?</Label>
+                          <Input id={`ni-${l.id}`} placeholder="e.g. Please upload clearer photos of the defect area" value={needsInfoNote} onChange={(e) => setNeedsInfoNote(e.target.value)} />
+                          <div className="flex gap-2">
+                            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => handleNeedsInformation(l.id)} disabled={processing === l.id}>
+                              {processing === l.id ? <Loader2 className="size-4 animate-spin" /> : "Send to Donor"}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => { setNeedsInfoId(null); setNeedsInfoNote(""); }}>Cancel</Button>
+                          </div>
+                        </div>
+                      )
+                      : (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <Button size="sm" onClick={() => handleApproveListing(l.id)} disabled={processing === l.id} className="gap-1">
+                            {processing === l.id ? <Loader2 className="size-4 animate-spin" /> : <><Check className="h-4 w-4" /> Approve</>}
+                          </Button>
+                          <Button size="sm" variant="outline" className="gap-1 border-amber-400 text-amber-700 hover:bg-amber-50" onClick={() => { setNeedsInfoId(l.id); setNeedsInfoNote(""); setRejectId(null); }}>
+                            <MessageSquare className="h-4 w-4" /> Needs Info
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => openReject(l.id, "listing")} className="gap-1">
+                            <X className="h-4 w-4" /> Reject
+                          </Button>
+                        </div>
+                      )
+                    }
                   </CardContent>
                 </Card>
               ))}

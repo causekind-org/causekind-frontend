@@ -32,6 +32,58 @@ function getInitials(name: string): string {
 }
 
 
+// Listing status journey — ordered steps a listing goes through
+const LISTING_JOURNEY = [
+  { status: "DRAFT",                 label: "Draft",             color: "bg-stone-300" },
+  { status: "SUBMITTED",             label: "Submitted",         color: "bg-blue-400" },
+  { status: "AI_SCREENING",          label: "AI Screening",      color: "bg-blue-500" },
+  { status: "MANUAL_REVIEW",         label: "Under Review",      color: "bg-amber-400" },
+  { status: "ELIGIBLE_FOR_MATCHING", label: "Live & Matching",   color: "bg-green-500" },
+  { status: "MATCHED",               label: "Matched",           color: "bg-emerald-600" },
+  { status: "DONATED",               label: "Donated",           color: "bg-emerald-700" },
+];
+
+const LISTING_STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  DRAFT:                  { label: "Draft",             color: "text-stone-500",  bg: "bg-stone-100 dark:bg-zinc-800",    border: "border-stone-300" },
+  SUBMITTED:              { label: "Under Review",      color: "text-blue-700",   bg: "bg-blue-50 dark:bg-blue-950/30",   border: "border-blue-200" },
+  AI_SCREENING:           { label: "AI Screening",      color: "text-blue-700",   bg: "bg-blue-50 dark:bg-blue-950/30",   border: "border-blue-200" },
+  NEEDS_INFORMATION:      { label: "More Info Needed",  color: "text-amber-700",  bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-300" },
+  MANUAL_REVIEW:          { label: "Manual Review",     color: "text-amber-700",  bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-300" },
+  ELIGIBLE_FOR_MATCHING:  { label: "Live — Matching",   color: "text-green-700",  bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-300" },
+  AVAILABLE:              { label: "Live — Matching",   color: "text-green-700",  bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-300" },
+  SOFT_RESERVED:          { label: "Soft Reserved",     color: "text-teal-700",   bg: "bg-teal-50 dark:bg-teal-950/30",   border: "border-teal-300" },
+  MATCHED:                { label: "Matched",           color: "text-emerald-700",bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-300" },
+  PAUSED:                 { label: "Paused",            color: "text-stone-600",  bg: "bg-stone-100 dark:bg-zinc-800",    border: "border-stone-300" },
+  PARTIALLY_DONATED:      { label: "Partially Donated", color: "text-emerald-700",bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-300" },
+  DONATED:                { label: "Donated",           color: "text-emerald-700",bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-300" },
+  FULFILLED:              { label: "Fulfilled",         color: "text-emerald-700",bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-300" },
+  EXPIRED:                { label: "Expired",           color: "text-red-600",    bg: "bg-red-50 dark:bg-red-950/30",     border: "border-red-300" },
+  WITHDRAWN:              { label: "Withdrawn",         color: "text-red-600",    bg: "bg-red-50 dark:bg-red-950/30",     border: "border-red-300" },
+  REJECTED:               { label: "Rejected",          color: "text-red-600",    bg: "bg-red-50 dark:bg-red-950/30",     border: "border-red-300" },
+};
+
+function ListingJourneyTracker({ status }: { status: string }) {
+  const terminal = ["DONATED", "FULFILLED", "EXPIRED", "WITHDRAWN", "REJECTED"];
+  if (terminal.includes(status)) return null;
+
+  const idx = LISTING_JOURNEY.findIndex(s => s.status === status
+    || (status === "AVAILABLE" && s.status === "ELIGIBLE_FOR_MATCHING"));
+  if (idx < 0) return null;
+
+  return (
+    <div className="flex items-center gap-0 pt-2">
+      {LISTING_JOURNEY.map((step, i) => (
+        <div key={step.status} className="flex items-center flex-1 last:flex-none">
+          <div className={`w-3 h-3 rounded-full flex-shrink-0 ${i <= idx ? step.color : "bg-stone-200 dark:bg-zinc-700"}`} title={step.label} />
+          {i < LISTING_JOURNEY.length - 1 && (
+            <div className={`flex-1 h-0.5 ${i < idx ? "bg-green-400" : "bg-stone-200 dark:bg-zinc-700"}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function getFulfilmentStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
     DONOR_REVIEW: { label: "⚠ Awaiting Your Confirmation", variant: "outline" },
@@ -676,28 +728,48 @@ export default function DashboardPage() {
                           </Link>
                         </div>
                       ) : (
-                        <div className="divide-y space-y-3">
-                          {itemListings.map((l) => (
-                            <div key={l.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group hover:bg-stone-50 dark:hover:bg-zinc-800/40 p-2 rounded-xl transition-all">
-                              <div>
-                                <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors"><TranslatedText text={l.title} /></p>
-                                <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
-                                  <span><TranslatedText text={l.city} /></span>
-                                  <span>•</span>
-                                  <span>Qty: {l.quantity}</span>
-                                  {l.maximumDeliveryRadius && (
-                                    <>
-                                      <span>•</span>
-                                      <span>Radius: {l.maximumDeliveryRadius}km</span>
-                                    </>
-                                  )}
+                        <div className="divide-y dark:divide-zinc-800 space-y-2">
+                          {itemListings.map((l) => {
+                            const meta = LISTING_STATUS_META[l.status] ?? { label: l.status, color: "text-stone-500", bg: "bg-stone-100", border: "border-stone-200" };
+                            const isDraft = l.status === "DRAFT";
+                            const needsInfo = l.status === "NEEDS_INFORMATION";
+                            return (
+                              <div key={l.id} className={`pt-3 first:pt-0 p-2 rounded-xl transition-all border ${needsInfo ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/10" : "border-transparent hover:bg-stone-50 dark:hover:bg-zinc-800/40"}`}>
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-sm text-stone-900 dark:text-stone-100 truncate"><TranslatedText text={l.title} /></p>
+                                    <div className="flex flex-wrap gap-1.5 items-center text-xs text-stone-400 mt-0.5">
+                                      {l.category && <span><TranslatedText text={l.category} /></span>}
+                                      {l.city && <><span>·</span><span><TranslatedText text={l.city} /></span></>}
+                                      <span>·</span>
+                                      <span>Qty: {l.quantity}</span>
+                                    </div>
+                                  </div>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${meta.color} ${meta.bg} ${meta.border}`}>
+                                    {meta.label}
+                                  </span>
                                 </div>
+
+                                <ListingJourneyTracker status={l.status} />
+
+                                {needsInfo && (
+                                  <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 font-semibold bg-amber-100 dark:bg-amber-950/20 rounded-lg p-2">
+                                    {l.rejectionReason
+                                      ? <>Admin note: {l.rejectionReason}</>
+                                      : "Admin has requested more information. Please update your listing."}
+                                  </div>
+                                )}
+
+                                {(isDraft || needsInfo) && (
+                                  <Link href="/items/new" className="mt-2 inline-block">
+                                    <span className="text-xs text-[#b04a15] font-bold hover:underline">
+                                      {isDraft ? "Continue listing →" : "Update listing →"}
+                                    </span>
+                                  </Link>
+                                )}
                               </div>
-                              <Badge variant={l.status === "AVAILABLE" ? "default" : "secondary"} className="text-[10px]">
-                                {l.status}
-                              </Badge>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </CardContent>

@@ -306,13 +306,16 @@ export type ItemListing = {
   condition: string;
   city: string;
   pincode: string | null;
+  locality: string | null;
   description: string | null;
   status: string;
   rejectionReason: string | null;
   donorId: number;
   donorName: string;
   createdAt: string;
+  submittedAt: string | null;
   imageUrl: string | null;
+  imageUrls: string | null;
   maximumDeliveryRadius: number | null;
   transportPayerPreference: string | null;
   availabilityExpiry: string | null;
@@ -320,6 +323,25 @@ export type ItemListing = {
   longitude: number | null;
   pickupAvailability: string | null;
   recipientRestrictions: string | null;
+  // spec §5.1
+  brand: string | null;
+  model: string | null;
+  approximateAge: string | null;
+  workingStatus: string | null;
+  knownDefects: string | null;
+  accessoriesIncluded: string | null;
+  dimensions: string | null;
+  approximateWeight: string | null;
+  // spec §5.3
+  pickupDays: string | null;
+  pickupTimeSlots: string | null;
+  donorDropOffAvailable: boolean;
+  maxTravelDistance: number | null;
+  packagingAvailable: string | null;
+  specialHandling: string | null;
+  preferredHandoverDate: string | null;
+  preferredHandoverSlots: string | null;
+  declarationsAccepted: boolean;
 };
 
 export function getItemListings() {
@@ -330,23 +352,61 @@ export function getMyItemListings() {
   return request<ItemListing[]>("/api/v1/items/mine");
 }
 
-export function createItemListing(data: {
-  title: string;
-  category: string;
+// ── Spec flow: Draft → Update → Submit ──────────────────────────────────────
+
+export function createItemListingDraft() {
+  return request<ItemListing>("/api/v1/items/draft", { method: "POST" });
+}
+
+export function updateItemListingDraft(id: number, data: Partial<CreateListingPayload>) {
+  return request<ItemListing>(`/api/v1/items/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function submitItemListing(id: number) {
+  return request<ItemListing>(`/api/v1/items/${id}/submit`, { method: "POST" });
+}
+
+export type CreateListingPayload = {
+  title?: string;
+  category?: string;
   subcategory?: string;
-  quantity: number;
-  condition: string;
-  city: string;
-  pincode?: string;
+  quantity?: number;
+  condition?: string;
+  brand?: string;
+  model?: string;
+  approximateAge?: string;
+  workingStatus?: string;
+  knownDefects?: string;
+  accessoriesIncluded?: string;
+  dimensions?: string;
+  approximateWeight?: string;
   description?: string;
   imageUrl?: string | null;
-  maximumDeliveryRadius?: number;
-  transportPayerPreference?: string;
+  imageUrls?: string;
+  city?: string;
+  pincode?: string;
+  locality?: string;
   latitude?: number;
   longitude?: number;
-  pickupAvailability?: string;
-  recipientRestrictions?: string;
-}) {
+  pickupAvailableYN?: boolean;
+  pickupDays?: string;
+  pickupTimeSlots?: string;
+  donorDropOffAvailable?: boolean;
+  maxTravelDistance?: number;
+  packagingAvailable?: string;
+  specialHandling?: string;
+  preferredHandoverDate?: string;
+  preferredHandoverSlots?: string;
+  maximumDeliveryRadius?: number;
+  transportPayerPreference?: string;
+  policyVersion?: string;
+  declarationsAccepted?: boolean;
+};
+
+export function createItemListing(data: CreateListingPayload) {
   return request<ItemListing>("/api/v1/items", {
     method: "POST",
     body: JSON.stringify(data),
@@ -366,6 +426,13 @@ export function adminRejectItemListing(id: number, reason: string) {
   return request<ItemListing>(`/api/v1/admin/items/${id}/reject`, {
     method: "PATCH",
     body: JSON.stringify({ reason }),
+  });
+}
+
+export function adminMarkListingNeedsInformation(id: number, adminNote: string) {
+  return request<ItemListing>(`/api/v1/admin/items/${id}/needs-information`, {
+    method: "PATCH",
+    body: JSON.stringify({ adminNote }),
   });
 }
 
