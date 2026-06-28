@@ -47,23 +47,51 @@ export async function detectLocationFromServer(lat: number, lng: number) {
   }
 }
 
+// Strip common administrative suffixes before comparing
+function normCity(s: string): string {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/\s+(city|district|taluka|tehsil|nagar|municipality|municipal corporation|corp\.?|cantt\.?|cantonment|ward|area|mc)$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export async function resolveLocationFromGPS(countryCode: string, stateName: string, cityName: string) {
   let stateIso = "";
   let cityValue = "";
-  if (countryCode) {
-    const states = State.getStatesOfCountry(countryCode);
-    const matchedState = states.find(
-      (s) => s.name.toLowerCase() === stateName?.toLowerCase() ||
-             s.name.toLowerCase().includes(stateName?.toLowerCase() || "")
-    );
-    if (matchedState) {
-      stateIso = matchedState.isoCode;
+
+  if (!countryCode) return { stateIso, cityValue };
+
+  const states = State.getStatesOfCountry(countryCode);
+  const sNorm = (stateName ?? "").toLowerCase();
+
+  // State: exact → library-includes-gps → gps-includes-library
+  const matchedState =
+    states.find((s) => s.name.toLowerCase() === sNorm) ||
+    states.find((s) => s.name.toLowerCase().includes(sNorm) && sNorm.length > 2) ||
+    states.find((s) => sNorm.includes(s.name.toLowerCase()) && s.name.length > 2);
+
+  if (matchedState) {
+    stateIso = matchedState.isoCode;
+
+    if (cityName) {
       const cities = City.getCitiesOfState(countryCode, matchedState.isoCode);
-      const matchedCity = cities.find(
-        (c) => c.name.toLowerCase() === cityName?.toLowerCase()
-      );
+      const gNorm = normCity(cityName);
+
+      const matchedCity =
+        // 1. exact match
+        cities.find((c) => c.name.toLowerCase() === cityName.toLowerCase()) ||
+        // 2. normalized exact
+        cities.find((c) => normCity(c.name) === gNorm) ||
+        // 3. library name contained in GPS name  (e.g. GPS="Pune City" lib="Pune")
+        cities.find((c) => normCity(c.name).length > 3 && gNorm.includes(normCity(c.name))) ||
+        // 4. GPS name contained in library name  (e.g. GPS="Navi" lib="Navi Mumbai")
+        cities.find((c) => gNorm.length > 3 && normCity(c.name).includes(gNorm));
+
       if (matchedCity) cityValue = matchedCity.name;
     }
   }
+
   return { stateIso, cityValue };
 }

@@ -58,7 +58,22 @@ async function deriveNotifications(role: string): Promise<AppNotification[]> {
   }
 
   if (role === "DONOR") {
-    const matches = await getMyMatches().catch(() => []);
+    const [matches, listings] = await Promise.all([
+      getMyMatches().catch(() => []),
+      getMyItemListings().catch(() => []),
+    ]);
+
+    listings.forEach(l => {
+      if (l.status === "PENDING_REVIEW") {
+        notifs.push({ id: `listing-review-${l.id}`, title: "Item under review", body: `"${l.title}" is being reviewed by our team`, type: "info", link: "/dashboard", timestamp: Date.now() });
+      }
+      if (l.status === "AVAILABLE") {
+        notifs.push({ id: `listing-approved-${l.id}`, title: "Item approved! ✓", body: `"${l.title}" is now live and can be matched with donors`, type: "approved", link: "/dashboard", timestamp: Date.now() });
+      }
+      if (l.status === "REJECTED") {
+        notifs.push({ id: `listing-rejected-${l.id}`, title: "Item not approved", body: `"${l.title}" was not approved${l.rejectionReason ? ": " + l.rejectionReason : ""}`, type: "info", link: "/dashboard", timestamp: Date.now() });
+      }
+    });
 
     matches.forEach(m => {
       if (m.status === "DONOR_REVIEW") {
@@ -99,6 +114,13 @@ export function useNotifications() {
     const interval = setInterval(refresh, POLL_MS);
     return () => clearInterval(interval);
   }, [isLoading, user, refresh]);
+
+  // Immediately re-derive when a listing is submitted (fired from /items/new)
+  useEffect(() => {
+    function onListingSubmit() { refresh(); }
+    window.addEventListener("ck-listing-submitted", onListingSubmit);
+    return () => window.removeEventListener("ck-listing-submitted", onListingSubmit);
+  }, [refresh]);
 
   function markAllRead() {
     const seen = loadSeen();

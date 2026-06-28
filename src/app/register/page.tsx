@@ -41,6 +41,31 @@ function FacebookIcon() {
   );
 }
 
+// ── Phone number digit counts by ISO country code ────────────────────────────
+const PHONE_LENGTHS: Record<string, number> = {
+  // South Asia
+  IN: 10, PK: 10, BD: 10, LK: 9, NP: 10, MV: 7, BT: 8, AF: 9,
+  // East / SE Asia
+  CN: 11, JP: 11, KR: 10, TW: 9, HK: 8, SG: 8, MY: 10,
+  PH: 10, TH: 9, VN: 9, ID: 12, MM: 9, KH: 9, LA: 9, MN: 8,
+  // Middle East
+  AE: 9, SA: 9, QA: 8, KW: 8, BH: 8, OM: 8, JO: 9, LB: 8,
+  IQ: 10, IR: 10, SY: 9, YE: 9, IL: 9,
+  // Africa
+  EG: 10, MA: 9, DZ: 9, TN: 8, LY: 9, NG: 10, ZA: 9,
+  KE: 9, GH: 9, ET: 9, TZ: 9, UG: 9, ZM: 9, ZW: 9,
+  // Europe
+  DE: 11, FR: 9, IT: 10, ES: 9, NL: 9, BE: 9, PT: 9,
+  CH: 9, AT: 10, SE: 9, NO: 8, DK: 8, FI: 10, PL: 9,
+  RU: 10, UA: 9, GR: 10, TR: 10,
+  // Americas
+  US: 10, CA: 10, MX: 10, BR: 11, AR: 10, CO: 10, CL: 9, PE: 9, VE: 10,
+  // Oceania
+  AU: 9, NZ: 9,
+  // UK
+  GB: 10,
+};
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function detectCountryCode(): string {
@@ -140,10 +165,13 @@ function RegisterContent() {
   const [stateIso, setStateIso] = useState("");
   const [cityValue, setCityValue] = useState("");
   const [cityFreeText, setCityFreeText] = useState("");
+  const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [panelAnimClass, setPanelAnimClass] = useState("");
 
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
+
+  const maxPhoneLength = PHONE_LENGTHS[dialCountry] ?? 15;
 
   function handleGPSLocation() {
     if (!navigator.geolocation) {
@@ -174,14 +202,16 @@ function RegisterContent() {
                 if (resolvedCity) {
                   setCityValue(resolvedCity);
                   setCityFreeText("");
+                  setForceFreeTextCity(false);
                 } else if (cityName) {
                   setCityValue("");
                   setCityFreeText(cityName);
+                  setForceFreeTextCity(true);
                 }
               } else {
                 setStateIso("");
                 setCityValue("");
-                if (cityName) setCityFreeText(cityName);
+                if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
               }
               toast.success("Location updated successfully!");
             }
@@ -202,7 +232,7 @@ function RegisterContent() {
 
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
-  const showCityFreeText = noStateOptions || noCityOptions;
+  const showCityFreeText = noStateOptions || noCityOptions || forceFreeTextCity;
 
   const triggerGoogle = useGoogleLogin({
     scope: "openid email profile",
@@ -233,12 +263,14 @@ function RegisterContent() {
     setStateIso("");
     setCityValue("");
     setCityFreeText("");
+    setForceFreeTextCity(false);
   }
 
   function handleStateChange(iso: string) {
     setStateIso(iso);
     setCityValue("");
     setCityFreeText("");
+    setForceFreeTextCity(false);
   }
 
   function buildCityString(): string {
@@ -282,14 +314,16 @@ function RegisterContent() {
                   if (resolvedCity) {
                     setCityValue(resolvedCity);
                     setCityFreeText("");
+                    setForceFreeTextCity(false);
                   } else if (cityName) {
                     setCityValue("");
                     setCityFreeText(cityName);
+                    setForceFreeTextCity(true);
                   }
                 } else {
                   setStateIso("");
                   setCityValue("");
-                  if (cityName) setCityFreeText(cityName);
+                  if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
                 }
                 return;
               }
@@ -343,8 +377,10 @@ function RegisterContent() {
     const e: Record<string, string> = {};
     if (!form.fullName.trim() || form.fullName.trim().length < 2)
       e.fullName = "Full name must be at least 2 characters";
-    if (!phoneNumber || !/^\d+$/.test(phoneNumber))
+    if (!phoneNumber || phoneNumber.length < 4)
       e.phone = "Enter a valid phone number";
+    else if (PHONE_LENGTHS[dialCountry] && phoneNumber.length !== PHONE_LENGTHS[dialCountry])
+      e.phone = `Phone number must be exactly ${PHONE_LENGTHS[dialCountry]} digits`;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Enter a valid email address";
     if (!isSocialFlow && form.password.length < 8)
@@ -538,7 +574,8 @@ function RegisterContent() {
                     inputMode="numeric"
                     placeholder={t("phone")}
                     value={phoneNumber}
-                    onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                    maxLength={maxPhoneLength}
+                    onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength))}
                     autoComplete="tel"
                     className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
                   />

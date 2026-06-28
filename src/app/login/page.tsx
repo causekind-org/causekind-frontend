@@ -51,6 +51,7 @@ function LoginContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [showNotFoundModal, setShowNotFoundModal] = useState(false);
   // Start with no animation class — set AFTER mount so the correct direction is known
   const [panelAnimClass, setPanelAnimClass] = useState("");
 
@@ -110,7 +111,13 @@ function LoginContent() {
       toast.success("Welcome back!");
       router.push(homeForRole(res.role));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Invalid credentials");
+      const msg = err instanceof Error ? err.message : "";
+      // Show the "not registered?" modal on any credential failure
+      if (msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("bad credentials") || msg === "") {
+        setShowNotFoundModal(true);
+      } else {
+        toast.error(msg || "Sign in failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -338,6 +345,84 @@ function LoginContent() {
         </p>
       </div>
 
+      {/* ── Not-registered popup ── */}
+      {showNotFoundModal && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setShowNotFoundModal(false)}
+            className="fixed inset-0 z-[998] bg-black/50 backdrop-blur-sm"
+            style={{ animation: "ck-bd-in 0.2s ease forwards" }}
+          />
+
+          {/* Panel */}
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="Account not found"
+            className="fixed z-[999] left-1/2 top-1/2 w-[min(420px,92vw)]"
+            style={{ transform: "translate(-50%,-50%)", animation: "ck-nr-in 0.35s cubic-bezier(0.22,1,0.36,1) forwards" }}
+          >
+            <div className="rounded-2xl overflow-hidden shadow-2xl border border-stone-200 dark:border-zinc-800">
+              {/* Warm top stripe */}
+              <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#b04a15,#e07b3a)" }} />
+
+              <div className="bg-white dark:bg-zinc-950 px-7 py-7">
+                {/* Icon + heading */}
+                <div className="flex items-start gap-4 mb-5">
+                  <div className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-xl"
+                    style={{ background: "#b04a1518" }}>
+                    🔒
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-extrabold text-stone-900 dark:text-stone-50 leading-tight mb-1">
+                      Couldn&apos;t sign you in
+                    </h3>
+                    <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
+                      The email or password you entered doesn&apos;t match any account.
+                      New to CauseKind? Create a free account in seconds.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-stone-100 dark:border-zinc-800 mb-5" />
+
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowNotFoundModal(false)}
+                    className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    Try again
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNotFoundModal(false);
+                      sessionStorage.setItem("ck_auth_direction", "login-to-register");
+                      router.push("/register");
+                    }}
+                    className="flex-1 rounded-xl px-4 py-3 text-sm font-bold text-white text-center transition-all hover:opacity-90 active:scale-95"
+                    style={{ background: "#b04a15" }}
+                  >
+                    Sign up free →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes ck-bd-in  { from{opacity:0} to{opacity:1} }
+            @keyframes ck-nr-in  {
+              from { opacity:0; transform:translate(-50%,-50%) scale(0.88) translateY(12px); }
+              to   { opacity:1; transform:translate(-50%,-50%) scale(1)    translateY(0px);  }
+            }
+          ` }} />
+        </>
+      )}
     </div>
   );
 }

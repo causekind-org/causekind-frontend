@@ -262,6 +262,10 @@ export function WelcomeOverlay() {
       sessionStorage.removeItem("ck_welcome_pending");
       return;
     }
+    if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
+      sessionStorage.removeItem("ck_welcome_pending");
+      return;
+    }
     setExiting(false);
     setShow(true);
     // DONOR view is interactive (category picker) — no auto-dismiss.

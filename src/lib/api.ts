@@ -80,7 +80,7 @@ async function request<T>(
 export function login(email: string, password: string, rememberMe = false) {
   return request<{ token: null; email: string; role: string; userId: number }>(
     "/api/v1/auth/login",
-    { method: "POST", body: JSON.stringify({ email, password, rememberMe }) }
+    { method: "POST", body: JSON.stringify({ email, password, rememberMe }), silent401: true }
   );
 }
 
@@ -367,6 +367,30 @@ export function adminRejectItemListing(id: number, reason: string) {
     method: "PATCH",
     body: JSON.stringify({ reason }),
   });
+}
+
+export type AiModerationResult = {
+  decision: "APPROVE" | "REJECT" | "REVIEW";
+  confidence: number;
+  labels: string[];
+  reason: string;
+};
+
+export function adminGetListingAiReview(id: number) {
+  return request<AiModerationResult>(`/api/v1/admin/items/${id}/ai-review`, { silent401: true });
+}
+
+export async function uploadListingImage(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("image", file);
+  const res = await fetch("/api/v1/items/upload-image", {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Image upload failed");
+  const data = await res.json();
+  return data.url as string;
 }
 
 // ── Item Requests ─────────────────────────────────────────────────────────────

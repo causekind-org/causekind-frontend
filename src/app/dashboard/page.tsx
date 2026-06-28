@@ -19,7 +19,8 @@ import { Progress } from "@/components/ui/progress";
 import {
   Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
-  Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown
+  Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown,
+  ChevronRight, List
 } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
@@ -31,6 +32,24 @@ function getInitials(name: string): string {
   return ((words[0][0] ?? "") + (words[words.length - 1][0] ?? "")).toUpperCase();
 }
 
+
+function getListingStatusBadge(status: string) {
+  const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+    DRAFT:            { label: "Draft",              variant: "outline" },
+    PENDING_REVIEW:   { label: "⏳ Under Review",    variant: "outline" },
+    AVAILABLE:        { label: "✓ Approved",         variant: "default" },
+    POTENTIAL_MATCH:  { label: "Match Found",        variant: "secondary" },
+    AWAITING_DONOR_CONFIRMATION: { label: "Action Required", variant: "outline" },
+    RESERVED:         { label: "Reserved",           variant: "secondary" },
+    HANDOVER_SCHEDULED: { label: "Handover Scheduled", variant: "secondary" },
+    IN_TRANSIT:       { label: "In Transit",         variant: "secondary" },
+    FULFILLED:        { label: "Donated ✓",          variant: "default" },
+    EXPIRED:          { label: "Expired",            variant: "outline" },
+    WITHDRAWN:        { label: "Withdrawn",          variant: "outline" },
+    REJECTED:         { label: "Rejected",           variant: "destructive" },
+  };
+  return map[status] ?? { label: status, variant: "outline" as const };
+}
 
 function getFulfilmentStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
@@ -402,6 +421,14 @@ export default function DashboardPage() {
   const [generatedOtp, setGeneratedOtp] = useState<{ matchId: number; otp: string } | null>(null);
   const [otpLoading, setOtpLoading] = useState<number | null>(null);
 
+  // Inventory drawer
+  const [showInventoryDrawer, setShowInventoryDrawer] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowInventoryDrawer(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const refreshMatches = async () => {
     try { const fresh = await getMyMatches(); setMatches(fresh); } catch { /* silent */ }
@@ -664,29 +691,41 @@ export default function DashboardPage() {
                           </Link>
                         </div>
                       ) : (
-                        <div className="divide-y space-y-3">
-                          {itemListings.map((l) => (
-                            <div key={l.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group hover:bg-stone-50 dark:hover:bg-zinc-800/40 p-2 rounded-xl transition-all">
-                              <div>
-                                <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors"><TranslatedText text={l.title} /></p>
-                                <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
-                                  <span><TranslatedText text={l.city} /></span>
-                                  <span>•</span>
-                                  <span>Qty: {l.quantity}</span>
-                                  {l.maximumDeliveryRadius && (
-                                    <>
-                                      <span>•</span>
-                                      <span>Radius: {l.maximumDeliveryRadius}km</span>
-                                    </>
-                                  )}
+                        <>
+                          <div className="divide-y space-y-3">
+                            {itemListings.slice(0, 4).map((l) => (
+                              <div key={l.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group hover:bg-stone-50 dark:hover:bg-zinc-800/40 p-2 rounded-xl transition-all">
+                                <div>
+                                  <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors"><TranslatedText text={l.title} /></p>
+                                  <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
+                                    <span><TranslatedText text={l.city} /></span>
+                                    <span>•</span>
+                                    <span>Qty: {l.quantity}</span>
+                                    {l.maximumDeliveryRadius && (
+                                      <>
+                                        <span>•</span>
+                                        <span>Radius: {l.maximumDeliveryRadius}km</span>
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
+                                <Badge variant={getListingStatusBadge(l.status).variant} className="text-[10px]">
+                                  {getListingStatusBadge(l.status).label}
+                                </Badge>
                               </div>
-                              <Badge variant={l.status === "AVAILABLE" ? "default" : "secondary"} className="text-[10px]">
-                                {l.status}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                          {itemListings.length > 4 && (
+                            <button
+                              onClick={() => setShowInventoryDrawer(true)}
+                              className="w-full mt-2 flex items-center justify-center gap-1.5 text-xs font-bold text-[#b04a15] hover:text-[#943e11] border border-[#b04a15]/20 hover:border-[#b04a15]/50 hover:bg-[#b04a15]/5 rounded-xl py-2.5 transition-all"
+                            >
+                              <List className="w-3.5 h-3.5" />
+                              Show all {itemListings.length} items
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </>
                       )}
                     </CardContent>
                   </Card>
@@ -975,6 +1014,91 @@ export default function DashboardPage() {
 
         </div>
       </div>
+
+      {/* ── Inventory Drawer ─────────────────────────────────────────────── */}
+      {showInventoryDrawer && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowInventoryDrawer(false)}
+          />
+          {/* Panel */}
+          <div className="fixed right-0 top-0 z-50 h-full w-full max-w-[480px] bg-white dark:bg-zinc-900 shadow-2xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 dark:border-zinc-800 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-[#b04a15]/10 text-[#b04a15] flex items-center justify-center">
+                  <EyeOff className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-extrabold text-stone-900 dark:text-white text-base leading-none">My Private Inventory</h2>
+                  <p className="text-xs text-stone-400 mt-0.5">{itemListings.length} item{itemListings.length !== 1 ? "s" : ""} listed</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInventoryDrawer(false)}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Add button */}
+            <div className="px-6 pt-4 pb-2 shrink-0">
+              <Link href="/items/new" onClick={() => setShowInventoryDrawer(false)}>
+                <Button size="sm" className="bg-[#b04a15] hover:bg-[#943e11] text-white text-xs font-bold rounded-xl w-full flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5" /> Add New Item
+                </Button>
+              </Link>
+            </div>
+
+            {/* Scrollable list */}
+            <div className="flex-1 overflow-y-auto px-6 py-2 space-y-2">
+              {itemListings.map((l, idx) => (
+                <div
+                  key={l.id}
+                  className="flex items-start justify-between gap-3 p-3.5 rounded-2xl border border-stone-100 dark:border-zinc-800 hover:border-[#b04a15]/30 hover:bg-[#b04a15]/5 transition-all group"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    {/* Index circle */}
+                    <div className="h-7 w-7 rounded-lg bg-stone-100 dark:bg-zinc-800 text-stone-400 text-[11px] font-black flex items-center justify-center shrink-0 group-hover:bg-[#b04a15]/10 group-hover:text-[#b04a15] transition-all">
+                      {idx + 1}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors truncate">
+                        <TranslatedText text={l.title} />
+                      </p>
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-center text-xs text-stone-400 mt-1">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          <TranslatedText text={l.city} />
+                        </span>
+                        <span>•</span>
+                        <span>Qty: {l.quantity}</span>
+                        {l.maximumDeliveryRadius && (
+                          <>
+                            <span>•</span>
+                            <span>Radius: {l.maximumDeliveryRadius}km</span>
+                          </>
+                        )}
+                      </div>
+                      {l.description && (
+                        <p className="text-xs text-stone-400 mt-1 line-clamp-2">
+                          <TranslatedText text={l.description} />
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant={getListingStatusBadge(l.status).variant} className="text-[10px] shrink-0 whitespace-nowrap">
+                    {getListingStatusBadge(l.status).label}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

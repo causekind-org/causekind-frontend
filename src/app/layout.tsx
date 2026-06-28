@@ -13,6 +13,7 @@ import { LocationGate } from "@/components/LocationGate";
 import { CookieConsent } from "@/components/CookieConsent";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { DonorListingPrompt } from "@/components/DonorListingPrompt";
+import { DonorCategoryModal } from "@/components/DonorCategoryModal";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
 
@@ -91,6 +92,7 @@ export default async function RootLayout({
               <LocationGate />
               <CookieConsent />
               <WelcomeOverlay />
+              <DonorCategoryModal />
               <DonorListingPrompt />
             </AuthProvider>
           </GoogleProvider>
