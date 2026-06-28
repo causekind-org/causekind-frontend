@@ -9,6 +9,7 @@ import {
   getMyItemListings, getMyItemRequests, getMyMatches, getMyProfile,
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   saveMatchLogistics, generateDeliveryOtp, verifyDeliveryMatch, confirmReceiptMatch, requestCallMasking,
+  pauseItemListing, resumeItemListing, withdrawItemListing,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -452,6 +453,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"donor" | "donee">("donor");
 
+  // Listing action state
+  const [listingActionLoading, setListingActionLoading] = useState<number | null>(null);
+
   // Donor review state
   const [declineMatchId, setDeclineMatchId] = useState<number | null>(null);
   const [declineReason, setDeclineReason] = useState("");
@@ -467,9 +471,28 @@ export default function DashboardPage() {
   const [otpLoading, setOtpLoading] = useState<number | null>(null);
 
 
+  const refreshListings = async () => {
+    try { const fresh = await getMyItemListings(); setItemListings(fresh); } catch { /* silent */ }
+  };
+
   const refreshMatches = async () => {
     try { const fresh = await getMyMatches(); setMatches(fresh); } catch { /* silent */ }
   };
+
+  async function handleListingAction(id: number, action: "pause" | "resume" | "withdraw") {
+    setListingActionLoading(id);
+    try {
+      if (action === "pause")    await pauseItemListing(id);
+      if (action === "resume")   await resumeItemListing(id);
+      if (action === "withdraw") await withdrawItemListing(id);
+      await refreshListings();
+      toast.success(action === "pause" ? "Listing paused" : action === "resume" ? "Listing resumed" : "Listing withdrawn");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setListingActionLoading(null);
+    }
+  }
 
   useEffect(() => {
     if (isLoading) return;
@@ -760,13 +783,46 @@ export default function DashboardPage() {
                                   </div>
                                 )}
 
-                                {(isDraft || needsInfo) && (
-                                  <Link href="/items/new" className="mt-2 inline-block">
-                                    <span className="text-xs text-[#b04a15] font-bold hover:underline">
-                                      {isDraft ? "Continue listing →" : "Update listing →"}
+                                {/* Listing action buttons per spec §7.4 */}
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {isDraft && (
+                                    <Link href="/items/new">
+                                      <span className="text-xs text-[#b04a15] font-bold hover:underline">Continue →</span>
+                                    </Link>
+                                  )}
+                                  {needsInfo && (
+                                    <span className="text-xs text-amber-700 font-bold">
+                                      Contact admin or resubmit after updating
                                     </span>
-                                  </Link>
-                                )}
+                                  )}
+                                  {l.status === "ELIGIBLE_FOR_MATCHING" || l.status === "AVAILABLE" ? (
+                                    <button
+                                      onClick={() => handleListingAction(l.id, "pause")}
+                                      disabled={listingActionLoading === l.id}
+                                      className="text-xs text-stone-500 border border-stone-300 rounded-full px-2.5 py-0.5 hover:border-stone-500 hover:text-stone-700 disabled:opacity-50"
+                                    >
+                                      {listingActionLoading === l.id ? "…" : "Pause"}
+                                    </button>
+                                  ) : null}
+                                  {l.status === "PAUSED" && (
+                                    <button
+                                      onClick={() => handleListingAction(l.id, "resume")}
+                                      disabled={listingActionLoading === l.id}
+                                      className="text-xs text-green-700 border border-green-400 rounded-full px-2.5 py-0.5 hover:bg-green-50 disabled:opacity-50"
+                                    >
+                                      {listingActionLoading === l.id ? "…" : "Resume"}
+                                    </button>
+                                  )}
+                                  {!["DONATED", "FULFILLED", "REJECTED", "WITHDRAWN"].includes(l.status) && (
+                                    <button
+                                      onClick={() => { if (confirm("Withdraw this listing? This cannot be undone.")) handleListingAction(l.id, "withdraw"); }}
+                                      disabled={listingActionLoading === l.id}
+                                      className="text-xs text-red-500 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 disabled:opacity-50"
+                                    >
+                                      Withdraw
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}

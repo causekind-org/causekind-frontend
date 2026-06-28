@@ -369,6 +369,18 @@ export function submitItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}/submit`, { method: "POST" });
 }
 
+export function pauseItemListing(id: number) {
+  return request<ItemListing>(`/api/v1/items/${id}/pause`, { method: "POST" });
+}
+
+export function resumeItemListing(id: number) {
+  return request<ItemListing>(`/api/v1/items/${id}/resume`, { method: "POST" });
+}
+
+export function withdrawItemListing(id: number) {
+  return request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
+}
+
 export type CreateListingPayload = {
   title?: string;
   category?: string;

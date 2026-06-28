@@ -54,8 +54,8 @@ const DECLARATIONS = [
   "I consent to screening, matching and processing for the donation journey.",
 ];
 
-const NEEDS_WORKING_STATUS = ["Electronics", "Household", "Medical aid", "Sports"];
-const NEEDS_DIMENSIONS     = ["Furniture", "Clothing", "Medical aid"];
+const NEEDS_WORKING_STATUS = ["Electronics", "Household", "Medical aid", "Sports", "Tools & Equipment"];
+const NEEDS_DIMENSIONS     = ["Furniture", "Clothing", "Medical aid", "Tools & Equipment"];
 
 const STEPS = [
   { id: 1, label: "Item Details" },
@@ -130,6 +130,7 @@ export default function NewItemPage() {
   const [packaging, setPackaging]       = useState("");
   const [specialHandling, setSpecialHandling] = useState<string[]>([]);
   const [handoverDate, setHandoverDate] = useState("");
+  const [handoverSlots, setHandoverSlots] = useState<string[]>([]);
   const [deliveryRadius, setDeliveryRadius] = useState(25);
 
   // Step 4: Declarations
@@ -192,6 +193,7 @@ export default function NewItemPage() {
       packagingAvailable: packaging || undefined,
       specialHandling: specialHandling.join("|") || undefined,
       preferredHandoverDate: handoverDate || undefined,
+      preferredHandoverSlots: handoverSlots.length > 0 ? handoverSlots.join(",") : undefined,
       maximumDeliveryRadius: deliveryRadius,
       policyVersion: "1.0",
       declarationsAccepted: declarations.every(Boolean),
@@ -202,7 +204,7 @@ export default function NewItemPage() {
     dimensions, weight, description, photos, cityFreeText, cityValue,
     stateIso, countryIso, pincode, locality, latitude, longitude,
     pickupYN, pickupDays, pickupSlots, dropOffYN, maxTravel, packaging,
-    specialHandling, handoverDate, deliveryRadius, declarations, showCityFreeText,
+    specialHandling, handoverDate, handoverSlots, deliveryRadius, declarations, showCityFreeText,
   ]);
 
   async function saveDraft() {
@@ -330,6 +332,9 @@ export default function NewItemPage() {
   function toggleHandling(h: string) {
     setSpecialHandling((prev) => prev.includes(h) ? prev.filter((x) => x !== h) : [...prev, h]);
   }
+  function toggleHandoverSlot(s: string) {
+    setHandoverSlots((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
+  }
   function toggleDeclaration(i: number) {
     setDeclarations((prev) => prev.map((v, idx) => idx === i ? !v : v));
   }
@@ -365,6 +370,28 @@ export default function NewItemPage() {
   // ── Step 1: Item Details ──────────────────────────────────────────────────
   const Step1 = () => (
     <div className="space-y-5">
+      {/* Spec §4 — Introductory policy disclosure */}
+      <div className="bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl p-4 space-y-3 text-xs text-stone-600 dark:text-stone-400">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">Accepted Categories</p>
+            <p>Education, Clothing, Furniture, Electronics, Household items, Sports equipment, Medical aids</p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-bold text-red-600 text-[11px] uppercase tracking-wide">Not Accepted</p>
+            <p>Food, medicines, used undergarments, weapons, hazardous/recalled items, adult content, cash equivalents</p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">Your Privacy</p>
+            <p>Your name, phone and address are never shared with recipients before admin approval. Contact happens through masked channels only.</p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">After Submission</p>
+            <p>AI screening → human review → matching → donor reconfirmation → handover with OTP → Donation Certificate issued.</p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <Field label="Category" required>
           <Select value={category} onValueChange={(v) => { setCategory(v); setSubcategory(""); }}>
@@ -651,10 +678,24 @@ export default function NewItemPage() {
         </div>
       </div>
 
-      {/* Handover date */}
-      <Field label="Earliest Preferred Handover Date">
-        <Input type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
-      </Field>
+      {/* Handover date + time slots */}
+      <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
+        <p className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Preferred Handover Period</p>
+        <Field label="Earliest Available Date">
+          <Input type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+        </Field>
+        <div>
+          <p className="text-xs font-semibold text-stone-500 mb-2">Preferred Time Slots for Handover</p>
+          <div className="flex flex-wrap gap-2">
+            {TIME_SLOTS.map((s) => (
+              <button key={s} type="button" onClick={() => toggleHandoverSlot(s)}
+                className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${handoverSlots.includes(s) ? "bg-emerald-600 text-white border-emerald-600" : "border-stone-300 text-stone-500 hover:border-emerald-400"}`}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Delivery radius */}
       <Field label="Maximum Delivery Radius (km)" hint="How far can this item travel to reach a recipient?">

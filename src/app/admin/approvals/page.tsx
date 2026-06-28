@@ -50,11 +50,15 @@ export default function ApprovalsPage() {
 
     Promise.all([
       adminGetCampaigns("PENDING_APPROVAL"),
-      adminGetItemListings("SUBMITTED"),
+      // Load both SUBMITTED (awaiting first screening) and MANUAL_REVIEW (AI flagged for human review)
+      Promise.all([
+        adminGetItemListings("SUBMITTED"),
+        adminGetItemListings("MANUAL_REVIEW"),
+      ]).then(([submitted, manual]) => [...submitted, ...manual]),
       adminGetItemRequests("PENDING_VERIFICATION"),
       adminGetMatches("PENDING_APPROVAL"),
     ])
-      .then(([c, l, r, m]) => { setCampaigns(c); setListings(l); setRequests(r); setMatches(m); })
+      .then(([c, l, r, m]) => { setCampaigns(c as Campaign[]); setListings(l as ItemListing[]); setRequests(r as ItemRequest[]); setMatches(m as ItemMatch[]); })
       .catch(() => toast.error(t("failedToLoadQueues")))
       .finally(() => setLoading(false));
   }, [user, isLoading, router]);
@@ -267,7 +271,9 @@ export default function ApprovalsPage() {
                           {` · Qty ${l.quantity}`}
                         </p>
                       </div>
-                      <Badge variant="secondary">SUBMITTED</Badge>
+                      <Badge variant={l.status === "MANUAL_REVIEW" ? "destructive" : "secondary"}>
+                        {l.status === "MANUAL_REVIEW" ? "⚠ Manual Review" : "Submitted"}
+                      </Badge>
                     </div>
 
                     {/* Photos */}
