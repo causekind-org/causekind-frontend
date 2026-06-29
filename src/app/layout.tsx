@@ -15,6 +15,7 @@ import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { DonorListingPrompt } from "@/components/DonorListingPrompt";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
+import { GoogleTagManager } from "@next/third-parties/google";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -62,6 +63,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <GoogleTagManager gtmId="GTM-P7693M56" />
       <head>
         <link
           rel="stylesheet"
