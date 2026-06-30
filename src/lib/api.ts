@@ -383,7 +383,7 @@ export function adminGetListingAiReview(id: number) {
 export async function uploadListingImage(file: File): Promise<string> {
   const fd = new FormData();
   fd.append("image", file);
-  const res = await fetch("/api/v1/items/upload-image", {
+  const res = await fetch(`${BASE_URL}/api/v1/items/upload-image`, {
     method: "POST",
     body: fd,
     credentials: "include",
