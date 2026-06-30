@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, Heart, HandHeart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { getMyProfile, getMyMatches, type UserProfile } from "@/lib/api";
+import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -247,7 +247,7 @@ export function SiteHeader() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [inKindCount, setInKindCount] = useState(0);
+  const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -260,7 +260,7 @@ export function SiteHeader() {
         .catch(() => {});
 
       getMyMatches()
-        .then(matches => setInKindCount(matches.length))
+        .then(setMatches)
         .catch(() => {});
     }
   }, [user, isSidebarOpen]);
@@ -315,6 +315,45 @@ export function SiteHeader() {
 
   const t = useTranslations();
 
+  // ── Derived panel data (all real, no hardcoded values) ────────────────────
+  const livesTouched = matches.filter(
+    m => m.status === "COMPLETED" || m.status === "FULFILLED"
+  ).length;
+
+  const profileCompletion = (() => {
+    let score = 0;
+    if (profile?.fullName) score += 25;
+    if (profile?.phone) score += 25;
+    if (profile?.city) score += 25;
+    if (avatarDataUrl) score += 25;
+    return score;
+  })();
+
+  const latestMatch = matches.length > 0
+    ? [...matches].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0]
+    : null;
+
+  const impactText = (() => {
+    if (!latestMatch) {
+      return user?.role === "DONOR"
+        ? "Make your first donation to start helping!"
+        : "Create a request to receive support from donors!";
+    }
+    const isDonor = user?.role === "DONOR";
+    const item = latestMatch.listingTitle ?? latestMatch.requestTitle ?? "an item";
+    const other = isDonor ? latestMatch.doneeName : latestMatch.donorName;
+    if (latestMatch.status === "COMPLETED" || latestMatch.status === "FULFILLED") {
+      return isDonor
+        ? `You donated "${item}" to ${other}. Great work!`
+        : `You received "${item}" from ${other}. Thank you!`;
+    }
+    return isDonor
+      ? `Your donation of "${item}" is currently in progress.`
+      : `Your request for "${item}" is being processed.`;
+  })();
+
   // Super-admin command center is full-screen & self-contained — hide public chrome.
   // Hide by path AND by role so there's no flash before the redirect kicks in.
   const hideChrome =
@@ -365,9 +404,9 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className="sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 border-b border-[#e5e2d5]/60 dark:border-stone-850/30 shadow-[0_2px_20px_rgba(0,0,0,0.07)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.35)] transition-all duration-200">
+      <header className="sticky top-0 z-50 w-full bg-[#faf8f5]/75 dark:bg-zinc-950/75 backdrop-blur-md border-b border-[#e5e2d5]/60 dark:border-stone-850/30 shadow-[0_2px_20px_rgba(0,0,0,0.07)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.35)] transition-all duration-200">
         {/* Mobile Header (lg:hidden) */}
-        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
+        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-transparent">
           <button
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
@@ -394,7 +433,7 @@ export function SiteHeader() {
           </Link>
 
           {/* Center navigation capsule */}
-          <nav className="hidden lg:flex items-center gap-1 bg-white dark:bg-zinc-900 border border-[#e5e2d5] dark:border-stone-800 rounded-full p-1 shadow-sm">
+          <nav className="hidden lg:flex items-center gap-1 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-[#e5e2d5] dark:border-stone-800 rounded-full p-1 shadow-sm">
             {navLinks.map((link) => {
               const active = isActive(link.href);
               return (
@@ -445,8 +484,10 @@ export function SiteHeader() {
           </div>
         </div>
 
-        {/* ── Unified Side Drawer with 3D Animations ── */}
-        <AnimatePresence>
+      </header>
+
+      {/* ── Unified Side Drawer — outside <header> to avoid backdrop-filter stacking context clipping ── */}
+      <AnimatePresence>
           {isSidebarOpen && (
             <>
               {/* Backdrop */}
@@ -516,7 +557,7 @@ export function SiteHeader() {
                         </div>
 
                         <p className="text-[14px] sm:text-base font-semibold text-stone-500 dark:text-stone-400 mt-2">
-                          Lives Touched: <span className="font-bold text-[#b04a15] dark:text-orange-400">{inKindCount > 0 ? (inKindCount * 12 + 5) : 0}</span>
+                          Lives Touched: <span className="font-bold text-[#b04a15] dark:text-orange-400">{livesTouched}</span>
                         </p>
                       </div>
                     </div>
@@ -556,15 +597,19 @@ export function SiteHeader() {
                             setIsSidebarOpen(false);
                             router.push(dashHref);
                           }}
-                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent ${
+                          className={`group relative w-full flex items-center gap-3.5 py-2.5 px-3 rounded-xl overflow-hidden transition-all duration-200 bg-transparent ${
                             isActive(dashHref)
                               ? "text-[#b04a15] dark:text-orange-400 font-bold"
                               : "text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
                           }`}
                         >
-                          <LayoutGrid className={`w-5.5 h-5.5 shrink-0 ${isActive(dashHref) ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
-                          <span className="text-[15px]">Dashboard</span>
-                          
+                          {/* Slide-in background */}
+                          <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#b04a15]/10 to-transparent -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out pointer-events-none" />
+                          <LayoutGrid className={`relative z-10 w-5.5 h-5.5 shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 ${isActive(dashHref) ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
+                          <span className="relative z-10 text-[15px] transition-transform duration-200 group-hover:translate-x-0.5">Dashboard</span>
+                          {!isActive(dashHref) && (
+                            <ChevronRight className="relative z-10 ml-auto w-3.5 h-3.5 text-[#b04a15] dark:text-orange-400 opacity-0 translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
+                          )}
                           {isActive(dashHref) && (
                             <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
                               <path d="M2 2 C 8 8, 8 22, 2 28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
@@ -578,15 +623,19 @@ export function SiteHeader() {
                             setIsSidebarOpen(false);
                             router.push("/profile");
                           }}
-                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent ${
+                          className={`group relative w-full flex items-center gap-3.5 py-2.5 px-3 rounded-xl overflow-hidden transition-all duration-200 bg-transparent ${
                             isActive("/profile")
                               ? "text-[#b04a15] dark:text-orange-400 font-bold"
                               : "text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
                           }`}
                         >
-                          <User className={`w-5.5 h-5.5 shrink-0 ${isActive("/profile") ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
-                          <span className="text-[15px]">My Profile</span>
-                          
+                          {/* Slide-in background */}
+                          <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#b04a15]/10 to-transparent -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out pointer-events-none" />
+                          <User className={`relative z-10 w-5.5 h-5.5 shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 ${isActive("/profile") ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
+                          <span className="relative z-10 text-[15px] transition-transform duration-200 group-hover:translate-x-0.5">My Profile</span>
+                          {!isActive("/profile") && (
+                            <ChevronRight className="relative z-10 ml-auto w-3.5 h-3.5 text-[#b04a15] dark:text-orange-400 opacity-0 translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
+                          )}
                           {isActive("/profile") && (
                             <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
                               <path d="M2 2 C 8 8, 8 22, 2 28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
@@ -596,28 +645,33 @@ export function SiteHeader() {
                       </>
                     ) : (
                       <>
-                        {/* Log In Link */}
+                        {/* Log In */}
                         <button
-                          onClick={() => {
-                            setIsSidebarOpen(false);
-                            router.push("/login");
-                          }}
-                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium`}
+                          onClick={() => { setIsSidebarOpen(false); router.push("/login"); }}
+                          className="group relative w-full flex items-center gap-3.5 py-3 px-3 rounded-2xl transition-all duration-200 hover:bg-stone-100 dark:hover:bg-zinc-800/70 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white font-semibold overflow-hidden"
                         >
-                          <LogIn className="w-5.5 h-5.5 shrink-0 text-stone-400" />
-                          <span className="text-[15px]">{t("nav.logIn")}</span>
+                          {/* left accent bar that grows in on hover */}
+                          <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[#b04a15] scale-y-0 group-hover:scale-y-100 transition-transform duration-200 origin-center" />
+                          <span className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-[#b04a15]/10 transition-colors duration-200">
+                            <LogIn className="w-4.5 h-4.5 text-stone-400 group-hover:text-[#b04a15] group-hover:translate-x-0.5 transition-all duration-200" />
+                          </span>
+                          <span className="text-[15px] group-hover:translate-x-0.5 transition-transform duration-200">{t("nav.logIn")}</span>
+                          <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 text-[#b04a15] -translate-x-1 group-hover:translate-x-0 transition-all duration-200" />
                         </button>
 
-                        {/* Sign Up Link */}
+                        {/* Sign Up */}
                         <button
-                          onClick={() => {
-                            setIsSidebarOpen(false);
-                            router.push("/register");
-                          }}
-                          className={`relative w-full flex items-center gap-3.5 py-2 px-1 transition-all duration-200 bg-transparent text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium`}
+                          onClick={() => { setIsSidebarOpen(false); router.push("/register"); }}
+                          className="group relative w-full flex items-center gap-3.5 py-3 px-3 rounded-2xl overflow-hidden font-bold text-white transition-all duration-200 active:scale-[0.98]"
+                          style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)", boxShadow: "0 4px 14px rgba(176,74,21,0.35)" }}
                         >
-                          <UserPlus className="w-5.5 h-5.5 shrink-0 text-stone-400" />
-                          <span className="text-[15px]">{t("nav.signUp")}</span>
+                          {/* shimmer sweep on hover */}
+                          <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 ease-in-out pointer-events-none" />
+                          <span className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 group-hover:bg-white/25 transition-colors duration-200">
+                            <UserPlus className="w-4.5 h-4.5 text-white" />
+                          </span>
+                          <span className="text-[15px] relative z-10">{t("nav.signUp")}</span>
+                          <ChevronRight className="w-4 h-4 ml-auto relative z-10 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200" />
                         </button>
                       </>
                     )}
@@ -641,13 +695,13 @@ export function SiteHeader() {
                   {user && (
                     <div className="bg-[#eaeaea]/45 dark:bg-zinc-900/50 rounded-[24px] p-5 flex items-center justify-between shadow-xs">
                       <div>
-                        <p className="text-xs sm:text-[13px] font-bold text-stone-800 dark:text-stone-200">Daily Kindness Goal</p>
-                        <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-semibold mt-1">80% complete</p>
+                        <p className="text-xs sm:text-[13px] font-bold text-stone-800 dark:text-stone-200">Profile Completion</p>
+                        <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-semibold mt-1">{profileCompletion}% complete</p>
                       </div>
                       <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                         <svg className="w-full h-full transform -rotate-90">
                           <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" className="text-stone-250/20 dark:text-zinc-800/40" fill="transparent" />
-                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" className="text-[#b04a15]" strokeDasharray="125.6" strokeDashoffset="25.12" fill="transparent" strokeLinecap="round" />
+                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" className="text-[#b04a15]" strokeDasharray="125.6" strokeDashoffset={125.6 * (1 - profileCompletion / 100)} fill="transparent" strokeLinecap="round" />
                         </svg>
                         <Heart className="absolute w-3.5 h-3.5 text-[#b04a15] fill-[#b04a15]" />
                       </div>
@@ -663,9 +717,7 @@ export function SiteHeader() {
                       <div className="min-w-0 flex-1">
                         <p className="text-xs sm:text-[13px] font-bold text-[#1b8a5a] dark:text-emerald-400">Latest Impact</p>
                         <p className="text-xs sm:text-[13px] text-stone-550 dark:text-stone-400 font-medium leading-relaxed mt-1">
-                          {user.role === "DONOR"
-                            ? "You helped 3 families yesterday with essential supplies."
-                            : "Your request was matched with a donor in your neighborhood!"}
+                          {impactText}
                         </p>
                       </div>
                     </div>
@@ -701,8 +753,7 @@ export function SiteHeader() {
               </motion.div>
             </>
           )}
-        </AnimatePresence>
-      </header>
+      </AnimatePresence>
     </>
   );
 }

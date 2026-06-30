@@ -8,6 +8,7 @@ import {
   createItemListingDraft,
   updateItemListingDraft,
   submitItemListing,
+  uploadListingImage,
   type CreateListingPayload,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -90,6 +91,7 @@ export default function NewItemPage() {
   const [draftId, setDraftId]   = useState<number | null>(null);
   const [saving, setSaving]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
 
   // ── Form state ───────────────────────────────────────────────────────────
@@ -314,19 +316,24 @@ export default function NewItemPage() {
   }
 
   // ── Photo handling ────────────────────────────────────────────────────────
-  function handlePhotoAdd(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     const remaining = 5 - photos.length;
     if (remaining <= 0) { toast.error("Maximum 5 photos allowed"); return; }
-    files.slice(0, remaining).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result as string;
-        if (result) setPhotos((prev) => [...prev, result]);
-      };
-      reader.readAsDataURL(file);
-    });
     e.target.value = "";
+    const selected = files.slice(0, remaining);
+    if (selected.length === 0) return;
+
+    setImageUploading(true);
+    try {
+      const urls = await Promise.all(selected.map((file) => uploadListingImage(file)));
+      setPhotos((prev) => [...prev, ...urls].slice(0, 5));
+      toast.success(selected.length === 1 ? "Photo uploaded" : `${selected.length} photos uploaded`);
+    } catch {
+      toast.error("Image upload failed. Please try again.");
+    } finally {
+      setImageUploading(false);
+    }
   }
 
   function removePhoto(idx: number) {
@@ -548,10 +555,11 @@ export default function NewItemPage() {
           <button
             type="button"
             onClick={() => photoInputRef.current?.click()}
+            disabled={imageUploading}
             className="aspect-square rounded-xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400 hover:border-[#1e3a60] hover:text-[#1e3a60] transition-colors"
           >
-            <ImagePlus className="w-6 h-6" />
-            <span className="text-xs font-semibold">{photos.length === 0 ? "Add Photos" : "Add More"}</span>
+            {imageUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <ImagePlus className="w-6 h-6" />}
+            <span className="text-xs font-semibold">{imageUploading ? "Uploading..." : photos.length === 0 ? "Add Photos" : "Add More"}</span>
             <span className="text-[10px]">{photos.length}/5</span>
           </button>
         )}

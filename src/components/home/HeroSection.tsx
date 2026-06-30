@@ -126,13 +126,13 @@ export function HeroSection({
 
         <div className="relative z-10 w-full h-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] px-6 sm:px-12 py-10 sm:py-16 flex flex-col justify-between">
           <div className="w-full flex items-start justify-between gap-4 lg:gap-6">
-            <div className="self-start inline-flex items-center gap-2 bg-white rounded-full px-5 py-2 border border-[#e2e0d5]">
+            <div className="self-start inline-flex items-center gap-2 bg-white/65 backdrop-blur-md rounded-full px-5 py-2 border border-white/40 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-[#f0b97a] animate-pulse shrink-0" />
               <span className="text-[#b04a15] text-xs font-extrabold uppercase tracking-wider">{tHero("badge")}</span>
             </div>
             <div className="hidden lg:flex flex-col items-end gap-2">
               {[tHero("transparent"), tHero("fastDistribution")].map(label => (
-                <div key={label} className="flex items-center gap-2 bg-black/35 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-xs">
+                <div key={label} className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 shadow-xs">
                   <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
                   <span className="text-white text-sm font-semibold">{label}</span>
                 </div>
@@ -152,7 +152,7 @@ export function HeroSection({
 
             {FEATURES.money && (
               <div className="lg:col-span-5 flex justify-end">
-                <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 shadow-2xl w-full max-w-[320px] border border-[#e5e2d5]/65 dark:border-zinc-800 animate-card-3d-enter sm:min-h-[350px] flex flex-col justify-between transition-all duration-500">
+                <div className="bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem] p-6 shadow-2xl w-full max-w-[320px] border border-white/50 dark:border-white/10 animate-card-3d-enter sm:min-h-[350px] flex flex-col justify-between transition-all duration-500">
                   <div>
                     <div className="mb-0 lg:mb-4">
                       <div className={`lg:hidden inline-flex items-center gap-1.5 rounded-full border px-3 py-1 mb-3 ${urgencyConfig.badge}`}>

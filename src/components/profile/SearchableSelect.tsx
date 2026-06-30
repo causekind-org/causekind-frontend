@@ -22,6 +22,8 @@ interface SearchableSelectProps {
   id?: string;
   /** Override what's shown in the closed trigger button (dropdown list always shows full label). */
   renderSelectedLabel?: (option: SelectOption) => React.ReactNode;
+  /** Called when the dropdown opens (before any selection). */
+  onOpen?: () => void;
 }
 
 export function SearchableSelect({
@@ -34,6 +36,7 @@ export function SearchableSelect({
   searchPlaceholder = "Search...",
   id,
   renderSelectedLabel,
+  onOpen,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -109,7 +112,7 @@ export function SearchableSelect({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen((o) => !o)}
+        onClick={() => { if (!disabled) { if (!open) onOpen?.(); setOpen((o) => !o); } }}
         aria-expanded={open}
         aria-haspopup="listbox"
         className={[

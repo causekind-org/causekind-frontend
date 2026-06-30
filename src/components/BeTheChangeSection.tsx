@@ -16,6 +16,7 @@ import {
   Home,
   ArrowRight,
 } from "lucide-react";
+import { getPlatformStats, type PlatformStats } from "@/lib/api";
 
 /* ─── Brand tokens ─────────────────────────────────────────────────── */
 const TERRACOTTA = "#b04a15";
@@ -187,6 +188,18 @@ export function BeTheChangeSection() {
   const { ref: statsRef, inView: statsInView } = useInView(0.3);
   const { ref: pillsRef, inView: pillsInView } = useInView(0.2);
   const { user } = useAuth();
+  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
+
+  useEffect(() => {
+    getPlatformStats().then(setPlatformStats).catch(() => {});
+  }, []);
+
+  const STATS = [
+    { value: platformStats?.activeCampaigns ?? 0, suffix: "",  label: "Active Campaigns",  color: TERRACOTTA },
+    { value: platformStats?.totalDonations  ?? 0, suffix: "+", label: "Verified Handovers", color: INK        },
+    { value: platformStats?.uniqueDonors    ?? 0, suffix: "+", label: "Donors Joined",      color: TERRACOTTA },
+    { value: 10,                                  suffix: "",  label: "KM Local Radius",    color: INK        },
+  ];
 
   const cards = [
     {
@@ -316,29 +329,31 @@ export function BeTheChangeSection() {
           </div>
         </div>
 
-        {/* ── Animated counters — LEFT-BORDER OFFSET STRIP ── */}
+        {/* ── Animated counters — data-driven, no card ── */}
         <div
           ref={statsRef}
-          className="rounded-3xl border border-[#e5e2d5]/60 dark:border-stone-800
-                     bg-white dark:bg-zinc-900
-                     shadow-lg shadow-stone-900/5 overflow-hidden
-                     grid lg:grid-cols-[auto_1fr] items-stretch"
+          className="border-y border-stone-200/70 dark:border-stone-800"
         >
-          {/* Thick left terracotta accent bar */}
-          <div className="hidden lg:block w-2 bg-[#b04a15]" />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-[#e5e2d5]/60 dark:divide-stone-800">
-            <div className="px-8 py-10">
-              <StatCounter value={14}   suffix="+"  label="Languages Supported"   color={TERRACOTTA} start={statsInView} />
-            </div>
-            <div className="px-8 py-10">
-              <StatCounter value={500}  suffix="+"  label="In-Kind Items Listed"   color={INK}        start={statsInView} />
-            </div>
-            <div className="px-8 py-10">
-              <StatCounter value={25}         label="KM Local Radius"             color={TERRACOTTA} start={statsInView} />
-            </div>
-            <div className="px-8 py-10">
-              <StatCounter value={100} suffix="%" label="Verified Handovers"      color={INK}        start={statsInView} />
-            </div>
+          <div
+            className="grid divide-x divide-stone-200/70 dark:divide-stone-800"
+            style={{ gridTemplateColumns: `repeat(${STATS.length}, minmax(0, 1fr))` }}
+          >
+            {STATS.map((s) => (
+              <div key={s.label} className="relative px-6 py-8 sm:px-8 sm:py-10">
+                {/* Thin colored accent line at top of each stat */}
+                <div
+                  className="absolute top-0 left-0 right-0 h-[3px]"
+                  style={{ backgroundColor: s.color }}
+                />
+                <StatCounter
+                  value={s.value}
+                  suffix={s.suffix}
+                  label={s.label}
+                  color={s.color}
+                  start={statsInView}
+                />
+              </div>
+            ))}
           </div>
         </div>
 

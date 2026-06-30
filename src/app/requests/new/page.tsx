@@ -236,6 +236,8 @@ export default function NewRequestPage() {
       toast.error("Please fix the highlighted fields");
       return;
     }
+    const coords = gpsCoords;
+    if (!coords) return;
     setFieldErrors({});
     setSubmitting(true);
     try {
@@ -245,8 +247,8 @@ export default function NewRequestPage() {
         quantity: Number(form.quantity),
         imageUrl: form.imageUrl || null,
         pickupRadiusKm: finalRadius ?? undefined,
-        latitude: gpsCoords.lat,
-        longitude: gpsCoords.lng
+        latitude: coords.lat,
+        longitude: coords.lng
       });
       toast.success(t("toastSuccess"));
       router.push("/dashboard");

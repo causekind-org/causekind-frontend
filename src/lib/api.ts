@@ -452,6 +452,42 @@ export function adminMarkListingNeedsInformation(id: number, adminNote: string) 
   });
 }
 
+export type AiAssessmentResponse = {
+  id: number;
+  listingId: number;
+  listingTitle: string;
+  modelVersion: string;
+  eligibilityResult: string;
+  conditionGrade: string;
+  confidence: number;
+  imageDescriptionScore: number;
+  fraudRisk: string;
+  safetyWarnings: string | null;
+  missingInfoFlags: string | null;
+  recommendation: string;
+  evidenceNotes: string | null;
+  detectedLabels: string | null;
+  moderationLabels: string | null;
+  createdAt: string;
+};
+
+export function adminGetListingAiAssessment(id: number) {
+  return request<AiAssessmentResponse>(`/api/v1/admin/items/${id}/ai-assessment`, { silent401: true });
+}
+
+export async function uploadListingImage(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("image", file);
+  const res = await fetch(`${BASE_URL}/api/v1/items/upload-image`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Image upload failed");
+  const data = await res.json();
+  return data.url as string;
+}
+
 // ── Item Requests ─────────────────────────────────────────────────────────────
 
 export type ItemRequest = {

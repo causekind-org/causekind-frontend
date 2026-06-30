@@ -296,7 +296,8 @@ export function ListingDetailPanel({ listing, onClose, onAction, actionLoading }
                 const result = phaseResults[i];
                 const state = result.state;
                 const isDone    = state === "done";
-                const isCurrent = state === "current" || state === "review";
+                const isReview = state === "review";
+                const isCurrent = state === "current" || isReview;
                 const isProblem = state === "problem";
                 const isUpcoming = state === "upcoming";
                 const isLast = i === PHASES.length - 1;
@@ -305,7 +306,7 @@ export function ListingDetailPanel({ listing, onClose, onAction, actionLoading }
                 if (isDone)    bodyText = phase.done;
                 if (isCurrent) bodyText = phase.current;
                 if (isProblem) bodyText = phase.problem ?? phase.current;
-                if (state === "review") bodyText = phase.review ?? phase.current;
+                if (isReview) bodyText = phase.review ?? phase.current;
 
                 return (
                   <div key={phase.key} className="flex gap-3">
@@ -321,19 +322,19 @@ export function ListingDetailPanel({ listing, onClose, onAction, actionLoading }
                     <div className={`pb-4 flex-1 min-w-0 ${isLast ? "pb-0" : ""}`}>
                       <p className={`text-sm font-bold leading-tight ${
                         isDone    ? "text-stone-700 dark:text-stone-300" :
+                        isReview ? "text-amber-600 dark:text-amber-400" :
                         isCurrent ? "text-[#1e3a60] dark:text-blue-300" :
                         isProblem ? "text-amber-700 dark:text-amber-400" :
-                        state === "review" ? "text-amber-600 dark:text-amber-400" :
                         "text-stone-400 dark:text-zinc-500"
                       }`}>
                         {phase.label}
-                        {(isCurrent || isProblem || state === "review") && (
+                        {(isCurrent || isProblem) && (
                           <span className={`ml-2 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
                             isProblem ? "bg-amber-100 text-amber-700 border border-amber-300" :
-                            state === "review" ? "bg-amber-50 text-amber-600 border border-amber-200" :
+                            isReview ? "bg-amber-50 text-amber-600 border border-amber-200" :
                             "bg-[#1e3a60]/10 text-[#1e3a60] border border-[#1e3a60]/20"
                           }`}>
-                            {isProblem ? "Action Needed" : state === "review" ? "In Review" : "Now"}
+                            {isProblem ? "Action Needed" : isReview ? "In Review" : "Now"}
                           </span>
                         )}
                       </p>
