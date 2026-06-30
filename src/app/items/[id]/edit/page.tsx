@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
-  createItemListingDraft,
+  getItemListing,
   updateItemListingDraft,
   submitItemListing,
+  type ItemListing,
   type CreateListingPayload,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,7 +22,7 @@ import Image from "next/image";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// ── Constants (same as /items/new) ──────────────────────────────────────────
 
 const CATEGORIES = ["Education", "Clothing", "Furniture", "Electronics", "Household", "Sports", "Medical aid"];
 
@@ -64,7 +65,7 @@ const STEPS = [
   { id: 4, label: "Declarations" },
 ];
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Field helper ─────────────────────────────────────────────────────────────
 
 function Field({ label, required, hint, error, children }: { label: string; required?: boolean; hint?: string; error?: string; children: React.ReactNode }) {
   return (
@@ -80,12 +81,16 @@ function Field({ label, required, hint, error, children }: { label: string; requ
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Edit Page ─────────────────────────────────────────────────────────────────
 
-export default function NewItemPage() {
+export default function EditItemPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const listingId = Number(params.id);
 
+  const [loadingListing, setLoadingListing] = useState(true);
+  const [adminNote, setAdminNote] = useState<string | null>(null);
   const [step, setStep]         = useState(1);
   const [draftId, setDraftId]   = useState<number | null>(null);
   const [saving, setSaving]     = useState(false);
@@ -94,7 +99,6 @@ export default function NewItemPage() {
 
   // ── Form state ───────────────────────────────────────────────────────────
 
-  // Step 1: Item details
   const [category, setCategory]             = useState("");
   const [subcategory, setSubcategory]       = useState("");
   const [title, setTitle]                   = useState("");
@@ -111,15 +115,14 @@ export default function NewItemPage() {
   const [weight, setWeight]                 = useState("");
   const [description, setDescription]       = useState("");
 
-  // Step 2: Photos
   const [photos, setPhotos]   = useState<string[]>([]);
   const photoInputRef         = useRef<HTMLInputElement>(null);
 
-  // Step 3: Location & Delivery
   const [countryIso, setCountryIso]     = useState("IN");
   const [stateIso, setStateIso]         = useState("");
-  const [cityValue, setCityValue]       = useState("");
   const [cityFreeText, setCityFreeText] = useState("");
+  const [cityValue, setCityValue]       = useState("");
+  const [useFreeText, setUseFreeText]   = useState(true); // edit mode always starts with free-text city
   const [pincode, setPincode]           = useState("");
   const [locality, setLocality]         = useState("");
   const [latitude, setLatitude]         = useState<number | undefined>();
@@ -135,31 +138,96 @@ export default function NewItemPage() {
   const [handoverSlots, setHandoverSlots] = useState<string[]>([]);
   const [deliveryRadius, setDeliveryRadius] = useState(25);
 
-  // Step 4: Declarations
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
-
-  // Validation
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors]   = useState<Record<string, string>>({});
   function ie(key: string) {
     return fieldErrors[key] ? "border-red-500 focus-visible:ring-red-300/30" : "";
   }
 
   const { states: stateOptions, cities: cityOptions } = useLocations(countryIso, stateIso);
-  const showCityFreeText = stateIso !== "" && cityOptions.length === 0;
+  const showCityFreeText = useFreeText || (stateIso !== "" && cityOptions.length === 0);
 
-  // ── Auth guard ────────────────────────────────────────────────────────────
+  // ── Auth guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
   }, [user, authLoading, router]);
 
+  // ── Load existing listing and pre-populate ─────────────────────────────────
+  useEffect(() => {
+    if (!user || !listingId) return;
+    getItemListing(listingId)
+      .then((l: ItemListing) => {
+        setDraftId(l.id);
+        if (l.rejectionReason) setAdminNote(l.rejectionReason);
 
-  // ── Auto-save helper ──────────────────────────────────────────────────────
+        // Step 1
+        setCategory(l.category ?? "");
+        setSubcategory(l.subcategory ?? "");
+        setTitle(l.title === "Draft" ? "" : (l.title ?? ""));
+        setBrand(l.brand ?? "");
+        setModel(l.model ?? "");
+        setQuantity(l.quantity ?? 1);
+        setApproximateAge(l.approximateAge ?? "");
+        setCondition(l.condition ?? "");
+        setWorkingStatus(l.workingStatus ?? "");
+        const defects = l.knownDefects ?? "";
+        setNoDefects(defects === "NONE");
+        setKnownDefects(defects === "NONE" ? "" : defects);
+        setAccessories(l.accessoriesIncluded ?? "");
+        setDimensions(l.dimensions ?? "");
+        setWeight(l.approximateWeight ?? "");
+        setDescription(l.description ?? "");
+
+        // Step 2 — photos
+        const allPhotos = [
+          l.imageUrl,
+          ...(l.imageUrls ? l.imageUrls.split("|") : []),
+        ].filter(Boolean) as string[];
+        setPhotos(allPhotos);
+
+        // Step 3 — city stored as "City, StateCode, CountryCode"
+        const cityStr = l.city ?? "";
+        const parts = cityStr.split(",").map((s) => s.trim());
+        if (parts.length >= 3) {
+          setCountryIso(parts[parts.length - 1] || "IN");
+          setStateIso(parts[parts.length - 2] || "");
+          setCityFreeText(parts.slice(0, parts.length - 2).join(", "));
+        } else {
+          setCityFreeText(cityStr);
+        }
+        setUseFreeText(true);
+        setPincode(l.pincode ?? "");
+        setLocality(l.locality ?? "");
+        if (l.latitude) setLatitude(l.latitude);
+        if (l.longitude) setLongitude(l.longitude);
+        setPickupDays(l.pickupDays ? l.pickupDays.split(",").filter(Boolean) : []);
+        setPickupSlots(l.pickupTimeSlots ? l.pickupTimeSlots.split(",").filter(Boolean) : []);
+        setDropOffYN(l.donorDropOffAvailable ?? false);
+        setMaxTravel(l.maxTravelDistance ?? 10);
+        setPackaging(l.packagingAvailable ?? "");
+        setSpecialHandling(l.specialHandling ? l.specialHandling.split("|").filter(Boolean) : []);
+        setHandoverDate(l.preferredHandoverDate ?? "");
+        setHandoverSlots(l.preferredHandoverSlots ? l.preferredHandoverSlots.split(",").filter(Boolean) : []);
+        setDeliveryRadius(l.maximumDeliveryRadius ?? 25);
+
+        // Step 4 — if previously accepted, pre-tick all
+        if (l.declarationsAccepted) {
+          setDeclarations(new Array(DECLARATIONS.length).fill(true));
+        }
+      })
+      .catch(() => {
+        toast.error("Could not load listing. Please try again.");
+        router.push("/dashboard");
+      })
+      .finally(() => setLoadingListing(false));
+  }, [user, listingId, router]);
+
+  // ── Payload builder ────────────────────────────────────────────────────────
   const buildPayload = useCallback((): Partial<CreateListingPayload> => {
     const city = showCityFreeText
       ? [cityFreeText, stateIso, countryIso].filter(Boolean).join(", ")
       : [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
 
-    // Collect all photos: first photo → imageUrl, rest → imageUrls (pipe-separated)
     const allPhotos = photos;
     const imageUrl  = allPhotos[0] ?? null;
     const imageUrls = allPhotos.length > 1 ? allPhotos.slice(1).join("|") : undefined;
@@ -209,20 +277,14 @@ export default function NewItemPage() {
   ]);
 
   async function saveDraft() {
+    if (!draftId) return;
     setSaving(true);
-    try {
-      let id = draftId;
-      if (!id) {
-        const d = await createItemListingDraft();
-        setDraftId(d.id);
-        id = d.id;
-      }
-      await updateItemListingDraft(id, buildPayload());
-    } catch { /* silent — draft save failures are non-critical */ }
+    try { await updateItemListingDraft(draftId, buildPayload()); }
+    catch { /* silent */ }
     finally { setSaving(false); }
   }
 
-  // ── Step validation ───────────────────────────────────────────────────────
+  // ── Validation ─────────────────────────────────────────────────────────────
   function validateStep(s: number): boolean {
     const e: Record<string, string> = {};
     if (s === 1) {
@@ -235,26 +297,19 @@ export default function NewItemPage() {
       if (!description || description.length < 30) e.description = `Must be at least 30 characters (currently ${description.length})`;
       if (NEEDS_WORKING_STATUS.includes(category) && !workingStatus) e.workingStatus = "Working status is required for this category";
     }
-    if (s === 2) {
-      if (photos.length < 2) e.photos = "At least 2 photos are required";
-    }
+    if (s === 2) { if (photos.length < 2) e.photos = "At least 2 photos are required"; }
     if (s === 3) {
       const city = showCityFreeText ? cityFreeText : cityValue;
       if (!city) e.city = "City is required";
       if (!pincode) e.pincode = "PIN code is required";
     }
-    if (s === 4) {
-      if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted before submitting";
-    }
+    if (s === 4) { if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted before submitting"; }
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   }
 
   async function handleNext() {
-    if (!validateStep(step)) {
-      toast.error("Please fix the highlighted fields");
-      return;
-    }
+    if (!validateStep(step)) { toast.error("Please fix the highlighted fields"); return; }
     await saveDraft();
     setStep((s) => Math.min(s + 1, 4));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -268,12 +323,12 @@ export default function NewItemPage() {
 
   async function handleSubmit() {
     if (!validateStep(4)) { toast.error("Please fix the highlighted fields"); return; }
-    if (!draftId) { toast.error("Draft not ready. Please wait."); return; }
+    if (!draftId) { toast.error("Listing not loaded. Please try again."); return; }
     setSubmitting(true);
     try {
       await updateItemListingDraft(draftId, { ...buildPayload(), declarationsAccepted: true });
       await submitItemListing(draftId);
-      toast.success("Your item has been submitted for review!");
+      toast.success("Your listing has been resubmitted for review!");
       router.push("/dashboard");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Submission failed. Please try again.");
@@ -282,7 +337,7 @@ export default function NewItemPage() {
     }
   }
 
-  // ── GPS ───────────────────────────────────────────────────────────────────
+  // ── GPS ────────────────────────────────────────────────────────────────────
   async function handleGPS() {
     if (!navigator.geolocation) { toast.error("GPS not supported"); return; }
     setGpsLoading(true);
@@ -299,7 +354,7 @@ export default function NewItemPage() {
             if (cc) {
               setCountryIso(cc);
               const { stateIso: sIso, cityValue: cVal } = await resolveLocationFromGPS(cc, addr.state, addr.city || addr.town || addr.village);
-              if (sIso) { setStateIso(sIso); if (cVal) setCityValue(cVal); else setCityFreeText(addr.city || ""); }
+              if (sIso) { setStateIso(sIso); setUseFreeText(false); if (cVal) setCityValue(cVal); else { setUseFreeText(true); setCityFreeText(addr.city || ""); } }
               if (addr.suburb || addr.neighbourhood) setLocality(addr.suburb || addr.neighbourhood);
               if (addr.postcode) setPincode(addr.postcode.replace(/\s/g, ""));
             }
@@ -313,7 +368,7 @@ export default function NewItemPage() {
     );
   }
 
-  // ── Photo handling ────────────────────────────────────────────────────────
+  // ── Photo handling ─────────────────────────────────────────────────────────
   function handlePhotoAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     const remaining = 5 - photos.length;
@@ -333,42 +388,30 @@ export default function NewItemPage() {
     setPhotos((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  // ── Toggle helpers ────────────────────────────────────────────────────────
-  function toggleDay(d: string) {
-    setPickupDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
-  }
-  function toggleSlot(s: string) {
-    setPickupSlots((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
-  }
-  function toggleHandling(h: string) {
-    setSpecialHandling((prev) => prev.includes(h) ? prev.filter((x) => x !== h) : [...prev, h]);
-  }
-  function toggleHandoverSlot(s: string) {
-    setHandoverSlots((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
-  }
-  function toggleDeclaration(i: number) {
-    setDeclarations((prev) => prev.map((v, idx) => idx === i ? !v : v));
-  }
+  // ── Toggle helpers ─────────────────────────────────────────────────────────
+  function toggleDay(d: string) { setPickupDays((p) => p.includes(d) ? p.filter((x) => x !== d) : [...p, d]); }
+  function toggleSlot(s: string) { setPickupSlots((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]); }
+  function toggleHandling(h: string) { setSpecialHandling((p) => p.includes(h) ? p.filter((x) => x !== h) : [...p, h]); }
+  function toggleHandoverSlot(s: string) { setHandoverSlots((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]); }
+  function toggleDeclaration(i: number) { setDeclarations((p) => p.map((v, idx) => idx === i ? !v : v)); }
 
-  if (authLoading || !user) return null;
+  if (authLoading || !user || loadingListing) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
+    </div>
+  );
 
-  // ── Progress indicator ───────────────────────────────────────────────────
+  // ── Progress bar ───────────────────────────────────────────────────────────
   const progressBar = (
     <div className="flex items-center gap-0 mb-8">
       {STEPS.map((s, i) => (
         <div key={s.id} className="flex items-center flex-1 last:flex-none">
-          <button
-            type="button"
-            onClick={() => step > s.id && setStep(s.id)}
-            className="flex flex-col items-center gap-1 group"
-          >
+          <button type="button" onClick={() => step > s.id && setStep(s.id)} className="flex flex-col items-center gap-1 group">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all
               ${step > s.id ? "bg-green-500 text-white" : step === s.id ? "bg-[#1e3a60] text-white ring-4 ring-[#1e3a60]/20" : "bg-stone-200 dark:bg-zinc-700 text-stone-400"}`}>
               {step > s.id ? <CheckCircle2 className="w-4 h-4" /> : s.id}
             </div>
-            <span className={`text-[10px] font-semibold hidden sm:block ${step === s.id ? "text-[#1e3a60]" : "text-stone-400"}`}>
-              {s.label}
-            </span>
+            <span className={`text-[10px] font-semibold hidden sm:block ${step === s.id ? "text-[#1e3a60]" : "text-stone-400"}`}>{s.label}</span>
           </button>
           {i < STEPS.length - 1 && (
             <div className={`flex-1 h-0.5 mx-1 ${step > s.id ? "bg-green-400" : "bg-stone-200 dark:bg-zinc-700"}`} />
@@ -378,31 +421,9 @@ export default function NewItemPage() {
     </div>
   );
 
-  // ── Step 1: Item Details ──────────────────────────────────────────────────
+  // ── Step 1 ─────────────────────────────────────────────────────────────────
   const step1 = (
     <div className="space-y-5">
-      {/* Spec §4 — Introductory policy disclosure */}
-      <div className="bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl p-4 space-y-3 text-xs text-stone-600 dark:text-stone-400">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">Accepted Categories</p>
-            <p>Education, Clothing, Furniture, Electronics, Household items, Sports equipment, Medical aids</p>
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-red-600 text-[11px] uppercase tracking-wide">Not Accepted</p>
-            <p>Food, medicines, used undergarments, weapons, hazardous/recalled items, adult content, cash equivalents</p>
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">Your Privacy</p>
-            <p>Your name, phone and address are never shared with recipients before admin approval. Contact happens through masked channels only.</p>
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">After Submission</p>
-            <p>AI screening → human review → matching → donor reconfirmation → handover with OTP → Donation Certificate issued.</p>
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-2 gap-4">
         <Field label="Category" required error={fieldErrors.category}>
           <Select value={category} onValueChange={(v) => { setCategory(v); setSubcategory(""); }}>
@@ -464,24 +485,12 @@ export default function NewItemPage() {
 
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="noDefects"
-            checked={noDefects}
-            onChange={(e) => { setNoDefects(e.target.checked); if (e.target.checked) setKnownDefects(""); }}
-            className="rounded"
-          />
+          <input type="checkbox" id="noDefects" checked={noDefects} onChange={(e) => { setNoDefects(e.target.checked); if (e.target.checked) setKnownDefects(""); }} className="rounded" />
           <label htmlFor="noDefects" className="text-sm font-semibold text-stone-700 dark:text-stone-300">No Known Defects</label>
         </div>
         {!noDefects && (
           <Field label="Known Defects" required hint="Be honest — this protects both you and the recipient." error={fieldErrors.knownDefects}>
-            <Textarea
-              rows={2}
-              placeholder="e.g. Minor scratch on right side, screen has hairline crack"
-              value={knownDefects}
-              onChange={(e) => setKnownDefects(e.target.value)}
-              className={ie("knownDefects")}
-            />
+            <Textarea rows={2} placeholder="e.g. Minor scratch on right side, screen has hairline crack" value={knownDefects} onChange={(e) => setKnownDefects(e.target.value)} className={ie("knownDefects")} />
           </Field>
         )}
       </div>
@@ -502,19 +511,12 @@ export default function NewItemPage() {
       )}
 
       <Field label="Description" required hint={`${description.length}/2000 characters. Do not include contact details.`} error={fieldErrors.description}>
-        <Textarea
-          rows={5}
-          placeholder="Describe the item in detail — its condition, what it comes with, why you're donating it, and who it may be suitable for."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={2000}
-          className={ie("description")}
-        />
+        <Textarea rows={5} placeholder="Describe the item in detail — its condition, what it comes with, why you're donating it, and who it may be suitable for." value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} className={ie("description")} />
       </Field>
     </div>
   );
 
-  // ── Step 2: Photos ────────────────────────────────────────────────────────
+  // ── Step 2 ─────────────────────────────────────────────────────────────────
   const step2 = (
     <div className="space-y-5">
       <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300 space-y-1">
@@ -534,22 +536,15 @@ export default function NewItemPage() {
           <div key={i} className="relative group aspect-square rounded-xl overflow-hidden border bg-stone-100 dark:bg-zinc-800">
             <Image src={p} alt={`Photo ${i + 1}`} fill className="object-cover" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
-            <button
-              type="button"
-              onClick={() => removePhoto(i)}
-              className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-            >
+            <button type="button" onClick={() => removePhoto(i)} className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity">
               <X className="w-3 h-3" />
             </button>
             {i === 0 && <span className="absolute bottom-2 left-2 text-[10px] bg-[#1e3a60] text-white rounded px-1.5 py-0.5 font-bold">MAIN</span>}
           </div>
         ))}
         {photos.length < 5 && (
-          <button
-            type="button"
-            onClick={() => photoInputRef.current?.click()}
-            className="aspect-square rounded-xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400 hover:border-[#1e3a60] hover:text-[#1e3a60] transition-colors"
-          >
+          <button type="button" onClick={() => photoInputRef.current?.click()}
+            className="aspect-square rounded-xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400 hover:border-[#1e3a60] hover:text-[#1e3a60] transition-colors">
             <ImagePlus className="w-6 h-6" />
             <span className="text-xs font-semibold">{photos.length === 0 ? "Add Photos" : "Add More"}</span>
             <span className="text-[10px]">{photos.length}/5</span>
@@ -557,9 +552,7 @@ export default function NewItemPage() {
         )}
       </div>
 
-      {fieldErrors.photos && (
-        <p className="text-sm text-red-500 font-semibold">{fieldErrors.photos}</p>
-      )}
+      {fieldErrors.photos && <p className="text-sm text-red-500 font-semibold">{fieldErrors.photos}</p>}
       {!fieldErrors.photos && photos.length < 2 && (
         <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold">
           {photos.length === 0 ? "Please add at least 2 photos to continue." : "Please add 1 more photo (minimum 2 required)."}
@@ -568,32 +561,23 @@ export default function NewItemPage() {
     </div>
   );
 
-  // ── Step 3: Location & Delivery ───────────────────────────────────────────
+  // ── Step 3 ─────────────────────────────────────────────────────────────────
   const step3 = (
     <div className="space-y-5">
-      {/* Location */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5" /> Item Location
           </Label>
-          <button
-            type="button"
-            onClick={handleGPS}
-            disabled={gpsLoading}
-            className="text-xs font-bold text-[#b04a15] hover:underline disabled:opacity-50"
-          >
+          <button type="button" onClick={handleGPS} disabled={gpsLoading} className="text-xs font-bold text-[#b04a15] hover:underline disabled:opacity-50">
             {gpsLoading ? "Detecting…" : "Use GPS 🎯"}
           </button>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="State / Province" required>
-            <select
-              value={stateIso}
-              onChange={(e) => { setStateIso(e.target.value); setCityValue(""); setCityFreeText(""); }}
-              className="w-full h-10 rounded-md border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-3"
-            >
+            <select value={stateIso} onChange={(e) => { setStateIso(e.target.value); setCityValue(""); setCityFreeText(""); setUseFreeText(false); }}
+              className="w-full h-10 rounded-md border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-3">
               <option value="">Select state</option>
               {stateOptions.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
@@ -602,12 +586,8 @@ export default function NewItemPage() {
             {showCityFreeText ? (
               <Input placeholder="Enter city" value={cityFreeText} onChange={(e) => setCityFreeText(e.target.value)} className={ie("city")} />
             ) : (
-              <select
-                value={cityValue}
-                onChange={(e) => setCityValue(e.target.value)}
-                disabled={!stateIso}
-                className={`w-full h-10 rounded-md border text-sm px-3 disabled:opacity-50 bg-white dark:bg-zinc-900 ${fieldErrors.city ? "border-red-500" : "border-stone-200 dark:border-zinc-700"}`}
-              >
+              <select value={cityValue} onChange={(e) => setCityValue(e.target.value)} disabled={!stateIso}
+                className={`w-full h-10 rounded-md border text-sm px-3 disabled:opacity-50 bg-white dark:bg-zinc-900 ${fieldErrors.city ? "border-red-500" : "border-stone-200 dark:border-zinc-700"}`}>
                 <option value="">Select city</option>
                 {cityOptions.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
@@ -622,7 +602,6 @@ export default function NewItemPage() {
         </div>
       </div>
 
-      {/* Pickup availability */}
       <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
         <div className="flex items-center gap-3">
           <input type="checkbox" id="pickupYN" checked={pickupYN} onChange={(e) => setPickupYN(e.target.checked)} className="rounded" />
@@ -656,7 +635,6 @@ export default function NewItemPage() {
         )}
       </div>
 
-      {/* Drop-off */}
       <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
         <div className="flex items-center gap-3">
           <input type="checkbox" id="dropOff" checked={dropOffYN} onChange={(e) => setDropOffYN(e.target.checked)} className="rounded" />
@@ -669,7 +647,6 @@ export default function NewItemPage() {
         )}
       </div>
 
-      {/* Packaging */}
       <Field label="Packaging Available">
         <Select value={packaging} onValueChange={setPackaging}>
           <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
@@ -681,7 +658,6 @@ export default function NewItemPage() {
         </Select>
       </Field>
 
-      {/* Special handling */}
       <div className="space-y-2">
         <Label className="text-sm font-semibold text-stone-700 dark:text-stone-300">Special Handling Notes</Label>
         <div className="flex flex-wrap gap-2">
@@ -694,7 +670,6 @@ export default function NewItemPage() {
         </div>
       </div>
 
-      {/* Handover date + time slots */}
       <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
         <p className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Preferred Handover Period</p>
         <Field label="Earliest Available Date">
@@ -713,31 +688,25 @@ export default function NewItemPage() {
         </div>
       </div>
 
-      {/* Delivery radius */}
       <Field label="Maximum Delivery Radius (km)" hint="How far can this item travel to reach a recipient?">
         <Input type="number" min={1} value={deliveryRadius} onChange={(e) => setDeliveryRadius(Number(e.target.value))} />
       </Field>
     </div>
   );
 
-  // ── Step 4: Declarations ──────────────────────────────────────────────────
+  // ── Step 4 ─────────────────────────────────────────────────────────────────
   const step4 = (
     <div className="space-y-5">
       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
         <p className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-1">Mandatory Donor Declarations</p>
-        <p className="text-xs text-amber-700 dark:text-amber-400">All declarations must be accepted before your listing can be submitted for review.</p>
+        <p className="text-xs text-amber-700 dark:text-amber-400">All declarations must be accepted before your listing can be resubmitted for review.</p>
       </div>
 
       <div className="space-y-3">
         {DECLARATIONS.map((d, i) => (
-          <label
-            key={i}
-            className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${declarations[i] ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700" : "border-stone-200 dark:border-zinc-700 hover:border-stone-300"}`}
-          >
+          <label key={i} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${declarations[i] ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700" : "border-stone-200 dark:border-zinc-700 hover:border-stone-300"}`}>
             <div className="mt-0.5 shrink-0">
-              {declarations[i]
-                ? <CheckCircle2 className="w-5 h-5 text-green-500" />
-                : <Circle className="w-5 h-5 text-stone-300" />}
+              {declarations[i] ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Circle className="w-5 h-5 text-stone-300" />}
             </div>
             <div>
               <input type="checkbox" className="sr-only" checked={declarations[i]} onChange={() => toggleDeclaration(i)} />
@@ -747,75 +716,56 @@ export default function NewItemPage() {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setDeclarations(new Array(DECLARATIONS.length).fill(true))}
-        className="text-xs font-bold text-[#1e3a60] hover:underline"
-      >
+      <button type="button" onClick={() => setDeclarations(new Array(DECLARATIONS.length).fill(true))} className="text-xs font-bold text-[#1e3a60] hover:underline">
         Accept all declarations
       </button>
 
-      {fieldErrors.declarations && (
-        <p className="text-sm text-red-500 font-semibold">{fieldErrors.declarations}</p>
-      )}
-
-      <div className="bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl p-4 text-xs text-stone-500 dark:text-stone-400 space-y-1">
-        <p className="font-semibold text-stone-600 dark:text-stone-300">What happens after submission?</p>
-        <p>1. Our team reviews your listing (usually within 24–48 hours)</p>
-        <p>2. You will be notified when it is approved and eligible for matching</p>
-        <p>3. When a recipient is found, we reconfirm availability with you first</p>
-        <p>4. Both parties must consent before contact details are shared</p>
-        <p>5. Handover is verified via OTP — then your donation certificate is issued</p>
-      </div>
+      {fieldErrors.declarations && <p className="text-sm text-red-500 font-semibold">{fieldErrors.declarations}</p>}
     </div>
   );
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
       {/* Left stripe */}
       <div className="hidden lg:flex lg:w-[30%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-800 shrink-0">
         <div className="absolute -top-24 left-1/4 h-[300px] w-[300px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 right-1/4 h-[300px] w-[300px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
-
         <div className="relative z-10 space-y-6">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3 py-1 self-start inline-block">
-            Verified Giving
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/20 border border-amber-500/40 rounded-full px-3 py-1 self-start inline-block">
+            Update Required
           </span>
           <h2 className="text-white text-3xl font-extrabold leading-tight tracking-tight font-serif mt-4">
-            List an Item
+            Update Your Listing
           </h2>
           <p className="text-stone-300 text-sm leading-relaxed">
-            Offer items you no longer need. Verified recipients in your area will be matched carefully and privately.
+            The admin has reviewed your listing and requested additional details. Update the relevant sections and resubmit.
           </p>
-
-          <div className="space-y-3 pt-4">
-            {[
-              "Your identity is protected throughout",
-              "Items are screened before matching",
-              "Handover is verified — not self-declared",
-              "You receive a Donation Certificate",
-            ].map((point) => (
-              <div key={point} className="flex items-start gap-2 text-stone-300 text-xs">
-                <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                <span>{point}</span>
-              </div>
-            ))}
-          </div>
+          {adminNote && (
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 space-y-1">
+              <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">Admin note</p>
+              <p className="text-sm text-amber-200 leading-relaxed">{adminNote}</p>
+            </div>
+          )}
         </div>
-
-        <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          CauseKind India · 2026
-        </div>
+        <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">CauseKind India · 2026</div>
       </div>
 
-      {/* Right panel: form */}
+      {/* Right panel */}
       <div className="flex-1 px-5 py-10 lg:px-12 overflow-y-auto">
         <div className="max-w-[620px] mx-auto space-y-6">
-          {/* Header */}
+
+          {/* Mobile admin note */}
+          {adminNote && (
+            <div className="lg:hidden rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-4">
+              <p className="text-xs font-black uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1">Admin note</p>
+              <p className="text-sm text-amber-800 dark:text-amber-200">{adminNote}</p>
+            </div>
+          )}
+
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Step {step} of {STEPS.length}</p>
+              <p className="text-[11px] font-black uppercase tracking-widest text-amber-600">Step {step} of {STEPS.length}</p>
               <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">{STEPS[step - 1].label}</h1>
             </div>
             {saving && <span className="text-xs text-stone-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Saving…</span>}
@@ -823,13 +773,11 @@ export default function NewItemPage() {
 
           {progressBar}
 
-          {/* Step content */}
           {step === 1 && step1}
           {step === 2 && step2}
           {step === 3 && step3}
           {step === 4 && step4}
 
-          {/* Navigation */}
           <div className="flex gap-3 pt-2 pb-8">
             {step > 1 && (
               <Button type="button" variant="outline" onClick={handleBack} className="rounded-xl px-5 font-semibold">
@@ -837,31 +785,19 @@ export default function NewItemPage() {
               </Button>
             )}
             {step < 4 ? (
-              <Button
-                type="button"
-                onClick={handleNext}
-                disabled={saving}
-                className="bg-[#1e3a60] hover:bg-[#162d4a] text-white rounded-xl px-6 font-bold ml-auto"
-              >
+              <Button type="button" onClick={handleNext} disabled={saving} className="bg-[#1e3a60] hover:bg-[#162d4a] text-white rounded-xl px-6 font-bold ml-auto">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Next: {STEPS[step].label} <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={submitting || !declarations.every(Boolean)}
-                className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-8 font-bold ml-auto disabled:opacity-50"
-              >
-                {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Submitting…</> : "Submit Item for Review"}
+              <Button type="button" onClick={handleSubmit} disabled={submitting || !declarations.every(Boolean)} className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-8 font-bold ml-auto disabled:opacity-50">
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Resubmitting…</> : "Resubmit for Review"}
               </Button>
             )}
           </div>
 
           <div className="flex justify-center pb-4">
-            <Link href="/dashboard" className="text-xs text-stone-400 hover:text-stone-600">
-              Save & Exit (continue later from Dashboard)
-            </Link>
+            <Link href="/dashboard" className="text-xs text-stone-400 hover:text-stone-600">Cancel — go back to Dashboard</Link>
           </div>
         </div>
       </div>

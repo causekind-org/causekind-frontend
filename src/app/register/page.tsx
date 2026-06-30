@@ -89,11 +89,11 @@ function getDialCode(isoCode: string, dialCodes: any[]): string {
 // ── Input component ──────────────────────────────────────────────────────────────
 function Field({
   id, label, type = "text", placeholder, value, onChange, required = true,
-  readOnly = false, hint, autoComplete,
+  readOnly = false, hint, autoComplete, error,
 }: {
   id: string; label: string; type?: string; placeholder?: string;
   value: string; onChange: (v: string) => void; required?: boolean;
-  readOnly?: boolean; hint?: string; autoComplete?: string;
+  readOnly?: boolean; hint?: string; autoComplete?: string; error?: string;
 }) {
   return (
     <div className="space-y-1.5">
@@ -109,9 +109,13 @@ function Field({
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className={`w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
+        className={`w-full rounded-xl border px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900
+          ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}
+          ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
       />
-      {hint && <p className="text-xs text-stone-400">{hint}</p>}
+      {error
+        ? <p className="text-xs text-red-500 font-medium mt-0.5">{error}</p>
+        : hint && <p className="text-xs text-stone-400">{hint}</p>}
     </div>
   );
 }
@@ -497,8 +501,8 @@ function RegisterContent() {
                   value={form.fullName} onChange={v => set("fullName", v)}
                   readOnly={isSocialFlow && !!form.fullName}
                   autoComplete="name"
+                  error={errors.fullName}
                 />
-                <FieldError msg={errors.fullName} />
               </div>
             </Reveal>
 
@@ -510,8 +514,8 @@ function RegisterContent() {
                   readOnly={isSocialFlow}
                   hint={isSocialFlow ? t("googleLinkedHint") : undefined}
                   autoComplete="email"
+                  error={errors.email}
                 />
-                <FieldError msg={errors.email} />
               </div>
             </Reveal>
 
@@ -540,10 +544,10 @@ function RegisterContent() {
                     value={phoneNumber}
                     onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
                     autoComplete="tel"
-                    className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                    className={`flex-1 rounded-xl border px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
                   />
                 </div>
-                <FieldError msg={errors.phone} />
+                {errors.phone && <p className="text-xs text-red-500 font-medium">{errors.phone}</p>}
               </div>
             </Reveal>
 
@@ -654,7 +658,7 @@ function RegisterContent() {
                        placeholder="••••••••"
                        value={form.password}
                        onChange={e => set("password", e.target.value)}
-                       className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                       className={`w-full rounded-xl border px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
                      />
                     <button
                       type="button"
@@ -665,7 +669,7 @@ function RegisterContent() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <FieldError msg={errors.password} />
+                  {errors.password && <p className="text-xs text-red-500 font-medium">{errors.password}</p>}
                 </div>
               </Reveal>
             )}

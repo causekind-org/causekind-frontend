@@ -352,6 +352,10 @@ export function getMyItemListings() {
   return request<ItemListing[]>("/api/v1/items/mine");
 }
 
+export function getItemListing(id: number) {
+  return request<ItemListing>(`/api/v1/items/${id}`);
+}
+
 // ── Spec flow: Draft → Update → Submit ──────────────────────────────────────
 
 export function createItemListingDraft() {

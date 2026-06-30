@@ -26,7 +26,7 @@ const empty = { title: "", category: "", targetAmount: "", description: "", imag
 
 
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
       <div>
@@ -34,6 +34,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
         {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </div>
       {children}
+      {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
     </div>
   );
 }
@@ -53,6 +54,7 @@ function NewCampaignPageInner() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [form, setForm] = useState(empty);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [videoMode, setVideoMode] = useState<"link" | "upload">("link");
   const [videoFileName, setVideoFileName] = useState<string>("");
@@ -173,10 +175,18 @@ function NewCampaignPageInner() {
       ? ""
       : (stateOptions.find((s) => s.value === stateIso)?.label || stateIso);
 
-    if (!form.title || !form.category || !form.targetAmount || !finalCity || (!noStateOptions && !finalState) || !form.description) {
-      toast.error(t("toastRequiredFields"));
+    const errs: Record<string, string> = {};
+    if (!form.title.trim()) errs.title = "Campaign title is required";
+    if (!form.category) errs.category = "Category is required";
+    if (!form.targetAmount || parseFloat(form.targetAmount) <= 0) errs.targetAmount = "Enter a valid goal amount";
+    if (!finalCity) errs.city = "City is required";
+    if (!form.description.trim()) errs.description = "Description is required";
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      toast.error("Please fix the highlighted fields");
       return;
     }
+    setFieldErrors({});
     setSubmitting(true);
     try {
       await createCampaign({
@@ -216,19 +226,19 @@ function NewCampaignPageInner() {
           <Card>
             <CardContent className="space-y-5 p-6">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={t("fieldCampaignTitle")}>
-                  <Input placeholder={t("placeholderCampaignTitle")} value={form.title} onChange={(e) => set("title", e.target.value)} required />
+                <Field label={t("fieldCampaignTitle")} error={fieldErrors.title}>
+                  <Input placeholder={t("placeholderCampaignTitle")} value={form.title} onChange={(e) => set("title", e.target.value)} className={fieldErrors.title ? "border-red-500" : ""} />
                 </Field>
-                <Field label={t("fieldCategory")}>
-                  <Select value={form.category} onValueChange={(v) => set("category", v)} required>
-                    <SelectTrigger><SelectValue placeholder={t("placeholderCategory")} /></SelectTrigger>
+                <Field label={t("fieldCategory")} error={fieldErrors.category}>
+                  <Select value={form.category} onValueChange={(v) => set("category", v)}>
+                    <SelectTrigger className={fieldErrors.category ? "border-red-500" : ""}><SelectValue placeholder={t("placeholderCategory")} /></SelectTrigger>
                     <SelectContent>
                       {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label={t("fieldGoalAmount")}>
-                  <Input type="number" min={1} placeholder="500000" value={form.targetAmount} onChange={(e) => set("targetAmount", e.target.value)} required />
+                <Field label={t("fieldGoalAmount")} error={fieldErrors.targetAmount}>
+                  <Input type="number" min={1} placeholder="500000" value={form.targetAmount} onChange={(e) => set("targetAmount", e.target.value)} className={fieldErrors.targetAmount ? "border-red-500" : ""} />
                 </Field>
                 <Field label={t("fieldCountry")}>
                   <SearchableSelect
@@ -258,14 +268,14 @@ function NewCampaignPageInner() {
                     />
                   )}
                 </Field>
-                <Field label={t("fieldCity")}>
+                <Field label={t("fieldCity")} error={fieldErrors.city}>
                   {showCityFreeText ? (
                     <Input
                       id="city"
                       placeholder={t("placeholderCityInput")}
                       value={cityFreeText}
                       onChange={(e) => setCityFreeText(e.target.value)}
-                      required
+                      className={fieldErrors.city ? "border-red-500" : ""}
                     />
                   ) : (
                     <SearchableSelect
@@ -282,8 +292,8 @@ function NewCampaignPageInner() {
                 </Field>
               </div>
 
-              <Field label={t("fieldStory")}>
-                <Textarea rows={6} placeholder={t("placeholderStory")} value={form.description} onChange={(e) => set("description", e.target.value)} required />
+              <Field label={t("fieldStory")} error={fieldErrors.description}>
+                <Textarea rows={6} placeholder={t("placeholderStory")} value={form.description} onChange={(e) => set("description", e.target.value)} className={fieldErrors.description ? "border-red-500" : ""} />
               </Field>
 
               {/* Campaign photos */}

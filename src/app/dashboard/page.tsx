@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
+import { ListingDetailPanel } from "@/components/ListingDetailPanel";
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/);
@@ -455,6 +456,7 @@ export default function DashboardPage() {
 
   // Listing action state
   const [listingActionLoading, setListingActionLoading] = useState<number | null>(null);
+  const [selectedListing, setSelectedListing] = useState<ItemListing | null>(null);
 
   // Donor review state
   const [declineMatchId, setDeclineMatchId] = useState<number | null>(null);
@@ -758,20 +760,26 @@ export default function DashboardPage() {
                             const needsInfo = l.status === "NEEDS_INFORMATION";
                             return (
                               <div key={l.id} className={`pt-3 first:pt-0 p-2 rounded-xl transition-all border ${needsInfo ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/10" : "border-transparent hover:bg-stone-50 dark:hover:bg-zinc-800/40"}`}>
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <p className="font-bold text-sm text-stone-900 dark:text-stone-100 truncate"><TranslatedText text={l.title} /></p>
-                                    <div className="flex flex-wrap gap-1.5 items-center text-xs text-stone-400 mt-0.5">
-                                      {l.category && <span><TranslatedText text={l.category} /></span>}
-                                      {l.city && <><span>·</span><span><TranslatedText text={l.city} /></span></>}
-                                      <span>·</span>
-                                      <span>Qty: {l.quantity}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedListing(l)}
+                                  className="w-full text-left"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-sm text-stone-900 dark:text-stone-100 truncate"><TranslatedText text={l.title} /></p>
+                                      <div className="flex flex-wrap gap-1.5 items-center text-xs text-stone-400 mt-0.5">
+                                        {l.category && <span><TranslatedText text={l.category} /></span>}
+                                        {l.city && <><span>·</span><span><TranslatedText text={l.city} /></span></>}
+                                        <span>·</span>
+                                        <span>Qty: {l.quantity}</span>
+                                      </div>
                                     </div>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${meta.color} ${meta.bg} ${meta.border}`}>
+                                      {meta.label}
+                                    </span>
                                   </div>
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${meta.color} ${meta.bg} ${meta.border}`}>
-                                    {meta.label}
-                                  </span>
-                                </div>
+                                </button>
 
                                 <ListingJourneyTracker status={l.status} />
 
@@ -791,9 +799,11 @@ export default function DashboardPage() {
                                     </Link>
                                   )}
                                   {needsInfo && (
-                                    <span className="text-xs text-amber-700 font-bold">
-                                      Contact admin or resubmit after updating
-                                    </span>
+                                    <Link href={`/items/${l.id}/edit`}>
+                                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+                                        Edit &amp; Resubmit →
+                                      </span>
+                                    </Link>
                                   )}
                                   {l.status === "ELIGIBLE_FOR_MATCHING" || l.status === "AVAILABLE" ? (
                                     <button
@@ -1115,6 +1125,16 @@ export default function DashboardPage() {
 
         </div>
       </div>
+
+      <ListingDetailPanel
+        listing={selectedListing}
+        onClose={() => setSelectedListing(null)}
+        onAction={async (id, action) => {
+          await handleListingAction(id, action);
+          setSelectedListing(null);
+        }}
+        actionLoading={listingActionLoading}
+      />
     </div>
   );
 }

@@ -23,11 +23,12 @@ const CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Househo
 
 const empty = { title: "", category: "", quantity: 1, urgency: "NORMAL", city: "", pincode: "", description: "", imageUrl: "", pickupRadiusKm: 10 };
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
       {children}
+      {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
     </div>
   );
 }
@@ -37,6 +38,7 @@ export default function NewRequestPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState(empty);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [radiusSel, setRadiusSel] = useState("10");
   const [customRadius, setCustomRadius] = useState("");
@@ -217,22 +219,24 @@ export default function NewRequestPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!gpsCoords) {
-      toast.error("Please allow GPS location access to submit this request.");
-      return;
-    }
     const cityStr = buildCityString();
-    if (!cityStr) {
-      toast.error(t("toastCityRequired"));
-      return;
-    }
     const finalRadius = radiusSel === "custom"
       ? (parseInt(customRadius) > 0 ? parseInt(customRadius) : null)
       : parseInt(radiusSel);
-    if (radiusSel === "custom" && !finalRadius) {
-      toast.error(t("toastInvalidRadius"));
+
+    const errs: Record<string, string> = {};
+    if (!form.title.trim()) errs.title = "Title is required";
+    if (!form.category) errs.category = "Category is required";
+    if (!cityStr) errs.city = "City is required";
+    if (!form.description.trim()) errs.description = "Description is required";
+    if (radiusSel === "custom" && !finalRadius) errs.radius = "Enter a valid custom radius";
+    if (!gpsCoords) errs.gps = "GPS location access is required";
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      toast.error("Please fix the highlighted fields");
       return;
     }
+    setFieldErrors({});
     setSubmitting(true);
     try {
       await createItemRequest({
@@ -324,13 +328,13 @@ export default function NewRequestPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Field label={t("fieldItemName")}>
-              <Input placeholder={t("placeholderItemName")} value={form.title} onChange={(e) => set("title", e.target.value)} required />
+            <Field label={t("fieldItemName")} error={fieldErrors.title}>
+              <Input placeholder={t("placeholderItemName")} value={form.title} onChange={(e) => set("title", e.target.value)} className={fieldErrors.title ? "border-red-500" : ""} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={t("fieldCategory")}>
-                <Select value={form.category} onValueChange={(v) => set("category", v)} required>
-                  <SelectTrigger><SelectValue placeholder={t("placeholderCategory")} /></SelectTrigger>
+              <Field label={t("fieldCategory")} error={fieldErrors.category}>
+                <Select value={form.category} onValueChange={(v) => set("category", v)}>
+                  <SelectTrigger className={fieldErrors.category ? "border-red-500" : ""}><SelectValue placeholder={t("placeholderCategory")} /></SelectTrigger>
                   <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
@@ -399,7 +403,7 @@ export default function NewRequestPage() {
                         placeholder={t("placeholderCityInput")}
                         value={cityFreeText}
                         onChange={(e) => setCityFreeText(e.target.value)}
-                        required
+                        className={fieldErrors.city ? "border-red-500" : ""}
                       />
                     ) : (
                       <SearchableSelect
@@ -415,6 +419,7 @@ export default function NewRequestPage() {
                     )}
                   </div>
                 </div>
+                {fieldErrors.city && <p className="text-xs text-red-500 font-medium">{fieldErrors.city}</p>}
               </div>
               <div className="sm:col-span-2 space-y-1.5">
                 <Field label={t("fieldPickupRadius")}>
@@ -446,8 +451,8 @@ export default function NewRequestPage() {
                 </p>
               </div>
             </div>
-            <Field label={t("fieldWhyNeeded")}>
-              <Textarea rows={4} placeholder={t("placeholderWhyNeeded")} value={form.description} onChange={(e) => set("description", e.target.value)} />
+            <Field label={t("fieldWhyNeeded")} error={fieldErrors.description}>
+              <Textarea rows={4} placeholder={t("placeholderWhyNeeded")} value={form.description} onChange={(e) => set("description", e.target.value)} className={fieldErrors.description ? "border-red-500" : ""} />
             </Field>
             <Field label={t("fieldPhoto")}>
               <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />

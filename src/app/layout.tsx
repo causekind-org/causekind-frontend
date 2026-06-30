@@ -82,9 +82,10 @@ export default async function RootLayout({
               <FloatingSupportButton />
               <Toaster
                 richColors
-                position="top-center"
-                offset={16}
-                visibleToasts={1}
+                position="bottom-left"
+                offset={24}
+                visibleToasts={3}
+                duration={4500}
                 style={{ zIndex: 2147483647 }}
                 toastOptions={{ style: { zIndex: 2147483647 } }}
               />
