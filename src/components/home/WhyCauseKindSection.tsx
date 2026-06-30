@@ -1,74 +1,184 @@
 "use client";
 
-/**
- * WhyCauseKindSection — 4-feature asymmetric grid ("Why raise funds through us").
- * Extracted from HomeClient.tsx for maintainability.
- */
-
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ShieldCheck, HandCoins, MapPin, Award } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 
+const AUTO_MS = 4000;
+const FEATURE_COUNT = 4;
+
 export function WhyCauseKindSection() {
   const t = useTranslations("landing");
+  const [active, setActive] = useState(0);
+  const [pct, setPct] = useState(0);
 
   const features = [
-    { icon: ShieldCheck, title: t("features.adminVerified"),       desc: t("features.adminVerifiedDesc"),       color: "from-[#b04a15]/10 to-[#e07b3a]/10 text-[#b04a15]",     accent: "#b04a15" },
-    { icon: HandCoins,   title: t("features.zeroFees"),            desc: t("features.zeroFeesDesc"),            color: "from-[#e07b3a]/10 to-[#f59e0b]/10 text-[#c2660a]",     accent: "#1e3a60" },
-    { icon: MapPin,      title: t("features.localMatching"),       desc: t("features.localMatchingDesc"),       color: "from-[#1e3a60]/10 to-[#2d5a96]/10 text-[#1e3a60]",     accent: "#b04a15" },
-    { icon: Award,       title: t("features.impactCertificates"), desc: t("features.impactCertificatesDesc"), color: "from-amber-500/10 to-yellow-500/10 text-amber-700",       accent: "#1e3a60" },
+    { num: "01", icon: ShieldCheck, title: t("features.adminVerified"),      desc: t("features.adminVerifiedDesc"),      accent: "#b04a15" },
+    { num: "02", icon: HandCoins,   title: t("features.zeroFees"),           desc: t("features.zeroFeesDesc"),           accent: "#1e3a60" },
+    { num: "03", icon: MapPin,      title: t("features.localMatching"),      desc: t("features.localMatchingDesc"),      accent: "#c2660a" },
+    { num: "04", icon: Award,       title: t("features.impactCertificates"), desc: t("features.impactCertificatesDesc"), accent: "#1e3a60" },
   ];
 
+  useEffect(() => {
+    setPct(0);
+    let elapsed = 0;
+    const TICK = 40;
+    const id = setInterval(() => {
+      elapsed += TICK;
+      setPct(Math.min((elapsed / AUTO_MS) * 100, 100));
+      if (elapsed >= AUTO_MS) {
+        clearInterval(id);
+        setActive(a => (a + 1) % FEATURE_COUNT);
+      }
+    }, TICK);
+    return () => clearInterval(id);
+  }, [active]);
+
   return (
-    <section id="trust" className="mx-auto max-w-7xl px-6 py-20">
-      <Reveal className="mb-14">
+    <section id="trust" className="mx-auto max-w-7xl px-6 py-10">
+      <Reveal className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
           <div>
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-2 block">Why CauseKind</span>
-            <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">{t("why.title")}</h2>
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-2 block">
+              Why CauseKind
+            </span>
+            <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
+              {t("why.title")}
+            </h2>
           </div>
-          <p className="text-base text-stone-500 dark:text-stone-400 font-medium max-w-sm lg:text-right">{t("why.subtitle")}</p>
+          <p className="text-base text-stone-500 dark:text-stone-400 font-medium max-w-sm lg:text-right">
+            {t("why.subtitle")}
+          </p>
         </div>
       </Reveal>
 
-      {/* Mobile: simple list */}
-      <div className="sm:hidden flex flex-col gap-3">
-        {features.map(f => (
-          <div key={f.title} className="flex items-start gap-4 px-4 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-orange-100/60 dark:border-zinc-800 shadow-xs">
-            <div className={`flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${f.color} shadow-xs`}>
-              <f.icon className="h-4.5 w-4.5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-snug">{f.title}</p>
-              <p className="text-xs text-stone-500 dark:text-stone-400 font-medium leading-relaxed mt-0.5">{f.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/*
+        Dribbble-inspired split panel:
+        Left — vertical stacked feature selector
+        Right — large animated spotlight panel
+        Outer border unifies the two as one widget, not separate cards.
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] border border-stone-200 dark:border-stone-800">
 
-      {/* Desktop: asymmetric tall|short|short|tall */}
-      <div className="hidden sm:grid grid-cols-4 gap-4 items-start">
-        {features.map((f, i) => (
-          <Reveal key={f.title} delay={i * 90}>
-            <div className={`relative rounded-3xl border bg-white dark:bg-zinc-900 border-[#e5e2d5]/60 dark:border-stone-800 p-7 flex flex-col gap-5 overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
-              i === 0 || i === 3 ? "min-h-[340px]" : "min-h-[240px]"
-            }`}>
-              {/* Left accent stripe */}
-              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-3xl" style={{ background: f.accent }} />
-              {/* Ghost step number */}
-              <span className="absolute right-3 bottom-3 text-[5rem] font-black leading-none select-none pointer-events-none opacity-[0.04] dark:opacity-[0.06]">
-                0{i + 1}
-              </span>
-              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${f.color} shadow-sm`}>
-                <f.icon className="h-5 w-5" />
+        {/* ── LEFT: feature list ── */}
+        <div className="lg:border-r border-stone-200 dark:border-stone-800 flex flex-col">
+          {features.map((f, i) => {
+            const isActive = i === active;
+            const Icon = f.icon;
+            return (
+              <div
+                key={f.num}
+                onClick={() => setActive(i)}
+                className="relative cursor-pointer border-b border-stone-200 dark:border-stone-800 last:border-b-0 px-6 py-5 flex items-center gap-4 transition-colors duration-200 group"
+                style={isActive ? { backgroundColor: `${f.accent}08` } : undefined}
+              >
+                {/* Left accent stripe */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm transition-all duration-300"
+                  style={{ backgroundColor: isActive ? f.accent : "transparent" }}
+                />
+
+                {/* Step number */}
+                <span
+                  className="text-[10px] font-black tracking-[0.15em] flex-shrink-0 w-5 transition-colors duration-200"
+                  style={{ color: isActive ? f.accent : "#c7c3bd" }}
+                >
+                  {f.num}
+                </span>
+
+                {/* Title */}
+                <span
+                  className={`flex-1 text-sm md:text-[0.9375rem] font-bold leading-snug transition-colors duration-200 ${
+                    isActive ? "text-stone-900 dark:text-white" : "text-stone-400 dark:text-stone-500 group-hover:text-stone-600 dark:group-hover:text-stone-300"
+                  }`}
+                >
+                  {f.title}
+                </span>
+
+                {/* Icon chip */}
+                <div
+                  className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
+                  style={{
+                    backgroundColor: isActive ? `${f.accent}18` : "transparent",
+                    color: isActive ? f.accent : "#d6d3d1",
+                  }}
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+
+                {/* Progress fill bar (bottom of row) */}
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 h-[2px] w-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                    <div
+                      className="h-full"
+                      style={{ width: `${pct}%`, backgroundColor: f.accent }}
+                    />
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                <h3 className="text-base font-extrabold text-stone-900 dark:text-stone-100 leading-snug">{f.title}</h3>
-                <p className="text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed">{f.desc}</p>
+            );
+          })}
+        </div>
+
+        {/* ── RIGHT: spotlight panel ── */}
+        <div className="relative min-h-[300px] lg:min-h-[unset] flex items-center justify-center overflow-hidden">
+
+          {/* Animated radial glow — reacts to active accent */}
+          <div
+            className="absolute inset-0 pointer-events-none transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse 70% 70% at 50% 50%, ${features[active].accent}0e 0%, transparent 75%)`,
+            }}
+          />
+
+          {/* One panel per feature, stacked via absolute positioning */}
+          {features.map((f, i) => {
+            const Icon = f.icon;
+            return (
+              <div
+                key={f.num}
+                className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 py-10 md:px-12"
+                style={{
+                  opacity: i === active ? 1 : 0,
+                  transform: `translateY(${i === active ? 0 : 14}px)`,
+                  transition: "opacity 0.4s ease, transform 0.4s ease",
+                  pointerEvents: i === active ? "auto" : "none",
+                }}
+              >
+                {/* Large icon with accent glow */}
+                <div
+                  className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5 flex-shrink-0"
+                  style={{
+                    backgroundColor: f.accent,
+                    boxShadow: `0 16px 56px ${f.accent}45`,
+                  }}
+                >
+                  <Icon className="h-10 w-10 text-white" />
+                </div>
+
+                {/* Feature number badge */}
+                <span
+                  className="text-[10px] font-black tracking-[0.25em] uppercase mb-2"
+                  style={{ color: f.accent }}
+                >
+                  {f.num} / 0{FEATURE_COUNT}
+                </span>
+
+                {/* Title */}
+                <h3 className="text-2xl md:text-3xl font-extrabold text-stone-900 dark:text-white leading-tight mb-3">
+                  {f.title}
+                </h3>
+
+                {/* Description */}
+                <p className="text-sm md:text-base text-stone-500 dark:text-stone-400 leading-relaxed max-w-[26rem]">
+                  {f.desc}
+                </p>
               </div>
-            </div>
-          </Reveal>
-        ))}
+            );
+          })}
+        </div>
+
       </div>
     </section>
   );

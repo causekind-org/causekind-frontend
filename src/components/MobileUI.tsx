@@ -200,8 +200,8 @@ export function FloatingSupportButton() {
       {/* Popover panel */}
       <div
         className={`floating-support-item fixed bottom-[9.5rem] right-5 lg:bottom-24 z-50 w-60
-          bg-white dark:bg-zinc-900
-          rounded-2xl shadow-2xl border border-stone-150 dark:border-zinc-800
+          bg-white/75 dark:bg-zinc-900/70 backdrop-blur-xl
+          rounded-2xl shadow-2xl border border-white/50 dark:border-white/10
           transition-all duration-300 origin-bottom-right
           ${open ? "scale-100 opacity-100 pointer-events-auto" : "scale-90 opacity-0 pointer-events-none"}
           ${menuOpen ? "menu-open" : ""}`}
@@ -241,9 +241,9 @@ export function FloatingSupportButton() {
         aria-label={open ? t("closeSupport") : t("openSupport")}
         className={`floating-support-item fixed bottom-[7.25rem] right-5 lg:bottom-8 z-50
                    w-13 h-13 rounded-full
-                   bg-gradient-to-br from-[#1e3a60] to-[#243f6a]
-                   shadow-[0_8px_28px_-4px_rgba(30,58,96,0.55)]
-                   border-2 border-white/20 dark:border-zinc-700/40
+                   bg-[#1e3a60]/65 backdrop-blur-md
+                   shadow-[0_8px_32px_-4px_rgba(30,58,96,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]
+                   border border-white/20 dark:border-white/12
                    flex items-center justify-center
                    active:scale-95 transition-all duration-200
                    support-btn-ripple

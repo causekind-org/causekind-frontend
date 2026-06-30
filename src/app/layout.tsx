@@ -13,8 +13,10 @@ import { LocationGate } from "@/components/LocationGate";
 import { CookieConsent } from "@/components/CookieConsent";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { DonorListingPrompt } from "@/components/DonorListingPrompt";
+import { DonorCategoryModal } from "@/components/DonorCategoryModal";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
+import { GoogleTagManager } from "@next/third-parties/google";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -62,6 +64,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <GoogleTagManager gtmId="GTM-P7693M56" />
       <head>
         <link
           rel="stylesheet"
@@ -82,15 +85,17 @@ export default async function RootLayout({
               <FloatingSupportButton />
               <Toaster
                 richColors
-                position="top-center"
-                offset={16}
-                visibleToasts={1}
+                position="bottom-left"
+                offset={24}
+                visibleToasts={3}
+                duration={4500}
                 style={{ zIndex: 2147483647 }}
                 toastOptions={{ style: { zIndex: 2147483647 } }}
               />
               <LocationGate />
               <CookieConsent />
               <WelcomeOverlay />
+              <DonorCategoryModal />
               <DonorListingPrompt />
             </AuthProvider>
           </GoogleProvider>

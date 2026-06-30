@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
-  adminGetItemListings, adminApproveItemListing, adminRejectItemListing, type ItemListing,
+  adminGetItemListings, adminApproveItemListing, adminRejectItemListing, adminMarkListingNeedsInformation, type ItemListing,
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest, type ItemRequest,
   adminGetMatches, adminApproveMatch, adminRejectMatch, type ItemMatch,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Check, ClipboardList, Handshake, Loader2, LogOut, Megaphone, Package, ShieldCheck, X,
+  Check, ClipboardList, Handshake, Loader2, LogOut, Megaphone, MessageSquare, Package, ShieldCheck, X,
 } from "lucide-react";
 
 type TabKey = "campaigns" | "requests" | "listings" | "matches";
@@ -38,16 +38,21 @@ export default function AdminDashboardPage() {
   const [rejectType, setRejectType] = useState<RejectType | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState<number | null>(null);
+  const [needsInfoId, setNeedsInfoId] = useState<number | null>(null);
+  const [needsInfoNote, setNeedsInfoNote] = useState("");
 
   const loadData = useCallback(() => {
     setLoading(true);
     Promise.all([
       adminGetCampaigns("PENDING_APPROVAL"),
       adminGetItemRequests("PENDING_VERIFICATION"),
-      adminGetItemListings("PENDING_REVIEW"),
+      Promise.all([
+        adminGetItemListings("SUBMITTED"),
+        adminGetItemListings("MANUAL_REVIEW"),
+      ]).then(([submitted, manual]) => [...submitted, ...manual]),
       adminGetMatches("PENDING_APPROVAL"),
     ]).then(([c, r, l, m]) => {
-      setCampaigns(c); setRequests(r); setListings(l); setMatches(m);
+      setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
     }).catch(() => toast.error("Failed to load approval queue"))
       .finally(() => setLoading(false));
   }, []);
@@ -61,8 +66,21 @@ export default function AdminDashboardPage() {
 
   function openReject(id: number, type: RejectType) {
     setRejectId(id); setRejectType(type); setRejectReason("");
+    setNeedsInfoId(null);
   }
   function cancelReject() { setRejectId(null); setRejectType(null); setRejectReason(""); }
+
+  async function handleNeedsInformation(id: number) {
+    if (!needsInfoNote.trim()) { toast.error("Please enter the information needed from the donor."); return; }
+    setProcessing(id);
+    try {
+      await adminMarkListingNeedsInformation(id, needsInfoNote.trim());
+      setListings(p => p.filter(l => l.id !== id));
+      setNeedsInfoId(null); setNeedsInfoNote("");
+      toast.success("Listing returned to donor for more information.");
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
+    finally { setProcessing(null); }
+  }
 
   async function handleApproveCampaign(id: number) {
     setProcessing(id);
@@ -392,18 +410,21 @@ export default function AdminDashboardPage() {
                 listings.length === 0
                   ? <AllClearState label="No pending item listings" />
                   : listings.map(l => (
-                    <ApprovalCard
-                      key={l.id} id={l.id}
-                      title={l.title}
-                      meta={[l.donorName, l.city, l.category, l.condition, `Qty ${l.quantity}`].filter(Boolean).join(" · ")}
-                      description={l.description}
+                    <ListingApprovalCard
+                      key={l.id}
+                      listing={l}
                       isRejecting={rejectId === l.id && rejectType === "listing"}
                       rejectReason={rejectReason} setRejectReason={setRejectReason}
                       processing={processing}
+                      needsInfoId={needsInfoId} needsInfoNote={needsInfoNote}
+                      setNeedsInfoNote={setNeedsInfoNote}
                       onApprove={() => handleApproveListing(l.id)}
                       onOpenReject={() => openReject(l.id, "listing")}
                       onConfirmReject={() => handleRejectListing(l.id)}
                       onCancelReject={cancelReject}
+                      onOpenNeedsInfo={() => { setNeedsInfoId(l.id); setNeedsInfoNote(""); setRejectId(null); }}
+                      onConfirmNeedsInfo={() => handleNeedsInformation(l.id)}
+                      onCancelNeedsInfo={() => { setNeedsInfoId(null); setNeedsInfoNote(""); }}
                     />
                   ))
               )}
@@ -537,6 +558,156 @@ function ApprovalCard({
               </button>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Full listing card (photos + defects + details + needs-info) ───────────────
+
+interface ListingApprovalCardProps {
+  listing: ItemListing;
+  isRejecting: boolean;
+  rejectReason: string;
+  setRejectReason: (v: string) => void;
+  processing: number | null;
+  needsInfoId: number | null;
+  needsInfoNote: string;
+  setNeedsInfoNote: (v: string) => void;
+  onApprove: () => void;
+  onOpenReject: () => void;
+  onConfirmReject: () => void;
+  onCancelReject: () => void;
+  onOpenNeedsInfo: () => void;
+  onConfirmNeedsInfo: () => void;
+  onCancelNeedsInfo: () => void;
+}
+
+function ListingApprovalCard({
+  listing: l,
+  isRejecting, rejectReason, setRejectReason,
+  processing, needsInfoId, needsInfoNote, setNeedsInfoNote,
+  onApprove, onOpenReject, onConfirmReject, onCancelReject,
+  onOpenNeedsInfo, onConfirmNeedsInfo, onCancelNeedsInfo,
+}: ListingApprovalCardProps) {
+  const photos = [l.imageUrl, ...(l.imageUrls ? l.imageUrls.split("|") : [])].filter(Boolean) as string[];
+
+  return (
+    <div className="group bg-white rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden">
+      <div className="flex">
+        <div className="w-1 shrink-0" style={{ background: "linear-gradient(180deg, #b04a15 0%, #e07b3a 60%, #f0b97a 100%)" }} />
+        <div className="flex-1 min-w-0 p-5 space-y-3">
+
+          {/* Header */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-bold text-stone-900 leading-snug">{l.title}</p>
+              <p className="text-xs text-stone-400 mt-1 leading-relaxed">
+                {[l.donorName, l.city, l.category, l.subcategory && `/ ${l.subcategory}`, l.condition, l.brand, l.model && l.model, `Qty ${l.quantity}`].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <span className={`shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full whitespace-nowrap border ${
+              l.status === "MANUAL_REVIEW"
+                ? "bg-amber-50 text-amber-700 border-amber-200"
+                : "bg-stone-100 text-stone-500 border-stone-200"
+            }`}>
+              {l.status === "MANUAL_REVIEW" ? "⚠ Manual Review" : "Submitted"}
+            </span>
+          </div>
+
+          {/* Photos */}
+          {photos.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {photos.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-24 rounded-xl border object-cover hover:opacity-80 transition" />
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* Detail grid */}
+          {(l.approximateAge || l.workingStatus || l.dimensions || l.approximateWeight || l.locality || l.pincode) && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-stone-50 rounded-xl p-3">
+              {l.approximateAge    && <div><span className="text-stone-400">Age: </span><span className="font-semibold text-stone-700">{l.approximateAge}</span></div>}
+              {l.workingStatus     && <div><span className="text-stone-400">Working: </span><span className="font-semibold text-stone-700">{l.workingStatus.replace(/_/g, " ")}</span></div>}
+              {l.dimensions        && <div><span className="text-stone-400">Size: </span><span className="font-semibold text-stone-700">{l.dimensions}</span></div>}
+              {l.approximateWeight && <div><span className="text-stone-400">Weight: </span><span className="font-semibold text-stone-700">{l.approximateWeight}</span></div>}
+              {l.locality          && <div><span className="text-stone-400">Locality: </span><span className="font-semibold text-stone-700">{l.locality}</span></div>}
+              {l.pincode           && <div><span className="text-stone-400">PIN: </span><span className="font-semibold text-stone-700">{l.pincode}</span></div>}
+            </div>
+          )}
+
+          {/* Known defects */}
+          {l.knownDefects && l.knownDefects !== "NONE" && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-sm">
+              <span className="font-bold text-amber-700">Known defects: </span>
+              <span className="text-stone-700">{l.knownDefects}</span>
+            </div>
+          )}
+
+          {/* Description */}
+          {l.description && (
+            <p className="text-sm text-stone-500 leading-relaxed">{l.description}</p>
+          )}
+
+          {/* Declarations */}
+          {l.declarationsAccepted && (
+            <p className="text-xs text-emerald-600 font-bold">✓ All mandatory declarations accepted by donor</p>
+          )}
+
+          {/* Actions */}
+          {isRejecting ? (
+            <div className="space-y-2.5 pt-1">
+              <input
+                autoFocus value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && onConfirmReject()}
+                placeholder="Reason for rejection..."
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition-all"
+              />
+              <div className="flex gap-2">
+                <button onClick={onConfirmReject} disabled={processing === l.id}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm">
+                  {processing === l.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><X className="w-4 h-4" /> Confirm Reject</>}
+                </button>
+                <button onClick={onCancelReject} className="px-4 py-2 text-sm font-semibold text-stone-500 hover:text-stone-800 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">Cancel</button>
+              </div>
+            </div>
+          ) : needsInfoId === l.id ? (
+            <div className="space-y-2.5 pt-1">
+              <input
+                autoFocus value={needsInfoNote} onChange={e => setNeedsInfoNote(e.target.value)}
+                placeholder="e.g. Please upload clearer photos of the defect area"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 transition-all"
+              />
+              <div className="flex gap-2">
+                <button onClick={onConfirmNeedsInfo} disabled={processing === l.id}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 disabled:opacity-50 transition-colors shadow-sm">
+                  {processing === l.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageSquare className="w-4 h-4" /> Send to Donor</>}
+                </button>
+                <button onClick={onCancelNeedsInfo} className="px-4 py-2 text-sm font-semibold text-stone-500 hover:text-stone-800 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button onClick={onApprove} disabled={processing !== null}
+                className="flex items-center gap-1.5 px-5 py-2 text-sm font-bold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm text-white"
+                style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
+                {processing === l.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Approve</>}
+              </button>
+              <button onClick={onOpenNeedsInfo} disabled={processing !== null}
+                className="flex items-center gap-1.5 px-5 py-2 bg-amber-50 text-amber-700 border border-amber-200 text-sm font-bold rounded-xl hover:bg-amber-100 disabled:opacity-50 transition-colors">
+                <MessageSquare className="w-4 h-4" /> Needs Info
+              </button>
+              <button onClick={onOpenReject} disabled={processing !== null}
+                className="flex items-center gap-1.5 px-5 py-2 bg-red-50 text-red-700 border border-red-200 text-sm font-bold rounded-xl hover:bg-red-100 disabled:opacity-50 transition-colors">
+                <X className="w-4 h-4" /> Reject
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

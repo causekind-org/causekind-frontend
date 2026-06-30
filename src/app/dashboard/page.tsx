@@ -9,6 +9,7 @@ import {
   getMyItemListings, getMyItemRequests, getMyMatches, getMyProfile,
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   saveMatchLogistics, generateDeliveryOtp, verifyDeliveryMatch, confirmReceiptMatch, requestCallMasking,
+  pauseItemListing, resumeItemListing, withdrawItemListing,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
+import { ListingDetailPanel } from "@/components/ListingDetailPanel";
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/);
@@ -31,6 +33,58 @@ function getInitials(name: string): string {
   return ((words[0][0] ?? "") + (words[words.length - 1][0] ?? "")).toUpperCase();
 }
 
+
+// Listing status journey — ordered steps a listing goes through
+const LISTING_JOURNEY = [
+  { status: "DRAFT",                 label: "Draft",             color: "bg-stone-300" },
+  { status: "SUBMITTED",             label: "Submitted",         color: "bg-blue-400" },
+  { status: "AI_SCREENING",          label: "AI Screening",      color: "bg-blue-500" },
+  { status: "MANUAL_REVIEW",         label: "Under Review",      color: "bg-amber-400" },
+  { status: "ELIGIBLE_FOR_MATCHING", label: "Live & Matching",   color: "bg-green-500" },
+  { status: "MATCHED",               label: "Matched",           color: "bg-emerald-600" },
+  { status: "DONATED",               label: "Donated",           color: "bg-emerald-700" },
+];
+
+const LISTING_STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  DRAFT:                  { label: "Draft",             color: "text-stone-500",  bg: "bg-stone-100 dark:bg-zinc-800",    border: "border-stone-300" },
+  SUBMITTED:              { label: "Under Review",      color: "text-blue-700",   bg: "bg-blue-50 dark:bg-blue-950/30",   border: "border-blue-200" },
+  AI_SCREENING:           { label: "AI Screening",      color: "text-blue-700",   bg: "bg-blue-50 dark:bg-blue-950/30",   border: "border-blue-200" },
+  NEEDS_INFORMATION:      { label: "More Info Needed",  color: "text-amber-700",  bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-300" },
+  MANUAL_REVIEW:          { label: "Manual Review",     color: "text-amber-700",  bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-300" },
+  ELIGIBLE_FOR_MATCHING:  { label: "Live — Matching",   color: "text-green-700",  bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-300" },
+  AVAILABLE:              { label: "Live — Matching",   color: "text-green-700",  bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-300" },
+  SOFT_RESERVED:          { label: "Soft Reserved",     color: "text-teal-700",   bg: "bg-teal-50 dark:bg-teal-950/30",   border: "border-teal-300" },
+  MATCHED:                { label: "Matched",           color: "text-emerald-700",bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-300" },
+  PAUSED:                 { label: "Paused",            color: "text-stone-600",  bg: "bg-stone-100 dark:bg-zinc-800",    border: "border-stone-300" },
+  PARTIALLY_DONATED:      { label: "Partially Donated", color: "text-emerald-700",bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-300" },
+  DONATED:                { label: "Donated",           color: "text-emerald-700",bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-300" },
+  FULFILLED:              { label: "Fulfilled",         color: "text-emerald-700",bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-300" },
+  EXPIRED:                { label: "Expired",           color: "text-red-600",    bg: "bg-red-50 dark:bg-red-950/30",     border: "border-red-300" },
+  WITHDRAWN:              { label: "Withdrawn",         color: "text-red-600",    bg: "bg-red-50 dark:bg-red-950/30",     border: "border-red-300" },
+  REJECTED:               { label: "Rejected",          color: "text-red-600",    bg: "bg-red-50 dark:bg-red-950/30",     border: "border-red-300" },
+};
+
+function ListingJourneyTracker({ status }: { status: string }) {
+  const terminal = ["DONATED", "FULFILLED", "EXPIRED", "WITHDRAWN", "REJECTED"];
+  if (terminal.includes(status)) return null;
+
+  const idx = LISTING_JOURNEY.findIndex(s => s.status === status
+    || (status === "AVAILABLE" && s.status === "ELIGIBLE_FOR_MATCHING"));
+  if (idx < 0) return null;
+
+  return (
+    <div className="flex items-center gap-0 pt-2">
+      {LISTING_JOURNEY.map((step, i) => (
+        <div key={step.status} className="flex items-center flex-1 last:flex-none">
+          <div className={`w-3 h-3 rounded-full flex-shrink-0 ${i <= idx ? step.color : "bg-stone-200 dark:bg-zinc-700"}`} title={step.label} />
+          {i < LISTING_JOURNEY.length - 1 && (
+            <div className={`flex-1 h-0.5 ${i < idx ? "bg-green-400" : "bg-stone-200 dark:bg-zinc-700"}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function getFulfilmentStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
@@ -400,6 +454,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"donor" | "donee">("donor");
 
+  // Listing action state
+  const [listingActionLoading, setListingActionLoading] = useState<number | null>(null);
+  const [selectedListing, setSelectedListing] = useState<ItemListing | null>(null);
+
   // Donor review state
   const [declineMatchId, setDeclineMatchId] = useState<number | null>(null);
   const [declineReason, setDeclineReason] = useState("");
@@ -415,9 +473,28 @@ export default function DashboardPage() {
   const [otpLoading, setOtpLoading] = useState<number | null>(null);
 
 
+  const refreshListings = async () => {
+    try { const fresh = await getMyItemListings(); setItemListings(fresh); } catch { /* silent */ }
+  };
+
   const refreshMatches = async () => {
     try { const fresh = await getMyMatches(); setMatches(fresh); } catch { /* silent */ }
   };
+
+  async function handleListingAction(id: number, action: "pause" | "resume" | "withdraw") {
+    setListingActionLoading(id);
+    try {
+      if (action === "pause")    await pauseItemListing(id);
+      if (action === "resume")   await resumeItemListing(id);
+      if (action === "withdraw") await withdrawItemListing(id);
+      await refreshListings();
+      toast.success(action === "pause" ? "Listing paused" : action === "resume" ? "Listing resumed" : "Listing withdrawn");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setListingActionLoading(null);
+    }
+  }
 
   useEffect(() => {
     if (isLoading) return;
@@ -676,28 +753,89 @@ export default function DashboardPage() {
                           </Link>
                         </div>
                       ) : (
-                        <div className="divide-y space-y-3">
-                          {itemListings.map((l) => (
-                            <div key={l.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group hover:bg-stone-50 dark:hover:bg-zinc-800/40 p-2 rounded-xl transition-all">
-                              <div>
-                                <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors"><TranslatedText text={l.title} /></p>
-                                <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
-                                  <span><TranslatedText text={l.city} /></span>
-                                  <span>•</span>
-                                  <span>Qty: {l.quantity}</span>
-                                  {l.maximumDeliveryRadius && (
-                                    <>
-                                      <span>•</span>
-                                      <span>Radius: {l.maximumDeliveryRadius}km</span>
-                                    </>
+                        <div className="divide-y dark:divide-zinc-800 space-y-2">
+                          {itemListings.map((l) => {
+                            const meta = LISTING_STATUS_META[l.status] ?? { label: l.status, color: "text-stone-500", bg: "bg-stone-100", border: "border-stone-200" };
+                            const isDraft = l.status === "DRAFT";
+                            const needsInfo = l.status === "NEEDS_INFORMATION";
+                            return (
+                              <div key={l.id} className={`pt-3 first:pt-0 p-2 rounded-xl transition-all border ${needsInfo ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/10" : "border-transparent hover:bg-stone-50 dark:hover:bg-zinc-800/40"}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedListing(l)}
+                                  className="w-full text-left"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-sm text-stone-900 dark:text-stone-100 truncate"><TranslatedText text={l.title} /></p>
+                                      <div className="flex flex-wrap gap-1.5 items-center text-xs text-stone-400 mt-0.5">
+                                        {l.category && <span><TranslatedText text={l.category} /></span>}
+                                        {l.city && <><span>·</span><span><TranslatedText text={l.city} /></span></>}
+                                        <span>·</span>
+                                        <span>Qty: {l.quantity}</span>
+                                      </div>
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${meta.color} ${meta.bg} ${meta.border}`}>
+                                      {meta.label}
+                                    </span>
+                                  </div>
+                                </button>
+
+                                <ListingJourneyTracker status={l.status} />
+
+                                {needsInfo && (
+                                  <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 font-semibold bg-amber-100 dark:bg-amber-950/20 rounded-lg p-2">
+                                    {l.rejectionReason
+                                      ? <>Admin note: {l.rejectionReason}</>
+                                      : "Admin has requested more information. Please update your listing."}
+                                  </div>
+                                )}
+
+                                {/* Listing action buttons per spec §7.4 */}
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {isDraft && (
+                                    <Link href="/items/new">
+                                      <span className="text-xs text-[#b04a15] font-bold hover:underline">Continue →</span>
+                                    </Link>
+                                  )}
+                                  {needsInfo && (
+                                    <Link href={`/items/${l.id}/edit`}>
+                                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+                                        Edit &amp; Resubmit →
+                                      </span>
+                                    </Link>
+                                  )}
+                                  {l.status === "ELIGIBLE_FOR_MATCHING" || l.status === "AVAILABLE" ? (
+                                    <button
+                                      onClick={() => handleListingAction(l.id, "pause")}
+                                      disabled={listingActionLoading === l.id}
+                                      className="text-xs text-stone-500 border border-stone-300 rounded-full px-2.5 py-0.5 hover:border-stone-500 hover:text-stone-700 disabled:opacity-50"
+                                    >
+                                      {listingActionLoading === l.id ? "…" : "Pause"}
+                                    </button>
+                                  ) : null}
+                                  {l.status === "PAUSED" && (
+                                    <button
+                                      onClick={() => handleListingAction(l.id, "resume")}
+                                      disabled={listingActionLoading === l.id}
+                                      className="text-xs text-green-700 border border-green-400 rounded-full px-2.5 py-0.5 hover:bg-green-50 disabled:opacity-50"
+                                    >
+                                      {listingActionLoading === l.id ? "…" : "Resume"}
+                                    </button>
+                                  )}
+                                  {!["DONATED", "FULFILLED", "REJECTED", "WITHDRAWN"].includes(l.status) && (
+                                    <button
+                                      onClick={() => { if (confirm("Withdraw this listing? This cannot be undone.")) handleListingAction(l.id, "withdraw"); }}
+                                      disabled={listingActionLoading === l.id}
+                                      className="text-xs text-red-500 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 disabled:opacity-50"
+                                    >
+                                      Withdraw
+                                    </button>
                                   )}
                                 </div>
                               </div>
-                              <Badge variant={l.status === "AVAILABLE" ? "default" : "secondary"} className="text-[10px]">
-                                {l.status}
-                              </Badge>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </CardContent>
@@ -987,6 +1125,16 @@ export default function DashboardPage() {
 
         </div>
       </div>
+
+      <ListingDetailPanel
+        listing={selectedListing}
+        onClose={() => setSelectedListing(null)}
+        onAction={async (id, action) => {
+          await handleListingAction(id, action);
+          setSelectedListing(null);
+        }}
+        actionLoading={listingActionLoading}
+      />
     </div>
   );
 }

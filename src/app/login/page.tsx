@@ -51,6 +51,7 @@ function LoginContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [errors, setErrors] = useState({ email: "", password: "" });
   // Start with no animation class — set AFTER mount so the correct direction is known
   const [panelAnimClass, setPanelAnimClass] = useState("");
 
@@ -100,11 +101,20 @@ function LoginContent() {
 
   if (user) return null;
 
+  function validateLogin(): boolean {
+    const e = { email: "", password: "" };
+    if (!email.trim()) e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email address";
+    if (!password) e.password = "Password is required";
+    setErrors(e);
+    return !e.email && !e.password;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validateLogin()) return;
     setLoading(true);
     try {
-      // Fix #4: backend sets httpOnly cookie; we only use email+role from response
       const res = await login(email, password, rememberMe);
       setUser({ email: res.email, role: res.role });
       toast.success("Welcome back!");
@@ -207,9 +217,10 @@ function LoginContent() {
                   required
                   placeholder="you@example.com"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                  onChange={e => { setEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: "" })); }}
+                  className={`w-full rounded-xl border px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
                 />
+                {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email}</p>}
               </div>
             </Reveal>
 
@@ -235,8 +246,8 @@ function LoginContent() {
                     required
                     placeholder="••••••••"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                    onChange={e => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: "" })); }}
+                    className={`w-full rounded-xl border px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
                   />
                   <button
                     type="button"
@@ -247,6 +258,7 @@ function LoginContent() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.password && <p className="text-xs text-red-500 font-medium">{errors.password}</p>}
               </div>
             </Reveal>
 

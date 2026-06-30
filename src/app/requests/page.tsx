@@ -662,18 +662,6 @@ export default function RequestsPage() {
     // DONEEs now get their own view — no redirect
   }, [user, authLoading, router]);
 
-  // ── Per-visit category picker modal (DONOR only) ──────────────────────────
-  // Shows every time a donor lands on this page. Picks a category (or skips).
-  const [showCatModal, setShowCatModal] = useState(false);
-  const [tempSelected, setTempSelected] = useState<string[]>([]);
-
-  useEffect(() => {
-    // Show the modal after auth resolves, only for donors, on every page mount/visit
-    if (!authLoading && user?.role === "DONOR") {
-      setShowCatModal(true);
-    }
-  }, [authLoading, user?.role]);
-
   const [requests,  setRequests]  = useState<ItemRequest[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading,   setLoading]   = useState(true);
@@ -698,11 +686,15 @@ export default function RequestsPage() {
     return [];
   });
 
+  // Sync with the global DonorCategoryModal when it fires while this page is open
   useEffect(() => {
-    if (showCatModal) {
-      setTempSelected(selectedCategories);
+    function onCategoryChanged(e: Event) {
+      setSelectedCategories((e as CustomEvent<string[]>).detail);
     }
-  }, [showCatModal, selectedCategories]);
+    window.addEventListener("ck-category-changed", onCategoryChanged);
+    return () => window.removeEventListener("ck-category-changed", onCategoryChanged);
+  }, []);
+
   const [selectedUrgencies,  setSelectedUrgencies]  = useState<string[]>([]);
   const [sort, setSort]           = useState<ReqSortValue>("nearest");
   const [showFilters, setShowFilters] = useState(false);
@@ -964,97 +956,6 @@ export default function RequestsPage() {
 
   return (
     <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
-
-      {/* ── Per-visit category picker modal (DONOR only) ── */}
-      {showCatModal && user?.role === "DONOR" && (
-        <div
-          className="fixed inset-0 z-[9990] flex items-end sm:items-center justify-center p-4 bg-stone-950/80 backdrop-blur-xl"
-          style={{ animation: "fadeIn 0.3s ease both" }}
-          onClick={() => setShowCatModal(false)}
-        >
-          <div
-            className="w-full max-w-lg bg-[#18120c] rounded-3xl border border-white/10 shadow-2xl p-7 flex flex-col gap-6"
-            style={{ animation: "slideUpModal 0.4s cubic-bezier(0.16,1,0.3,1) both" }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="text-center">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-[#b04a15] mb-2">What do you want to give?</p>
-              <h2 className="text-2xl font-black text-white leading-tight">Choose categories</h2>
-              <p className="text-stone-400 text-sm mt-1">We&apos;ll show you the most urgent local needs.</p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { name: "Medical aid", Icon: Stethoscope, col: "text-sky-400",     bg: "bg-sky-400/10",     border: "border-sky-400/30",    active: "ring-2 ring-sky-400" },
-                { name: "Education",   Icon: BookOpen,    col: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/30",  active: "ring-2 ring-amber-400" },
-                { name: "Livelihood",  Icon: Sprout,      col: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30",active: "ring-2 ring-emerald-400" },
-                { name: "Relief",      Icon: Users,       col: "text-violet-400",  bg: "bg-violet-400/10",  border: "border-violet-400/30", active: "ring-2 ring-violet-400" },
-                { name: "Household",   Icon: Home,        col: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/30",   active: "ring-2 ring-rose-400" },
-                { name: "List Item",   Icon: Package,     col: "text-[#f0b97a]",   bg: "bg-[#f0b97a]/10",   border: "border-[#f0b97a]/30",  active: "ring-2 ring-[#f0b97a]" },
-              ].map(({ name, Icon, col, bg, border, active }) => {
-                const isSelected = tempSelected.includes(name);
-                return (
-                  <button
-                    key={name}
-                    onClick={() => {
-                      if (name === "List Item") {
-                        setShowCatModal(false);
-                        router.push("/items/new");
-                        return;
-                      }
-                      setTempSelected(prev =>
-                        prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
-                      );
-                    }}
-                    className={`group flex flex-col items-center gap-2.5 py-4 px-2 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5
-                               ${isSelected ? `${active} ${bg} brightness-125` : `${border} ${bg} opacity-70 hover:opacity-100`}`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl ${bg} border ${border} flex items-center justify-center`}>
-                      <Icon className={`w-5 h-5 ${col}`} />
-                    </div>
-                    <span className={`text-xs font-bold ${col} text-center leading-tight`}>{name}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => {
-                  setSelectedCategories(tempSelected);
-                  if (typeof window !== "undefined") {
-                    localStorage.setItem("causekind_donor_category", JSON.stringify(tempSelected));
-                  }
-                  setShowCatModal(false);
-                }}
-                className="w-full bg-[#b04a15] hover:bg-[#963c0d] active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-md shadow-orange-950/40"
-              >
-                {tempSelected.length > 0 ? `Apply Selection (${tempSelected.length})` : "Apply Selection (All)"}
-              </button>
-
-              <button
-                onClick={() => { 
-                  setSelectedCategories([]); 
-                  if (typeof window !== "undefined") {
-                    localStorage.setItem("causekind_donor_category", JSON.stringify([]));
-                  }
-                  setShowCatModal(false); 
-                }}
-                className="text-stone-500 hover:text-stone-300 text-sm font-semibold text-center transition-colors underline underline-offset-4 mt-2"
-              >
-                Show all needs
-              </button>
-            </div>
-          </div>
-
-          <style>{`
-            @keyframes slideUpModal {
-              from { opacity: 0; transform: translateY(40px) scale(0.97); }
-              to   { opacity: 1; transform: translateY(0) scale(1); }
-            }
-          `}</style>
-        </div>
-      )}
 
       {/* ── Hero ── */}
       <RequestsHero total={requests.length} critical={criticalCount} catCounts={catCounts} />
