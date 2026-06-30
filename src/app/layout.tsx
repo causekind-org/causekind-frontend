@@ -17,6 +17,7 @@ import { DonorCategoryModal } from "@/components/DonorCategoryModal";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
 import { GoogleTagManager } from "@next/third-parties/google";
+import MetaPixel from "@/components/MetaPixel";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -62,9 +63,12 @@ export default async function RootLayout({
 }) {
   const messages = await getMessages();
 
+  const gtmId = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P7693M56";
+
   return (
     <html lang="en" suppressHydrationWarning>
-      <GoogleTagManager gtmId="GTM-P7693M56" />
+      <GoogleTagManager gtmId={gtmId} />
+      <MetaPixel />
       <head>
         <link
           rel="stylesheet"
