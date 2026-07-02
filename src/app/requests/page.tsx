@@ -863,14 +863,7 @@ export default function RequestsPage() {
 
   function openDonateModal(req: ItemRequest) {
     if (!user) { router.push("/login"); return; }
-    if (myProfile?.latitude == null || myProfile?.longitude == null) {
-      toast.error("Please set your location in your profile before donating.", {
-        action: { label: "Set location", onClick: () => router.push("/profile") },
-      });
-      return;
-    }
-    setDonateTarget(req);
-    setDescription(""); setImages([]); setImagePreviews([]); setAnalyzing(false); setAiGenerated(false);
+    router.push(`/requests/${req.id}/offer`);
   }
 
   function closeDonateModal() {

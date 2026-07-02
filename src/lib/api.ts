@@ -798,6 +798,459 @@ export function reconfirmAvailability(id: number) {
   return request<ItemMatch>(`/api/v1/matches/${id}/reconfirm`, { method: "POST" });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type DonorFlowType = "ALREADY_OWN" | "WILL_PURCHASE" | "SIMILAR_ITEM";
+
+export type OfferStatus =
+  | "DRAFT" | "SUBMITTED" | "AI_ELIGIBILITY_SCREENING" | "AI_COMPATIBILITY_SCREENING"
+  | "COMPATIBILITY_CHECKED" | "SOFT_RESERVED_PRIMARY" | "SOFT_RESERVED_BACKUP"
+  | "PENDING_DONEE_REVIEW" | "DONEE_ACCEPTED" | "DONEE_DECLINED"
+  | "DONOR_RECONFIRMATION_REQUIRED" | "DONOR_RECONFIRMED" | "CONDITION_CHANGED_RESCREENING"
+  | "NEEDS_INFORMATION" | "PENDING_ADMIN_APPROVAL" | "ADMIN_APPROVED" | "ADMIN_REJECTED"
+  | "HANDOVER_IN_PROGRESS" | "HANDOVER_AT_RISK" | "ISSUE_WINDOW_OPEN" | "ISSUE_RAISED"
+  | "COMPLETED" | "CANCELLED" | "WITHDRAWN";
+
+export type CompatibilityIndicator =
+  | "STRONG_MATCH" | "POSSIBLE_MATCH" | "SOME_SPECS_DONT_MATCH" | "NOT_ELIGIBLE";
+
+export type CompatibilityResult =
+  | "PENDING" | "COMPATIBLE" | "PARTIALLY_COMPATIBLE" | "INCOMPATIBLE" | "REJECTED";
+
+export type OfferHandoverMethod = "PICKUP" | "DROP_OFF" | "COURIER" | "CAUSEKIND_LOGISTICS";
+
+export type AnonymizedRequest = {
+  id: number;
+  title: string;
+  category: string;
+  quantity: number;
+  urgency: string;
+  city: string;
+  description: string | null;
+  status: string;
+  createdAt: string;
+  latitude: number | null;
+  longitude: number | null;
+  quantityRequired: number;
+  quantityReserved: number;
+  quantityDelivered: number;
+  quantityRemaining: number;
+};
+
+export type QuantityAllocation = {
+  requestId: number;
+  quantityRequired: number;
+  quantityOffered: number;
+  quantityReserved: number;
+  quantityDelivered: number;
+  quantityCancelled: number;
+  quantityRemaining: number;
+};
+
+export type OfferItemDetails = {
+  id: number;
+  brand: string | null;
+  model: string | null;
+  approximateAge: string | null;
+  condition: string | null;
+  workingStatus: string | null;
+  knownDefects: string | null;
+  accessoriesIncluded: string | null;
+  dimensions: string | null;
+  approximateWeight: string | null;
+  quantity: number;
+  subcategory: string | null;
+  specNotes: string | null;
+  pickupCity: string | null;
+  pickupPincode: string | null;
+  pickupLocality: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  donorDropOffAvailable: boolean;
+  maxTravelDistanceKm: number | null;
+  deliveryCostBornBy: string | null;
+  preferredHandoverDate: string | null;
+  offerValidUntil: string | null;
+};
+
+export type OfferMediaItem = {
+  id: number;
+  mediaUrl: string;
+  mediaType: "IMAGE" | "VIDEO";
+  isPrimary: boolean;
+  sortOrder: number;
+};
+
+export type DonationOffer = {
+  id: number;
+  flowType: DonorFlowType;
+  status: OfferStatus;
+  compatibilityResult: CompatibilityResult | null;
+  compatibilityIndicator: CompatibilityIndicator | null;
+  matchScore: number | null;
+  rejectionReason: string | null;
+  declarationsAccepted: boolean;
+  submittedAt: string | null;
+  createdAt: string;
+  requestId: number;
+  requestTitle: string;
+  requestCategory: string;
+  requestQuantity: number;
+  requestCity: string;
+  requestUrgency: string;
+  itemDetails: OfferItemDetails | null;
+  media: OfferMediaItem[];
+  reservationType: "PRIMARY" | "BACKUP" | null;
+  donorName: string;
+  doneeName: string;
+  donorPhone: string | null;
+  doneePhone: string | null;
+  callMaskingRequested: boolean;
+};
+
+export type CompatibilityCheck = {
+  indicator: CompatibilityIndicator;
+  categoryMatch: boolean;
+  quantityMatch: boolean;
+  conditionOk: boolean;
+  explanation: string;
+};
+
+export type HandoverConfirmationSummary = {
+  otpVerified: boolean;
+  donorConfirmedQty: number | null;
+  donorConfirmedAt: string | null;
+  doneeConfirmedQty: number | null;
+  doneeConfirmedAt: string | null;
+  doneeConditionRating: string | null;
+};
+
+export type HandoverRecord = {
+  id: number;
+  offerId: number;
+  method: OfferHandoverMethod | null;
+  scheduledDateTime: string | null;
+  locationAddress: string | null;
+  transportArrangedBy: string | null;
+  transportCostBornBy: string | null;
+  rescheduleCount: number;
+  atRisk: boolean;
+  courierName: string | null;
+  trackingNumber: string | null;
+  createdAt: string;
+  confirmation: HandoverConfirmationSummary | null;
+};
+
+export type Certificate = {
+  id: number;
+  offerId: number;
+  certificateNumber: string;
+  donorName: string;
+  category: string;
+  quantityDelivered: number;
+  handoverDate: string;
+  qrCodeUrl: string | null;
+  pdfUrl: string | null;
+  issuedAt: string;
+};
+
+export type ChatMessage = {
+  id: number;
+  threadId: number;
+  senderId: number;
+  senderName: string;
+  content: string;
+  messageType: "TEXT" | "SYSTEM" | "QUESTION" | "ADMIN_NOTE";
+  recipientTarget: "DONOR" | "DONEE" | "BOTH" | null;
+  readAt: string | null;
+  sentAt: string;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Stage 1: Anonymized request
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getAnonymizedRequest(requestId: number) {
+  return request<AnonymizedRequest>(`/api/v1/item-requests/${requestId}/anonymized`);
+}
+
+export function getQuantityAllocation(requestId: number) {
+  return request<QuantityAllocation>(`/api/v1/item-requests/${requestId}/quantity-allocation`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Stage 2–3: Offer creation
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function createOfferDraft(requestId: number, flowType: DonorFlowType) {
+  return request<DonationOffer>(
+    `/api/v1/offers/draft?requestId=${requestId}&flowType=${flowType}`,
+    { method: "POST" },
+  );
+}
+
+export function updateOfferItemDetails(offerId: number, data: Partial<OfferItemDetails> & {
+  knownDefects?: string; specNotes?: string; courierArrangement?: string;
+}) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}/item-details`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function uploadOfferMedia(offerId: number, files: File[]) {
+  const formData = new FormData();
+  files.forEach((f) => formData.append("files", f));
+  return fetch(`${BASE_URL}/api/v1/offers/${offerId}/media`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.message ?? "Upload failed");
+    }
+    return res.json() as Promise<DonationOffer>;
+  });
+}
+
+export function deleteOfferMedia(offerId: number, mediaId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/media/${mediaId}`, { method: "DELETE" });
+}
+
+export function checkOfferCompatibility(offerId: number) {
+  return request<CompatibilityCheck>(`/api/v1/offers/${offerId}/check-compatibility`, {
+    method: "POST",
+  });
+}
+
+export function submitOffer(offerId: number, declarationsAccepted: boolean) {
+  return request<DonationOffer>(
+    `/api/v1/offers/${offerId}/submit?declarationsAccepted=${declarationsAccepted}`,
+    { method: "POST" },
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Donor read/manage
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getMyDonationOffers() {
+  return request<DonationOffer[]>("/api/v1/offers/mine");
+}
+
+export function getDonationOffer(offerId: number) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}`);
+}
+
+export function reconfirmOfferAvailability(offerId: number) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}/reconfirm`, { method: "POST" });
+}
+
+export function withdrawOffer(offerId: number, reason?: string) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}/withdraw`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason ?? null }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Donee review (Stage 6)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getOffersForMyRequests() {
+  return request<DonationOffer[]>("/api/v1/offers/for-my-requests");
+}
+
+export function doneeReviewOffer(
+  offerId: number,
+  action: "ACCEPT" | "DECLINE" | "ASK_QUESTION" | "REPORT" | "REQUEST_INFO",
+  declineReason?: string,
+  message?: string,
+) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}/donee-review`, {
+    method: "POST",
+    body: JSON.stringify({ action, declineReason, message }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Flow B (purchase intent)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function saveFlowBCommitment(offerId: number, data: {
+  itemName: string; proposedBrand?: string; proposedModel?: string;
+  estimatedCost?: number; purchaseTimeline: string; intendedStore?: string; notes?: string;
+}) {
+  return request<object>(`/api/v1/offers/${offerId}/flow-b/commitment`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function uploadFlowBProof(offerId: number, proofType: string, file?: File,
+                                   trackingNumber?: string, notes?: string) {
+  const formData = new FormData();
+  formData.append("proofType", proofType);
+  if (file) formData.append("file", file);
+  if (trackingNumber) formData.append("trackingNumber", trackingNumber);
+  if (notes) formData.append("notes", notes);
+  return fetch(`${BASE_URL}/api/v1/offers/${offerId}/flow-b/proof`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b?.message ?? "Upload failed"); }
+    return res.json();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Handover (Stages 9–11)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getHandover(offerId: number) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover`);
+}
+
+export function scheduleHandover(offerId: number, data: {
+  method: OfferHandoverMethod; scheduledDateTime: string; locationAddress?: string;
+  locationLatitude?: number; locationLongitude?: number;
+  transportArrangedBy?: string; transportCostBornBy?: string;
+  packagingResponsibility?: string; courierName?: string;
+}) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function rescheduleHandover(offerId: number, data: {
+  scheduledDateTime: string; locationAddress?: string; rescheduleReason?: string;
+}) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/reschedule`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function generateHandoverOtp(offerId: number) {
+  return request<{ otp: string }>(`/api/v1/offers/${offerId}/handover/otp`, { method: "POST" });
+}
+
+export function confirmHandoverDonor(offerId: number, quantityHandedOver: number, verificationMethod?: string) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/confirm-donor`, {
+    method: "POST",
+    body: JSON.stringify({ quantityHandedOver, verificationMethod }),
+  });
+}
+
+export function confirmHandoverDonee(offerId: number, data: {
+  otp?: string; quantityReceived: number;
+  conditionRating?: string; conditionNotes?: string; verificationMethod?: string;
+}) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/confirm-donee`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function reportPostDeliveryIssue(offerId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/offers/${offerId}/handover/issues`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Certificate (Stage 12)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getOfferCertificate(offerId: number) {
+  return request<Certificate>(`/api/v1/offers/${offerId}/certificate`);
+}
+
+export function verifyCertificate(certNumber: string) {
+  return request<Certificate>(`/api/v1/certificates/${certNumber}/verify`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Chat
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getChatMessages(offerId: number) {
+  return request<ChatMessage[]>(`/api/v1/offers/${offerId}/chat/messages`);
+}
+
+export function getChatMessagesSince(offerId: number, since: string) {
+  return request<ChatMessage[]>(
+    `/api/v1/offers/${offerId}/chat/messages/since?since=${encodeURIComponent(since)}`,
+  );
+}
+
+export function sendChatMessage(
+  offerId: number,
+  content: string,
+  messageType = "TEXT",
+  recipientTarget?: "DONOR" | "DONEE" | "BOTH",
+) {
+  return request<ChatMessage>(`/api/v1/offers/${offerId}/chat/messages`, {
+    method: "POST",
+    body: JSON.stringify({ content, messageType, ...(recipientTarget ? { recipientTarget } : {}) }),
+  });
+}
+
+export function requestOfferCall(offerId: number) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}/request-call`, { method: "POST" });
+}
+
+export function markChatMessagesRead(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/chat/messages/read`, { method: "POST" });
+}
+
+export function getChatUnreadCount(offerId: number) {
+  return request<{ count: number }>(`/api/v1/offers/${offerId}/chat/messages/unread-count`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Donor Flow 2 — Admin
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function adminGetAllOffers(status?: string) {
+  const q = status ? `?status=${status}` : "";
+  return request<DonationOffer[]>(`/api/v1/admin/offers${q}`);
+}
+
+export function adminActionOffer(offerId: number, action: string, reason?: string, backupOfferId?: number) {
+  return request<DonationOffer>(`/api/v1/admin/offers/${offerId}/action`, {
+    method: "POST",
+    body: JSON.stringify({ action, reason, backupOfferId }),
+  });
+}
+
+export type StatusHistoryEntry = {
+  id: number;
+  entityType: string;
+  entityId: number;
+  fromStatus: string | null;
+  toStatus: string;
+  changedByEmail: string;
+  note: string | null;
+  changedAt: string;
+};
+
+export function adminGetOfferHistory(offerId: number) {
+  return request<StatusHistoryEntry[]>(`/api/v1/admin/offers/${offerId}/history`);
+}
+
+export function adminGetOfferById(offerId: number) {
+  return request<DonationOffer>(`/api/v1/admin/offers/${offerId}`);
+}
+
 export function updateMatchFulfilmentStatus(id: number, status: string, note?: string) {
   return request<ItemMatch>(`/api/v1/matches/${id}/status`, {
     method: "PATCH",
