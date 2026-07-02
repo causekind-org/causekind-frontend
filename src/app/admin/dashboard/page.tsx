@@ -11,7 +11,7 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Check, ClipboardList, Handshake, Loader2, LogOut, Megaphone, MessageSquare, Package, ShieldCheck, X,
+  Check, ClipboardList, Handshake, Heart, Loader2, LogOut, Megaphone, MessageSquare, Package, ShieldCheck, X,
 } from "lucide-react";
 
 type TabKey = "campaigns" | "requests" | "listings" | "matches";
@@ -258,6 +258,12 @@ export default function AdminDashboardPage() {
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-stone-400 hover:text-white hover:bg-white/5 transition-all border border-white/[0.05]">
             <Handshake className="w-4 h-4 shrink-0 text-teal-400" />
             Match History
+          </a>
+          <a href="/admin/offers"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-stone-400 hover:text-white hover:bg-white/5 transition-all border border-[#b04a15]/30 bg-[#b04a15]/05">
+            <Heart className="w-4 h-4 shrink-0 text-[#b04a15]" />
+            <span>Donation Offers</span>
+            <span className="ml-auto text-[10px] font-black text-[#b04a15] uppercase tracking-wide">New</span>
           </a>
         </div>
 

@@ -10,7 +10,8 @@ import {
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   saveMatchLogistics, generateDeliveryOtp, verifyDeliveryMatch, confirmReceiptMatch, requestCallMasking,
   pauseItemListing, resumeItemListing, withdrawItemListing,
-  type ItemListing, type ItemRequest, type ItemMatch, type UserProfile
+  getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer,
+  type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -124,6 +125,431 @@ function getRequestStatusBadge(status: string) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Donor Flow 2 — Offer Stage Tracker
+───────────────────────────────────────────────────────────────────────────── */
+
+// Ordered stages for the visual progress bar
+const OFFER_STAGES = [
+  "DRAFT",
+  "SUBMITTED",
+  "AI_ELIGIBILITY_SCREENING",
+  "PENDING_DONEE_REVIEW",
+  "DONOR_RECONFIRMED",
+  "ADMIN_APPROVED",
+  "HANDOVER_IN_PROGRESS",
+  "ISSUE_WINDOW_OPEN",
+  "COMPLETED",
+];
+
+type OfferMeta = {
+  label: string;
+  explanation: string;
+  action?: string;
+  actionLabel?: string;
+  severity: "info" | "warning" | "success" | "error" | "neutral";
+};
+
+const OFFER_STATUS_META: Record<string, OfferMeta> = {
+  DRAFT:                         { label: "Draft",                    explanation: "Complete your item details and photos to submit the offer.", action: "edit", actionLabel: "Continue offer", severity: "warning" },
+  SUBMITTED:                     { label: "Submitted",                explanation: "Your offer has been submitted and is queued for AI screening.", severity: "info" },
+  AI_ELIGIBILITY_SCREENING:      { label: "AI Eligibility Check",     explanation: "We are checking if your item is safe and eligible to donate.", severity: "info" },
+  AI_COMPATIBILITY_SCREENING:    { label: "AI Compatibility Check",   explanation: "We are comparing your item details against the request requirements.", severity: "info" },
+  COMPATIBILITY_CHECKED:         { label: "Compatibility Checked",    explanation: "AI check is complete. Sending to the recipient for review.", severity: "info" },
+  NEEDS_INFORMATION:             { label: "More Information Needed",  explanation: "Your offer needs additional details before it can proceed.", action: "edit", actionLabel: "Update details", severity: "warning" },
+  SOFT_RESERVED_PRIMARY:         { label: "Sent to Recipient",        explanation: "Your offer is the primary offer and the recipient is reviewing it.", severity: "info" },
+  SOFT_RESERVED_BACKUP:          { label: "Backup Offer",             explanation: "Your offer is on standby as a backup in case the primary offer falls through.", severity: "neutral" },
+  PENDING_DONEE_REVIEW:          { label: "Recipient Reviewing",      explanation: "The recipient is reviewing your item photos and details.", severity: "info" },
+  DONEE_ACCEPTED:                { label: "Recipient Accepted",       explanation: "Great! The recipient accepted your offer. Waiting for you to reconfirm.", action: "reconfirm", actionLabel: "Reconfirm availability", severity: "warning" },
+  DONEE_DECLINED:                { label: "Recipient Declined",       explanation: "The recipient declined this offer.", severity: "error" },
+  DONOR_RECONFIRMATION_REQUIRED: { label: "Reconfirmation Required",  explanation: "Please confirm your item is still available and in the same condition.", action: "reconfirm", actionLabel: "Confirm item is ready", severity: "warning" },
+  DONOR_RECONFIRMED:             { label: "Reconfirmed",              explanation: "You confirmed availability. Waiting for CauseKind admin to do a final review.", severity: "info" },
+  CONDITION_CHANGED_RESCREENING: { label: "Re-screening",             explanation: "Item condition changed — AI is re-checking your updated details.", severity: "info" },
+  PENDING_ADMIN_APPROVAL:        { label: "Admin Reviewing",          explanation: "CauseKind admin is doing a final check before approving the handover.", severity: "info" },
+  ADMIN_APPROVED:                { label: "Approved! Schedule Handover", explanation: "Your offer was approved. Please schedule the handover now.", action: "handover", actionLabel: "Go to Handover Hub", severity: "warning" },
+  ADMIN_REJECTED:                { label: "Rejected by Admin",        explanation: "Admin could not approve this offer. See the reason and your next steps below.", action: "browse", actionLabel: "Browse other requests", severity: "error" },
+  HANDOVER_IN_PROGRESS:          { label: "Handover in Progress",     explanation: "The handover is scheduled. Confirm the OTP when you physically hand over the item.", action: "handover", actionLabel: "Open Handover Hub", severity: "info" },
+  HANDOVER_AT_RISK:              { label: "Handover At Risk",         explanation: "The handover has been rescheduled multiple times. Admin review may be required.", action: "handover", actionLabel: "View Handover Hub", severity: "warning" },
+  ISSUE_WINDOW_OPEN:             { label: "Issue Window Open",        explanation: "Delivery confirmed! Both parties can report any problems within the issue window.", action: "issues", actionLabel: "Report an issue", severity: "success" },
+  ISSUE_RAISED:                  { label: "Issue Under Review",       explanation: "An issue has been reported. Our team is looking into it.", severity: "warning" },
+  COMPLETED:                     { label: "Donation Complete!",       explanation: "The donation was successfully completed.", action: "certificate", actionLabel: "View Certificate", severity: "success" },
+  CANCELLED:                     { label: "Cancelled",                explanation: "This offer was cancelled.", severity: "neutral" },
+  WITHDRAWN:                     { label: "Withdrawn",                explanation: "You withdrew this offer.", severity: "neutral" },
+};
+
+const SEVERITY_STYLES = {
+  info:    { bar: "bg-blue-500",   badge: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800",    dot: "bg-blue-500" },
+  warning: { bar: "bg-amber-500",  badge: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800", dot: "bg-amber-500" },
+  success: { bar: "bg-green-500",  badge: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800",  dot: "bg-green-500" },
+  error:   { bar: "bg-red-500",    badge: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800",              dot: "bg-red-500" },
+  neutral: { bar: "bg-stone-300",  badge: "bg-stone-50 text-stone-600 border-stone-200 dark:bg-zinc-800 dark:text-stone-400 dark:border-zinc-700",       dot: "bg-stone-400" },
+};
+
+function OfferStageCard({
+  offer,
+  onReconfirm,
+  onWithdraw,
+}: {
+  offer: DonationOffer;
+  onReconfirm: (id: number) => void;
+  onWithdraw: (id: number, reason: string) => void;
+}) {
+  const meta = OFFER_STATUS_META[offer.status] ?? {
+    label: offer.status.replace(/_/g, " "),
+    explanation: "",
+    severity: "neutral" as const,
+  };
+  const style = SEVERITY_STYLES[meta.severity];
+
+  const stageIdx = OFFER_STAGES.indexOf(
+    OFFER_STAGES.find((s) => {
+      if (s === offer.status) return true;
+      if (s === "SUBMITTED" && (offer.status === "AI_ELIGIBILITY_SCREENING" || offer.status === "AI_COMPATIBILITY_SCREENING" || offer.status === "COMPATIBILITY_CHECKED")) return true;
+      if (s === "PENDING_DONEE_REVIEW" && (offer.status === "SOFT_RESERVED_PRIMARY" || offer.status === "SOFT_RESERVED_BACKUP" || offer.status === "DONEE_ACCEPTED")) return true;
+      if (s === "DONOR_RECONFIRMED" && (offer.status === "DONOR_RECONFIRMATION_REQUIRED" || offer.status === "CONDITION_CHANGED_RESCREENING" || offer.status === "PENDING_ADMIN_APPROVAL")) return true;
+      if (s === "HANDOVER_IN_PROGRESS" && offer.status === "HANDOVER_AT_RISK") return true;
+      if (s === "ISSUE_WINDOW_OPEN" && offer.status === "ISSUE_RAISED") return true;
+      return false;
+    }) ?? ""
+  );
+
+  const isTerminal = ["COMPLETED", "CANCELLED", "WITHDRAWN", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(offer.status);
+
+  const actionHref =
+    meta.action === "edit"        ? `/requests/${offer.requestId}/offer` :
+    meta.action === "handover"    ? `/offers/${offer.id}/handover` :
+    meta.action === "issues"      ? `/offers/${offer.id}/issues` :
+    meta.action === "certificate" ? `/certificate?offerId=${offer.id}` :
+    meta.action === "browse"      ? `/requests` : null;
+
+  return (
+    <div className={`rounded-2xl border ${style.badge} p-4 space-y-3`}>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${style.badge}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+              {meta.label}
+            </span>
+            {offer.flowType && (
+              <span className="text-xs text-stone-400">
+                {offer.flowType === "ALREADY_OWN" ? "Own item" : offer.flowType === "WILL_PURCHASE" ? "Will purchase" : "Similar item"}
+              </span>
+            )}
+          </div>
+          <p className="font-semibold text-sm text-stone-900 dark:text-stone-100 truncate">{offer.requestTitle}</p>
+          <p className="text-xs text-stone-500 mt-0.5">{offer.requestCategory}{offer.requestCity ? ` · ${offer.requestCity}` : ""}</p>
+        </div>
+        {offer.media?.[0] && (
+          <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
+            <img src={offer.media[0].mediaUrl} alt="" className="h-full w-full object-cover" />
+          </div>
+        )}
+      </div>
+
+      {/* Explanation */}
+      {meta.explanation && (
+        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{meta.explanation}</p>
+      )}
+
+      {/* Rejection reason */}
+      {offer.rejectionReason && (
+        <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-700 dark:text-red-400">
+          <span className="font-semibold">Reason: </span>{offer.rejectionReason}
+        </div>
+      )}
+
+      {/* Post-rejection next steps — shown only for ADMIN_REJECTED */}
+      {offer.status === "ADMIN_REJECTED" && (
+        <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 p-3 space-y-2">
+          <p className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">What you can do next</p>
+          <div className="space-y-1.5">
+            <Link href={`/requests`}
+              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[#b04a15] transition-colors">
+              <span className="text-sm">🔍</span>
+              <div>
+                <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">Offer to a different request</p>
+                <p className="text-[10px] text-stone-400">Browse all verified requests and find a better match for your item.</p>
+              </div>
+            </Link>
+            <Link href={`/items/new`}
+              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[#b04a15] transition-colors">
+              <span className="text-sm">📦</span>
+              <div>
+                <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">List the item as a general listing</p>
+                <p className="text-[10px] text-stone-400">Let the system find any suitable recipient automatically.</p>
+              </div>
+            </Link>
+            <Link href={`/requests/${offer.requestId}/offer`}
+              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[#b04a15] transition-colors">
+              <span className="text-sm">✏️</span>
+              <div>
+                <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">Re-offer with updated details</p>
+                <p className="text-[10px] text-stone-400">Address the rejection reason and submit a fresh offer for the same request.</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Stage progress tracker — full labeled view matching donee style */}
+      {!isTerminal && (() => {
+        const donorStages: { label: string; sublabel: string; statuses: string[]; nowText: string }[] = [
+          {
+            label: "Submitted",
+            sublabel: "Your offer was submitted for review",
+            statuses: ["DRAFT", "SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "COMPATIBILITY_CHECKED", "NEEDS_INFORMATION"],
+            nowText:
+              offer.status === "DRAFT" ? "Complete your item details and photos to submit the offer." :
+              offer.status === "NEEDS_INFORMATION" ? "AI screening found missing details. Please update your offer before it can proceed." :
+              "Your offer has been submitted. AI is checking your item details and photos. No action needed.",
+          },
+          {
+            label: "Sent to Recipient",
+            sublabel: "Recipient is reviewing your item",
+            statuses: ["PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP"],
+            nowText:
+              offer.status === "SOFT_RESERVED_BACKUP" ? "Your offer is on standby as a backup in case the primary offer falls through." :
+              "Your offer has passed AI screening and has been sent to the recipient. Waiting for them to accept or decline.",
+          },
+          {
+            label: "Recipient Accepted",
+            sublabel: "Recipient accepted — waiting for you",
+            statuses: ["DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED"],
+            nowText: "The recipient accepted your offer! Please confirm that your item is still available and in the same condition before we proceed.",
+          },
+          {
+            label: "You Reconfirmed",
+            sublabel: "You confirmed item availability",
+            statuses: ["DONOR_RECONFIRMED", "CONDITION_CHANGED_RESCREENING", "PENDING_ADMIN_APPROVAL"],
+            nowText:
+              offer.status === "CONDITION_CHANGED_RESCREENING" ? "Your updated item details are being re-checked by AI." :
+              "You confirmed availability. CauseKind admin is doing a final review before approving the match.",
+          },
+          {
+            label: "Admin Approved",
+            sublabel: "CauseKind approved the match",
+            statuses: ["ADMIN_APPROVED"],
+            nowText: "Your donation has been approved! Please go to the Handover Hub to schedule when and how you will hand over the item.",
+          },
+          {
+            label: "Handover",
+            sublabel: "Item handed over to recipient",
+            statuses: ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"],
+            nowText:
+              offer.status === "HANDOVER_AT_RISK" ? "The handover has been rescheduled multiple times. Please contact us or the recipient to resolve the scheduling." :
+              "A handover has been scheduled. Generate the OTP in the Handover Hub and hand it over to the recipient at the agreed time.",
+          },
+          {
+            label: "Complete",
+            sublabel: "Donation successfully delivered",
+            statuses: ["ISSUE_WINDOW_OPEN", "ISSUE_RAISED", "COMPLETED"],
+            nowText:
+              offer.status === "ISSUE_RAISED" ? "An issue was reported for this donation. Our team is reviewing it." :
+              offer.status === "ISSUE_WINDOW_OPEN" ? "The recipient confirmed they got the item. A short issue window is open. Once it closes, your certificate will be issued." :
+              "Your donation is complete! Download your certificate as a record of your contribution.",
+          },
+        ];
+
+        const isAtRisk = offer.status === "HANDOVER_AT_RISK";
+        const currentDonorIdx = donorStages.findIndex(s => s.statuses.includes(offer.status));
+
+        return (
+          <div className="space-y-2 pt-1">
+            {/* Segmented bar */}
+            <div className="flex gap-0.5">
+              {donorStages.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 flex-1 rounded-full transition-all ${
+                    i < currentDonorIdx  ? "bg-green-500" :
+                    i === currentDonorIdx ? (isAtRisk ? "bg-amber-500 animate-pulse" : `${style.bar} animate-pulse`) :
+                    "bg-stone-200 dark:bg-zinc-700"
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Stage labels */}
+            <div className="flex">
+              {donorStages.map((stage, i) => (
+                <div key={i} className="flex-1 min-w-0">
+                  <div className={`text-[9px] font-semibold leading-tight truncate text-center ${
+                    i < currentDonorIdx  ? "text-green-600 dark:text-green-400" :
+                    i === currentDonorIdx ? (isAtRisk ? "text-amber-600 dark:text-amber-400" : "text-[#b04a15]") :
+                    "text-stone-300 dark:text-zinc-600"
+                  }`}>
+                    {i < currentDonorIdx ? "✓ " : i === currentDonorIdx ? "● " : "○ "}{stage.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Now + Next explanation */}
+            {currentDonorIdx >= 0 && (
+              <div className="rounded-xl p-3 space-y-2 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700">
+                {/* Current stage */}
+                <div className="flex items-start gap-2">
+                  <span className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-white ${isAtRisk ? "bg-amber-500" : "bg-[#b04a15]"}`}>
+                    {currentDonorIdx + 1}
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">
+                      Now · {donorStages[currentDonorIdx].label}
+                    </p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+                      {donorStages[currentDonorIdx].nowText}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Next stage */}
+                {currentDonorIdx < donorStages.length - 1 && offer.status !== "COMPLETED" && (
+                  <div className="flex items-start gap-2 pt-1 border-t border-stone-100 dark:border-zinc-700">
+                    <span className="mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-stone-400 border border-stone-300 dark:border-zinc-600">
+                      {currentDonorIdx + 2}
+                    </span>
+                    <div>
+                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wide">
+                        Next · {donorStages[currentDonorIdx + 1].label}
+                      </p>
+                      <p className="text-xs text-stone-400 dark:text-stone-500">
+                        {donorStages[currentDonorIdx + 1].sublabel}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Action button */}
+      {meta.action && (
+        meta.action === "reconfirm" ? (
+          <div className="space-y-2">
+            <button
+              onClick={() => onReconfirm(offer.id)}
+              className="w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-white py-2.5 text-xs font-semibold transition-colors"
+            >
+              ✓ Yes, item is still available
+            </button>
+            <button
+              onClick={() => {
+                const reasons = [
+                  "Donated outside CauseKind",
+                  "Item lost or damaged",
+                  "Item sold",
+                  "No longer available",
+                  "Other",
+                ];
+                const reason = window.prompt(
+                  "Why is the item no longer available?\n\n" + reasons.map((r, i) => `${i + 1}. ${r}`).join("\n") + "\n\nType one of the above or your own reason:"
+                );
+                if (reason !== null) onWithdraw(offer.id, reason || "No longer available");
+              }}
+              className="w-full rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 py-2 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+            >
+              ✕ Item is no longer available
+            </button>
+          </div>
+        ) : actionHref ? (
+          <Link
+            href={actionHref}
+            className={`block w-full rounded-xl py-2 text-center text-xs font-semibold transition-colors ${
+              meta.severity === "success"
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : meta.severity === "warning"
+                ? "bg-amber-500 hover:bg-amber-600 text-white"
+                : "bg-[#b04a15] hover:bg-[#c45520] text-white"
+            }`}
+          >
+            {meta.actionLabel}
+          </Link>
+        ) : null
+      )}
+    </div>
+  );
+}
+
+function DonorOfferSection({ offers, onReconfirm, onWithdraw }: {
+  offers: DonationOffer[];
+  onReconfirm: (id: number) => void;
+  onWithdraw: (id: number, reason: string) => void;
+}) {
+  const active = offers.filter(o => !["WITHDRAWN", "CANCELLED", "COMPLETED"].includes(o.status));
+  const completed = offers.filter(o => o.status === "COMPLETED");
+  const terminal = offers.filter(o => ["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(o.status));
+  const needsAction = active.filter(o =>
+    ["DRAFT", "NEEDS_INFORMATION", "DONOR_RECONFIRMATION_REQUIRED", "DONEE_ACCEPTED", "ADMIN_APPROVED"].includes(o.status)
+  );
+
+  if (offers.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-black text-stone-800 dark:text-stone-100">Donation Offers</h2>
+          <p className="text-xs text-stone-400">Offers you made to fulfil specific requests</p>
+        </div>
+        <Link href="/offers" className="text-xs font-semibold text-[#b04a15] hover:underline">View all</Link>
+      </div>
+
+      {/* Needs action — shown first and highlighted */}
+      {needsAction.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+            <AlertTriangle className="w-3 h-3" /> Action Required
+          </p>
+          {needsAction.map(o => (
+            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} />
+          ))}
+        </div>
+      )}
+
+      {/* In-progress (no action needed from donor) */}
+      {active.filter(o => !needsAction.includes(o)).length > 0 && (
+        <div className="space-y-3">
+          {needsAction.length > 0 && (
+            <p className="text-[10px] font-black uppercase tracking-wider text-stone-400">In Progress</p>
+          )}
+          {active.filter(o => !needsAction.includes(o)).map(o => (
+            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} />
+          ))}
+        </div>
+      )}
+
+      {/* Completed */}
+      {completed.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-wider text-stone-400">Completed</p>
+          {completed.map(o => (
+            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} />
+          ))}
+        </div>
+      )}
+
+      {/* Terminal / Closed */}
+      {terminal.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer text-[10px] font-black uppercase tracking-wider text-stone-400 flex items-center gap-1">
+            <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+            Closed ({terminal.length})
+          </summary>
+          <div className="mt-2 space-y-2">
+            {terminal.map(o => (
+              <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} />
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    Dedicated Donee Dashboard — shown instead of the donor layout for DONEE role
 ───────────────────────────────────────────────────────────────────────────── */
 function DoneeDashboard({
@@ -143,6 +569,26 @@ function DoneeDashboard({
   const [verifyMatchId, setVerifyMatchId] = useState<number | null>(null);
   const [otpInput, setOtpInput] = useState("");
   const [verifyLoading, setVerifyLoading] = useState(false);
+  const [incomingOffers, setIncomingOffers] = useState<DonationOffer[]>([]);
+  const [offerActionLoading, setOfferActionLoading] = useState<number | null>(null);
+
+  useEffect(() => {
+    getOffersForMyRequests().then(setIncomingOffers).catch(() => {});
+  }, []);
+
+  async function handleOfferAction(offerId: number, action: "ACCEPT" | "DECLINE", declineReason?: string) {
+    setOfferActionLoading(offerId);
+    try {
+      const updated = await doneeReviewOffer(offerId, action, declineReason);
+      setIncomingOffers(prev => prev.map(o => o.id === offerId ? updated : o));
+      if (action === "ACCEPT") toast.success("Offer accepted! The donor will reconfirm availability next.");
+      else toast.success("Offer declined.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setOfferActionLoading(null);
+    }
+  }
 
   const handleDoneeAccept = async (id: number) => {
     setMatchActionLoading(id);
@@ -275,6 +721,248 @@ function DoneeDashboard({
             </div>
           </div>
         </div>
+
+        {/* ── Incoming Donation Offers (Donor Flow 2) ── */}
+        {incomingOffers.filter(o => o.status !== "DONEE_DECLINED").length > 0 && (
+          <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#b04a15]" />
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4 relative z-10">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Heart className="w-4 h-4 text-[#b04a15]" /> Donation Offers Received
+              </CardTitle>
+              <Link href="/donee/offers">
+                <Button variant="ghost" size="sm" className="text-xs font-bold text-[#b04a15]">View all</Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              {incomingOffers
+                .filter(o => o.status !== "DONEE_DECLINED")
+                .map(offer => {
+                  const isPendingReview = offer.status === "PENDING_DONEE_REVIEW";
+                  const isApproved      = offer.status === "ADMIN_APPROVED";
+                  const isHandover      = ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"].includes(offer.status);
+                  const isComplete      = offer.status === "COMPLETED";
+                  const isWithdrawn     = offer.status === "WITHDRAWN" || offer.status === "CANCELLED" || offer.status === "ADMIN_REJECTED";
+                  const statusLabel =
+                    isPendingReview ? "Awaiting your review" :
+                    offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? "Donor is reconfirming" :
+                    offer.status === "DONOR_RECONFIRMED" ? "Under admin review" :
+                    isApproved ? "Approved" :
+                    isHandover ? "Handover in progress" :
+                    isComplete ? "Completed" :
+                    offer.status === "ADMIN_REJECTED" ? "Offer not approved" :
+                    isWithdrawn ? "Offer withdrawn" :
+                    offer.status.replace(/_/g, " ");
+                  const statusColor =
+                    isPendingReview ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
+                    isApproved || isComplete ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" :
+                    isHandover ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
+                    isWithdrawn ? "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400" :
+                    "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400";
+
+                  return (
+                    <div key={offer.id} className="rounded-2xl border border-stone-100 dark:border-zinc-800 p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusColor}`}>
+                              {statusLabel}
+                            </span>
+                            {offer.compatibilityIndicator && (
+                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                offer.compatibilityIndicator === "STRONG_MATCH" ? "bg-green-50 text-green-600" :
+                                offer.compatibilityIndicator === "POSSIBLE_MATCH" ? "bg-amber-50 text-amber-600" :
+                                "bg-orange-50 text-orange-600"
+                              }`}>
+                                {offer.compatibilityIndicator.replace(/_/g, " ")}
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{offer.requestTitle}</p>
+                          {offer.itemDetails && (
+                            <p className="text-xs text-stone-500 mt-0.5">
+                              {offer.itemDetails.quantity}× · {offer.itemDetails.condition ?? "Condition not specified"}
+                              {offer.itemDetails.pickupCity ? ` · ${offer.itemDetails.pickupCity}` : ""}
+                            </p>
+                          )}
+                        </div>
+                        {offer.media?.[0] && (
+                          <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
+                            <img src={offer.media[0].mediaUrl} alt="" className="h-full w-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Item details for pending review */}
+                      {isPendingReview && offer.itemDetails && (
+                        <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 text-xs text-stone-600 dark:text-stone-400 space-y-1">
+                          {offer.itemDetails.knownDefects && offer.itemDetails.knownDefects !== "None" && (
+                            <div className="text-orange-600 dark:text-orange-400">Disclosed defects: {offer.itemDetails.knownDefects}</div>
+                          )}
+                          {offer.itemDetails.accessoriesIncluded && <div>Accessories: {offer.itemDetails.accessoriesIncluded}</div>}
+                          {offer.itemDetails.workingStatus && <div>Working status: {offer.itemDetails.workingStatus}</div>}
+                        </div>
+                      )}
+
+                      {/* Withdrawn / rejected — special message instead of tracker */}
+                      {isWithdrawn && (
+                        <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4 space-y-2">
+                          <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                            {offer.status === "ADMIN_REJECTED"
+                              ? "This donation offer was not approved by admin."
+                              : "The donor's item is no longer available."}
+                          </p>
+                          {offer.rejectionReason && (
+                            <div className="rounded-lg bg-white dark:bg-zinc-900 border border-red-100 dark:border-red-900 px-3 py-2">
+                              <p className="text-[10px] font-bold text-red-500 uppercase tracking-wide mb-0.5">
+                                {offer.status === "ADMIN_REJECTED" ? "Admin's reason" : "Reason given"}
+                              </p>
+                              <p className="text-xs text-red-600 dark:text-red-400">{offer.rejectionReason}</p>
+                            </div>
+                          )}
+                          <div className="pt-1 border-t border-red-100 dark:border-red-900 space-y-1">
+                            <p className="text-xs text-red-600 dark:text-red-400 font-semibold">What happens next:</p>
+                            <ul className="text-xs text-red-500 dark:text-red-500 space-y-0.5 list-disc list-inside">
+                              <li>Your request remains open and visible to other donors</li>
+                              {offer.status === "ADMIN_REJECTED"
+                                ? <li>The donor may re-submit an improved offer or offer to a different request</li>
+                                : <li>If another donor had expressed interest, they will be notified</li>}
+                              <li>You will receive a notification when a new offer arrives</li>
+                            </ul>
+                          </div>
+                          <Link href="/requests" className="block text-center rounded-xl border border-red-300 dark:border-red-800 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
+                            Browse donors offering to help →
+                          </Link>
+                        </div>
+                      )}
+
+                      {/* Stage Progress Tracker — only shown when offer is active */}
+                      {!isWithdrawn && (() => {
+                        const stages: { label: string; sublabel: string; statuses: string[] }[] = [
+                          { label: "Offer Received",    sublabel: "Donor submitted their offer",            statuses: ["PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP"] },
+                          { label: "You Reviewed",      sublabel: "You accepted or reviewed the offer",     statuses: ["DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED"] },
+                          { label: "Donor Confirmed",   sublabel: "Donor reconfirmed item availability",   statuses: ["DONOR_RECONFIRMED", "CONDITION_CHANGED_RESCREENING", "PENDING_ADMIN_APPROVAL"] },
+                          { label: "Admin Approved",    sublabel: "CauseKind verified the match",          statuses: ["ADMIN_APPROVED"] },
+                          { label: "Handover",          sublabel: "Item collected or delivered",           statuses: ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"] },
+                          { label: "Item Received",     sublabel: "You confirmed receipt",                 statuses: ["ISSUE_WINDOW_OPEN", "ISSUE_RAISED"] },
+                          { label: "Complete",          sublabel: "Donation successfully fulfilled",       statuses: ["COMPLETED"] },
+                        ];
+                        const currentIdx = stages.findIndex(s => s.statuses.includes(offer.status));
+                        const isAtRisk = offer.status === "HANDOVER_AT_RISK";
+                        return (
+                          <div className="space-y-2 pt-1">
+                            {/* Compact progress bar */}
+                            <div className="flex gap-0.5">
+                              {stages.map((_, i) => (
+                                <div
+                                  key={i}
+                                  className={`h-1.5 flex-1 rounded-full transition-all ${
+                                    i < currentIdx  ? "bg-green-500" :
+                                    i === currentIdx ? (isAtRisk ? "bg-amber-500 animate-pulse" : "bg-[#b04a15] animate-pulse") :
+                                    "bg-stone-200 dark:bg-zinc-700"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            {/* Stage labels row */}
+                            <div className="flex">
+                              {stages.map((stage, i) => (
+                                <div key={i} className="flex-1 min-w-0">
+                                  <div className={`text-[9px] font-semibold leading-tight truncate text-center ${
+                                    i < currentIdx  ? "text-green-600 dark:text-green-400" :
+                                    i === currentIdx ? (isAtRisk ? "text-amber-600 dark:text-amber-400" : "text-[#b04a15]") :
+                                    "text-stone-300 dark:text-zinc-600"
+                                  }`}>
+                                    {i < currentIdx ? "✓ " : i === currentIdx ? "● " : "○ "}{stage.label}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Current + next stage explanation */}
+                            <div className="rounded-xl p-3 space-y-2 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700">
+                              {/* Current */}
+                              {currentIdx >= 0 && (
+                                <div className="flex items-start gap-2">
+                                  <span className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-white ${isAtRisk ? "bg-amber-500" : "bg-[#b04a15]"}`}>
+                                    {currentIdx + 1}
+                                  </span>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Now · {stages[currentIdx].label}</p>
+                                    <p className="text-xs text-stone-500 dark:text-stone-400">
+                                      {isPendingReview && "A donor has offered to fulfil your request. Review their item details above and accept or decline."}
+                                      {offer.status === "DONEE_ACCEPTED" && "You accepted this offer. Waiting for the donor to confirm their item is still available."}
+                                      {offer.status === "DONOR_RECONFIRMATION_REQUIRED" && "The donor is being asked to reconfirm their item. No action needed from you right now."}
+                                      {offer.status === "DONOR_RECONFIRMED" && "The donor confirmed availability. CauseKind admin is doing a final review before approving."}
+                                      {offer.status === "PENDING_ADMIN_APPROVAL" && "Admin is reviewing the offer. You will be notified once it's approved or if more information is needed."}
+                                      {isApproved && "The donation has been approved! The donor will contact you to arrange pickup or delivery."}
+                                      {offer.status === "HANDOVER_IN_PROGRESS" && "A handover has been scheduled. Be ready to receive the item and confirm it via the Handover Hub."}
+                                      {isAtRisk && "The handover has been rescheduled multiple times. Admin may step in to help coordinate."}
+                                      {offer.status === "ISSUE_WINDOW_OPEN" && "You received the item. If anything is wrong, report it now within the issue window."}
+                                      {offer.status === "ISSUE_RAISED" && "An issue was reported. The CauseKind team is reviewing it."}
+                                      {isComplete && "The donation is complete. Thank you for using CauseKind!"}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                              {/* What's next */}
+                              {currentIdx >= 0 && currentIdx < stages.length - 1 && !isComplete && (
+                                <div className="flex items-start gap-2 pt-1 border-t border-stone-100 dark:border-zinc-700">
+                                  <span className="mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-stone-400 border border-stone-300 dark:border-zinc-600">
+                                    {currentIdx + 2}
+                                  </span>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wide">Next · {stages[currentIdx + 1].label}</p>
+                                    <p className="text-xs text-stone-400 dark:text-stone-500">{stages[currentIdx + 1].sublabel}</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+
+                      {/* Actions */}
+                      {isPendingReview && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleOfferAction(offer.id, "ACCEPT")}
+                            disabled={offerActionLoading === offer.id}
+                            className="flex-1 rounded-xl bg-[#b04a15] py-2 text-xs font-semibold text-white hover:bg-[#c45520] transition-colors disabled:opacity-50"
+                          >
+                            {offerActionLoading === offer.id ? "..." : "Accept Offer"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const reason = window.prompt("Reason for declining (optional):");
+                              handleOfferAction(offer.id, "DECLINE", reason ?? undefined);
+                            }}
+                            disabled={offerActionLoading === offer.id}
+                            className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-700 py-2 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 disabled:opacity-50"
+                          >
+                            Decline
+                          </button>
+                          <Link href="/donee/offers" className="rounded-xl border border-stone-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800">
+                            Details
+                          </Link>
+                        </div>
+                      )}
+                      {(isApproved || isHandover) && (
+                        <Link href={`/offers/${offer.id}/handover`} className="block w-full rounded-xl bg-blue-600 py-2 text-center text-xs font-semibold text-white hover:bg-blue-700">
+                          Open Handover Hub →
+                        </Link>
+                      )}
+                      {isComplete && (
+                        <Link href={`/certificate?offerId=${offer.id}`} className="block w-full rounded-xl bg-green-600 py-2 text-center text-xs font-semibold text-white hover:bg-green-700">
+                          View Certificate →
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Requests + Matches grid ── */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -451,6 +1139,7 @@ export default function DashboardPage() {
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>([]);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
+  const [donationOffers, setDonationOffers] = useState<DonationOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"donor" | "donee">("donor");
 
@@ -481,6 +1170,26 @@ export default function DashboardPage() {
     try { const fresh = await getMyMatches(); setMatches(fresh); } catch { /* silent */ }
   };
 
+  async function handleOfferReconfirm(offerId: number) {
+    try {
+      const updated = await reconfirmOfferAvailability(offerId);
+      setDonationOffers(prev => prev.map(o => o.id === offerId ? updated : o));
+      toast.success("Availability confirmed! Waiting for admin approval.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to reconfirm");
+    }
+  }
+
+  async function handleOfferWithdraw(offerId: number, reason: string) {
+    try {
+      const updated = await withdrawOffer(offerId, reason);
+      setDonationOffers(prev => prev.map(o => o.id === offerId ? updated : o));
+      toast.success("Offer withdrawn. The recipient has been notified.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to withdraw offer");
+    }
+  }
+
   async function handleListingAction(id: number, action: "pause" | "resume" | "withdraw") {
     setListingActionLoading(id);
     try {
@@ -508,6 +1217,7 @@ export default function DashboardPage() {
       getMyItemListings().then(setItemListings).catch(() => setItemListings([])),
       getMyItemRequests().then(setItemRequests).catch(() => setItemRequests([])),
       getMyMatches().then(setMatches).catch(() => setMatches([])),
+      getMyDonationOffers().then(setDonationOffers).catch(() => setDonationOffers([])),
     ])
       .finally(() => setLoading(false));
   }, [user, isLoading, router]);
@@ -727,9 +1437,20 @@ export default function DashboardPage() {
                   </Card>
                 </div>
 
+                {/* Donor Flow 2 — Offer Tracker */}
+                {donationOffers.length > 0 && (
+                  <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm p-6">
+                    <DonorOfferSection
+                      offers={donationOffers}
+                      onReconfirm={handleOfferReconfirm}
+                      onWithdraw={handleOfferWithdraw}
+                    />
+                  </div>
+                )}
+
                 {/* Donor Listings & Donor Matches Grid */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                  
+
                   {/* Private Inventory */}
                   <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-[#b04a15]" />

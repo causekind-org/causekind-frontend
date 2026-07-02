@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getMyMatches, getMyItemRequests, getMyItemListings } from "@/lib/api";
+import { getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers } from "@/lib/api";
 import { useAuth } from "./useAuth";
 
 export type AppNotification = {
@@ -14,7 +14,7 @@ export type AppNotification = {
 };
 
 const SEEN_KEY  = "ck_notif_seen_v2";
-const POLL_MS   = 90_000;
+const POLL_MS   = 360_000; // 6 min — longer than Neon's 5-min autosuspend so DB can actually sleep
 
 function loadSeen(): Set<string> {
   try {
@@ -30,17 +30,37 @@ async function deriveNotifications(role: string): Promise<AppNotification[]> {
   const notifs: AppNotification[] = [];
 
   if (role === "DONEE") {
-    const [requests, matches] = await Promise.all([
+    const [requests, matches, incomingOffers] = await Promise.all([
       getMyItemRequests().catch(() => []),
       getMyMatches().catch(() => []),
+      getOffersForMyRequests().catch(() => []),
     ]);
 
     requests.forEach(r => {
       if (r.status === "POTENTIAL_MATCH_FOUND" || r.status === "VERIFIED_PRIVATE_MATCHING") {
-        notifs.push({ id: `match-req-${r.id}`, title: "Match found!", body: `A donor was matched to "${r.title}"`, type: "match", link: "/dashboard#my-requests", timestamp: Date.now() });
+        notifs.push({ id: `match-req-${r.id}`, title: "Match found!", body: `A donor was matched to "${r.title}"`, type: "match", link: "/donee/offers", timestamp: Date.now() });
       }
       if (r.status === "PUBLIC_REQUEST") {
-        notifs.push({ id: `approved-req-${r.id}`, title: "Request approved", body: `"${r.title}" is now live on the platform`, type: "approved", link: "/dashboard#my-requests", timestamp: Date.now() });
+        notifs.push({ id: `approved-req-${r.id}`, title: "Request approved", body: `"${r.title}" is now live — donors can offer to fulfil it`, type: "approved", link: "/dashboard", timestamp: Date.now() });
+      }
+    });
+
+    // Donor Flow 2 incoming offers
+    incomingOffers.forEach(o => {
+      if (o.status === "PENDING_DONEE_REVIEW") {
+        notifs.push({ id: `offer-review-${o.id}`, title: "Someone wants to donate!", body: `A donor offered to fulfil "${o.requestTitle}" — review their offer now`, type: "match", link: "/donee/offers", timestamp: Date.now() });
+      }
+      if (o.status === "DONOR_RECONFIRMED") {
+        notifs.push({ id: `offer-reconfirmed-${o.id}`, title: "Donor confirmed availability", body: `The donor reconfirmed their item for "${o.requestTitle}" — pending admin approval`, type: "info", link: "/donee/offers", timestamp: Date.now() });
+      }
+      if (o.status === "ADMIN_APPROVED") {
+        notifs.push({ id: `offer-admin-approved-${o.id}`, title: "Donation approved!", body: `The donation for "${o.requestTitle}" has been approved. Handover will be scheduled.`, type: "approved", link: `/offers/${o.id}/handover`, timestamp: Date.now() });
+      }
+      if (o.status === "HANDOVER_IN_PROGRESS") {
+        notifs.push({ id: `offer-handover-${o.id}`, title: "Handover scheduled", body: `Your donation for "${o.requestTitle}" has a handover scheduled.`, type: "match", link: `/offers/${o.id}/handover`, timestamp: Date.now() });
+      }
+      if (o.status === "COMPLETED") {
+        notifs.push({ id: `offer-complete-${o.id}`, title: "Item received! 🎉", body: `"${o.requestTitle}" has been successfully donated and delivered.`, type: "fulfilled", link: "/donee/offers", timestamp: Date.now() });
       }
     });
 
@@ -58,10 +78,30 @@ async function deriveNotifications(role: string): Promise<AppNotification[]> {
   }
 
   if (role === "DONOR") {
-    const [matches, listings] = await Promise.all([
+    const [matches, listings, myOffers] = await Promise.all([
       getMyMatches().catch(() => []),
       getMyItemListings().catch(() => []),
+      getMyDonationOffers().catch(() => []),
     ]);
+
+    // Donor Flow 2 offer status notifications
+    myOffers.forEach(o => {
+      if (o.status === "NEEDS_INFORMATION") {
+        notifs.push({ id: `offer-needs-info-${o.id}`, title: "Action required", body: `More information is needed for your offer on "${o.requestTitle}"`, type: "info", link: `/requests/${o.requestId}/offer`, timestamp: Date.now() });
+      }
+      if (o.status === "DONEE_ACCEPTED" || o.status === "DONOR_RECONFIRMATION_REQUIRED") {
+        notifs.push({ id: `offer-reconfirm-${o.id}`, title: "Recipient accepted your offer!", body: `Please reconfirm your item is available for "${o.requestTitle}"`, type: "match", link: "/offers", timestamp: Date.now() });
+      }
+      if (o.status === "ADMIN_APPROVED") {
+        notifs.push({ id: `offer-approved-${o.id}`, title: "Offer approved! Schedule handover", body: `Your donation for "${o.requestTitle}" was approved — schedule the handover now`, type: "approved", link: `/offers/${o.id}/handover`, timestamp: Date.now() });
+      }
+      if (o.status === "DONEE_DECLINED") {
+        notifs.push({ id: `offer-declined-${o.id}`, title: "Offer declined", body: `The recipient declined your offer for "${o.requestTitle}"`, type: "info", link: "/offers", timestamp: Date.now() });
+      }
+      if (o.status === "COMPLETED") {
+        notifs.push({ id: `offer-cert-${o.id}`, title: "Donation complete! 🎉", body: `Your donation for "${o.requestTitle}" is done — view your certificate`, type: "fulfilled", link: `/certificate?offerId=${o.id}`, timestamp: Date.now() });
+      }
+    });
 
     listings.forEach(l => {
       if (l.status === "PENDING_REVIEW") {
@@ -110,8 +150,10 @@ export function useNotifications() {
 
   useEffect(() => {
     if (isLoading || !user) return;
-    refresh();
-    const interval = setInterval(refresh, POLL_MS);
+    refresh().catch(() => {});
+    const interval = setInterval(() => {
+      if (!document.hidden) refresh().catch(() => {});
+    }, POLL_MS);
     return () => clearInterval(interval);
   }, [isLoading, user, refresh]);
 

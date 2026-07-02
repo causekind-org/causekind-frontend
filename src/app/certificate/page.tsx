@@ -1,121 +1,284 @@
 "use client";
 
+import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { getOfferCertificate, verifyCertificate, type Certificate } from "@/lib/api";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Award, Download, Heart, ShieldCheck, ArrowLeft, ExternalLink } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { Reveal } from "@/components/Reveal";
+import { ArrowLeft, Download } from "lucide-react";
+import { LogoSVG } from "@/components/LogoSVG";
 
-function Detail({ label, value }: { label: string; value: string }) {
+export default function CertificatePage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const offerId = searchParams.get("offerId");
+  const certNumber = searchParams.get("certNumber");
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const [cert, setCert] = useState<Certificate | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (certNumber) {
+      verifyCertificate(certNumber).then(setCert).catch(() => setError("Certificate not found")).finally(() => setLoading(false));
+    } else if (offerId) {
+      getOfferCertificate(Number(offerId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
+    } else {
+      setError("No certificate reference provided");
+      setLoading(false);
+    }
+  }, [offerId, certNumber]);
+
+  function handlePrint() {
+    window.print();
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="animate-pulse text-gray-400">Loading certificate...</p>
+      </div>
+    );
+  }
+
+  if (error || !cert) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 text-center">
+        <div className="text-4xl mb-3">📜</div>
+        <h2 className="text-lg font-semibold text-gray-700">{error ?? "Certificate not found"}</h2>
+        <p className="mt-1 text-sm text-gray-500">Please check the link or contact CauseKind support.</p>
+        <Link href="/dashboard" className="mt-4 text-sm text-[#b04a15] font-medium hover:underline">Back to Dashboard</Link>
+      </div>
+    );
+  }
+
+  const handoverDate = new Date(cert.handoverDate).toLocaleDateString("en-IN", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+
   return (
-    <div className="group p-4 bg-orange-50/50 dark:bg-zinc-800 border border-orange-100/50 dark:border-zinc-800 rounded-2xl hover:border-[#b04a15]/30 hover:bg-orange-50/80 dark:hover:bg-zinc-800/80 transition-all duration-300">
-      <p className="text-[10px] font-black uppercase tracking-wider text-stone-400 dark:text-stone-500">{label}</p>
-      <p className="mt-1 font-bold text-stone-800 dark:text-stone-200 text-sm group-hover:text-[#b04a15] transition-colors">{value}</p>
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 print:bg-transparent print:p-0">
+      {/* Nav — hidden on print */}
+      <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between print:hidden">
+        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+          <ArrowLeft size={14} /> Back
+        </button>
+        <button
+          onClick={handlePrint}
+          className="flex items-center gap-2 rounded-xl bg-[#b04a15] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
+        >
+          <Download size={14} /> Download / Print
+        </button>
+      </div>
+
+      {/* Certificate — landscape A4 */}
+      <div
+        ref={printRef}
+        className="mx-auto"
+        style={{
+          width: "100%",
+          maxWidth: "960px",
+          aspectRatio: "1414 / 1000",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            backgroundColor: "#f5f0e8",
+            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "40px",
+            fontFamily: "Georgia, 'Times New Roman', serif",
+            boxSizing: "border-box",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.15)",
+          }}
+        >
+          {/* Ornamental border */}
+          <OrnamentalBorder />
+
+          {/* Logo */}
+          <div style={{ marginBottom: "16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ width: "64px", height: "64px" }}>
+              <LogoSVG />
+            </div>
+            <div style={{ fontSize: "18px", fontWeight: "700", letterSpacing: "0.05em", color: "#1a1008", marginTop: "4px" }}>
+              <span style={{ color: "#c4501a" }}>Cause</span>Kind
+            </div>
+          </div>
+
+          {/* Title */}
+          <div style={{ textAlign: "center", marginBottom: "12px" }}>
+            <div style={{
+              fontSize: "clamp(32px, 6vw, 64px)",
+              fontWeight: "900",
+              letterSpacing: "0.15em",
+              color: "#1a1008",
+              fontFamily: "'Georgia', serif",
+              lineHeight: 1,
+            }}>
+              CERTIFICATE
+            </div>
+            <div style={{
+              fontSize: "clamp(11px, 2vw, 18px)",
+              letterSpacing: "0.35em",
+              color: "#1a1008",
+              fontWeight: "600",
+              marginTop: "4px",
+            }}>
+              I N - K I N D &nbsp; D O N A T I O N
+            </div>
+          </div>
+
+          {/* Body text */}
+          <p style={{
+            fontStyle: "italic",
+            textAlign: "center",
+            color: "#3a2a1a",
+            fontSize: "clamp(10px, 1.6vw, 15px)",
+            lineHeight: 1.7,
+            maxWidth: "580px",
+            marginBottom: "20px",
+          }}>
+            This is to formally certify that the individual named below<br />
+            has made a verified in-kind contribution through the<br />
+            CauseKind platform.
+          </p>
+
+          {/* Donor name with signature style */}
+          <div style={{ marginBottom: "24px", textAlign: "center" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "8px", justifyContent: "center" }}>
+              <span style={{ fontSize: "clamp(10px, 1.4vw, 14px)", color: "#5a4a3a" }}>Mr./Ms.</span>
+              <div style={{ borderBottom: "1.5px solid #5a4a3a", minWidth: "200px", textAlign: "center" }}>
+                <span style={{
+                  fontFamily: "'Brush Script MT', 'Dancing Script', cursive",
+                  fontSize: "clamp(22px, 4vw, 38px)",
+                  color: "#1a1008",
+                  letterSpacing: "0.02em",
+                }}>
+                  {cert.donorName}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Data table */}
+          <table style={{
+            borderCollapse: "collapse",
+            marginBottom: "20px",
+            fontSize: "clamp(10px, 1.5vw, 14px)",
+          }}>
+            <tbody>
+              <TableRow label="Item Donated" value={cert.category} />
+              <TableRow label="Donation Date" value={handoverDate} />
+              <TableRow label="Certificate ID" value={cert.certificateNumber} />
+            </tbody>
+          </table>
+
+          {/* Website */}
+          <div style={{
+            fontStyle: "italic",
+            color: "#5a4a3a",
+            fontSize: "clamp(10px, 1.5vw, 14px)",
+            marginBottom: "8px",
+          }}>
+            www.causekind.com
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            fontStyle: "italic",
+            color: "#7a6a5a",
+            fontSize: "clamp(8px, 1.2vw, 11px)",
+          }}>
+            This certificate is digitally issued and valid without a physical signature.
+          </div>
+        </div>
+      </div>
+
+      {/* QR info below */}
+      <div className="mx-auto mt-4 max-w-4xl text-center print:hidden">
+        <p className="text-xs text-gray-400">
+          Certificate ID: <span className="font-mono font-semibold text-gray-600">{cert.certificateNumber}</span>
+          {" · "}Verify at{" "}
+          <span className="font-mono text-gray-600">causekind.com/certificate?certNumber={cert.certificateNumber}</span>
+        </p>
+      </div>
     </div>
   );
 }
 
-export default function CertificatePage() {
-  const t = useTranslations("certificate");
+function TableRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-[#faf8f5] dark:bg-zinc-950 min-h-[calc(100vh-4rem)] py-12 px-4 sm:px-6">
-      <div className="mx-auto max-w-4xl space-y-6">
-        
-        {/* Navigation & Actions */}
-        <Reveal>
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200/60 dark:border-zinc-800 pb-4">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              {t("backToDashboard")}
-            </Link>
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-1.5 rounded-xl text-xs font-bold border-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-900">
-                <Download className="h-3.5 w-3.5" />
-                {t("downloadPdf")}
-              </Button>
-            </div>
-          </div>
-        </Reveal>
+    <tr>
+      <td style={{
+        border: "1px solid #c4a882",
+        padding: "7px 16px",
+        color: "#3a2a1a",
+        fontWeight: "500",
+        backgroundColor: "rgba(255,255,255,0.3)",
+      }}>
+        {label}
+      </td>
+      <td style={{
+        border: "1px solid #c4a882",
+        padding: "7px 16px",
+        color: "#3a2a1a",
+        backgroundColor: "rgba(255,255,255,0.3)",
+        minWidth: "160px",
+      }}>
+        {value}
+      </td>
+    </tr>
+  );
+}
 
-        {/* Certificate Frame */}
-        <Reveal delay={80}>
-          <div className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white dark:bg-zinc-900 shadow-xl p-8 sm:p-12">
-            
-            {/* Left Flush Terracotta Accent Stripe */}
-            <div className="absolute left-0 top-0 bottom-0 w-[6px] bg-[#b04a15]" />
-
-            {/* Background glows */}
-            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#b04a15]/10 blur-3xl pointer-events-none" />
-            <div className="absolute -left-20 -bottom-20 h-72 w-72 rounded-full bg-[#1e3a60]/10 blur-3xl pointer-events-none" />
-            
-            {/* Fine line details for credentials look */}
-            <div className="absolute right-8 top-8 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">
-              80G
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-10 items-center relative z-10">
-              
-              {/* Left Column: Details */}
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-1.5 bg-[#b04a15]/10 text-[#b04a15] border border-[#b04a15]/20 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Official Certificate
-                  </div>
-                  <h1 className="text-3xl font-black text-stone-900 dark:text-white tracking-tight leading-none mt-2">
-                    {t("thankYouName")}
-                  </h1>
-                  <p className="text-sm font-semibold text-[#b04a15] uppercase tracking-wider">
-                    {t("certificateType")}
-                  </p>
-                </div>
-
-                <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed max-w-xl">
-                  {t("donationDescription")}
-                </p>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <Detail label={t("labelItemDonated")} value="Winter jackets x 6" />
-                  <Detail label={t("labelDonee")} value="Shelter For Hope (Reshma P.)" />
-                  <Detail label={t("labelDeliveredOn")} value="14 May 2026" />
-                  <Detail label={t("labelCertificateId")} value="CK-IK-2026-00482" />
-                </div>
-              </div>
-
-              {/* Right Column: Seal & Brand */}
-              <div className="flex flex-col items-center justify-center text-center bg-stone-50 dark:bg-zinc-950 p-8 rounded-3xl border border-stone-100 dark:border-zinc-850/30 relative overflow-hidden">
-                {/* Internal gradient blob */}
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none" />
-                
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#b04a15] to-[#e07b3a] text-white flex items-center justify-center shadow-lg shadow-[#b04a15]/20 mb-4 animate-pulse">
-                  <Award className="h-8 w-8" />
-                </div>
-                
-                <p className="text-[11px] font-black uppercase tracking-[0.15em] text-[#b04a15] dark:text-orange-400">
-                  {t("brandName")}
-                </p>
-                <p className="text-xs text-stone-400 dark:text-stone-500 font-medium mt-1">
-                  {t("tagline")}
-                </p>
-
-                <div className="w-full border-t border-stone-200/60 dark:border-zinc-800 mt-6 pt-4 space-y-1">
-                  <div className="flex justify-center items-center gap-1.5 text-[11px] text-stone-500 font-bold">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                    {t("verifiedNote")}
-                  </div>
-                  <p className="text-[9px] text-stone-400 font-medium">Secured by Cryptographic Seal</p>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </Reveal>
-
-      </div>
+function OrnamentalBorder() {
+  const corner = (style: React.CSSProperties) => (
+    <div style={{
+      position: "absolute",
+      width: "70px",
+      height: "70px",
+      ...style,
+    }}>
+      <svg viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="66" height="66" stroke="#c4501a" strokeWidth="1.5" fill="none" rx="2"/>
+        <rect x="6" y="6" width="58" height="58" stroke="#c4501a" strokeWidth="0.5" fill="none" rx="1"/>
+        <path d="M2 20 L2 2 L20 2" stroke="#c4501a" strokeWidth="2" fill="none"/>
+        <path d="M6 18 L6 6 L18 6" stroke="#c4501a" strokeWidth="1" fill="none"/>
+        <circle cx="12" cy="12" r="3" fill="#c4501a" opacity="0.6"/>
+        <path d="M2 14 Q8 8 14 2" stroke="#c4501a" strokeWidth="0.8" fill="none" opacity="0.5"/>
+        <path d="M20 8 Q14 14 8 20" stroke="#c4501a" strokeWidth="0.8" fill="none" opacity="0.5"/>
+      </svg>
     </div>
+  );
+
+  return (
+    <>
+      {/* Outer border line */}
+      <div style={{
+        position: "absolute", inset: "12px",
+        border: "1.5px solid #c4501a",
+        pointerEvents: "none",
+        borderRadius: "2px",
+      }} />
+      {/* Inner border line */}
+      <div style={{
+        position: "absolute", inset: "18px",
+        border: "0.5px solid #c4501a",
+        pointerEvents: "none",
+        borderRadius: "1px",
+        opacity: 0.5,
+      }} />
+      {/* Corner ornaments */}
+      {corner({ top: 0, left: 0 })}
+      {corner({ top: 0, right: 0, transform: "scaleX(-1)" })}
+      {corner({ bottom: 0, left: 0, transform: "scaleY(-1)" })}
+      {corner({ bottom: 0, right: 0, transform: "scale(-1)" })}
+    </>
   );
 }
