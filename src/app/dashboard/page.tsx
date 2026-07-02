@@ -9,7 +9,7 @@ import {
   getMyItemListings, getMyItemRequests, getMyMatches, getMyProfile,
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   saveMatchLogistics, generateDeliveryOtp, verifyDeliveryMatch, confirmReceiptMatch, requestCallMasking,
-  pauseItemListing, resumeItemListing, withdrawItemListing,
+  pauseItemListing, resumeItemListing, withdrawItemListing, deleteMyListing,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -213,7 +213,7 @@ function DoneeDashboard({
       <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
 
         {/* ── Profile strip ── */}
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-4 flex items-center gap-4 shadow-sm">
+        <div className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-stone-100/80 dark:border-zinc-700/50 p-4 flex items-center gap-4 shadow-sm">
           <div className="w-12 h-12 rounded-xl bg-[#1e3a60]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-lg text-[#1e3a60] dark:text-blue-400 shrink-0">
             {getInitials(myProfile.fullName)}
           </div>
@@ -237,7 +237,7 @@ function DoneeDashboard({
         {/* ── Stats row ── */}
         <div className="grid gap-4 sm:grid-cols-3">
           <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-5 shadow-sm flex items-center gap-4"
+            className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-stone-100/80 dark:border-zinc-700/50 p-5 shadow-sm flex items-center gap-4"
             style={{ borderLeft: "3px solid #1e3a60" }}
           >
             <div className="w-10 h-10 rounded-xl bg-[#1e3a60]/10 flex items-center justify-center text-[#1e3a60] shrink-0">
@@ -250,7 +250,7 @@ function DoneeDashboard({
           </div>
 
           <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-5 shadow-sm flex items-center gap-4"
+            className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-stone-100/80 dark:border-zinc-700/50 p-5 shadow-sm flex items-center gap-4"
             style={{ borderLeft: "3px solid #f0b97a" }}
           >
             <div className="w-10 h-10 rounded-xl bg-[#f0b97a]/15 flex items-center justify-center text-[#b04a15] shrink-0">
@@ -263,7 +263,7 @@ function DoneeDashboard({
           </div>
 
           <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-zinc-800 p-5 shadow-sm flex items-center gap-4"
+            className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-stone-100/80 dark:border-zinc-700/50 p-5 shadow-sm flex items-center gap-4"
             style={{ borderLeft: "3px solid #10b981" }}
           >
             <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-zinc-800 flex items-center justify-center text-emerald-600 shrink-0">
@@ -280,7 +280,7 @@ function DoneeDashboard({
         <div className="grid gap-6 lg:grid-cols-2">
 
           {/* My Requests */}
-          <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+          <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
             <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#1e3a60]" />
             <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none leading-none">01</div>
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4 relative z-10">
@@ -333,7 +333,7 @@ function DoneeDashboard({
           </Card>
 
           {/* Match Status */}
-          <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+          <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
             <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#f0b97a]" />
             <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none leading-none">02</div>
             <CardHeader className="border-b pb-4 relative z-10">
@@ -496,6 +496,20 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleDeleteRejected(id: number) {
+    if (!confirm("Permanently delete this rejected listing?")) return;
+    setListingActionLoading(id);
+    try {
+      await deleteMyListing(id);
+      setItemListings(prev => prev.filter(l => l.id !== id));
+      toast.success("Listing deleted");
+    } catch {
+      toast.error("Failed to delete listing");
+    } finally {
+      setListingActionLoading(null);
+    }
+  }
+
   useEffect(() => {
     if (isLoading) return;
     if (!user) { router.push("/login"); return; }
@@ -511,6 +525,20 @@ export default function DashboardPage() {
     ])
       .finally(() => setLoading(false));
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (itemListings.length === 0) return;
+    const rejected = itemListings.filter(l => l.status === "REJECTED");
+    if (rejected.length === 0) return;
+    const key = "ck_rejected_cleanup_ts";
+    const last = localStorage.getItem(key);
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+    if (last && Date.now() - parseInt(last) < THIRTY_DAYS) return;
+    localStorage.setItem(key, Date.now().toString());
+    if (window.confirm(`You have ${rejected.length} rejected listing${rejected.length > 1 ? "s" : ""}. Delete ${rejected.length > 1 ? "them" : "it"} to keep your inventory clean?`)) {
+      rejected.forEach(l => handleDeleteRejected(l.id));
+    }
+  }, [itemListings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const donorMatches = useMemo(() => {
     if (!myProfile) return [];
@@ -593,7 +621,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
           
           {/* LEFT: Sticky Sidebar */}
-          <aside className="lg:sticky lg:top-24 bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 space-y-6 relative overflow-hidden">
+          <aside className="lg:sticky lg:top-24 bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-3xl p-6 shadow-sm border border-stone-100/80 dark:border-zinc-700/50 space-y-6 relative overflow-hidden">
             {/* Left accent stripe */}
             <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#b04a15]" />
             
@@ -686,7 +714,7 @@ export default function DashboardPage() {
                 
                 {/* Stats Row */}
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#b04a15]" />
                     <CardContent className="flex items-center gap-4 p-5">
                       <div className="h-11 w-11 rounded-xl bg-orange-100 text-[#b04a15] dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -700,7 +728,7 @@ export default function DashboardPage() {
                   </Card>
 
 
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-emerald-500" />
                     <CardContent className="flex items-center gap-4 p-5">
                       <div className="h-11 w-11 rounded-xl bg-green-100 text-green-600 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -713,7 +741,7 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-500" />
                     <CardContent className="flex items-center gap-4 p-5">
                       <div className="h-11 w-11 rounded-xl bg-blue-100 text-blue-600 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -731,7 +759,7 @@ export default function DashboardPage() {
                 <div className="grid gap-6 lg:grid-cols-2">
                   
                   {/* Private Inventory */}
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-[#b04a15]" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">01</div>
                     <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-4 relative z-10">
@@ -832,6 +860,15 @@ export default function DashboardPage() {
                                       Withdraw
                                     </button>
                                   )}
+                                  {l.status === "REJECTED" && (
+                                    <button
+                                      onClick={() => handleDeleteRejected(l.id)}
+                                      disabled={listingActionLoading === l.id}
+                                      className="text-xs text-red-600 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 font-semibold"
+                                    >
+                                      {listingActionLoading === l.id ? "…" : "Delete"}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -843,7 +880,7 @@ export default function DashboardPage() {
 
 
                   {/* Donor Matches */}
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-emerald-500" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">02</div>
                     <CardHeader className="border-b pb-4 mb-4 relative z-10">
@@ -994,7 +1031,7 @@ export default function DashboardPage() {
                 
                 {/* Stats Row */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#b04a15]" />
                     <CardContent className="flex items-center gap-4 p-5">
                       <div className="h-11 w-11 rounded-xl bg-orange-100 text-[#b04a15] dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -1007,7 +1044,7 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-emerald-500" />
                     <CardContent className="flex items-center gap-4 p-5">
                       <div className="h-11 w-11 rounded-xl bg-green-100 text-green-600 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -1025,7 +1062,7 @@ export default function DashboardPage() {
                 <div className="grid gap-6 lg:grid-cols-2">
                   
                   {/* Requests list */}
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-[#b04a15]" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">01</div>
                     <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-4 relative z-10">
@@ -1072,7 +1109,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Donee Matches */}
-                  <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-emerald-500" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">02</div>
                     <CardHeader className="border-b pb-4 mb-4 relative z-10">

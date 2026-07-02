@@ -32,7 +32,7 @@ export function AboutCtaCard() {
         <Link href="/requests" className="px-6 py-3 rounded-full bg-[#b04a15] hover:bg-[#963c0d] text-white text-xs font-extrabold uppercase tracking-wider transition-colors shadow-md shadow-[#b04a15]/20 flex items-center gap-2">
           Become a Donor <ArrowRight className="w-3.5 h-3.5" />
         </Link>
-        <Link href="/help" className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-extrabold uppercase tracking-wider transition-colors flex items-center gap-2">
+        <Link href="/faq" className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-extrabold uppercase tracking-wider transition-colors flex items-center gap-2">
           Receive Support <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>

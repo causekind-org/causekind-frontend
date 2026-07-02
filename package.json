@@ -2,12 +2,17 @@
   "name": "causekind-next",
   "private": true,
   "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "next lint",
-    "translate": "node scripts/generate-translations.mjs"
+    "translate": "node scripts/generate-translations.mjs",
+    "build:ds": "tsup && npm run build:ds:css",
+    "build:ds:css": "tailwindcss -i src/design-system/entry.css -o dist/styles.css"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -66,6 +71,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.2",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
@@ -73,6 +79,7 @@
     "jimp": "^1.6.1",
     "potrace": "^2.1.8",
     "sharp": "^0.35.1",
+    "tsup": "^8.5.1",
     "typescript": "^5.8.3"
   }
 }

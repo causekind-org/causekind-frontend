@@ -323,7 +323,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
               onClick={prev}
               aria-label="Previous"
               className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
-                         bg-white/25 dark:bg-zinc-900/25 backdrop-blur-xl backdrop-saturate-150
+                         bg-white/25 dark:bg-zinc-900/25 backdrop-blur-md backdrop-saturate-150
                          border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
                          shadow-[0_8px_32px_-8px_rgba(176,74,21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
                          text-[#b04a15] dark:text-[#e07b3a]
@@ -337,7 +337,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
               onClick={next}
               aria-label="Next"
               className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
-                         bg-white/25 dark:bg-zinc-900/25 backdrop-blur-xl backdrop-saturate-150
+                         bg-white/25 dark:bg-zinc-900/25 backdrop-blur-md backdrop-saturate-150
                          border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
                          shadow-[0_8px_32px_-8px_rgba(176,74,21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
                          text-[#b04a15] dark:text-[#e07b3a]

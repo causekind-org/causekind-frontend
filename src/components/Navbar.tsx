@@ -7,7 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, Heart, HandHeart } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
@@ -329,6 +329,24 @@ export function SiteHeader() {
     return score;
   })();
 
+  const missingProfileFields = profile
+    ? [
+        ...(!profile.fullName ? ["name"] : []),
+        ...(!profile.phone ? ["phone"] : []),
+        ...(!profile.city ? ["city"] : []),
+        ...(!avatarDataUrl ? ["photo"] : []),
+      ]
+    : [];
+
+  const roleLabel: Record<string, string> = {
+    DONOR: "Donor",
+    DONEE: "Donee",
+    ADMIN: "Administrator",
+    SUPER_ADMIN: "Super Admin",
+    REPRESENTATIVE: "Representative",
+    NGO_PARTNER: "NGO Partner",
+  };
+
   const latestMatch = matches.length > 0
     ? [...matches].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -361,12 +379,20 @@ export function SiteHeader() {
     pathname?.startsWith("/admin/dashboard") ||
     user?.role === "SUPER_ADMIN";
 
+  // Mobile drawer lists everything flat; desktop groups these three under
+  // an "About Us" dropdown instead of three separate pills (see render below).
+  const aboutMenuItems = [
+    { href: "/about", label: t("nav.about") },
+    { href: "/faq", label: t("nav.faq") },
+    { href: "/contact", label: t("nav.contact") },
+  ];
+
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
     { href: "/requests", label: t("nav.requests") },
-    { href: "/about", label: t("nav.about") },
     { href: "/blog", label: t("nav.blog") },
+    ...aboutMenuItems,
   ];
 
   /** Whether a nav link is active, keyed by href for exactness. */
@@ -417,13 +443,16 @@ export function SiteHeader() {
           <Link href="/" className="flex items-center justify-center">
             <CareNestLogo size="md" hideIcon={true} />
           </Link>
-          <Link
-            href={user ? "/profile" : "/login"}
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-[#b04a15]/30 text-[#b04a15] active:scale-95 hover:bg-[#b04a15]/5 transition-all"
-            aria-label="Profile"
-          >
-            <User className="w-4.5 h-4.5" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Link
+              href={user ? "/profile" : "/login"}
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-[#b04a15]/30 text-[#b04a15] active:scale-95 hover:bg-[#b04a15]/5 transition-all"
+              aria-label="Profile"
+            >
+              <User className="w-4.5 h-4.5" />
+            </Link>
+          </div>
         </div>
 
         {/* Desktop Header */}
@@ -435,6 +464,47 @@ export function SiteHeader() {
           {/* Center navigation capsule */}
           <nav className="hidden lg:flex items-center gap-1 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-[#e5e2d5] dark:border-stone-800 rounded-full p-1 shadow-sm">
             {navLinks.map((link) => {
+              // FAQ and Contact live inside the "About Us" dropdown on desktop
+              // instead of as separate pills — skip them here.
+              if (link.href === "/faq" || link.href === "/contact") return null;
+
+              if (link.href === "/about") {
+                // Trigger reflects wherever you actually are — "About Us" by
+                // default, but swaps to "FAQ" / "Contact" on those pages so
+                // the top nav visibly acknowledges the current page too.
+                const activeAboutItem = aboutMenuItems.find((item) => isActive(item.href));
+                const groupActive = !!activeAboutItem;
+                const triggerLabel = activeAboutItem ? activeAboutItem.label : t("nav.about");
+                return (
+                  <DropdownMenu key="about-dropdown">
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={`group text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-1.5 font-semibold outline-none ${groupActive
+                            ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6] dark:bg-zinc-800 border border-[#e5e2d5] dark:border-zinc-700 shadow-2xs"
+                            : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
+                          }`}
+                      >
+                        {groupActive && <span className="w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
+                        {triggerLabel}
+                        <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="min-w-[11rem]">
+                      {aboutMenuItems.map((item) => (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link
+                            href={item.href}
+                            className={isActive(item.href) ? "text-[#b04a15] dark:text-orange-400" : ""}
+                          >
+                            {item.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
+
               const active = isActive(link.href);
               return (
                 <Link
@@ -553,7 +623,7 @@ export function SiteHeader() {
                         
                         <div className="inline-flex items-center gap-1 bg-[#fbeee9] dark:bg-orange-950/20 text-[#8d4332] dark:text-orange-400 text-xs font-bold px-3 py-1 rounded-full">
                           <Heart className="w-3 h-3 fill-current text-[#8d4332] dark:text-orange-400 shrink-0" />
-                          <span>{user.role === "DONOR" ? "Community Hero" : user.role === "ADMIN" ? "Administrator" : "Community Member"}</span>
+                          <span>{roleLabel[user.role] ?? user.role}</span>
                         </div>
 
                         <p className="text-[14px] sm:text-base font-semibold text-stone-500 dark:text-stone-400 mt-2">
@@ -693,18 +763,34 @@ export function SiteHeader() {
                 <div className="w-full mt-8 space-y-6">
                   {/* Daily Kindness Goal Card */}
                   {user && (
-                    <div className="bg-[#eaeaea]/45 dark:bg-zinc-900/50 rounded-[24px] p-5 flex items-center justify-between shadow-xs">
-                      <div>
-                        <p className="text-xs sm:text-[13px] font-bold text-stone-800 dark:text-stone-200">Profile Completion</p>
-                        <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-semibold mt-1">{profileCompletion}% complete</p>
+                    <div className="bg-[#eaeaea]/45 dark:bg-zinc-900/50 rounded-[24px] p-5 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs sm:text-[13px] font-bold text-stone-800 dark:text-stone-200">Profile Completion</p>
+                          <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-semibold mt-1">{profileCompletion}% complete</p>
+                          {missingProfileFields.length > 0 && (
+                            <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">
+                              Missing: {missingProfileFields.join(", ")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                          <svg className="w-full h-full transform -rotate-90">
+                            <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" className="text-stone-250/20 dark:text-zinc-800/40" fill="transparent" />
+                            <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" className="text-[#b04a15]" strokeDasharray="125.6" strokeDashoffset={125.6 * (1 - profileCompletion / 100)} fill="transparent" strokeLinecap="round" />
+                          </svg>
+                          <Heart className="absolute w-3.5 h-3.5 text-[#b04a15] fill-[#b04a15]" />
+                        </div>
                       </div>
-                      <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                        <svg className="w-full h-full transform -rotate-90">
-                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" className="text-stone-250/20 dark:text-zinc-800/40" fill="transparent" />
-                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" className="text-[#b04a15]" strokeDasharray="125.6" strokeDashoffset={125.6 * (1 - profileCompletion / 100)} fill="transparent" strokeLinecap="round" />
-                        </svg>
-                        <Heart className="absolute w-3.5 h-3.5 text-[#b04a15] fill-[#b04a15]" />
-                      </div>
+                      {profileCompletion < 100 && (
+                        <button
+                          onClick={() => { setIsSidebarOpen(false); router.push("/profile"); }}
+                          className="mt-3 w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#b04a15] dark:text-orange-400 bg-[#b04a15]/8 dark:bg-orange-950/20 hover:bg-[#b04a15]/15 dark:hover:bg-orange-950/40 rounded-xl py-2 transition-colors duration-200"
+                        >
+                          Complete Profile
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -805,7 +891,7 @@ export function SiteFooter() {
               { href: "/register", l: t("createAccount") },
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
               ...(FEATURES.money ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
-              { href: "/help", l: t("helpFaq") },
+              { href: "/faq", l: t("helpFaq") },
               { href: "/blog", l: t("blog") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
@@ -850,7 +936,7 @@ export function SiteFooter() {
             Campaign Policy (Coming Soon)
           </Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
-          <Link href="/privacy#contact" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+          <Link href="/contact" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
             Contact Us
           </Link>
         </div>

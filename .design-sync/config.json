@@ -1,0 +1,19 @@
+{
+  "projectId": "0dc734c3-4df9-420b-97c6-f6eb4c615c6b",
+  "pkg": "causekind-next",
+  "globalName": "CausekindUI",
+  "shape": "package",
+  "buildCmd": "npm run build:ds",
+  "cssEntry": "dist/styles.css",
+  "tsconfig": "tsconfig.json",
+  "overrides": {
+    "Card": { "cardMode": "column" }
+  },
+  "provider": {
+    "component": "NextIntlClientProvider",
+    "props": { "locale": "en", "messages": {} }
+  },
+  "componentSrcMap": {
+    "NextIntlClientProvider": null
+  }
+}

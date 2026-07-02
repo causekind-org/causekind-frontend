@@ -1,30 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /**
- * CursorGlowHero — a full-bleed dark hero panel with a warm cursor-tracking
- * radial spotlight. Works without canvas; uses only CSS transforms + opacity.
+ * CursorGlowHero — cursor-tracking radial spotlight.
+ * Uses direct DOM writes + transform (not setState + left/top) to avoid
+ * per-mousemove React re-renders and layout reflows.
  */
 export function CursorGlowHero({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ x: 0.5, y: 0.5 }); // normalised 0-1
-  const [active, setActive] = useState(false);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!el || !outer || !inner) return;
 
     const handleMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
-      setPos({
-        x: (e.clientX - rect.left) / rect.width,
-        y: (e.clientY - rect.top) / rect.height,
-      });
-      setActive(true);
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      outer.style.transform = `translate(${x - 180}px, ${y - 180}px)`;
+      inner.style.transform = `translate(${x - 40}px, ${y - 40}px)`;
+      outer.style.opacity = "1";
+      inner.style.opacity = "1";
     };
 
-    const handleLeave = () => setActive(false);
+    const handleLeave = () => {
+      outer.style.opacity = "0";
+      inner.style.opacity = "0";
+    };
 
     el.addEventListener("mousemove", handleMove);
     el.addEventListener("mouseleave", handleLeave);
@@ -54,64 +61,55 @@ export function CursorGlowHero({ children }: { children: React.ReactNode }) {
         className="relative overflow-hidden bg-[#120c04] border-b border-stone-850 h-[280px] sm:h-[340px] flex items-center justify-center"
         style={{ cursor: "none" }}
       >
-        {/* ── Static ambient glows (always visible) ── */}
+        {/* Static ambient glows */}
         <div
           aria-hidden="true"
           className="ck-glow-static-1 pointer-events-none absolute rounded-full bg-[#b04a15]"
-          style={{
-            width: "520px",
-            height: "520px",
-            top: "-160px",
-            left: "20%",
-            filter: "blur(80px)",
-          }}
+          style={{ width: "520px", height: "520px", top: "-160px", left: "20%", filter: "blur(80px)" }}
         />
         <div
           aria-hidden="true"
           className="ck-glow-static-2 pointer-events-none absolute rounded-full bg-[#1e3a60]"
-          style={{
-            width: "380px",
-            height: "380px",
-            bottom: "-120px",
-            right: "15%",
-            filter: "blur(70px)",
-          }}
+          style={{ width: "380px", height: "380px", bottom: "-120px", right: "15%", filter: "blur(70px)" }}
         />
 
-        {/* ── Cursor spotlight ── */}
+        {/* Cursor spotlight — positioned at top:0 left:0, moved via transform only */}
         <div
+          ref={outerRef}
           aria-hidden="true"
           className="pointer-events-none absolute rounded-full"
           style={{
             width: "360px",
             height: "360px",
-            background:
-              "radial-gradient(circle, rgba(176,74,21,0.28) 0%, rgba(176,74,21,0.10) 40%, transparent 70%)",
-            left: `calc(${pos.x * 100}% - 180px)`,
-            top: `calc(${pos.y * 100}% - 180px)`,
-            opacity: active ? 1 : 0,
-            transition: "left 0.06s linear, top 0.06s linear, opacity 0.5s ease",
+            top: 0,
+            left: 0,
+            background: "radial-gradient(circle, rgba(176,74,21,0.28) 0%, rgba(176,74,21,0.10) 40%, transparent 70%)",
+            opacity: 0,
+            transform: "translate(-180px, -180px)",
+            transition: "transform 0.06s linear, opacity 0.5s ease",
             filter: "blur(2px)",
+            willChange: "transform",
           }}
         />
 
-        {/* ── Smaller sharp inner core ── */}
+        {/* Inner sharp core */}
         <div
+          ref={innerRef}
           aria-hidden="true"
           className="pointer-events-none absolute rounded-full"
           style={{
             width: "80px",
             height: "80px",
-            background:
-              "radial-gradient(circle, rgba(240,185,122,0.22) 0%, transparent 70%)",
-            left: `calc(${pos.x * 100}% - 40px)`,
-            top: `calc(${pos.y * 100}% - 40px)`,
-            opacity: active ? 1 : 0,
-            transition: "left 0.04s linear, top 0.04s linear, opacity 0.4s ease",
+            top: 0,
+            left: 0,
+            background: "radial-gradient(circle, rgba(240,185,122,0.22) 0%, transparent 70%)",
+            opacity: 0,
+            transform: "translate(-40px, -40px)",
+            transition: "transform 0.04s linear, opacity 0.4s ease",
+            willChange: "transform",
           }}
         />
 
-        {/* Content sits above the glows */}
         <div className="relative z-20 w-full">{children}</div>
       </div>
     </>

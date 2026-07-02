@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, Shield, Milestone, Compass, CheckCircle2, ArrowRight 
 import { getTranslations } from "next-intl/server";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { AboutCtaCard } from "@/components/AboutCtaCard";
+import { Reveal } from "@/components/Reveal";
 
 export const metadata = {
   title: "About Us — CauseKind",
@@ -43,6 +44,7 @@ export default async function AboutPage() {
 
       {/* ── Section 1: Our Story — PHOTO RIGHT (7/5 split reversed) ── */}
       <div className="mx-auto max-w-7xl px-6 sm:px-10 py-24">
+        <Reveal>
         <div className="grid gap-12 lg:grid-cols-[3fr_2fr] items-center">
 
           {/* Story text — LEFT, with oversized decorative number */}
@@ -99,6 +101,7 @@ export default async function AboutPage() {
           </div>
 
         </div>
+        </Reveal>
       </div>
 
       {/* ── Section 2: Vision & Mission — ALTERNATING OFFSET STAGGER ── */}
@@ -120,6 +123,7 @@ export default async function AboutPage() {
           </div>
 
           {/* Vision & Mission Cards */}
+          <Reveal direction="left">
           <div className="grid md:grid-cols-2 gap-8 items-stretch mb-8">
             <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-10 flex flex-col justify-between gap-6 group hover:bg-white/8 transition-all duration-300">
               <div className="flex flex-col gap-6">
@@ -151,6 +155,7 @@ export default async function AboutPage() {
               </div>
             </div>
           </div>
+          </Reveal>
 
         </div>
       </div>
@@ -159,14 +164,17 @@ export default async function AboutPage() {
       <div className="mx-auto max-w-7xl px-6 sm:px-10 py-24">
 
         {/* Left-flush heading */}
+        <Reveal>
         <div className="mb-16">
           <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-2 block">02</span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-stone-900 dark:text-white leading-snug max-w-md">
             What We Stand For
           </h2>
         </div>
+        </Reveal>
 
         {/* Row 1: [3fr 2fr] — large community card + small secure card */}
+        <Reveal delay={100}>
         <div className="grid gap-6 lg:grid-cols-[3fr_2fr] mb-6">
           {/* Large showcase card */}
           <div className="bg-white dark:bg-zinc-900 border border-[#e5e2d5]/60 dark:border-stone-800 rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 grid sm:grid-cols-2">
@@ -203,8 +211,10 @@ export default async function AboutPage() {
             </div>
           </div>
         </div>
+        </Reveal>
 
         {/* Row 2: [1fr 3fr] — small verified card + large dark CTA card */}
+        <Reveal delay={200}>
         <div className="grid gap-6 lg:grid-cols-[2fr_3fr]">
           {/* Small verified card */}
           <div className="p-8 bg-white dark:bg-zinc-900 border border-[#e5e2d5]/60 dark:border-stone-800 rounded-3xl hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
@@ -225,6 +235,7 @@ export default async function AboutPage() {
           {/* Dynamic dynamic CTA card — hidden when authenticated */}
           <AboutCtaCard />
         </div>
+        </Reveal>
 
       </div>
 

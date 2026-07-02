@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
@@ -292,9 +293,11 @@ function CategoryBar({
   total: number;
 }) {
   return (
-    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-b border-stone-100 dark:border-zinc-800 sticky top-[57px] z-40 shadow-sm">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-3">
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-b border-stone-100 dark:border-zinc-800 sticky top-14 lg:top-[88px] z-40 shadow-sm">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center gap-2">
+
+        {/* Scrollable pill row */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-3 flex-1 min-w-0">
 
           {/* All */}
           <button
@@ -336,6 +339,18 @@ function CategoryBar({
             );
           })}
         </div>
+
+        {/* Pinned CTA — doesn't scroll with the pills */}
+        <div className="shrink-0 pl-2 border-l border-stone-200 dark:border-zinc-700">
+          <Link
+            href="/items/new"
+            className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold border-2 border-[#b04a15] text-[#b04a15] hover:bg-[#b04a15] hover:text-white transition-all duration-200 whitespace-nowrap"
+          >
+            <Plus className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">List an Item</span>
+          </Link>
+        </div>
+
       </div>
     </div>
   );
@@ -740,7 +755,7 @@ export default function RequestsPage() {
         }
       },
       (err) => {
-        console.error("GPS retrieval error — code:", err.code, "| message:", err.message);
+        console.warn("GPS retrieval error — code:", err.code, "| message:", err.message);
         setGpsBlocked(true);
         setGpsLoading(false);
         const msg =
@@ -859,9 +874,24 @@ export default function RequestsPage() {
   }
 
   function closeDonateModal() {
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
     setDonateTarget(null);
     setDescription(""); setImages([]); setImagePreviews([]); setAnalyzing(false); setAiGenerated(false);
   }
+
+  useEffect(() => {
+    if (!donateTarget) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+    };
+  }, [donateTarget]);
 
   async function runAnalysis(file: File) {
     setAnalyzing(true); setAiGenerated(false); setDescription("");
@@ -960,23 +990,6 @@ export default function RequestsPage() {
       {/* ── Hero ── */}
       <RequestsHero total={requests.length} critical={criticalCount} catCounts={catCounts} />
 
-      {/* ── Donor action strip ── */}
-      <div className="sticky top-0 z-20 bg-[#f2ede7]/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-stone-200 dark:border-zinc-800 shadow-sm">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center justify-between gap-3 h-14">
-          <div className="flex items-center gap-1">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-[#b04a15] text-white shadow-sm">
-              <HandCoins className="w-4 h-4" /> In-Kind Requests
-            </button>
-          </div>
-          <Link
-            href="/items/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border-2 border-[#b04a15] text-[#b04a15] hover:bg-[#b04a15] hover:text-white transition-all duration-200"
-          >
-            <Plus className="w-4 h-4" /> List an Item
-          </Link>
-        </div>
-      </div>
-
       {/* ── Category quick-filter bar ── */}
       <CategoryBar
         catCounts={catCounts}
@@ -1036,7 +1049,7 @@ export default function RequestsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8 items-start">
 
           {/* Desktop sidebar */}
-          <aside className="hidden lg:block sticky top-[calc(57px+53px)] bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-stone-100 dark:border-zinc-800 shrink-0">
+          <aside className="hidden lg:block sticky top-[146px] bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-stone-100 dark:border-zinc-800 shrink-0">
             <h3 className="text-sm font-black text-stone-800 dark:text-stone-200 mb-5 flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-stone-400" />
               Filters
@@ -1216,14 +1229,21 @@ export default function RequestsPage() {
       </div>
 
       {/* ── Donate modal ── */}
-      {donateTarget && (
+      {donateTarget && createPortal((
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[9990] bg-black/65 backdrop-blur-sm"
           style={{ animation: "fadeIn 0.2s ease forwards" }}
+          onClick={closeDonateModal}
         >
-          <div className="w-full max-w-4xl overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl flex flex-col md:flex-row h-auto md:max-h-[88vh]">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="give-item-title"
+            className="fixed left-1/2 top-1/2 flex max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl bg-white shadow-2xl shadow-black/35 dark:bg-zinc-900 md:max-h-[calc(100dvh-96px)] md:w-[calc(100vw-48px)] md:max-w-[860px] md:flex-row"
+            onClick={e => e.stopPropagation()}
+          >
             <div
-              className="relative hidden md:flex md:w-[42%] flex-col justify-between p-8 text-white select-none overflow-hidden"
+              className="relative hidden select-none flex-col justify-between overflow-hidden p-8 text-white md:flex md:min-h-[560px] md:w-[40%]"
               style={{ backgroundImage: "url('/images/kindness_banner.png')", backgroundSize: "cover", backgroundPosition: "center" }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30 pointer-events-none" />
@@ -1251,13 +1271,13 @@ export default function RequestsPage() {
               </div>
             </div>
 
-            <div className="w-full md:w-[58%] p-6 sm:p-8 flex flex-col overflow-y-auto max-h-[90vh] md:max-h-[88vh] relative">
+            <div className="relative flex max-h-[calc(100dvh-32px)] min-h-0 w-full flex-col overflow-y-auto p-5 sm:p-7 md:max-h-[calc(100dvh-96px)] md:w-[60%] md:p-8">
               <button onClick={closeDonateModal} className="absolute right-4 top-4 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-800 hover:text-stone-600 transition z-10">
                 <X className="h-4 w-4" />
               </button>
-              <div className="flex-1 flex flex-col justify-center max-w-[380px] mx-auto w-full space-y-5">
+              <div className="mx-auto flex min-h-full w-full max-w-[380px] flex-col justify-center space-y-5 py-2">
                 <div>
-                  <h3 className="text-2xl font-extrabold text-stone-900 dark:text-white">Give your item</h3>
+                  <h3 id="give-item-title" className="text-2xl font-extrabold text-stone-900 dark:text-white">Give your item</h3>
                   <p className="text-xs text-stone-400 mt-1">Show us what you&apos;re giving so we can find it a perfect home.</p>
                 </div>
                 <div>
@@ -1319,7 +1339,7 @@ export default function RequestsPage() {
                 </button>
                 <div className="flex justify-between text-[10px] text-stone-400 font-bold border-t border-stone-100 dark:border-zinc-800 pt-4">
                   <div className="flex gap-3">
-                    <Link href="/help" className="hover:text-[#b04a15] transition-colors">Help</Link>
+                    <Link href="/faq" className="hover:text-[#b04a15] transition-colors">Help</Link>
                     <Link href="/privacy" className="hover:text-[#b04a15] transition-colors">Privacy</Link>
                   </div>
                   <span>© 2026 CauseKind</span>
@@ -1328,7 +1348,7 @@ export default function RequestsPage() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

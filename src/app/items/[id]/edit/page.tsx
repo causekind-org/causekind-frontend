@@ -135,7 +135,6 @@ export default function EditItemPage() {
   const [packaging, setPackaging]       = useState("");
   const [specialHandling, setSpecialHandling] = useState<string[]>([]);
   const [handoverDate, setHandoverDate] = useState("");
-  const [handoverSlots, setHandoverSlots] = useState<string[]>([]);
   const [deliveryRadius, setDeliveryRadius] = useState(25);
 
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
@@ -207,7 +206,6 @@ export default function EditItemPage() {
         setPackaging(l.packagingAvailable ?? "");
         setSpecialHandling(l.specialHandling ? l.specialHandling.split("|").filter(Boolean) : []);
         setHandoverDate(l.preferredHandoverDate ?? "");
-        setHandoverSlots(l.preferredHandoverSlots ? l.preferredHandoverSlots.split(",").filter(Boolean) : []);
         setDeliveryRadius(l.maximumDeliveryRadius ?? 25);
 
         // Step 4 — if previously accepted, pre-tick all
@@ -262,7 +260,6 @@ export default function EditItemPage() {
       packagingAvailable: packaging || undefined,
       specialHandling: specialHandling.join("|") || undefined,
       preferredHandoverDate: handoverDate || undefined,
-      preferredHandoverSlots: handoverSlots.length > 0 ? handoverSlots.join(",") : undefined,
       maximumDeliveryRadius: deliveryRadius,
       policyVersion: "1.0",
       declarationsAccepted: declarations.every(Boolean),
@@ -273,7 +270,7 @@ export default function EditItemPage() {
     dimensions, weight, description, photos, cityFreeText, cityValue,
     stateIso, countryIso, pincode, locality, latitude, longitude,
     pickupYN, pickupDays, pickupSlots, dropOffYN, maxTravel, packaging,
-    specialHandling, handoverDate, handoverSlots, deliveryRadius, declarations, showCityFreeText,
+    specialHandling, handoverDate, deliveryRadius, declarations, showCityFreeText,
   ]);
 
   async function saveDraft() {
@@ -392,7 +389,6 @@ export default function EditItemPage() {
   function toggleDay(d: string) { setPickupDays((p) => p.includes(d) ? p.filter((x) => x !== d) : [...p, d]); }
   function toggleSlot(s: string) { setPickupSlots((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]); }
   function toggleHandling(h: string) { setSpecialHandling((p) => p.includes(h) ? p.filter((x) => x !== h) : [...p, h]); }
-  function toggleHandoverSlot(s: string) { setHandoverSlots((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]); }
   function toggleDeclaration(i: number) { setDeclarations((p) => p.map((v, idx) => idx === i ? !v : v)); }
 
   if (authLoading || !user || loadingListing) return (
@@ -675,17 +671,6 @@ export default function EditItemPage() {
         <Field label="Earliest Available Date">
           <Input type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
         </Field>
-        <div>
-          <p className="text-xs font-semibold text-stone-500 mb-2">Preferred Time Slots for Handover</p>
-          <div className="flex flex-wrap gap-2">
-            {TIME_SLOTS.map((s) => (
-              <button key={s} type="button" onClick={() => toggleHandoverSlot(s)}
-                className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${handoverSlots.includes(s) ? "bg-emerald-600 text-white border-emerald-600" : "border-stone-300 text-stone-500 hover:border-emerald-400"}`}>
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       <Field label="Maximum Delivery Radius (km)" hint="How far can this item travel to reach a recipient?">

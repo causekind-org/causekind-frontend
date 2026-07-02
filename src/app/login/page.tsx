@@ -138,13 +138,6 @@ function LoginContent() {
 
       {/* ── LEFT: Brand/Image panel — slides in from direction of navigation ── */}
       <div className={`hidden lg:flex lg:w-[40%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0 ${panelAnimClass}`}>
-        {/* Warmth glows */}
-        <div className="absolute -top-24 left-1/4 h-[350px] w-[350px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 right-1/4 h-[350px] w-[350px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
-        
-        {/* Dot pattern */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.05] pointer-events-none" />
-
         <div className="relative z-10 flex items-center gap-2 mb-8">
           <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3 py-1">
             Verified In-Kind
@@ -163,10 +156,10 @@ function LoginContent() {
           </blockquote>
         </div>
 
-        {/* Decorative graphic / background image */}
-        <div className="absolute inset-0 opacity-[0.25] pointer-events-none mix-blend-luminosity">
+        {/* Illustration — a direct, verified handover */}
+        <div className="absolute inset-0 pointer-events-none">
           <Image
-            src="/Change_stories.jpg"
+            src="/login-illustration.png"
             alt=""
             fill
             className="object-cover"
@@ -181,14 +174,14 @@ function LoginContent() {
       </div>
 
       {/* ── RIGHT: Form panel — fades in ── */}
-      <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-10 lg:px-16 overflow-y-auto relative overflow-hidden auth-form-appear">
+      <div className="flex flex-1 flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 px-6 py-8 lg:px-12 overflow-y-auto relative overflow-hidden auth-form-appear">
         {/* Breathing warmth glows representing community light & hope */}
-        <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-[#1e3a60]/5 blur-3xl pointer-events-none" />
+        <div className="absolute top-10 right-10 w-80 h-80 rounded-full bg-[#b04a15]/12 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-[#1e3a60]/10 blur-3xl pointer-events-none" />
 
         <div />
 
-        <div className="w-full max-w-[400px] mx-auto space-y-7 relative z-10">
+        <div className="w-full max-w-[420px] mx-auto space-y-7 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-3xl px-8 py-10 shadow-xl">
           {/* Heading */}
           <Reveal>
             <div className="space-y-1.5">
