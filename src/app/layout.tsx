@@ -70,7 +70,6 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <GoogleTagManager gtmId={gtmId} />
-      <MetaPixel />
       <head>
         <link
           rel="stylesheet"
@@ -78,6 +77,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
+        <MetaPixel />
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>
             <AuthProvider>
