@@ -341,15 +341,17 @@ export type ItemListing = {
   specialHandling: string | null;
   preferredHandoverDate: string | null;
   preferredHandoverSlots: string | null;
+  policyVersion: string | null;
   declarationsAccepted: boolean;
+  rejectedByAi: boolean;
 };
 
 export function getItemListings() {
   return request<ItemListing[]>("/api/v1/items");
 }
 
-export function getMyItemListings() {
-  return request<ItemListing[]>("/api/v1/items/mine");
+export function getMyItemListings(options: { silent401?: boolean } = {}) {
+  return request<ItemListing[]>("/api/v1/items/mine", options);
 }
 
 export function getItemListing(id: number) {
@@ -383,6 +385,10 @@ export function resumeItemListing(id: number) {
 
 export function withdrawItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
+}
+
+export function deleteMyListing(id: number) {
+  return request<void>(`/api/v1/items/${id}`, { method: "DELETE" });
 }
 
 export type CreateListingPayload = {
@@ -452,6 +458,26 @@ export function adminMarkListingNeedsInformation(id: number, adminNote: string) 
   });
 }
 
+export type AdminAiReviewResponse = {
+  entityType: "LISTING" | "REQUEST";
+  entityId: number;
+  title: string;
+  recommendation: "APPROVE" | "REJECT" | "NEEDS_INFORMATION" | "MANUAL_REVIEW" | string;
+  confidence: number;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | string;
+  summary: string;
+  suggestedAdminAction: string;
+  suggestedAdminReason: string;
+  donorMessage: string;
+  evidence: string[];
+  missingInfo: string[];
+  modelVersion: string;
+};
+
+export function adminGetListingAiReview(id: number) {
+  return request<AdminAiReviewResponse>(`/api/v1/admin/items/${id}/ai-review`, { silent401: true });
+}
+
 export type AiAssessmentResponse = {
   id: number;
   listingId: number;
@@ -473,6 +499,14 @@ export type AiAssessmentResponse = {
 
 export function adminGetListingAiAssessment(id: number) {
   return request<AiAssessmentResponse>(`/api/v1/admin/items/${id}/ai-assessment`, { silent401: true });
+}
+
+export function adminRunAiAssessment(id: number) {
+  return request<{ status: string }>(`/api/v1/admin/items/${id}/run-ai-assessment`, { method: "POST" });
+}
+
+export function adminGetAllAiAssessments() {
+  return request<AiAssessmentResponse[]>(`/api/v1/admin/ai-assessments`);
 }
 
 export async function uploadListingImage(file: File): Promise<string> {
@@ -560,6 +594,10 @@ export function adminRejectItemRequest(id: number, reason: string) {
   });
 }
 
+export function adminGetItemRequestAiReview(id: number) {
+  return request<AdminAiReviewResponse>(`/api/v1/admin/item-requests/${id}/ai-review`, { silent401: true });
+}
+
 // ── Matches ───────────────────────────────────────────────────────────────────
 
 export type ItemMatch = {
@@ -569,10 +607,18 @@ export type ItemMatch = {
   listingTitle: string | null;
   requestId: number | null;
   requestTitle: string | null;
+  donorId: number | null;
   donorName: string;
+  donorEmail: string | null;
   donorCity: string;
+  donorLatitude: number | null;
+  donorLongitude: number | null;
+  doneeId: number | null;
   doneeName: string;
+  doneeEmail: string | null;
   doneeCity: string;
+  doneeLatitude: number | null;
+  doneeLongitude: number | null;
   status:
     | "DONOR_REVIEW"
     | "DONOR_REJECTED"
@@ -602,6 +648,41 @@ export type ItemMatch = {
   doneeReason: string | null;
   donorContact: string | null;
   doneeContact: string | null;
+  // Request snapshot
+  requestCategory: string | null;
+  requestQuantity: number | null;
+  requestUrgency: string | null;
+  requestCity: string | null;
+  requestPincode: string | null;
+  requestDescription: string | null;
+  requestStatus: string | null;
+  requestImageUrl: string | null;
+  requestLatitude: number | null;
+  requestLongitude: number | null;
+  requestCreatedAt: string | null;
+  // Listing snapshot
+  listingCategory: string | null;
+  listingSubcategory: string | null;
+  listingQuantity: number | null;
+  listingCondition: string | null;
+  listingCity: string | null;
+  listingPincode: string | null;
+  listingLocality: string | null;
+  listingDescription: string | null;
+  listingStatus: string | null;
+  listingImageUrl: string | null;
+  listingImageUrls: string | null;
+  listingBrand: string | null;
+  listingModel: string | null;
+  listingApproximateAge: string | null;
+  listingWorkingStatus: string | null;
+  listingKnownDefects: string | null;
+  listingAccessoriesIncluded: string | null;
+  listingDimensions: string | null;
+  listingApproximateWeight: string | null;
+  listingLatitude: number | null;
+  listingLongitude: number | null;
+  listingCreatedAt: string | null;
   // Logistics
   handoverMethod: string | null;
   transportArrangedBy: string | null;

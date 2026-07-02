@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck, Handshake, ShieldCheck, CheckCircle2, Info, X } from "lucide-react";
+import { Bell, CheckCheck, Handshake, ShieldCheck, CheckCircle2, Info, X, AlertCircle } from "lucide-react";
 import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
 import { useAuth } from "@/hooks/useAuth";
 
 const TYPE_ICON = {
-  match:     { Icon: Handshake,    bg: "bg-sky-100 dark:bg-sky-900/30",     ic: "text-sky-600 dark:text-sky-400"    },
-  approved:  { Icon: ShieldCheck,  bg: "bg-emerald-100 dark:bg-emerald-900/30", ic: "text-emerald-600 dark:text-emerald-400" },
-  fulfilled: { Icon: CheckCircle2, bg: "bg-[#b04a15]/10",                   ic: "text-[#b04a15]"                    },
-  info:      { Icon: Info,         bg: "bg-stone-100 dark:bg-zinc-800",      ic: "text-stone-500 dark:text-stone-400" },
+  match:     { Icon: Handshake,     bg: "bg-sky-100 dark:bg-sky-900/30",       ic: "text-sky-600 dark:text-sky-400"        },
+  approved:  { Icon: ShieldCheck,   bg: "bg-emerald-100 dark:bg-emerald-900/30", ic: "text-emerald-600 dark:text-emerald-400" },
+  rejected:  { Icon: AlertCircle,   bg: "bg-red-100 dark:bg-red-900/30",       ic: "text-red-600 dark:text-red-400"        },
+  fulfilled: { Icon: CheckCircle2,  bg: "bg-[#b04a15]/10",                     ic: "text-[#b04a15]"                        },
+  info:      { Icon: Info,          bg: "bg-stone-100 dark:bg-zinc-800",        ic: "text-stone-500 dark:text-stone-400"    },
 };
 
 function NotifItem({ n }: { n: AppNotification }) {

@@ -1,0 +1,4 @@
+/* Design-system-only CSS entry: adds the font wiring on top of the real
+   app stylesheet. Compiled to dist/styles.css via the build:ds:css script. */
+@import "./fonts.css";
+@import "../styles.css";

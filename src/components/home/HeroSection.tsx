@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getHeroImages } from "@/app/actions/getHeroImages";
@@ -26,39 +27,34 @@ const HERO_QUOTES = [
 
 export function HeroQuoteSlider() {
   const [idx, setIdx] = useState(0);
-  const [phase, setPhase] = useState<"enter" | "visible" | "exit">("enter");
 
   useEffect(() => {
-    const t = setTimeout(() => setPhase("visible"), 900);
-    return () => clearTimeout(t);
-  }, [idx]);
+    const t = setInterval(() => setIdx(i => (i + 1) % HERO_QUOTES.length), 6000);
+    return () => clearInterval(t);
+  }, []);
 
-  useEffect(() => {
-    if (phase !== "visible") return;
-    const t = setTimeout(() => setPhase("exit"), 5000);
-    return () => clearTimeout(t);
-  }, [phase]);
-
-  useEffect(() => {
-    if (phase !== "exit") return;
-    const t = setTimeout(() => { setIdx(i => (i + 1) % HERO_QUOTES.length); setPhase("enter"); }, 600);
-    return () => clearTimeout(t);
-  }, [phase]);
-
-  const q   = HERO_QUOTES[idx];
-  const cls = phase === "enter" ? "hero-quote-enter" : phase === "exit" ? "hero-quote-exit" : "";
+  const q = HERO_QUOTES[idx];
 
   return (
     <div className="relative h-[96px] sm:h-[76px] overflow-hidden">
-      <div key={idx} className={`absolute inset-0 flex flex-col justify-center ${cls}`}>
-        <p className="text-white/70 text-sm sm:text-base leading-relaxed font-medium italic line-clamp-3">
-          &ldquo;{q.text}&rdquo;
-        </p>
-        <span className="mt-1 flex items-center gap-2 text-[#f0b97a] text-[11px] font-black uppercase tracking-wider">
-          <span className="block h-px w-5 bg-[#e07b3a]" />
-          {q.author}
-        </span>
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={idx}
+          className="absolute inset-0 flex flex-col justify-center"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.45, ease: [0.36, 0.66, 0.04, 1] }}
+        >
+          <p className="text-white/70 text-sm sm:text-base leading-relaxed font-medium italic line-clamp-3">
+            &ldquo;{q.text}&rdquo;
+          </p>
+          <span className="mt-1 flex items-center gap-2 text-[#f0b97a] text-[11px] font-black uppercase tracking-wider">
+            <span className="block h-px w-5 bg-[#e07b3a]" />
+            {q.author}
+          </span>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
@@ -117,7 +113,7 @@ export function HeroSection({
 
   return (
     <section className="relative w-full max-w-[1440px] mx-auto px-0 sm:px-10 pt-0 sm:pt-8 pb-0">
-      <div className="relative w-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] rounded-t-[3rem] rounded-b-none overflow-hidden bg-stone-900 shadow-xl border-x border-t border-[#e5e2d5]/60 animate-scale anim-d1">
+      <div className="relative w-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] rounded-t-[3rem] rounded-b-none overflow-hidden bg-stone-900 shadow-xl border-x border-t border-[#e5e2d5]/60">
         <div className="absolute inset-0 w-full h-full pointer-events-none">
           <HeroImageSlider />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
@@ -126,33 +122,59 @@ export function HeroSection({
 
         <div className="relative z-10 w-full h-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] px-6 sm:px-12 py-10 sm:py-16 flex flex-col justify-between">
           <div className="w-full flex items-start justify-between gap-4 lg:gap-6">
-            <div className="self-start inline-flex items-center gap-2 bg-white/65 backdrop-blur-md rounded-full px-5 py-2 border border-white/40 shadow-sm">
+            <motion.div
+              className="self-start inline-flex items-center gap-2 bg-white/65 backdrop-blur-md rounded-full px-5 py-2 border border-white/40 shadow-sm"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 90, damping: 20 }}
+            >
               <span className="w-2 h-2 rounded-full bg-[#f0b97a] animate-pulse shrink-0" />
               <span className="text-[#b04a15] text-xs font-extrabold uppercase tracking-wider">{tHero("badge")}</span>
-            </div>
+            </motion.div>
             <div className="hidden lg:flex flex-col items-end gap-2">
-              {[tHero("transparent"), tHero("fastDistribution")].map(label => (
-                <div key={label} className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 shadow-xs">
+              {[tHero("transparent"), tHero("fastDistribution")].map((label, i) => (
+                <motion.div
+                  key={label}
+                  className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 shadow-xs"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.1 + i * 0.1 }}
+                >
                   <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
                   <span className="text-white text-sm font-semibold">{label}</span>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
 
           <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mt-auto">
             <div className="lg:col-span-7 flex flex-col items-start gap-5 relative">
-              <h1 className="text-white font-extrabold leading-[1.08] tracking-tight text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] max-w-2xl font-jakarta">
+              <motion.h1
+                className="text-white font-extrabold leading-[1.08] tracking-tight text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] max-w-2xl font-jakarta"
+                initial={{ opacity: 0, x: -28 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ type: "spring", stiffness: 75, damping: 20, delay: 0.15 }}
+              >
                 {tHero("headline")}
-              </h1>
-              <div className="max-w-lg w-full">
+              </motion.h1>
+              <motion.div
+                className="max-w-lg w-full"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ type: "spring", stiffness: 75, damping: 20, delay: 0.28 }}
+              >
                 <HeroQuoteSlider />
-              </div>
+              </motion.div>
             </div>
 
             {FEATURES.money && (
-              <div className="lg:col-span-5 flex justify-end">
-                <div className="bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem] p-6 shadow-2xl w-full max-w-[320px] border border-white/50 dark:border-white/10 animate-card-3d-enter sm:min-h-[350px] flex flex-col justify-between transition-all duration-500">
+              <motion.div
+                className="lg:col-span-5 flex justify-end"
+                initial={{ opacity: 0, x: 36, scale: 0.94 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 65, damping: 18, delay: 0.22 }}
+              >
+                <div className="bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem] p-6 shadow-2xl w-full max-w-[320px] border border-white/50 dark:border-white/10 sm:min-h-[350px] flex flex-col justify-between transition-all duration-500">
                   <div>
                     <div className="mb-0 lg:mb-4">
                       <div className={`lg:hidden inline-flex items-center gap-1.5 rounded-full border px-3 py-1 mb-3 ${urgencyConfig.badge}`}>
@@ -182,7 +204,7 @@ export function HeroSection({
                     </button>
                   </Link>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>

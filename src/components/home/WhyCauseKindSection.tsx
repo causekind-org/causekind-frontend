@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ShieldCheck, HandCoins, MapPin, Award } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Reveal } from "@/components/Reveal";
 
 const AUTO_MS = 4000;
@@ -125,58 +126,63 @@ export function WhyCauseKindSection() {
         <div className="relative min-h-[300px] lg:min-h-[unset] flex items-center justify-center overflow-hidden">
 
           {/* Animated radial glow — reacts to active accent */}
-          <div
-            className="absolute inset-0 pointer-events-none transition-all duration-700"
-            style={{
-              background: `radial-gradient(ellipse 70% 70% at 50% 50%, ${features[active].accent}0e 0%, transparent 75%)`,
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            animate={{
+              background: `radial-gradient(ellipse 70% 70% at 50% 50%, ${features[active].accent}12 0%, transparent 75%)`,
             }}
+            transition={{ duration: 0.7, ease: "easeInOut" }}
           />
 
-          {/* One panel per feature, stacked via absolute positioning */}
-          {features.map((f, i) => {
-            const Icon = f.icon;
-            return (
-              <div
-                key={f.num}
-                className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 py-10 md:px-12"
-                style={{
-                  opacity: i === active ? 1 : 0,
-                  transform: `translateY(${i === active ? 0 : 14}px)`,
-                  transition: "opacity 0.4s ease, transform 0.4s ease",
-                  pointerEvents: i === active ? "auto" : "none",
-                }}
-              >
-                {/* Large icon with accent glow */}
-                <div
-                  className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5 flex-shrink-0"
-                  style={{
-                    backgroundColor: f.accent,
-                    boxShadow: `0 16px 56px ${f.accent}45`,
-                  }}
+          {/* AnimatePresence crossfade between feature panels */}
+          <AnimatePresence mode="wait">
+            {features.map((f, i) => {
+              if (i !== active) return null;
+              const Icon = f.icon;
+              return (
+                <motion.div
+                  key={f.num}
+                  className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 py-10 md:px-12"
+                  initial={{ opacity: 0, y: 18, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -12, scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 90, damping: 22 }}
                 >
-                  <Icon className="h-10 w-10 text-white" />
-                </div>
+                  {/* Large icon with accent glow */}
+                  <motion.div
+                    className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5 flex-shrink-0"
+                    style={{
+                      backgroundColor: f.accent,
+                      boxShadow: `0 16px 56px ${f.accent}45`,
+                    }}
+                    initial={{ scale: 0.6, rotate: -12 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.05 }}
+                  >
+                    <Icon className="h-10 w-10 text-white" />
+                  </motion.div>
 
-                {/* Feature number badge */}
-                <span
-                  className="text-[10px] font-black tracking-[0.25em] uppercase mb-2"
-                  style={{ color: f.accent }}
-                >
-                  {f.num} / 0{FEATURE_COUNT}
-                </span>
+                  {/* Feature number badge */}
+                  <span
+                    className="text-[10px] font-black tracking-[0.25em] uppercase mb-2"
+                    style={{ color: f.accent }}
+                  >
+                    {f.num} / 0{FEATURE_COUNT}
+                  </span>
 
-                {/* Title */}
-                <h3 className="text-2xl md:text-3xl font-extrabold text-stone-900 dark:text-white leading-tight mb-3">
-                  {f.title}
-                </h3>
+                  {/* Title */}
+                  <h3 className="text-2xl md:text-3xl font-extrabold text-stone-900 dark:text-white leading-tight mb-3">
+                    {f.title}
+                  </h3>
 
-                {/* Description */}
-                <p className="text-sm md:text-base text-stone-500 dark:text-stone-400 leading-relaxed max-w-[26rem]">
-                  {f.desc}
-                </p>
-              </div>
-            );
-          })}
+                  {/* Description */}
+                  <p className="text-sm md:text-base text-stone-500 dark:text-stone-400 leading-relaxed max-w-[26rem]">
+                    {f.desc}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
 
       </div>

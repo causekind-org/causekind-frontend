@@ -11,6 +11,7 @@ import {
   adminMarkListingNeedsInformation, type ItemListing,
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest, type ItemRequest,
   adminGetMatches, adminApproveMatch, adminRejectMatch, type ItemMatch,
+  adminGetListingAiAssessment, adminRunAiAssessment, type AiAssessmentResponse,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Loader2, MessageSquare, X } from "lucide-react";
+import { Bot, Check, ChevronDown, ChevronUp, Loader2, MessageSquare, X } from "lucide-react";
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -42,6 +43,7 @@ export default function ApprovalsPage() {
   const [needsInfoId, setNeedsInfoId] = useState<number | null>(null);
   const [needsInfoNote, setNeedsInfoNote] = useState("");
   const [processing, setProcessing] = useState<number | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -178,14 +180,17 @@ export default function ApprovalsPage() {
   if (!user) return null;
 
   return (
-    <div>
+    <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950">
       <div className="border-b bg-gradient-to-b from-accent/40 to-transparent">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
           </div>
-          <Link href="/admin/dashboard"><Button variant="outline">{t("backToDashboard")}</Button></Link>
+          <div className="flex gap-2">
+            <Link href="/admin/ai-logs"><Button variant="outline" className="gap-1.5"><Bot className="h-4 w-4" /> AI Logs</Button></Link>
+            <Link href="/admin/dashboard"><Button variant="outline">{t("backToDashboard")}</Button></Link>
+          </div>
         </div>
       </div>
 
@@ -211,7 +216,7 @@ export default function ApprovalsPage() {
             {loading ? <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>
               : campaigns.length === 0 ? <p className="py-20 text-center text-muted-foreground">{t("noPendingCampaigns")}</p>
               : campaigns.map((c) => (
-                <Card key={c.id}>
+                <Card key={c.id} className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-200/60 dark:border-zinc-700/40 shadow-sm">
                   <CardContent className="space-y-3 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -234,7 +239,7 @@ export default function ApprovalsPage() {
             {loading ? <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>
               : requests.length === 0 ? <p className="py-20 text-center text-muted-foreground">{t("noPendingRequests")}</p>
               : requests.map((r) => (
-                <Card key={r.id}>
+                <Card key={r.id} className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-200/60 dark:border-zinc-700/40 shadow-sm">
                   <CardContent className="space-y-3 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -257,7 +262,7 @@ export default function ApprovalsPage() {
             {loading ? <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>
               : listings.length === 0 ? <p className="py-20 text-center text-muted-foreground">{t("noPendingListings")}</p>
               : listings.map((l) => (
-                <Card key={l.id}>
+                <Card key={l.id} className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-200/60 dark:border-zinc-700/40 shadow-sm">
                   <CardContent className="space-y-3 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -281,9 +286,9 @@ export default function ApprovalsPage() {
                       <div className="flex gap-2 flex-wrap">
                         {[l.imageUrl, ...(l.imageUrls ? l.imageUrls.split("|") : [])].filter(Boolean).map((url, i) => (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <a key={i} href={url!} target="_blank" rel="noopener noreferrer">
+                          <button type="button" key={i} onClick={() => setLightboxUrl(url!)}>
                             <img src={url!} alt={`Photo ${i + 1}`} className="h-20 w-20 rounded-lg border object-cover hover:opacity-80 transition" />
-                          </a>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -310,6 +315,8 @@ export default function ApprovalsPage() {
                     {l.declarationsAccepted && (
                       <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✓ All mandatory declarations accepted by donor</p>
                     )}
+
+                    <AiPanel listingId={l.id} />
 
                     {rejectId === l.id && rejectType === "listing"
                       ? <RejectForm id={l.id} rejectReason={rejectReason} setRejectReason={setRejectReason} processing={processing} onConfirm={handleRejectListing} cancelReject={cancelReject} />
@@ -350,7 +357,7 @@ export default function ApprovalsPage() {
             {loading ? <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>
               : matches.length === 0 ? <p className="py-20 text-center text-muted-foreground">{t("noPendingMatches")}</p>
               : matches.map((m) => (
-                <Card key={m.id}>
+                <Card key={m.id} className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-200/60 dark:border-zinc-700/40 shadow-sm">
                   <CardContent className="space-y-3 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -382,9 +389,9 @@ export default function ApprovalsPage() {
                         <div className="flex gap-2">
                           {m.donorImages.map((url, i) => (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                            <button type="button" key={i} onClick={() => setLightboxUrl(url)}>
                               <img src={url} alt={t("itemPhotoAlt", { n: i + 1 })} className="h-20 w-20 rounded-lg border object-cover hover:opacity-80 transition" />
-                            </a>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -409,6 +416,206 @@ export default function ApprovalsPage() {
           </TabsContent>
 
         </Tabs>
+      </div>
+
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={lightboxUrl} alt="Full size preview" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+            <button
+              onClick={() => setLightboxUrl(null)}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition text-lg font-bold"
+            >×</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── AI Assessment inline panel ───────────────────────────────────────────────
+
+const REC_STYLE: Record<string, string> = {
+  APPROVE: "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-700",
+  REJECT: "bg-red-50 text-red-800 border-red-300 dark:bg-red-950/30 dark:text-red-300 dark:border-red-700",
+  MANUAL_REVIEW: "bg-orange-50 text-orange-800 border-orange-300 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-700",
+  REQUEST_INFORMATION: "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-700",
+};
+const REC_ICON: Record<string, string> = {
+  APPROVE: "✓", REJECT: "✗", MANUAL_REVIEW: "⚠", REQUEST_INFORMATION: "?",
+};
+const FRAUD_STYLE: Record<string, string> = {
+  HIGH: "bg-red-100 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-300",
+  MEDIUM: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950/30 dark:text-amber-300",
+  LOW: "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-300",
+};
+
+function AiPanel({ listingId }: { listingId: number }) {
+  const [panelState, setPanelState] = useState<"idle" | "loading" | "loaded" | "none">("idle");
+  const [expanded, setExpanded] = useState(false);
+  const [ai, setAi] = useState<AiAssessmentResponse | null>(null);
+  const [running, setRunning] = useState(false);
+
+  async function loadAi() {
+    setPanelState("loading");
+    setExpanded(true);
+    try {
+      const data = await adminGetListingAiAssessment(listingId);
+      setAi(data);
+      setPanelState("loaded");
+    } catch {
+      setPanelState("none");
+    }
+  }
+
+  async function runAi() {
+    setRunning(true);
+    try {
+      await adminRunAiAssessment(listingId);
+      toast.success("AI screening triggered — reload in a few seconds to see the result.");
+      setPanelState("idle");
+      setAi(null);
+      setExpanded(false);
+    } catch {
+      toast.error("Failed to trigger AI screening.");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const recStyle = ai ? (REC_STYLE[ai.recommendation] ?? "bg-stone-100 text-stone-700 border-stone-300") : "";
+  const recIcon = ai ? (REC_ICON[ai.recommendation] ?? "·") : "";
+  const fraudStyle = ai?.fraudRisk ? (FRAUD_STYLE[ai.fraudRisk] ?? "") : "";
+
+  return (
+    <div className="rounded-lg border border-dashed border-violet-200 bg-violet-50/40 dark:bg-violet-950/10 dark:border-violet-800 p-3">
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          className="flex items-center gap-1.5 text-xs font-semibold text-violet-700 dark:text-violet-300 hover:opacity-80 transition"
+          onClick={() => {
+            if (panelState === "idle") { loadAi(); return; }
+            setExpanded((e) => !e);
+          }}
+        >
+          <Bot className="h-3.5 w-3.5" />
+          AI Screening
+          {panelState === "loaded" && ai && (
+            <>
+              <span className={`ml-1 inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0 text-[10px] font-semibold ${recStyle}`}>
+                {recIcon} {ai.recommendation.replace(/_/g, " ")}
+              </span>
+              {expanded ? <ChevronUp className="h-3 w-3 ml-0.5" /> : <ChevronDown className="h-3 w-3 ml-0.5" />}
+            </>
+          )}
+          {panelState === "idle" && <span className="ml-1 text-violet-400 font-normal">(click to load)</span>}
+          {panelState === "none" && <span className="ml-1 text-stone-400 font-normal">no assessment yet</span>}
+          {panelState === "loading" && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
+        </button>
+
+        {/* Force re-run button */}
+        <button
+          onClick={runAi}
+          disabled={running}
+          className="flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800 rounded-full px-2 py-0.5 hover:bg-violet-50 dark:hover:bg-violet-950/30 disabled:opacity-50 transition"
+        >
+          {running ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Bot className="h-2.5 w-2.5" />}
+          {running ? "Running…" : "Run AI"}
+        </button>
+      </div>
+
+      {/* Expanded detail */}
+      {panelState === "loaded" && ai && expanded && (
+        <div className="mt-3 space-y-2.5">
+          {/* Badges row */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${recStyle}`}>
+              {recIcon} {ai.recommendation.replace(/_/g, " ")}
+            </span>
+            {ai.fraudRisk && (
+              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${fraudStyle}`}>
+                Fraud: {ai.fraudRisk}
+              </span>
+            )}
+            {ai.conditionGrade && (
+              <span className="inline-flex items-center rounded-full border border-stone-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 px-2 py-0.5 text-xs text-stone-600 dark:text-stone-400">
+                Grade: {ai.conditionGrade}
+              </span>
+            )}
+            {ai.eligibilityResult && (
+              <span className="inline-flex items-center rounded-full border border-stone-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 px-2 py-0.5 text-xs text-stone-600 dark:text-stone-400">
+                {ai.eligibilityResult}
+              </span>
+            )}
+          </div>
+
+          {/* Score bars */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            <ScoreBar label="Confidence" value={ai.confidence} />
+            <ScoreBar
+              label="Image ↔ Desc"
+              value={ai.imageDescriptionScore}
+              colorClass={ai.imageDescriptionScore > 0.6 ? "bg-emerald-500" : ai.imageDescriptionScore > 0.3 ? "bg-amber-500" : "bg-red-500"}
+            />
+          </div>
+
+          {/* Evidence notes */}
+          {ai.evidenceNotes && (
+            <p className="text-xs italic text-stone-600 dark:text-stone-400 leading-relaxed">{ai.evidenceNotes}</p>
+          )}
+
+          {/* Detected labels */}
+          {ai.detectedLabels && (
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-400">Detected in images</p>
+              <div className="flex flex-wrap gap-1">
+                {ai.detectedLabels.split(",").slice(0, 10).map((lbl, i) => (
+                  <span key={i} className="rounded-full bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 px-2 py-0.5 text-[11px] text-stone-600 dark:text-stone-400">
+                    {lbl.trim()}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Warnings */}
+          {ai.missingInfoFlags && (
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              <span className="font-semibold">Missing info: </span>{ai.missingInfoFlags}
+            </p>
+          )}
+          {ai.safetyWarnings && (
+            <p className="text-xs text-red-700 dark:text-red-400">
+              <span className="font-semibold">Safety flags: </span>{ai.safetyWarnings}
+            </p>
+          )}
+
+          <p className="text-[10px] text-stone-400">
+            Assessed {new Date(ai.createdAt).toLocaleString()} · Model: {ai.modelVersion}
+          </p>
+        </div>
+      )}
+
+      {panelState === "none" && (
+        <p className="mt-2 text-xs text-stone-500">No assessment on record yet. AI runs automatically on submission — use <strong>Run AI</strong> to force a re-screen.</p>
+      )}
+    </div>
+  );
+}
+
+function ScoreBar({ label, value, colorClass = "bg-violet-500" }: { label: string; value: number; colorClass?: string }) {
+  const pct = Math.round(value * 100);
+  return (
+    <div>
+      <div className="flex justify-between text-[10px] text-stone-500 mb-0.5">
+        <span>{label}</span><span>{pct}%</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-stone-200 dark:bg-zinc-700 overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${colorClass}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

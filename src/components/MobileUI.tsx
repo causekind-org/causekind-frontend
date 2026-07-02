@@ -68,7 +68,7 @@ export function MobileBottomNav() {
     <nav
       className={`fixed z-50 lg:hidden transition-all duration-300 ease-in-out
         ${scrolled
-          ? "left-4 right-4 rounded-[2rem] border border-stone-200/70 dark:border-zinc-700/60 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl backdrop-saturate-200 shadow-xl py-2"
+          ? "left-4 right-4 rounded-[2rem] border border-stone-200/70 dark:border-zinc-700/60 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg backdrop-saturate-150 shadow-xl py-2"
           : "left-0 right-0 border-t border-[#e5e2d5] dark:border-zinc-800 bg-[#faf8f3] dark:bg-zinc-950 pb-safe-bottom pt-2 pb-3 shadow-md"
         }`}
       style={{
@@ -200,7 +200,7 @@ export function FloatingSupportButton() {
       {/* Popover panel */}
       <div
         className={`floating-support-item fixed bottom-[9.5rem] right-5 lg:bottom-24 z-50 w-60
-          bg-white/75 dark:bg-zinc-900/70 backdrop-blur-xl
+          bg-white/75 dark:bg-zinc-900/70 backdrop-blur-md
           rounded-2xl shadow-2xl border border-white/50 dark:border-white/10
           transition-all duration-300 origin-bottom-right
           ${open ? "scale-100 opacity-100 pointer-events-auto" : "scale-90 opacity-0 pointer-events-none"}
@@ -209,7 +209,7 @@ export function FloatingSupportButton() {
         <div className="p-4 space-y-3">
           <p className="text-xs font-black text-stone-500 dark:text-zinc-400 uppercase tracking-widest">{t("getSupport")}</p>
           <a
-            href="mailto:support@causekind.org"
+            href="mailto:support@causekind.com"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors group"
           >
             <span className="w-8 h-8 rounded-full bg-[#b04a15]/10 flex items-center justify-center shrink-0">
@@ -217,11 +217,11 @@ export function FloatingSupportButton() {
             </span>
             <div>
               <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("emailUs")}</p>
-              <p className="text-[10px] text-stone-400 font-medium">support@causekind.org</p>
+              <p className="text-[10px] text-stone-400 font-medium">support@causekind.com</p>
             </div>
           </a>
           <a
-            href="/help"
+            href="/faq"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors group"
           >
             <span className="w-8 h-8 rounded-full bg-[#1e3a60]/10 flex items-center justify-center shrink-0">

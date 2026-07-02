@@ -622,10 +622,10 @@ export default function TermsPage() {
                     {SUPPORT_EMAIL}
                   </a>
                   <Link
-                    href="/help"
+                    href="/faq"
                     className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-200 bg-white px-6 py-3 text-sm font-bold text-stone-700 transition-colors hover:border-[#b04a15]/40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-300"
                   >
-                    Visit Help Center
+                    Visit FAQ
                   </Link>
                 </div>
                 <P>

@@ -4,6 +4,7 @@ import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { AuthProvider } from "@/hooks/useAuth";
+import { NotificationsProvider } from "@/hooks/useNotifications";
 import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
@@ -13,6 +14,7 @@ import { LocationGate } from "@/components/LocationGate";
 import { CookieConsent } from "@/components/CookieConsent";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { DonorListingPrompt } from "@/components/DonorListingPrompt";
+import { DoneeRequestPrompt } from "@/components/DoneeRequestPrompt";
 import { DonorCategoryModal } from "@/components/DonorCategoryModal";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
@@ -79,28 +81,31 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>
             <AuthProvider>
-              <SuperAdminRedirect />
-              <AdminRedirect />
-              <ScrollProgress />
-              <SiteHeader />
-              <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
-              <SiteFooter />
-              <MobileBottomNav />
-              <FloatingSupportButton />
-              <Toaster
-                richColors
-                position="bottom-left"
-                offset={24}
-                visibleToasts={3}
-                duration={4500}
-                style={{ zIndex: 2147483647 }}
-                toastOptions={{ style: { zIndex: 2147483647 } }}
-              />
-              <LocationGate />
-              <CookieConsent />
-              <WelcomeOverlay />
-              <DonorCategoryModal />
-              <DonorListingPrompt />
+              <NotificationsProvider>
+                <SuperAdminRedirect />
+                <AdminRedirect />
+                <ScrollProgress />
+                <SiteHeader />
+                <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
+                <SiteFooter />
+                <MobileBottomNav />
+                <FloatingSupportButton />
+                <Toaster
+                  richColors
+                  position="bottom-left"
+                  offset={24}
+                  visibleToasts={3}
+                  duration={4500}
+                  style={{ zIndex: 2147483647 }}
+                  toastOptions={{ style: { zIndex: 2147483647 } }}
+                />
+                <LocationGate />
+                <CookieConsent />
+                <WelcomeOverlay />
+                <DonorCategoryModal />
+                <DonorListingPrompt />
+                <DoneeRequestPrompt />
+              </NotificationsProvider>
             </AuthProvider>
           </GoogleProvider>
         </NextIntlClientProvider>

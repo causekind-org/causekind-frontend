@@ -30,14 +30,16 @@ import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTransla
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
 import { BeTheChangeSection } from "@/components/BeTheChangeSection";
+import { DoneeRequestsSection } from "@/components/home/DoneeRequestsSection";
 import { ComingSoonMagnets } from "@/components/ComingSoonMagnets";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, Package, ArrowRight, BookOpen, Shirt } from "lucide-react";
 import { FEATURES } from "@/lib/features";
 import type { Campaign, ItemRequest, ItemListing, PlatformStats, RecentActivity } from "@/lib/api";
-import { getMyProfile, type UserProfile } from "@/lib/api";
+import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection }           from "@/components/home/HeroSection";
@@ -155,6 +157,7 @@ export default function HomeClient({
 }) {
   const t       = useTranslations("landing");
   const tCommon = useTranslations("common");
+  const { user } = useAuth();
 
   const [campaigns,    setCampaigns]    = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -177,6 +180,14 @@ export default function HomeClient({
     const id = setInterval(() => setActiveCampaignIndex(p => (p + 1) % campaigns.length), 5000);
     return () => clearInterval(id);
   }, [campaigns.length]);
+
+  // Item requests are private inventory (auth required) — the server-side render
+  // above can't attach the httpOnly cookie, so `initialItemRequests` is always
+  // empty. Re-fetch client-side once a logged-in user's cookie is available.
+  useEffect(() => {
+    if (!user) return;
+    getItemRequests().then(setItemRequests).catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     const handleFilter = async (e: Event) => {
@@ -376,6 +387,9 @@ export default function HomeClient({
 
         {/* "Be the Change" feature cards */}
         <BeTheChangeSection />
+
+        {/* Donee requests, filtered by the donor's chosen focus areas — hidden for donees themselves */}
+        {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={itemRequests} />}
 
         {/* Coming soon magnets */}
         <ComingSoonMagnets />

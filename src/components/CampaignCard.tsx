@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import type { Campaign } from "@/lib/api";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,15 @@ export function CampaignCard({ campaign }: Props) {
   const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
 
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ type: "spring", stiffness: 70, damping: 18 }}
+      whileHover={{ y: -6, transition: { duration: 0.2, ease: "easeOut" } }}
+      whileTap={{ scale: 0.98 }}
+      style={{ height: "100%" }}
+    >
     <HoverCard openDelay={300}>
       <HoverCardTrigger asChild>
         <Card className="card-3d card-shimmer card-glow flex flex-col h-full overflow-hidden glass-card rounded-2xl group border-stone-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 cursor-pointer">
@@ -122,5 +132,6 @@ export function CampaignCard({ campaign }: Props) {
         </div>
       </HoverCardContent>
     </HoverCard>
+    </motion.div>
   );
 }

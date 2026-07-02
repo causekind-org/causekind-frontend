@@ -12,13 +12,12 @@ import {
   type CreateListingPayload,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ImagePlus, X, MapPin, ChevronRight, ChevronLeft, CheckCircle2, Circle } from "lucide-react";
-import Image from "next/image";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Loader2, ImagePlus, X, MapPin, ChevronRight, ChevronLeft, CheckCircle2, Circle, Shield, Award, Package, Lock, Info, Ban, ListChecks } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 
@@ -59,25 +58,56 @@ const NEEDS_WORKING_STATUS = ["Electronics", "Household", "Medical aid", "Sports
 const NEEDS_DIMENSIONS     = ["Furniture", "Clothing", "Medical aid", "Tools & Equipment"];
 
 const STEPS = [
-  { id: 1, label: "Item Details" },
-  { id: 2, label: "Photos" },
-  { id: 3, label: "Location & Delivery" },
-  { id: 4, label: "Declarations" },
+  { id: 1, label: "Item Details",        sub: "What are you giving?" },
+  { id: 2, label: "Photos",              sub: "Show what you have" },
+  { id: 3, label: "Location & Delivery", sub: "Where & when?" },
+  { id: 4, label: "Declarations",        sub: "Final confirmation" },
 ];
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+const TRUST_BADGES = [
+  { icon: Shield,  title: "Identity Protected",     desc: "Your info stays private" },
+  { icon: Package, title: "AI + Human Screening",   desc: "Every item verified" },
+  { icon: Lock,    title: "OTP-Verified Handover",  desc: "Safe, confirmed delivery" },
+  { icon: Award,   title: "Donation Certificate",   desc: "Official record issued" },
+];
 
+const LISTING_GUIDELINES = [
+  { icon: CheckCircle2, title: "Accepted Categories", body: CATEGORIES.join(", ") },
+  { icon: Ban,          title: "Not Accepted",        body: "Food, medicines, used undergarments, weapons, hazardous items, adult content, cash" },
+  { icon: Shield,       title: "Your Privacy",        body: "Your name, phone and address are never shared before admin approval. Masked channels only." },
+  { icon: ListChecks,   title: "After Submission",    body: "AI screening → human review → matching → donor reconfirmation → OTP handover → Certificate." },
+];
+
+// ── Particles type ────────────────────────────────────────────────────────────
+interface Particle { id: number; x: number; y: number; angle: number; speed: number; color: string; }
+
+// ── Field wrapper ─────────────────────────────────────────────────────────────
 function Field({ label, required, hint, error, children }: { label: string; required?: boolean; hint?: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-        {label} {required && <span className="text-red-500">*</span>}
+      <Label className="text-sm font-bold text-stone-700 dark:text-stone-200">
+        {label}{required && <span className="text-[#b04a15] ml-0.5">*</span>}
       </Label>
       {children}
       {error
-        ? <p className="text-xs text-red-500 font-medium mt-0.5">{error}</p>
+        ? <p className="text-xs text-[#b04a15] font-semibold">{error}</p>
         : hint && <p className="text-xs text-stone-400">{hint}</p>}
     </div>
+  );
+}
+
+// ── Chip button ───────────────────────────────────────────────────────────────
+function Chip({ label, active, onClick, color = "terra" }: { label: string; active: boolean; onClick: () => void; color?: "terra" | "ink" | "gold" }) {
+  const colors = {
+    terra: active ? "bg-[#b04a15] text-white border-[#b04a15] shadow-[0_4px_14px_rgba(176,74,21,0.35)]" : "border-stone-300 text-stone-500 hover:border-[#b04a15] hover:text-[#b04a15]",
+    ink:   active ? "bg-[#1e3a60] text-white border-[#1e3a60] shadow-[0_4px_14px_rgba(30,58,96,0.35)]" : "border-stone-300 text-stone-500 hover:border-[#1e3a60] hover:text-[#1e3a60]",
+    gold:  active ? "bg-[#e07b3a] text-white border-[#e07b3a] shadow-[0_4px_14px_rgba(224,123,58,0.35)]" : "border-stone-300 text-stone-500 hover:border-[#e07b3a] hover:text-[#e07b3a]",
+  };
+  return (
+    <button type="button" onClick={onClick}
+      className={`px-3.5 py-1.5 rounded-full border font-bold text-xs transition-all duration-200 select-none ${colors[color]} ${active ? "scale-[1.04]" : "hover:scale-[1.02]"}`}>
+      {label}
+    </button>
   );
 }
 
@@ -93,10 +123,15 @@ export default function NewItemPage() {
   const [submitting, setSubmitting] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animDir, setAnimDir]   = useState<"forward" | "back">("forward");
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [mousePos, setMousePos] = useState({ x: -999, y: -999 });
+  const containerRef            = useRef<HTMLDivElement>(null);
 
   // ── Form state ───────────────────────────────────────────────────────────
 
-  // Step 1: Item details
+  // Step 1
   const [category, setCategory]             = useState("");
   const [subcategory, setSubcategory]       = useState("");
   const [title, setTitle]                   = useState("");
@@ -113,11 +148,12 @@ export default function NewItemPage() {
   const [weight, setWeight]                 = useState("");
   const [description, setDescription]       = useState("");
 
-  // Step 2: Photos
-  const [photos, setPhotos]   = useState<string[]>([]);
-  const photoInputRef         = useRef<HTMLInputElement>(null);
+  // Step 2
+  const [photos, setPhotos]         = useState<string[]>([]);
+  const [photoBlobs, setPhotoBlobs] = useState<string[]>([]);
+  const photoInputRef               = useRef<HTMLInputElement>(null);
 
-  // Step 3: Location & Delivery
+  // Step 3
   const [countryIso, setCountryIso]     = useState("IN");
   const [stateIso, setStateIso]         = useState("");
   const [cityValue, setCityValue]       = useState("");
@@ -134,16 +170,14 @@ export default function NewItemPage() {
   const [packaging, setPackaging]       = useState("");
   const [specialHandling, setSpecialHandling] = useState<string[]>([]);
   const [handoverDate, setHandoverDate] = useState("");
-  const [handoverSlots, setHandoverSlots] = useState<string[]>([]);
   const [deliveryRadius, setDeliveryRadius] = useState(25);
 
-  // Step 4: Declarations
+  // Step 4
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
 
-  // Validation
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   function ie(key: string) {
-    return fieldErrors[key] ? "border-red-500 focus-visible:ring-red-300/30" : "";
+    return fieldErrors[key] ? "border-[#b04a15] focus-visible:ring-[#b04a15]/30" : "";
   }
 
   const { states: stateOptions, cities: cityOptions } = useLocations(countryIso, stateIso);
@@ -154,51 +188,52 @@ export default function NewItemPage() {
     if (!authLoading && !user) router.push("/login");
   }, [user, authLoading, router]);
 
+  // ── Magnetic cursor ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    };
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
 
-  // ── Auto-save helper ──────────────────────────────────────────────────────
+  // ── Particle burst ────────────────────────────────────────────────────────
+  function spawnParticles() {
+    const colors = ["#b04a15", "#e07b3a", "#f0b97a", "#1e3a60", "#ffffff"];
+    const burst: Particle[] = Array.from({ length: 28 }, (_, i) => ({
+      id: Date.now() + i,
+      x: 0, y: 0,
+      angle: (Math.PI * 2 * i) / 28,
+      speed: 1.5 + Math.random() * 2.5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    }));
+    setParticles(burst);
+    setTimeout(() => setParticles([]), 1100);
+  }
+
+  // ── Auto-save ─────────────────────────────────────────────────────────────
   const buildPayload = useCallback((): Partial<CreateListingPayload> => {
     const city = showCityFreeText
       ? [cityFreeText, stateIso, countryIso].filter(Boolean).join(", ")
       : [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
-
-    // Collect all photos: first photo → imageUrl, rest → imageUrls (pipe-separated)
-    const allPhotos = photos;
-    const imageUrl  = allPhotos[0] ?? null;
-    const imageUrls = allPhotos.length > 1 ? allPhotos.slice(1).join("|") : undefined;
-
+    const imageUrl  = photos[0] ?? null;
+    const imageUrls = photos.length > 1 ? photos.slice(1).join("|") : undefined;
     return {
-      title: title || undefined,
-      category: category || undefined,
-      subcategory: subcategory || undefined,
-      quantity,
-      condition: condition || undefined,
-      brand: brand || undefined,
-      model: model || undefined,
-      approximateAge: approximateAge || undefined,
-      workingStatus: workingStatus || undefined,
+      title: title || undefined, category: category || undefined, subcategory: subcategory || undefined,
+      quantity, condition: condition || undefined, brand: brand || undefined, model: model || undefined,
+      approximateAge: approximateAge || undefined, workingStatus: workingStatus || undefined,
       knownDefects: noDefects ? "NONE" : (knownDefects || undefined),
-      accessoriesIncluded: accessories || undefined,
-      dimensions: dimensions || undefined,
-      approximateWeight: weight || undefined,
-      description: description || undefined,
-      imageUrl,
-      imageUrls,
-      city: city || undefined,
-      pincode: pincode || undefined,
-      locality: locality || undefined,
-      latitude,
-      longitude,
-      pickupAvailableYN: pickupYN,
-      pickupDays: pickupDays.join(",") || undefined,
-      pickupTimeSlots: pickupSlots.join(",") || undefined,
-      donorDropOffAvailable: dropOffYN,
-      maxTravelDistance: dropOffYN ? maxTravel : undefined,
-      packagingAvailable: packaging || undefined,
-      specialHandling: specialHandling.join("|") || undefined,
-      preferredHandoverDate: handoverDate || undefined,
-      preferredHandoverSlots: handoverSlots.length > 0 ? handoverSlots.join(",") : undefined,
-      maximumDeliveryRadius: deliveryRadius,
-      policyVersion: "1.0",
+      accessoriesIncluded: accessories || undefined, dimensions: dimensions || undefined,
+      approximateWeight: weight || undefined, description: description || undefined,
+      imageUrl, imageUrls, city: city || undefined, pincode: pincode || undefined,
+      locality: locality || undefined, latitude, longitude,
+      pickupAvailableYN: pickupYN, pickupDays: pickupDays.join(",") || undefined,
+      pickupTimeSlots: pickupSlots.join(",") || undefined, donorDropOffAvailable: dropOffYN,
+      maxTravelDistance: dropOffYN ? maxTravel : undefined, packagingAvailable: packaging || undefined,
+      specialHandling: specialHandling.join("|") || undefined, preferredHandoverDate: handoverDate || undefined,
+      maximumDeliveryRadius: deliveryRadius, policyVersion: "1.0",
       declarationsAccepted: declarations.every(Boolean),
     };
   }, [
@@ -207,24 +242,20 @@ export default function NewItemPage() {
     dimensions, weight, description, photos, cityFreeText, cityValue,
     stateIso, countryIso, pincode, locality, latitude, longitude,
     pickupYN, pickupDays, pickupSlots, dropOffYN, maxTravel, packaging,
-    specialHandling, handoverDate, handoverSlots, deliveryRadius, declarations, showCityFreeText,
+    specialHandling, handoverDate, deliveryRadius, declarations, showCityFreeText,
   ]);
 
   async function saveDraft() {
     setSaving(true);
     try {
       let id = draftId;
-      if (!id) {
-        const d = await createItemListingDraft();
-        setDraftId(d.id);
-        id = d.id;
-      }
+      if (!id) { const d = await createItemListingDraft(); setDraftId(d.id); id = d.id; }
       await updateItemListingDraft(id, buildPayload());
-    } catch { /* silent — draft save failures are non-critical */ }
+    } catch { /* silent */ }
     finally { setSaving(false); }
   }
 
-  // ── Step validation ───────────────────────────────────────────────────────
+  // ── Validation ────────────────────────────────────────────────────────────
   function validateStep(s: number): boolean {
     const e: Record<string, string> = {};
     if (s === 1) {
@@ -235,53 +266,53 @@ export default function NewItemPage() {
       if (!approximateAge) e.approximateAge = "Approximate age is required";
       if (!knownDefects.trim() && !noDefects) e.knownDefects = "Describe known defects or tick 'No Known Defects'";
       if (!description || description.length < 30) e.description = `Must be at least 30 characters (currently ${description.length})`;
-      if (NEEDS_WORKING_STATUS.includes(category) && !workingStatus) e.workingStatus = "Working status is required for this category";
+      if (NEEDS_WORKING_STATUS.includes(category) && !workingStatus) e.workingStatus = "Working status is required";
     }
-    if (s === 2) {
-      if (photos.length < 2) e.photos = "At least 2 photos are required";
-    }
+    if (s === 2) { if (photos.length < 2) e.photos = "At least 2 photos are required"; }
     if (s === 3) {
       const city = showCityFreeText ? cityFreeText : cityValue;
       if (!city) e.city = "City is required";
       if (!pincode) e.pincode = "PIN code is required";
     }
-    if (s === 4) {
-      if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted before submitting";
-    }
+    if (s === 4) { if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted"; }
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   }
 
   async function handleNext() {
-    if (!validateStep(step)) {
-      toast.error("Please fix the highlighted fields");
-      return;
-    }
+    if (!validateStep(step)) { toast.error("Please fix the highlighted fields"); return; }
     await saveDraft();
-    setStep((s) => Math.min(s + 1, 4));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    spawnParticles();
+    setAnimDir("forward");
+    setIsAnimating(true);
+    setTimeout(() => { setStep((s) => Math.min(s + 1, 4)); setIsAnimating(false); window.scrollTo({ top: 0, behavior: "smooth" }); }, 380);
   }
 
   function handleBack() {
     setFieldErrors({});
-    setStep((s) => Math.max(s - 1, 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setAnimDir("back");
+    setIsAnimating(true);
+    setTimeout(() => { setStep((s) => Math.max(s - 1, 1)); setIsAnimating(false); window.scrollTo({ top: 0, behavior: "smooth" }); }, 280);
   }
 
   async function handleSubmit() {
     if (!validateStep(4)) { toast.error("Please fix the highlighted fields"); return; }
-    if (!draftId) { toast.error("Draft not ready. Please wait."); return; }
     setSubmitting(true);
     try {
-      await updateItemListingDraft(draftId, { ...buildPayload(), declarationsAccepted: true });
-      await submitItemListing(draftId);
+      let id = draftId;
+      if (!id) {
+        const d = await createItemListingDraft();
+        setDraftId(d.id);
+        id = d.id;
+      }
+      await updateItemListingDraft(id, { ...buildPayload(), declarationsAccepted: true });
+      await submitItemListing(id);
+      spawnParticles();
       toast.success("Your item has been submitted for review!");
       router.push("/dashboard");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Submission failed. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
   // ── GPS ───────────────────────────────────────────────────────────────────
@@ -293,7 +324,7 @@ export default function NewItemPage() {
         try {
           const { latitude: lat, longitude: lng } = pos.coords;
           setLatitude(lat); setLongitude(lng);
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+          const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
           const data = await res.json();
           const addr = data.address;
           if (addr) {
@@ -315,364 +346,329 @@ export default function NewItemPage() {
     );
   }
 
-  // ── Photo handling ────────────────────────────────────────────────────────
+  // ── Photos ────────────────────────────────────────────────────────────────
   async function handlePhotoAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     const remaining = 5 - photos.length;
     if (remaining <= 0) { toast.error("Maximum 5 photos allowed"); return; }
     e.target.value = "";
     const selected = files.slice(0, remaining);
-    if (selected.length === 0) return;
-
+    if (!selected.length) return;
     setImageUploading(true);
+    let blobUrls: string[] = [];
     try {
-      const urls = await Promise.all(selected.map((file) => uploadListingImage(file)));
+      blobUrls = selected.map((f) => URL.createObjectURL(f));
+      const urls = await Promise.all(selected.map((f) => uploadListingImage(f)));
       setPhotos((prev) => [...prev, ...urls].slice(0, 5));
+      setPhotoBlobs((prev) => [...prev, ...blobUrls].slice(0, 5));
       toast.success(selected.length === 1 ? "Photo uploaded" : `${selected.length} photos uploaded`);
     } catch {
+      blobUrls.forEach((u) => URL.revokeObjectURL(u));
       toast.error("Image upload failed. Please try again.");
-    } finally {
-      setImageUploading(false);
     }
+    finally { setImageUploading(false); }
   }
 
   function removePhoto(idx: number) {
+    const blob = photoBlobs[idx];
+    if (blob) URL.revokeObjectURL(blob);
     setPhotos((prev) => prev.filter((_, i) => i !== idx));
+    setPhotoBlobs((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  // ── Toggle helpers ────────────────────────────────────────────────────────
-  function toggleDay(d: string) {
-    setPickupDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
-  }
-  function toggleSlot(s: string) {
-    setPickupSlots((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
-  }
-  function toggleHandling(h: string) {
-    setSpecialHandling((prev) => prev.includes(h) ? prev.filter((x) => x !== h) : [...prev, h]);
-  }
-  function toggleHandoverSlot(s: string) {
-    setHandoverSlots((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
-  }
-  function toggleDeclaration(i: number) {
-    setDeclarations((prev) => prev.map((v, idx) => idx === i ? !v : v));
-  }
+  // ── Toggles ───────────────────────────────────────────────────────────────
+  const toggle = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, val: T) =>
+    setter((prev) => prev.includes(val) ? prev.filter((x) => x !== val) : [...prev, val]);
 
   if (authLoading || !user) return null;
 
-  // ── Progress indicator ───────────────────────────────────────────────────
-  const progressBar = (
-    <div className="flex items-center gap-0 mb-8">
-      {STEPS.map((s, i) => (
-        <div key={s.id} className="flex items-center flex-1 last:flex-none">
-          <button
-            type="button"
-            onClick={() => step > s.id && setStep(s.id)}
-            className="flex flex-col items-center gap-1 group"
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all
-              ${step > s.id ? "bg-green-500 text-white" : step === s.id ? "bg-[#1e3a60] text-white ring-4 ring-[#1e3a60]/20" : "bg-stone-200 dark:bg-zinc-700 text-stone-400"}`}>
-              {step > s.id ? <CheckCircle2 className="w-4 h-4" /> : s.id}
-            </div>
-            <span className={`text-[10px] font-semibold hidden sm:block ${step === s.id ? "text-[#1e3a60]" : "text-stone-400"}`}>
-              {s.label}
-            </span>
-          </button>
-          {i < STEPS.length - 1 && (
-            <div className={`flex-1 h-0.5 mx-1 ${step > s.id ? "bg-green-400" : "bg-stone-200 dark:bg-zinc-700"}`} />
-          )}
-        </div>
-      ))}
-    </div>
-  );
-
-  // ── Step 1: Item Details ──────────────────────────────────────────────────
+  // ── Step 1 ────────────────────────────────────────────────────────────────
   const step1 = (
-    <div className="space-y-5">
-      {/* Spec §4 — Introductory policy disclosure */}
-      <div className="bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl p-4 space-y-3 text-xs text-stone-600 dark:text-stone-400">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">Accepted Categories</p>
-            <p>Education, Clothing, Furniture, Electronics, Household items, Sports equipment, Medical aids</p>
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-red-600 text-[11px] uppercase tracking-wide">Not Accepted</p>
-            <p>Food, medicines, used undergarments, weapons, hazardous/recalled items, adult content, cash equivalents</p>
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">Your Privacy</p>
-            <p>Your name, phone and address are never shared with recipients before admin approval. Contact happens through masked channels only.</p>
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-stone-700 dark:text-stone-200 text-[11px] uppercase tracking-wide">After Submission</p>
-            <p>AI screening → human review → matching → donor reconfirmation → handover with OTP → Donation Certificate issued.</p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      {/* Listing guidelines — click-to-open popover, stays open until dismissed */}
+      <div className="flex justify-end -mt-2 -mb-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#b04a15]/30 text-xs font-bold text-[#b04a15] hover:bg-[#b04a15]/5 transition-colors"
+            >
+              <Info className="w-3.5 h-3.5" /> Listing Guidelines
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-[90vw] sm:w-[520px] p-5">
+            <div className="grid sm:grid-cols-2 gap-4">
+              {LISTING_GUIDELINES.map(({ icon: Icon, title, body }) => (
+                <div key={title} className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[#b04a15]">
+                    <Icon className="w-3.5 h-3.5" />
+                    <p className="text-[11px] font-black uppercase tracking-wider">{title}</p>
+                  </div>
+                  <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Category + Subcategory */}
+      <div className="grid grid-cols-2 gap-5">
         <Field label="Category" required error={fieldErrors.category}>
           <Select value={category} onValueChange={(v) => { setCategory(v); setSubcategory(""); }}>
-            <SelectTrigger className={ie("category")}><SelectValue placeholder="Select category" /></SelectTrigger>
+            <SelectTrigger className={`h-11 ${ie("category")} focus:ring-[#b04a15]/25 focus:border-[#b04a15]`}><SelectValue placeholder="Select category" /></SelectTrigger>
             <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
         <Field label="Subcategory" required>
           <Select value={subcategory} onValueChange={setSubcategory} disabled={!category}>
-            <SelectTrigger><SelectValue placeholder="Select subcategory" /></SelectTrigger>
+            <SelectTrigger className="h-11"><SelectValue placeholder="Select subcategory" /></SelectTrigger>
             <SelectContent>{(SUBCATEGORIES[category] ?? []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
       </div>
 
-      <Field label="Item Title" required hint="Describe the item clearly. Do not include phone numbers or addresses." error={fieldErrors.title}>
-        <Input placeholder="e.g. School Textbooks Grade 5–7, Set of 6" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className={ie("title")} />
+      {/* Category chips */}
+      <div>
+        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Quick Select</p>
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map((c) => (
+            <Chip key={c} label={c} active={category === c} onClick={() => { setCategory(c); setSubcategory(""); }} color="terra" />
+          ))}
+        </div>
+      </div>
+
+      <Field label="Item Title" required hint={`${title.length}/120 — no phone numbers or addresses`} error={fieldErrors.title}>
+        <Input placeholder="e.g. School Textbooks Grade 5–7, Set of 6" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120}
+          className={`h-11 ${ie("title")} focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20`} />
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Brand" hint="Recommended for electronics & appliances">
-          <Input placeholder="e.g. Samsung, IKEA" value={brand} onChange={(e) => setBrand(e.target.value)} />
+      <div className="grid grid-cols-2 gap-5">
+        <Field label="Brand" hint="Recommended for electronics">
+          <Input placeholder="e.g. Samsung, IKEA" value={brand} onChange={(e) => setBrand(e.target.value)} className="h-11 focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20" />
         </Field>
         <Field label="Model">
-          <Input placeholder="e.g. Galaxy A32" value={model} onChange={(e) => setModel(e.target.value)} />
+          <Input placeholder="e.g. Galaxy A32" value={model} onChange={(e) => setModel(e.target.value)} className="h-11 focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20" />
         </Field>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-5">
         <Field label="Quantity" required error={fieldErrors.quantity}>
-          <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={ie("quantity")} />
+          <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={`h-11 ${ie("quantity")}`} />
         </Field>
         <Field label="Approximate Age" required error={fieldErrors.approximateAge}>
           <Select value={approximateAge} onValueChange={setApproximateAge}>
-            <SelectTrigger className={ie("approximateAge")}><SelectValue placeholder="Select age" /></SelectTrigger>
+            <SelectTrigger className={`h-11 ${ie("approximateAge")}`}><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>{AGE_RANGES.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
         <Field label="Condition" required error={fieldErrors.condition}>
           <Select value={condition} onValueChange={setCondition}>
-            <SelectTrigger className={ie("condition")}><SelectValue placeholder="Select" /></SelectTrigger>
+            <SelectTrigger className={`h-11 ${ie("condition")}`}><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>{CONDITIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
       </div>
 
+      {/* Condition chips */}
+      <div className="flex flex-wrap gap-2">
+        {CONDITIONS.map((c) => (
+          <Chip key={c} label={c} active={condition === c} onClick={() => setCondition(c)} color="ink" />
+        ))}
+      </div>
+
       {NEEDS_WORKING_STATUS.includes(category) && (
         <Field label="Working Status" required error={fieldErrors.workingStatus}>
-          <Select value={workingStatus} onValueChange={setWorkingStatus}>
-            <SelectTrigger className={ie("workingStatus")}><SelectValue placeholder="Select working status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="WORKING">Working</SelectItem>
-              <SelectItem value="PARTIALLY_WORKING">Partially Working</SelectItem>
-              <SelectItem value="NOT_WORKING">Not Working</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-3">
+            {["WORKING", "PARTIALLY_WORKING", "NOT_WORKING"].map((ws) => (
+              <Chip key={ws} label={ws.replace("_", " ")} active={workingStatus === ws} onClick={() => setWorkingStatus(ws)}
+                color={ws === "WORKING" ? "ink" : ws === "PARTIALLY_WORKING" ? "gold" : "terra"} />
+            ))}
+          </div>
         </Field>
       )}
 
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="noDefects"
-            checked={noDefects}
-            onChange={(e) => { setNoDefects(e.target.checked); if (e.target.checked) setKnownDefects(""); }}
-            className="rounded"
-          />
-          <label htmlFor="noDefects" className="text-sm font-semibold text-stone-700 dark:text-stone-300">No Known Defects</label>
-        </div>
+        <label className="flex items-center gap-2.5 cursor-pointer group">
+          <div
+            onClick={() => { setNoDefects(!noDefects); if (!noDefects) setKnownDefects(""); }}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer
+              ${noDefects ? "bg-[#b04a15] border-[#b04a15]" : "border-stone-300 group-hover:border-[#b04a15]"}`}>
+            {noDefects && <CheckCircle2 className="w-3 h-3 text-white" />}
+          </div>
+          <span className="text-sm font-bold text-stone-700 dark:text-stone-200">No Known Defects</span>
+        </label>
         {!noDefects && (
           <Field label="Known Defects" required hint="Be honest — this protects both you and the recipient." error={fieldErrors.knownDefects}>
-            <Textarea
-              rows={2}
-              placeholder="e.g. Minor scratch on right side, screen has hairline crack"
-              value={knownDefects}
-              onChange={(e) => setKnownDefects(e.target.value)}
-              className={ie("knownDefects")}
-            />
+            <Textarea rows={2} placeholder="e.g. Minor scratch on right side, screen has hairline crack"
+              value={knownDefects} onChange={(e) => setKnownDefects(e.target.value)}
+              className={`${ie("knownDefects")} focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20`} />
           </Field>
         )}
       </div>
 
-      <Field label="Accessories Included" hint="List any cables, manuals, chargers, remotes, etc.">
-        <Input placeholder="e.g. Original charger, remote control, manual" value={accessories} onChange={(e) => setAccessories(e.target.value)} />
+      <Field label="Accessories Included" hint="List cables, manuals, chargers, remotes, etc.">
+        <Input placeholder="e.g. Original charger, remote control, manual" value={accessories} onChange={(e) => setAccessories(e.target.value)} className="h-11 focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20" />
       </Field>
 
       {NEEDS_DIMENSIONS.includes(category) && (
         <div className="grid grid-cols-2 gap-4">
           <Field label="Dimensions / Size" hint="e.g. 180×90×75 cm or XL">
-            <Input placeholder="e.g. 120×60×75 cm" value={dimensions} onChange={(e) => setDimensions(e.target.value)} />
+            <Input placeholder="e.g. 120×60×75 cm" value={dimensions} onChange={(e) => setDimensions(e.target.value)} className="h-11" />
           </Field>
           <Field label="Approximate Weight">
-            <Input placeholder="e.g. 25 kg" value={weight} onChange={(e) => setWeight(e.target.value)} />
+            <Input placeholder="e.g. 25 kg" value={weight} onChange={(e) => setWeight(e.target.value)} className="h-11" />
           </Field>
         </div>
       )}
 
-      <Field label="Description" required hint={`${description.length}/2000 characters. Do not include contact details.`} error={fieldErrors.description}>
-        <Textarea
-          rows={5}
-          placeholder="Describe the item in detail — its condition, what it comes with, why you're donating it, and who it may be suitable for."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={2000}
-          className={ie("description")}
-        />
+      <Field label="Description" required hint={`${description.length}/2000 — no contact details`} error={fieldErrors.description}>
+        <Textarea rows={5} placeholder="Describe the item in detail — condition, what it comes with, why you're donating it, who it may suit."
+          value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000}
+          className={`${ie("description")} focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20`} />
       </Field>
     </div>
   );
 
-  // ── Step 2: Photos ────────────────────────────────────────────────────────
+  // ── Step 2 ────────────────────────────────────────────────────────────────
   const step2 = (
-    <div className="space-y-5">
-      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300 space-y-1">
-        <p className="font-bold">Photo guidelines (minimum 2 required):</p>
-        <ul className="list-disc ml-4 space-y-0.5 text-xs">
-          <li>Front view of the item</li>
-          <li>Full / side view</li>
-          <li>Any visible defects or damage (if applicable)</li>
-          <li>Do not include faces, personal documents, phone numbers or addresses in photos</li>
-        </ul>
+    <div className="space-y-6">
+      <div className="rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-4">
+        <p className="text-xs font-black text-[#1e3a60] uppercase tracking-widest mb-2">Photo Guidelines — Minimum 2 Required</p>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-stone-500">
+          {["Front view of the item", "Full or side view", "Visible defects or damage", "No faces, documents, phone numbers"].map((g) => (
+            <div key={g} className="flex items-start gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#e07b3a] mt-1 shrink-0" />
+              <span>{g}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoAdd} />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {photos.map((p, i) => (
-          <div key={i} className="relative group aspect-square rounded-xl overflow-hidden border bg-stone-100 dark:bg-zinc-800">
-            <Image src={p} alt={`Photo ${i + 1}`} fill className="object-cover" />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
-            <button
-              type="button"
-              onClick={() => removePhoto(i)}
-              className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-            >
+          <div key={i} className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-stone-200 bg-stone-100 dark:bg-zinc-800 shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photoBlobs[i] ?? p} alt={`Photo ${i + 1}`} className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
+            <button type="button" onClick={() => removePhoto(i)}
+              className="absolute top-2 right-2 rounded-full bg-[#b04a15] p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
               <X className="w-3 h-3" />
             </button>
-            {i === 0 && <span className="absolute bottom-2 left-2 text-[10px] bg-[#1e3a60] text-white rounded px-1.5 py-0.5 font-bold">MAIN</span>}
+            {i === 0 && (
+              <span className="absolute bottom-2 left-2 text-[9px] bg-[#1e3a60] text-white rounded-full px-2 py-0.5 font-black tracking-wider">MAIN</span>
+            )}
           </div>
         ))}
         {photos.length < 5 && (
-          <button
-            type="button"
-            onClick={() => photoInputRef.current?.click()}
-            disabled={imageUploading}
-            className="aspect-square rounded-xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400 hover:border-[#1e3a60] hover:text-[#1e3a60] transition-colors"
-          >
-            {imageUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <ImagePlus className="w-6 h-6" />}
-            <span className="text-xs font-semibold">{imageUploading ? "Uploading..." : photos.length === 0 ? "Add Photos" : "Add More"}</span>
-            <span className="text-[10px]">{photos.length}/5</span>
+          <button type="button" onClick={() => photoInputRef.current?.click()} disabled={imageUploading}
+            className="aspect-square rounded-2xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400
+              hover:border-[#b04a15] hover:text-[#b04a15] transition-all hover:bg-[#b04a15]/4 group">
+            {imageUploading ? <Loader2 className="w-7 h-7 animate-spin" /> : <ImagePlus className="w-7 h-7 group-hover:scale-110 transition-transform" />}
+            <span className="text-xs font-bold">{imageUploading ? "Uploading…" : photos.length === 0 ? "Add Photos" : "Add More"}</span>
+            <span className="text-[10px] font-semibold text-stone-300">{photos.length}/5</span>
           </button>
         )}
       </div>
 
-      {fieldErrors.photos && (
-        <p className="text-sm text-red-500 font-semibold">{fieldErrors.photos}</p>
-      )}
+      {fieldErrors.photos && <p className="text-sm text-[#b04a15] font-bold">{fieldErrors.photos}</p>}
       {!fieldErrors.photos && photos.length < 2 && (
-        <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold">
-          {photos.length === 0 ? "Please add at least 2 photos to continue." : "Please add 1 more photo (minimum 2 required)."}
-        </p>
+        <div className="flex items-center gap-2 text-sm text-amber-600 font-semibold">
+          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          {photos.length === 0 ? "Please add at least 2 photos to continue." : "Add 1 more photo (minimum 2 required)."}
+        </div>
       )}
     </div>
   );
 
-  // ── Step 3: Location & Delivery ───────────────────────────────────────────
+  // ── Step 3 ────────────────────────────────────────────────────────────────
   const step3 = (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Location */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5" /> Item Location
-          </Label>
-          <button
-            type="button"
-            onClick={handleGPS}
-            disabled={gpsLoading}
-            className="text-xs font-bold text-[#b04a15] hover:underline disabled:opacity-50"
-          >
-            {gpsLoading ? "Detecting…" : "Use GPS 🎯"}
+          <p className="text-xs font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-[#b04a15]" /> Item Location
+          </p>
+          <button type="button" onClick={handleGPS} disabled={gpsLoading}
+            className="text-xs font-bold text-[#b04a15] hover:underline disabled:opacity-50 flex items-center gap-1">
+            {gpsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "📍"} {gpsLoading ? "Detecting…" : "Use GPS"}
           </button>
         </div>
-
         <div className="grid grid-cols-2 gap-3">
           <Field label="State / Province" required>
-            <select
-              value={stateIso}
-              onChange={(e) => { setStateIso(e.target.value); setCityValue(""); setCityFreeText(""); }}
-              className="w-full h-10 rounded-md border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-3"
-            >
+            <select value={stateIso} onChange={(e) => { setStateIso(e.target.value); setCityValue(""); setCityFreeText(""); }}
+              className="w-full h-11 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-3 focus:outline-none focus:ring-2 focus:ring-[#b04a15]/20 focus:border-[#b04a15] transition-all">
               <option value="">Select state</option>
               {stateOptions.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </Field>
           <Field label="City" required error={fieldErrors.city}>
             {showCityFreeText ? (
-              <Input placeholder="Enter city" value={cityFreeText} onChange={(e) => setCityFreeText(e.target.value)} className={ie("city")} />
+              <Input placeholder="Enter city" value={cityFreeText} onChange={(e) => setCityFreeText(e.target.value)} className={`h-11 ${ie("city")}`} />
             ) : (
-              <select
-                value={cityValue}
-                onChange={(e) => setCityValue(e.target.value)}
-                disabled={!stateIso}
-                className={`w-full h-10 rounded-md border text-sm px-3 disabled:opacity-50 bg-white dark:bg-zinc-900 ${fieldErrors.city ? "border-red-500" : "border-stone-200 dark:border-zinc-700"}`}
-              >
+              <select value={cityValue} onChange={(e) => setCityValue(e.target.value)} disabled={!stateIso}
+                className={`w-full h-11 rounded-lg border text-sm px-3 disabled:opacity-50 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#b04a15]/20 focus:border-[#b04a15] transition-all
+                  ${fieldErrors.city ? "border-[#b04a15]" : "border-stone-200 dark:border-zinc-700"}`}>
                 <option value="">Select city</option>
                 {cityOptions.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             )}
           </Field>
-          <Field label="Locality / Area" hint="Neighbourhood or area within city">
-            <Input placeholder="e.g. Koregaon Park, Andheri West" value={locality} onChange={(e) => setLocality(e.target.value)} />
+          <Field label="Locality / Area" hint="Neighbourhood or area">
+            <Input placeholder="e.g. Koregaon Park, Andheri West" value={locality} onChange={(e) => setLocality(e.target.value)} className="h-11 focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20" />
           </Field>
           <Field label="PIN Code" required error={fieldErrors.pincode}>
-            <Input placeholder="e.g. 411001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} className={ie("pincode")} />
+            <Input placeholder="e.g. 411001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} className={`h-11 ${ie("pincode")}`} />
           </Field>
         </div>
       </div>
 
-      {/* Pickup availability */}
-      <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <input type="checkbox" id="pickupYN" checked={pickupYN} onChange={(e) => setPickupYN(e.target.checked)} className="rounded" />
-          <label htmlFor="pickupYN" className="text-sm font-semibold text-stone-700 dark:text-stone-300">Pickup from my location is available</label>
-        </div>
+      {/* Pickup */}
+      <div className="rounded-2xl border border-stone-200 dark:border-zinc-700 p-5 space-y-4">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <div onClick={() => setPickupYN(!pickupYN)}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer
+              ${pickupYN ? "bg-[#1e3a60] border-[#1e3a60]" : "border-stone-300 hover:border-[#1e3a60]"}`}>
+            {pickupYN && <CheckCircle2 className="w-3 h-3 text-white" />}
+          </div>
+          <span className="text-sm font-bold text-stone-700 dark:text-stone-200">Pickup from my location is available</span>
+        </label>
         {pickupYN && (
-          <>
+          <div className="space-y-4 pt-1">
             <div>
-              <p className="text-xs font-semibold text-stone-500 mb-2">Available Days</p>
+              <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2.5">Available Days</p>
               <div className="flex flex-wrap gap-2">
-                {DAYS.map((d) => (
-                  <button key={d} type="button" onClick={() => toggleDay(d)}
-                    className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${pickupDays.includes(d) ? "bg-[#1e3a60] text-white border-[#1e3a60]" : "border-stone-300 text-stone-500 hover:border-[#1e3a60]"}`}>
-                    {d.slice(0, 3)}
-                  </button>
-                ))}
+                <Chip label="Any Day" active={pickupDays.includes("ANY")} onClick={() => { if (pickupDays.includes("ANY")) { setPickupDays([]); } else { setPickupDays(["ANY"]); } }} color="ink" />
+                {DAYS.map((d) => <Chip key={d} label={d.slice(0, 3)} active={pickupDays.includes(d) && !pickupDays.includes("ANY")} onClick={() => { if (pickupDays.includes("ANY")) { setPickupDays([d]); } else { toggle(setPickupDays, d); } }} color="ink" />)}
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold text-stone-500 mb-2">Available Time Slots</p>
+              <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2.5">Time Slots</p>
               <div className="flex flex-wrap gap-2">
-                {TIME_SLOTS.map((s) => (
-                  <button key={s} type="button" onClick={() => toggleSlot(s)}
-                    className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${pickupSlots.includes(s) ? "bg-[#1e3a60] text-white border-[#1e3a60]" : "border-stone-300 text-stone-500 hover:border-[#1e3a60]"}`}>
-                    {s}
-                  </button>
-                ))}
+                <Chip label="Anytime" active={pickupSlots.includes("ANYTIME")} onClick={() => { if (pickupSlots.includes("ANYTIME")) { setPickupSlots([]); } else { setPickupSlots(["ANYTIME"]); } }} color="ink" />
+                {TIME_SLOTS.map((s) => <Chip key={s} label={s} active={pickupSlots.includes(s) && !pickupSlots.includes("ANYTIME")} onClick={() => { if (pickupSlots.includes("ANYTIME")) { setPickupSlots([s]); } else { toggle(setPickupSlots, s); } }} color="ink" />)}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {/* Drop-off */}
-      <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <input type="checkbox" id="dropOff" checked={dropOffYN} onChange={(e) => setDropOffYN(e.target.checked)} className="rounded" />
-          <label htmlFor="dropOff" className="text-sm font-semibold text-stone-700 dark:text-stone-300">I can drop off the item</label>
-        </div>
+      <div className="rounded-2xl border border-stone-200 dark:border-zinc-700 p-5 space-y-4">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <div onClick={() => setDropOffYN(!dropOffYN)}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer
+              ${dropOffYN ? "bg-[#e07b3a] border-[#e07b3a]" : "border-stone-300 hover:border-[#e07b3a]"}`}>
+            {dropOffYN && <CheckCircle2 className="w-3 h-3 text-white" />}
+          </div>
+          <span className="text-sm font-bold text-stone-700 dark:text-stone-200">I can drop off the item</span>
+        </label>
         {dropOffYN && (
           <Field label="Maximum travel distance (km)">
-            <Input type="number" min={1} max={200} value={maxTravel} onChange={(e) => setMaxTravel(Number(e.target.value))} />
+            <Input type="number" min={1} max={200} value={maxTravel} onChange={(e) => setMaxTravel(Number(e.target.value))} className="h-11 w-40" />
           </Field>
         )}
       </div>
@@ -680,7 +676,7 @@ export default function NewItemPage() {
       {/* Packaging */}
       <Field label="Packaging Available">
         <Select value={packaging} onValueChange={setPackaging}>
-          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+          <SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="YES">Yes — I can pack it safely</SelectItem>
             <SelectItem value="NO">No — recipient needs to bring packaging</SelectItem>
@@ -691,184 +687,300 @@ export default function NewItemPage() {
 
       {/* Special handling */}
       <div className="space-y-2">
-        <Label className="text-sm font-semibold text-stone-700 dark:text-stone-300">Special Handling Notes</Label>
+        <Label className="text-sm font-bold text-stone-700 dark:text-stone-200">Special Handling Notes</Label>
         <div className="flex flex-wrap gap-2">
-          {SPECIAL_HANDLING_OPTIONS.map((h) => (
-            <button key={h} type="button" onClick={() => toggleHandling(h)}
-              className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${specialHandling.includes(h) ? "bg-amber-500 text-white border-amber-500" : "border-stone-300 text-stone-500 hover:border-amber-400"}`}>
-              {h}
-            </button>
-          ))}
+          {SPECIAL_HANDLING_OPTIONS.map((h) => <Chip key={h} label={h} active={specialHandling.includes(h)} onClick={() => toggle(setSpecialHandling, h)} color="gold" />)}
         </div>
       </div>
 
-      {/* Handover date + time slots */}
-      <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
-        <p className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Preferred Handover Period</p>
+      {/* Handover */}
+      <div className="rounded-2xl border border-stone-200 dark:border-zinc-700 p-5 space-y-4">
+        <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Preferred Handover</p>
         <Field label="Earliest Available Date">
-          <Input type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+          <Input type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="h-11 w-48" />
         </Field>
-        <div>
-          <p className="text-xs font-semibold text-stone-500 mb-2">Preferred Time Slots for Handover</p>
-          <div className="flex flex-wrap gap-2">
-            {TIME_SLOTS.map((s) => (
-              <button key={s} type="button" onClick={() => toggleHandoverSlot(s)}
-                className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${handoverSlots.includes(s) ? "bg-emerald-600 text-white border-emerald-600" : "border-stone-300 text-stone-500 hover:border-emerald-400"}`}>
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Delivery radius */}
       <Field label="Maximum Delivery Radius (km)" hint="How far can this item travel to reach a recipient?">
-        <Input type="number" min={1} value={deliveryRadius} onChange={(e) => setDeliveryRadius(Number(e.target.value))} />
+        <Input type="number" min={1} value={deliveryRadius} onChange={(e) => setDeliveryRadius(Number(e.target.value))} className="h-11 w-40" />
       </Field>
     </div>
   );
 
-  // ── Step 4: Declarations ──────────────────────────────────────────────────
+  // ── Step 4 ────────────────────────────────────────────────────────────────
   const step4 = (
-    <div className="space-y-5">
-      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-        <p className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-1">Mandatory Donor Declarations</p>
-        <p className="text-xs text-amber-700 dark:text-amber-400">All declarations must be accepted before your listing can be submitted for review.</p>
+    <div className="space-y-6">
+      <div className="rounded-2xl bg-[#f0b97a]/15 border border-[#f0b97a]/40 p-4">
+        <p className="text-sm font-black text-[#b04a15] mb-1">Mandatory Donor Declarations</p>
+        <p className="text-xs text-stone-600 dark:text-stone-400">All 8 declarations must be accepted before your listing can be submitted.</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {DECLARATIONS.map((d, i) => (
-          <label
-            key={i}
-            className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${declarations[i] ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700" : "border-stone-200 dark:border-zinc-700 hover:border-stone-300"}`}
-          >
-            <div className="mt-0.5 shrink-0">
+          <label key={i} onClick={() => setDeclarations((prev) => prev.map((v, idx) => idx === i ? !v : v))}
+            className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200
+              ${declarations[i]
+                ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700 shadow-[0_0_0_1px_rgba(74,222,128,0.2)]"
+                : "border-stone-200 dark:border-zinc-700 hover:border-stone-300 hover:bg-white/50"}`}>
+            <div className="mt-0.5 shrink-0 transition-transform duration-200" style={{ transform: declarations[i] ? "scale(1.1)" : "scale(1)" }}>
               {declarations[i]
                 ? <CheckCircle2 className="w-5 h-5 text-green-500" />
                 : <Circle className="w-5 h-5 text-stone-300" />}
             </div>
-            <div>
-              <input type="checkbox" className="sr-only" checked={declarations[i]} onChange={() => toggleDeclaration(i)} />
-              <span className="text-sm text-stone-700 dark:text-stone-300">{d}</span>
-            </div>
+            <span className="text-sm text-stone-700 dark:text-stone-300 select-none">{d}</span>
           </label>
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setDeclarations(new Array(DECLARATIONS.length).fill(true))}
-        className="text-xs font-bold text-[#1e3a60] hover:underline"
-      >
-        Accept all declarations
+      <button type="button" onClick={() => setDeclarations(new Array(DECLARATIONS.length).fill(true))}
+        className="text-xs font-black text-[#1e3a60] hover:text-[#b04a15] underline underline-offset-2 transition-colors">
+        Accept all declarations at once →
       </button>
 
-      {fieldErrors.declarations && (
-        <p className="text-sm text-red-500 font-semibold">{fieldErrors.declarations}</p>
-      )}
+      {fieldErrors.declarations && <p className="text-sm text-[#b04a15] font-bold">{fieldErrors.declarations}</p>}
 
-      <div className="bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl p-4 text-xs text-stone-500 dark:text-stone-400 space-y-1">
-        <p className="font-semibold text-stone-600 dark:text-stone-300">What happens after submission?</p>
-        <p>1. Our team reviews your listing (usually within 24–48 hours)</p>
-        <p>2. You will be notified when it is approved and eligible for matching</p>
-        <p>3. When a recipient is found, we reconfirm availability with you first</p>
-        <p>4. Both parties must consent before contact details are shared</p>
-        <p>5. Handover is verified via OTP — then your donation certificate is issued</p>
+      <div className="rounded-2xl bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 p-4 space-y-2">
+        <p className="text-xs font-black text-stone-600 dark:text-stone-300 uppercase tracking-widest">What happens next</p>
+        {[
+          "Our team reviews your listing (usually 24–48 hours)",
+          "You're notified when approved and eligible for matching",
+          "When a recipient is found, we reconfirm availability with you first",
+          "Both parties consent before any contact details are shared",
+          "Handover is verified via OTP — then your certificate is issued",
+        ].map((s, i) => (
+          <div key={i} className="flex items-start gap-2 text-xs text-stone-500">
+            <span className="font-black text-[#b04a15] shrink-0">{i + 1}.</span>
+            <span>{s}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
-      {/* Left stripe */}
-      <div className="hidden lg:flex lg:w-[30%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-800 shrink-0">
-        <div className="absolute -top-24 left-1/4 h-[300px] w-[300px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 right-1/4 h-[300px] w-[300px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
+    <div ref={containerRef} className="min-h-screen flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950 relative overflow-hidden">
 
-        <div className="relative z-10 space-y-6">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3 py-1 self-start inline-block">
-            Verified Giving
-          </span>
-          <h2 className="text-white text-3xl font-extrabold leading-tight tracking-tight font-serif mt-4">
-            List an Item
-          </h2>
-          <p className="text-stone-300 text-sm leading-relaxed">
-            Offer items you no longer need. Verified recipients in your area will be matched carefully and privately.
-          </p>
+      {/* ── Magnetic cursor glow ── */}
+      <div className="pointer-events-none fixed z-0"
+        style={{ left: mousePos.x, top: mousePos.y, width: 380, height: 380,
+          transform: "translate(-50%,-50%)",
+          background: "radial-gradient(circle, rgba(176,74,21,0.09) 0%, transparent 70%)",
+          transition: "left 0.12s ease, top 0.12s ease" }} />
 
-          <div className="space-y-3 pt-4">
-            {[
-              "Your identity is protected throughout",
-              "Items are screened before matching",
-              "Handover is verified — not self-declared",
-              "You receive a Donation Certificate",
-            ].map((point) => (
-              <div key={point} className="flex items-start gap-2 text-stone-300 text-xs">
-                <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                <span>{point}</span>
-              </div>
-            ))}
+      {/* ── Particle burst ── */}
+      {particles.map((p, i) => (
+        <div key={p.id} className="ck-particle pointer-events-none fixed z-50 w-2.5 h-2.5 rounded-full"
+          style={{
+            left: "50%", top: "40%",
+            backgroundColor: p.color,
+            "--px": `${Math.cos(p.angle) * 120 * p.speed}px`,
+            "--py": `${Math.sin(p.angle) * 90 * p.speed}px`,
+            animationDelay: `${i * 14}ms`,
+          } as React.CSSProperties} />
+      ))}
+
+      {/* ════════════════════════════════
+          LEFT SIDEBAR
+      ════════════════════════════════ */}
+      <aside className="hidden lg:flex lg:w-[280px] xl:w-[300px] shrink-0 flex-col relative overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #0e0904 0%, #1a0f07 50%, #0c1621 100%)" }}>
+
+        {/* Floating orbs */}
+        <div className="ck-orb-a absolute top-16 left-8 w-56 h-56 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(176,74,21,0.22) 0%, transparent 70%)", filter: "blur(40px)" }} />
+        <div className="ck-orb-b absolute bottom-24 right-4 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(30,58,96,0.30) 0%, transparent 70%)", filter: "blur(36px)" }} />
+        <div className="ck-orb-a absolute top-1/2 left-1/3 w-32 h-32 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(240,185,122,0.10) 0%, transparent 70%)", filter: "blur(28px)", animationDelay: "3s" }} />
+
+        <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
+          {/* Badge */}
+          <div className="mb-8">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3.5 py-1.5">
+              <Shield className="w-3 h-3" /> Verified Giving
+            </span>
           </div>
+
+          {/* Title */}
+          <div className="mb-10">
+            <h1 className="text-white text-4xl xl:text-5xl font-black leading-none tracking-tight mb-3"
+              style={{ fontFamily: "serif" }}>
+              List an<br />
+              <span style={{ background: "linear-gradient(90deg, #e07b3a, #f0b97a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Item</span>
+            </h1>
+            <p className="text-stone-400 text-sm leading-relaxed">
+              Offer items you no longer need. Verified recipients will be matched carefully and privately.
+            </p>
+          </div>
+
+          {/* Step rail */}
+          <div className="space-y-1 mb-10">
+            {STEPS.map((s, i) => {
+              const done   = step > s.id;
+              const active = step === s.id;
+              return (
+                <div key={s.id}>
+                  <button type="button" onClick={() => done && setStep(s.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group text-left
+                      ${active ? "bg-white/8 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)]" : "hover:bg-white/4"}`}>
+                    {/* Step circle */}
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0 transition-all duration-300
+                      ${done   ? "bg-green-500/20 text-green-400 shadow-[0_0_14px_rgba(74,222,128,0.25)]"
+                              : active ? "text-white shadow-[0_0_20px_rgba(176,74,21,0.6)]" : "bg-white/6 text-white/30"}`}
+                      style={active ? { background: "linear-gradient(135deg, #b04a15, #e07b3a)" } : {}}>
+                      {done ? <CheckCircle2 className="w-4 h-4" /> : s.id}
+                    </div>
+                    <div className={`transition-all duration-300 ${active ? "opacity-100" : done ? "opacity-60" : "opacity-30"}`}>
+                      <p className="text-white text-sm font-bold leading-tight">{s.label}</p>
+                      <p className="text-white/40 text-[11px]">{s.sub}</p>
+                    </div>
+                    {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#e07b3a]" style={{ boxShadow: "0 0 6px #e07b3a" }} />}
+                  </button>
+                  {i < STEPS.length - 1 && (
+                    <div className="ml-7.5 pl-3.5 h-4 flex items-center">
+                      <div className={`w-px h-full transition-all duration-500 ${done ? "bg-green-500/40" : "bg-white/8"}`} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Trust badges */}
+          <div className="space-y-2.5 mt-auto">
+            {TRUST_BADGES.map((b, i) => {
+              const Icon = b.icon;
+              return (
+                <div key={b.title} className="ck-badge-enter flex items-center gap-3 px-3.5 py-3 rounded-xl"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    backdropFilter: "blur(12px)",
+                    animationDelay: `${i * 80}ms`,
+                  }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: "rgba(176,74,21,0.18)", border: "1px solid rgba(176,74,21,0.25)" }}>
+                    <Icon className="w-4 h-4 text-[#e07b3a]" />
+                  </div>
+                  <div>
+                    <p className="text-white text-xs font-bold leading-tight">{b.title}</p>
+                    <p className="text-white/35 text-[10px]">{b.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-6 text-[9px] font-black uppercase tracking-[0.2em] text-white/15">CauseKind India · 2026</p>
+        </div>
+      </aside>
+
+      {/* ════════════════════════════════
+          RIGHT PANEL
+      ════════════════════════════════ */}
+      <div className="flex-1 min-w-0 relative overflow-y-auto">
+
+        {/* Giant watermark step number */}
+        <div className="ck-numfloat pointer-events-none select-none absolute right-0 top-0 text-[22vw] lg:text-[18vw] font-black leading-none z-0"
+          style={{ color: "rgba(176,74,21,0.045)", lineHeight: 1, right: "-2vw", top: "-1vw" }}>
+          {step}
         </div>
 
-        <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          CauseKind India · 2026
-        </div>
-      </div>
+        <div className="relative z-10 max-w-[860px] mx-auto px-6 sm:px-10 lg:px-16 py-10 lg:py-14">
 
-      {/* Right panel: form */}
-      <div className="flex-1 px-5 py-10 lg:px-12 overflow-y-auto">
-        <div className="max-w-[620px] mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Step {step} of {STEPS.length}</p>
-              <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">{STEPS[step - 1].label}</h1>
+          {/* ── Mobile step indicator ── */}
+          <div className="lg:hidden mb-6">
+            <div className="flex items-center gap-0">
+              {STEPS.map((s, i) => (
+                <div key={s.id} className="flex items-center flex-1 last:flex-none">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black shrink-0 transition-all
+                    ${step > s.id ? "bg-green-500 text-white" : step === s.id ? "text-white shadow-[0_0_12px_rgba(176,74,21,0.5)]" : "bg-stone-200 text-stone-400"}`}
+                    style={step === s.id ? { background: "linear-gradient(135deg,#b04a15,#e07b3a)" } : {}}>
+                    {step > s.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : s.id}
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-1 transition-all duration-500 ${step > s.id ? "bg-green-400" : "bg-stone-200 dark:bg-zinc-700"}`} />
+                  )}
+                </div>
+              ))}
             </div>
-            {saving && <span className="text-xs text-stone-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Saving…</span>}
           </div>
 
-          {progressBar}
+          {/* ── Header ── */}
+          <div className="flex items-start justify-between mb-8">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#b04a15] mb-1">
+                Step {step} of {STEPS.length}
+              </p>
+              <h2 className="text-3xl xl:text-4xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-none">
+                {STEPS[step - 1].label}
+              </h2>
+              <p className="text-stone-400 text-sm mt-1">{STEPS[step - 1].sub}</p>
+            </div>
+            {saving && (
+              <span className="text-xs text-stone-400 flex items-center gap-1.5 mt-1">
+                <Loader2 className="w-3 h-3 animate-spin text-[#b04a15]" /> Saving…
+              </span>
+            )}
+          </div>
 
-          {/* Step content */}
-          {step === 1 && step1}
-          {step === 2 && step2}
-          {step === 3 && step3}
-          {step === 4 && step4}
+          {/* ── Progress rail ── */}
+          <div className="relative mb-8 h-1.5 rounded-full bg-stone-200 dark:bg-zinc-800 overflow-hidden">
+            <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+              style={{
+                width: `${((step - 1) / (STEPS.length - 1)) * 100}%`,
+                background: "linear-gradient(90deg, #b04a15, #e07b3a, #f0b97a)",
+                boxShadow: "0 0 12px rgba(224,123,58,0.5)",
+              }} />
+          </div>
 
-          {/* Navigation */}
-          <div className="flex gap-3 pt-2 pb-8">
+          {/* ── Step content panel ── */}
+          <div
+            className={`rounded-3xl p-8 sm:p-10 mb-6 ${isAnimating ? "ck-step-exit" : animDir === "forward" ? "ck-step-enter-fwd" : "ck-step-enter-back"}`}
+            style={{
+              background: "rgba(255,255,255,0.75)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.5)",
+              boxShadow: "0 20px 60px -12px rgba(176,74,21,0.10), 0 4px 20px -4px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
+            }}>
+            {step === 1 && step1}
+            {step === 2 && step2}
+            {step === 3 && step3}
+            {step === 4 && step4}
+          </div>
+
+          {/* ── Navigation ── */}
+          <div className="flex items-center gap-3 pb-6">
             {step > 1 && (
-              <Button type="button" variant="outline" onClick={handleBack} className="rounded-xl px-5 font-semibold">
-                <ChevronLeft className="w-4 h-4 mr-1" /> Back
-              </Button>
+              <button type="button" onClick={handleBack}
+                className="flex items-center gap-1.5 px-5 py-3 rounded-2xl border-2 border-stone-200 dark:border-zinc-700 font-bold text-sm text-stone-600 dark:text-stone-300
+                  hover:border-stone-400 hover:bg-white/80 transition-all active:scale-[0.97]">
+                <ChevronLeft className="w-4 h-4" /> Back
+              </button>
             )}
+
+            <div className="flex-1" />
+
             {step < 4 ? (
-              <Button
-                type="button"
-                onClick={handleNext}
-                disabled={saving}
-                className="bg-[#1e3a60] hover:bg-[#162d4a] text-white rounded-xl px-6 font-bold ml-auto"
-              >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Next: {STEPS[step].label} <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+              <button type="button" onClick={handleNext} disabled={saving}
+                className="flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-60 shadow-[0_6px_24px_rgba(176,74,21,0.35)] hover:shadow-[0_8px_32px_rgba(176,74,21,0.50)] hover:-translate-y-0.5"
+                style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}>
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                Next: {STEPS[step].label} <ChevronRight className="w-4 h-4" />
+              </button>
             ) : (
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={submitting || !declarations.every(Boolean)}
-                className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-8 font-bold ml-auto disabled:opacity-50"
-              >
-                {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Submitting…</> : "Submit Item for Review"}
-              </Button>
+              <button type="button" onClick={handleSubmit} disabled={submitting || !declarations.every(Boolean)}
+                className="flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-50 shadow-[0_6px_24px_rgba(22,163,74,0.35)] hover:shadow-[0_8px_32px_rgba(22,163,74,0.50)] hover:-translate-y-0.5"
+                style={{ background: submitting || !declarations.every(Boolean) ? undefined : "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)" }}>
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <>Submit for Review <ChevronRight className="w-4 h-4" /></>}
+              </button>
             )}
           </div>
 
-          <div className="flex justify-center pb-4">
-            <Link href="/dashboard" className="text-xs text-stone-400 hover:text-stone-600">
-              Save & Exit (continue later from Dashboard)
+          <div className="text-center pb-8">
+            <Link href="/dashboard" className="text-xs text-stone-400 hover:text-[#b04a15] transition-colors font-semibold underline underline-offset-2">
+              Save & exit — continue later from Dashboard
             </Link>
           </div>
         </div>

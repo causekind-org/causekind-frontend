@@ -4,6 +4,7 @@ import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -76,6 +77,14 @@ function CampaignCard({ c, i, featured = false }: { c: Campaign; i: number; feat
   const pct = Math.min(100, Math.round((c.amountRaised / c.targetAmount) * 100));
   const img = cardImage(c, i);
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.08 }}
+      transition={{ type: "spring", stiffness: 70, damping: 18, delay: (i % 6) * 0.07 }}
+      whileHover={{ y: -4, transition: { duration: 0.18, ease: "easeOut" } }}
+      style={{ height: "100%" }}
+    >
     <HoverCard openDelay={300}>
       <HoverCardTrigger asChild>
         <Link
@@ -128,6 +137,7 @@ function CampaignCard({ c, i, featured = false }: { c: Campaign; i: number; feat
         </div>
       </HoverCardContent>
     </HoverCard>
+    </motion.div>
   );
 }
 

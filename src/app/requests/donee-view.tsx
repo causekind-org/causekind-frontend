@@ -170,7 +170,7 @@ function DoneeHero({ myRequestCount }: { myRequestCount: number }) {
 
             {/* Primary card */}
             <div className="float-card w-[296px] relative">
-              <div className="bg-white/8 backdrop-blur-xl border border-white/15 rounded-3xl p-5 shadow-2xl">
+              <div className="bg-white/8 backdrop-blur-md border border-white/15 rounded-3xl p-5 shadow-2xl">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-9 h-9 rounded-xl bg-sky-500/20 flex items-center justify-center shrink-0">
                     <Stethoscope className="w-4.5 h-4.5 text-sky-400" />
@@ -197,7 +197,7 @@ function DoneeHero({ myRequestCount }: { myRequestCount: number }) {
 
             {/* Secondary mini card */}
             <div
-              className="w-[256px] bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-4"
+              className="w-[256px] bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4"
               style={{ animation: "need-board-float 6s ease-in-out 1.4s infinite" }}
             >
               <div className="flex items-center gap-2.5">
