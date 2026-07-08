@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
+import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 import {
   ArrowLeft,
   ScrollText,
@@ -143,6 +144,13 @@ function Section({
 export default function TermsPage() {
   const [active, setActive] = useState<string>(SECTIONS[0].id);
   const [progress, setProgress] = useState(0);
+  const [mailHref, setMailHref] = useState(DEFAULT_SUPPORT_GMAIL_URL);
+
+  useEffect(() => {
+    // Client-only, post-mount — see the DEFAULT_SUPPORT_GMAIL_URL doc comment
+    // in lib/utils.ts for why this can't be computed directly during render.
+    setMailHref(buildSupportGmailUrl());
+  }, []);
 
   // Scroll-spy (active section) + reading progress, in one deterministic handler.
   useEffect(() => {
@@ -615,7 +623,9 @@ export default function TermsPage() {
                 <P>For any questions about these Terms, please contact Us:</P>
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <a
-                    href={`mailto:${SUPPORT_EMAIL}`}
+                    href={mailHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-[#b04a15] px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#b04a15]/20 transition-colors hover:bg-[#963c0d]"
                   >
                     <Mail className="h-4 w-4" />

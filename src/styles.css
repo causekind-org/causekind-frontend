@@ -1965,3 +1965,54 @@ div:has(.searchable-select-open) {
     transform: none !important;
   }
 }
+
+@keyframes select-wobble {
+  0%   { transform: rotate(0deg) scale(1); }
+  20%  { transform: rotate(-4deg) scale(1.03); }
+  40%  { transform: rotate(3deg) scale(1.02); }
+  60%  { transform: rotate(-2deg) scale(1.015); }
+  80%  { transform: rotate(1deg) scale(1.005); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+.animate-select-wobble {
+  animation: select-wobble 0.5s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-select-wobble {
+    animation: none !important;
+  }
+}
+
+/* ── Call button: locked-state pulse ring + notice-bubble pop-in ─────────────── */
+@keyframes locked-field-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(176, 74, 21, 0.22); }
+  50%      { box-shadow: 0 0 0 7px rgba(176, 74, 21, 0); }
+}
+.animate-locked-pulse {
+  animation: locked-field-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes notice-pop-in {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.9); }
+  60%  { opacity: 1; transform: translateY(-3px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-notice-pop {
+  animation: notice-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Call button: active/callable icon "ring" pulse ──────────────────────────── */
+@keyframes call-ring-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(176, 74, 21, 0.35); }
+  50%      { transform: scale(1.06); box-shadow: 0 0 0 6px rgba(176, 74, 21, 0); }
+}
+.animate-call-pulse {
+  animation: call-ring-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-locked-pulse, .animate-notice-pop, .animate-call-pulse {
+    animation: none !important;
+  }
+}

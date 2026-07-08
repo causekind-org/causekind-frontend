@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getOffersForMyRequests, doneeReviewOffer, type DonationOffer } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import CompatibilityIndicator from "@/components/CompatibilityIndicator";
 
 export default function DoneeOffersPage() {
@@ -24,6 +25,10 @@ export default function DoneeOffersPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user, router]);
+
+  useEntityUpdates(["OFFER"], () => {
+    getOffersForMyRequests().then(setOffers).catch(() => {});
+  });
 
   if (!user) return null;
 

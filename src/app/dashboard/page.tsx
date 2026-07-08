@@ -10,10 +10,11 @@ import {
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   saveMatchLogistics, generateDeliveryOtp, verifyDeliveryMatch, confirmReceiptMatch, requestCallMasking,
   pauseItemListing, resumeItemListing, withdrawItemListing, deleteMyListing,
-  getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer,
+  getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer, confirmNoIssue,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,7 +90,7 @@ function ListingJourneyTracker({ status }: { status: string }) {
 
 function getFulfilmentStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-    DONOR_REVIEW: { label: "⚠ Awaiting Your Confirmation", variant: "outline" },
+    DONOR_REVIEW: { label: "⚠ Awaiting Donor's Confirmation", variant: "outline" },
     DONOR_REJECTED: { label: "Donor Declined", variant: "destructive" },
     PENDING_APPROVAL: { label: "Pending Admin Approval", variant: "outline" },
     TRANSPORT_DISCUSSION: { label: "Discussion Enabled", variant: "secondary" },
@@ -590,6 +591,20 @@ function DoneeDashboard({
     }
   }
 
+  async function handleConfirmNoIssue(offerId: number) {
+    if (!window.confirm("Mark this donation complete? You won't be able to report a problem after this.")) return;
+    setOfferActionLoading(offerId);
+    try {
+      const updated = await confirmNoIssue(offerId);
+      setIncomingOffers(prev => prev.map(o => o.id === offerId ? updated : o));
+      toast.success("Marked as complete — thank you for confirming!");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to complete");
+    } finally {
+      setOfferActionLoading(null);
+    }
+  }
+
   const handleDoneeAccept = async (id: number) => {
     setMatchActionLoading(id);
     try {
@@ -741,6 +756,8 @@ function DoneeDashboard({
                   const isPendingReview = offer.status === "PENDING_DONEE_REVIEW";
                   const isApproved      = offer.status === "ADMIN_APPROVED";
                   const isHandover      = ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"].includes(offer.status);
+                  const isIssueWindow   = offer.status === "ISSUE_WINDOW_OPEN";
+                  const isIssueRaised   = offer.status === "ISSUE_RAISED";
                   const isComplete      = offer.status === "COMPLETED";
                   const isWithdrawn     = offer.status === "WITHDRAWN" || offer.status === "CANCELLED" || offer.status === "ADMIN_REJECTED";
                   const statusLabel =
@@ -749,14 +766,17 @@ function DoneeDashboard({
                     offer.status === "DONOR_RECONFIRMED" ? "Under admin review" :
                     isApproved ? "Approved" :
                     isHandover ? "Handover in progress" :
+                    isIssueWindow ? "Issue window open" :
+                    isIssueRaised ? "Issue under review" :
                     isComplete ? "Completed" :
                     offer.status === "ADMIN_REJECTED" ? "Offer not approved" :
                     isWithdrawn ? "Offer withdrawn" :
                     offer.status.replace(/_/g, " ");
                   const statusColor =
                     isPendingReview ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
-                    isApproved || isComplete ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" :
+                    isApproved || isComplete || isIssueWindow ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" :
                     isHandover ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
+                    isIssueRaised ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
                     isWithdrawn ? "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400" :
                     "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400";
 
@@ -952,6 +972,26 @@ function DoneeDashboard({
                           Open Handover Hub →
                         </Link>
                       )}
+                      {isIssueWindow && (
+                        <div className="space-y-1.5">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleConfirmNoIssue(offer.id)}
+                              disabled={offerActionLoading === offer.id}
+                              className="flex-1 rounded-xl bg-green-600 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                            >
+                              {offerActionLoading === offer.id ? "..." : "Everything's fine — Complete"}
+                            </button>
+                            <Link href={`/offers/${offer.id}/issues`} className="flex-1 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 py-2 text-center text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors">
+                              Report an issue
+                            </Link>
+                          </div>
+                          <p className="text-[10px] text-stone-400 text-center">Marking complete ends the issue window — you won&apos;t be able to report a problem afterward.</p>
+                        </div>
+                      )}
+                      {isIssueRaised && (
+                        <p className="text-center text-xs text-stone-400 dark:text-stone-500">Our team is reviewing your report.</p>
+                      )}
                       {isComplete && (
                         <Link href={`/certificate?offerId=${offer.id}`} className="block w-full rounded-xl bg-green-600 py-2 text-center text-xs font-semibold text-white hover:bg-green-700">
                           View Certificate →
@@ -1134,6 +1174,13 @@ export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const { user, isLoading } = useAuth();
   const router = useRouter();
+
+  useEntityUpdates(["OFFER", "REQUEST", "LISTING", "MATCH", "HANDOVER"], () => {
+    refreshListings();
+    refreshMatches();
+    getMyItemRequests().then(setItemRequests).catch(() => {});
+    getMyDonationOffers().then(setDonationOffers).catch(() => {});
+  });
 
   const [itemListings, setItemListings] = useState<ItemListing[]>([]);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>([]);

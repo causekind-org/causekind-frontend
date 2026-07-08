@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { AboutCtaCard } from "@/components/AboutCtaCard";
 import { Reveal } from "@/components/Reveal";
+import { BorderBeam } from "@/components/BorderBeam";
 
 export const metadata = {
   title: "About Us — CauseKind",
@@ -125,7 +126,8 @@ export default async function AboutPage() {
           {/* Vision & Mission Cards */}
           <Reveal direction="left">
           <div className="grid md:grid-cols-2 gap-8 items-stretch mb-8">
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-10 flex flex-col justify-between gap-6 group hover:bg-white/8 transition-all duration-300">
+            <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-10 flex flex-col justify-between gap-6 group hover:bg-white/8 transition-all duration-300">
+              <BorderBeam size={160} duration={7} colorFrom="#f0b97a" colorTo="#b04a15" />
               <div className="flex flex-col gap-6">
                 <div className="p-3 w-fit rounded-xl bg-[#b04a15]/15 text-[#f0b97a]">
                   <Compass className="w-6 h-6" />
@@ -140,7 +142,8 @@ export default async function AboutPage() {
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-10 flex flex-col justify-between gap-6 group hover:bg-white/8 transition-all duration-300">
+            <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-10 flex flex-col justify-between gap-6 group hover:bg-white/8 transition-all duration-300">
+              <BorderBeam size={160} duration={7} delay={3.5} colorFrom="#7fb2f0" colorTo="#1e3a60" reverse />
               <div className="flex flex-col gap-6">
                 <div className="p-3 w-fit rounded-xl bg-[#1e3a60]/30 text-blue-300">
                   <Milestone className="w-6 h-6" />

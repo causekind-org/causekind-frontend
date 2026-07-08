@@ -1,15 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   getDonationOffer, getHandover, scheduleHandover, rescheduleHandover,
   generateHandoverOtp, confirmHandoverDonor, confirmHandoverDonee,
-  sendChatMessage, requestOfferCall,
+  sendChatMessage, setDoneeCallPermission,
   type DonationOffer, type HandoverRecord, type OfferHandoverMethod,
 } from "@/lib/api";
 import ChatWindow from "@/components/ChatWindow";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import {
+  ArrowLeft, ShieldCheck, CalendarDays, Phone, PhoneCall, Package, ChevronRight,
+  Lock, type LucideIcon,
+} from "lucide-react";
+
+const STATUS_STEP_INFO: Record<string, { title: string; description: string }> = {
+  ADMIN_APPROVED:       { title: "Admin Approved",       description: "Your offer has been verified and is ready for the next step." },
+  HANDOVER_IN_PROGRESS: { title: "Handover In Progress", description: "Coordinate the handover below, then confirm once it's done." },
+  HANDOVER_AT_RISK:     { title: "Handover At Risk",     description: "This handover has been rescheduled multiple times and needs admin review." },
+  ISSUE_WINDOW_OPEN:    { title: "Delivery Confirmed",   description: "Both sides confirmed the handover. Report a problem now if something's wrong." },
+  ISSUE_RAISED:         { title: "Issue Under Review",   description: "Our team is reviewing a reported issue with this handover." },
+  COMPLETED:            { title: "Completed",            description: "This donation is complete — thank you for your contribution!" },
+};
+
+function statusStepColor(status: string) {
+  if (status === "COMPLETED") return { text: "text-green-700 dark:text-green-400", border: "border-green-300 dark:border-green-700", bg: "bg-green-50 dark:bg-green-950/30" };
+  if (status === "HANDOVER_AT_RISK" || status === "ISSUE_RAISED") return { text: "text-red-700 dark:text-red-400", border: "border-red-300 dark:border-red-700", bg: "bg-red-50 dark:bg-red-950/30" };
+  return { text: "text-[#b04a15] dark:text-[#e07b3a]", border: "border-[#b04a15]/30 dark:border-[#e07b3a]/40", bg: "bg-orange-50 dark:bg-orange-950/20" };
+}
 
 export default function HandoverHubPage() {
   const params = useParams();
@@ -40,7 +60,7 @@ export default function HandoverHubPage() {
   const [problemNote, setProblemNote] = useState("");   // free-text detail
   const [problemSubmitting, setProblemSubmitting] = useState(false);
   const [problemSent, setProblemSent] = useState(false);
-  const [callRequesting, setCallRequesting] = useState(false);
+  const [allowingCall, setAllowingCall] = useState(false);
 
   const isDonee = user?.role === "DONEE";
 
@@ -53,6 +73,14 @@ export default function HandoverHubPage() {
       .catch(() => setError("Failed to load handover details"))
       .finally(() => setLoading(false));
   }, [offerId]);
+
+  // Real-time: refetch offer + handover whenever either changes server-side (donor/donee
+  // actions, admin actions, scheduled jobs) — reflects within a second, no refresh needed.
+  useEntityUpdates(["OFFER", "HANDOVER"], (detail) => {
+    if (!offerId || detail.entityId !== offerId) return;
+    getDonationOffer(offerId).then(setOffer).catch(() => {});
+    getHandover(offerId).then(setHandover).catch(() => {});
+  });
 
   async function handleSchedule() {
     if (!scheduledDateTime) { setError("Please select a date and time"); return; }
@@ -101,13 +129,13 @@ export default function HandoverHubPage() {
     finally { setSubmitting(false); }
   }
 
-  async function handleRequestCall() {
-    setCallRequesting(true);
+  async function handleToggleDoneeCall(next: boolean) {
+    setAllowingCall(true);
     try {
-      const updated = await requestOfferCall(offerId);
+      const updated = await setDoneeCallPermission(offerId, next);
       setOffer(updated);
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Failed to request contact"); }
-    finally { setCallRequesting(false); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Failed to update"); }
+    finally { setAllowingCall(false); }
   }
 
   async function handleReportProblem() {
@@ -151,174 +179,174 @@ export default function HandoverHubPage() {
   if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="animate-pulse text-gray-500">Loading...</p></div>;
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
-      <div className="mx-auto max-w-2xl px-4 pt-8 space-y-5">
+    <main className="min-h-screen bg-[#fdf6ef] dark:bg-gray-950 pb-20">
+      <div className="mx-auto max-w-4xl px-4 pt-8">
         {/* Header */}
-        <div>
-          <button onClick={() => router.back()} className="mb-2 text-sm text-gray-400 hover:text-gray-600">← Back</button>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Handover Hub</h1>
-          {offer && (
-            <p className="text-sm text-gray-500">
-              {offer.requestTitle}
-              {isDonee
-                ? offer.donorName ? ` · Donor: ${offer.donorName}` : ""
-                : offer.doneeName ? ` · Recipient: ${offer.doneeName}` : ""}
+        <div className="mb-8">
+          <button onClick={() => router.back()} className="group mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#b04a15]/80 hover:text-[#b04a15]">
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-1" />
+            Back
+          </button>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Handover Hub</h1>
+              {offer && (
+                <p className="mt-1.5 flex items-center gap-1.5 text-sm text-[#b04a15] dark:text-[#e07b3a]">
+                  <Package className="h-3.5 w-3.5" />
+                  {offer.requestTitle}
+                  <span className="text-gray-300 dark:text-gray-700">•</span>
+                  {isDonee
+                    ? offer.donorName ? `Donor: ${offer.donorName}` : ""
+                    : offer.doneeName ? `Recipient: ${offer.doneeName}` : ""}
+                </p>
+              )}
+            </div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+              Transaction ID: #CK-{String(offerId).padStart(5, "0")}
             </p>
-          )}
+          </div>
         </div>
 
         {/* At-risk banner */}
         {handover?.atRisk && (
-          <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          <div className="mb-6 border-l-4 border-red-400 bg-red-50 dark:bg-red-950/40 dark:border-red-700 px-4 py-3 text-sm text-red-700 dark:text-red-400">
             This handover has been rescheduled multiple times and requires admin review.
           </div>
         )}
 
         {error && (
-          <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          <div className="mb-6 border-l-4 border-red-400 bg-red-50 dark:bg-red-950/40 dark:border-red-700 px-4 py-3 text-sm text-red-700 dark:text-red-400">
             {error}
           </div>
         )}
 
-        {/* Offer status */}
-        {offer && (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Offer Status</div>
-                <StatusChip status={offer.status} />
-              </div>
-              {offer.status === "COMPLETED" && (
-                <button
-                  onClick={() => router.push(`/certificate?offerId=${offerId}`)}
-                  className="rounded-xl bg-[#b04a15] px-4 py-2 text-xs font-semibold text-white"
-                >
-                  View Certificate
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Vertical timeline — current status → schedule → contact → (confirmation) */}
+        <div className="mb-10">
+          {offer && (() => {
+            const info = STATUS_STEP_INFO[offer.status] ?? { title: offer.status.replace(/_/g, " "), description: "" };
+            const colors = statusStepColor(offer.status);
+            return (
+              <TimelineStep
+                icon={ShieldCheck}
+                label="Current Status"
+                title={info.title}
+                description={info.description}
+                colorClasses={colors}
+                titleClassName={colors.text}
+                action={offer.status === "COMPLETED" && (
+                  <button
+                    onClick={() => router.push(`/certificate?offerId=${offerId}`)}
+                    className="rounded-xl bg-[#b04a15] px-4 py-2 text-xs font-semibold text-white hover:bg-[#c45520] transition-colors"
+                  >
+                    View Certificate
+                  </button>
+                )}
+              />
+            );
+          })()}
 
-        {/* Handover scheduling */}
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-          <h2 className="mb-3 font-semibold text-gray-800 dark:text-gray-200">Handover Schedule</h2>
-          {handover ? (
-            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <div><span className="font-medium">Method:</span> {handover.method}</div>
-              <div><span className="font-medium">Date/Time:</span> {handover.scheduledDateTime ? new Date(handover.scheduledDateTime).toLocaleString() : "—"}</div>
-              {handover.locationAddress && <div><span className="font-medium">Location:</span> {handover.locationAddress}</div>}
-              <div><span className="font-medium">Reschedules used:</span> {handover.rescheduleCount} / 2</div>
-              {handover.rescheduleCount < 2 && (
-                <button onClick={() => setShowScheduleForm(true)} className="mt-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-800">
-                  Reschedule
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowScheduleForm(true)}
-              className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white"
+          <TimelineStep
+            icon={CalendarDays}
+            label="Step 2: Logistics"
+            title="Handover Schedule"
+            description={!handover ? `Select a date and time that works for both you and the ${isDonee ? "donor" : "recipient"}.` : undefined}
+            colorClasses={statusStepColor("")}
+            action={!handover && (
+              <button
+                onClick={() => setShowScheduleForm(true)}
+                className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
+              >
+                Schedule Handover
+              </button>
+            )}
+          >
+            {handover && (
+              <div className="space-y-1.5 rounded-xl bg-white/60 dark:bg-white/5 p-4 text-sm text-gray-600 dark:text-gray-400">
+                <div><span className="font-medium">Method:</span> {handover.method}</div>
+                <div><span className="font-medium">Date/Time:</span> {handover.scheduledDateTime ? new Date(handover.scheduledDateTime).toLocaleString() : "—"}</div>
+                {handover.locationAddress && <div><span className="font-medium">Location:</span> {handover.locationAddress}</div>}
+                <div><span className="font-medium">Reschedules used:</span> {handover.rescheduleCount} / 2</div>
+                {handover.rescheduleCount < 2 && (
+                  <button onClick={() => setShowScheduleForm(true)} className="mt-1 rounded-lg bg-white/80 dark:bg-black/20 px-3 py-1.5 text-xs font-semibold text-[#b04a15] hover:bg-white transition-colors">
+                    Reschedule
+                  </button>
+                )}
+              </div>
+            )}
+            {showScheduleForm && (
+              <div className="mt-4 rounded-2xl bg-white/80 dark:bg-gray-900/80 p-5 space-y-3">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+                  {handover ? "Reschedule Handover" : "Schedule Handover"}
+                </h3>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Method</label>
+                  <select value={method} onChange={(e) => setMethod(e.target.value as OfferHandoverMethod)}
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm">
+                    <option value="PICKUP">Donee picks up from donor</option>
+                    <option value="DROP_OFF">Donor delivers to donee</option>
+                    <option value="COURIER">Courier delivery</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Date & Time</label>
+                  <input type="datetime-local" value={scheduledDateTime} onChange={(e) => setScheduledDateTime(e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">General Location (no full address needed yet)</label>
+                  <input type="text" value={locationAddress} onChange={(e) => setLocationAddress(e.target.value)} placeholder="e.g. Andheri East, Mumbai"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handover ? handleReschedule : handleSchedule} disabled={submitting}
+                    className="flex-1 rounded-xl bg-[#b04a15] py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+                    {submitting ? "Saving..." : "Confirm"}
+                  </button>
+                  <button onClick={() => setShowScheduleForm(false)} className="rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-2.5 text-sm">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </TimelineStep>
+
+          {/* Contact coordination — visible from ADMIN_APPROVED onwards */}
+          {offer && ["ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_WINDOW_OPEN", "ISSUE_RAISED"].includes(offer.status) && (
+            <TimelineStep
+              icon={Phone}
+              label="Step 3: Direct Contact"
+              title="Contact Coordination"
+              description="Use platform chat for details. Tap the button below to call directly — numbers are never shown."
+              colorClasses={statusStepColor("")}
+              isLast={!(handover && offer.status === "HANDOVER_IN_PROGRESS")}
             >
-              Schedule Handover
-            </button>
+              {isDonee ? (
+                <CallButton
+                  phone={offer.donorPhone}
+                  label="Call Donor"
+                  lockedMessage="The donor hasn't turned on calling yet — try again later, or use chat for now."
+                />
+              ) : (
+                <div className="space-y-3">
+                  <CallButton
+                    phone={offer.doneePhone}
+                    label="Call Recipient"
+                    lockedMessage="The recipient's number isn't available yet."
+                  />
+                  <CallPermissionToggle
+                    allowed={offer.donorAllowsDoneeCall}
+                    onToggle={handleToggleDoneeCall}
+                    loading={allowingCall}
+                  />
+                </div>
+              )}
+            </TimelineStep>
           )}
         </div>
 
-        {/* Schedule form */}
-        {showScheduleForm && (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-3">
-            <h3 className="font-semibold text-gray-800 dark:text-gray-200">
-              {handover ? "Reschedule Handover" : "Schedule Handover"}
-            </h3>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Method</label>
-              <select value={method} onChange={(e) => setMethod(e.target.value as OfferHandoverMethod)}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm">
-                <option value="PICKUP">Donee picks up from donor</option>
-                <option value="DROP_OFF">Donor delivers to donee</option>
-                <option value="COURIER">Courier delivery</option>
-                <option value="CAUSEKIND_LOGISTICS">CauseKind arranges</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Date & Time</label>
-              <input type="datetime-local" value={scheduledDateTime} onChange={(e) => setScheduledDateTime(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">General Location (no full address needed yet)</label>
-              <input type="text" value={locationAddress} onChange={(e) => setLocationAddress(e.target.value)} placeholder="e.g. Andheri East, Mumbai"
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm" />
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handover ? handleReschedule : handleSchedule} disabled={submitting}
-                className="flex-1 rounded-xl bg-[#b04a15] py-2.5 text-sm font-semibold text-white disabled:opacity-50">
-                {submitting ? "Saving..." : "Confirm"}
-              </button>
-              <button onClick={() => setShowScheduleForm(false)} className="rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-2.5 text-sm">
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Phone Contact Card — visible from ADMIN_APPROVED onwards */}
-        {offer && ["ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_WINDOW_OPEN", "ISSUE_RAISED"].includes(offer.status) && (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-            <h2 className="mb-1 font-semibold text-gray-800 dark:text-gray-200">📞 Contact the Other Party</h2>
-            <p className="text-xs text-gray-500 mb-3">
-              Use in-platform chat first. Request phone contact only when needed to coordinate handover logistics.
-            </p>
-
-            {/* Determine which phone to show based on role */}
-            {(() => {
-              const myPhone = isDonee ? offer.donorPhone : offer.doneePhone;
-              const otherLabel = isDonee ? "Donor" : "Recipient";
-
-              if (myPhone) {
-                return (
-                  <div className="rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4">
-                    <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-wide mb-1">
-                      {otherLabel}&apos;s Phone Number
-                    </p>
-                    <a href={`tel:${myPhone}`}
-                      className="text-xl font-mono font-bold text-green-800 dark:text-green-300 hover:underline tracking-widest">
-                      {myPhone}
-                    </a>
-                    <p className="text-[10px] text-green-600 dark:text-green-500 mt-1">
-                      This number has been shared with consent. Do not share it with third parties.
-                    </p>
-                  </div>
-                );
-              }
-
-              if (offer.callMaskingRequested) {
-                return (
-                  <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-                    Phone contact was requested. The {otherLabel.toLowerCase()}&apos;s number will appear here once available.
-                  </div>
-                );
-              }
-
-              return (
-                <button
-                  onClick={handleRequestCall}
-                  disabled={callRequesting}
-                  className="w-full rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:border-[#b04a15] hover:text-[#b04a15] transition-colors disabled:opacity-50">
-                  {callRequesting ? "Requesting..." : `📞 Request ${otherLabel}'s Phone Number`}
-                  <span className="block text-xs font-normal text-gray-400 mt-0.5">
-                    Both parties will see each other&apos;s number
-                  </span>
-                </button>
-              );
-            })()}
-          </div>
-        )}
-
         {/* Stage 10: OTP & Confirmation */}
         {handover && offer?.status === "HANDOVER_IN_PROGRESS" && (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
+          <div className="mb-10 rounded-2xl bg-white/80 dark:bg-gray-900/80 p-5 space-y-4">
             <h2 className="font-semibold text-gray-800 dark:text-gray-200">Handover Confirmation</h2>
 
             {/* Problem sent banner */}
@@ -530,7 +558,7 @@ export default function HandoverHubPage() {
           </div>
         )}
 
-        {/* Chat */}
+        {/* Chat — full width below the timeline */}
         {offer && user && (
           <div>
             <h2 className="mb-3 font-semibold text-gray-800 dark:text-gray-200">Messages</h2>
@@ -547,10 +575,129 @@ export default function HandoverHubPage() {
   );
 }
 
-function StatusChip({ status }: { status: string }) {
-  const color = status === "COMPLETED" ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-    : status === "HANDOVER_AT_RISK" ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-    : status === "ADMIN_APPROVED" ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
-    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
-  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${color}`}>{status.replace(/_/g, " ")}</span>;
+function TimelineStep({
+  icon: Icon, label, title, description, action, isLast, colorClasses, titleClassName, children,
+}: {
+  icon: LucideIcon;
+  label: string;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  isLast?: boolean;
+  colorClasses: { text: string; border: string; bg: string };
+  titleClassName?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="relative flex gap-5">
+      {!isLast && <div className="absolute left-[19px] top-11 bottom-0 w-px bg-gray-200 dark:bg-gray-800" />}
+      <div className={`relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 bg-[#fdf6ef] dark:bg-gray-950 ${colorClasses.border}`}>
+        <Icon className={`h-4 w-4 ${colorClasses.text}`} />
+      </div>
+      <div className="min-w-0 flex-1 pb-10">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400">{label}</p>
+            <h2 className={`mt-0.5 text-xl font-bold ${titleClassName ?? "text-gray-900 dark:text-gray-100"}`}>{title}</h2>
+            {description && <p className="mt-1 max-w-md text-sm text-gray-500 dark:text-gray-400">{description}</p>}
+          </div>
+          {action && <div className="flex-shrink-0">{action}</div>}
+        </div>
+        {children && <div className="mt-4">{children}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Direct-call button — numbers are never rendered as text. Tap to place the
+// call straight away (tel: link), or see a locked state with a why-not notice.
+
+function CallButton({
+  phone, label, lockedMessage,
+}: {
+  phone: string | null;
+  label: string;
+  lockedMessage: string;
+}) {
+  const [showNotice, setShowNotice] = useState(false);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  if (phone) {
+    return (
+      <a
+        href={`tel:${phone}`}
+        className="flex w-full items-center gap-3 rounded-xl bg-white/60 dark:bg-white/5 px-4 py-3.5 text-left transition-colors hover:bg-white dark:hover:bg-white/10"
+      >
+        <div className="animate-call-pulse flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#b04a15] text-white">
+          <PhoneCall className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
+          <p className="text-xs text-gray-400">Tap to call — numbers stay private</p>
+        </div>
+        <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-300" />
+      </a>
+    );
+  }
+
+  function handleClick() {
+    setShowNotice(true);
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setShowNotice(false), 3200);
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={handleClick}
+        className="animate-locked-pulse flex w-full items-center gap-3 rounded-xl bg-white/60 dark:bg-white/5 px-4 py-3.5 text-left"
+      >
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white dark:bg-gray-800 text-gray-400">
+          <Lock className="h-3.5 w-3.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">{label}</p>
+        </div>
+      </button>
+
+      {showNotice && (
+        <div className="animate-notice-pop absolute inset-x-0 top-full z-10 mt-2 rounded-xl bg-gray-900 dark:bg-gray-800 px-4 py-3 text-xs text-white shadow-lg">
+          {lockedMessage}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Donor-only permission switch — reversible any time, no numbers involved ────
+
+function CallPermissionToggle({
+  allowed, onToggle, loading,
+}: {
+  allowed: boolean;
+  onToggle: (next: boolean) => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="rounded-xl bg-white/60 dark:bg-white/5 p-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Let the recipient call you</p>
+          <p className="text-xs text-gray-400">
+            {allowed ? "On — they can call you now. Turn off any time." : "Off — turn on whenever you're ready to take calls."}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={allowed}
+          disabled={loading}
+          onClick={() => onToggle(!allowed)}
+          className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors duration-300 disabled:opacity-50 ${allowed ? "bg-[#b04a15]" : "bg-gray-300 dark:bg-gray-700"}`}
+        >
+          <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 ${allowed ? "translate-x-5" : "translate-x-0"}`} />
+        </button>
+      </div>
+    </div>
+  );
 }

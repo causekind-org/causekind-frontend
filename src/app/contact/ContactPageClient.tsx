@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { Reveal } from "@/components/Reveal";
 import { ArrowLeft, ArrowRight, Copy, Check, ExternalLink } from "lucide-react";
+import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 
 const TERRACOTTA = "#b04a15";
 const INK = "#1e3a60";
@@ -109,6 +110,15 @@ function PulseDot() {
 }
 
 export function ContactPageClient() {
+  const [mailHref, setMailHref] = useState(DEFAULT_SUPPORT_GMAIL_URL);
+
+  useEffect(() => {
+    // Client-only, post-mount — window.location isn't available during
+    // server render, so computing this at render time causes a
+    // server/client href mismatch and a hydration error.
+    setMailHref(buildSupportGmailUrl());
+  }, []);
+
   return (
     <div className="bg-[#faf8f5] dark:bg-zinc-950 min-h-screen">
       {/* ── Hero ── */}
@@ -146,7 +156,7 @@ export function ContactPageClient() {
         <CopyableChannel
           label="Email"
           display={SUPPORT_EMAIL}
-          href={`mailto:${SUPPORT_EMAIL}`}
+          href={mailHref}
           copyValue={SUPPORT_EMAIL}
           delay={0}
         />

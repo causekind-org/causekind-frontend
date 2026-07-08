@@ -30,9 +30,14 @@ export default function BlogReadingPage({ params }: PageProps) {
 
   const handleEmailShare = () => {
     if (typeof window !== "undefined" && post) {
-      const subject = encodeURIComponent(post.title);
-      const body = encodeURIComponent(`Check out this article: ${post.title}\n\nRead here: ${window.location.href}`);
-      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      // Gmail web compose, not a plain mailto: — a bare mailto: silently does
+      // nothing if the browser/OS has no default mail client configured
+      // (common on Windows). No fixed "to" here — the reader picks the
+      // recipient, unlike the site's "contact support" email buttons.
+      const subject = post.title;
+      const body = `Check out this article: ${post.title}\n\nRead here: ${window.location.href}`;
+      const params = new URLSearchParams({ view: "cm", fs: "1", su: subject, body });
+      window.open(`https://mail.google.com/mail/?${params.toString()}`, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -54,7 +59,7 @@ export default function BlogReadingPage({ params }: PageProps) {
   return (
     <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-24`}>
       {/* Main Content Area */}
-      <main className="pb-xl">
+      <main className="pb-24">
         <article>
           {/* Back button */}
           <div className="max-w-[1280px] mx-auto px-6 mb-6">

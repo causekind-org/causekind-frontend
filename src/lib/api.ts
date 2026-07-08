@@ -129,6 +129,10 @@ export function getRecentActivity() {
   return request<RecentActivity[]>("/api/v1/stats/recent-activity");
 }
 
+export function getPositiveUpdate() {
+  return request<{ text: string }>("/api/v1/stats/positive-update");
+}
+
 export function forgotPassword(email: string) {
   return request<{ message: string }>("/api/v1/auth/forgot-password", {
     method: "POST",
@@ -907,7 +911,7 @@ export type DonationOffer = {
   doneeName: string;
   donorPhone: string | null;
   doneePhone: string | null;
-  callMaskingRequested: boolean;
+  donorAllowsDoneeCall: boolean;
 };
 
 export type CompatibilityCheck = {
@@ -961,6 +965,7 @@ export type ChatMessage = {
   threadId: number;
   senderId: number;
   senderName: string;
+  senderEmail: string;
   content: string;
   messageType: "TEXT" | "SYSTEM" | "QUESTION" | "ADMIN_NOTE";
   recipientTarget: "DONOR" | "DONEE" | "BOTH" | null;
@@ -1038,7 +1043,7 @@ export function submitOffer(offerId: number, declarationsAccepted: boolean) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function getMyDonationOffers() {
-  return request<DonationOffer[]>("/api/v1/offers/mine");
+  return request<DonationOffer[]>("/api/v1/offers/mine", { silent401: true });
 }
 
 export function getDonationOffer(offerId: number) {
@@ -1061,7 +1066,7 @@ export function withdrawOffer(offerId: number, reason?: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function getOffersForMyRequests() {
-  return request<DonationOffer[]>("/api/v1/offers/for-my-requests");
+  return request<DonationOffer[]>("/api/v1/offers/for-my-requests", { silent401: true });
 }
 
 export function doneeReviewOffer(
@@ -1166,6 +1171,10 @@ export function reportPostDeliveryIssue(offerId: number, data: {
   });
 }
 
+export function confirmNoIssue(offerId: number) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}/handover/confirm-no-issue`, { method: "POST" });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Donor Flow 2 — Certificate (Stage 12)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1204,8 +1213,8 @@ export function sendChatMessage(
   });
 }
 
-export function requestOfferCall(offerId: number) {
-  return request<DonationOffer>(`/api/v1/offers/${offerId}/request-call`, { method: "POST" });
+export function setDoneeCallPermission(offerId: number, allowed: boolean) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}/donee-call-permission?allowed=${allowed}`, { method: "POST" });
 }
 
 export function markChatMessagesRead(offerId: number) {

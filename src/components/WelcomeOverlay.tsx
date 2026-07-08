@@ -262,7 +262,7 @@ export function WelcomeOverlay() {
       sessionStorage.removeItem("ck_welcome_pending");
       return;
     }
-    if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
+    if (user.role === "ADMIN") {
       sessionStorage.removeItem("ck_welcome_pending");
       return;
     }

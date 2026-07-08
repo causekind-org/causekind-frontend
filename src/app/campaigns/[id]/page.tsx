@@ -228,7 +228,7 @@ function CampaignDetailPageInner() {
     }
     if (!campaign) return;
     if (!amount || isNaN(amount) || amount < 1) {
-      toast.error("Enter a valid amount (minimum â‚¹1)");
+      toast.error("Enter a valid amount (minimum ₹1)");
       return;
     }
     setCheckoutLoading(true);
@@ -508,7 +508,7 @@ function CampaignDetailPageInner() {
                 <div className="space-y-3 p-4 rounded-2xl bg-[#FCFAF6] border border-[#EDECE7]">
                   <p className="text-xs font-semibold text-[#8C3D1D]">{t("postUpdate")}</p>
                   <Textarea
-                    placeholder="Share progress, milestones, or a thank-you with your donorsâ€¦"
+                    placeholder="Share progress, milestones, or a thank-you with your donors…"
                     rows={3}
                     value={updateText}
                     onChange={(e) => setUpdateText(e.target.value)}
@@ -758,7 +758,7 @@ function CampaignDetailPageInner() {
             onClick={() => setIsDonateModalOpen(true)}
             className="bg-[#8C3D1D] hover:bg-[#733115] text-white rounded-xl px-5 py-2.5 text-sm font-extrabold shrink-0 shadow-md transition-all active:scale-95"
           >
-            Donate â‚¹{amount.toLocaleString("en-IN")}
+            Donate ₹{amount.toLocaleString("en-IN")}
           </button>
         </div>
       </div>
@@ -790,7 +790,7 @@ function CampaignDetailPageInner() {
               <div className="space-y-2">
                 <Label htmlFor="amount" className="font-bold text-stone-700">Donation Amount (INR)</Label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-extrabold text-stone-400">â‚¹</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-extrabold text-stone-400">₹</span>
                   <Input
                     id="amount"
                     type="number"
@@ -815,7 +815,7 @@ function CampaignDetailPageInner() {
                           : "hover:bg-stone-50 text-stone-700"
                       }`}
                     >
-                      â‚¹{p.toLocaleString("en-IN")}
+                      ₹{p.toLocaleString("en-IN")}
                     </Button>
                   ))}
                 </div>
@@ -917,7 +917,7 @@ function CampaignDetailPageInner() {
               </button>
 
               <p className="text-center text-[10px] text-stone-400 font-bold">
-                Secured by Razorpay Â· UPI Â· Cards Â· Netbanking
+                Secured by Razorpay · UPI · Cards · Netbanking
               </p>
 
             </div>
@@ -1006,32 +1006,6 @@ function CampaignDetailPageInner() {
               </div>
             ) : (
               <div className="space-y-4 flex-1">
-                {/* Direct info cards */}
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  {campaign.doneeEmail && (
-                    <a 
-                      href={`mailto:${campaign.doneeEmail}?subject=Inquiry%20regarding%20${encodeURIComponent(campaign.title)}`}
-                      className="flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDECE7] bg-[#FCFAF7] hover:bg-[#FDF0E9] hover:border-[#8C3D1D]/30 transition-all group"
-                    >
-                      <Mail className="h-5 w-5 text-stone-400 group-hover:text-[#8C3D1D] mb-1.5 transition-colors" />
-                      <span className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider">Email</span>
-                      <span className="text-xs text-stone-700 font-bold truncate w-full mt-0.5">{campaign.doneeEmail}</span>
-                    </a>
-                  )}
-                  {campaign.doneePhone && (
-                    <a 
-                      href={`tel:${campaign.doneePhone}`}
-                      className="flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDECE7] bg-[#FCFAF7] hover:bg-[#FDF0E9] hover:border-[#8C3D1D]/30 transition-all group"
-                    >
-                      <User className="h-5 w-5 text-stone-400 group-hover:text-[#8C3D1D] mb-1.5 transition-colors" />
-                      <span className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider">Phone</span>
-                      <span className="text-xs text-stone-700 font-bold truncate w-full mt-0.5">{campaign.doneePhone}</span>
-                    </a>
-                  )}
-                </div>
-
-                <div className="h-px bg-[#EDECE7] my-2" />
-
                 {/* Form */}
                 <div className="space-y-3">
                   <div className="space-y-1">

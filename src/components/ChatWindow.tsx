@@ -16,7 +16,7 @@ interface Props {
   className?: string;
 }
 
-const POLL_INTERVAL_MS = 30_000;
+const POLL_INTERVAL_MS = 5_000;
 
 export default function ChatWindow({ offerId, currentUserEmail, locked = false, className = "" }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -42,7 +42,9 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Polling for new messages — skips when tab is in background
+  // Polling for new messages — skips when tab is in background. Kept as a fallback/
+  // catch-up path even with the SSE push below (covers the SSE connection dropping,
+  // reconnect gaps, etc.) — see [[Decisions and Gotchas]] on the dual SSE+poll pattern.
   useEffect(() => {
     const interval = setInterval(async () => {
       if (document.hidden) return;
@@ -64,6 +66,33 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
       }
     }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
+  }, [offerId]);
+
+  // Real-time push — NotificationsProvider's single SSE connection rebroadcasts
+  // "chat-message" events as a window CustomEvent; append instantly if it's for
+  // this offer, instead of waiting for the next poll tick.
+  useEffect(() => {
+    function onPush(e: Event) {
+      const detail = (e as CustomEvent).detail as {
+        offerId: number; id: number; threadId: number; senderId: number; senderName: string;
+        senderEmail: string; content: string; messageType: ChatMessage["messageType"];
+        recipientTarget: ChatMessage["recipientTarget"]; sentAt: string;
+      } | undefined;
+      if (!detail || detail.offerId !== offerId) return;
+      const message: ChatMessage = {
+        id: detail.id, threadId: detail.threadId, senderId: detail.senderId, senderName: detail.senderName,
+        senderEmail: detail.senderEmail, content: detail.content, messageType: detail.messageType,
+        recipientTarget: detail.recipientTarget, readAt: null, sentAt: detail.sentAt,
+      };
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) return prev;
+        lastSentAt.current = message.sentAt;
+        return [...prev, message];
+      });
+      markChatMessagesRead(offerId).catch(() => {});
+    }
+    window.addEventListener("ck-chat-message", onPush);
+    return () => window.removeEventListener("ck-chat-message", onPush);
   }, [offerId]);
 
   async function handleSend() {
@@ -110,7 +139,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
           <p className="text-center text-sm text-gray-400 py-6">No messages yet.</p>
         )}
         {messages.map((msg) => {
-          const isMe = msg.senderName === currentUserEmail;
+          const isMe = msg.senderEmail === currentUserEmail;
           const isSystem = msg.messageType === "SYSTEM";
           if (isSystem) {
             return (

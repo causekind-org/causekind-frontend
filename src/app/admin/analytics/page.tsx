@@ -67,6 +67,7 @@ export default function AdminAnalyticsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState<DonationStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -83,7 +84,7 @@ export default function AdminAnalyticsPage() {
         setCampaigns(c);
         setStats(s);
       })
-      .catch(() => {})
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, [user, isLoading, router]);
 
@@ -155,6 +156,15 @@ export default function AdminAnalyticsPage() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="size-8 animate-spin text-stone-400" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-center px-4">
+        <XCircle className="size-8 text-red-400" />
+        <p className="text-sm text-stone-600 dark:text-stone-400">Couldn't load analytics data — the server may be having an issue. Try refreshing.</p>
       </div>
     );
   }

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getMyDonationOffers, type DonationOffer } from "@/lib/api";
+import { getMyDonationOffers, reconfirmOfferAvailability, type DonationOffer } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/lib/toast";
 import Link from "next/link";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -32,6 +33,7 @@ export default function MyOffersPage() {
   const router = useRouter();
   const [offers, setOffers] = useState<DonationOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reconfirmingId, setReconfirmingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -43,6 +45,19 @@ export default function MyOffersPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user, router]);
+
+  async function handleReconfirm(offerId: number) {
+    setReconfirmingId(offerId);
+    try {
+      const updated = await reconfirmOfferAvailability(offerId);
+      setOffers((prev) => prev.map((o) => (o.id === offerId ? updated : o)));
+      toast.success("Availability reconfirmed");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to reconfirm");
+    } finally {
+      setReconfirmingId(null);
+    }
+  }
 
   if (!user) return null;
 
@@ -109,10 +124,13 @@ export default function MyOffersPage() {
                     </Link>
                   )}
                   {offer.status === "DONOR_RECONFIRMATION_REQUIRED" && (
-                    <Link href={`/offers/${offer.id}`}
-                      className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white text-center">
-                      Reconfirm
-                    </Link>
+                    <button
+                      onClick={() => handleReconfirm(offer.id)}
+                      disabled={reconfirmingId === offer.id}
+                      className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white text-center transition-colors hover:bg-amber-600 disabled:opacity-50"
+                    >
+                      {reconfirmingId === offer.id ? "Reconfirming…" : "Reconfirm"}
+                    </button>
                   )}
                 </div>
               </div>

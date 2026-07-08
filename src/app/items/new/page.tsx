@@ -158,6 +158,7 @@ export default function NewItemPage() {
   const [stateIso, setStateIso]         = useState("");
   const [cityValue, setCityValue]       = useState("");
   const [cityFreeText, setCityFreeText] = useState("");
+  const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
   const [pincode, setPincode]           = useState("");
   const [locality, setLocality]         = useState("");
   const [latitude, setLatitude]         = useState<number | undefined>();
@@ -181,7 +182,9 @@ export default function NewItemPage() {
   }
 
   const { states: stateOptions, cities: cityOptions } = useLocations(countryIso, stateIso);
-  const showCityFreeText = stateIso !== "" && cityOptions.length === 0;
+  // forceFreeTextCity covers GPS finding a real city that just isn't in the dataset's
+  // list for this state — the plain "zero cities listed" check alone misses that case.
+  const showCityFreeText = (stateIso !== "" && cityOptions.length === 0) || forceFreeTextCity;
 
   // ── Auth guard ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -332,7 +335,11 @@ export default function NewItemPage() {
             if (cc) {
               setCountryIso(cc);
               const { stateIso: sIso, cityValue: cVal } = await resolveLocationFromGPS(cc, addr.state, addr.city || addr.town || addr.village);
-              if (sIso) { setStateIso(sIso); if (cVal) setCityValue(cVal); else setCityFreeText(addr.city || ""); }
+              if (sIso) {
+                setStateIso(sIso);
+                if (cVal) { setCityValue(cVal); setCityFreeText(""); setForceFreeTextCity(false); }
+                else { setCityValue(""); setCityFreeText(addr.city || ""); setForceFreeTextCity(true); }
+              }
               if (addr.suburb || addr.neighbourhood) setLocality(addr.suburb || addr.neighbourhood);
               if (addr.postcode) setPincode(addr.postcode.replace(/\s/g, ""));
             }
@@ -599,7 +606,7 @@ export default function NewItemPage() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="State / Province" required>
-            <select value={stateIso} onChange={(e) => { setStateIso(e.target.value); setCityValue(""); setCityFreeText(""); }}
+            <select value={stateIso} onChange={(e) => { setStateIso(e.target.value); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); }}
               className="w-full h-11 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-3 focus:outline-none focus:ring-2 focus:ring-[#b04a15]/20 focus:border-[#b04a15] transition-all">
               <option value="">Select state</option>
               {stateOptions.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}

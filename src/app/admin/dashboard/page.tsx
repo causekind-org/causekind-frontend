@@ -8,18 +8,21 @@ import {
   adminGetItemListings, adminApproveItemListing, adminRejectItemListing, adminMarkListingNeedsInformation, type ItemListing,
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest, type ItemRequest,
   adminGetMatches, adminApproveMatch, adminRejectMatch, adminGetMatchHistory, type ItemMatch, type StatusHistoryEntry,
+  adminGetAllOffers,
   adminGetAllAiAssessments, type AiAssessmentResponse,
   adminGetListingAiReview, adminGetItemRequestAiReview, type AdminAiReviewResponse,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import { OffersQueuePanel } from "../offers/OffersQueuePanel";
 import {
-  Bot, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Handshake,
+  Bot, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageSquare,
   Package, Phone, RefreshCw, Search, ShieldCheck, Tag, Truck, UserRound, X,
   type LucideIcon,
 } from "lucide-react";
 
-type TabKey = "campaigns" | "requests" | "listings" | "matches" | "match-history" | "ai-logs";
+type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs";
 type RejectType = "campaign" | "request" | "listing" | "match";
 type DetailSelection =
   | { type: "request"; item: ItemRequest }
@@ -120,11 +123,16 @@ export default function AdminDashboardPage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
 
+  useEntityUpdates(["CAMPAIGN", "REQUEST", "LISTING", "MATCH", "OFFER"], () => {
+    loadData();
+  });
+
   // ── Approval queue state ──
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [requests, setRequests] = useState<ItemRequest[]>([]);
   const [listings, setListings] = useState<ItemListing[]>([]);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
+  const [offersNeedingAction, setOffersNeedingAction] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [tab, setTab] = useState<TabKey>("campaigns");
@@ -165,8 +173,15 @@ export default function AdminDashboardPage() {
         adminGetItemListings("MANUAL_REVIEW"),
       ]).then(([submitted, manual]) => [...submitted, ...manual]),
       adminGetMatches("PENDING_APPROVAL"),
-    ]).then(([c, r, l, m]) => {
+      // Offers tab manages its own list/loading inside OffersQueuePanel — just need the
+      // count here for the tab badge, matching that panel's own "Needs Action" filter.
+      Promise.all([
+        adminGetAllOffers("DONOR_RECONFIRMED"),
+        adminGetAllOffers("PENDING_ADMIN_APPROVAL"),
+      ]).then(([a, b]) => a.length + b.length),
+    ]).then(([c, r, l, m, offerCount]) => {
       setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
+      setOffersNeedingAction(offerCount);
     }).catch(() => toast.error("Failed to load approval queue"))
       .finally(() => setLoading(false));
   }, []);
@@ -349,14 +364,15 @@ export default function AdminDashboardPage() {
   }
   if (!user) return null;
 
-  const total = campaigns.length + requests.length + listings.length + matches.length;
+  const total = campaigns.length + requests.length + listings.length + matches.length + offersNeedingAction;
   const isReportTab = tab === "match-history" || tab === "ai-logs";
 
   const TABS = [
-    { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length, icon: Megaphone,     color: "#e07b3a" },
-    { key: "requests"  as TabKey, label: "Requests",     count: requests.length,  icon: ClipboardList,  color: "#60a5fa" },
-    { key: "listings"  as TabKey, label: "Listings",     count: listings.length,  icon: Package,        color: "#a78bfa" },
-    { key: "matches"   as TabKey, label: "Matches",      count: matches.length,   icon: Handshake,      color: "#34d399" },
+    { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#e07b3a" },
+    { key: "requests"  as TabKey, label: "Requests",     count: requests.length,    icon: ClipboardList,  color: "#60a5fa" },
+    { key: "listings"  as TabKey, label: "Listings",     count: listings.length,    icon: Package,        color: "#a78bfa" },
+    { key: "matches"   as TabKey, label: "Matches",      count: matches.length,     icon: Handshake,      color: "#34d399" },
+    { key: "offers"    as TabKey, label: "Offers",       count: offersNeedingAction, icon: Gift,          color: "#f472b6" },
   ];
 
   const headerTitle = tab === "match-history" ? "Match History"
@@ -584,8 +600,11 @@ export default function AdminDashboardPage() {
         {/* ── Cards feed ── */}
         <div className="flex-1 px-7 lg:px-10 py-8 max-w-4xl space-y-4">
 
+          {/* ── DONATION OFFERS TAB — reuses the same panel as the standalone /admin/offers page ── */}
+          {tab === "offers" && <OffersQueuePanel />}
+
           {/* ── APPROVAL QUEUE TABS ── */}
-          {!isReportTab && (
+          {!isReportTab && tab !== "offers" && (
             loading ? (
               <div className="flex flex-col items-center justify-center py-28">
                 <Loader2 className="w-8 h-8 animate-spin text-stone-300" />

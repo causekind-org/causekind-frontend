@@ -1,25 +1,69 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
 import { Reveal } from "@/components/Reveal";
-import { TranslatedText } from "@/hooks/useDynamicTranslation";
+import { TranslatedText, useDynamicTranslation } from "@/hooks/useDynamicTranslation";
 import { DONOR_CATEGORY_EVENT } from "@/components/DonorCategoryModal";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS, readSelectedDonorCategories } from "@/lib/categoryVisuals";
-import { ArrowRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { ArrowRight, MapPin, Bell } from "lucide-react";
 import type { ItemRequest } from "@/lib/api";
 
-function urgencyMarks(urgency: string): string {
-  if (urgency === "CRITICAL") return "✱✱✱";
-  if (urgency === "HIGH") return "✱✱";
-  return "✱";
+type CategoryEntry = { category: string; requests: ItemRequest[] };
+
+const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const VISIBLE_PER_CATEGORY = 4;
+
+/* ─── Titles decode into place instead of a plain fade — the whole point of ── */
+/* dropping images was to let the words themselves carry the "cool" moment. ── */
+function ScrambleText({ text, className }: { text: string; className?: string }) {
+  const [display, setDisplay] = useState(text);
+  const started = useRef(false);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => { setDisplay(text); started.current = false; }, [text]);
+
+  function start() {
+    if (started.current || reduceMotion) return;
+    started.current = true;
+    let frame = 0;
+    const totalFrames = 12;
+    const timer = setInterval(() => {
+      frame++;
+      const revealCount = Math.ceil((frame / totalFrames) * text.length);
+      setDisplay(
+        text
+          .split("")
+          .map((ch, i) => (ch === " " || i < revealCount ? ch : SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]))
+          .join("")
+      );
+      if (frame >= totalFrames) {
+        setDisplay(text);
+        clearInterval(timer);
+      }
+    }, 32);
+  }
+
+  return (
+    <motion.span className={className} onViewportEnter={start} viewport={{ once: true, amount: 0.6 }}>
+      {display}
+    </motion.span>
+  );
 }
 
 export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemRequest[] }) {
+  const router = useRouter();
+  const { user } = useAuth();
   const [selected, setSelected] = useState<string[] | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  function openRequest(id: number) {
+    if (!user) { router.push("/login"); return; }
+    router.push(`/requests/${id}/offer`);
+  }
 
   useEffect(() => {
     setSelected(readSelectedDonorCategories());
@@ -46,14 +90,16 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
       : ALL_REQUEST_CATEGORIES;
   if (categoriesToShow.length === 0) return null;
 
+  const categoryData: CategoryEntry[] = categoriesToShow.map(cat => ({
+    category: cat,
+    requests: itemRequests.filter(r => r.category === cat),
+  }));
+  const hasAnyRequests = categoryData.some(c => c.requests.length > 0);
+
   return (
     <section className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 py-20 border-t border-stone-200/60 dark:border-stone-800">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
         <Reveal className="mb-14">
-          <div className="flex items-center gap-4 mb-3">
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Field Notes</span>
-            <span className="h-px flex-1 bg-[#b04a15]/20" />
-          </div>
           <div className="flex items-end justify-between gap-6 flex-wrap">
             <div>
               <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
@@ -61,8 +107,8 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
               </h2>
               <p className="text-stone-500 dark:text-stone-400 mt-2 max-w-xl">
                 {selected && selected.length > 0
-                  ? "Scoped to the categories you picked — change them anytime."
-                  : "You chose to see everything — narrow this to specific focus areas anytime."}
+                  ? "Scoped to the categories you picked. Change them anytime."
+                  : "You chose to see everything. Narrow this to specific focus areas anytime."}
               </p>
             </div>
             <Link href="/requests" className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[#b04a15] dark:text-[#e07b3a] hover:underline shrink-0">
@@ -71,130 +117,125 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
           </div>
         </Reveal>
 
-        {/* Narrow reading column — deliberately not the full section width,
-            like a magazine's wide masthead over a narrower article column. */}
-        <div className="max-w-3xl">
-          {categoriesToShow.map((cat, i) => (
-            <CategoryEntry
-              key={cat}
-              category={cat}
-              requests={itemRequests.filter(r => r.category === cat)}
-              delay={i * 100}
-              showDivider={i < categoriesToShow.length - 1}
-            />
-          ))}
-        </div>
+        {!hasAnyRequests ? (
+          <EmptyBoard categories={categoriesToShow} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-14 gap-y-10">
+            {categoryData.map((entry, i) => (
+              <CategoryGroup key={entry.category} category={entry.category} requests={entry.requests} delay={i * 100} onOpen={openRequest} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
-function CategoryEntry({
-  category, requests, delay, showDivider,
-}: { category: string; requests: ItemRequest[]; delay: number; showDivider: boolean }) {
-  const col    = CATEGORY_VISUALS[category] ?? CATEGORY_VISUALS["Medical aid"];
-  const top    = requests[0];
-  const others = requests.slice(1);
+function CategoryGroup({
+  category, requests, delay, onOpen,
+}: { category: string; requests: ItemRequest[]; delay: number; onOpen: (id: number) => void }) {
+  const col = CATEGORY_VISUALS[category] ?? CATEGORY_VISUALS["Medical aid"];
+  const visible = requests.slice(0, VISIBLE_PER_CATEGORY);
+  const overflow = requests.length - visible.length;
 
   return (
     <Reveal delay={delay}>
-      <div className="py-7 first:pt-0">
-        <div className="flex items-baseline justify-between mb-3">
-          <h3 className={`text-sm italic font-semibold ${col.text}`} style={{ fontFamily: "var(--font-lora)" }}>
-            <TranslatedText text={category} />
-          </h3>
-          {top && (
-            <span className="text-xs text-stone-400 flex items-center gap-1.5">
-              <span className="text-[#b04a15] tracking-tight">{urgencyMarks(top.urgency)}</span>
-              {requests.length} {requests.length === 1 ? "request" : "requests"}
-            </span>
-          )}
-        </div>
-
-        {top ? (
-          <Link href="/requests" className="group flex items-start gap-5 sm:gap-6">
-            <p
-              className="flex-1 text-xl sm:text-2xl leading-snug text-stone-800 dark:text-stone-100 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors duration-300"
-              style={{ fontFamily: "var(--font-lora)" }}
-            >
-              &ldquo;<TranslatedText text={top.title} />&rdquo;
-              <span className="block text-[11px] not-italic font-sans font-bold text-stone-400 mt-2.5 tracking-wide uppercase">
-                — <TranslatedText text={top.city} />
-              </span>
-              {others.length > 0 && (
-                <span className="block text-sm not-italic font-normal text-stone-500 dark:text-stone-400 mt-2.5 leading-relaxed">
-                  Also noted:{" "}
-                  {others.slice(0, 2).map((r, i) => (
-                    <span key={r.id}>
-                      {i > 0 && ", "}
-                      <TranslatedText text={r.title} />
-                    </span>
-                  ))}
-                  {others.length > 2 && ` — and ${others.length - 2} more`}
-                </span>
-              )}
-            </p>
-
-            <motion.div
-              className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 overflow-hidden mt-1"
-              initial={{ filter: "grayscale(1) brightness(0.85)" }}
-              whileInView={{ filter: "grayscale(0) brightness(1)" }}
-              viewport={{ once: true, amount: 0.6 }}
-              transition={{ duration: 1.6, ease: "easeOut", delay: 0.2 }}
-            >
-              <Image
-                src={top.imageUrl ?? col.fallbackImage}
-                alt={top.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="96px"
-              />
-            </motion.div>
-          </Link>
-        ) : (
-          <EmptyEntry category={category} />
-        )}
-
-        {showDivider && <SquiggleDivider className={col.text} />}
+      <div className="mb-4 flex items-center gap-3">
+        <col.Icon className={`h-4 w-4 shrink-0 ${col.text}`} strokeWidth={2} />
+        <h3 className={`shrink-0 text-xs font-black uppercase tracking-widest ${col.text}`}>
+          <TranslatedText text={category} />
+        </h3>
+        <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
+        <span className="shrink-0 text-xs font-semibold text-stone-400 dark:text-stone-500">
+          {requests.length} open
+        </span>
       </div>
+
+      {visible.length > 0 ? (
+        <div className="divide-y divide-stone-200/70 dark:divide-stone-800">
+          {visible.map(req => (
+            <RequestRow key={req.id} request={req} onOpen={onOpen} />
+          ))}
+        </div>
+      ) : (
+        <EmptyCategoryRow category={category} />
+      )}
+
+      {overflow > 0 && (
+        <Link
+          href="/requests"
+          className="group mt-1 flex items-center gap-2 pt-4 text-sm font-bold text-[#b04a15] dark:text-[#e07b3a]"
+        >
+          +{overflow} more in <TranslatedText text={category} />
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      )}
     </Reveal>
   );
 }
 
-function EmptyEntry({ category }: { category: string }) {
+function RequestRow({ request, onOpen }: { request: ItemRequest; onOpen: (id: number) => void }) {
+  const title = useDynamicTranslation(request.title) ?? request.title;
+  const city = useDynamicTranslation(request.city) ?? request.city;
+  const urgent = request.urgency === "CRITICAL" || request.urgency === "HIGH";
+
   return (
-    <p className="text-lg italic text-stone-400 dark:text-stone-500" style={{ fontFamily: "var(--font-lora)" }}>
-      Nothing logged here yet
-      <BlinkingCursor />
-      <span className="block text-[11px] not-italic font-sans font-bold text-stone-400 mt-2.5 tracking-wide uppercase">
-        You&apos;ll be the first to know about <TranslatedText text={category} />
+    <button
+      type="button"
+      onClick={() => onOpen(request.id)}
+      className="group flex w-full items-center justify-between gap-4 py-4 text-left"
+    >
+      <span className="flex min-w-0 items-center gap-3">
+        {urgent && (
+          <span
+            aria-hidden="true"
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${request.urgency === "CRITICAL" ? "bg-[#b04a15]" : "bg-[#b04a15]/45"}`}
+          />
+        )}
+        <ScrambleText
+          text={title}
+          className="truncate text-lg font-bold text-stone-800 transition-colors dark:text-stone-100 sm:text-xl group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a]"
+        />
       </span>
+      <span className="flex shrink-0 items-center gap-2 text-xs font-semibold text-stone-400 dark:text-stone-500">
+        <MapPin className="h-3 w-3" />
+        <span className="hidden sm:inline">{city}</span>
+        <ArrowRight className="h-3.5 w-3.5 text-stone-300 transition-all dark:text-stone-600 group-hover:translate-x-0.5 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a]" />
+      </span>
+    </button>
+  );
+}
+
+function EmptyCategoryRow({ category }: { category: string }) {
+  return (
+    <p className="flex items-center gap-2 py-4 text-sm text-stone-400 dark:text-stone-500">
+      <Bell className="h-3.5 w-3.5 shrink-0" />
+      Nothing open here yet. You&apos;ll be the first to know about <TranslatedText text={category} />.
     </p>
   );
 }
 
-function BlinkingCursor() {
+function EmptyBoard({ categories }: { categories: string[] }) {
   return (
-    <motion.span
-      aria-hidden="true"
-      className="inline-block w-[2px] h-[1em] bg-stone-400 dark:bg-stone-500 ml-1 align-middle translate-y-[1px]"
-      animate={{ opacity: [1, 1, 0, 0] }}
-      transition={{ duration: 1.1, repeat: Infinity, times: [0, 0.5, 0.5, 1], ease: "linear" }}
-    />
-  );
-}
-
-// A hand-drawn-feeling wavy rule between entries, instead of a straight <hr>.
-function SquiggleDivider({ className }: { className: string }) {
-  return (
-    <svg viewBox="0 0 600 12" preserveAspectRatio="none" className={`w-full h-3 mt-7 opacity-[0.18] ${className}`} aria-hidden="true">
-      <path
-        d="M0,6 Q15,0 30,6 T60,6 T90,6 T120,6 T150,6 T180,6 T210,6 T240,6 T270,6 T300,6 T330,6 T360,6 T390,6 T420,6 T450,6 T480,6 T510,6 T540,6 T570,6 T600,6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
+    <Reveal>
+      <div className="flex max-w-xl flex-col items-start gap-4 py-6">
+        <Bell className="h-6 w-6 text-[#b04a15]" strokeWidth={1.5} />
+        <div>
+          <p className="text-lg font-semibold text-stone-800 dark:text-stone-100">
+            No open requests in your focus areas right now.
+          </p>
+          <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-400">
+            We&apos;ll keep watching{" "}
+            {categories.map((c, i) => (
+              <span key={c}>
+                {i > 0 && ", "}
+                <TranslatedText text={c} />
+              </span>
+            ))}{" "}
+            and notify you the moment something comes in.
+          </p>
+        </div>
+      </div>
+    </Reveal>
   );
 }
