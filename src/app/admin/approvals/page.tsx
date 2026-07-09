@@ -14,6 +14,7 @@ import {
   adminGetListingAiAssessment, adminRunAiAssessment, type AiAssessmentResponse,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,11 +46,7 @@ export default function ApprovalsPage() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (!user) { router.push("/login"); return; }
-    if (user.role !== "ADMIN") { router.push("/"); return; }
-
+  function loadQueues() {
     Promise.all([
       adminGetCampaigns("PENDING_APPROVAL"),
       // Load both SUBMITTED (awaiting first screening) and MANUAL_REVIEW (AI flagged for human review)
@@ -63,6 +60,18 @@ export default function ApprovalsPage() {
       .then(([c, l, r, m]) => { setCampaigns(c as Campaign[]); setListings(l as ItemListing[]); setRequests(r as ItemRequest[]); setMatches(m as ItemMatch[]); })
       .catch(() => toast.error(t("failedToLoadQueues")))
       .finally(() => setLoading(false));
+  }
+
+  useEntityUpdates(["CAMPAIGN", "LISTING", "REQUEST", "MATCH"], () => {
+    loadQueues();
+  });
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user) { router.push("/login"); return; }
+    if (user.role !== "ADMIN") { router.push("/"); return; }
+
+    loadQueues();
   }, [user, isLoading, router]);
 
   function openReject(id: number, type: "campaign" | "listing" | "request" | "match") {

@@ -498,6 +498,15 @@ function CampaignsPageInner() {
       .finally(() => setLoading(false));
   }, [t]);
 
+  // Public/anonymous page — can't ride the per-user SSE stream, so refresh the
+  // list every 60s instead. Silent on failure, skipped while the tab is hidden.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!document.hidden) getCampaigns().then(setCampaigns).catch(() => {});
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Total counts (all campaigns, ignores current filters — for sidebar reference)
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
