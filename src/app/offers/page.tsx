@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getMyDonationOffers, reconfirmOfferAvailability, type DonationOffer } from "@/lib/api";
+import { getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, type DonationOffer } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/lib/toast";
 import Link from "next/link";
@@ -28,12 +28,27 @@ const STATUS_COLOR: Record<string, string> = {
   NEEDS_INFORMATION: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
 };
 
+// Offer wizard is incomplete — donor can jump back in and finish it
+const CONTINUABLE_STATUSES = new Set(["DRAFT", "NEEDS_INFORMATION"]);
+
+// Anything the backend will still let the donor withdraw themselves
+// (mirrors DonationOfferService.withdrawOffer — only COMPLETED/ADMIN_APPROVED are blocked).
+// Handover-stage statuses are excluded here — those go through the Handover Hub/issue flow instead.
+const CANCELLABLE_STATUSES = new Set([
+  "DRAFT", "SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING",
+  "COMPATIBILITY_CHECKED", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP",
+  "PENDING_DONEE_REVIEW", "DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED",
+  "DONOR_RECONFIRMED", "CONDITION_CHANGED_RESCREENING", "NEEDS_INFORMATION",
+  "PENDING_ADMIN_APPROVAL",
+]);
+
 export default function MyOffersPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [offers, setOffers] = useState<DonationOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [reconfirmingId, setReconfirmingId] = useState<number | null>(null);
+  const [cancelingId, setCancelingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -56,6 +71,20 @@ export default function MyOffersPage() {
       toast.error(e instanceof Error ? e.message : "Failed to reconfirm");
     } finally {
       setReconfirmingId(null);
+    }
+  }
+
+  async function handleCancel(offerId: number) {
+    if (!confirm("Cancel this offer? This can't be undone.")) return;
+    setCancelingId(offerId);
+    try {
+      const updated = await withdrawOffer(offerId);
+      setOffers((prev) => prev.map((o) => (o.id === offerId ? updated : o)));
+      toast.success("Offer cancelled");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to cancel offer");
+    } finally {
+      setCancelingId(null);
     }
   }
 
@@ -130,6 +159,21 @@ export default function MyOffersPage() {
                       className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white text-center transition-colors hover:bg-amber-600 disabled:opacity-50"
                     >
                       {reconfirmingId === offer.id ? "Reconfirming…" : "Reconfirm"}
+                    </button>
+                  )}
+                  {CONTINUABLE_STATUSES.has(offer.status) && (
+                    <Link href={`/requests/${offer.requestId}/offer`}
+                      className="rounded-lg bg-[#1e3a60] px-3 py-1.5 text-xs font-semibold text-white text-center transition-colors hover:bg-[#254876]">
+                      Continue
+                    </Link>
+                  )}
+                  {CANCELLABLE_STATUSES.has(offer.status) && (
+                    <button
+                      onClick={() => handleCancel(offer.id)}
+                      disabled={cancelingId === offer.id}
+                      className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-600 text-center transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
+                    >
+                      {cancelingId === offer.id ? "Cancelling…" : "Cancel"}
                     </button>
                   )}
                 </div>

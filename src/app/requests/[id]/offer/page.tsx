@@ -19,6 +19,7 @@ import {
   type CompatibilityCheck,
 } from "@/lib/api";
 import CompatibilityIndicator from "@/components/CompatibilityIndicator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/lib/toast";
 import Link from "next/link";
@@ -223,8 +224,11 @@ const INITIAL: FormState = {
   donorDropOffAvailable: false, declarationsAccepted: false,
 };
 
-type Action = { type: "SET"; key: keyof FormState; value: string | boolean | DonorFlowType };
+type Action =
+  | { type: "SET"; key: keyof FormState; value: string | boolean | DonorFlowType }
+  | { type: "HYDRATE"; values: Partial<FormState> };
 function reducer(state: FormState, action: Action): FormState {
+  if (action.type === "HYDRATE") return { ...state, ...action.values };
   return { ...state, [action.key]: action.value };
 }
 
@@ -261,7 +265,15 @@ export default function OfferWizardPage() {
       .then((offers) => {
         const found = offers.find((o) => o.requestId === requestId &&
           !["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(o.status));
-        if (found) setExistingOffer(found);
+        if (!found) return;
+        setExistingOffer(found);
+        // Draft/needs-info offers are unfinished — resume straight into Step 2,
+        // pre-filled, instead of re-showing the flow-type picker they already answered.
+        if (found.status === "DRAFT" || found.status === "NEEDS_INFORMATION") {
+          setOffer(found);
+          hydrateForm(found);
+          setStep(2);
+        }
       })
       .catch(() => {});
   }, [requestId]);
@@ -283,6 +295,33 @@ export default function OfferWizardPage() {
     dispatch({ type: "SET", key, value: value as string | boolean | DonorFlowType });
   }
 
+  // Refill the form from a previously-saved draft/needs-info offer so resuming
+  // doesn't force the donor to re-enter details they already submitted.
+  function hydrateForm(o: DonationOffer) {
+    const d = o.itemDetails;
+    const hasDefects = !!d?.knownDefects && d.knownDefects !== "None";
+    dispatch({
+      type: "HYDRATE",
+      values: {
+        flowType: o.flowType,
+        approximateAge: d?.approximateAge ?? "",
+        condition: d?.condition ?? "",
+        workingStatus: d?.workingStatus ?? "",
+        hasKnownDefects: hasDefects,
+        knownDefects: hasDefects ? d!.knownDefects! : "",
+        accessoriesIncluded: d?.accessoriesIncluded ?? "",
+        quantity: d?.quantity ? String(d.quantity) : "1",
+        specNotes: d?.specNotes ?? "",
+        pickupCity: d?.pickupCity ?? "",
+        pickupPincode: d?.pickupPincode ?? "",
+        pickupLocality: d?.pickupLocality ?? "",
+        maxTravelDistanceKm: d?.maxTravelDistanceKm != null ? String(d.maxTravelDistanceKm) : "",
+        deliveryCostBornBy: d?.deliveryCostBornBy ?? "DONOR",
+        donorDropOffAvailable: d?.donorDropOffAvailable ?? false,
+      },
+    });
+  }
+
   // ── Step 1: Select flow type + create/resume draft ────────────────────────
   async function handleFlowSelect(flowType: DonorFlowType) {
     set("flowType", flowType);
@@ -291,12 +330,16 @@ export default function OfferWizardPage() {
     try {
       const returned = await createOfferDraft(requestId, flowType);
       setOffer(returned);
+      // If this resumes an in-progress draft rather than starting a fresh one,
+      // refill the form so the donor doesn't have to re-enter everything.
+      if (returned.itemDetails) hydrateForm(returned);
       // If backend returned an existing active offer (not a fresh draft), handle it
       if (returned.status !== "DRAFT" && returned.status !== "NEEDS_INFORMATION") {
         setExistingOffer(returned);
         return; // Stay on Step 1 — the existing offer banner will appear
       }
       setStep(2);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create offer draft");
     } finally {
@@ -342,12 +385,14 @@ export default function OfferWizardPage() {
   async function handleItemDetailsSubmit() {
     if (!form.condition) { setError("Please select item condition"); return; }
     if (!form.pickupCity) { setError("Pickup city is required"); return; }
-    if (files.length < 2) { setError("Please upload at least 2 photos"); return; }
+    const existingPhotoCount = offer?.media?.length ?? 0;
+    if (files.length + existingPhotoCount < 2) { setError("Please upload at least 2 photos"); return; }
     if (!form.declarationsAccepted) { setError("Please accept all declarations"); return; }
     setError(null);
     try {
       await saveDetails();
       setStep(3);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       await handleSubmit();
     } catch {}
   }
@@ -489,7 +534,7 @@ export default function OfferWizardPage() {
                       <div className="mt-3 flex flex-wrap gap-2">
                         {guidance.resumeStep && (
                           <button
-                            onClick={() => { setOffer(existingOffer); setStep(guidance.resumeStep!); }}
+                            onClick={() => { setOffer(existingOffer); hydrateForm(existingOffer); setStep(guidance.resumeStep!); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                             className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors ${c.btn}`}
                           >
                             Continue offer →
@@ -778,8 +823,8 @@ export default function OfferWizardPage() {
                   label="Who pays delivery?"
                   value={form.deliveryCostBornBy}
                   onChange={(v) => set("deliveryCostBornBy", v)}
-                  options={["DONOR", "DONEE", "SHARED", "ADMIN_APPROVAL"]}
-                  displayMap={{ DONOR: "I will pay", DONEE: "Recipient pays", SHARED: "Share cost", ADMIN_APPROVAL: "Platform to decide" }}
+                  options={["DONOR", "DONEE", "SHARED"]}
+                  displayMap={{ DONOR: "I will pay", DONEE: "Recipient pays", SHARED: "Share cost" }}
                 />
               )}
             </div>
@@ -793,6 +838,18 @@ export default function OfferWizardPage() {
                 <h3 className="font-semibold text-gray-800 dark:text-gray-200">Photos (min. 2, max. 8) *</h3>
               </div>
               <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">Upload recent, genuine photos. Include full item view, condition, and any defects.</p>
+              {offer?.media && offer.media.length > 0 && (
+                <div className="mb-3">
+                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Already uploaded</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {offer.media.map((m) => (
+                      <div key={m.id} className="relative aspect-square overflow-hidden rounded-lg">
+                        <img src={m.mediaUrl} alt="" className="h-full w-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-4 gap-2">
                 <label
                   htmlFor="photo-upload"
@@ -864,7 +921,7 @@ export default function OfferWizardPage() {
 
             <div className="flex items-center justify-between pt-1">
               <button
-                onClick={() => setStep(1)}
+                onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className="group inline-flex items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-1" />
@@ -922,7 +979,7 @@ export default function OfferWizardPage() {
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950 text-2xl">!</div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">More Information Needed</h2>
                 <p className="mt-2 text-sm text-gray-500">Please provide additional details before your offer can proceed.</p>
-                <button onClick={() => setStep(2)} className="mt-6 rounded-xl bg-[#b04a15] px-6 py-2.5 text-sm font-semibold text-white">
+                <button onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mt-6 rounded-xl bg-[#b04a15] px-6 py-2.5 text-sm font-semibold text-white">
                   Update Details
                 </button>
               </>
@@ -977,18 +1034,23 @@ function SelectField({ label, value, onChange, options, displayMap, wobble }: {
   return (
     <div>
       <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
-      <select
+      <Select
         value={value}
-        onChange={(e) => { onChange(e.target.value); triggerWobble(); }}
-        onFocus={triggerWobble}
-        onAnimationEnd={() => setWobbling(false)}
-        className={`w-full rounded-xl border border-indigo-100 dark:border-gray-700 bg-indigo-50/60 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#1e3a60] ${wobbling ? "animate-select-wobble" : ""}`}
+        onValueChange={(v) => { onChange(v); triggerWobble(); }}
+        onOpenChange={(open) => { if (open) triggerWobble(); }}
       >
-        <option value="">Select...</option>
-        {options.map((o) => (
-          <option key={o} value={o}>{displayMap?.[o] ?? o}</option>
-        ))}
-      </select>
+        <SelectTrigger
+          onAnimationEnd={() => setWobbling(false)}
+          className={`w-full h-auto rounded-xl border border-indigo-100 dark:border-gray-700 bg-indigo-50/60 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus-visible:border-[#1e3a60] focus-visible:ring-0 ${wobbling ? "animate-select-wobble" : ""}`}
+        >
+          <SelectValue placeholder="Select..." />
+        </SelectTrigger>
+        <SelectContent className="rounded-xl border-indigo-100 dark:border-gray-700">
+          {options.map((o) => (
+            <SelectItem key={o} value={o}>{displayMap?.[o] ?? o}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
