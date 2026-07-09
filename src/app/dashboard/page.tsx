@@ -993,9 +993,12 @@ function DoneeDashboard({
                         <p className="text-center text-xs text-stone-400 dark:text-stone-500">Our team is reviewing your report.</p>
                       )}
                       {isComplete && (
-                        <Link href={`/certificate?offerId=${offer.id}`} className="block w-full rounded-xl bg-green-600 py-2 text-center text-xs font-semibold text-white hover:bg-green-700">
-                          View Certificate →
-                        </Link>
+                        <div className="space-y-1.5">
+                          <Link href={`/offers/${offer.id}/issues`} className="block w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 py-2 text-center text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors">
+                            Report an issue
+                          </Link>
+                          <p className="text-[10px] text-stone-400 text-center">Noticed a problem with the item? You can still report it for a few days after completion.</p>
+                        </div>
                       )}
                     </div>
                   );

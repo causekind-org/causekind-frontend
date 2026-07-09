@@ -99,6 +99,31 @@ export function OffersQueuePanel() {
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [filter]);
 
+  // Real-time push — mirrors ChatWindow.tsx's SSE-rebroadcast pattern: the backend
+  // broadcasts every chat message to admins via "chat-message", which arrives here
+  // as a window CustomEvent. Append instantly to the currently-expanded thread.
+  useEffect(() => {
+    function onPush(e: Event) {
+      const detail = (e as CustomEvent).detail as {
+        offerId: number; id: number; threadId: number; senderId: number; senderName: string;
+        senderEmail: string; content: string; messageType: ChatMessage["messageType"];
+        recipientTarget: ChatMessage["recipientTarget"]; sentAt: string;
+      } | undefined;
+      if (!detail || detail.offerId !== expanded) return;
+      const message: ChatMessage = {
+        id: detail.id, threadId: detail.threadId, senderId: detail.senderId, senderName: detail.senderName,
+        senderEmail: detail.senderEmail, content: detail.content, messageType: detail.messageType,
+        recipientTarget: detail.recipientTarget, readAt: null, sentAt: detail.sentAt,
+      };
+      setExpandedData(prev => {
+        if (!prev || prev.messages.some(m => m.id === message.id)) return prev;
+        return { ...prev, messages: [...prev.messages, message] };
+      });
+    }
+    window.addEventListener("ck-chat-message", onPush);
+    return () => window.removeEventListener("ck-chat-message", onPush);
+  }, [expanded]);
+
   async function toggleExpand(offerId: number) {
     if (expanded === offerId) { setExpanded(null); setExpandedData(null); return; }
     setExpanded(offerId);

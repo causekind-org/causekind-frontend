@@ -76,8 +76,8 @@ export default function HandoverHubPage() {
 
   // Real-time: refetch offer + handover whenever either changes server-side (donor/donee
   // actions, admin actions, scheduled jobs) — reflects within a second, no refresh needed.
-  useEntityUpdates(["OFFER", "HANDOVER"], (detail) => {
-    if (!offerId || detail.entityId !== offerId) return;
+  useEntityUpdates(["OFFER", "HANDOVER"], (_latest, batch) => {
+    if (!offerId || !batch.some((d) => d.entityId === offerId)) return;
     getDonationOffer(offerId).then(setOffer).catch(() => {});
     getHandover(offerId).then(setHandover).catch(() => {});
   });
