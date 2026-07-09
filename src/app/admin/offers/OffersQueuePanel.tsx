@@ -4,14 +4,19 @@ import { useEffect, useState } from "react";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
   adminGetAllOffers, adminActionOffer, adminGetOfferById, adminGetOfferHistory,
-  getChatMessages, sendChatMessage,
+  adminRetryOfferScreening, getChatMessages, sendChatMessage,
   type DonationOffer, type StatusHistoryEntry, type ChatMessage,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import {
   Check, X, Info, ChevronDown, ChevronUp, Clock, User, Package,
-  MapPin, ShieldCheck, AlertTriangle, Loader2, RefreshCw, Phone,
+  MapPin, ShieldCheck, AlertTriangle, Loader2, RefreshCw, Phone, Bot,
 } from "lucide-react";
+
+// Offers where AI screening hasn't reached a reviewable outcome yet — either never
+// started (SUBMITTED) or is mid-flight. Admin previously had no visibility into these
+// at all; they'd just silently sit here forever if the async screening job never fired.
+const SCREENING_STATUSES = ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING"];
 
 // Status → display config
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -27,6 +32,9 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
   COMPLETED:                    { label: "Completed",               color: "text-green-700", bg: "bg-green-50 dark:bg-green-950/40 border-green-200" },
   WITHDRAWN:                    { label: "Withdrawn",               color: "text-gray-600",  bg: "bg-gray-50 dark:bg-zinc-800 border-gray-200"        },
   ISSUE_RAISED:                 { label: "Issue Raised",            color: "text-red-700",   bg: "bg-red-50 dark:bg-red-950/40 border-red-200"       },
+  SUBMITTED:                    { label: "Awaiting AI Screening",   color: "text-sky-700",   bg: "bg-sky-50 dark:bg-sky-950/40 border-sky-200"        },
+  AI_ELIGIBILITY_SCREENING:     { label: "AI Screening…",           color: "text-sky-700",   bg: "bg-sky-50 dark:bg-sky-950/40 border-sky-200"        },
+  AI_COMPATIBILITY_SCREENING:   { label: "AI Screening…",           color: "text-sky-700",   bg: "bg-sky-50 dark:bg-sky-950/40 border-sky-200"        },
 };
 
 const FLOW_STAGES = [
@@ -47,6 +55,7 @@ type ExpandedOffer = { offer: DonationOffer; history: StatusHistoryEntry[]; mess
 
 const FILTER_OPTIONS = [
   { key: "PENDING",   label: "Needs Action",    statuses: ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"] },
+  { key: "SCREENING", label: "AI Screening",    statuses: SCREENING_STATUSES },
   { key: "ALL",       label: "All Offers",      statuses: [] as string[] },
   { key: "APPROVED",  label: "Approved",        statuses: ["ADMIN_APPROVED"] },
   { key: "IN_FLIGHT", label: "In Progress",     statuses: ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_WINDOW_OPEN", "ISSUE_RAISED"] },
@@ -77,6 +86,7 @@ export function OffersQueuePanel() {
   const [replySending, setReplySending] = useState<number | null>(null);
   const [disputeActing, setDisputeActing] = useState<number | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [retrying, setRetrying] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
@@ -197,6 +207,17 @@ export function OffersQueuePanel() {
       toast.success("Donation cancelled. Both parties notified.");
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed"); }
     finally { setDisputeActing(null); }
+  }
+
+  async function handleRetryScreening(offerId: number) {
+    setRetrying(offerId);
+    try {
+      const updated = await adminRetryOfferScreening(offerId);
+      setOffers(prev => prev.map(o => o.id === offerId ? updated : o));
+      if (expandedData?.offer.id === offerId) setExpandedData({ ...expandedData, offer: updated });
+      toast.success("AI screening re-triggered — refresh in a few seconds to see the result.");
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to retry screening"); }
+    finally { setRetrying(null); }
   }
 
   async function handleRequestInfo() {
@@ -332,6 +353,7 @@ export function OffersQueuePanel() {
         const stageIdx = STATUS_TO_STAGE[offer.status] ?? 0;
         const isExpanded = expanded === offer.id;
         const needsAction = ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(offer.status);
+        const isScreening = SCREENING_STATUSES.includes(offer.status);
 
         return (
           <div key={offer.id}
@@ -360,6 +382,11 @@ export function OffersQueuePanel() {
                   {needsAction && (
                     <span className="rounded-full bg-amber-500 text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wide animate-pulse">
                       Action Required
+                    </span>
+                  )}
+                  {isScreening && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-500 text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wide">
+                      <Bot className="w-2.5 h-2.5" /> AI Screening
                     </span>
                   )}
                   {offer.matchScore != null && (
@@ -524,6 +551,83 @@ export function OffersQueuePanel() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Screening in progress / never started — admin visibility + manual retry.
+                            Previously these offers were invisible: no assessment record exists yet,
+                            so there was nothing here to show and no way to know it was stuck. */}
+                        {isScreening && (
+                          <div className="rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 p-4 space-y-2">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-sky-700 dark:text-sky-400">
+                              <Bot className="w-3.5 h-3.5" />
+                              AI screening {offer.status === "SUBMITTED" ? "has not started yet" : "is in progress"}
+                            </div>
+                            <p className="text-xs text-sky-600 dark:text-sky-400">
+                              Submitted {offer.submittedAt ? new Date(offer.submittedAt).toLocaleString() : "—"}.
+                              {offer.status === "SUBMITTED" && " If this doesn't move within a few minutes, the background screening job may not have run — use Retry below."}
+                            </p>
+                            <button onClick={() => handleRetryScreening(offer.id)} disabled={retrying === offer.id}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-sky-700 disabled:opacity-50">
+                              <RefreshCw className={`w-3 h-3 ${retrying === offer.id ? "animate-spin" : ""}`} />
+                              {retrying === offer.id ? "Retrying…" : "Retry AI Screening"}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Full AI evidence — only present once screening has actually run at least once */}
+                        {expandedData.offer.assessment && (
+                          <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-4 space-y-2 text-sm">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <p className="text-[10px] text-stone-400 uppercase font-bold">Eligibility</p>
+                                <p className="font-semibold text-stone-700 dark:text-stone-300">{expandedData.offer.assessment.eligibilityResult ?? "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-stone-400 uppercase font-bold">Fraud Risk</p>
+                                <p className={`font-semibold ${
+                                  expandedData.offer.assessment.fraudRisk === "HIGH" ? "text-red-600" :
+                                  expandedData.offer.assessment.fraudRisk === "MEDIUM" ? "text-amber-600" :
+                                  "text-green-600"
+                                }`}>{expandedData.offer.assessment.fraudRisk ?? "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-stone-400 uppercase font-bold">Recommendation</p>
+                                <p className="font-semibold text-stone-700 dark:text-stone-300">{expandedData.offer.assessment.recommendation ?? "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-stone-400 uppercase font-bold">Model</p>
+                                <p className="font-semibold text-stone-700 dark:text-stone-300">{expandedData.offer.assessment.modelVersion ?? "—"}</p>
+                              </div>
+                            </div>
+                            {expandedData.offer.assessment.missingInfoFlags && (
+                              <div className="rounded-lg bg-orange-50 dark:bg-orange-950/30 px-2 py-1 text-xs text-orange-700 dark:text-orange-400">
+                                Missing info: {expandedData.offer.assessment.missingInfoFlags}
+                              </div>
+                            )}
+                            {expandedData.offer.assessment.safetyWarnings && (
+                              <div className="rounded-lg bg-red-50 dark:bg-red-950/30 px-2 py-1 text-xs text-red-700 dark:text-red-400">
+                                Safety: {expandedData.offer.assessment.safetyWarnings}
+                              </div>
+                            )}
+                            {expandedData.offer.assessment.evidenceNotes && (
+                              <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 px-2 py-1 text-xs text-blue-700 dark:text-blue-400">
+                                {expandedData.offer.assessment.evidenceNotes}
+                              </div>
+                            )}
+                            {(expandedData.offer.assessment.detectedLabels || expandedData.offer.assessment.moderationLabels) && (
+                              <div className="pt-1 space-y-1">
+                                {expandedData.offer.assessment.detectedLabels && (
+                                  <p className="text-[11px] text-stone-500"><span className="font-semibold">Detected:</span> {expandedData.offer.assessment.detectedLabels}</p>
+                                )}
+                                {expandedData.offer.assessment.moderationLabels && (
+                                  <p className="text-[11px] text-stone-500"><span className="font-semibold">Moderation:</span> {expandedData.offer.assessment.moderationLabels}</p>
+                                )}
+                              </div>
+                            )}
+                            <p className="text-[10px] text-stone-400 pt-1">
+                              Screened {new Date(expandedData.offer.assessment.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Donor / Donee + Photos */}
