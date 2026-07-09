@@ -390,7 +390,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen flex bg-[#12101a]">
       {/* ── DARK LEFT SIDEBAR ────────────────────────────────────────────────── */}
-      <aside className="hidden lg:flex w-[296px] shrink-0 flex-col min-h-screen fixed left-0 top-0 bottom-0 z-10 border-r border-white/[0.07]"
+      <aside className="hidden lg:flex w-[296px] shrink-0 flex-col min-h-screen fixed left-0 top-0 bottom-0 z-10 border-r border-white/[0.07] overflow-y-auto"
         style={{ background: "linear-gradient(180deg, #17141f 0%, #12101a 100%)" }}>
 
         {/* Brand strip */}
