@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 
 const FIRST_DELAY_MS  = 800;
 const VISIBLE_MS      = 10_000;
-const REPEAT_DELAY_MS = 60_000;
+const REPEAT_DELAY_MS = 15_000;
 const EXIT_MS         = 380;
 
 export function DonorListingPrompt() {

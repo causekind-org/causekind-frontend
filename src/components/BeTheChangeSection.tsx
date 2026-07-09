@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useMotionValue, useAnimationFrame } from "framer-motion";
 import Link from "next/link";
+import { Reveal } from "@/components/Reveal";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Shield,
@@ -59,69 +60,133 @@ function useInView(threshold = 0.2) {
   return { ref, inView };
 }
 
-/* ─── Flip-in card animation ─────────────────────────────────────────── */
-function FlipCard({
-  icon: Icon,
-  title,
-  desc,
-  accent,
-  delay = 0,
-  size = "normal",
-}: {
-  icon: React.ElementType;
-  title: string;
-  desc: string;
-  accent: string;
-  delay?: number;
-  size?: "normal" | "large";
-}) {
+/* ─── Trust journey — an animated connecting path instead of a card grid ── */
+type JourneyItem = { icon: React.ElementType; title: string; desc: string; accent: string; delay: number };
+
+const JOURNEY_PATH_D =
+  "M100,100 C200,100 200,320 300,320 C400,320 400,100 500,100 C600,100 600,320 700,320 C800,320 800,100 900,100 C1000,100 1000,320 1100,320";
+
+const NODE_LAYOUT: { xPct: number; yPct: number; label: "above" | "below" }[] = [
+  { xPct: 8.33,  yPct: 23.8, label: "below" },
+  { xPct: 25,    yPct: 76.2, label: "above" },
+  { xPct: 41.67, yPct: 23.8, label: "below" },
+  { xPct: 58.33, yPct: 76.2, label: "above" },
+  { xPct: 75,    yPct: 23.8, label: "below" },
+  { xPct: 91.67, yPct: 76.2, label: "above" },
+];
+
+function JourneyNode({
+  icon: Icon, title, desc, accent, index, xPct, yPct, label,
+}: JourneyItem & { index: number; xPct: number; yPct: number; label: "above" | "below" }) {
   return (
     <motion.div
-      className="relative group h-full"
-      initial={{ opacity: 0, rotateY: -20, y: 24 }}
-      whileInView={{ opacity: 1, rotateY: 0, y: 0 }}
-      viewport={{ once: true, amount: 0.12 }}
-      transition={{
-        type: "spring",
-        stiffness: 70,
-        damping: 18,
-        delay: delay / 1000,
-      }}
-      whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }}
+      className="absolute"
+      style={{ left: `${xPct}%`, top: `${yPct}%` }}
+      initial={{ opacity: 0, scale: 0.7 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true, amount: 0.6 }}
+      transition={{ type: "spring", stiffness: 120, damping: 16, delay: index * 0.12 }}
     >
-      <div
-        className={`h-full rounded-2xl border border-[#e5e2d5]/60 dark:border-stone-800
-                   bg-white dark:bg-zinc-900 overflow-hidden flex flex-row
-                   hover:shadow-xl transition-shadow duration-300 cursor-default`}
+      {/* Marker is pinned exactly to the path point, independent of text length */}
+      <span
+        className="absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 bg-white dark:bg-zinc-900 shadow-sm"
+        style={{ borderColor: accent, color: accent }}
       >
-        {/* Integrated left accent stripe */}
-        <div
-          className="w-[3px] shrink-0"
-          style={{ background: accent }}
-        />
-        {/* Card content */}
-        <div className={`flex-1 p-6 flex flex-col gap-4 ${size === "large" ? "justify-between" : ""}`}>
-          <div
-            className={`w-11 h-11 rounded-xl flex items-center justify-center ${size === "large" ? "w-14 h-14 rounded-2xl" : ""}`}
-            style={{ background: `${accent}18`, color: accent }}
-          >
-            <Icon className={size === "large" ? "w-7 h-7" : "w-5 h-5"} />
-          </div>
-          <div className="flex-1">
-            <h3 className={`font-extrabold text-stone-900 dark:text-white leading-snug mb-2 ${size === "large" ? "text-lg" : "text-sm"}`}>
-              {title}
-            </h3>
-            <p className={`text-stone-500 dark:text-stone-400 leading-relaxed font-medium ${size === "large" ? "text-sm" : "text-xs"}`}>
-              {desc}
-            </p>
-          </div>
-          <span
-            className="w-2 h-2 rounded-full self-end"
-            style={{ background: accent, opacity: 0.4 }}
-          />
-        </div>
+        <Icon className="h-5 w-5" />
+      </span>
+      {/* Text hangs off the marker and always grows toward the container's vertical center,
+          so it can never push past the top/bottom edge of the journey block */}
+      <div
+        className={`absolute w-48 -translate-x-1/2 rounded-xl bg-[#faf8f5]/95 dark:bg-zinc-950/95 backdrop-blur-[2px] px-3 py-2 text-center ${
+          label === "below" ? "top-9" : "bottom-9"
+        }`}
+      >
+        <h3 className="text-sm font-extrabold text-stone-900 dark:text-white leading-snug">{title}</h3>
+        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400 leading-relaxed">{desc}</p>
       </div>
     </motion.div>
+  );
+}
+
+function JourneyNodeMobile({ icon: Icon, title, desc, accent, index }: JourneyItem & { index: number }) {
+  return (
+    <Reveal delay={index * 90} className="relative pl-9">
+      <span
+        className="absolute left-0 top-0 grid h-8 w-8 place-items-center rounded-full border-2 bg-white dark:bg-zinc-900"
+        style={{ borderColor: accent, color: accent }}
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+      <h3 className="text-sm font-extrabold text-stone-900 dark:text-white leading-snug">{title}</h3>
+      <p className="mt-1 text-xs text-stone-500 dark:text-stone-400 leading-relaxed">{desc}</p>
+    </Reveal>
+  );
+}
+
+function TrustJourney({ items }: { items: JourneyItem[] }) {
+  const pathRef = useRef<SVGPathElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  // Drives the traveling dot exactly along the curve (getPointAtLength), not a straight-line
+  // interpolation between node coordinates — otherwise it visibly cuts corners off the wave.
+  const dotCx = useMotionValue(0);
+  const dotCy = useMotionValue(0);
+  const dotProgress = useRef(0);
+  const totalLen = useRef<number | null>(null);
+
+  useAnimationFrame((_, delta) => {
+    if (reduceMotion || !pathRef.current) return;
+    if (totalLen.current == null) totalLen.current = pathRef.current.getTotalLength();
+    const total = totalLen.current;
+    dotProgress.current = (dotProgress.current + delta * (total / 9000)) % total;
+    const pt = pathRef.current.getPointAtLength(dotProgress.current);
+    dotCx.set(pt.x);
+    dotCy.set(pt.y);
+  });
+
+  return (
+    <div className="relative mb-16">
+      {/* Desktop — same width as the header/pills above, so it lines up exactly */}
+      <div className="relative hidden h-[420px] w-full lg:block">
+        <svg viewBox="0 0 1200 420" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
+          <defs>
+            <linearGradient id="journey-gradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={TERRACOTTA} />
+              <stop offset="50%" stopColor={INK} />
+              <stop offset="100%" stopColor={TERRACOTTA} />
+            </linearGradient>
+          </defs>
+          <path ref={pathRef} d={JOURNEY_PATH_D} fill="none" strokeWidth={2} className="stroke-stone-200 dark:stroke-stone-800" />
+          <motion.path
+            d={JOURNEY_PATH_D}
+            fill="none"
+            stroke="url(#journey-gradient)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            initial={{ pathLength: 0 }}
+            whileInView={{ pathLength: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: reduceMotion ? 0 : 1.8, ease: "easeInOut" }}
+          />
+          {!reduceMotion && (
+            <motion.circle r={5} fill="url(#journey-gradient)" style={{ cx: dotCx, cy: dotCy }} />
+          )}
+        </svg>
+        {items.map((item, i) => (
+          <JourneyNode key={item.title} {...item} index={i} xPct={NODE_LAYOUT[i].xPct} yPct={NODE_LAYOUT[i].yPct} label={NODE_LAYOUT[i].label} />
+        ))}
+      </div>
+
+      {/* Mobile — vertical stack, same idea without the horizontal path */}
+      <div className="relative lg:hidden">
+        <div aria-hidden="true" className="absolute left-4 top-2 bottom-2 w-px bg-gradient-to-b from-stone-200 via-stone-300 to-transparent dark:from-stone-800 dark:via-stone-700" />
+        <div className="space-y-8">
+          {items.map((item, i) => (
+            <JourneyNodeMobile key={item.title} {...item} index={i} />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -389,54 +454,48 @@ export function BeTheChangeSection() {
 
   const STATS = hasTraction ? LIVE_STATS : PROMISE_STATS;
 
-  const cards = [
+  const cards: JourneyItem[] = [
     {
       icon: Shield,
       title: "Every listing is admin-verified",
-      desc: "No unvetted requests reach donors. Our team manually reviews each campaign, item request, and donee profile before it goes live.",
+      desc: "No unvetted requests reach donors. Each campaign, item request, and donee profile is reviewed before it goes live.",
       accent: TERRACOTTA,
       delay: 0,
-      size: "large" as const,
     },
     {
       icon: MapPin,
       title: "Hyper-local matching engine",
-      desc: "Donors and donees within 10 km are matched first — ensuring your donation reaches the closest family in need.",
+      desc: "Donors and donees within 10 km are matched first, so your donation reaches the closest family in need.",
       accent: INK,
       delay: 100,
-      size: "normal" as const,
     },
     {
       icon: Handshake,
       title: "Direct person-to-person handover",
-      desc: "We cut out middlemen. Items and aid move directly from donor to donee — fully traceable and confirmed with handover certificates.",
+      desc: "No middlemen. Items and aid move directly from donor to donee, fully traceable with handover certificates.",
       accent: TERRACOTTA,
       delay: 200,
-      size: "normal" as const,
     },
     {
       icon: Users,
       title: "Community-first approach",
-      desc: "CauseKind is built around local communities — neighbourhoods, districts, cities — growing a trusted network of giving across India.",
+      desc: "Built around local communities, growing a trusted network of giving across India.",
       accent: INK,
       delay: 300,
-      size: "large" as const,
     },
     {
       icon: Package,
       title: "In-kind donations that matter",
-      desc: "From school supplies and warm clothing to medical equipment — real items for real needs, not just cash that loses touch with impact.",
+      desc: "From school supplies to medical equipment, real items for real needs, not just cash that loses touch with impact.",
       accent: TERRACOTTA,
       delay: 400,
-      size: "normal" as const,
     },
     {
       icon: CheckCircle,
       title: "Impact certificates issued",
-      desc: "Every completed handover generates a digital impact certificate — proof of your generosity for tax, audit, or simply your own pride.",
+      desc: "Every completed handover generates a digital certificate, proof of your generosity for tax, audit, or your own pride.",
       accent: INK,
       delay: 500,
-      size: "normal" as const,
     },
   ];
 
@@ -490,21 +549,8 @@ export function BeTheChangeSection() {
           ))}
         </div>
 
-        {/* ── Feature cards — ASYMMETRIC: [2fr 1fr 1fr] row 1, [1fr 1fr 2fr] row 2 ── */}
-        <div className="grid gap-4 mb-16">
-          {/* Row 1: large | normal | normal */}
-          <div className="grid gap-4 lg:grid-cols-[2fr_1fr_1fr]">
-            {cards.slice(0, 3).map((card) => (
-              <FlipCard key={card.title} {...card} />
-            ))}
-          </div>
-          {/* Row 2: normal | normal | large */}
-          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_2fr]">
-            {cards.slice(3, 6).map((card) => (
-              <FlipCard key={card.title} {...card} />
-            ))}
-          </div>
-        </div>
+        {/* ── Trust journey — an animated connecting path, no card containers ── */}
+        <TrustJourney items={cards} />
 
         {/* ── Trust signal rail ── */}
         <div

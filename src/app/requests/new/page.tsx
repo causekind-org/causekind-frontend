@@ -52,6 +52,7 @@ export default function NewRequestPage() {
   const [stateIso, setStateIso] = useState<string>("");
   const [cityValue, setCityValue] = useState<string>("");
   const [cityFreeText, setCityFreeText] = useState<string>("");
+  const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
 
   // Derived option lists
   const { countries: countryOptions, states: stateOptions, cities: cityOptions } = useLocations(countryIso, stateIso);
@@ -59,7 +60,10 @@ export default function NewRequestPage() {
   // Fallback to free-text for city
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
-  const showCityFreeText = noStateOptions || noCityOptions;
+  // forceFreeTextCity covers the case where GPS found a real city but it just isn't
+  // in the dataset's list for this state — noCityOptions alone only catches states
+  // with zero cities listed at all, not "GPS's specific city didn't match."
+  const showCityFreeText = noStateOptions || noCityOptions || forceFreeTextCity;
 
   // Urgency and radius options built from translations
   const URGENCIES = [
@@ -125,12 +129,14 @@ export default function NewRequestPage() {
     setStateIso("");
     setCityValue("");
     setCityFreeText("");
+    setForceFreeTextCity(false);
   }
 
   function handleStateChange(iso: string) {
     setStateIso(iso);
     setCityValue("");
     setCityFreeText("");
+    setForceFreeTextCity(false);
   }
 
   function handleCityChange(val: string) {
@@ -170,14 +176,16 @@ export default function NewRequestPage() {
                 if (resolvedCity) {
                   setCityValue(resolvedCity);
                   setCityFreeText("");
+                  setForceFreeTextCity(false);
                 } else if (cityName) {
                   setCityValue("");
                   setCityFreeText(cityName);
+                  setForceFreeTextCity(true);
                 }
               } else {
                 setStateIso("");
                 setCityValue("");
-                if (cityName) setCityFreeText(cityName);
+                if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
               }
               if (!isAuto) toast.success("Location updated successfully!");
             }

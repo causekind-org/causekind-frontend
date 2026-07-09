@@ -397,7 +397,7 @@ function RegisterContent() {
     e.preventDefault();
     if (!validate()) return;
     const dialCode = getDialCode(dialCountry, dialCodeOptions);
-    const fullPhone = dialCode && phoneNumber ? `${dialCode} ${phoneNumber}` : phoneNumber;
+    const fullPhone = dialCode && phoneNumber ? `${dialCode}${phoneNumber}` : phoneNumber;
     const cityStr = buildCityString();
 
     setLoading(true);

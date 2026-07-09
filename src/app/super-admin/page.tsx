@@ -355,7 +355,7 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div className={`min-h-screen relative ${th.root}`}>
+    <div className={`h-screen overflow-hidden relative ${th.root}`}>
       {/* Animated grid backdrop (dark only) */}
       {isDark && (
         <>
@@ -368,10 +368,10 @@ export default function SuperAdminPage() {
         <div className="fixed top-0 right-0 w-[600px] h-[400px] rounded-full bg-[#b04a15]/5 blur-[120px] pointer-events-none" />
       )}
 
-      <div className="relative z-10 flex min-h-screen">
+      <div className="relative z-10 flex h-screen">
         {/* ── Sidebar (desktop) ── */}
-        <aside className={`hidden lg:flex w-60 shrink-0 flex-col border-r ${th.divider} ${th.sidebar}`}>
-          <div className={`px-5 py-5 border-b ${th.divider}`}>
+        <aside className={`hidden lg:flex w-60 shrink-0 flex-col h-screen border-r ${th.divider} ${th.sidebar}`}>
+          <div className={`shrink-0 px-5 py-5 border-b ${th.divider}`}>
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#b04a15] to-[#f0b97a] flex items-center justify-center shrink-0">
                 <ShieldAlert className="w-4 h-4 text-white" />
@@ -383,7 +383,7 @@ export default function SuperAdminPage() {
             </div>
           </div>
 
-          <nav className="flex-1 p-3 space-y-1">
+          <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
             {NAV.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -401,7 +401,7 @@ export default function SuperAdminPage() {
             ))}
           </nav>
 
-          <div className={`p-3 border-t ${th.divider}`}>
+          <div className={`shrink-0 p-3 border-t ${th.divider}`}>
             <p className={`text-[10px] px-3 mb-2 truncate font-mono ${th.textDimmer}`}>{user.email}</p>
             <div className="flex items-center gap-1.5">
               {ThemeToggle}
@@ -416,9 +416,9 @@ export default function SuperAdminPage() {
         </aside>
 
         {/* ── Main column ── */}
-        <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex-1 min-w-0 h-screen flex flex-col">
           {/* Topbar */}
-          <header className={`sticky top-0 z-20 flex items-center justify-between gap-3 px-5 py-3.5 border-b ${th.divider} ${th.topbar}`}>
+          <header className={`shrink-0 flex items-center justify-between gap-3 px-5 py-3.5 border-b ${th.divider} ${th.topbar}`}>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className={`text-xs font-mono ${th.textMuted}`}>root@causekind</span>
@@ -435,7 +435,7 @@ export default function SuperAdminPage() {
           </header>
 
           {/* Mobile nav strip */}
-          <div className={`lg:hidden flex gap-1.5 overflow-x-auto scrollbar-hide px-4 py-3 border-b ${th.divider}`}>
+          <div className={`shrink-0 lg:hidden flex gap-1.5 overflow-x-auto scrollbar-hide px-4 py-3 border-b ${th.divider}`}>
             {NAV.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -452,7 +452,7 @@ export default function SuperAdminPage() {
           </div>
 
           {/* Content */}
-          <main className="flex-1 p-5 sm:p-7 max-w-6xl w-full">
+          <main className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-7 max-w-6xl w-full">
             {content}
           </main>
         </div>

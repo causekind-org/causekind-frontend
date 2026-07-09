@@ -31,4 +31,7 @@ Thumbs.db
 .ds-sync/
 ds-bundle/
 
+# Graphify
+graphify-out/
+
 

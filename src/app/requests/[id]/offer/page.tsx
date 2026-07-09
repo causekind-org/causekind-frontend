@@ -20,7 +20,80 @@ import {
 } from "@/lib/api";
 import CompatibilityIndicator from "@/components/CompatibilityIndicator";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/lib/toast";
 import Link from "next/link";
+import {
+  MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
+  ShoppingBag, Shuffle, Loader2, type LucideIcon,
+  Camera, ImagePlus, CheckCircle2, Eye,
+} from "lucide-react";
+
+const URGENCY_STYLE: Record<string, { label: string; text: string; bg: string }> = {
+  CRITICAL: { label: "Urgent",   text: "text-red-600 dark:text-red-400",     bg: "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800" },
+  HIGH:     { label: "High Priority", text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800" },
+};
+
+// ── Step 1: flow-type options (no card boxes — plain columns with a 3D tilt) ───
+
+const FLOW_OPTIONS: {
+  type: DonorFlowType;
+  title: string;
+  desc: string;
+  badge: string | null;
+  icon: LucideIcon;
+  iconBg: string;
+  iconText: string;
+  tags: string[];
+}[] = [
+  {
+    type: "ALREADY_OWN",
+    title: "I already own this item",
+    desc: "You have the item physically available and ready to give.",
+    badge: "Fastest",
+    icon: Package,
+    iconBg: "bg-green-100 dark:bg-green-950",
+    iconText: "text-green-600 dark:text-green-400",
+    tags: ["No purchase needed", "Photos required", "Fastest match"],
+  },
+  {
+    type: "WILL_PURCHASE",
+    title: "I will purchase a new item",
+    desc: "You intend to buy the item after the offer is accepted.",
+    badge: null,
+    icon: ShoppingBag,
+    iconBg: "bg-blue-100 dark:bg-blue-950",
+    iconText: "text-blue-600 dark:text-blue-400",
+    tags: ["Buy after approval", "Flexible timing", "Receipt may be asked"],
+  },
+  {
+    type: "SIMILAR_ITEM",
+    title: "I have a similar item",
+    desc: "Your item may not exactly match the specs — the donee will review it.",
+    badge: null,
+    icon: Shuffle,
+    iconBg: "bg-purple-100 dark:bg-purple-950",
+    iconText: "text-purple-600 dark:text-purple-400",
+    tags: ["Alt spec allowed", "Donee reviews fit", "May need clarification"],
+  },
+];
+
+function daysAgo(iso: string): string {
+  const days = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
+  if (days === 0) return "Listed today";
+  if (days === 1) return "Listed 1 day ago";
+  return `Listed ${days} days ago`;
+}
+
+function shareRequest(title: string, requestId: number) {
+  const url = `${window.location.origin}/requests/${requestId}/offer`;
+  const text = `Check this request on CauseKind: ${title}`;
+  if (typeof navigator !== "undefined" && navigator.share) {
+    navigator.share({ title, text, url }).catch(() => {});
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, "_blank", "noopener,noreferrer");
+    toast.success("Opening WhatsApp to share");
+  }
+}
 
 // ── Existing offer status → guidance ──────────────────────────────────────────
 
@@ -28,7 +101,7 @@ type OfferGuidance = {
   title: string;
   explanation: string;
   action?: { label: string; href: string };
-  resumeStep?: 2 | 3;
+  resumeStep?: 2;
   color: "blue" | "amber" | "green" | "red";
 };
 
@@ -37,7 +110,7 @@ function getOfferGuidance(offer: DonationOffer): OfferGuidance {
   switch (s) {
     case "DRAFT":
     case "NEEDS_INFORMATION":
-      return { title: "Continue your offer", explanation: s === "NEEDS_INFORMATION" ? "More information is required before your offer can proceed. Please update your item details." : "Your draft is saved. Pick up where you left off.", resumeStep: 3, color: "amber" };
+      return { title: "Continue your offer", explanation: s === "NEEDS_INFORMATION" ? "More information is required before your offer can proceed. Please update your item details." : "Your draft is saved. Pick up where you left off.", resumeStep: 2, color: "amber" };
     case "SUBMITTED":
     case "AI_ELIGIBILITY_SCREENING":
     case "AI_COMPATIBILITY_SCREENING":
@@ -70,17 +143,64 @@ function getOfferGuidance(offer: DonationOffer): OfferGuidance {
   }
 }
 
+// ── 3D mouse-tilt card (used for the flow-type choices) ────────────────────────
+
+function Tilt3DCard({
+  onClick, disabled, className, style, children,
+}: {
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, active: false });
+
+  function handleMove(e: React.MouseEvent<HTMLButtonElement>) {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width - 0.5;
+    const py = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt({ rx: py * -14, ry: px * 14, active: true });
+  }
+  function handleLeave() {
+    setTilt({ rx: 0, ry: 0, active: false });
+  }
+
+  return (
+    <button
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        ...style,
+        transform: `perspective(900px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale3d(${tilt.active ? 1.04 : 1}, ${tilt.active ? 1.04 : 1}, 1)`,
+        transformStyle: "preserve-3d",
+        transitionProperty: "transform, box-shadow",
+        transitionDuration: tilt.active ? "100ms" : "400ms",
+        transitionTimingFunction: "ease-out",
+      }}
+      className={className}
+    >
+      {children}
+    </button>
+  );
+}
+
 // ── Step types ────────────────────────────────────────────────────────────────
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3;
 
 interface FormState {
   flowType: DonorFlowType | null;
-  brand: string;
-  model: string;
   approximateAge: string;
   condition: string;
   workingStatus: string;
+  hasKnownDefects: boolean;
   knownDefects: string;
   accessoriesIncluded: string;
   quantity: string;
@@ -96,8 +216,8 @@ interface FormState {
 
 const INITIAL: FormState = {
   flowType: null,
-  brand: "", model: "", approximateAge: "", condition: "", workingStatus: "",
-  knownDefects: "", accessoriesIncluded: "", quantity: "1", specNotes: "",
+  approximateAge: "", condition: "", workingStatus: "",
+  hasKnownDefects: false, knownDefects: "", accessoriesIncluded: "", quantity: "1", specNotes: "",
   pickupCity: "", pickupPincode: "", pickupLocality: "",
   maxTravelDistanceKm: "", deliveryCostBornBy: "DONOR",
   donorDropOffAvailable: false, declarationsAccepted: false,
@@ -127,12 +247,14 @@ export default function OfferWizardPage() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [requestLoadFailed, setRequestLoadFailed] = useState(false);
   const compatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load request data and check for an existing offer
   useEffect(() => {
     if (!requestId) return;
-    getAnonymizedRequest(requestId).then(setRequest).catch(() => {});
+    getAnonymizedRequest(requestId).then(setRequest).catch(() => setRequestLoadFailed(true));
     getQuantityAllocation(requestId).then(setQty).catch(() => {});
     // Check if the donor already has an offer for this request
     getMyDonationOffers()
@@ -146,7 +268,7 @@ export default function OfferWizardPage() {
 
   // Debounced compatibility check
   useEffect(() => {
-    if (!offer || step !== 3) return;
+    if (!offer || step !== 2) return;
     if (compatTimer.current) clearTimeout(compatTimer.current);
     compatTimer.current = setTimeout(async () => {
       try {
@@ -161,7 +283,7 @@ export default function OfferWizardPage() {
     dispatch({ type: "SET", key, value: value as string | boolean | DonorFlowType });
   }
 
-  // ── Step 2: Select flow type + create/resume draft ────────────────────────
+  // ── Step 1: Select flow type + create/resume draft ────────────────────────
   async function handleFlowSelect(flowType: DonorFlowType) {
     set("flowType", flowType);
     setLoading(true);
@@ -174,7 +296,7 @@ export default function OfferWizardPage() {
         setExistingOffer(returned);
         return; // Stay on Step 1 — the existing offer banner will appear
       }
-      setStep(3);
+      setStep(2);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create offer draft");
     } finally {
@@ -182,19 +304,17 @@ export default function OfferWizardPage() {
     }
   }
 
-  // ── Step 3: Save item details ──────────────────────────────────────────────
+  // ── Step 2: Save item details ──────────────────────────────────────────────
   async function saveDetails() {
     if (!offer) return;
     setLoading(true);
     setError(null);
     try {
       await updateOfferItemDetails(offer.id, {
-        brand: form.brand || undefined,
-        model: form.model || undefined,
         approximateAge: form.approximateAge || undefined,
         condition: form.condition || undefined,
         workingStatus: form.workingStatus || undefined,
-        knownDefects: form.knownDefects || undefined,
+        knownDefects: form.hasKnownDefects ? (form.knownDefects || undefined) : "None",
         accessoriesIncluded: form.accessoriesIncluded || undefined,
         quantity: Number(form.quantity),
         specNotes: form.specNotes || undefined,
@@ -219,7 +339,7 @@ export default function OfferWizardPage() {
     }
   }
 
-  async function handleStep3Submit() {
+  async function handleItemDetailsSubmit() {
     if (!form.condition) { setError("Please select item condition"); return; }
     if (!form.pickupCity) { setError("Pickup city is required"); return; }
     if (files.length < 2) { setError("Please upload at least 2 photos"); return; }
@@ -227,7 +347,7 @@ export default function OfferWizardPage() {
     setError(null);
     try {
       await saveDetails();
-      setStep(4);
+      setStep(3);
       await handleSubmit();
     } catch {}
   }
@@ -254,6 +374,56 @@ export default function OfferWizardPage() {
     ].slice(0, 8));
   }
 
+  function handleUseMyLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser doesn't support location detection");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=en`
+          );
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          const address = data.address ?? {};
+          const city = address.city || address.town || address.village || address.suburb || "";
+          const locality = address.suburb || address.neighbourhood || address.road || "";
+          const pincode = address.postcode || "";
+          if (city) set("pickupCity", city);
+          if (locality) set("pickupLocality", locality);
+          if (pincode) set("pickupPincode", pincode);
+          toast.success("Location filled in");
+        } catch {
+          toast.error("Couldn't detect address details — please enter manually");
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error("Location access denied");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  if (requestLoadFailed) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-gray-600 dark:text-gray-400">This request couldn't be loaded — it may have been withdrawn or is no longer accepting offers.</p>
+        <button
+          onClick={() => router.push("/requests")}
+          className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
+        >
+          Back to Requests
+        </button>
+      </div>
+    );
+  }
+
   if (!request) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -264,25 +434,27 @@ export default function OfferWizardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
-      <div className="mx-auto max-w-2xl px-4 pt-8">
+      <div className={`mx-auto px-4 pt-8 ${step === 1 ? "max-w-5xl" : step === 2 ? "max-w-4xl" : "max-w-2xl"}`}>
         {/* Progress */}
-        <div className="mb-6 flex items-center gap-2">
-          {([1, 2, 3, 4] as Step[]).map((s) => (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                  s < step ? "bg-green-500 text-white"
-                  : s === step ? "bg-[#b04a15] text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-500"
-                }`}
-              >
-                {s < step ? "✓" : s}
+        <div className="mb-6 flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2">
+            {([1, 2, 3] as Step[]).map((s) => (
+              <div key={s} className="flex items-center gap-2">
+                <div
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                    s < step ? "bg-green-500 text-white"
+                    : s === step ? "bg-[#1e3a60] text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                  }`}
+                >
+                  {s < step ? "✓" : s}
+                </div>
+                {s < 3 && <div className={`h-0.5 w-8 ${s < step ? "bg-green-400" : "bg-gray-200 dark:bg-gray-700"}`} />}
               </div>
-              {s < 4 && <div className={`h-0.5 w-8 ${s < step ? "bg-green-400" : "bg-gray-200 dark:bg-gray-700"}`} />}
-            </div>
-          ))}
-          <span className="ml-2 text-xs text-gray-400">
-            {["View Request", "Choose How", "Item Details", "Submitted"][step - 1]}
+            ))}
+          </div>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            {["View & Choose", "Item Details", "Submitted"][step - 1]}
           </span>
         </div>
 
@@ -292,23 +464,23 @@ export default function OfferWizardPage() {
           </div>
         )}
 
-        {/* ── Step 1: Request overview ──────────────────────────────────────── */}
+        {/* ── Step 1: Request overview + choose how to help (merged, no card boxes) ── */}
         {step === 1 && (
-          <div className="space-y-4">
-            {/* Existing offer banner — shown prominently when an offer is in progress */}
+          <div>
+            {/* Existing offer banner — left-accent alert, not a boxed card */}
             {existingOffer && (() => {
               const guidance = getOfferGuidance(existingOffer);
               const colorMap = {
-                blue:  { card: "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800",   title: "text-blue-800 dark:text-blue-200", text: "text-blue-700 dark:text-blue-300",   btn: "bg-blue-600 hover:bg-blue-700" },
-                amber: { card: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800", title: "text-amber-800 dark:text-amber-200", text: "text-amber-700 dark:text-amber-300", btn: "bg-amber-500 hover:bg-amber-600" },
-                green: { card: "bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800", title: "text-green-800 dark:text-green-200", text: "text-green-700 dark:text-green-300",  btn: "bg-green-600 hover:bg-green-700" },
-                red:   { card: "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800",         title: "text-red-800 dark:text-red-200",   text: "text-red-700 dark:text-red-300",    btn: "bg-red-600 hover:bg-red-700" },
+                blue:  { accent: "border-blue-400 dark:border-blue-600",   title: "text-blue-800 dark:text-blue-200",   text: "text-blue-700 dark:text-blue-300",   btn: "bg-blue-600 hover:bg-blue-700" },
+                amber: { accent: "border-amber-400 dark:border-amber-600", title: "text-amber-800 dark:text-amber-200", text: "text-amber-700 dark:text-amber-300", btn: "bg-amber-500 hover:bg-amber-600" },
+                green: { accent: "border-green-400 dark:border-green-600", title: "text-green-800 dark:text-green-200", text: "text-green-700 dark:text-green-300", btn: "bg-green-600 hover:bg-green-700" },
+                red:   { accent: "border-red-400 dark:border-red-600",     title: "text-red-800 dark:text-red-200",     text: "text-red-700 dark:text-red-300",     btn: "bg-red-600 hover:bg-red-700" },
               };
               const c = colorMap[guidance.color];
               return (
-                <div className={`rounded-2xl border p-5 ${c.card}`}>
+                <div className={`mb-6 border-l-4 py-1 pl-4 ${c.accent}`}>
                   <div className="flex items-start gap-3">
-                    <div className="text-2xl">
+                    <div className="text-xl leading-none">
                       {guidance.color === "green" ? "✓" : guidance.color === "amber" ? "⚠" : guidance.color === "red" ? "✕" : "ℹ"}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -341,126 +513,179 @@ export default function OfferWizardPage() {
               );
             })()}
 
-            {/* Request detail card */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <span className="rounded-full bg-green-100 dark:bg-green-950 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">
-                  Verified Request
+            {/* Breadcrumb */}
+            <div className="mb-4 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+              <Link href="/requests" className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">Requests</Link>
+              <span>/</span>
+              <Link href={`/requests?category=${encodeURIComponent(request.category)}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">
+                {request.category}
+              </Link>
+              <span>/</span>
+              <span className="text-gray-500 dark:text-gray-400">Request #{request.id}</span>
+            </div>
+
+            {/* Request identity — plain header, divider instead of a box */}
+            <header className="mb-8 border-b border-gray-200 pb-6 dark:border-gray-800">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-400">
+                  <ShieldCheck className="h-3 w-3" /> Verified Request
                 </span>
-                <span className="text-xs text-gray-400">{request.urgency}</span>
+                {URGENCY_STYLE[request.urgency] && (
+                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${URGENCY_STYLE[request.urgency].bg} ${URGENCY_STYLE[request.urgency].text}`}>
+                    {URGENCY_STYLE[request.urgency].label}
+                  </span>
+                )}
               </div>
-              <h1 className="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="mb-3 text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {request.title}
               </h1>
-              <div className="mb-4 grid grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-400">
-                <div><span className="font-medium">Category:</span> {request.category}</div>
-                <div><span className="font-medium">Location:</span> {request.city}</div>
-                <div><span className="font-medium">Quantity needed:</span> {request.quantityRequired}</div>
-                <div><span className="font-medium">Still needed:</span> {request.quantityRemaining}</div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+                <span className="inline-flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> {request.category}</span>
+                <span className="text-gray-300 dark:text-gray-700">•</span>
+                <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {request.city}</span>
+                <span className="text-gray-300 dark:text-gray-700">•</span>
+                <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {request.quantity} unit{request.quantity === 1 ? "" : "s"} needed</span>
               </div>
-              {request.description && (
-                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">{request.description}</p>
-              )}
-              {qty && (
-                <div className="mb-4 rounded-xl bg-gray-50 dark:bg-gray-800 p-3 text-xs text-gray-500">
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div><div className="font-semibold text-gray-700 dark:text-gray-300">{qty.quantityRequired}</div>Required</div>
-                    <div><div className="font-semibold text-amber-600">{qty.quantityReserved}</div>Reserved</div>
-                    <div><div className="font-semibold text-green-600">{qty.quantityDelivered}</div>Delivered</div>
+            </header>
+
+            {/* How would you like to help — centered heading, 3 white cards side by side */}
+            {existingOffer && existingOffer.status !== "DRAFT" && existingOffer.status !== "NEEDS_INFORMATION" ? (
+              <p className="mb-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                Your offer for this request is already in progress — see the status above.
+              </p>
+            ) : (
+              <section className="mb-10">
+                <div className="mb-8 text-center">
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">
+                    Step 1 of 3
+                  </p>
+                  <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    How would you like to help?
+                  </h2>
+                  <p className="mx-auto max-w-md text-sm text-gray-500 dark:text-gray-400">
+                    Choosing the right option helps us process your offer correctly — each path has a slightly different next step.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags }, i) => {
+                    const isSelecting = loading && form.flowType === type;
+                    return (
+                      <Tilt3DCard
+                        key={type}
+                        onClick={() => handleFlowSelect(type)}
+                        disabled={loading}
+                        style={{ animationDelay: `${i * 100}ms`, animationFillMode: "backwards" }}
+                        className="group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900"
+                      >
+                        {badge && (
+                          <span style={{ transform: "translateZ(30px)" }} className="absolute right-5 top-5 text-[11px] font-bold uppercase tracking-wide text-green-600 dark:text-green-400">
+                            {badge}
+                          </span>
+                        )}
+                        <div style={{ transform: "translateZ(36px)" }} className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${iconBg}`}>
+                          {isSelecting ? (
+                            <Loader2 className={`h-6 w-6 animate-spin ${iconText}`} />
+                          ) : (
+                            <Icon className={`h-6 w-6 ${iconText}`} />
+                          )}
+                        </div>
+                        <div style={{ transform: "translateZ(20px)" }} className="font-semibold text-gray-900 dark:text-gray-100">
+                          {title}
+                        </div>
+                        <div style={{ transform: "translateZ(12px)" }} className="mt-1.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                          {desc}
+                        </div>
+                        <div className="mt-3 max-w-[15rem] text-[10px] font-medium leading-relaxed text-gray-400 dark:text-gray-500">
+                          {tags.join(" · ")}
+                        </div>
+                      </Tilt3DCard>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Request description — quoted, in the donee's own words */}
+            {request.description && (
+              <section className="mb-8">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Request Description</p>
+                <div className="rounded-xl border-l-4 border-indigo-300 bg-indigo-50 px-5 py-4 dark:border-indigo-600 dark:bg-indigo-950/30">
+                  <p className="text-sm italic leading-relaxed text-gray-700 dark:text-gray-300">&ldquo;{request.description}&rdquo;</p>
+                </div>
+              </section>
+            )}
+
+            {/* Verified & Audited — card with stat blocks + review checklist */}
+            {qty && (
+              <section className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div className="flex flex-wrap items-start justify-between gap-6">
+                  <div className="max-w-sm">
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100">Verified &amp; Audited</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+                      Our team manually verifies every request with supporting documentation before it goes live.
+                    </p>
+                  </div>
+                  <div className="flex gap-8 text-right">
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityDelivered} / {qty.quantityRequired}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Provided</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityReserved}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Reserved</p>
+                    </div>
                   </div>
                 </div>
-              )}
-              <div className="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 mb-5">
-                Donee contact details are kept private until admin approves the match.
-              </div>
-
-              {/* Hide the main CTA if offer is already past DRAFT */}
-              {existingOffer && existingOffer.status !== "DRAFT" && existingOffer.status !== "NEEDS_INFORMATION" ? (
-                <p className="text-center text-sm text-gray-400 py-2">
-                  Your offer for this request is already in progress.
-                </p>
-              ) : (
-                <button
-                  onClick={() => setStep(2)}
-                  className="w-full rounded-xl bg-[#b04a15] py-3 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
-                >
-                  {existingOffer ? "Continue My Offer" : "I Can Donate This Item"}
-                </button>
-              )}
-              <div className="mt-3 flex gap-2">
-                <button onClick={() => router.back()} className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  Back
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Step 2: Flow type selection ───────────────────────────────────── */}
-        {step === 2 && (
-          <div>
-            <h2 className="mb-2 text-lg font-bold text-gray-900 dark:text-gray-100">
-              How would you like to help?
-            </h2>
-            <p className="mb-5 text-sm text-gray-500">
-              Choosing the right option helps us process your offer correctly.
-            </p>
-            <div className="space-y-3">
-              {[
-                {
-                  type: "ALREADY_OWN" as DonorFlowType,
-                  title: "I already own this item",
-                  desc: "You have the item physically available and ready to give.",
-                  badge: "Fastest",
-                  badgeColor: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-                },
-                {
-                  type: "WILL_PURCHASE" as DonorFlowType,
-                  title: "I will purchase a new item",
-                  desc: "You intend to buy the item after the offer is accepted.",
-                  badge: null,
-                  badgeColor: "",
-                },
-                {
-                  type: "SIMILAR_ITEM" as DonorFlowType,
-                  title: "I have a similar item",
-                  desc: "Your item may not exactly match the specs — the donee will review it.",
-                  badge: null,
-                  badgeColor: "",
-                },
-              ].map(({ type, title, desc, badge, badgeColor }) => (
-                <button
-                  key={type}
-                  onClick={() => handleFlowSelect(type)}
-                  disabled={loading}
-                  className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 text-left shadow-sm hover:border-[#b04a15] hover:shadow-md transition-all disabled:opacity-50"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold text-gray-900 dark:text-gray-100">{title}</div>
-                      <div className="mt-0.5 text-sm text-gray-500">{desc}</div>
-                    </div>
-                    {badge && (
-                      <span className={`ml-3 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${badgeColor}`}>
-                        {badge}
-                      </span>
-                    )}
+                <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-gray-100 pt-4 dark:border-gray-800 sm:grid-cols-2">
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-green-600 dark:text-green-400" />
+                    <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-400">Reviewed and approved by the CauseKind admin team before publishing.</p>
                   </div>
-                </button>
-              ))}
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-green-600 dark:text-green-400" />
+                    <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-400">Recipient identity confirmed during onboarding.</p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Meta + share — inline, no boxed nuggets */}
+            <div className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+              <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {daysAgo(request.createdAt)}</span>
+              <span className="text-gray-300 dark:text-gray-700">•</span>
+              <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {request.quantityRemaining} still needed</span>
+              <span className="text-gray-300 dark:text-gray-700">•</span>
+              <button
+                onClick={() => shareRequest(request.title, request.id)}
+                className="inline-flex items-center gap-1.5 font-semibold text-[#b04a15] transition-colors hover:text-[#c45520] dark:text-[#e07b3a]"
+              >
+                <Share2 className="h-3.5 w-3.5" /> Share this Request
+              </button>
             </div>
-            <button onClick={() => setStep(1)} className="mt-4 text-sm text-gray-400 hover:text-gray-600">
-              ← Back
+
+            {/* Privacy note — plain text, no box */}
+            <p className="mb-6 flex items-start gap-2 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+              Donee contact details are kept private until admin approves the match — pickup is arranged directly once your offer is accepted.
+            </p>
+
+            <button
+              onClick={() => router.back()}
+              className="group inline-flex items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-1" />
+              Back
             </button>
           </div>
         )}
 
-        {/* ── Step 3: Item details form ─────────────────────────────────────── */}
-        {step === 3 && offer && (
+        {/* ── Step 2: Item details form ─────────────────────────────────────── */}
+        {step === 2 && offer && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Item Details</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Item Details</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {form.flowType === "ALREADY_OWN" && "Tell us about the item you already have."}
                 {form.flowType === "WILL_PURCHASE" && "Describe the item you plan to purchase."}
                 {form.flowType === "SIMILAR_ITEM" && "Describe your item — note any differences from the request."}
@@ -475,22 +700,37 @@ export default function OfferWizardPage() {
               />
             )}
 
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Brand" value={form.brand} onChange={(v) => set("brand", v)} placeholder="Optional" />
-                <Field label="Model" value={form.model} onChange={(v) => set("model", v)} placeholder="Optional" />
-              </div>
               <div className="grid grid-cols-2 gap-4">
                 <SelectField
                   label="Condition *"
                   value={form.condition}
                   onChange={(v) => set("condition", v)}
                   options={["Unused", "Like New", "Good", "Fair", "Needs Minor Repair", "Not Working"]}
+                  wobble
                 />
                 <Field label="Approximate Age" value={form.approximateAge} onChange={(v) => set("approximateAge", v)} placeholder="e.g. 2 years" />
               </div>
               <Field label="Quantity to donate *" value={form.quantity} onChange={(v) => set("quantity", v)} type="number" />
-              <Field label="Known Defects (write 'None' if none) *" value={form.knownDefects} onChange={(v) => set("knownDefects", v)} placeholder="e.g. Minor scratch on lid" />
+
+              <div>
+                <label className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={form.hasKnownDefects}
+                    onChange={(e) => set("hasKnownDefects", e.target.checked)}
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">This item has known defects</span>
+                </label>
+                {form.hasKnownDefects && (
+                  <div className="mt-3">
+                    <Field label="Known Defects" value={form.knownDefects} onChange={(v) => set("knownDefects", v)} placeholder="e.g. Minor scratch on lid" />
+                  </div>
+                )}
+              </div>
+
               <Field label="Accessories Included" value={form.accessoriesIncluded} onChange={(v) => set("accessoriesIncluded", v)} placeholder="e.g. Charger, original box" />
               {form.flowType === "SIMILAR_ITEM" && (
                 <Field label="How is your item different?" value={form.specNotes} onChange={(v) => set("specNotes", v)} placeholder="e.g. 4 GB RAM instead of 8 GB, same brand" />
@@ -499,59 +739,97 @@ export default function OfferWizardPage() {
 
             {/* Logistics */}
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
-              <h3 className="font-semibold text-gray-800 dark:text-gray-200">Pickup / Delivery</h3>
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                    <MapPin className="h-4.5 w-4.5" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Pickup / Delivery</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleUseMyLocation}
+                  disabled={gpsLoading}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 px-2.5 py-1.5 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-50 disabled:opacity-50 dark:border-teal-800 dark:text-teal-400 dark:hover:bg-teal-950/40"
+                >
+                  {gpsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
+                  Use my location
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="City *" value={form.pickupCity} onChange={(v) => set("pickupCity", v)} placeholder="e.g. Mumbai" />
                 <Field label="Pincode" value={form.pickupPincode} onChange={(v) => set("pickupPincode", v)} />
               </div>
               <Field label="Locality" value={form.pickupLocality} onChange={(v) => set("pickupLocality", v)} placeholder="e.g. Andheri West" />
-              <div className="flex items-center gap-3">
+              <label
+                htmlFor="dropoff"
+                className="flex cursor-pointer items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/20"
+              >
                 <input type="checkbox" id="dropoff" checked={form.donorDropOffAvailable}
                   onChange={(e) => set("donorDropOffAvailable", e.target.checked)}
-                  className="h-4 w-4 rounded" />
-                <label htmlFor="dropoff" className="text-sm text-gray-700 dark:text-gray-300">
-                  I can deliver/drop off the item
-                </label>
-              </div>
-              <SelectField
-                label="Who pays delivery?"
-                value={form.deliveryCostBornBy}
-                onChange={(v) => set("deliveryCostBornBy", v)}
-                options={["DONOR", "DONEE", "SHARED", "ADMIN_APPROVAL"]}
-                displayMap={{ DONOR: "I will pay", DONEE: "Recipient pays", SHARED: "Share cost", ADMIN_APPROVAL: "Platform to decide" }}
-              />
+                  className="mt-0.5 h-4 w-4 rounded" />
+                <div>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">I can deliver/drop off the item</p>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Check this if you are willing to transport the item to the charity or recipient&apos;s address.</p>
+                </div>
+              </label>
+              {!form.donorDropOffAvailable && (
+                <SelectField
+                  label="Who pays delivery?"
+                  value={form.deliveryCostBornBy}
+                  onChange={(v) => set("deliveryCostBornBy", v)}
+                  options={["DONOR", "DONEE", "SHARED", "ADMIN_APPROVAL"]}
+                  displayMap={{ DONOR: "I will pay", DONEE: "Recipient pays", SHARED: "Share cost", ADMIN_APPROVAL: "Platform to decide" }}
+                />
+              )}
             </div>
 
             {/* Photos */}
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-              <h3 className="mb-1 font-semibold text-gray-800 dark:text-gray-200">Photos (min. 2, max. 8) *</h3>
-              <p className="mb-3 text-xs text-gray-500">Upload recent, genuine photos. Include full item view, condition, and any defects.</p>
-              <input
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-[#b04a15] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
-              />
-              {previews.length > 0 && (
-                <div className="mt-3 grid grid-cols-4 gap-2">
-                  {previews.map((src, i) => (
-                    <div key={i} className="relative aspect-square overflow-hidden rounded-lg">
-                      <img src={src} alt="" className="h-full w-full object-cover" />
-                      <button
-                        onClick={() => { setFiles((f) => f.filter((_, j) => j !== i)); setPreviews((p) => p.filter((_, j) => j !== i)); }}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs"
-                      >×</button>
-                    </div>
-                  ))}
+              <div className="mb-1 flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <Camera className="h-4.5 w-4.5" />
                 </div>
-              )}
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">Photos (min. 2, max. 8) *</h3>
+              </div>
+              <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">Upload recent, genuine photos. Include full item view, condition, and any defects.</p>
+              <div className="grid grid-cols-4 gap-2">
+                <label
+                  htmlFor="photo-upload"
+                  className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-[#1e3a60] hover:text-[#1e3a60] dark:border-gray-700 dark:text-gray-500"
+                >
+                  <ImagePlus className="h-5 w-5" />
+                  <span className="text-[11px] font-medium">Add Photo</span>
+                </label>
+                <input
+                  id="photo-upload"
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                {previews.map((src, i) => (
+                  <div key={i} className="relative aspect-square overflow-hidden rounded-lg">
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                    <button
+                      onClick={() => { setFiles((f) => f.filter((_, j) => j !== i)); setPreviews((p) => p.filter((_, j) => j !== i)); }}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs"
+                    >×</button>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Declarations */}
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-              <h3 className="mb-3 font-semibold text-gray-800 dark:text-gray-200">Declarations</h3>
-              <ul className="mb-4 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+              <div className="mb-3 flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <ShieldCheck className="h-4.5 w-4.5" />
+                </div>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">Declarations</h3>
+              </div>
+              <ul className="mb-4 space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 {[
                   "I own this item or am authorised to donate it.",
                   "The photographs are recent and genuine.",
@@ -562,12 +840,12 @@ export default function OfferWizardPage() {
                   "I agree to follow the CauseKind handover process.",
                 ].map((d, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="mt-0.5 text-[#b04a15]">✓</span>
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-teal-600 dark:text-teal-400" />
                     <span>{d}</span>
                   </li>
                 ))}
               </ul>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 border-t border-gray-100 pt-4 dark:border-gray-800">
                 <input type="checkbox" id="decl" checked={form.declarationsAccepted}
                   onChange={(e) => set("declarationsAccepted", e.target.checked)}
                   className="h-4 w-4 rounded" />
@@ -576,24 +854,53 @@ export default function OfferWizardPage() {
                 </label>
               </div>
             </div>
+            </div>
 
             {error && (
               <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
                 {error}
               </div>
             )}
-            <button
-              onClick={handleStep3Submit}
-              disabled={loading}
-              className="w-full rounded-xl bg-[#b04a15] py-3.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors disabled:opacity-50"
-            >
-              {loading ? "Submitting..." : "Submit Donation Offer"}
-            </button>
+
+            <div className="flex items-center justify-between pt-1">
+              <button
+                onClick={() => setStep(1)}
+                className="group inline-flex items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-1" />
+                Back to Step 1
+              </button>
+              <button
+                onClick={handleItemDetailsSubmit}
+                disabled={loading}
+                className="rounded-xl bg-[#1e3a60] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#254876] disabled:opacity-50"
+              >
+                {loading ? "Submitting..." : "Submit Donation Offer"}
+              </button>
+            </div>
+
+            {/* Info tiles */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="rounded-xl bg-indigo-50/70 p-4 dark:bg-indigo-950/20">
+                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <ShieldCheck className="h-4.5 w-4.5" />
+                </div>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Quality Assurance</p>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Your detailed info helps our team assess condition and ensure quality standards are met.</p>
+              </div>
+              <div className="rounded-xl bg-indigo-50/70 p-4 dark:bg-indigo-950/20">
+                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <Eye className="h-4.5 w-4.5" />
+                </div>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Transparency</p>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Recipients can review condition details before accepting any donation.</p>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ── Step 4: Submitted / AI screening ─────────────────────────────── */}
-        {step === 4 && (
+        {/* ── Step 3: Submitted / AI screening ──────────────────────────────── */}
+        {step === 3 && (
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-8 text-center shadow-sm">
             {loading ? (
               <>
@@ -615,7 +922,7 @@ export default function OfferWizardPage() {
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950 text-2xl">!</div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">More Information Needed</h2>
                 <p className="mt-2 text-sm text-gray-500">Please provide additional details before your offer can proceed.</p>
-                <button onClick={() => setStep(3)} className="mt-6 rounded-xl bg-[#b04a15] px-6 py-2.5 text-sm font-semibold text-white">
+                <button onClick={() => setStep(2)} className="mt-6 rounded-xl bg-[#b04a15] px-6 py-2.5 text-sm font-semibold text-white">
                   Update Details
                 </button>
               </>
@@ -649,23 +956,33 @@ function Field({ label, value, onChange, placeholder, type = "text" }: {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#b04a15]"
+        className="w-full rounded-xl border border-indigo-100 dark:border-gray-700 bg-indigo-50/60 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#1e3a60]"
       />
     </div>
   );
 }
 
-function SelectField({ label, value, onChange, options, displayMap }: {
+function SelectField({ label, value, onChange, options, displayMap, wobble }: {
   label: string; value: string; onChange: (v: string) => void;
-  options: string[]; displayMap?: Record<string, string>;
+  options: string[]; displayMap?: Record<string, string>; wobble?: boolean;
 }) {
+  const [wobbling, setWobbling] = useState(false);
+
+  function triggerWobble() {
+    if (!wobble) return;
+    setWobbling(false);
+    requestAnimationFrame(() => setWobbling(true));
+  }
+
   return (
     <div>
       <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
       <select
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#b04a15]"
+        onChange={(e) => { onChange(e.target.value); triggerWobble(); }}
+        onFocus={triggerWobble}
+        onAnimationEnd={() => setWobbling(false)}
+        className={`w-full rounded-xl border border-indigo-100 dark:border-gray-700 bg-indigo-50/60 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#1e3a60] ${wobbling ? "animate-select-wobble" : ""}`}
       >
         <option value="">Select...</option>
         {options.map((o) => (

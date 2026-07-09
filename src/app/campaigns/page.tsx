@@ -574,7 +574,7 @@ function CampaignsPageInner() {
 
       {/* ── Hero Banner ──────────────────────────────────────────────── */}
       <div className="relative h-[240px] sm:h-[300px] overflow-hidden">
-        <Image src="/images/hero-4.webp" alt="Campaign stories" fill
+        <Image src="/images/hero-5.webp" alt="Campaign stories" fill
           className="object-cover object-center" priority />
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/75" />
         <div className="relative z-10 flex h-full flex-col justify-end px-5 pb-8 sm:px-10 md:px-14 max-w-3xl">

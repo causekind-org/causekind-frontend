@@ -61,15 +61,12 @@ export function HeroQuoteSlider() {
 
 /* ── Background image slider ─────────────────────────────────────────────── */
 export function HeroImageSlider() {
-  const [images, setImages]   = useState<string[]>(["/images/hero-4.webp"]);
+  const [images, setImages]   = useState<string[]>(["/images/hero-1.webp"]);
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     getHeroImages().then(imgs => {
-      if (imgs?.length) {
-        const others = imgs.filter(i => !i.includes("hero-4.webp"));
-        setImages(["/images/hero-4.webp", ...others]);
-      }
+      if (imgs?.length) setImages(imgs);
     });
   }, []);
 

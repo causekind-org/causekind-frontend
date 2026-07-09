@@ -7,7 +7,8 @@ import { blogPosts, insiderTips } from "../../data/blogData";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
 import { Search } from "lucide-react";
-import { getRecentActivity, type RecentActivity } from "@/lib/api";
+import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
+import { Sparkles } from "lucide-react";
 
 function timeAgo(date: Date): string {
   const mins = Math.floor((Date.now() - date.getTime()) / 60000);
@@ -29,6 +30,7 @@ function activityToFeedItem(a: RecentActivity, i: number) {
 export default function BlogListingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [liveFeed, setLiveFeed] = useState<{ id: number; time: string; user: string; text: string }[]>([]);
+  const [positiveUpdate, setPositiveUpdate] = useState<string | null>(null);
 
   // Carousel state for Insider Tips section
   const [tipIndex, setTipIndex] = useState(0);
@@ -56,6 +58,16 @@ export default function BlogListingPage() {
           { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing — be the first donor in your area!" },
         ]);
       });
+  }, []);
+
+  // Fetch the AI-generated positive spin on recent activity (refreshed
+  // server-side on a schedule, not per-request — see PositiveUpdateService).
+  // Silently keeps the widget's existing content if this fails or the
+  // feature isn't configured (no GEMINI_API_KEY) — never a hard failure.
+  useEffect(() => {
+    getPositiveUpdate()
+      .then((data) => setPositiveUpdate(data.text))
+      .catch(() => {});
   }, []);
 
   // Cycle through live feed items
@@ -243,6 +255,14 @@ export default function BlogListingPage() {
                         Live CauseKind Feed
       </h3>
                     </div>
+                    {positiveUpdate && (
+                      <div className="flex items-start gap-2 mb-4 p-3 rounded-xl bg-[#b04a15]/8 dark:bg-orange-400/10 border border-[#b04a15]/15 dark:border-orange-400/20">
+                        <Sparkles className="w-3.5 h-3.5 text-[#b04a15] dark:text-orange-400 shrink-0 mt-0.5" />
+                        <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300 font-medium">
+                          {positiveUpdate}
+                        </p>
+                      </div>
+                    )}
                     <div className="space-y-4">
                       {liveFeed.map((item, idx) => (
                         <div

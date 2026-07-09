@@ -8,15 +8,15 @@ import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { Reveal } from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import Image from "next/image";
 import {
   ImagePlus, Loader2, MapPin, PackageOpen, Search, SearchX,
-  Sparkles, X, HandCoins, Package, CheckCircle2, Plus, ChevronDown,
+  Sparkles, X, HandCoins, Package, Plus, ChevronDown,
   ShieldCheck, Heart, SlidersHorizontal, AlertTriangle, ArrowRight,
   BookOpen, Stethoscope, Sprout, Users, Home, Activity,
 } from "lucide-react";
@@ -52,50 +52,43 @@ const CAT_ICON: Record<string, React.ElementType> = {
   "Household":   Home,
 };
 
-const CAT_COLOR: Record<string, { pill: string; bar: string; dot: string; gradient: string }> = {
+const CAT_COLOR: Record<string, { pill: string; bar: string; dot: string; text: string; border: string }> = {
   "Medical aid": {
-    pill:     "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800/60",
-    bar:      "bg-sky-500",
-    dot:      "bg-sky-500",
-    gradient: "from-sky-600/80",
+    pill:   "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800/60",
+    bar:    "bg-sky-500",
+    dot:    "bg-sky-500",
+    text:   "text-sky-700 dark:text-sky-400",
+    border: "border-sky-500",
   },
   "Education": {
-    pill:     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/60",
-    bar:      "bg-amber-500",
-    dot:      "bg-amber-500",
-    gradient: "from-amber-600/80",
+    pill:   "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/60",
+    bar:    "bg-amber-500",
+    dot:    "bg-amber-500",
+    text:   "text-amber-700 dark:text-amber-400",
+    border: "border-amber-500",
   },
   "Livelihood": {
-    pill:     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/60",
-    bar:      "bg-emerald-500",
-    dot:      "bg-emerald-500",
-    gradient: "from-emerald-600/80",
+    pill:   "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/60",
+    bar:    "bg-emerald-500",
+    dot:    "bg-emerald-500",
+    text:   "text-emerald-700 dark:text-emerald-400",
+    border: "border-emerald-500",
   },
   "Relief": {
-    pill:     "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800/60",
-    bar:      "bg-violet-500",
-    dot:      "bg-violet-500",
-    gradient: "from-violet-600/80",
+    pill:   "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800/60",
+    bar:    "bg-violet-500",
+    dot:    "bg-violet-500",
+    text:   "text-violet-700 dark:text-violet-400",
+    border: "border-violet-500",
   },
   "Household": {
-    pill:     "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/60",
-    bar:      "bg-rose-500",
-    dot:      "bg-rose-500",
-    gradient: "from-rose-600/80",
+    pill:   "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/60",
+    bar:    "bg-rose-500",
+    dot:    "bg-rose-500",
+    text:   "text-rose-700 dark:text-rose-400",
+    border: "border-rose-500",
   },
 };
-
-const CAT_FALLBACK: Record<string, string> = {
-  "Medical aid": "/images/medical-1.webp",
-  "Education":   "/images/hero-7.webp",
-  "Livelihood":  "/images/hero-3.webp",
-  "Relief":      "/images/hero-5.webp",
-  "Household":   "/images/hero-6.webp",
-};
-
-function getCardImage(r: ItemRequest): string {
-  return r.imageUrl ?? CAT_FALLBACK[r.category] ?? "/images/hero-1.webp";
-}
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371, dLat = ((lat2 - lat1) * Math.PI) / 180, dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -129,10 +122,14 @@ function RequestsHero({
   total,
   critical,
   catCounts,
+  selected,
+  onToggle,
 }: {
   total: number;
   critical: number;
   catCounts: Record<string, number>;
+  selected: string[];
+  onToggle: (c: string) => void;
 }) {
   const [mouse, setMouse] = useState({ x: 50, y: 40 });
   const [active, setActive] = useState(false);
@@ -247,29 +244,43 @@ function RequestsHero({
               <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a]/70">Needs by Category</span>
             </div>
 
-            {cats.map(({ cat, Icon, count, col }, idx) => (
-              <div
-                key={cat}
-                className="relative bg-white/6 backdrop-blur-sm border border-white/10 rounded-2xl p-4
-                           hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-default group overflow-hidden"
-                style={{ transitionDelay: `${idx * 40}ms` }}
-              >
-                {/* Subtle bottom-left tinted corner */}
-                <div className={`absolute bottom-0 left-0 w-20 h-20 rounded-tr-3xl ${col.bar} opacity-[0.08] pointer-events-none`} />
+            {cats.map(({ cat, Icon, count, col }, idx) => {
+              const active = selected.includes(cat);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => onToggle(cat)}
+                  disabled={count === 0}
+                  aria-pressed={active}
+                  className={`relative rounded-2xl p-4 text-left backdrop-blur-sm border transition-all duration-300 group overflow-hidden
+                              disabled:opacity-35 disabled:cursor-not-allowed
+                              ${active
+                                ? "bg-white/18 border-white/40 shadow-[0_0_0_1px_rgba(255,255,255,0.15)]"
+                                : "bg-white/6 border-white/10 hover:bg-white/10 hover:border-white/20"}`}
+                  style={{ transitionDelay: `${idx * 40}ms` }}
+                >
+                  {/* Subtle bottom-left tinted corner */}
+                  <div className={`absolute bottom-0 left-0 w-20 h-20 rounded-tr-3xl ${col.bar} opacity-[0.08] pointer-events-none`} />
 
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-white/10 group-hover:scale-110 transition-transform`}>
-                  <Icon className={`w-4.5 h-4.5 text-white/70`} />
-                </div>
-                <p className="text-white/85 text-sm font-extrabold leading-tight">{cat}</p>
-                <div className="flex items-end gap-1.5 mt-1">
-                  <span className="text-2xl font-black text-white tabular-nums leading-none">{count}</span>
-                  <span className="text-white/35 text-[10px] font-bold uppercase tracking-wide pb-0.5">needs</span>
-                </div>
-                {count > 0 && (
-                  <div className={`mt-2 h-0.5 rounded-full ${col.bar} opacity-40`} style={{ width: `${Math.min(100, count * 10)}%` }} />
-                )}
-              </div>
-            ))}
+                  {active && (
+                    <span className={`absolute top-3 right-3 h-2 w-2 rounded-full ${col.bar}`} aria-hidden="true" />
+                  )}
+
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-white/10 group-hover:scale-110 transition-transform">
+                    <Icon className="w-4.5 h-4.5 text-white/70" />
+                  </div>
+                  <p className="text-white/85 text-sm font-extrabold leading-tight">{cat}</p>
+                  <div className="flex items-end gap-1.5 mt-1">
+                    <span className="text-2xl font-black text-white tabular-nums leading-none">{count}</span>
+                    <span className="text-white/35 text-[10px] font-bold uppercase tracking-wide pb-0.5">needs</span>
+                  </div>
+                  {count > 0 && (
+                    <div className={`mt-2 h-0.5 rounded-full ${col.bar} opacity-40`} style={{ width: `${Math.min(100, count * 10)}%` }} />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -443,224 +454,66 @@ function RequestFilterPanel({
   );
 }
 
-// ── Bento card variants ───────────────────────────────────────────────────────
+// ── Request listing block ─────────────────────────────────────────────────────
+// No card container — a category-colored top rule plus typography. Urgent requests
+// get a bigger type scale instead of a different "skin", so the masonry's natural
+// height variety is driven by real data (urgency, description length), not decoration.
 
-function TallRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
-  const col    = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
-  const Icon   = CAT_ICON[r.category] ?? Package;
-  const imgSrc = getCardImage(r);
-  const isCrit = r.urgency === "CRITICAL";
-  const isHigh = r.urgency === "HIGH";
+function RequestBlock({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
+  const col      = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
+  const Icon     = CAT_ICON[r.category] ?? Package;
+  const isCrit   = r.urgency === "CRITICAL";
+  const isHigh   = r.urgency === "HIGH";
+  const featured = isCrit;
 
   return (
     <Reveal>
       <div
         onClick={() => onGive(r)}
-        className="relative h-full min-h-[340px] rounded-3xl overflow-hidden cursor-pointer group"
+        className={`group cursor-pointer border-t-2 pt-4 ${col.border}`}
       >
-        <Image src={imgSrc} alt={r.title} fill className="object-cover transition-transform duration-700 group-hover:scale-[1.04]" sizes="(max-width: 1024px) 100vw, 45vw" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-black/10 pointer-events-none" />
-
-        {/* Top-left: verified badge */}
-        <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-black px-2.5 py-1 rounded-full">
-          <CheckCircle2 className="w-3 h-3 shrink-0" /> Verified
+        <div className="flex items-center justify-between gap-3">
+          <span className={`inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide ${col.text}`}>
+            <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} /> <TranslatedText text={r.category} />
+          </span>
+          {(isCrit || isHigh) && (
+            <span className={`inline-flex shrink-0 items-center gap-1 text-[10px] font-black uppercase tracking-wide ${isCrit ? "text-[#b04a15]" : "text-amber-600 dark:text-amber-400"}`}>
+              <AlertTriangle className="h-3 w-3 shrink-0" /> {isCrit ? "Urgent" : "High"}
+            </span>
+          )}
         </div>
 
-        {/* Top-right: urgency */}
-        {(isCrit || isHigh) && (
-          <div className={`absolute top-4 right-4 flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full backdrop-blur-sm ${isCrit ? "bg-red-500/90 text-white" : "bg-amber-500/90 text-white"}`}>
-            <AlertTriangle className="w-3 h-3 shrink-0" /> {isCrit ? "Urgent" : "High"}
-          </div>
+        <h3
+          className={`mt-2.5 font-extrabold leading-snug text-stone-900 transition-colors dark:text-stone-100 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] ${
+            featured ? "text-2xl line-clamp-2" : "text-base line-clamp-2"
+          }`}
+        >
+          <TranslatedText text={r.title} />
+        </h3>
+
+        {r.description && (
+          <p className={`mt-1.5 text-stone-500 dark:text-stone-400 leading-relaxed ${featured ? "text-sm line-clamp-4" : "text-xs line-clamp-2"}`}>
+            <TranslatedText text={r.description} />
+          </p>
         )}
 
-        {/* Bottom content */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 space-y-2">
-          <div className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm border ${col.pill}`}>
-            <Icon className="w-3 h-3 shrink-0" /> <TranslatedText text={r.category} />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <MapPin className="w-3 h-3 text-white/50" />
-            <span className="text-white/50 text-[10px] font-medium"><TranslatedText text={r.city} /></span>
-          </div>
-          <h3 className="text-white font-extrabold text-[1.2rem] leading-snug line-clamp-2">
-            <TranslatedText text={r.title} />
-          </h3>
-          {r.description && (
-            <p className="text-white/60 text-xs leading-relaxed line-clamp-2">
-              <TranslatedText text={r.description} />
-            </p>
-          )}
-          <div className="flex items-center gap-3 pt-0.5">
-            <span className="text-white/70 text-xs font-semibold tabular-nums">{r.quantity} items needed</span>
-            <span className="text-white/25">·</span>
-            <span className="text-white/40 text-[10px]">by {r.doneeName}</span>
+        <div className="mt-3 flex items-center justify-between gap-3 border-t border-stone-100 pt-3 dark:border-zinc-800">
+          <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-stone-400 dark:text-stone-500">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate"><TranslatedText text={r.city} /></span>
+            <span className="shrink-0 text-stone-300 dark:text-stone-700">·</span>
+            <span className="shrink-0 tabular-nums">{r.quantity} needed</span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onGive(r); }}
-            className="w-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/25 text-white text-sm font-bold py-3 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98]"
+            className="flex shrink-0 items-center gap-1 text-xs font-extrabold text-[#b04a15] dark:text-[#e07b3a] hover:underline"
           >
-            <Heart className="w-4 h-4 shrink-0" /> Give this item
+            Give <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
           </button>
         </div>
       </div>
     </Reveal>
   );
-}
-
-function ImageRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
-  const col    = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
-  const Icon   = CAT_ICON[r.category] ?? Package;
-  const imgSrc = getCardImage(r);
-
-  return (
-    <Reveal>
-      <div
-        className="h-full rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 shadow-sm flex flex-col cursor-pointer group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-        onClick={() => onGive(r)}
-      >
-        {/* Image section */}
-        <div className="relative flex-[5] overflow-hidden min-h-0">
-          <Image src={imgSrc} alt={r.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 1024px) 100vw, 40vw" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
-          <div className={`absolute top-3 left-3 flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm border ${col.pill}`}>
-            <Icon className="w-3 h-3 shrink-0" /> <TranslatedText text={r.category} />
-          </div>
-          {r.urgency === "CRITICAL" && (
-            <div className="absolute top-3 right-3 flex items-center gap-1 bg-red-500/90 text-white text-[10px] font-black px-2 py-0.5 rounded-full backdrop-blur-sm">
-              <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> Urgent
-            </div>
-          )}
-          <div className="absolute bottom-3 left-3 flex items-baseline gap-1">
-            <span className="text-white font-black text-base tabular-nums">{r.quantity}</span>
-            <span className="text-white/60 text-[10px]">needed</span>
-          </div>
-        </div>
-        {/* Text section */}
-        <div className="flex-[4] p-4 flex flex-col justify-between min-h-0">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#b04a15] dark:text-[#e07b3a] mb-1.5">
-              <TranslatedText text={r.category} />
-            </p>
-            <h3 className="font-extrabold text-stone-900 dark:text-stone-100 text-sm leading-snug line-clamp-2 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors">
-              <TranslatedText text={r.title} />
-            </h3>
-            {r.description && (
-              <p className="text-xs text-stone-400 mt-1 line-clamp-2 leading-relaxed">
-                <TranslatedText text={r.description} />
-              </p>
-            )}
-          </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-stone-50 dark:border-zinc-800">
-            <div className="flex items-center gap-1.5">
-              <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-              <span className="text-[10px] text-stone-400"><TranslatedText text={r.city} /></span>
-            </div>
-            <button onClick={(e) => { e.stopPropagation(); onGive(r); }} className="flex items-center gap-1 text-[10px] font-extrabold text-[#b04a15] dark:text-[#e07b3a] hover:underline">
-              Give <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </Reveal>
-  );
-}
-
-function DarkRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
-  const Icon = CAT_ICON[r.category] ?? Package;
-  const bg   = r.urgency === "CRITICAL" ? "bg-[#b04a15]"
-             : r.urgency === "HIGH"     ? "bg-[#7a3410]"
-             :                            "bg-[#1e3a60]";
-
-  return (
-    <Reveal>
-      <div className={`h-full rounded-3xl ${bg} p-5 flex flex-col justify-between`}>
-        <div>
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-              <Icon className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-white/40 text-[9px] font-black uppercase tracking-widest text-right">
-              {r.urgency === "CRITICAL" ? "Critical" : r.urgency === "HIGH" ? "High Priority" : r.category}
-            </span>
-          </div>
-          <h3 className="text-white font-extrabold text-base leading-snug line-clamp-2">
-            <TranslatedText text={r.title} />
-          </h3>
-          {r.description && (
-            <p className="text-white/55 text-xs mt-2 line-clamp-3 leading-relaxed">
-              <TranslatedText text={r.description} />
-            </p>
-          )}
-          <div className="flex items-center gap-1.5 mt-2">
-            <MapPin className="w-3 h-3 text-white/40 shrink-0" />
-            <span className="text-white/40 text-[10px]"><TranslatedText text={r.city} /></span>
-          </div>
-        </div>
-        <button
-          onClick={() => onGive(r)}
-          className="mt-4 w-full bg-white/20 hover:bg-white/30 border border-white/20 text-white text-sm font-extrabold py-2.5 rounded-2xl transition-all duration-200 active:scale-[0.98]"
-        >
-          Contribute
-        </button>
-      </div>
-    </Reveal>
-  );
-}
-
-function IconRequestCard({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
-  const col  = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
-  const Icon = CAT_ICON[r.category] ?? Package;
-
-  return (
-    <Reveal>
-      <div
-        className="h-full rounded-3xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 shadow-sm p-4 flex flex-col justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
-        onClick={() => onGive(r)}
-      >
-        <div>
-          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-3 ${col.pill.split(" ").slice(0, 2).join(" ")}`}>
-            <Icon className={`w-5 h-5 ${col.pill.split(" ")[1] ?? "text-stone-600"}`} />
-          </div>
-          <h3 className="font-extrabold text-stone-900 dark:text-stone-100 text-sm leading-snug line-clamp-2">
-            <TranslatedText text={r.title} />
-          </h3>
-          <p className="text-[10px] text-stone-400 mt-1 line-clamp-2 font-medium leading-relaxed">
-            {r.description
-              ? <TranslatedText text={r.description} />
-              : `Requested by ${r.doneeName}.`}
-          </p>
-        </div>
-        <div className="mt-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-              <span className="text-[10px] text-stone-400"><TranslatedText text={r.city} /></span>
-            </div>
-            <span className="text-[10px] font-black text-[#b04a15] tabular-nums">{r.quantity} needed</span>
-          </div>
-          <div className="h-1.5 rounded-full overflow-hidden bg-stone-100 dark:bg-zinc-800">
-            <div
-              className={`h-full rounded-full ${col.bar} transition-all duration-500`}
-              style={{ width: `${r.urgency === "CRITICAL" ? 82 : r.urgency === "HIGH" ? 56 : 28}%` }}
-            />
-          </div>
-          <p className="text-[10px] text-stone-400 mt-1 font-medium">
-            {r.urgency === "CRITICAL" ? "Urgently needed" : r.urgency === "HIGH" ? "High priority" : "Accepting contributions"}
-          </p>
-        </div>
-      </div>
-    </Reveal>
-  );
-}
-
-// Cycles: image → dark → icon across groups so adjacent cards never repeat the same style
-function SmallBentoCard({
-  r, groupIdx, pos, onGive,
-}: { r: ItemRequest; groupIdx: number; pos: 0 | 1; onGive: (r: ItemRequest) => void }) {
-  const v = (groupIdx * 2 + pos) % 3;
-  if (v === 1) return <DarkRequestCard r={r} onGive={onGive} />;
-  if (v === 2) return <IconRequestCard r={r} onGive={onGive} />;
-  return <ImageRequestCard r={r} onGive={onGive} />;
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -669,6 +522,13 @@ export default function RequestsPage() {
   const t        = useTranslations("requests");
   const { user, isLoading: authLoading } = useAuth();
   const router   = useRouter();
+
+  useEntityUpdates(["REQUEST"], () => {
+    if (!user || user.role === "DONEE" || !gpsCoords) return;
+    getItemRequests(undefined, gpsCoords.lat, gpsCoords.lng)
+      .then(setRequests)
+      .catch(() => {});
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -782,15 +642,20 @@ export default function RequestsPage() {
     }
   }, [user]);
 
-  // Load requests based on GPS and category selection
+  // Load requests based on GPS. Categories are deliberately NOT sent to the server —
+  // category filtering happens entirely client-side below (`filtered`), so `requests`
+  // always holds the full GPS-scoped set. Sending selectedCategories here used to make
+  // the server return only the selected categories, which shrank `requests` itself and
+  // broke `catCounts` (every unselected category read as 0 and got disabled, blocking
+  // multiselect — you could never add a second category once one was picked).
   useEffect(() => {
     if (!user || user.role === "DONEE" || !gpsCoords) return;
     setLoading(true);
-    getItemRequests(selectedCategories, gpsCoords.lat, gpsCoords.lng)
+    getItemRequests(undefined, gpsCoords.lat, gpsCoords.lng)
       .then(setRequests)
       .catch(() => toast.error("Failed to load item requests"))
       .finally(() => setLoading(false));
-  }, [user, gpsCoords, selectedCategories]);
+  }, [user, gpsCoords]);
 
   // ── Derived counts ────────────────────────────────────────────────────────
 
@@ -981,7 +846,13 @@ export default function RequestsPage() {
     <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
 
       {/* ── Hero ── */}
-      <RequestsHero total={requests.length} critical={criticalCount} catCounts={catCounts} />
+      <RequestsHero
+        total={requests.length}
+        critical={criticalCount}
+        catCounts={catCounts}
+        selected={selectedCategories}
+        onToggle={toggleCategory}
+      />
 
       {/* ── Category quick-filter bar ── */}
       <CategoryBar
@@ -1158,61 +1029,15 @@ export default function RequestsPage() {
                 )}
               </div>
             ) : (
-              <div className="pb-20 space-y-5">
-                {/* Mobile / tablet: simple 2-col grid */}
-                <div className="lg:hidden grid gap-4 sm:grid-cols-2">
+              <div className="pb-20">
+                {/* True masonry: each block keeps its own natural height and packs
+                    tightly against its neighbours — no forced equal-height stretching. */}
+                <div className="columns-1 sm:columns-2 lg:columns-3 gap-5">
                   {filtered.map((r) => (
-                    <ImageRequestCard key={r.id} r={r} onGive={openDonateModal} />
+                    <div key={r.id} className="mb-5 break-inside-avoid">
+                      <RequestBlock r={r} onGive={openDonateModal} />
+                    </div>
                   ))}
-                </div>
-
-                {/* Desktop: asymmetric bento — groups of 3, alternating tall-left / tall-right */}
-                <div className="hidden lg:block space-y-5">
-                  {Array.from({ length: Math.ceil(filtered.length / 3) }, (_, gi) => {
-                    const chunk = filtered.slice(gi * 3, gi * 3 + 3);
-                    // Partial last group always uses even pattern so tall card is never missing
-                    const isEven = gi % 2 === 0 || chunk.length < 3;
-
-                    return (
-                      <div key={gi} className="flex gap-5" style={{ minHeight: 520 }}>
-                        {isEven ? (
-                          /* Even: tall left, up to 2 smalls stacked right */
-                          <>
-                            <div className="flex-1 min-w-0">
-                              <TallRequestCard r={chunk[0]} onGive={openDonateModal} />
-                            </div>
-                            {chunk.length > 1 && (
-                              <div className="flex-1 min-w-0 flex flex-col gap-5">
-                                <div className="flex-1 min-h-0">
-                                  <SmallBentoCard r={chunk[1]} groupIdx={gi} pos={0} onGive={openDonateModal} />
-                                </div>
-                                {chunk[2] && (
-                                  <div className="flex-1 min-h-0">
-                                    <SmallBentoCard r={chunk[2]} groupIdx={gi} pos={1} onGive={openDonateModal} />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          /* Odd: 2 smalls stacked left, tall right */
-                          <>
-                            <div className="flex-1 min-w-0 flex flex-col gap-5">
-                              <div className="flex-1 min-h-0">
-                                <SmallBentoCard r={chunk[0]} groupIdx={gi} pos={0} onGive={openDonateModal} />
-                              </div>
-                              <div className="flex-1 min-h-0">
-                                <SmallBentoCard r={chunk[1]} groupIdx={gi} pos={1} onGive={openDonateModal} />
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <TallRequestCard r={chunk[2]} onGive={openDonateModal} />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
             )}

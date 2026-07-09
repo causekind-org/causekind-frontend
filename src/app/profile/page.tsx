@@ -142,6 +142,7 @@ export default function ProfilePage() {
   const [stateIso, setStateIso] = useState<string>("");
   const [cityValue, setCityValue] = useState<string>("");
   const [cityFreeText, setCityFreeText] = useState<string>(""); // free-text fallback
+  const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
 
   // Donation history + campaign stats
   const [donations, setDonations] = useState<Donation[]>([]);
@@ -163,7 +164,9 @@ export default function ProfilePage() {
   // Whether we fall back to free-text for city
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
-  const showCityFreeText = noStateOptions || noCityOptions;
+  // forceFreeTextCity covers GPS finding a real city that just isn't in the dataset's
+  // list for this state — the "zero cities listed" checks alone miss that case.
+  const showCityFreeText = noStateOptions || noCityOptions || forceFreeTextCity;
 
   // Auth guard
   useEffect(() => {
@@ -271,6 +274,7 @@ export default function ProfilePage() {
     setStateIso("");
     setCityValue("");
     setCityFreeText("");
+    setForceFreeTextCity(false);
   }
 
   // State change: reset city
@@ -278,6 +282,7 @@ export default function ProfilePage() {
     setStateIso(iso);
     setCityValue("");
     setCityFreeText("");
+    setForceFreeTextCity(false);
   }
 
   // Build the city string to persist
@@ -325,14 +330,16 @@ export default function ProfilePage() {
                     if (resolvedCity) {
                       setCityValue(resolvedCity);
                       setCityFreeText("");
+                      setForceFreeTextCity(false);
                     } else if (cityName) {
                       setCityValue("");
                       setCityFreeText(cityName);
+                      setForceFreeTextCity(true);
                     }
                   } else {
                     setStateIso("");
                     setCityValue("");
-                    if (cityName) setCityFreeText(cityName);
+                    if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
                   }
                 }
               }

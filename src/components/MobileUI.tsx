@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
 import { FEATURES } from "@/lib/features";
+import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
 export function MobileBottomNav() {
@@ -155,6 +156,14 @@ export function FloatingSupportButton() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mailHref, setMailHref] = useState(DEFAULT_SUPPORT_GMAIL_URL);
+
+  useEffect(() => {
+    // Client-only, post-mount — window.location isn't available during
+    // server render, so computing this at render time (instead of here)
+    // causes a server/client href mismatch and a hydration error.
+    setMailHref(buildSupportGmailUrl());
+  }, [pathname]);
 
   useEffect(() => {
     // Sync initial state if menu is already open
@@ -209,7 +218,9 @@ export function FloatingSupportButton() {
         <div className="p-4 space-y-3">
           <p className="text-xs font-black text-stone-500 dark:text-zinc-400 uppercase tracking-widest">{t("getSupport")}</p>
           <a
-            href="mailto:support@causekind.com"
+            href={mailHref}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors group"
           >
             <span className="w-8 h-8 rounded-full bg-[#b04a15]/10 flex items-center justify-center shrink-0">

@@ -15,6 +15,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { DonorListingPrompt } from "@/components/DonorListingPrompt";
 import { DoneeRequestPrompt } from "@/components/DoneeRequestPrompt";
+import { DoneeListingPrompt } from "@/components/DoneeListingPrompt";
 import { DonorCategoryModal } from "@/components/DonorCategoryModal";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
@@ -103,6 +104,7 @@ export default async function RootLayout({
                 <CookieConsent />
                 <WelcomeOverlay />
                 <DonorCategoryModal />
+                <DoneeListingPrompt />
                 <DonorListingPrompt />
                 <DoneeRequestPrompt />
               </NotificationsProvider>

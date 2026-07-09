@@ -213,7 +213,7 @@ export default function ItemDetailPage() {
                       <p className="font-bold text-stone-850 dark:text-stone-200">Location</p>
                       <p className="text-stone-500 dark:text-stone-400 text-xs mt-0.5">
                         <TranslatedText text={item.city} />
-                        {item.pincode ? ` â€“ ${item.pincode}` : ""}
+                        {item.pincode ? ` – ${item.pincode}` : ""}
                       </p>
                     </div>
                   </div>
@@ -266,7 +266,7 @@ export default function ItemDetailPage() {
 
             {/* Guidelines banner */}
             <div className="rounded-3xl border border-stone-200/50 dark:border-zinc-800/80 bg-stone-50/50 dark:bg-zinc-950/20 p-5 text-xs text-stone-500 dark:text-stone-400 leading-relaxed space-y-2">
-              <p className="font-bold text-stone-700 dark:text-stone-300">ðŸ’¡ Guidelines for Beneficiaries</p>
+              <p className="font-bold text-stone-700 dark:text-stone-300">💡 Guidelines for Beneficiaries</p>
               <p>Your request will be submitted to the donor for approval. Provide a sincere, clear explanation of why you need this item to ensure a higher chance of matching.</p>
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function ItemDetailPage() {
                   <TranslatedText text={requestTarget.title} />
                 </h2>
                 <p className="text-sm text-stone-500 dark:text-stone-400">
-                  <TranslatedText text={requestTarget.category} /> Â· <TranslatedText text={requestTarget.condition} /> Â· Qty {requestTarget.quantity} Â· <TranslatedText text={requestTarget.city} />
+                  <TranslatedText text={requestTarget.category} /> · <TranslatedText text={requestTarget.condition} /> · Qty {requestTarget.quantity} · <TranslatedText text={requestTarget.city} />
                 </p>
               </div>
               <button onClick={closeRequestModal} className="absolute right-4 top-4 rounded-lg p-1.5 text-stone-400 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-stone-600 transition" aria-label={t("closeModal")}>
