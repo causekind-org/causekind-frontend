@@ -350,9 +350,9 @@ export type ItemListing = {
   rejectedByAi: boolean;
 };
 
-export function getItemListings() {
-  return request<ItemListing[]>("/api/v1/items");
-}
+// Listings are private donor inventory — the pool endpoint (GET /api/v1/items) is
+// admin-only on the backend. Donor-facing code uses getMyItemListings/getItemListing;
+// admin queues use adminGetItemListings.
 
 export function getMyItemListings(options: { silent401?: boolean } = {}) {
   return request<ItemListing[]>("/api/v1/items/mine", options);

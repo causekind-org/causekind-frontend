@@ -1,7 +1,6 @@
 import {
   getCampaigns,
   getItemRequests,
-  getItemListings,
   getPlatformStats,
   getRecentActivity
 } from "@/lib/api";
@@ -10,13 +9,13 @@ import HomeClient from "./HomeClient";
 export const revalidate = 60; // ISR cache for 60 seconds
 
 export default async function HomePage() {
-  // Fetch initial data concurrently on the server
-  const [campaigns, stats, activity, itemRequests, itemListings] = await Promise.all([
+  // Fetch initial data concurrently on the server.
+  // Listings are private donor inventory (admin-only) — never fetched here.
+  const [campaigns, stats, activity, itemRequests] = await Promise.all([
     getCampaigns().catch(() => []),
     getPlatformStats().catch(() => null),
     getRecentActivity().catch(() => []),
-    getItemRequests().catch(() => []),
-    getItemListings().catch(() => [])
+    getItemRequests().catch(() => [])
   ]);
 
   return (
@@ -25,7 +24,6 @@ export default async function HomePage() {
       initialStats={stats}
       initialActivity={activity}
       initialItemRequests={itemRequests}
-      initialItemListings={itemListings}
     />
   );
 }

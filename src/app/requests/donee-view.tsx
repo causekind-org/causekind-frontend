@@ -43,10 +43,10 @@ const CAT_SHADOW: Record<string, string> = {
 function getStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
     PENDING_VERIFICATION:      { label: "Under Review",    variant: "outline"      },
-    VERIFIED_PRIVATE_MATCHING: { label: "Matching",        variant: "secondary"    },
-    POTENTIAL_MATCH_FOUND:     { label: "Match Found!",    variant: "secondary"    },
+    VERIFIED_PRIVATE_MATCHING: { label: "Finding a donor", variant: "secondary"    },
+    POTENTIAL_MATCH_FOUND:     { label: "Confirming a possible donor", variant: "secondary" },
     AWAITING_MATCH_APPROVAL:   { label: "Approval Pending",variant: "secondary"    },
-    PUBLIC_REQUEST:            { label: "Live",            variant: "default"      },
+    PUBLIC_REQUEST:            { label: "Visible to donors", variant: "default"    },
     FULFILMENT_IN_PROGRESS:    { label: "In Progress",     variant: "secondary"    },
     FULFILLED:                 { label: "Received ✓",      variant: "default"      },
     REJECTED:                  { label: "Rejected",        variant: "destructive"  },

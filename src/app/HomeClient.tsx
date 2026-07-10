@@ -38,7 +38,7 @@ import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, Package, ArrowRight, BookOpen, Shirt } from "lucide-react";
 import { FEATURES } from "@/lib/features";
-import type { Campaign, ItemRequest, ItemListing, PlatformStats, RecentActivity } from "@/lib/api";
+import type { Campaign, ItemRequest, PlatformStats, RecentActivity } from "@/lib/api";
 import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 
 // ── Extracted section components ─────────────────────────────────────────────
@@ -146,13 +146,11 @@ export default function HomeClient({
   initialStats,
   initialActivity,
   initialItemRequests,
-  initialItemListings,
 }: {
   initialCampaigns:    Campaign[];
   initialStats:        PlatformStats | null;
   initialActivity:     RecentActivity[];
   initialItemRequests: ItemRequest[];
-  initialItemListings: ItemListing[];
 }) {
   const t       = useTranslations("landing");
   const tCommon = useTranslations("common");
