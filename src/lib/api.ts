@@ -546,6 +546,12 @@ export type ItemRequest = {
   pickupRadiusKm: number | null;
   latitude: number | null;
   longitude: number | null;
+  // Tiered verification (Phase 3) — safe to show the owning donee, no PII/scores
+  verificationTier: "TIER_1_BASIC" | "TIER_2_MODERATE" | "TIER_3_HIGH_VALUE" | "TIER_4_EMERGENCY" | null;
+  isEmergency: boolean;
+  emergencyNature: string | null;
+  incidentDate: string | null;
+  verificationDueAt: string | null;
 };
 
 export function getItemRequests(categories?: string[], lat?: number, lng?: number) {
@@ -579,6 +585,117 @@ export function createItemRequest(data: {
   return request<ItemRequest>("/api/v1/item-requests", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+// ── Tiered verification: draft → update → submit (DONEE, Phase 3/4) ──────────
+
+export function createItemRequestDraft() {
+  return request<ItemRequest>("/api/v1/item-requests/draft", { method: "POST" });
+}
+
+export type UpdateRequestPayload = {
+  title?: string;
+  category?: string;
+  quantity?: number;
+  urgency?: string;
+  city?: string;
+  pincode?: string;
+  description?: string;
+  imageUrl?: string | null;
+  latitude?: number;
+  longitude?: number;
+  isEmergency?: boolean;
+  emergencyNature?: string;
+  incidentDate?: string;
+};
+
+export function updateItemRequestDraft(id: number, data: Partial<UpdateRequestPayload>) {
+  return request<ItemRequest>(`/api/v1/item-requests/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function submitItemRequestDraft(id: number) {
+  return request<ItemRequest>(`/api/v1/item-requests/${id}/submit`, { method: "POST" });
+}
+
+export type RequestVerification = {
+  householdSize: number | null;
+  dependents: number | null;
+  age: number | null;
+  gender: string | null;
+  addressLandmark: string | null;
+  housingType: "OWNED" | "RENTED" | "SHELTER" | "TEMPORARY" | null;
+  beneficiaryDetails: string | null;
+  reasonCannotBuy: string | null;
+  supportingInstitution: string | null;
+  monthlyIncome: number | null;
+  landlordNameContact: string | null;
+  familySize: number | null;
+  numberOfEarners: number | null;
+  incomeSource: string | null;
+  medicalCondition: string | null;
+  referrerName: string | null;
+  referrerContact: string | null;
+  altContactName: string | null;
+  altContactPhone: string | null;
+  detailedStory: string | null;
+  mapsPin: string | null;
+  peopleAffected: number | null;
+  lostDamagedDescription: string | null;
+  priorityItems: string | null;
+  deliveryAddressDiffers: boolean;
+  deliveryAddressReason: string | null;
+};
+
+export function saveRequestVerificationDetails(id: number, data: Partial<RequestVerification>) {
+  return request<RequestVerification>(`/api/v1/item-requests/${id}/verification-details`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export type VerificationDocumentType =
+  | "AADHAAR_FRONT" | "AADHAAR_BACK" | "SELFIE_WITH_ID" | "RATION_CARD" | "VOTER_ID"
+  | "PROOF_OF_NEED" | "BPL_CARD" | "INCOME_CERT" | "REFERENCE_LETTER" | "SITUATION_PHOTO"
+  | "BANK_PASSBOOK" | "GOVT_ID_ANY" | "EMERGENCY_PROOF" | "SCENE_SELFIE" | "OFFICIAL_LETTER";
+
+export type VerificationDocument = {
+  id: number;
+  docType: VerificationDocumentType;
+  url: string;
+  uploadedAt: string;
+};
+
+export async function uploadVerificationDocument(
+  requestId: number, docType: VerificationDocumentType, file: File
+): Promise<VerificationDocument> {
+  const fd = new FormData();
+  fd.append("docType", docType);
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/item-requests/${requestId}/documents`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Document upload failed");
+  return res.json();
+}
+
+export function getMyVerificationDocuments(requestId: number) {
+  return request<VerificationDocument[]>(`/api/v1/item-requests/${requestId}/documents`);
+}
+
+export function deleteVerificationDocument(requestId: number, docId: number) {
+  return request<void>(`/api/v1/item-requests/${requestId}/documents/${docId}`, { method: "DELETE" });
+}
+
+export function updateAadhaar(aadhaarNumber: string) {
+  return request<UserProfile>("/api/v1/users/aadhaar", {
+    method: "PUT",
+    body: JSON.stringify({ aadhaarNumber }),
   });
 }
 
