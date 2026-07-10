@@ -1720,6 +1720,20 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
         />
       </DetailSection>
 
+      {m.scoreCategory != null && (
+        <DetailSection icon={ShieldCheck} title="Match Confidence Breakdown">
+          <DetailGrid
+            items={[
+              { label: "Category match", value: `${m.scoreCategory}%` },
+              { label: "Spec match", value: m.scoreSpec != null ? `${m.scoreSpec.toFixed(0)}%` : null },
+              { label: "Distance", value: m.scoreDistanceKm != null ? `${m.scoreDistanceKm.toFixed(1)} km (stage ${m.scoreDistanceStage ?? "—"})` : null },
+              { label: "Quantity penalty", value: m.scoreQuantity != null ? `-${m.scoreQuantity}` : null },
+              { label: "Urgency boost", value: m.scoreUrgency != null ? `+${m.scoreUrgency}` : null },
+            ]}
+          />
+        </DetailSection>
+      )}
+
       <DetailSection icon={Phone} title="People">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <PersonInfoCard

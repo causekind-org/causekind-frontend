@@ -647,6 +647,13 @@ export type ItemMatch = {
   rejectionReason: string | null;
   createdAt: string;
   matchScore: number | null;
+  // Match confidence breakdown — admin-only detail, null on donor/donee views.
+  scoreCategory: number | null;
+  scoreSpec: number | null;
+  scoreDistanceKm: number | null;
+  scoreDistanceStage: number | null;
+  scoreQuantity: number | null;
+  scoreUrgency: number | null;
   donorImages: string[];
   donorItemDescription: string | null;
   doneeReason: string | null;
