@@ -715,6 +715,87 @@ export function adminRejectItemRequest(id: number, reason: string) {
   });
 }
 
+// ── Tiered verification console (ADMIN, Phase 5) ──────────────────────────────
+
+export type NeedAssessment = {
+  modelVersion: string;
+  needScore: number;
+  fraudScore: number;
+  duplicateScore: number;
+  documentConfidence: number;
+  urgencyAssessment: string | null;
+  recommendation: string;
+  evidenceNotes: string | null;
+  missingInfoFlags: string | null;
+  createdAt: string;
+};
+
+export type FraudFlag = {
+  id: number;
+  flagType: string;
+  description: string;
+  autoDetected: boolean;
+  createdAt: string;
+};
+
+export type VerificationChecklistItem = {
+  id: number;
+  stepNumber: number;
+  action: string;
+  howToVerify: string;
+  status: "PENDING" | "PASS" | "FAIL";
+  note: string | null;
+  checkedByEmail: string | null;
+  checkedAt: string | null;
+};
+
+export type AdminRequestVerificationDetail = {
+  requestId: number;
+  tier: string | null;
+  isEmergency: boolean;
+  emergencyNature: string | null;
+  incidentDate: string | null;
+  verificationDueAt: string | null;
+  tierOverriddenBy: string | null;
+  tierOverrideReason: string | null;
+  doneeAadhaarLast4: string | null;
+  doneeAadhaarOnFile: boolean;
+  verification: RequestVerification | null;
+  documents: VerificationDocument[];
+  needAssessment: NeedAssessment | null;
+  fraudFlags: FraudFlag[];
+  checklist: VerificationChecklistItem[];
+};
+
+export function adminGetItemRequestVerification(id: number) {
+  return request<AdminRequestVerificationDetail>(`/api/v1/admin/item-requests/${id}/verification`);
+}
+
+export function adminUpdateChecklistItem(requestId: number, itemId: number, status: "PASS" | "FAIL" | "PENDING", note?: string) {
+  return request<VerificationChecklistItem>(`/api/v1/admin/item-requests/${requestId}/checklist/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, note }),
+  });
+}
+
+export function adminOverrideTier(requestId: number, tier: string, reason: string) {
+  return request<ItemRequest>(`/api/v1/admin/item-requests/${requestId}/override-tier`, {
+    method: "PATCH",
+    body: JSON.stringify({ tier, reason }),
+  });
+}
+
+export function adminHoldItemRequest(requestId: number, reason: string) {
+  return request<ItemRequest>(`/api/v1/admin/item-requests/${requestId}/hold`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function adminResumeItemRequestReview(requestId: number) {
+  return request<ItemRequest>(`/api/v1/admin/item-requests/${requestId}/resume-review`, { method: "PATCH" });
+}
+
 export function adminGetItemRequestAiReview(id: number) {
   return request<AdminAiReviewResponse>(`/api/v1/admin/item-requests/${id}/ai-review`, { silent401: true });
 }
@@ -862,10 +943,10 @@ export function donorAcceptMatch(id: number) {
   return request<ItemMatch>(`/api/v1/matches/${id}/donor-accept`, { method: "POST" });
 }
 
-export function donorRejectMatch(id: number, reason?: string) {
+export function donorRejectMatch(id: number, reason?: string, conditionChanged?: boolean) {
   return request<ItemMatch>(`/api/v1/matches/${id}/donor-reject`, {
     method: "POST",
-    body: JSON.stringify({ reason: reason ?? null }),
+    body: JSON.stringify({ reason: reason ?? null, conditionChanged: conditionChanged ? "true" : "false" }),
   });
 }
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
@@ -473,6 +474,13 @@ export default function AdminDashboardPage() {
             <Bot className={`w-4 h-4 shrink-0 ${tab === "ai-logs" ? "text-[#b04a15]" : "text-violet-400"}`} />
             AI Screening Logs
           </button>
+          <Link
+            href="/admin/verifications"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+          >
+            <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+            Donee Verification
+          </Link>
         </div>
 
         {/* Sign out */}
