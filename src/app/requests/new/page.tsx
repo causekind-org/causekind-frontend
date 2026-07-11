@@ -31,7 +31,12 @@ import { SearchableSelect } from "@/components/profile/SearchableSelect";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
+// Kept symmetric with donor listing categories so a donor-listed item can always
+// find a matching donee request category — see src/lib/categoryVisuals.ts.
+const CATEGORIES = [
+  "Medical aid", "Education", "Livelihood", "Relief", "Household",
+  "Furniture", "Clothing", "Electronics", "Sports",
+];
 const URGENCIES = [
   { value: "NORMAL", label: "Normal" },
   { value: "HIGH", label: "High" },
@@ -47,7 +52,11 @@ type Tier = "TIER_1_BASIC" | "TIER_2_MODERATE" | "TIER_3_HIGH_VALUE" | "TIER_4_E
 function mapCategoryToTier(category: string, isEmergency: boolean): Tier {
   if (isEmergency) return "TIER_4_EMERGENCY";
   const map: Record<string, Tier> = {
+    "clothing": "TIER_1_BASIC",
     "household": "TIER_1_BASIC",
+    "sports": "TIER_1_BASIC",
+    "electronics": "TIER_2_MODERATE",
+    "furniture": "TIER_2_MODERATE",
     "education": "TIER_2_MODERATE",
     "medical aid": "TIER_3_HIGH_VALUE",
     "livelihood": "TIER_3_HIGH_VALUE",

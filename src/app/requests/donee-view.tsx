@@ -6,6 +6,7 @@ import {
   Stethoscope, BookOpen, Sprout, Users, Home, Package,
   MapPin, ChevronDown, ArrowRight, Plus, ShieldCheck,
   Loader2, Heart, Handshake, AlertTriangle,
+  Armchair, Shirt, Smartphone, Dumbbell,
 } from "lucide-react";
 import { getItemRequests, getMyItemRequests, type ItemRequest } from "@/lib/api";
 import { Reveal } from "@/components/Reveal";
@@ -14,7 +15,11 @@ import { TranslatedText } from "@/hooks/useDynamicTranslation";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
+// Kept symmetric with donor listing categories — see src/lib/categoryVisuals.ts.
+const CATEGORIES = [
+  "Medical aid", "Education", "Livelihood", "Relief", "Household",
+  "Furniture", "Clothing", "Electronics", "Sports",
+];
 
 const CAT_ICON: Record<string, React.ElementType> = {
   "Medical aid": Stethoscope,
@@ -22,6 +27,10 @@ const CAT_ICON: Record<string, React.ElementType> = {
   "Livelihood":  Sprout,
   "Relief":      Users,
   "Household":   Home,
+  "Furniture":   Armchair,
+  "Clothing":    Shirt,
+  "Electronics": Smartphone,
+  "Sports":      Dumbbell,
 };
 
 const CAT_GRADIENT: Record<string, string> = {
@@ -30,6 +39,10 @@ const CAT_GRADIENT: Record<string, string> = {
   "Livelihood":  "from-[#065f46] via-[#047857] to-[#064e3b]",
   "Relief":      "from-[#5b21b6] via-[#4c1d95] to-[#3b1582]",
   "Household":   "from-[#9f1239] via-[#881337] to-[#720e30]",
+  "Furniture":   "from-[#4338ca] via-[#3730a3] to-[#312e81]",
+  "Clothing":    "from-[#0f766e] via-[#115e59] to-[#134e4a]",
+  "Electronics": "from-[#c2410c] via-[#9a3412] to-[#7c2d12]",
+  "Sports":      "from-[#0e7490] via-[#155e75] to-[#164e63]",
 };
 
 const CAT_SHADOW: Record<string, string> = {
@@ -38,6 +51,10 @@ const CAT_SHADOW: Record<string, string> = {
   "Livelihood":  "hover:shadow-emerald-600/30",
   "Relief":      "hover:shadow-violet-600/30",
   "Household":   "hover:shadow-rose-600/30",
+  "Furniture":   "hover:shadow-indigo-600/30",
+  "Clothing":    "hover:shadow-teal-600/30",
+  "Electronics": "hover:shadow-orange-600/30",
+  "Sports":      "hover:shadow-cyan-600/30",
 };
 
 function getStatusBadge(status: string) {
