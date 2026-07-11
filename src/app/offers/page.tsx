@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, type DonationOffer } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { toast } from "@/lib/toast";
 import Link from "next/link";
 
@@ -49,6 +50,11 @@ export default function MyOffersPage() {
   const [loading, setLoading] = useState(true);
   const [reconfirmingId, setReconfirmingId] = useState<number | null>(null);
   const [cancelingId, setCancelingId] = useState<number | null>(null);
+
+  useEntityUpdates(["OFFER"], () => {
+    if (!user) return;
+    getMyDonationOffers().then(setOffers).catch(() => {});
+  });
 
   useEffect(() => {
     if (!user) {

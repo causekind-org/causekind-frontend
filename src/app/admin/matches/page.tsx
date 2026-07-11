@@ -9,6 +9,7 @@ import {
   type ItemMatch, type StatusHistoryEntry,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,6 +51,10 @@ export default function AdminMatchesPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [history, setHistory] = useState<Record<number, StatusHistoryEntry[]>>({});
   const [historyLoading, setHistoryLoading] = useState<number | null>(null);
+
+  useEntityUpdates(["MATCH"], () => {
+    loadMatches(statusFilter);
+  });
 
   useEffect(() => {
     if (isLoading) return;

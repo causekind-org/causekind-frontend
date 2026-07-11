@@ -912,6 +912,27 @@ export type DonationOffer = {
   donorPhone: string | null;
   doneePhone: string | null;
   donorAllowsDoneeCall: boolean;
+  // Full AI screening detail — only populated on admin endpoints (adminGetAllOffers /
+  // adminGetOfferById / adminActionOffer / adminRetryOfferScreening); null elsewhere.
+  assessment: OfferAssessmentDetails | null;
+};
+
+export type OfferAssessmentDetails = {
+  modelVersion: string | null;
+  eligibilityResult: string | null;
+  fraudRisk: string | null;
+  categoryMatch: boolean;
+  quantityMatch: boolean;
+  conditionMatch: boolean;
+  distanceWithinRange: boolean;
+  specMatchNotes: string | null;
+  safetyWarnings: string | null;
+  missingInfoFlags: string | null;
+  recommendation: string | null;
+  evidenceNotes: string | null;
+  detectedLabels: string | null;
+  moderationLabels: string | null;
+  createdAt: string;
 };
 
 export type CompatibilityCheck = {
@@ -1258,6 +1279,10 @@ export function adminGetOfferHistory(offerId: number) {
 
 export function adminGetOfferById(offerId: number) {
   return request<DonationOffer>(`/api/v1/admin/offers/${offerId}`);
+}
+
+export function adminRetryOfferScreening(offerId: number) {
+  return request<DonationOffer>(`/api/v1/admin/offers/${offerId}/retry-screening`, { method: "POST" });
 }
 
 export function updateMatchFulfilmentStatus(id: number, status: string, note?: string) {
