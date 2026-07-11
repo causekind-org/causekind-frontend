@@ -19,13 +19,18 @@ import {
   Sparkles, X, HandCoins, Package, Plus, ChevronDown,
   ShieldCheck, Heart, SlidersHorizontal, AlertTriangle, ArrowRight,
   BookOpen, Stethoscope, Sprout, Users, Home, Activity,
+  Armchair, Shirt, Smartphone, Dumbbell,
 } from "lucide-react";
 import Link from "next/link";
 import { DoneeRequestsPage } from "./donee-view";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const ITEM_REQ_CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
+// Kept symmetric with donor listing categories — see src/lib/categoryVisuals.ts.
+const ITEM_REQ_CATEGORIES = [
+  "Medical aid", "Education", "Livelihood", "Relief", "Household",
+  "Furniture", "Clothing", "Electronics", "Sports",
+];
 
 const URGENCY_LEVELS = [
   { value: "CRITICAL", label: "Critical",  dot: "bg-red-500"    },
@@ -50,6 +55,10 @@ const CAT_ICON: Record<string, React.ElementType> = {
   "Livelihood":  Sprout,
   "Relief":      Users,
   "Household":   Home,
+  "Furniture":   Armchair,
+  "Clothing":    Shirt,
+  "Electronics": Smartphone,
+  "Sports":      Dumbbell,
 };
 
 const CAT_COLOR: Record<string, { pill: string; bar: string; dot: string; text: string; border: string }> = {
@@ -87,6 +96,34 @@ const CAT_COLOR: Record<string, { pill: string; bar: string; dot: string; text: 
     dot:    "bg-rose-500",
     text:   "text-rose-700 dark:text-rose-400",
     border: "border-rose-500",
+  },
+  "Furniture": {
+    pill:   "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800/60",
+    bar:    "bg-indigo-500",
+    dot:    "bg-indigo-500",
+    text:   "text-indigo-700 dark:text-indigo-400",
+    border: "border-indigo-500",
+  },
+  "Clothing": {
+    pill:   "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-800/60",
+    bar:    "bg-teal-500",
+    dot:    "bg-teal-500",
+    text:   "text-teal-700 dark:text-teal-400",
+    border: "border-teal-500",
+  },
+  "Electronics": {
+    pill:   "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800/60",
+    bar:    "bg-orange-500",
+    dot:    "bg-orange-500",
+    text:   "text-orange-700 dark:text-orange-400",
+    border: "border-orange-500",
+  },
+  "Sports": {
+    pill:   "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/30 dark:text-cyan-400 dark:border-cyan-800/60",
+    bar:    "bg-cyan-500",
+    dot:    "bg-cyan-500",
+    text:   "text-cyan-700 dark:text-cyan-400",
+    border: "border-cyan-500",
   },
 };
 
