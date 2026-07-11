@@ -1404,11 +1404,12 @@ section:focus-within {
   }
 }
 
-/* ── Sonner toasts: always above sticky navbar (navbar = z-50 / z-index 50) ── */
+/* ── Sonner toasts: always above sticky navbar (navbar = z-50 / z-index 50) ──
+   Only the toaster container's stacking context needs raising above the navbar.
+   Individual toasts must keep sonner's own `var(--z-index)` (set per-toast so the
+   newest toast paints above older ones) — forcing a flat z-index here breaks that
+   ordering and makes the newest toast render underneath the previous one. */
 [data-sonner-toaster] {
-  z-index: 9999 !important;
-}
-[data-sonner-toast] {
   z-index: 9999 !important;
 }
 

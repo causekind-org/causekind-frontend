@@ -16,6 +16,10 @@ type RequestOptions = RequestInit & {
   silent401?: boolean;
 };
 
+/** A 409 conflict from a super-admin hard-delete carries the exact rows blocking it. */
+export type SuperAdminDependent = { table: string; column: string; count: number };
+export type ApiConflictError = Error & { dependents?: SuperAdminDependent[] };
+
 async function request<T>(
   path: string,
   options: RequestOptions = {}
@@ -52,7 +56,9 @@ async function request<T>(
     if (res.status === 404) throw new Error("The requested item was not found.");
     if (res.status === 409) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body?.message ?? "This action has already been done.");
+      const err = new Error(body?.message ?? "This action has already been done.");
+      if (Array.isArray(body?.dependents)) (err as ApiConflictError).dependents = body.dependents;
+      throw err;
     }
     if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
     const body = await res.json().catch(() => ({}));
@@ -1631,8 +1637,13 @@ export function superAdminUpdate(entity: SuperAdminEntity, id: number, body: Rec
   });
 }
 
-export function superAdminDelete(entity: SuperAdminEntity, id: number) {
-  return request<void>(`/api/v1/super-admin/${entity}/${id}`, { method: "DELETE" });
+export type SuperAdminCascadeResult = { deleted: Record<string, number>; total: number };
+
+export function superAdminDelete(entity: SuperAdminEntity, id: number, cascade = false) {
+  return request<SuperAdminCascadeResult | undefined>(
+    `/api/v1/super-admin/${entity}/${id}${cascade ? "?cascade=true" : ""}`,
+    { method: "DELETE" }
+  );
 }
 
 export function superAdminCreateUser(body: Record<string, unknown>) {
