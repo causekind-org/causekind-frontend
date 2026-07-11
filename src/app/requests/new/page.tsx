@@ -82,14 +82,14 @@ const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: strin
     { type: "AADHAAR_BACK", label: "Aadhaar Card — Back" },
     { type: "SELFIE_WITH_ID", label: "Selfie holding your Aadhaar" },
     { type: "PROOF_OF_NEED", label: "Proof of need (school/hospital/doctor letter)" },
-    { type: "BPL_CARD", label: "BPL card or income certificate" },
+    { type: "BPL_CARD", label: "BPL card" },
   ],
   TIER_3_HIGH_VALUE: [
     { type: "AADHAAR_FRONT", label: "Aadhaar Card — Front" },
     { type: "AADHAAR_BACK", label: "Aadhaar Card — Back" },
     { type: "SELFIE_WITH_ID", label: "Selfie holding your Aadhaar" },
     { type: "PROOF_OF_NEED", label: "Primary proof of need (hospital discharge / prescription)" },
-    { type: "BPL_CARD", label: "BPL card or income certificate" },
+    { type: "BPL_CARD", label: "BPL card" },
     { type: "REFERENCE_LETTER", label: "Third-party reference letter (NGO/Sarpanch/social worker)" },
     { type: "SITUATION_PHOTO", label: "Situation photo (home/patient/damage)" },
   ],
@@ -299,7 +299,9 @@ export default function NewRequestPage() {
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
     if (s === 3) {
-      if (!aadhaarSaved) e.aadhaar = "Aadhaar number must be saved before continuing";
+      // Tier 4 (Emergency) doesn't collect Aadhaar at all — the field isn't even
+      // rendered for it (relaxed ID requirements), so don't block on it here.
+      if (tier !== "TIER_4_EMERGENCY" && !aadhaarSaved) e.aadhaar = "Aadhaar number must be saved before continuing";
       const missing = REQUIRED_DOCS[tier].filter((d) => !uploadedDocs.has(d.type));
       if (missing.length > 0) e.documents = `${missing.length} required document(s) still missing`;
     }
@@ -546,10 +548,10 @@ export default function NewRequestPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-5">
-            <Field label="Household size">
+            <Field label="How many people live in your home?" hint="Count everyone — yourself, children, parents, grandparents">
               <Input type="number" min={1} value={verification.householdSize ?? ""} onChange={(e) => setV("householdSize", Number(e.target.value))} className="h-11" />
             </Field>
-            <Field label="Number of dependents">
+            <Field label="How many of them cannot earn?" hint="Children, elderly, or sick members who depend on the family. Write 0 if none">
               <Input type="number" min={0} value={verification.dependents ?? ""} onChange={(e) => setV("dependents", Number(e.target.value))} className="h-11" />
             </Field>
           </div>
