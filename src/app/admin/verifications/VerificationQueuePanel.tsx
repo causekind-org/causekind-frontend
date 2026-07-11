@@ -5,13 +5,13 @@ import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest,
   adminGetItemRequestVerification, adminUpdateChecklistItem, adminOverrideTier,
-  adminHoldItemRequest, adminResumeItemRequestReview,
+  adminHoldItemRequest, adminResumeItemRequestReview, adminRevealAadhaar,
   type ItemRequest, type AdminRequestVerificationDetail,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import {
   Check, X, ChevronDown, ChevronUp, Clock, User, FileText, Gauge,
-  AlertTriangle, Loader2, ShieldCheck, Lock, Pause, Play, ListChecks,
+  AlertTriangle, Loader2, ShieldCheck, Lock, Pause, Play, ListChecks, Eye, EyeOff,
 } from "lucide-react";
 
 const TIERS = [
@@ -332,6 +332,24 @@ function VerificationDetail({
   const checklistDone = detail.checklist.length > 0 && detail.checklist.every((i) => i.status === "PASS");
   const checklistFailed = detail.checklist.some((i) => i.status === "FAIL");
 
+  // Deliberately local-only, never persisted: cleared the instant this card collapses
+  // (this component unmounts) since expanded is a single id, not a set — see the parent.
+  const [revealedAadhaar, setRevealedAadhaar] = useState<string | null>(null);
+  const [revealing, setRevealing] = useState(false);
+
+  async function handleRevealAadhaar() {
+    if (revealedAadhaar) { setRevealedAadhaar(null); return; } // toggle off — re-hide
+    setRevealing(true);
+    try {
+      const { aadhaarNumber } = await adminRevealAadhaar(request.doneeId);
+      setRevealedAadhaar(aadhaarNumber);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to reveal Aadhaar number");
+    } finally {
+      setRevealing(false);
+    }
+  }
+
   return (
     <>
       {/* Tier + Aadhaar summary */}
@@ -352,9 +370,21 @@ function VerificationDetail({
         <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs space-y-1 border border-stone-100 dark:border-zinc-700">
           <p className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1"><Lock className="w-3 h-3" /> Identity (admin-only)</p>
           {detail.doneeAadhaarOnFile ? (
-            <p>Aadhaar on file — ending in <strong>{detail.doneeAadhaarLast4}</strong></p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-mono">
+                {revealedAadhaar ?? `•••• •••• ${detail.doneeAadhaarLast4}`}
+              </p>
+              <button onClick={handleRevealAadhaar} disabled={revealing}
+                className="shrink-0 flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-[#b04a15] hover:text-[#b04a15] disabled:opacity-50">
+                {revealing ? <Loader2 className="w-3 h-3 animate-spin" /> : revealedAadhaar ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                {revealedAadhaar ? "Hide" : "Reveal"}
+              </button>
+            </div>
           ) : (
             <p className="text-amber-600 font-semibold">No Aadhaar on file yet</p>
+          )}
+          {revealedAadhaar && (
+            <p className="text-[10px] text-stone-400">This reveal has been logged for audit purposes.</p>
           )}
         </div>
       </div>

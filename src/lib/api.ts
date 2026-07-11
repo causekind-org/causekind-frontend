@@ -796,6 +796,12 @@ export function adminResumeItemRequestReview(requestId: number) {
   return request<ItemRequest>(`/api/v1/admin/item-requests/${requestId}/resume-review`, { method: "PATCH" });
 }
 
+// Click-to-reveal: decrypts on demand server-side, audit-logged. Never cache this
+// value beyond the component that displayed it — re-fetch on every reveal.
+export function adminRevealAadhaar(userId: number) {
+  return request<{ aadhaarNumber: string }>(`/api/v1/admin/users/${userId}/aadhaar`);
+}
+
 export function adminGetItemRequestAiReview(id: number) {
   return request<AdminAiReviewResponse>(`/api/v1/admin/item-requests/${id}/ai-review`, { silent401: true });
 }
