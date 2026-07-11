@@ -297,7 +297,12 @@ export default function NewRequestPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
       {/* ── LEFT PANEL: Asymmetric info stripe ── */}
-      <div className="hidden lg:flex lg:w-[35%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0">
+      <div className="hidden lg:flex lg:w-[35%] relative p-8 flex-col justify-between overflow-hidden border-r border-stone-850 shrink-0"
+        style={{
+          backgroundImage: "linear-gradient(160deg, rgba(18, 12, 4, 0.82) 0%, rgba(26, 15, 7, 0.88) 50%, rgba(12, 22, 33, 0.92) 100%), url('/Item listing Donee.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center"
+        }}>
         {/* Warm glow circles */}
         <div className="absolute -top-24 left-1/4 h-[300px] w-[300px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 right-1/4 h-[300px] w-[300px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
