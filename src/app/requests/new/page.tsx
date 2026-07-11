@@ -299,7 +299,9 @@ export default function NewRequestPage() {
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
     if (s === 3) {
-      if (!aadhaarSaved) e.aadhaar = "Aadhaar number must be saved before continuing";
+      // Tier 4 (Emergency) doesn't collect Aadhaar at all — the field isn't even
+      // rendered for it (relaxed ID requirements), so don't block on it here.
+      if (tier !== "TIER_4_EMERGENCY" && !aadhaarSaved) e.aadhaar = "Aadhaar number must be saved before continuing";
       const missing = REQUIRED_DOCS[tier].filter((d) => !uploadedDocs.has(d.type));
       if (missing.length > 0) e.documents = `${missing.length} required document(s) still missing`;
     }
