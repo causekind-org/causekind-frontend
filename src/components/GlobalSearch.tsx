@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, Package, ClipboardList, Loader2, ArrowRight } from "lucide-react";
-import { getItemRequests, getItemListings, type ItemRequest, type ItemListing } from "@/lib/api";
+import { Search, X, ClipboardList, Loader2, ArrowRight } from "lucide-react";
+import { getItemRequests, type ItemRequest } from "@/lib/api";
 
-type Result =
-  | { kind: "request"; item: ItemRequest }
-  | { kind: "listing"; item: ItemListing };
+// Need-first privacy: donor listings are private inventory — never searchable.
+// Global search covers only requests published on the public need board.
 
 /* ── Highlight matched substring ─────────────────────────────────────────── */
 function Highlight({ text, query }: { text: string; query: string }) {
@@ -27,19 +26,16 @@ function Highlight({ text, query }: { text: string; query: string }) {
 
 /* ── Single result row ───────────────────────────────────────────────────── */
 function ResultRow({
-  result,
+  item,
   query,
   active,
   onClick,
 }: {
-  result: Result;
+  item: ItemRequest;
   query: string;
   active: boolean;
   onClick: () => void;
 }) {
-  const isReq = result.kind === "request";
-  const item  = result.item;
-
   return (
     <button
       onClick={onClick}
@@ -49,17 +45,15 @@ function ResultRow({
           : "hover:bg-stone-50 dark:hover:bg-zinc-800/60"
       }`}
     >
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-        isReq ? "bg-[#b04a15]/10 text-[#b04a15]" : "bg-[#1e3a60]/10 text-[#1e3a60] dark:text-blue-400"
-      }`}>
-        {isReq ? <ClipboardList className="w-4 h-4" /> : <Package className="w-4 h-4" />}
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[#b04a15]/10 text-[#b04a15]">
+        <ClipboardList className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-snug truncate">
           <Highlight text={item.title} query={query} />
         </p>
         <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">
-          {isReq ? "Request" : "Listing"} · {item.city} · Qty: {item.quantity}
+          Request · {item.city} · Qty: {item.quantity}
         </p>
       </div>
       <ArrowRight className={`w-3.5 h-3.5 shrink-0 transition-opacity ${active ? "opacity-100 text-[#b04a15]" : "opacity-0"}`} />
@@ -72,23 +66,19 @@ export function GlobalSearch() {
   const router = useRouter();
   const [open,    setOpen]    = useState(false);
   const [query,   setQuery]   = useState("");
-  const [results, setResults] = useState<Result[]>([]);
+  const [results, setResults] = useState<ItemRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [active,  setActive]  = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   /* Data cache — fetched once per session */
-  const cache = useRef<{ requests: ItemRequest[]; listings: ItemListing[] } | null>(null);
+  const cache = useRef<ItemRequest[] | null>(null);
 
   const fetchData = useCallback(async () => {
     if (cache.current) return cache.current;
     setLoading(true);
     try {
-      const [requests, listings] = await Promise.all([
-        getItemRequests().catch(() => []),
-        getItemListings().catch(() => []),
-      ]);
-      cache.current = { requests, listings };
+      cache.current = await getItemRequests().catch(() => []);
       return cache.current;
     } finally {
       setLoading(false);
@@ -113,11 +103,7 @@ export function GlobalSearch() {
     if (open) {
       fetchData().then(data => {
         if (!query.trim()) {
-          const recent: Result[] = [
-            ...data.requests.slice(0, 3).map(item => ({ kind: "request" as const, item })),
-            ...data.listings.slice(0, 2).map(item => ({ kind: "listing" as const, item })),
-          ];
-          setResults(recent);
+          setResults(data.slice(0, 5));
         }
       });
       setTimeout(() => inputRef.current?.focus(), 60);
@@ -132,22 +118,13 @@ export function GlobalSearch() {
     if (!cache.current) return;
     const q = query.toLowerCase().trim();
     if (!q) {
-      const recent: Result[] = [
-        ...cache.current.requests.slice(0, 3).map(item => ({ kind: "request" as const, item })),
-        ...cache.current.listings.slice(0, 2).map(item => ({ kind: "listing" as const, item })),
-      ];
-      setResults(recent);
+      setResults(cache.current.slice(0, 5));
       return;
     }
-    const reqs = cache.current.requests
+    const reqs = cache.current
       .filter(r => r.title.toLowerCase().includes(q) || r.city.toLowerCase().includes(q) || r.category.toLowerCase().includes(q))
-      .slice(0, 5)
-      .map(item => ({ kind: "request" as const, item }));
-    const lst = cache.current.listings
-      .filter(l => l.title.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.category.toLowerCase().includes(q))
-      .slice(0, 4)
-      .map(item => ({ kind: "listing" as const, item }));
-    setResults([...reqs, ...lst]);
+      .slice(0, 8);
+    setResults(reqs);
     setActive(0);
   }, [query]);
 
@@ -156,13 +133,13 @@ export function GlobalSearch() {
     if (e.key === "ArrowDown") { e.preventDefault(); setActive(a => Math.min(a + 1, results.length - 1)); }
     if (e.key === "ArrowUp")   { e.preventDefault(); setActive(a => Math.max(a - 1, 0)); }
     if (e.key === "Enter" && results[active]) {
-      navigate(results[active]);
+      navigate();
     }
   }
 
-  function navigate(r: Result) {
+  function navigate() {
     setOpen(false);
-    router.push(r.kind === "request" ? "/requests" : "/items");
+    router.push("/requests");
   }
 
   if (!open) return null;
@@ -185,7 +162,7 @@ export function GlobalSearch() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search requests, listings…"
+            placeholder="Search requests…"
             className="flex-1 bg-transparent text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 outline-none font-medium"
           />
           {loading && <Loader2 className="w-4 h-4 text-stone-400 animate-spin shrink-0" />}
@@ -213,11 +190,11 @@ export function GlobalSearch() {
               </p>
               {results.map((r, i) => (
                 <ResultRow
-                  key={`${r.kind}-${r.item.id}`}
-                  result={r}
+                  key={r.id}
+                  item={r}
                   query={query}
                   active={i === active}
-                  onClick={() => navigate(r)}
+                  onClick={navigate}
                 />
               ))}
             </>

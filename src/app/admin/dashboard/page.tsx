@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
@@ -473,6 +474,13 @@ export default function AdminDashboardPage() {
             <Bot className={`w-4 h-4 shrink-0 ${tab === "ai-logs" ? "text-[#b04a15]" : "text-violet-400"}`} />
             AI Screening Logs
           </button>
+          <Link
+            href="/admin/verifications"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+          >
+            <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+            Donee Verification
+          </Link>
         </div>
 
         {/* Sign out */}
@@ -1719,6 +1727,20 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
           ]}
         />
       </DetailSection>
+
+      {m.scoreCategory != null && (
+        <DetailSection icon={ShieldCheck} title="Match Confidence Breakdown">
+          <DetailGrid
+            items={[
+              { label: "Category match", value: `${m.scoreCategory}%` },
+              { label: "Spec match", value: m.scoreSpec != null ? `${m.scoreSpec.toFixed(0)}%` : null },
+              { label: "Distance", value: m.scoreDistanceKm != null ? `${m.scoreDistanceKm.toFixed(1)} km (stage ${m.scoreDistanceStage ?? "—"})` : null },
+              { label: "Quantity penalty", value: m.scoreQuantity != null ? `-${m.scoreQuantity}` : null },
+              { label: "Urgency boost", value: m.scoreUrgency != null ? `+${m.scoreUrgency}` : null },
+            ]}
+          />
+        </DetailSection>
+      )}
 
       <DetailSection icon={Phone} title="People">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

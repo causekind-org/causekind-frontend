@@ -19,13 +19,18 @@ import {
   Sparkles, X, HandCoins, Package, Plus, ChevronDown,
   ShieldCheck, Heart, SlidersHorizontal, AlertTriangle, ArrowRight,
   BookOpen, Stethoscope, Sprout, Users, Home, Activity,
+  Armchair, Shirt, Smartphone, Dumbbell,
 } from "lucide-react";
 import Link from "next/link";
 import { DoneeRequestsPage } from "./donee-view";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const ITEM_REQ_CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
+// Kept symmetric with donor listing categories — see src/lib/categoryVisuals.ts.
+const ITEM_REQ_CATEGORIES = [
+  "Medical aid", "Education", "Livelihood", "Relief", "Household",
+  "Furniture", "Clothing", "Electronics", "Sports",
+];
 
 const URGENCY_LEVELS = [
   { value: "CRITICAL", label: "Critical",  dot: "bg-red-500"    },
@@ -50,6 +55,10 @@ const CAT_ICON: Record<string, React.ElementType> = {
   "Livelihood":  Sprout,
   "Relief":      Users,
   "Household":   Home,
+  "Furniture":   Armchair,
+  "Clothing":    Shirt,
+  "Electronics": Smartphone,
+  "Sports":      Dumbbell,
 };
 
 const CAT_COLOR: Record<string, { pill: string; bar: string; dot: string; text: string; border: string }> = {
@@ -87,6 +96,34 @@ const CAT_COLOR: Record<string, { pill: string; bar: string; dot: string; text: 
     dot:    "bg-rose-500",
     text:   "text-rose-700 dark:text-rose-400",
     border: "border-rose-500",
+  },
+  "Furniture": {
+    pill:   "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800/60",
+    bar:    "bg-indigo-500",
+    dot:    "bg-indigo-500",
+    text:   "text-indigo-700 dark:text-indigo-400",
+    border: "border-indigo-500",
+  },
+  "Clothing": {
+    pill:   "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-800/60",
+    bar:    "bg-teal-500",
+    dot:    "bg-teal-500",
+    text:   "text-teal-700 dark:text-teal-400",
+    border: "border-teal-500",
+  },
+  "Electronics": {
+    pill:   "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800/60",
+    bar:    "bg-orange-500",
+    dot:    "bg-orange-500",
+    text:   "text-orange-700 dark:text-orange-400",
+    border: "border-orange-500",
+  },
+  "Sports": {
+    pill:   "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/30 dark:text-cyan-400 dark:border-cyan-800/60",
+    bar:    "bg-cyan-500",
+    dot:    "bg-cyan-500",
+    text:   "text-cyan-700 dark:text-cyan-400",
+    border: "border-cyan-500",
   },
 };
 
@@ -476,7 +513,11 @@ function RequestBlock({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) 
           <span className={`inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide ${col.text}`}>
             <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} /> <TranslatedText text={r.category} />
           </span>
-          {(isCrit || isHigh) && (
+          {r.isEmergency ? (
+            <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-black uppercase tracking-wide text-white bg-red-600 px-1.5 py-0.5 rounded">
+              <AlertTriangle className="h-3 w-3 shrink-0" /> Emergency
+            </span>
+          ) : (isCrit || isHigh) && (
             <span className={`inline-flex shrink-0 items-center gap-1 text-[10px] font-black uppercase tracking-wide ${isCrit ? "text-[#b04a15]" : "text-amber-600 dark:text-amber-400"}`}>
               <AlertTriangle className="h-3 w-3 shrink-0" /> {isCrit ? "Urgent" : "High"}
             </span>
@@ -691,7 +732,7 @@ export default function RequestsPage() {
       }
     } else if (sort === "urgent") {
       const ord: Record<string, number> = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
-      out = [...out].sort((a, b) => (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2));
+      out = [...out].sort((a, b) => (a.isEmergency === b.isEmergency ? 0 : a.isEmergency ? -1 : 1) || (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2));
     } else if (sort === "newest") {
       out = [...out].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } else if (sort === "qty") {

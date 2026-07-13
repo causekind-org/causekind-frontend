@@ -1,6 +1,15 @@
-import { Stethoscope, BookOpen, Sprout, Users, Home as HomeIcon, type LucideIcon } from "lucide-react";
+import { Stethoscope, BookOpen, Sprout, Users, Home as HomeIcon, Armchair, Shirt, Smartphone, Dumbbell, type LucideIcon } from "lucide-react";
 
-export const ALL_REQUEST_CATEGORIES = ["Medical aid", "Education", "Livelihood", "Relief", "Household"];
+// Kept symmetric with donor listing categories (items/new/page.tsx's CATEGORIES) —
+// Furniture/Clothing/Electronics/Sports were previously donor-only, which meant a
+// donor-listed Furniture item could never match a donee request (requests had no
+// Furniture option to pick, only the ill-fitting "Household"). Livelihood/Relief
+// stay request-only — they're need-framings without a matching physical-item
+// listing category, used for distance-staging in MatchingEngineService.
+export const ALL_REQUEST_CATEGORIES = [
+  "Medical aid", "Education", "Livelihood", "Relief", "Household",
+  "Furniture", "Clothing", "Electronics", "Sports",
+];
 
 export type CategoryVisual = { Icon: LucideIcon; text: string; fallbackImage: string };
 
@@ -12,6 +21,10 @@ export const CATEGORY_VISUALS: Record<string, CategoryVisual> = {
   "Livelihood":  { Icon: Sprout,      text: "text-emerald-700 dark:text-emerald-400", fallbackImage: "/images/hero-3.webp" },
   "Relief":      { Icon: Users,       text: "text-violet-700 dark:text-violet-400",   fallbackImage: "/images/hero-5.webp" },
   "Household":   { Icon: HomeIcon,    text: "text-rose-700 dark:text-rose-400",   fallbackImage: "/images/hero-6.webp" },
+  "Furniture":   { Icon: Armchair,    text: "text-indigo-700 dark:text-indigo-400", fallbackImage: "/images/hero-6.webp" },
+  "Clothing":    { Icon: Shirt,       text: "text-teal-700 dark:text-teal-400",   fallbackImage: "/images/hero-3.webp" },
+  "Electronics": { Icon: Smartphone,  text: "text-orange-700 dark:text-orange-400", fallbackImage: "/images/hero-7.webp" },
+  "Sports":      { Icon: Dumbbell,    text: "text-cyan-700 dark:text-cyan-400",   fallbackImage: "/images/hero-5.webp" },
 };
 
 const DONOR_CATEGORY_STORAGE_KEY = "causekind_donor_category";

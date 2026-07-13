@@ -431,6 +431,7 @@ export default function TermsPage() {
                     "Users posting Item Listings or Requests are responsible for the accuracy, legality, ownership, and condition of the items described.",
                     "CauseKind only facilitates a connection (Item Match) between donors and recipients; We do not inspect, handle, transport, warrant, or take custody of any items.",
                     "Any exchange, delivery, or arrangement of items is solely between the Users involved. CauseKind is not responsible for the quality, safety, delivery, or any dispute relating to such items.",
+                    "Recipients submitting an Item Request may be asked to complete identity verification appropriate to the tier of their request, which can include an Aadhaar number and supporting photo identification. This information is collected solely for admin-side verification of genuine need and to prevent fraud — it is encrypted at rest, is never displayed to donors, other recipients, or any user other than the submitter, and is only accessible to authorized CauseKind administrators for the purpose of reviewing and approving the request.",
                   ]}
                 />
               </Section>

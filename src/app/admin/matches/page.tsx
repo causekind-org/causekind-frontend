@@ -13,7 +13,7 @@ import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ChevronDown, ChevronUp, Clock, MapPin, Phone, Package } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, Clock, MapPin, Phone, Package, Gauge } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   DONOR_REVIEW: "bg-amber-100 text-amber-800",
@@ -173,6 +173,21 @@ export default function AdminMatchesPage() {
                           <p className="text-stone-400">{m.doneeCity}</p>
                         </div>
                       </div>
+
+                      {/* Match confidence breakdown — admin-only detail */}
+                      {m.scoreCategory != null && (
+                        <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700">
+                          <p className="font-bold mb-2 flex items-center gap-1"><Gauge className="w-3 h-3" /> Match Confidence Breakdown</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 text-stone-600 dark:text-stone-400">
+                            <div><span className="text-stone-400">Overall: </span><strong>{m.matchScore}%</strong></div>
+                            <div><span className="text-stone-400">Category match: </span><strong>{m.scoreCategory}%</strong></div>
+                            <div><span className="text-stone-400">Spec match: </span><strong>{m.scoreSpec != null ? `${m.scoreSpec.toFixed(0)}%` : "—"}</strong></div>
+                            <div><span className="text-stone-400">Distance: </span><strong>{m.scoreDistanceKm != null ? `${m.scoreDistanceKm.toFixed(1)} km` : "—"} (stage {m.scoreDistanceStage ?? "—"})</strong></div>
+                            <div><span className="text-stone-400">Quantity penalty: </span><strong>-{m.scoreQuantity ?? 0}</strong></div>
+                            <div><span className="text-stone-400">Urgency boost: </span><strong>+{m.scoreUrgency ?? 0}</strong></div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Item description */}
                       {m.donorItemDescription && (

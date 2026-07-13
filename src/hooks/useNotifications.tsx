@@ -74,11 +74,14 @@ async function deriveNotifications(rawRole: string): Promise<AppNotification[]> 
       if (r.status === "PENDING_VERIFICATION") {
         notifs.push({ id: `req-submitted-${r.id}`, title: "Request submitted", body: `"${r.title}" has been received and is awaiting review`, type: "info", link: "/dashboard#my-requests", timestamp: ts });
       }
-      if (r.status === "PUBLIC_REQUEST" || r.status === "VERIFIED_PRIVATE_MATCHING") {
-        notifs.push({ id: `req-approved-${r.id}`, title: "Request approved ✓", body: `"${r.title}" is now live on the platform and being matched`, type: "approved", link: "/dashboard#my-requests", timestamp: ts });
+      if (r.status === "PUBLIC_REQUEST" || r.status === "VERIFIED_PRIVATE_MATCHING" || r.status === "POTENTIAL_MATCH_FOUND") {
+        notifs.push({ id: `req-approved-${r.id}`, title: "Request approved ✓", body: `"${r.title}" has been verified and is being matched`, type: "approved", link: "/dashboard#my-requests", timestamp: ts });
       }
       if (r.status === "POTENTIAL_MATCH_FOUND") {
-        notifs.push({ id: `req-match-${r.id}`, title: "Match found!", body: `A donor was matched to your request "${r.title}"`, type: "match", link: "/dashboard#my-requests", timestamp: ts });
+        notifs.push({ id: `req-match-${r.id}`, title: "We may have found a donor", body: `We're confirming availability for "${r.title}" — we'll let you know as soon as it's confirmed.`, type: "info", link: "/dashboard#my-requests", timestamp: ts });
+      }
+      if (r.status === "PUBLIC_REQUEST") {
+        notifs.push({ id: `req-published-${r.id}`, title: "Your request is visible to donors", body: `"${r.title}" is now published on the need board so donors can offer to help.`, type: "info", link: "/dashboard#my-requests", timestamp: ts });
       }
       if (r.status === "REJECTED") {
         notifs.push({ id: `req-rejected-${r.id}`, title: "Request not approved", body: `"${r.title}" was not approved${r.rejectionReason ? ": " + r.rejectionReason : ". Contact support if you believe this is an error."}`, type: "rejected", link: "/dashboard#my-requests", timestamp: ts });
@@ -107,11 +110,13 @@ async function deriveNotifications(rawRole: string): Promise<AppNotification[]> 
 
     matches.forEach(m => {
       const ts = toTimestamp(m.createdAt);
-      if (m.status === "DONOR_REVIEW") {
-        notifs.push({ id: `donee-match-proposed-${m.id}`, title: "A potential donor was found!", body: `We found a possible match for "${m.requestTitle ?? "your request"}" — we've asked the donor to confirm.`, type: "info", link: "/dashboard", timestamp: ts });
-      }
+      // Need-first privacy: matches in DONOR_REVIEW / PENDING_APPROVAL no longer reach
+      // the donee at all (the backend filters them out of /matches/mine until the donor
+      // reconfirms and admin approves) — the donee's journey starts at
+      // AWAITING_DONEE_CONFIRMATION. PENDING_APPROVAL below only fires for
+      // donee-initiated REQUEST_LISTING matches, which they can always see.
       if (m.status === "PENDING_APPROVAL") {
-        notifs.push({ id: `donee-match-pending-${m.id}`, title: "Donor confirmed your match!", body: `A donor accepted "${m.requestTitle ?? "your request"}" — under admin review now`, type: "match", link: "/dashboard", timestamp: ts });
+        notifs.push({ id: `donee-match-pending-${m.id}`, title: "Your item request is under review", body: `Your request for "${m.requestTitle ?? "an item"}" is being reviewed by our team`, type: "info", link: "/dashboard", timestamp: ts });
       }
       if (m.status === "TRANSPORT_DISCUSSION") {
         notifs.push({ id: `contact-shared-${m.id}`, title: "Contact details shared", body: `Donor contact was shared for "${m.requestTitle ?? "your request"}" — reach out to arrange pickup`, type: "match", link: "/dashboard", timestamp: ts });

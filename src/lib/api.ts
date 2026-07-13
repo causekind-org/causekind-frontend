@@ -350,9 +350,9 @@ export type ItemListing = {
   rejectedByAi: boolean;
 };
 
-export function getItemListings() {
-  return request<ItemListing[]>("/api/v1/items");
-}
+// Listings are private donor inventory — the pool endpoint (GET /api/v1/items) is
+// admin-only on the backend. Donor-facing code uses getMyItemListings/getItemListing;
+// admin queues use adminGetItemListings.
 
 export function getMyItemListings(options: { silent401?: boolean } = {}) {
   return request<ItemListing[]>("/api/v1/items/mine", options);
@@ -546,6 +546,12 @@ export type ItemRequest = {
   pickupRadiusKm: number | null;
   latitude: number | null;
   longitude: number | null;
+  // Tiered verification (Phase 3) — safe to show the owning donee, no PII/scores
+  verificationTier: "TIER_1_BASIC" | "TIER_2_MODERATE" | "TIER_3_HIGH_VALUE" | "TIER_4_EMERGENCY" | null;
+  isEmergency: boolean;
+  emergencyNature: string | null;
+  incidentDate: string | null;
+  verificationDueAt: string | null;
 };
 
 export function getItemRequests(categories?: string[], lat?: number, lng?: number) {
@@ -582,6 +588,117 @@ export function createItemRequest(data: {
   });
 }
 
+// ── Tiered verification: draft → update → submit (DONEE, Phase 3/4) ──────────
+
+export function createItemRequestDraft() {
+  return request<ItemRequest>("/api/v1/item-requests/draft", { method: "POST" });
+}
+
+export type UpdateRequestPayload = {
+  title?: string;
+  category?: string;
+  quantity?: number;
+  urgency?: string;
+  city?: string;
+  pincode?: string;
+  description?: string;
+  imageUrl?: string | null;
+  latitude?: number;
+  longitude?: number;
+  isEmergency?: boolean;
+  emergencyNature?: string;
+  incidentDate?: string;
+};
+
+export function updateItemRequestDraft(id: number, data: Partial<UpdateRequestPayload>) {
+  return request<ItemRequest>(`/api/v1/item-requests/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function submitItemRequestDraft(id: number) {
+  return request<ItemRequest>(`/api/v1/item-requests/${id}/submit`, { method: "POST" });
+}
+
+export type RequestVerification = {
+  householdSize: number | null;
+  dependents: number | null;
+  age: number | null;
+  gender: string | null;
+  addressLandmark: string | null;
+  housingType: "OWNED" | "RENTED" | "SHELTER" | "TEMPORARY" | null;
+  beneficiaryDetails: string | null;
+  reasonCannotBuy: string | null;
+  supportingInstitution: string | null;
+  monthlyIncome: number | null;
+  landlordNameContact: string | null;
+  familySize: number | null;
+  numberOfEarners: number | null;
+  incomeSource: string | null;
+  medicalCondition: string | null;
+  referrerName: string | null;
+  referrerContact: string | null;
+  altContactName: string | null;
+  altContactPhone: string | null;
+  detailedStory: string | null;
+  mapsPin: string | null;
+  peopleAffected: number | null;
+  lostDamagedDescription: string | null;
+  priorityItems: string | null;
+  deliveryAddressDiffers: boolean;
+  deliveryAddressReason: string | null;
+};
+
+export function saveRequestVerificationDetails(id: number, data: Partial<RequestVerification>) {
+  return request<RequestVerification>(`/api/v1/item-requests/${id}/verification-details`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export type VerificationDocumentType =
+  | "AADHAAR_FRONT" | "AADHAAR_BACK" | "SELFIE_WITH_ID" | "RATION_CARD" | "VOTER_ID"
+  | "PROOF_OF_NEED" | "BPL_CARD" | "INCOME_CERT" | "REFERENCE_LETTER" | "SITUATION_PHOTO"
+  | "BANK_PASSBOOK" | "GOVT_ID_ANY" | "EMERGENCY_PROOF" | "SCENE_SELFIE" | "OFFICIAL_LETTER";
+
+export type VerificationDocument = {
+  id: number;
+  docType: VerificationDocumentType;
+  url: string;
+  uploadedAt: string;
+};
+
+export async function uploadVerificationDocument(
+  requestId: number, docType: VerificationDocumentType, file: File
+): Promise<VerificationDocument> {
+  const fd = new FormData();
+  fd.append("docType", docType);
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/item-requests/${requestId}/documents`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Document upload failed");
+  return res.json();
+}
+
+export function getMyVerificationDocuments(requestId: number) {
+  return request<VerificationDocument[]>(`/api/v1/item-requests/${requestId}/documents`);
+}
+
+export function deleteVerificationDocument(requestId: number, docId: number) {
+  return request<void>(`/api/v1/item-requests/${requestId}/documents/${docId}`, { method: "DELETE" });
+}
+
+export function updateAadhaar(aadhaarNumber: string) {
+  return request<UserProfile>("/api/v1/users/aadhaar", {
+    method: "PUT",
+    body: JSON.stringify({ aadhaarNumber }),
+  });
+}
+
 export function adminGetItemRequests(status?: string) {
   const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<ItemRequest[]>(`/api/v1/admin/item-requests${qs}`);
@@ -596,6 +713,93 @@ export function adminRejectItemRequest(id: number, reason: string) {
     method: "PATCH",
     body: JSON.stringify({ reason }),
   });
+}
+
+// ── Tiered verification console (ADMIN, Phase 5) ──────────────────────────────
+
+export type NeedAssessment = {
+  modelVersion: string;
+  needScore: number;
+  fraudScore: number;
+  duplicateScore: number;
+  documentConfidence: number;
+  urgencyAssessment: string | null;
+  recommendation: string;
+  evidenceNotes: string | null;
+  missingInfoFlags: string | null;
+  createdAt: string;
+};
+
+export type FraudFlag = {
+  id: number;
+  flagType: string;
+  description: string;
+  autoDetected: boolean;
+  createdAt: string;
+};
+
+export type VerificationChecklistItem = {
+  id: number;
+  stepNumber: number;
+  action: string;
+  howToVerify: string;
+  status: "PENDING" | "PASS" | "FAIL";
+  note: string | null;
+  checkedByEmail: string | null;
+  checkedAt: string | null;
+};
+
+export type AdminRequestVerificationDetail = {
+  requestId: number;
+  tier: string | null;
+  isEmergency: boolean;
+  emergencyNature: string | null;
+  incidentDate: string | null;
+  verificationDueAt: string | null;
+  tierOverriddenBy: string | null;
+  tierOverrideReason: string | null;
+  doneeAadhaarLast4: string | null;
+  doneeAadhaarOnFile: boolean;
+  verification: RequestVerification | null;
+  documents: VerificationDocument[];
+  needAssessment: NeedAssessment | null;
+  fraudFlags: FraudFlag[];
+  checklist: VerificationChecklistItem[];
+};
+
+export function adminGetItemRequestVerification(id: number) {
+  return request<AdminRequestVerificationDetail>(`/api/v1/admin/item-requests/${id}/verification`);
+}
+
+export function adminUpdateChecklistItem(requestId: number, itemId: number, status: "PASS" | "FAIL" | "PENDING", note?: string) {
+  return request<VerificationChecklistItem>(`/api/v1/admin/item-requests/${requestId}/checklist/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, note }),
+  });
+}
+
+export function adminOverrideTier(requestId: number, tier: string, reason: string) {
+  return request<ItemRequest>(`/api/v1/admin/item-requests/${requestId}/override-tier`, {
+    method: "PATCH",
+    body: JSON.stringify({ tier, reason }),
+  });
+}
+
+export function adminHoldItemRequest(requestId: number, reason: string) {
+  return request<ItemRequest>(`/api/v1/admin/item-requests/${requestId}/hold`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function adminResumeItemRequestReview(requestId: number) {
+  return request<ItemRequest>(`/api/v1/admin/item-requests/${requestId}/resume-review`, { method: "PATCH" });
+}
+
+// Click-to-reveal: decrypts on demand server-side, audit-logged. Never cache this
+// value beyond the component that displayed it — re-fetch on every reveal.
+export function adminRevealAadhaar(userId: number) {
+  return request<{ aadhaarNumber: string }>(`/api/v1/admin/users/${userId}/aadhaar`);
 }
 
 export function adminGetItemRequestAiReview(id: number) {
@@ -647,6 +851,13 @@ export type ItemMatch = {
   rejectionReason: string | null;
   createdAt: string;
   matchScore: number | null;
+  // Match confidence breakdown — admin-only detail, null on donor/donee views.
+  scoreCategory: number | null;
+  scoreSpec: number | null;
+  scoreDistanceKm: number | null;
+  scoreDistanceStage: number | null;
+  scoreQuantity: number | null;
+  scoreUrgency: number | null;
   donorImages: string[];
   donorItemDescription: string | null;
   doneeReason: string | null;
@@ -738,10 +949,10 @@ export function donorAcceptMatch(id: number) {
   return request<ItemMatch>(`/api/v1/matches/${id}/donor-accept`, { method: "POST" });
 }
 
-export function donorRejectMatch(id: number, reason?: string) {
+export function donorRejectMatch(id: number, reason?: string, conditionChanged?: boolean) {
   return request<ItemMatch>(`/api/v1/matches/${id}/donor-reject`, {
     method: "POST",
-    body: JSON.stringify({ reason: reason ?? null }),
+    body: JSON.stringify({ reason: reason ?? null, conditionChanged: conditionChanged ? "true" : "false" }),
   });
 }
 
