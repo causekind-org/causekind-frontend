@@ -8,7 +8,6 @@ import { useTranslations } from "next-intl";
 import {
   getMyItemListings, getMyItemRequests, getMyMatches, getMyProfile,
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
-  saveMatchLogistics, generateDeliveryOtp, verifyDeliveryMatch, confirmReceiptMatch, requestCallMasking,
   pauseItemListing, resumeItemListing, withdrawItemListing, deleteMyListing,
   getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer, confirmNoIssue,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
@@ -22,11 +21,19 @@ import { Progress } from "@/components/ui/progress";
 import {
   Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
-  Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown
+  Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck
 } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { ListingDetailPanel } from "@/components/ListingDetailPanel";
+
+// Once both parties accept, scheduling/confirmation/chat all live on the
+// Handover Hub page instead of inline dashboard forms.
+const HANDOVER_HUB_STATUSES = new Set([
+  "BOTH_PARTIES_ACCEPTED", "LOGISTICS_CONFIRMED", "TRANSPORT_DISCUSSION",
+  "ARRANGEMENT_AGREED", "PICKUP_SCHEDULED", "PICKED_UP", "IN_TRANSIT",
+  "DELIVERY_ATTEMPTED", "DELIVERED_PENDING_CONFIRMATION",
+]);
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/);
@@ -567,9 +574,6 @@ function DoneeDashboard({
   onRefresh: () => Promise<void>;
 }) {
   const [matchActionLoading, setMatchActionLoading] = useState<number | null>(null);
-  const [verifyMatchId, setVerifyMatchId] = useState<number | null>(null);
-  const [otpInput, setOtpInput] = useState("");
-  const [verifyLoading, setVerifyLoading] = useState(false);
   const [incomingOffers, setIncomingOffers] = useState<DonationOffer[]>([]);
   const [offerActionLoading, setOfferActionLoading] = useState<number | null>(null);
 
@@ -1133,29 +1137,11 @@ function DoneeDashboard({
                             </Button>
                           </div>
                         )}
-                        {m.status === "TRANSPORT_DISCUSSION" && (
-                          <div className="flex justify-end pt-1">
-                            <Button size="sm" onClick={async () => { try { await requestCallMasking(m.id); toast.success("Call request sent!"); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed"); } }} className="bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold rounded-lg"><Phone className="w-3 h-3 mr-1" />Contact Donor (Masked)</Button>
-                          </div>
-                        )}
-                        {(m.status === "DELIVERED_PENDING_CONFIRMATION" || m.status === "IN_TRANSIT" || m.status === "PICKED_UP" || m.status === "LOGISTICS_CONFIRMED") && (
-                          <div className="pt-1 space-y-2">
-                            <p className="text-xs font-semibold text-emerald-700">Item is on the way — enter the OTP from the donor to confirm receipt</p>
-                            {verifyMatchId === m.id ? (
-                              <div className="space-y-2">
-                                <input type="text" maxLength={6} placeholder="Enter 6-digit OTP" value={otpInput} onChange={e => setOtpInput(e.target.value.replace(/\D/g, ""))} className="w-full text-center text-lg font-bold tracking-widest border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900" />
-                                <div className="flex gap-2">
-                                  <button disabled={verifyLoading || otpInput.length !== 6} onClick={async () => { setVerifyLoading(true); try { await verifyDeliveryMatch(m.id, { verificationMethod: "OTP", otp: otpInput }); toast.success("Delivery confirmed! Match completed."); setVerifyMatchId(null); setOtpInput(""); await onRefresh(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "OTP verification failed"); } finally { setVerifyLoading(false); } }} className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg">
-                                    {verifyLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : "Confirm Receipt"}
-                                  </button>
-                                  <button onClick={() => { setVerifyMatchId(null); setOtpInput(""); }} className="px-3 text-xs text-stone-500 border border-stone-200 dark:border-zinc-700 rounded-lg">Cancel</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <button onClick={() => setVerifyMatchId(m.id)} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg">
-                                Enter OTP to Confirm Receipt
-                              </button>
-                            )}
+                        {HANDOVER_HUB_STATUSES.has(m.status) && (
+                          <div className="pt-1">
+                            <Link href={`/matches/${m.id}/handover`} className="flex items-center justify-center gap-1.5 w-full bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                              <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
+                            </Link>
                           </div>
                         )}
                       </div>
@@ -1202,16 +1188,6 @@ export default function DashboardPage() {
   const [declineReason, setDeclineReason] = useState("");
   const [declineConditionChanged, setDeclineConditionChanged] = useState(false);
   const [reviewLoading, setReviewLoading] = useState<number | null>(null);
-
-  // Logistics form state
-  const [logisticsMatchId, setLogisticsMatchId] = useState<number | null>(null);
-  const [logisticsForm, setLogisticsForm] = useState({ handoverMethod: "IN_PERSON", pickupDateTime: "", handoverAddress: "", notes: "" });
-  const [logisticsLoading, setLogisticsLoading] = useState(false);
-
-  // OTP state
-  const [generatedOtp, setGeneratedOtp] = useState<{ matchId: number; otp: string } | null>(null);
-  const [otpLoading, setOtpLoading] = useState<number | null>(null);
-
 
   const refreshListings = async () => {
     try { const fresh = await getMyItemListings(); setItemListings(fresh); } catch { /* silent */ }
@@ -1742,52 +1718,11 @@ export default function DashboardPage() {
                                     </button>
                                   </div>
                                 )}
-                                {m.status === "BOTH_PARTIES_ACCEPTED" && (
-                                  <div className="pt-1 space-y-2">
-                                    <p className="text-xs font-semibold text-blue-700 flex items-center gap-1"><Calendar className="w-3 h-3" /> Set pickup details to confirm logistics</p>
-                                    {logisticsMatchId === m.id ? (
-                                      <div className="space-y-2 bg-blue-50 dark:bg-zinc-800 p-3 rounded-xl">
-                                        <select value={logisticsForm.handoverMethod} onChange={e => setLogisticsForm(f => ({ ...f, handoverMethod: e.target.value }))} className="w-full text-xs border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900">
-                                          <option value="IN_PERSON">In Person</option>
-                                          <option value="COURIER">Courier</option>
-                                          <option value="THIRD_PARTY">Third Party</option>
-                                        </select>
-                                        <input type="datetime-local" value={logisticsForm.pickupDateTime} onChange={e => setLogisticsForm(f => ({ ...f, pickupDateTime: e.target.value }))} className="w-full text-xs border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900" />
-                                        <input type="text" placeholder="Pickup address (optional)" value={logisticsForm.handoverAddress} onChange={e => setLogisticsForm(f => ({ ...f, handoverAddress: e.target.value }))} className="w-full text-xs border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900" />
-                                        <input type="text" placeholder="Notes (optional)" value={logisticsForm.notes} onChange={e => setLogisticsForm(f => ({ ...f, notes: e.target.value }))} className="w-full text-xs border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900" />
-                                        <div className="flex gap-2">
-                                          <button disabled={logisticsLoading || !logisticsForm.pickupDateTime} onClick={async () => { setLogisticsLoading(true); try { await saveMatchLogistics(m.id, { handoverMethod: logisticsForm.handoverMethod, pickupDateTime: logisticsForm.pickupDateTime, handoverAddress: logisticsForm.handoverAddress || undefined, notes: logisticsForm.notes || undefined }); toast.success("Logistics saved!"); setLogisticsMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to save logistics"); } finally { setLogisticsLoading(false); } }} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg">
-                                            {logisticsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : "Save Logistics"}
-                                          </button>
-                                          <button onClick={() => setLogisticsMatchId(null)} className="px-3 text-xs text-stone-500 border border-stone-200 dark:border-zinc-700 rounded-lg">Cancel</button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <button onClick={() => { setLogisticsMatchId(m.id); setLogisticsForm({ handoverMethod: "IN_PERSON", pickupDateTime: "", handoverAddress: "", notes: "" }); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-lg">
-                                        Set Pickup Details
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                                {(m.status === "LOGISTICS_CONFIRMED" || m.status === "PICKUP_SCHEDULED" || m.status === "PICKED_UP" || m.status === "IN_TRANSIT" || m.status === "DELIVERED_PENDING_CONFIRMATION") && (
-                                  <div className="pt-1 space-y-2">
-                                    {m.pickupDateTime && <p className="text-xs text-stone-500 flex items-center gap-1"><Calendar className="w-3 h-3" /> Pickup: {new Date(m.pickupDateTime).toLocaleString()}</p>}
-                                    {generatedOtp?.matchId === m.id ? (
-                                      <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 rounded-xl p-3 text-center">
-                                        <p className="text-xs text-stone-500 mb-1">Share this OTP with the recipient for delivery confirmation</p>
-                                        <p className="text-3xl font-black tracking-widest text-emerald-700">{generatedOtp.otp}</p>
-                                        <button onClick={() => setGeneratedOtp(null)} className="mt-2 text-xs text-stone-400 underline">Hide OTP</button>
-                                      </div>
-                                    ) : (
-                                      <button disabled={otpLoading === m.id} onClick={async () => { setOtpLoading(m.id); try { const res = await generateDeliveryOtp(m.id); setGeneratedOtp({ matchId: m.id, otp: res.otp }); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to generate OTP"); } finally { setOtpLoading(null); } }} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5">
-                                        {otpLoading === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Generate Delivery OTP"}
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                                {(m.status === "TRANSPORT_DISCUSSION" || m.status === "BOTH_PARTIES_ACCEPTED" || m.status === "LOGISTICS_CONFIRMED") && (
-                                  <div className="flex justify-end gap-2 pt-1">
-                                    <Button size="sm" onClick={async () => { try { await requestCallMasking(m.id); toast.success("Call request sent — recipient will be notified."); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed"); } }} className="bg-[#b04a15] text-white text-xs font-bold rounded-lg flex items-center gap-1"><Phone className="w-3 h-3" /> Call Recipient (Masked)</Button>
+                                {HANDOVER_HUB_STATUSES.has(m.status) && (
+                                  <div className="pt-1">
+                                    <Link href={`/matches/${m.id}/handover`} className="flex items-center justify-center gap-1.5 w-full bg-[#b04a15] hover:bg-[#c45520] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                      <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
+                                    </Link>
                                   </div>
                                 )}
                               </div>
@@ -1941,6 +1876,7 @@ export default function DashboardPage() {
 
       <ListingDetailPanel
         listing={selectedListing}
+        match={selectedListing ? matches.find(m => m.listingId === selectedListing.id) ?? null : null}
         onClose={() => setSelectedListing(null)}
         onAction={async (id, action) => {
           await handleListingAction(id, action);

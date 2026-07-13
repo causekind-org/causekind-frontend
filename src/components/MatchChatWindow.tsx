@@ -2,15 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  getChatMessages,
-  getChatMessagesSince,
-  sendChatMessage,
-  markChatMessagesRead,
+  getMatchChatMessages,
+  getMatchChatMessagesSince,
+  sendMatchChatMessage,
+  markMatchChatMessagesRead,
   type ChatMessage,
 } from "@/lib/api";
 
 interface Props {
-  offerId: number;
+  matchId: number;
   currentUserEmail: string;
   locked?: boolean;
   className?: string;
@@ -18,7 +18,7 @@ interface Props {
 
 const POLL_INTERVAL_MS = 5_000;
 
-export default function ChatWindow({ offerId, currentUserEmail, locked = false, className = "" }: Props) {
+export default function MatchChatWindow({ matchId, currentUserEmail, locked = false, className = "" }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -28,36 +28,34 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
 
   // Initial load
   useEffect(() => {
-    getChatMessages(offerId)
+    getMatchChatMessages(matchId)
       .then((msgs) => {
         setMessages(msgs);
         if (msgs.length > 0) lastSentAt.current = msgs[msgs.length - 1].sentAt;
-        markChatMessagesRead(offerId).catch(() => {});
+        markMatchChatMessagesRead(matchId).catch(() => {});
       })
       .catch(() => {});
-  }, [offerId]);
+  }, [matchId]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Polling for new messages — skips when tab is in background. Kept as a fallback/
-  // catch-up path even with the SSE push below (covers the SSE connection dropping,
-  // reconnect gaps, etc.) — see [[Decisions and Gotchas]] on the dual SSE+poll pattern.
+  // Polling fallback — covers SSE reconnect gaps, same dual SSE+poll pattern as ChatWindow.
   useEffect(() => {
     const interval = setInterval(async () => {
       if (document.hidden) return;
       try {
         const since = lastSentAt.current ?? new Date(0).toISOString();
-        const newMsgs = await getChatMessagesSince(offerId, since);
+        const newMsgs = await getMatchChatMessagesSince(matchId, since);
         if (newMsgs.length > 0) {
           setMessages((prev) => {
             const existingIds = new Set(prev.map((m) => m.id));
             const fresh = newMsgs.filter((m) => !existingIds.has(m.id));
             if (fresh.length === 0) return prev;
             lastSentAt.current = fresh[fresh.length - 1].sentAt;
-            markChatMessagesRead(offerId).catch(() => {});
+            markMatchChatMessagesRead(matchId).catch(() => {});
             return [...prev, ...fresh];
           });
         }
@@ -66,11 +64,10 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
       }
     }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [offerId]);
+  }, [matchId]);
 
-  // Real-time push — NotificationsProvider's single SSE connection rebroadcasts
-  // "chat-message" events as a window CustomEvent; append instantly if it's for
-  // this offer, instead of waiting for the next poll tick.
+  // Real-time push — same "ck-chat-message" window event ChatWindow uses, but filtered
+  // to source==="MATCH" so an offer and a match sharing the same numeric id don't cross-post.
   useEffect(() => {
     function onPush(e: Event) {
       const detail = (e as CustomEvent).detail as {
@@ -78,7 +75,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
         senderEmail: string; content: string; messageType: ChatMessage["messageType"];
         recipientTarget: ChatMessage["recipientTarget"]; sentAt: string; source?: string;
       } | undefined;
-      if (!detail || detail.source !== "OFFER" || detail.offerId !== offerId) return;
+      if (!detail || detail.source !== "MATCH" || detail.offerId !== matchId) return;
       const message: ChatMessage = {
         id: detail.id, threadId: detail.threadId, senderId: detail.senderId, senderName: detail.senderName,
         senderEmail: detail.senderEmail, content: detail.content, messageType: detail.messageType,
@@ -89,11 +86,11 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
         lastSentAt.current = message.sentAt;
         return [...prev, message];
       });
-      markChatMessagesRead(offerId).catch(() => {});
+      markMatchChatMessagesRead(matchId).catch(() => {});
     }
     window.addEventListener("ck-chat-message", onPush);
     return () => window.removeEventListener("ck-chat-message", onPush);
-  }, [offerId]);
+  }, [matchId]);
 
   async function handleSend() {
     const text = input.trim();
@@ -101,7 +98,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
     setSending(true);
     setError(null);
     try {
-      const msg = await sendChatMessage(offerId, text);
+      const msg = await sendMatchChatMessage(matchId, text);
       setMessages((prev) => [...prev, msg]);
       lastSentAt.current = msg.sentAt;
       setInput("");
@@ -124,7 +121,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-          Offer Messages
+          Messages
         </span>
         {locked && (
           <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs text-gray-500">
