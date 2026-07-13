@@ -28,6 +28,7 @@ import {
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
+import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -192,7 +193,7 @@ export default function NewRequestPage() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsBlocked, setGpsBlocked] = useState(false);
-  const { countries: countryOptions, states: stateOptions, cities: cityOptions } = useLocations(countryIso, stateIso);
+  const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
   const showCityFreeText = noStateOptions || noCityOptions || forceFreeTextCity;
@@ -205,9 +206,42 @@ export default function NewRequestPage() {
     setVerification((v) => ({ ...v, [key]: value }));
   }
 
+  // Reference contact — dial-code select + per-country digit limit, plus a
+  // self-reference guard against the donee's own saved phone (the backend
+  // flags SELF_REFERENCE on exact match with donee.phone, so we store the
+  // same `+<dialcode><digits>` format registration uses).
+  const [userPhone, setUserPhone] = useState("");
+  const [refDialCountry, setRefDialCountry] = useState("IN");
+  const [refPhone, setRefPhone] = useState("");
+  const refMaxLength = PHONE_LENGTHS[refDialCountry] ?? 15;
+  const refDialCode = getDialCode(refDialCountry, dialCodeOptions);
+
+  const digitsOnly = (s: string) => s.replace(/\D/g, "");
+  const isSelfReference =
+    refPhone.length >= 7 && userPhone !== "" &&
+    (digitsOnly(userPhone) === digitsOnly(refDialCode + refPhone) ||
+      digitsOnly(userPhone).endsWith(refPhone));
+  const refComplete = refPhone.length === (PHONE_LENGTHS[refDialCountry] ?? -1);
+  const refLiveError = isSelfReference
+    ? "Reference number cannot be your own phone number — give an independent reference"
+    : "";
+
+  // Keep verification.referrerContact in sync in full international format
+  useEffect(() => {
+    setVerification((v) => ({ ...v, referrerContact: refPhone ? `${refDialCode}${refPhone}` : "" }));
+  }, [refPhone, refDialCode]);
+
+  // Default the reference dial country to the GPS-detected country (until the user types)
+  useEffect(() => {
+    if (countryIso && refPhone === "") setRefDialCountry(countryIso);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryIso]);
+
   // Step 3 — Aadhaar + documents
   const [aadhaarNumber, setAadhaarNumber] = useState("");
   const [aadhaarSaved, setAadhaarSaved] = useState(false);
+  // Last 4 of the Aadhaar already on file (from profile) — full number never leaves the server
+  const [aadhaarLast4, setAadhaarLast4] = useState<string | null>(null);
   const [savingAadhaar, setSavingAadhaar] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<Set<VerificationDocumentType>>(new Set());
   const [uploadingDoc, setUploadingDoc] = useState<VerificationDocumentType | null>(null);
@@ -223,6 +257,12 @@ export default function NewRequestPage() {
         if (p.role !== "DONEE" && p.role !== "ADMIN") {
           toast.error("Access denied. Only Beneficiaries (Donees) can post needs.");
           router.push("/dashboard");
+        }
+        setUserPhone(p.phone ?? "");
+        // Aadhaar saved on a previous request — reflect it instead of asking again
+        if (p.aadhaarLast4) {
+          setAadhaarLast4(p.aadhaarLast4);
+          setAadhaarSaved(true);
         }
       })
       .catch(() => {});
@@ -307,6 +347,12 @@ export default function NewRequestPage() {
       if (!gpsCoords) e.gps = "GPS location is required";
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
+    if (s === 2 && tier === "TIER_3_HIGH_VALUE" && refPhone.length > 0) {
+      if (PHONE_LENGTHS[refDialCountry] && refPhone.length !== PHONE_LENGTHS[refDialCountry])
+        e.referrerContact = `Reference number must be exactly ${PHONE_LENGTHS[refDialCountry]} digits for ${refDialCode || refDialCountry}`;
+      else if (isSelfReference)
+        e.referrerContact = "Reference number cannot be your own phone number — give an independent reference";
+    }
     if (s === 3) {
       // Tier 4 (Emergency) doesn't collect Aadhaar at all — the field isn't even
       // rendered for it (relaxed ID requirements), so don't block on it here.
@@ -352,6 +398,8 @@ export default function NewRequestPage() {
     setSavingAadhaar(true);
     try {
       await updateAadhaar(aadhaarNumber);
+      setAadhaarLast4(aadhaarNumber.slice(-4));
+      setAadhaarNumber("");
       setAadhaarSaved(true);
       toast.success("Aadhaar number saved securely");
     } catch (e) {
@@ -615,8 +663,40 @@ export default function NewRequestPage() {
                 <Field label="Reference person name" hint="Doctor / NGO worker / social worker who wrote your reference letter">
                   <Input value={verification.referrerName ?? ""} onChange={(e) => setV("referrerName", e.target.value)} className="h-11" />
                 </Field>
-                <Field label="Reference contact number">
-                  <Input value={verification.referrerContact ?? ""} onChange={(e) => setV("referrerContact", e.target.value)} className="h-11" />
+                <Field
+                  label="Reference contact number"
+                  error={fieldErrors.referrerContact || refLiveError}
+                  hint={refComplete && !isSelfReference ? undefined : `${PHONE_LENGTHS[refDialCountry] ?? "Up to 15"} digits for ${refDialCode || refDialCountry}`}
+                >
+                  <div className="flex gap-2">
+                    <div className="w-[104px] shrink-0">
+                      <SearchableSelect
+                        options={dialCodeOptions}
+                        value={refDialCountry}
+                        onChange={(iso) => {
+                          setRefDialCountry(iso);
+                          const max = PHONE_LENGTHS[iso] ?? 15;
+                          setRefPhone((p) => p.slice(0, max));
+                        }}
+                        placeholder="+–"
+                        searchPlaceholder="Search country"
+                        renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
+                      />
+                    </div>
+                    <div className="relative flex-1">
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        value={refPhone}
+                        maxLength={refMaxLength}
+                        onChange={(e) => setRefPhone(digitsOnly(e.target.value).slice(0, refMaxLength))}
+                        className={`h-11 pr-9 ${refLiveError ? "border-red-500 focus-visible:ring-red-500/30" : ""}`}
+                      />
+                      {refComplete && !isSelfReference && (
+                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500 pointer-events-none" />
+                      )}
+                    </div>
+                  </div>
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-5">
@@ -651,14 +731,41 @@ export default function NewRequestPage() {
       </div>
 
       {tier !== "TIER_4_EMERGENCY" && (
-        <Field label="Aadhaar Number" required error={fieldErrors.aadhaar} hint="12 digits, no spaces">
+        <Field
+          label="Aadhaar Number"
+          required
+          error={fieldErrors.aadhaar}
+          hint={aadhaarSaved ? "Already on file from your account — no need to re-enter" : "12 digits, no spaces"}
+        >
           <div className="flex gap-2">
-            <Input value={aadhaarNumber} onChange={(e) => { setAadhaarNumber(e.target.value.replace(/\D/g, "").slice(0, 12)); setAadhaarSaved(false); }}
-              placeholder="123456789012" maxLength={12} className="h-11 flex-1" disabled={aadhaarSaved} />
-            <button type="button" onClick={handleSaveAadhaar} disabled={savingAadhaar || aadhaarSaved || aadhaarNumber.length !== 12}
-              className="h-11 px-4 rounded-lg border border-[#b04a15]/40 text-[#b04a15] text-sm font-bold hover:bg-[#b04a15]/5 disabled:opacity-50 transition-colors shrink-0">
-              {savingAadhaar ? <Loader2 className="w-4 h-4 animate-spin" /> : aadhaarSaved ? <CheckCircle2 className="w-4 h-4" /> : "Save"}
-            </button>
+            <Input
+              value={aadhaarSaved && aadhaarLast4 ? `XXXX XXXX ${aadhaarLast4}` : aadhaarNumber}
+              onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, "").slice(0, 12))}
+              placeholder="123456789012" maxLength={14} className="h-11 flex-1" disabled={aadhaarSaved} />
+            {aadhaarSaved ? (
+              <>
+                <span className="h-11 px-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/20 dark:border-green-700 text-green-600 dark:text-green-400 text-sm font-bold flex items-center gap-1.5 shrink-0">
+                  <CheckCircle2 className="w-4 h-4" /> Saved
+                </span>
+                <button type="button" onClick={() => { setAadhaarSaved(false); setAadhaarNumber(""); }}
+                  className="h-11 px-4 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 text-sm font-bold hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shrink-0">
+                  Change
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={handleSaveAadhaar} disabled={savingAadhaar || aadhaarNumber.length !== 12}
+                  className="h-11 px-4 rounded-lg border border-[#b04a15]/40 text-[#b04a15] text-sm font-bold hover:bg-[#b04a15]/5 disabled:opacity-50 transition-colors shrink-0">
+                  {savingAadhaar ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                </button>
+                {aadhaarLast4 && (
+                  <button type="button" onClick={() => { setAadhaarSaved(true); setAadhaarNumber(""); }}
+                    className="h-11 px-4 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 text-sm font-bold hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shrink-0">
+                    Cancel
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </Field>
       )}

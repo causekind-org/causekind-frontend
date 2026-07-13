@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers } from "@/lib/api";
 import { useAuth } from "./useAuth";
@@ -11,10 +11,20 @@ export type AppNotification = {
   body: string;
   type: "match" | "approved" | "rejected" | "fulfilled" | "info";
   link: string;
+  /** When the underlying event happened (entity createdAt) */
   timestamp: number;
+  /** When this client first saw it — drives ordering and the 10-item cap */
+  receivedAt: number;
 };
 
+/** What deriveNotifications/SSE produce — receivedAt is stamped at merge time */
+type IncomingNotification = Omit<AppNotification, "receivedAt"> & { receivedAt?: number };
+
 const SEEN_KEY  = "ck_notif_seen_v3";
+// Per-user persistent tray. Notifications only ever *accumulate* here — a status
+// moving on (or an entity disappearing) never removes its notification; the only
+// way one leaves the tray is being pushed off the bottom by the 10-item cap.
+const STORE_PREFIX = "ck_notif_store_v1_";
 const POLL_MS   = 90_000;
 const MAX_NOTIFICATIONS = 10;
 const SSE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1/notifications/stream`;
@@ -46,9 +56,24 @@ function saveSeen(s: Set<string>) {
   try { localStorage.setItem(SEEN_KEY, JSON.stringify([...s])); } catch {}
 }
 
-// Newest first, capped to MAX_NOTIFICATIONS — older ones fall off as new ones arrive.
+// Newest first (by when the client received it), capped to MAX_NOTIFICATIONS —
+// the oldest fall off the bottom as new ones arrive on top.
 function sortAndCap(list: AppNotification[]): AppNotification[] {
-  return [...list].sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_NOTIFICATIONS);
+  return [...list].sort((a, b) => b.receivedAt - a.receivedAt).slice(0, MAX_NOTIFICATIONS);
+}
+
+function loadStore(key: string): AppNotification[] {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((n) => n && typeof n.id === "string" && typeof n.receivedAt === "number")
+      : [];
+  } catch { return []; }
+}
+function saveStore(key: string, list: AppNotification[]) {
+  try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
 }
 
 function toTimestamp(iso: string | null | undefined): number {
@@ -57,9 +82,9 @@ function toTimestamp(iso: string | null | undefined): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
-async function deriveNotifications(rawRole: string): Promise<AppNotification[]> {
+async function deriveNotifications(rawRole: string): Promise<IncomingNotification[]> {
   const role = normalizeRole(rawRole);
-  const notifs: AppNotification[] = [];
+  const notifs: IncomingNotification[] = [];
 
   // ── DONEE notifications ────────────────────────────────────────────────────
   if (role === "DONEE") {
@@ -232,25 +257,51 @@ function useNotificationState(): NotificationsContextValue {
   const { user, isLoading } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
+  const storeKey = user?.email ? `${STORE_PREFIX}${user.email}` : null;
+  const hydratedRef = useRef(false);
 
-  const addNotification = useCallback((n: AppNotification) => {
+  // Hydrate the tray from this user's persistent store (survives reloads/logins)
+  useEffect(() => {
+    hydratedRef.current = false;
+    if (!storeKey) { setNotifications([]); setUnread(0); return; }
+    setNotifications(sortAndCap(loadStore(storeKey)));
+    hydratedRef.current = true;
+  }, [storeKey]);
+
+  // Persist every change and recompute the unread badge
+  useEffect(() => {
+    if (!hydratedRef.current || !storeKey) return;
+    saveStore(storeKey, notifications);
+    const seen = loadSeen();
+    setUnread(notifications.filter(n => !seen.has(n.id)).length);
+  }, [notifications, storeKey]);
+
+  // Merge-only: already-known ids are left untouched (their position/receivedAt is
+  // stable), unknown ids are stamped and enter at the top. Nothing is ever removed
+  // here — only the sortAndCap 10-item cap drops the oldest from the bottom.
+  const merge = useCallback((incoming: IncomingNotification[]) => {
     setNotifications(prev => {
-      if (prev.some(p => p.id === n.id)) return prev;
-      return sortAndCap([n, ...prev]);
-    });
-    setUnread(u => {
-      const seen = loadSeen();
-      return seen.has(n.id) ? u : u + 1;
+      const known = new Set(prev.map(p => p.id));
+      const fresh = incoming.filter(n => !known.has(n.id));
+      if (fresh.length === 0) return prev;
+      // First fill of an empty tray: stamp with the event's own time so a backlog
+      // doesn't all read "just now". After that, new arrivals stamp now → top.
+      const stamped = fresh.map(n => ({
+        ...n,
+        receivedAt: n.receivedAt ?? (prev.length === 0 ? (n.timestamp || Date.now()) : Date.now()),
+      }));
+      return sortAndCap([...prev, ...stamped]);
     });
   }, []);
 
+  const addNotification = useCallback((n: IncomingNotification) => {
+    merge([{ ...n, receivedAt: Date.now() }]);
+  }, [merge]);
+
   const refresh = useCallback(async () => {
     if (!user?.role) return;
-    const fresh = sortAndCap(await deriveNotifications(user.role));
-    const seen  = loadSeen();
-    setNotifications(fresh);
-    setUnread(fresh.filter(n => !seen.has(n.id)).length);
-  }, [user?.role]);
+    merge(await deriveNotifications(user.role));
+  }, [user?.role, merge]);
 
   useEffect(() => {
     if (isLoading || !user) return;

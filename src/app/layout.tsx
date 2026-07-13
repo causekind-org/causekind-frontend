@@ -9,7 +9,6 @@ import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
 import { ScrollProgress } from "@/components/ScrollProgress";
-import { ScrollRestoration } from "@/components/ScrollRestoration";
 import { Toaster } from "sonner";
 import { LocationGate } from "@/components/LocationGate";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -87,7 +86,6 @@ export default async function RootLayout({
                 <SuperAdminRedirect />
                 <AdminRedirect />
                 <ScrollProgress />
-                <ScrollRestoration />
                 <SiteHeader />
                 <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
                 <SiteFooter />

@@ -182,6 +182,8 @@ export type UserProfile = {
   role: string;
   latitude: number | null;
   longitude: number | null;
+  /** Last 4 digits of the saved Aadhaar, or null if none on file yet. */
+  aadhaarLast4: string | null;
 };
 
 export function getProfile() {

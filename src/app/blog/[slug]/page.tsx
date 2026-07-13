@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, use } from "react";
+import React, { useState, useRef, useEffect, use } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "isomorphic-dompurify";
 import { blogPosts } from "../../../data/blogData";
 import { AnimatedWrapper } from "../../components/AnimatedWrapper";
@@ -10,6 +10,97 @@ import { StaggerContainer, itemVariants } from "../../components/StaggerContaine
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+const FONT_OPTIONS = [
+  { value: "font-serif-mode", label: "Source Serif", family: "var(--font-source-serif-4), serif" },
+  { value: "font-sans-mode",  label: "Plus Jakarta", family: "var(--font-plus-jakarta-sans), sans-serif" },
+  { value: "font-inter-mode", label: "Inter Sans",   family: "var(--font-inter), sans-serif" },
+  { value: "font-lora-mode",  label: "Lora Serif",   family: "var(--font-lora), serif" },
+  { value: "font-mono-mode",  label: "Roboto Mono",  family: "var(--font-roboto-mono), monospace" },
+];
+
+function FontDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selected = FONT_OPTIONS.find((o) => o.value === value) ?? FONT_OPTIONS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onEscape(e: globalThis.KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        className="w-full flex items-center justify-between gap-2 pl-4 pr-3 py-3 bg-white dark:bg-stone-800 border border-[#b04a15]/20 dark:border-[#e07b3a]/20 rounded-xl font-body-md text-sm text-[#1c1917] dark:text-[#e7e5e4] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 dark:focus-visible:ring-[#e07b3a]/40 hover:border-[#b04a15]/50 dark:hover:border-[#e07b3a]/50 transition-colors cursor-pointer shadow-sm"
+      >
+        <span className="truncate" style={{ fontFamily: selected.family }}>{selected.label}</span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="material-symbols-outlined text-[#b04a15] dark:text-[#e07b3a] text-[20px] leading-none shrink-0"
+        >
+          expand_more
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            role="listbox"
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="absolute z-50 mt-2 w-full origin-top rounded-xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 bg-white dark:bg-stone-800 shadow-lg overflow-hidden py-1"
+          >
+            {FONT_OPTIONS.map((opt, i) => (
+              <motion.li
+                key={opt.value}
+                role="option"
+                aria-selected={opt.value === value}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.18, delay: 0.03 * i }}
+              >
+                <button
+                  type="button"
+                  onClick={() => { onChange(opt.value); setOpen(false); }}
+                  className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-left cursor-pointer transition-colors ${
+                    opt.value === value
+                      ? "bg-orange-50 dark:bg-stone-700/60 text-[#b04a15] dark:text-[#e07b3a] font-semibold"
+                      : "text-stone-700 dark:text-stone-200 hover:bg-orange-50 dark:hover:bg-stone-700/60 hover:text-[#b04a15] dark:hover:text-[#e07b3a]"
+                  }`}
+                  style={{ fontFamily: opt.family }}
+                >
+                  <span className="truncate">{opt.label}</span>
+                  {opt.value === value && (
+                    <span className="material-symbols-outlined text-[16px] leading-none shrink-0">check</span>
+                  )}
+                </button>
+              </motion.li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 export default function BlogReadingPage({ params }: PageProps) {
@@ -116,7 +207,7 @@ export default function BlogReadingPage({ params }: PageProps) {
               <div className="sticky top-[120px] flex flex-col gap-8">
                 {/* Reading Tools Panel */}
                 {/* Reading Tools Panel */}
-                <div className="bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-6 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
+                <div className="relative z-30 bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-6 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
                   <h3 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
                     Reading Tools
                   </h3>
@@ -142,22 +233,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                     <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
                       Font Options
                     </span>
-                    <div className="relative">
-                      <select
-                        value={fontMode}
-                        onChange={(e) => setFontMode(e.target.value)}
-                        className="w-full pl-4 pr-10 py-3 bg-white dark:bg-stone-800 border border-[#b04a15]/20 dark:border-[#e07b3a]/20 rounded-xl font-body-md text-sm text-[#1c1917] dark:text-[#e7e5e4] appearance-none focus:outline-none focus:border-[#b04a15] dark:focus:border-[#e07b3a] focus:ring-1 focus:ring-[#b04a15]/50 dark:focus:ring-[#e07b3a]/50 transition-all cursor-pointer shadow-sm truncate"
-                      >
-                        <option value="font-serif-mode">Source Serif</option>
-                        <option value="font-sans-mode">Plus Jakarta</option>
-                        <option value="font-inter-mode">Inter Sans</option>
-                        <option value="font-lora-mode">Lora Serif</option>
-                        <option value="font-mono-mode">Roboto Mono</option>
-                      </select>
-                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#b04a15] dark:text-[#e07b3a] pointer-events-none text-[20px] leading-none">
-                        expand_more
-                      </span>
-                    </div>
+                    <FontDropdown value={fontMode} onChange={setFontMode} />
                   </div>
                 </div>
                 {/* Social Share */}
