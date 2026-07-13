@@ -1443,3 +1443,109 @@ export function superAdminRunSql(query: string) {
     body: JSON.stringify({ query }),
   });
 }
+
+// ── WhatsApp (Meta Cloud API) ────────────────────────────────────────────────
+
+export type WhatsAppMessageLog = {
+  id: number;
+  direction: "OUTBOUND" | "INBOUND";
+  waMessageId: string | null;
+  phoneNumber: string;
+  messageType: "TEMPLATE" | "TEXT" | "FLOW" | "OTHER";
+  templateName: string | null;
+  status: "SENT" | "DELIVERED" | "READ" | "FAILED" | "RECEIVED";
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WhatsAppMessagePage = {
+  content: WhatsAppMessageLog[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+};
+
+export type WhatsAppTemplateComponent = Record<string, unknown>;
+
+export type WhatsAppTemplate = {
+  id: string;
+  name: string;
+  category: string;
+  language: string;
+  status: string;
+  components?: WhatsAppTemplateComponent[];
+};
+
+export type WhatsAppFlow = {
+  id: string;
+  name: string;
+  status: string;
+  categories?: string[];
+};
+
+export function getWhatsAppTemplates() {
+  return request<{ data: WhatsAppTemplate[] }>("/api/v1/admin/whatsapp/templates");
+}
+
+export function createWhatsAppTemplate(body: {
+  name: string;
+  category: string;
+  language: string;
+  components: WhatsAppTemplateComponent[];
+}) {
+  return request<Record<string, unknown>>("/api/v1/admin/whatsapp/templates", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function deleteWhatsAppTemplate(name: string) {
+  return request<void>(`/api/v1/admin/whatsapp/templates/${encodeURIComponent(name)}`, {
+    method: "DELETE",
+  });
+}
+
+export function getWhatsAppFlows() {
+  return request<{ data: WhatsAppFlow[] }>("/api/v1/admin/whatsapp/flows");
+}
+
+export function createWhatsAppFlow(body: { name: string; categories: string[] }) {
+  return request<Record<string, unknown>>("/api/v1/admin/whatsapp/flows", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateWhatsAppFlowJson(flowId: string, flowJson: string) {
+  return request<Record<string, unknown>>(`/api/v1/admin/whatsapp/flows/${flowId}/json`, {
+    method: "PUT",
+    body: JSON.stringify({ flowJson }),
+  });
+}
+
+export function publishWhatsAppFlow(flowId: string) {
+  return request<Record<string, unknown>>(`/api/v1/admin/whatsapp/flows/${flowId}/publish`, {
+    method: "POST",
+  });
+}
+
+export function deleteWhatsAppFlow(flowId: string) {
+  return request<void>(`/api/v1/admin/whatsapp/flows/${flowId}`, { method: "DELETE" });
+}
+
+export function sendWhatsAppTemplateMessage(body: {
+  to: string;
+  templateName: string;
+  languageCode: string;
+  bodyParameters?: string[];
+}) {
+  return request<WhatsAppMessageLog>("/api/v1/admin/whatsapp/messages/send-template", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function getWhatsAppMessages(page = 0, size = 25) {
+  return request<WhatsAppMessagePage>(`/api/v1/admin/whatsapp/messages?page=${page}&size=${size}`);
+}

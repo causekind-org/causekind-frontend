@@ -198,6 +198,7 @@ export default function ApprovalsPage() {
           </div>
           <div className="flex gap-2">
             <Link href="/admin/ai-logs"><Button variant="outline" className="gap-1.5"><Bot className="h-4 w-4" /> AI Logs</Button></Link>
+            <Link href="/admin/whatsapp"><Button variant="outline" className="gap-1.5"><MessageSquare className="h-4 w-4" /> WhatsApp</Button></Link>
             <Link href="/admin/dashboard"><Button variant="outline">{t("backToDashboard")}</Button></Link>
           </div>
         </div>

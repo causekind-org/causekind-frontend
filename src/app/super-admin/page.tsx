@@ -6,10 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { superAdminOverview, type SuperAdminOverview } from "@/lib/api";
 import { EntityTable, type Column } from "@/components/super-admin/EntityTable";
 import { SqlConsole } from "@/components/super-admin/SqlConsole";
+import { WhatsAppPanel } from "@/components/super-admin/WhatsAppPanel";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
-  Sun, Moon, AlertTriangle,
+  Sun, Moon, AlertTriangle, MessageCircle,
 } from "lucide-react";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -161,6 +162,7 @@ const NAV = [
   { key: "item-requests", label: "Requests",    icon: ClipboardList },
   { key: "item-listings", label: "Listings",    icon: Package },
   { key: "matches",       label: "Matches",     icon: Handshake },
+  { key: "whatsapp",      label: "WhatsApp",    icon: MessageCircle },
   { key: "sql",           label: "SQL Console", icon: Terminal },
 ] as const;
 
@@ -330,6 +332,7 @@ export default function SuperAdminPage() {
       case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS}   isDark={isDark} />;
       case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS}   isDark={isDark} />;
       case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
+      case "whatsapp":      return <WhatsAppPanel isDark={isDark} />;
       case "sql":           return <SqlConsole isDark={isDark} />;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
