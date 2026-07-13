@@ -791,7 +791,11 @@ export default function NewItemPage() {
           LEFT SIDEBAR
       ════════════════════════════════ */}
       <aside className="hidden lg:flex lg:w-[280px] xl:w-[300px] shrink-0 flex-col relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #0e0904 0%, #1a0f07 50%, #0c1621 100%)" }}>
+        style={{
+          backgroundImage: "linear-gradient(160deg, rgba(14, 9, 4, 0.82) 0%, rgba(26, 15, 7, 0.88) 50%, rgba(12, 22, 33, 0.92) 100%), url('/Item listing Doner.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center"
+        }}>
 
         {/* Floating orbs */}
         <div className="ck-orb-a absolute top-16 left-8 w-56 h-56 rounded-full pointer-events-none"

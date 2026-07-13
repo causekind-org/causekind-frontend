@@ -30,7 +30,9 @@ _Last updated: 2026-06-27 (donor flow 1 — spec implementation)_
 | `requests/page.tsx` | `/requests` | Browse item requests; AI photo detection + donate modal |
 | `requests/new/page.tsx` | `/requests/new` | Create item request |
 | `admin/dashboard/page.tsx` | `/admin/dashboard` | Admin overview |
-| `admin/approvals/page.tsx` | `/admin/approvals` | Approve/reject campaigns, items, requests, matches. Items tab fetches SUBMITTED status, shows photos/defect grid, has **Needs Info** action (sends admin note back to donor → NEEDS_INFORMATION) |
+| `admin/approvals/page.tsx` | `/admin/approvals` | Approve/reject campaigns, items, requests, matches. Items tab fetches SUBMITTED status, shows photos/defect grid, has **Needs Info** action (sends admin note back to donor → NEEDS_INFORMATION). Links to AI Logs and WhatsApp admin pages |
+| `admin/whatsapp/page.tsx` | `/admin/whatsapp` | Meta WhatsApp Cloud API admin UI — 4 tabs: Send Message (template + variables), Templates (list/create/delete, submits to Meta for approval), Flows (list/create draft, paste Flow JSON, publish, delete), Message Log (paginated send/receive history) |
+| `super-admin/page.tsx` | `/super-admin` | Full-screen "Command Center" SPA (SUPER_ADMIN only) — sidebar-driven sections (Overview, Users, Campaigns, Donations, Requests, Listings, Matches, WhatsApp, SQL Console), custom dark/light theme tokens, no shared Navbar chrome |
 | `certificate/page.tsx` | `/certificate` | Donation certificate generator |
 | `help/page.tsx` | `/help` | FAQ / help page |
 | `thank-you/page.tsx` | `/thank-you` | Post-donation thank you page |
@@ -54,6 +56,9 @@ _Last updated: 2026-06-27 (donor flow 1 — spec implementation)_
 | `PhoneAnimationSection.tsx` | Phone mockup animation section |
 | `ScrollProgress.tsx` | Top-of-page scroll progress bar |
 | `ui/` | shadcn/ui primitives: badge, button, card, input, label, progress, select, switch, tabs, textarea |
+| `super-admin/EntityTable.tsx` | Generic editable table for `/super-admin` entity sections (users, campaigns, donations, requests, listings, matches) |
+| `super-admin/SqlConsole.tsx` | Raw SQL console for `/super-admin` (danger-zone gated) |
+| `super-admin/WhatsAppPanel.tsx` | WhatsApp management for `/super-admin` — same send/templates/flows/log functionality as `admin/whatsapp/page.tsx`, restyled to match the Command Center's custom dark/light theme tokens instead of shadcn components |
 
 ---
 
@@ -61,7 +66,7 @@ _Last updated: 2026-06-27 (donor flow 1 — spec implementation)_
 
 | File | Purpose |
 |------|---------|
-| `lib/api.ts` | All API calls. Types: `UserProfile`, `Campaign`, `ItemListing`, `ItemRequest`, `ItemMatch`, `Donation`, etc. |
+| `lib/api.ts` | All API calls. Types: `UserProfile`, `Campaign`, `ItemListing`, `ItemRequest`, `ItemMatch`, `Donation`, etc. WhatsApp section: `WhatsAppTemplate`, `WhatsAppFlow`, `WhatsAppMessageLog` types + `getWhatsAppTemplates`/`createWhatsAppTemplate`/`deleteWhatsAppTemplate`, `getWhatsAppFlows`/`createWhatsAppFlow`/`updateWhatsAppFlowJson`/`publishWhatsAppFlow`/`deleteWhatsAppFlow`, `sendWhatsAppTemplateMessage`, `getWhatsAppMessages` |
 | `lib/utils.ts` | `cn()` utility (clsx + tailwind-merge) |
 | `hooks/useAuth.tsx` | Auth context + JWT decode. `user.role` used for role-gating pages |
 
