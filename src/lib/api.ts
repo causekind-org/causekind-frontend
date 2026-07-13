@@ -910,6 +910,8 @@ export type ItemMatch = {
   allocatedQuantity: number | null;
   reservationExpiry: string | null;
   fulfilmentNotes: string | null;
+  logisticsRescheduleCount: number;
+  logisticsAtRisk: boolean;
   // Delivery verification
   deliveryOtpVerified: boolean;
   deliveryVerificationMethod: string | null;
@@ -917,6 +919,13 @@ export type ItemMatch = {
   verifiedDeliveryCertificate: string | null;
   // Call masking
   callMaskingRequested: boolean;
+  // Dual handover confirmation (Handover Hub)
+  donorConfirmedQty: number | null;
+  donorConfirmedAt: string | null;
+  doneeConfirmedQty: number | null;
+  doneeConfirmedAt: string | null;
+  doneeConditionRating: string | null;
+  doneeConditionNotes: string | null;
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
@@ -995,6 +1004,59 @@ export function requestCallMasking(id: number) {
 
 export function generateDeliveryOtp(id: number): Promise<{ otp: string }> {
   return request<{ otp: string }>(`/api/v1/matches/${id}/generate-otp`, { method: "POST" });
+}
+
+// ── Match Handover Hub: dual confirmation (donor-only schedule via saveMatchLogistics) ──
+
+export function confirmMatchHandoverDonor(id: number, data: {
+  quantityHandedOver: number; verificationMethod?: string; notes?: string;
+}) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/handover/confirm-donor`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function confirmMatchHandoverDonee(id: number, data: {
+  otp?: string; quantityReceived: number;
+  conditionRating?: string; conditionNotes?: string; verificationMethod?: string;
+}) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/handover/confirm-donee`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ── Match chat (mirrors offer chat, keyed to matchId instead of offerId) ────────
+
+export function getMatchChatMessages(matchId: number) {
+  return request<ChatMessage[]>(`/api/v1/matches/${matchId}/chat/messages`);
+}
+
+export function getMatchChatMessagesSince(matchId: number, since: string) {
+  return request<ChatMessage[]>(
+    `/api/v1/matches/${matchId}/chat/messages/since?since=${encodeURIComponent(since)}`,
+  );
+}
+
+export function sendMatchChatMessage(
+  matchId: number,
+  content: string,
+  messageType = "TEXT",
+  recipientTarget?: "DONOR" | "DONEE" | "BOTH",
+) {
+  return request<ChatMessage>(`/api/v1/matches/${matchId}/chat/messages`, {
+    method: "POST",
+    body: JSON.stringify({ content, messageType, ...(recipientTarget ? { recipientTarget } : {}) }),
+  });
+}
+
+export function markMatchChatMessagesRead(matchId: number) {
+  return request<void>(`/api/v1/matches/${matchId}/chat/messages/read`, { method: "POST" });
+}
+
+export function getMatchChatUnreadCount(matchId: number) {
+  return request<{ count: number }>(`/api/v1/matches/${matchId}/chat/messages/unread-count`);
 }
 
 export function verifyDeliveryMatch(id: number, data: {
@@ -1529,6 +1591,10 @@ export function requestListing(listingId: number, reason: string) {
 
 export function getMyMatches() {
   return request<ItemMatch[]>("/api/v1/matches/mine", { silent401: true });
+}
+
+export function getMatch(id: number) {
+  return request<ItemMatch>(`/api/v1/matches/${id}`);
 }
 
 export function adminGetMatches(status?: string) {

@@ -8,7 +8,7 @@ import {
   MapPin, Package, Wrench, Tag, Layers, FileText,
   Truck, CalendarDays, Box, Info, ChevronRight,
 } from "lucide-react";
-import type { ItemListing } from "@/lib/api";
+import type { ItemListing, ItemMatch } from "@/lib/api";
 
 // ── Journey phases ────────────────────────────────────────────────────────────
 
@@ -81,7 +81,49 @@ interface PhaseResult {
   contextMessage?: string;
 }
 
-function getPhaseResults(status: string): PhaseResult[] {
+// Once a match exists, its own status is the more reliable signal for phases 5–7
+// (listing.status collapses to the ambiguous RESERVED value for the whole handover
+// stretch — see [[Decisions and Gotchas]] on the tracker previously stalling at
+// "Approved by CauseKind"). Index into PHASES (5=MATCHED, 6=HANDOVER, 7=DONATED).
+const MATCH_STATUS_IDX: Record<string, number> = {
+  PENDING_APPROVAL: 4,
+  AWAITING_DONEE_CONFIRMATION: 5,
+  DONEE_ACCEPTED: 5,
+  BOTH_PARTIES_ACCEPTED: 6,
+  LOGISTICS_CONFIRMED: 6,
+  TRANSPORT_DISCUSSION: 6,
+  ARRANGEMENT_AGREED: 6,
+  PICKUP_SCHEDULED: 6,
+  PICKED_UP: 6,
+  IN_TRANSIT: 6,
+  DELIVERY_ATTEMPTED: 6,
+  DELIVERED_PENDING_CONFIRMATION: 6,
+  COMPLETED: 7,
+  FULFILLED: 7,
+};
+const MATCH_PROBLEM_STATUSES = new Set(["CANCELLED", "FAILED", "DONOR_REJECTED", "REJECTED"]);
+
+function getPhaseResults(status: string, match?: ItemMatch | null): PhaseResult[] {
+  if (match && MATCH_STATUS_IDX[match.status] !== undefined) {
+    const idx = MATCH_STATUS_IDX[match.status];
+    const isDone = match.status === "COMPLETED" || match.status === "FULFILLED";
+    return PHASES.map((_, i) => {
+      if (i < idx) return { state: "done" };
+      if (i === idx) return { state: isDone ? "done" : "current" };
+      return { state: "upcoming" };
+    });
+  }
+  if (match && MATCH_PROBLEM_STATUSES.has(match.status)) {
+    return PHASES.map((_, i) => {
+      if (i < 5) return { state: "done" };
+      if (i === 5) return { state: "problem", contextMessage: "This match did not go through. Check your matches for details." };
+      return { state: "upcoming" };
+    });
+  }
+  return getListingOnlyPhaseResults(status);
+}
+
+function getListingOnlyPhaseResults(status: string): PhaseResult[] {
   // Special statuses that sit between phases
   if (status === "NEEDS_INFORMATION") {
     return PHASES.map((_, i) => {
@@ -176,12 +218,13 @@ function Detail({ icon: Icon, label, value }: { icon: React.ElementType; label: 
 
 interface Props {
   listing: ItemListing | null;
+  match?: ItemMatch | null;
   onClose: () => void;
   onAction: (id: number, action: "pause" | "resume" | "withdraw") => Promise<void>;
   actionLoading: number | null;
 }
 
-export function ListingDetailPanel({ listing, onClose, onAction, actionLoading }: Props) {
+export function ListingDetailPanel({ listing, match, onClose, onAction, actionLoading }: Props) {
   // Lock body scroll while open
   useEffect(() => {
     if (listing) {
@@ -206,7 +249,7 @@ export function ListingDetailPanel({ listing, onClose, onAction, actionLoading }
     ...(listing.imageUrls ? listing.imageUrls.split("|") : []),
   ].filter(Boolean) as string[];
 
-  const phaseResults = getPhaseResults(listing.status);
+  const phaseResults = getPhaseResults(listing.status, match);
   const statusMeta: Record<string, { label: string; color: string }> = {
     DRAFT:                 { label: "Draft",            color: "text-stone-500 bg-stone-100 border-stone-300" },
     SUBMITTED:             { label: "Under Review",     color: "text-blue-700 bg-blue-50 border-blue-200" },
@@ -343,6 +386,16 @@ export function ListingDetailPanel({ listing, onClose, onAction, actionLoading }
                       }`}>
                         {bodyText}
                       </p>
+
+                      {/* Handover Hub link — this phase is driven by the match, not the listing */}
+                      {phase.key === "HANDOVER" && match && (isCurrent || isDone) && (
+                        <Link
+                          href={`/matches/${match.id}/handover`}
+                          className="mt-2 inline-flex items-center gap-1 rounded-lg bg-[#1e3a60] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#162d4a] transition-colors"
+                        >
+                          Go to Handover Hub <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      )}
 
                       {/* Context message for this phase */}
                       {result.contextMessage && (
