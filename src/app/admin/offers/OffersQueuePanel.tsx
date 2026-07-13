@@ -117,9 +117,9 @@ export function OffersQueuePanel() {
       const detail = (e as CustomEvent).detail as {
         offerId: number; id: number; threadId: number; senderId: number; senderName: string;
         senderEmail: string; content: string; messageType: ChatMessage["messageType"];
-        recipientTarget: ChatMessage["recipientTarget"]; sentAt: string;
+        recipientTarget: ChatMessage["recipientTarget"]; sentAt: string; source?: string;
       } | undefined;
-      if (!detail || detail.offerId !== expanded) return;
+      if (!detail || detail.source !== "OFFER" || detail.offerId !== expanded) return;
       const message: ChatMessage = {
         id: detail.id, threadId: detail.threadId, senderId: detail.senderId, senderName: detail.senderName,
         senderEmail: detail.senderEmail, content: detail.content, messageType: detail.messageType,
