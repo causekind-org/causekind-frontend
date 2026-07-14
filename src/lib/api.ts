@@ -18,7 +18,7 @@ type RequestOptions = RequestInit & {
 
 /** A 409 conflict from a super-admin hard-delete carries the exact rows blocking it. */
 export type SuperAdminDependent = { table: string; column: string; count: number };
-export type ApiConflictError = Error & { dependents?: SuperAdminDependent[] };
+export type ApiConflictError = Error & { dependents?: SuperAdminDependent[]; code?: string };
 
 async function request<T>(
   path: string,
@@ -58,6 +58,7 @@ async function request<T>(
       const body = await res.json().catch(() => ({}));
       const err = new Error(body?.message ?? "This action has already been done.");
       if (Array.isArray(body?.dependents)) (err as ApiConflictError).dependents = body.dependents;
+      if (typeof body?.code === "string") (err as ApiConflictError).code = body.code;
       throw err;
     }
     if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
@@ -1300,6 +1301,10 @@ export function getQuantityAllocation(requestId: number) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Donor Flow 2 — Stage 2–3: Offer creation
 // ─────────────────────────────────────────────────────────────────────────────
+
+export function getOfferAvailability(requestId: number) {
+  return request<{ blocked: boolean }>(`/api/v1/offers/availability?requestId=${requestId}`);
+}
 
 export function createOfferDraft(requestId: number, flowType: DonorFlowType) {
   return request<DonationOffer>(
