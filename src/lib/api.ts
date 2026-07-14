@@ -2,11 +2,15 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 function handleUnauthorized() {
   if (typeof window !== "undefined") {
+    // Only someone who actually HAD a session can have it "expire" — an anonymous
+    // visitor hitting an auth-gated endpoint (e.g. opening global search while
+    // logged out) must not be yanked to /login with a misleading expiry banner.
+    const hadSession = !!localStorage.getItem("ck_user");
     // Fix #4: clear legacy token keys from old sessions that pre-date cookie auth
     localStorage.removeItem("ck_token");
     sessionStorage.removeItem("ck_token");
     localStorage.removeItem("ck_user");
-    window.location.href = "/login?expired=1";
+    if (hadSession) window.location.href = "/login?expired=1";
   }
 }
 
@@ -563,7 +567,7 @@ export type ItemRequest = {
   verificationDueAt: string | null;
 };
 
-export function getItemRequests(categories?: string[], lat?: number, lng?: number) {
+export function getItemRequests(categories?: string[], lat?: number, lng?: number, opts?: { silent401?: boolean }) {
   const params = new URLSearchParams();
   if (categories && categories.length > 0) {
     categories.forEach(c => params.append("categories", c));
@@ -571,7 +575,7 @@ export function getItemRequests(categories?: string[], lat?: number, lng?: numbe
   if (lat !== undefined && lat !== null) params.append("lat", String(lat));
   if (lng !== undefined && lng !== null) params.append("lng", String(lng));
   const qs = params.toString() ? `?${params.toString()}` : "";
-  return request<ItemRequest[]>(`/api/v1/item-requests${qs}`);
+  return request<ItemRequest[]>(`/api/v1/item-requests${qs}`, { silent401: opts?.silent401 });
 }
 
 export function getMyItemRequests() {
@@ -1133,6 +1137,16 @@ export type AnonymizedRequest = {
   quantityReserved: number;
   quantityDelivered: number;
   quantityRemaining: number;
+  // Trust context — structured, non-identifying facts only
+  verificationTier: string | null;
+  emergency: boolean;
+  imageUrl: string | null;
+  householdSize: number | null;
+  dependents: number | null;
+  peopleAffected: number | null;
+  housingType: string | null;
+  numberOfEarners: number | null;
+  reasonCannotBuy: string | null;
 };
 
 export type QuantityAllocation = {

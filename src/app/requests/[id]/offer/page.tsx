@@ -36,8 +36,9 @@ import { toast } from "@/lib/toast";
 import Link from "next/link";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
-  ShoppingBag, Shuffle, Loader2, type LucideIcon,
+  ShoppingBag, Shuffle, Loader2, Sparkles, type LucideIcon,
   Camera, ImagePlus, CheckCircle2, Eye,
+  Users, Home, UserRound, Wallet, BadgeCheck, Siren,
 } from "lucide-react";
 
 const URGENCY_STYLE: Record<string, { label: string; text: string; bg: string }> = {
@@ -56,6 +57,7 @@ const FLOW_OPTIONS: {
   iconBg: string;
   iconText: string;
   tags: string[];
+  comingSoon?: boolean;
 }[] = [
   {
     type: "ALREADY_OWN",
@@ -76,6 +78,7 @@ const FLOW_OPTIONS: {
     iconBg: "bg-blue-100 dark:bg-blue-950",
     iconText: "text-blue-600 dark:text-blue-400",
     tags: ["Buy after approval", "Flexible timing", "Receipt may be asked"],
+    comingSoon: true,
   },
   {
     type: "SIMILAR_ITEM",
@@ -86,8 +89,110 @@ const FLOW_OPTIONS: {
     iconBg: "bg-purple-100 dark:bg-purple-950",
     iconText: "text-purple-600 dark:text-purple-400",
     tags: ["Alt spec allowed", "Donee reviews fit", "May need clarification"],
+    comingSoon: true,
   },
 ];
+
+// ── About this need — anonymized household context shown to donors ───────────
+// Structured, non-identifying facts only; the backend never sends contacts,
+// addresses, income figures, or the free-text story to this view.
+
+const HOUSING_LABEL: Record<string, string> = {
+  OWNED: "Own home",
+  RENTED: "Rented home",
+  SHELTER: "Living in a shelter",
+  TEMPORARY: "Temporary housing",
+};
+
+const TIER_LABEL: Record<string, string> = {
+  TIER_1_BASIC: "Tier 1 verified",
+  TIER_2_MODERATE: "Tier 2 verified",
+  TIER_3_HIGH_VALUE: "Tier 3 verified · high value",
+  TIER_4_EMERGENCY: "Tier 4 verified · emergency",
+};
+
+function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
+  const facts: { icon: LucideIcon; label: string; value: string }[] = [];
+  if (request.householdSize != null)
+    facts.push({ icon: Home, label: "Household", value: `${request.householdSize} member${request.householdSize === 1 ? "" : "s"}` });
+  if (request.dependents != null)
+    facts.push({ icon: UserRound, label: "Dependents", value: String(request.dependents) });
+  if (request.peopleAffected != null)
+    facts.push({ icon: Users, label: "People affected", value: String(request.peopleAffected) });
+  if (request.housingType && HOUSING_LABEL[request.housingType])
+    facts.push({ icon: Home, label: "Housing", value: HOUSING_LABEL[request.housingType] });
+  if (request.numberOfEarners != null)
+    facts.push({
+      icon: Wallet,
+      label: "Earning members",
+      value: request.numberOfEarners === 0 ? "None" : request.numberOfEarners === 1 ? "Single earner" : String(request.numberOfEarners),
+    });
+
+  const hasBadges = !!request.verificationTier || request.emergency;
+  if (!request.imageUrl && facts.length === 0 && !request.reasonCannotBuy && !hasBadges) return null;
+
+  return (
+    <section className="mb-8">
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">About This Need</p>
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div className="flex flex-col sm:flex-row">
+          {request.imageUrl && (
+            <div className="flex-shrink-0 sm:w-56">
+              <img src={request.imageUrl} alt={request.title} className="h-48 w-full object-cover sm:h-full" />
+            </div>
+          )}
+          <div className="flex-1 p-5">
+            {hasBadges && (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                {request.verificationTier && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    {TIER_LABEL[request.verificationTier] ?? "Verified"}
+                  </span>
+                )}
+                {request.emergency && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
+                    <Siren className="h-3.5 w-3.5" />
+                    Emergency need
+                  </span>
+                )}
+              </div>
+            )}
+            {facts.length > 0 ? (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+                {facts.map(({ icon: FactIcon, label, value }) => (
+                  <div key={label} className="flex items-start gap-2.5">
+                    <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+                      <FactIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                Household details for this request are kept private.
+              </p>
+            )}
+          </div>
+        </div>
+        {request.reasonCannotBuy && (
+          <div className="border-t border-gray-100 bg-amber-50/60 px-5 py-4 dark:border-gray-800 dark:bg-amber-950/20">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">
+              Why they can&rsquo;t purchase this themselves
+            </p>
+            <p className="text-sm italic leading-relaxed text-gray-700 dark:text-gray-300">
+              &ldquo;{request.reasonCannotBuy}&rdquo;
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 function daysAgo(iso: string): string {
   const days = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
@@ -265,7 +370,9 @@ export default function OfferWizardPage() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
   const [blockedByOther, setBlockedByOther] = useState(false);
+  const [nudged, setNudged] = useState<DonorFlowType | null>(null);
   const compatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load request data and check for an existing offer
   useEffect(() => {
@@ -337,6 +444,14 @@ export default function OfferWizardPage() {
         donorDropOffAvailable: d?.donorDropOffAvailable ?? false,
       },
     });
+  }
+
+  // Locked flow types: wiggle the card and explain instead of creating a draft
+  function handleComingSoon(flowType: DonorFlowType) {
+    setNudged(flowType);
+    if (nudgeTimer.current) clearTimeout(nudgeTimer.current);
+    nudgeTimer.current = setTimeout(() => setNudged(null), 650);
+    toast.info("This option is coming soon — for now, offer an item you already own.");
   }
 
   // ── Step 1: Select flow type + create/resume draft ────────────────────────
@@ -519,27 +634,43 @@ export default function OfferWizardPage() {
       </AlertDialog>
 
       <div className={`mx-auto px-4 pt-8 ${step === 1 ? "max-w-5xl" : step === 2 ? "max-w-4xl" : "max-w-2xl"}`}>
-        {/* Progress */}
-        <div className="mb-6 flex flex-col items-center gap-2">
-          <div className="flex items-center gap-2">
-            {([1, 2, 3] as Step[]).map((s) => (
-              <div key={s} className="flex items-center gap-2">
-                <div
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                    s < step ? "bg-green-500 text-white"
-                    : s === step ? "bg-[#1e3a60] text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-500"
-                  }`}
-                >
-                  {s < step ? "✓" : s}
+        {/* Top bar: back button (left) + progress (centered) */}
+        <div className="relative mb-6">
+          <button
+            onClick={() => {
+              // Step 3 is post-submission — "back" can't reopen the form, so it
+              // leaves the wizard instead of stepping to 2.
+              if (step === 2) { setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }
+              else if (step === 3) { router.push("/requests"); }
+              else { router.back(); }
+            }}
+            className="group absolute left-0 top-0 z-10 inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-500 shadow-sm transition-colors hover:border-gray-300 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-1" />
+            <span className="hidden sm:inline">{step === 1 ? "Back" : step === 2 ? "Back to Step 1" : "Back to Requests"}</span>
+            <span className="sm:hidden">Back</span>
+          </button>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              {([1, 2, 3] as Step[]).map((s) => (
+                <div key={s} className="flex items-center gap-2">
+                  <div
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                      s < step ? "bg-green-500 text-white"
+                      : s === step ? "bg-[#1e3a60] text-white"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                    }`}
+                  >
+                    {s < step ? "✓" : s}
+                  </div>
+                  {s < 3 && <div className={`h-0.5 w-8 ${s < step ? "bg-green-400" : "bg-gray-200 dark:bg-gray-700"}`} />}
                 </div>
-                {s < 3 && <div className={`h-0.5 w-8 ${s < step ? "bg-green-400" : "bg-gray-200 dark:bg-gray-700"}`} />}
-              </div>
-            ))}
+              ))}
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+              {["View & Choose", "Item Details", "Submitted"][step - 1]}
+            </span>
           </div>
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-            {["View & Choose", "Item Details", "Submitted"][step - 1]}
-          </span>
         </div>
 
         {error && (
@@ -652,8 +783,44 @@ export default function OfferWizardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags }, i) => {
+                  {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags, comingSoon }, i) => {
                     const isSelecting = loading && form.flowType === type;
+
+                    if (comingSoon) {
+                      return (
+                        <Tilt3DCard
+                          key={type}
+                          onClick={() => handleComingSoon(type)}
+                          style={{ animationDelay: `${i * 100}ms`, animationFillMode: "backwards" }}
+                          className={`cs-flow-card group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center overflow-hidden rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg dark:border-gray-600 dark:bg-gray-900 ${nudged === type ? "cs-card-nudge" : ""}`}
+                        >
+                          <span aria-hidden className="cs-card-sheen" />
+                          <span style={{ transform: "translateZ(30px)" }} className="absolute right-4 top-4 inline-flex items-center gap-1">
+                            <Sparkles className="cs-badge-spark h-3 w-3 text-amber-500" />
+                            <span className="cs-badge-shimmer text-[10px] font-bold uppercase tracking-widest">Coming soon</span>
+                          </span>
+                          <div style={{ transform: "translateZ(36px)" }} className={`cs-icon-drift mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${iconBg} opacity-70 saturate-50 transition-all duration-300 group-hover:opacity-100 group-hover:saturate-100`}>
+                            <Icon className={`h-6 w-6 ${iconText}`} />
+                          </div>
+                          <div style={{ transform: "translateZ(20px)" }} className="font-semibold text-gray-500 transition-colors duration-300 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200">
+                            {title}
+                          </div>
+                          <div style={{ transform: "translateZ(12px)" }} className="mt-1.5 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
+                            {desc}
+                          </div>
+                          <div className="mt-3 max-w-[15rem] text-[10px] font-medium leading-relaxed text-gray-300 dark:text-gray-600">
+                            {tags.join(" · ")}
+                          </div>
+                          <div style={{ transform: "translateZ(16px)" }} className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                            In the works
+                            <span className="cs-dot" />
+                            <span className="cs-dot" style={{ animationDelay: "0.2s" }} />
+                            <span className="cs-dot" style={{ animationDelay: "0.4s" }} />
+                          </div>
+                        </Tilt3DCard>
+                      );
+                    }
+
                     return (
                       <Tilt3DCard
                         key={type}
@@ -699,6 +866,9 @@ export default function OfferWizardPage() {
                 </div>
               </section>
             )}
+
+            {/* About this need — anonymized household facts, photo, why they can't buy */}
+            <AboutThisNeed request={request} />
 
             {/* Verified & Audited — card with stat blocks + review checklist */}
             {qty && (

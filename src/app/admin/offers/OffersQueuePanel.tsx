@@ -16,7 +16,7 @@ import {
 // Offers where AI screening hasn't reached a reviewable outcome yet — either never
 // started (SUBMITTED) or is mid-flight. Admin previously had no visibility into these
 // at all; they'd just silently sit here forever if the async screening job never fired.
-const SCREENING_STATUSES = ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING"];
+const SCREENING_STATUSES = ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "COMPATIBILITY_CHECKED", "CONDITION_CHANGED_RESCREENING"];
 
 // Status → display config
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -24,6 +24,14 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
   PENDING_ADMIN_APPROVAL:       { label: "Pending Admin Approval",  color: "text-amber-700", bg: "bg-amber-50 dark:bg-amber-950/40 border-amber-200" },
   PENDING_DONEE_REVIEW:         { label: "With Recipient",          color: "text-blue-700",  bg: "bg-blue-50 dark:bg-blue-950/40 border-blue-200"   },
   SOFT_RESERVED_PRIMARY:        { label: "Primary Offer",           color: "text-blue-700",  bg: "bg-blue-50 dark:bg-blue-950/40 border-blue-200"   },
+  SOFT_RESERVED_BACKUP:         { label: "Backup Offer",            color: "text-blue-700",  bg: "bg-blue-50 dark:bg-blue-950/40 border-blue-200"   },
+  DONEE_ACCEPTED:               { label: "Recipient Accepted",      color: "text-blue-700",  bg: "bg-blue-50 dark:bg-blue-950/40 border-blue-200"   },
+  DONOR_RECONFIRMATION_REQUIRED:{ label: "Awaiting Donor Reconfirm",color: "text-blue-700",  bg: "bg-blue-50 dark:bg-blue-950/40 border-blue-200"   },
+  DONEE_DECLINED:               { label: "Recipient Declined",      color: "text-gray-600",  bg: "bg-gray-50 dark:bg-zinc-800 border-gray-200"       },
+  CANCELLED:                    { label: "Cancelled",               color: "text-gray-600",  bg: "bg-gray-50 dark:bg-zinc-800 border-gray-200"       },
+  COMPATIBILITY_CHECKED:        { label: "AI Checked",              color: "text-sky-700",   bg: "bg-sky-50 dark:bg-sky-950/40 border-sky-200"        },
+  CONDITION_CHANGED_RESCREENING:{ label: "Re-screening…",           color: "text-sky-700",   bg: "bg-sky-50 dark:bg-sky-950/40 border-sky-200"        },
+  ISSUE_WINDOW_OPEN:            { label: "Issue Window Open",       color: "text-teal-700",  bg: "bg-teal-50 dark:bg-teal-950/40 border-teal-200"    },
   ADMIN_APPROVED:               { label: "Approved",                color: "text-green-700", bg: "bg-green-50 dark:bg-green-950/40 border-green-200" },
   ADMIN_REJECTED:               { label: "Rejected",                color: "text-red-700",   bg: "bg-red-50 dark:bg-red-950/40 border-red-200"       },
   NEEDS_INFORMATION:            { label: "More Info Needed",        color: "text-orange-700",bg: "bg-orange-50 dark:bg-orange-950/40 border-orange-200"},
@@ -53,13 +61,16 @@ const STATUS_TO_STAGE: Record<string, number> = {
 
 type ExpandedOffer = { offer: DonationOffer; history: StatusHistoryEntry[]; messages: ChatMessage[] };
 
+// Every offer status must belong to exactly one pill besides "All Offers" —
+// an offer that only shows under "All" is effectively invisible to admins.
 const FILTER_OPTIONS = [
   { key: "PENDING",   label: "Needs Action",    statuses: ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"] },
   { key: "SCREENING", label: "AI Screening",    statuses: SCREENING_STATUSES },
+  { key: "PARTIES",   label: "With Parties",    statuses: ["PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP", "DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED", "NEEDS_INFORMATION"] },
   { key: "ALL",       label: "All Offers",      statuses: [] as string[] },
   { key: "APPROVED",  label: "Approved",        statuses: ["ADMIN_APPROVED"] },
   { key: "IN_FLIGHT", label: "In Progress",     statuses: ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_WINDOW_OPEN", "ISSUE_RAISED"] },
-  { key: "CLOSED",    label: "Closed",          statuses: ["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN"] },
+  { key: "CLOSED",    label: "Closed",          statuses: ["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED"] },
 ];
 
 // ── Reusable donation-offers queue — embedded in the admin dashboard's "Offers" tab
@@ -88,18 +99,13 @@ export function OffersQueuePanel() {
   const [cancelReason, setCancelReason] = useState("");
   const [retrying, setRetrying] = useState<number | null>(null);
 
+  // Load everything once and filter client-side — pill counts need the full
+  // picture anyway, and switching pills becomes instant instead of a refetch.
   async function load() {
     setLoading(true);
     try {
-      const current = FILTER_OPTIONS.find(f => f.key === filter);
-      if (current?.statuses.length === 1) {
-        setOffers(await adminGetAllOffers(current.statuses[0]));
-      } else if (current?.statuses.length && current.statuses.length > 1) {
-        const results = await Promise.all(current.statuses.map(s => adminGetAllOffers(s)));
-        setOffers(results.flat().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      } else {
-        setOffers(await adminGetAllOffers());
-      }
+      const all = await adminGetAllOffers();
+      setOffers(all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch {
       toast.error("Failed to load offers");
     } finally {
@@ -107,7 +113,7 @@ export function OffersQueuePanel() {
     }
   }
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [filter]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
   // Real-time push — mirrors ChatWindow.tsx's SSE-rebroadcast pattern: the backend
   // broadcasts every chat message to admins via "chat-message", which arrives here
@@ -232,19 +238,31 @@ export function OffersQueuePanel() {
     finally { setActing(null); }
   }
 
-  const pendingCount = offers.filter(o =>
-    ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(o.status)
-  ).length;
+  const countFor = (key: string) => {
+    const opt = FILTER_OPTIONS.find(f => f.key === key);
+    if (!opt || opt.statuses.length === 0) return offers.length;
+    return offers.filter(o => opt.statuses.includes(o.status)).length;
+  };
+  const pendingCount = countFor("PENDING");
+  const visible = (() => {
+    const opt = FILTER_OPTIONS.find(f => f.key === filter);
+    if (!opt || opt.statuses.length === 0) return offers;
+    return offers.filter(o => opt.statuses.includes(o.status));
+  })();
+  // "All clear" only when truly nothing is open — an offer mid-pipeline that
+  // doesn't need admin action yet must still be visible in the summary.
+  const openCount = offers.length - countFor("CLOSED");
+  const headline = pendingCount > 0
+    ? `${pendingCount} offer${pendingCount > 1 ? "s" : ""} waiting for your approval`
+    : openCount > 0
+      ? `Nothing needs you right now — ${openCount} offer${openCount > 1 ? "s" : ""} moving through the pipeline`
+      : "No open offers";
 
   return (
     <div className="space-y-4">
       {/* Header strip */}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-stone-500">
-          {pendingCount > 0
-            ? `${pendingCount} offer${pendingCount > 1 ? "s" : ""} waiting for your approval`
-            : "No offers pending approval"}
-        </p>
+        <p className="text-sm text-stone-500">{headline}</p>
         <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border border-stone-200 rounded-xl bg-white text-stone-600 hover:text-stone-900 transition-all disabled:opacity-50">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -253,24 +271,30 @@ export function OffersQueuePanel() {
 
       {/* Filter tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {FILTER_OPTIONS.map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
-              filter === f.key ? "bg-[#b04a15] text-white" : "bg-white dark:bg-zinc-900 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-zinc-700 hover:border-[#b04a15]"
-            }`}>
-            {f.label}
-            {f.key === "PENDING" && pendingCount > 0 && (
-              <span className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">{pendingCount}</span>
-            )}
-          </button>
-        ))}
+        {FILTER_OPTIONS.map(f => {
+          const count = countFor(f.key);
+          const active = filter === f.key;
+          return (
+            <button key={f.key} onClick={() => setFilter(f.key)}
+              className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
+                active ? "bg-[#b04a15] text-white" : "bg-white dark:bg-zinc-900 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-zinc-700 hover:border-[#b04a15]"
+              }`}>
+              {f.label}
+              {count > 0 && (
+                <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+                  active ? "bg-white/25" : f.key === "PENDING" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300" : "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400"
+                }`}>{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {loading && (
         <div className="flex justify-center py-16"><Loader2 className="animate-spin w-8 h-8 text-[#b04a15]" /></div>
       )}
 
-      {!loading && offers.length === 0 && (
+      {!loading && visible.length === 0 && (
         <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 p-12 text-center shadow-sm">
           <Check className="w-10 h-10 text-green-500 mx-auto mb-3" />
           <h3 className="font-bold text-stone-700 dark:text-stone-300">All clear</h3>
@@ -348,7 +372,7 @@ export function OffersQueuePanel() {
       )}
 
       {/* Offer cards */}
-      {!loading && offers.map(offer => {
+      {!loading && visible.map(offer => {
         const cfg = STATUS_CFG[offer.status] ?? { label: offer.status.replace(/_/g, " "), color: "text-stone-600", bg: "bg-stone-50 border-stone-200" };
         const stageIdx = STATUS_TO_STAGE[offer.status] ?? 0;
         const isExpanded = expanded === offer.id;

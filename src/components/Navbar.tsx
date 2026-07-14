@@ -7,7 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
@@ -510,6 +510,7 @@ export function SiteHeader() {
                 <Link
                   key={link.label}
                   href={link.href}
+                  data-tour={link.href === "/requests" ? "nav-requests" : undefined}
                   className={`text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-2 font-semibold ${active
                       ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6] dark:bg-zinc-800 border border-[#e5e2d5] dark:border-zinc-700 shadow-2xs"
                       : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
@@ -525,8 +526,8 @@ export function SiteHeader() {
           {/* Right buttons */}
           <div className="flex items-center gap-3 sm:gap-4">
             <GlobalSearch />
-            <SearchTrigger />
-            <NotificationBell />
+            <span data-tour="search" className="inline-flex"><SearchTrigger /></span>
+            <span data-tour="bell" className="inline-flex"><NotificationBell /></span>
 
             {/* Sleek Theme Toggle */}
             <button
@@ -546,6 +547,7 @@ export function SiteHeader() {
               onClick={() => setIsSidebarOpen(true)}
               className={iconBtnCls}
               aria-label="Open workspace menu"
+              data-tour="menu"
             >
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
             </button>
@@ -712,6 +714,22 @@ export function SiteHeader() {
                             </svg>
                           )}
                         </button>
+
+                        {/* Take the tour again — replays the first-time guided tour */}
+                        {(user.role === "DONOR" || user.role === "DONEE") && (
+                          <button
+                            onClick={() => {
+                              setIsSidebarOpen(false);
+                              setTimeout(() => window.dispatchEvent(new Event("ck-start-tour")), 350);
+                            }}
+                            className="group relative w-full flex items-center gap-3.5 py-2.5 px-3 rounded-xl overflow-hidden transition-all duration-200 bg-transparent text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
+                          >
+                            <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#b04a15]/10 to-transparent -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out pointer-events-none" />
+                            <Compass className="relative z-10 w-5.5 h-5.5 shrink-0 text-stone-400 transition-all duration-200 group-hover:scale-110 group-hover:text-[#b04a15] dark:group-hover:text-orange-400" />
+                            <span className="relative z-10 text-[15px] transition-transform duration-200 group-hover:translate-x-0.5">Take the tour</span>
+                            <ChevronRight className="relative z-10 ml-auto w-3.5 h-3.5 text-[#b04a15] dark:text-orange-400 opacity-0 translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
+                          </button>
+                        )}
                       </>
                     ) : (
                       <>

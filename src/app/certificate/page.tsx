@@ -79,16 +79,20 @@ export default function CertificatePage() {
              components individually (fragile — a new floating widget added later
              would leak through again), hide everything on the page by default and
              re-reveal only .cert-print-card and its contents. That's what actually
-             gets "one page, the certificate only" instead of the full page layout. */}
+             gets "one page, the certificate only" instead of the full page layout.
+          3. A4 landscape explicitly — the certificate's own 1414:1000 aspect ratio
+             maps to A4 landscape edge to edge; leaving @page size unset falls back
+             to the browser/OS default paper size (often US Letter), which crops it. */}
       <style>{`
         @media print {
-          @page { size: landscape; margin: 0; }
+          @page { size: A4 landscape; margin: 0; }
           /* visibility:hidden still reserves the hidden element's layout height,
              which pushed a blank second page — display:none actually removes it.
              Targets the root layout's site chrome by tag/id/class directly (it's
-             a fixed, known set: header, #footer, the mobile bottom nav, and the
-             floating support button/panel — see src/app/layout.tsx). */
-          header, footer#footer, nav, .floating-support-item { display: none !important; }
+             a fixed, known set: header, #footer, the mobile bottom nav, the
+             floating support button/panel, and the toast notification host —
+             see src/app/layout.tsx). */
+          header, footer#footer, nav, .floating-support-item, [data-sonner-toaster] { display: none !important; }
           html, body, .cert-print-card, .cert-print-card * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;

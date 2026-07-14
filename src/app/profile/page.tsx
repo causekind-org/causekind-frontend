@@ -519,13 +519,15 @@ export default function ProfilePage() {
         <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 75% 20%, rgba(193,122,58,0.14) 0%, transparent 55%)" }} />
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 pt-14 pb-2 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-10 lg:gap-16 items-center">
-          <MemberPass
-            name={fullName || profile?.fullName || user.email}
-            role={profile?.role ?? "MEMBER"}
-            city={profile?.city}
-            avatarDataUrl={avatarDataUrl}
-            initials={initials}
-          />
+          <div data-tour="member-pass">
+            <MemberPass
+              name={fullName || profile?.fullName || user.email}
+              role={profile?.role ?? "MEMBER"}
+              city={profile?.city}
+              avatarDataUrl={avatarDataUrl}
+              initials={initials}
+            />
+          </div>
 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }} className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#C17A3A]">CauseKind member</p>
@@ -540,6 +542,7 @@ export default function ProfilePage() {
             </div>
             <button
               onClick={() => setSettingsOpen((v) => !v)}
+              data-tour="account-settings"
               className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#C17A3A]/40 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/20 px-4 py-2.5 text-xs font-bold text-[#e8b98a] transition-colors"
             >
               {settingsOpen ? "Close account settings" : "Edit account details"}
@@ -550,7 +553,7 @@ export default function ProfilePage() {
 
         {/* Live ledger: hairline strip inside the band */}
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mt-10 grid grid-cols-3 border-t border-white/10">
+          <div data-tour="profile-ledger" className="mt-10 grid grid-cols-3 border-t border-white/10">
             {ledger.map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
                 className={`py-6 ${i > 0 ? "border-l border-white/10 pl-5 sm:pl-8" : ""}`}>
@@ -565,7 +568,7 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-12 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12 items-start">
 
         {/* Your story: a chronicle of real events */}
-        <section>
+        <section data-tour="story">
           <div className="border-b-2 border-[#C17A3A]/60 pb-3">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8B4513] dark:text-[#C17A3A]">Your story</p>
             <p className="text-xs text-stone-400 mt-1">Everything that has happened on your CauseKind journey, newest first.</p>
@@ -611,7 +614,7 @@ export default function ProfilePage() {
         </section>
 
         {/* Milestone stamps */}
-        <aside>
+        <aside data-tour="milestones">
           <div className="border-b-2 border-[#C17A3A]/60 pb-3">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8B4513] dark:text-[#C17A3A]">Milestones</p>
             <p className="text-xs text-stone-400 mt-1">Earned by doing, never bought.</p>

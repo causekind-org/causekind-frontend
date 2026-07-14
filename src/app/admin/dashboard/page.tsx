@@ -134,6 +134,7 @@ export default function AdminDashboardPage() {
   const [listings, setListings] = useState<ItemListing[]>([]);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [offersNeedingAction, setOffersNeedingAction] = useState(0);
+  const [offersInFlight, setOffersInFlight] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [tab, setTab] = useState<TabKey>("campaigns");
@@ -174,15 +175,17 @@ export default function AdminDashboardPage() {
         adminGetItemListings("MANUAL_REVIEW"),
       ]).then(([submitted, manual]) => [...submitted, ...manual]),
       adminGetMatches("PENDING_APPROVAL"),
-      // Offers tab manages its own list/loading inside OffersQueuePanel — just need the
-      // count here for the tab badge, matching that panel's own "Needs Action" filter.
-      Promise.all([
-        adminGetAllOffers("DONOR_RECONFIRMED"),
-        adminGetAllOffers("PENDING_ADMIN_APPROVAL"),
-      ]).then(([a, b]) => a.length + b.length),
-    ]).then(([c, r, l, m, offerCount]) => {
+      // Offers tab manages its own list/loading inside OffersQueuePanel — here we only
+      // need counts: needs-action for the tab badge, plus open offers so the header
+      // doesn't claim "all clear" while an offer is mid-pipeline with the parties.
+      adminGetAllOffers().then(all => ({
+        needsAction: all.filter(o => ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(o.status)).length,
+        open: all.filter(o => !["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED", "DRAFT"].includes(o.status)).length,
+      })),
+    ]).then(([c, r, l, m, offerCounts]) => {
       setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
-      setOffersNeedingAction(offerCount);
+      setOffersNeedingAction(offerCounts.needsAction);
+      setOffersInFlight(offerCounts.open);
     }).catch(() => toast.error("Failed to load approval queue"))
       .finally(() => setLoading(false));
   }, []);
@@ -366,6 +369,8 @@ export default function AdminDashboardPage() {
     ? `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} across all listings`
     : loading ? "Loading..." : total > 0
       ? `${total} item${total !== 1 ? "s" : ""} awaiting your review`
+      : offersInFlight > 0
+      ? `Nothing needs action — ${offersInFlight} offer${offersInFlight !== 1 ? "s" : ""} in flight`
       : "All clear — nothing pending";
 
   return (

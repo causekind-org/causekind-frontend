@@ -250,6 +250,8 @@ export function WelcomeOverlay() {
     setTimeout(() => {
       sessionStorage.removeItem("ck_welcome_pending");
       setShow(false);
+      // Lets the first-time guided tour start right after the welcome closes
+      window.dispatchEvent(new Event("ck-welcome-dismissed"));
     }, 400);
   }, []);
 

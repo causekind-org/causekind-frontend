@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X, ClipboardList, Loader2, ArrowRight } from "lucide-react";
 import { getItemRequests, type ItemRequest } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 // Need-first privacy: donor listings are private inventory — never searchable.
 // Global search covers only requests published on the public need board.
@@ -64,6 +65,7 @@ function ResultRow({
 /* ── Main GlobalSearch component ─────────────────────────────────────────── */
 export function GlobalSearch() {
   const router = useRouter();
+  const { user } = useAuth();
   const [open,    setOpen]    = useState(false);
   const [query,   setQuery]   = useState("");
   const [results, setResults] = useState<ItemRequest[]>([]);
@@ -78,7 +80,9 @@ export function GlobalSearch() {
     if (cache.current) return cache.current;
     setLoading(true);
     try {
-      cache.current = await getItemRequests().catch(() => []);
+      // silent401: search is a background/optional fetch — a logged-out visitor
+      // opening search must not be redirected to login as "session expired".
+      cache.current = await getItemRequests(undefined, undefined, undefined, { silent401: true }).catch(() => []);
       return cache.current;
     } finally {
       setLoading(false);
@@ -179,9 +183,21 @@ export function GlobalSearch() {
         {/* Results */}
         <div className="max-h-[400px] overflow-y-auto p-2">
           {results.length === 0 && !loading ? (
-            <div className="py-10 text-center text-sm text-stone-400 font-medium">
-              {query ? `No results for "${query}"` : "Type to search"}
-            </div>
+            !user ? (
+              <div className="py-10 text-center space-y-2">
+                <p className="text-sm text-stone-400 font-medium">Live requests are visible to members only.</p>
+                <button
+                  onClick={() => { setOpen(false); router.push("/login"); }}
+                  className="text-sm font-bold text-[#b04a15] hover:underline"
+                >
+                  Log in to search requests →
+                </button>
+              </div>
+            ) : (
+              <div className="py-10 text-center text-sm text-stone-400 font-medium">
+                {query ? `No results for "${query}"` : "Type to search"}
+              </div>
+            )
           ) : (
             <>
               {/* Label */}
