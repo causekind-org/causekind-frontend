@@ -2,20 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
   adminGetItemListings, adminApproveItemListing, adminRejectItemListing, adminMarkListingNeedsInformation, type ItemListing,
-  adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest, type ItemRequest,
+  adminGetItemRequests, type ItemRequest,
   adminGetMatches, adminApproveMatch, adminRejectMatch, adminGetMatchHistory, type ItemMatch, type StatusHistoryEntry,
   adminGetAllOffers,
   adminGetAllAiAssessments, type AiAssessmentResponse,
-  adminGetListingAiReview, adminGetItemRequestAiReview, type AdminAiReviewResponse,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { OffersQueuePanel } from "../offers/OffersQueuePanel";
+import { VerificationQueuePanel } from "../verifications/VerificationQueuePanel";
+import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import {
   Bot, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageSquare,
@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs";
-type RejectType = "campaign" | "request" | "listing" | "match";
+type RejectType = "campaign" | "listing" | "match";
 type DetailSelection =
   | { type: "request"; item: ItemRequest }
   | { type: "listing"; item: ItemListing }
@@ -296,26 +296,6 @@ export default function AdminDashboardPage() {
     finally { setProcessing(null); }
   }
 
-  async function handleApproveRequest(id: number) {
-    setProcessing(id);
-    try {
-      await adminApproveItemRequest(id);
-      setRequests(p => p.filter(r => r.id !== id));
-      toast.success("Request approved");
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
-    finally { setProcessing(null); }
-  }
-  async function handleRejectRequest(id: number) {
-    if (!rejectReason.trim()) { toast.error("Enter a rejection reason"); return; }
-    setProcessing(id);
-    try {
-      await adminRejectItemRequest(id, rejectReason.trim());
-      setRequests(p => p.filter(r => r.id !== id));
-      cancelReject(); toast.success("Request rejected");
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
-    finally { setProcessing(null); }
-  }
-
   async function handleApproveListing(id: number) {
     setProcessing(id);
     try {
@@ -474,13 +454,6 @@ export default function AdminDashboardPage() {
             <Bot className={`w-4 h-4 shrink-0 ${tab === "ai-logs" ? "text-[#b04a15]" : "text-violet-400"}`} />
             AI Screening Logs
           </button>
-          <Link
-            href="/admin/verifications"
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-          >
-            <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
-            Donee Verification
-          </Link>
         </div>
 
         {/* Sign out */}
@@ -611,8 +584,14 @@ export default function AdminDashboardPage() {
           {/* ── DONATION OFFERS TAB — reuses the same panel as the standalone /admin/offers page ── */}
           {tab === "offers" && <OffersQueuePanel />}
 
+          {/* ── REQUESTS TAB — merged with Donee Verification: the tiered verification
+                 queue (checklist, SLA, hold, Aadhaar reveal) is the single review path,
+                 so high-value requests can't be approved past the checklist. Same panel
+                 as the standalone /admin/verifications page. ── */}
+          {tab === "requests" && <VerificationQueuePanel />}
+
           {/* ── APPROVAL QUEUE TABS ── */}
-          {!isReportTab && tab !== "offers" && (
+          {!isReportTab && tab !== "offers" && tab !== "requests" && (
             loading ? (
               <div className="flex flex-col items-center justify-center py-28">
                 <Loader2 className="w-8 h-8 animate-spin text-stone-300" />
@@ -636,39 +615,6 @@ export default function AdminDashboardPage() {
                         onOpenReject={() => openReject(c.id, "campaign")}
                         onConfirmReject={() => handleRejectCampaign(c.id)}
                         onCancelReject={cancelReject}
-                      />
-                    ))
-                )}
-
-                {tab === "requests" && (
-                  requests.length === 0
-                    ? <AllClearState label="No pending item requests" />
-                    : requests.map(r => (
-                      <ApprovalCard
-                        key={r.id} id={r.id}
-                        title={r.title}
-                        meta={[r.doneeName, r.city, r.category, `Qty ${r.quantity}`, r.urgency].filter(Boolean).join(" · ")}
-                        description={r.description}
-                        isRejecting={rejectId === r.id && rejectType === "request"}
-                        rejectReason={rejectReason} setRejectReason={setRejectReason}
-                        processing={processing}
-                        onApprove={() => handleApproveRequest(r.id)}
-                        onOpenReject={() => openReject(r.id, "request")}
-                        onConfirmReject={() => handleRejectRequest(r.id)}
-                        onCancelReject={cancelReject}
-                        onOpenDetails={() => setDetailSelection({ type: "request", item: r })}
-                        reviewSlot={
-                          <AiReviewPanel
-                            entity="request"
-                            id={r.id}
-                            onUseReason={(reason) => {
-                              setRejectId(r.id);
-                              setRejectType("request");
-                              setRejectReason(reason);
-                              setNeedsInfoId(null);
-                            }}
-                          />
-                        }
                       />
                     ))
                 )}
@@ -1090,130 +1036,6 @@ function AiStatCard({ label, value, color }: { label: string; value: number; col
       <p className="text-xs font-medium mt-0.5 opacity-80">{label}</p>
     </div>
   );
-}
-
-// ── Structured AI review panel ────────────────────────────────────────────────
-
-function AiReviewPanel({
-  entity,
-  id,
-  onUseReason,
-  onUseNeedsInfo,
-}: {
-  entity: "request" | "listing";
-  id: number;
-  onUseReason: (reason: string) => void;
-  onUseNeedsInfo?: (reason: string) => void;
-}) {
-  const [review, setReview] = useState<AdminAiReviewResponse | null>(null);
-  const [loadingReview, setLoadingReview] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    setLoadingReview(true);
-    setReview(null);
-    const loader = entity === "listing" ? adminGetListingAiReview : adminGetItemRequestAiReview;
-    loader(id)
-      .then(data => { if (active) setReview(data); })
-      .catch(() => { if (active) setReview(null); })
-      .finally(() => { if (active) setLoadingReview(false); });
-    return () => { active = false; };
-  }, [entity, id]);
-
-  if (loadingReview) {
-    return (
-      <div className="rounded-xl border border-violet-100 bg-violet-50/50 px-3 py-2 text-xs text-violet-500" onClick={event => event.stopPropagation()}>
-        <span className="inline-flex items-center gap-1.5 font-bold">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> AI reviewing...
-        </span>
-      </div>
-    );
-  }
-
-  if (!review) {
-    return (
-      <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-400" onClick={event => event.stopPropagation()}>
-        AI review unavailable. Manual review still works.
-      </div>
-    );
-  }
-
-  const badgeClass = reviewBadgeClass(review.recommendation);
-  const riskClass = riskBadgeClass(review.riskLevel);
-  const canUseNeedsInfo = review.recommendation === "NEEDS_INFORMATION" && onUseNeedsInfo;
-  const canUseReject = review.recommendation === "REJECT" || (review.recommendation === "NEEDS_INFORMATION" && !onUseNeedsInfo);
-
-  return (
-    <div
-      className="rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2.5"
-      onClick={event => event.stopPropagation()}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-violet-700">
-            <Bot className="h-3.5 w-3.5" /> AI Review
-          </span>
-          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${badgeClass}`}>
-            {review.recommendation.replace(/_/g, " ")}
-          </span>
-          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${riskClass}`}>
-            {review.riskLevel} risk
-          </span>
-        </div>
-        <span className="text-[10px] font-bold text-stone-400">{Math.round(review.confidence)}% confidence</span>
-      </div>
-
-      <p className="mt-1.5 text-xs font-medium leading-relaxed text-stone-700">{review.summary}</p>
-
-      {review.evidence.length > 0 && (
-        <div className="mt-2 space-y-1">
-          {review.evidence.slice(0, 2).map((item, index) => (
-            <p key={index} className="text-[11px] leading-relaxed text-stone-500">- {item}</p>
-          ))}
-        </div>
-      )}
-
-      {(canUseReject || canUseNeedsInfo) && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {canUseReject && (
-            <button
-              type="button"
-              onClick={() => onUseReason(review.suggestedAdminReason)}
-              className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-[11px] font-bold text-red-700 transition hover:bg-red-50"
-            >
-              {review.recommendation === "REJECT" ? "Use reject reason" : "Use AI note"}
-            </button>
-          )}
-          {canUseNeedsInfo && (
-            <button
-              type="button"
-              onClick={() => canUseNeedsInfo(review.suggestedAdminReason)}
-              className="rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-[11px] font-bold text-amber-700 transition hover:bg-amber-50"
-            >
-              Use needs-info note
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function reviewBadgeClass(recommendation: string) {
-  switch (recommendation) {
-    case "APPROVE": return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "REJECT": return "border-red-200 bg-red-50 text-red-700";
-    case "NEEDS_INFORMATION": return "border-amber-200 bg-amber-50 text-amber-700";
-    default: return "border-orange-200 bg-orange-50 text-orange-700";
-  }
-}
-
-function riskBadgeClass(riskLevel: string) {
-  switch (riskLevel) {
-    case "LOW": return "border-emerald-200 bg-white text-emerald-700";
-    case "HIGH": return "border-red-200 bg-white text-red-700";
-    default: return "border-amber-200 bg-white text-amber-700";
-  }
 }
 
 // ── Reusable approval card ────────────────────────────────────────────────────

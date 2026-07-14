@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest,
@@ -9,9 +11,10 @@ import {
   type ItemRequest, type AdminRequestVerificationDetail,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import {
-  Check, X, ChevronDown, ChevronUp, Clock, User, FileText, Gauge,
-  AlertTriangle, Loader2, ShieldCheck, Lock, Pause, Play, ListChecks, Eye, EyeOff,
+  Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Clock, User, FileText, Gauge,
+  AlertTriangle, Loader2, ShieldCheck, Lock, Pause, Play, ListChecks, Eye, EyeOff, ExternalLink, Sparkles,
 } from "lucide-react";
 
 const TIERS = [
@@ -46,6 +49,38 @@ function formatDue(dueAt: string | null): { label: string; color: string } {
 }
 
 type ExpandedState = { detail: AdminRequestVerificationDetail; loading: boolean };
+
+// Drafts a professional, donee-facing rejection reason from the verification
+// evidence on file: failed checklist steps (with the admin's notes), fraud
+// flags, and any missing-info signals from the need assessment. Returns "" when
+// there is nothing concrete to cite — the admin then writes the reason manually.
+function draftRejectReason(detail: AdminRequestVerificationDetail | undefined): string {
+  if (!detail) return "";
+  const failed = detail.checklist.filter((i) => i.status === "FAIL");
+  const flags = detail.fraudFlags;
+  const missing = detail.needAssessment?.missingInfoFlags;
+  if (failed.length === 0 && flags.length === 0 && !missing) return "";
+
+  const lines: string[] = [
+    "After a careful review of your request and the documents you provided, we are unable to approve it at this time.",
+  ];
+  if (failed.length > 0) {
+    lines.push("", "The following verification checks were not successful:");
+    failed.forEach((f) => lines.push(`• ${f.action}${f.note ? ` — ${f.note}` : ""}`));
+  }
+  if (flags.length > 0) {
+    lines.push("", "Additional concerns noted during review:");
+    flags.forEach((f) => lines.push(`• ${f.description}`));
+  }
+  if (missing) {
+    lines.push("", `Information that was missing or incomplete: ${missing}.`);
+  }
+  lines.push(
+    "",
+    "You are welcome to submit a new request once the points above have been addressed. If you believe this decision was made in error, please contact CauseKind support and we will take another look."
+  );
+  return lines.join("\n");
+}
 
 export function VerificationQueuePanel() {
   const [requests, setRequests] = useState<ItemRequest[]>([]);
@@ -101,13 +136,28 @@ export function VerificationQueuePanel() {
     } catch { /* keep stale data on transient failure */ }
   }
 
-  async function handleChecklistUpdate(requestId: number, itemId: number, status: "PASS" | "FAIL") {
-    try {
-      await adminUpdateChecklistItem(requestId, itemId, status);
-      await refreshExpanded(requestId);
-    } catch {
+  function handleChecklistUpdate(requestId: number, itemId: number, status: "PASS" | "FAIL") {
+    // Optimistic: flip the button instantly, sync with the server in the background.
+    // Previously this awaited the update AND a full detail refetch before any visual
+    // change — two round trips of dead air per click.
+    setExpandedData((prev) => {
+      const cur = prev[requestId];
+      if (!cur?.detail) return prev;
+      return {
+        ...prev,
+        [requestId]: {
+          ...cur,
+          detail: {
+            ...cur.detail,
+            checklist: cur.detail.checklist.map((i) => (i.id === itemId ? { ...i, status } : i)),
+          },
+        },
+      };
+    });
+    adminUpdateChecklistItem(requestId, itemId, status).catch(() => {
       toast.error("Failed to update checklist item");
-    }
+      refreshExpanded(requestId); // roll back to server truth
+    });
   }
 
   async function handleApprove(id: number) {
@@ -240,6 +290,11 @@ export function VerificationQueuePanel() {
 
                 {isExpanded && (
                   <div className="border-t dark:border-zinc-700 p-4 space-y-4 bg-stone-50 dark:bg-zinc-900/50">
+                    <AiReviewPanel
+                      entity="request"
+                      id={r.id}
+                      onUseReason={(reason) => { setRejectId(r.id); setRejectReason(reason); }}
+                    />
                     {!state || state.loading ? (
                       <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-stone-400" /></div>
                     ) : (
@@ -286,11 +341,27 @@ export function VerificationQueuePanel() {
       {/* Reject modal */}
       {rejectId && (
         <Modal title="Reject Request" onClose={() => setRejectId(null)}>
-          <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3}
+          <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={6}
             placeholder="Reason for rejection…" className="w-full rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 text-sm" />
-          <div className="flex justify-end gap-2 mt-3">
-            <button onClick={() => setRejectId(null)} className="px-4 py-2 rounded-xl text-sm font-semibold text-stone-500">Cancel</button>
-            <button onClick={handleReject} disabled={acting === rejectId} className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-bold disabled:opacity-50">Confirm Reject</button>
+          <div className="flex items-center justify-between gap-2 mt-3">
+            <button
+              onClick={() => {
+                const draft = draftRejectReason(expandedData[rejectId]?.detail);
+                if (!draft) {
+                  toast.error("No failed checks or flags on file — please write the reason manually.");
+                  return;
+                }
+                setRejectReason(draft);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 text-xs font-bold hover:bg-violet-100 dark:hover:bg-violet-950/50 transition-colors"
+              title="Draft a reason from the failed checklist steps, fraud flags and missing information"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> AI Draft
+            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setRejectId(null)} className="px-4 py-2 rounded-xl text-sm font-semibold text-stone-500">Cancel</button>
+              <button onClick={handleReject} disabled={acting === rejectId} className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-bold disabled:opacity-50">Confirm Reject</button>
+            </div>
           </div>
         </Modal>
       )}
@@ -336,6 +407,18 @@ function VerificationDetail({
   // (this component unmounts) since expanded is a single id, not a set — see the parent.
   const [revealedAadhaar, setRevealedAadhaar] = useState<string | null>(null);
   const [revealing, setRevealing] = useState(false);
+  const [docIndex, setDocIndex] = useState<number | null>(null);
+
+  // Warm the image optimizer + browser cache the moment the card expands, so the
+  // lightbox is usually instant by the time the admin clicks a document chip.
+  useEffect(() => {
+    detail.documents.forEach((d) => {
+      if (!isPdfUrl(d.url)) {
+        const img = new window.Image();
+        img.src = optimizedDocUrl(d.url);
+      }
+    });
+  }, [detail.documents]);
 
   async function handleRevealAadhaar() {
     if (revealedAadhaar) { setRevealedAadhaar(null); return; } // toggle off — re-hide
@@ -415,20 +498,27 @@ function VerificationDetail({
         </div>
       )}
 
-      {/* Documents */}
+      {/* Documents — inline lightbox preview instead of leaving the page */}
       {detail.documents.length > 0 && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700">
           <p className="font-bold mb-2 flex items-center gap-1"><FileText className="w-3 h-3" /> Documents ({detail.documents.length})</p>
           <div className="flex flex-wrap gap-2">
-            {detail.documents.map((d) => (
-              <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer"
-                className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-300 hover:bg-[#b04a15]/10 hover:text-[#b04a15] transition-colors">
-                {d.docType.replace(/_/g, " ")}
-              </a>
+            {detail.documents.map((d, i) => (
+              <button key={d.id} type="button" onClick={() => setDocIndex(i)}
+                className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-300 hover:bg-[#b04a15]/10 hover:text-[#b04a15] transition-colors cursor-pointer">
+                <Eye className="w-3 h-3" /> {d.docType.replace(/_/g, " ")}
+              </button>
             ))}
           </div>
         </div>
       )}
+
+      <DocLightbox
+        documents={detail.documents}
+        index={docIndex}
+        onNavigate={setDocIndex}
+        onClose={() => setDocIndex(null)}
+      />
 
       {/* Verification form */}
       {detail.verification && <VerificationFormGrid v={detail.verification} isEmergency={request.isEmergency} />}
@@ -448,11 +538,11 @@ function VerificationDetail({
               </div>
               <div className="flex gap-1 shrink-0">
                 <button onClick={() => onChecklistUpdate(item.id, "PASS")}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold ${item.status === "PASS" ? "bg-green-600 text-white" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-green-500 hover:text-green-600"}`}>
+                  className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "PASS" ? "bg-green-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-green-500 hover:text-green-600"}`}>
                   PASS
                 </button>
                 <button onClick={() => onChecklistUpdate(item.id, "FAIL")}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold ${item.status === "FAIL" ? "bg-red-600 text-white" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-red-500 hover:text-red-600"}`}>
+                  className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "FAIL" ? "bg-red-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-red-500 hover:text-red-600"}`}>
                   FAIL
                 </button>
               </div>
@@ -514,5 +604,173 @@ function VerificationFormGrid({ v, isEmergency }: { v: NonNullable<AdminRequestV
         ))}
       </div>
     </div>
+  );
+}
+
+// ── Document lightbox ─────────────────────────────────────────────────────────
+// Inline preview so admins never leave the verification queue: animated overlay,
+// image or PDF viewer, arrow-key/button navigation across all of the request's
+// documents, Escape/backdrop to close. Rendered via portal so no ancestor
+// stacking context (backdrop-blur etc.) can trap it.
+
+type VerificationDocument = AdminRequestVerificationDetail["documents"][number];
+
+const DOC_PREVIEW_WIDTH = 1920;
+
+function isPdfUrl(url: string) {
+  return /\.pdf(\?|$)/i.test(url);
+}
+
+// Docs are raw S3 originals (phone photos, often 3-8 MB). Routing them through
+// Next's image optimizer (host already allowed in next.config remotePatterns)
+// serves a resized WebP instead — typically 10-20x fewer bytes, no backend change.
+function optimizedDocUrl(url: string) {
+  return `/_next/image?url=${encodeURIComponent(url)}&w=${DOC_PREVIEW_WIDTH}&q=75`;
+}
+
+// Optimized image with a spinner until it decodes, fading in when ready.
+// Falls back to the raw S3 URL if the optimizer errors for any reason.
+function DocImage({ doc }: { doc: VerificationDocument }) {
+  const [loaded, setLoaded] = useState(false);
+  const [useOriginal, setUseOriginal] = useState(false);
+  const src = useOriginal ? doc.url : optimizedDocUrl(doc.url);
+
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
+        </div>
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={doc.docType.replace(/_/g, " ")}
+        onLoad={() => setLoaded(true)}
+        onError={() => { if (!useOriginal) { setUseOriginal(true); setLoaded(false); } }}
+        className={`max-w-full max-h-[70vh] object-contain select-none transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        draggable={false}
+      />
+    </>
+  );
+}
+
+function DocLightbox({
+  documents, index, onNavigate, onClose,
+}: {
+  documents: VerificationDocument[];
+  index: number | null;
+  onNavigate: (i: number) => void;
+  onClose: () => void;
+}) {
+  const open = index !== null && documents[index] != null;
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") onNavigate(((index as number) + 1) % documents.length);
+      if (e.key === "ArrowLeft") onNavigate(((index as number) - 1 + documents.length) % documents.length);
+    }
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, index, documents.length, onNavigate, onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  const doc = open ? documents[index as number] : null;
+  const isPdf = doc ? /\.pdf(\?|$)/i.test(doc.url) : false;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && doc && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            key={doc.id}
+            initial={{ opacity: 0, scale: 0.92, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="relative w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-stone-200 dark:border-zinc-700">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className="w-4 h-4 text-[#b04a15] shrink-0" />
+                <p className="text-sm font-bold text-stone-800 dark:text-stone-100 truncate">
+                  {doc.docType.replace(/_/g, " ")}
+                </p>
+                <span className="text-xs text-stone-400 shrink-0">
+                  {(index as number) + 1} / {documents.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 text-stone-500 dark:text-stone-400 hover:text-[#b04a15] hover:border-[#b04a15]/50 transition-colors">
+                  <ExternalLink className="w-3 h-3" /> Open
+                </a>
+                <button type="button" onClick={onClose}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="relative flex-1 min-h-[320px] bg-stone-950/95 flex items-center justify-center overflow-hidden">
+              {isPdf ? (
+                <iframe src={doc.url} title={doc.docType} className="w-full h-[70vh] bg-white" />
+              ) : (
+                <DocImage key={doc.id} doc={doc} />
+              )}
+
+              {documents.length > 1 && (
+                <>
+                  <button type="button" aria-label="Previous document"
+                    onClick={() => onNavigate(((index as number) - 1 + documents.length) % documents.length)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-zinc-800/90 text-stone-700 dark:text-stone-200 shadow-md hover:scale-110 transition-transform">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button type="button" aria-label="Next document"
+                    onClick={() => onNavigate(((index as number) + 1) % documents.length)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-zinc-800/90 text-stone-700 dark:text-stone-200 shadow-md hover:scale-110 transition-transform">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnail strip */}
+            {documents.length > 1 && (
+              <div className="flex gap-1.5 px-4 py-2.5 border-t border-stone-200 dark:border-zinc-700 overflow-x-auto">
+                {documents.map((d, i) => (
+                  <button key={d.id} type="button" onClick={() => onNavigate(i)}
+                    className={`shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border transition-colors ${
+                      i === index
+                        ? "bg-[#b04a15] text-white border-[#b04a15]"
+                        : "bg-stone-50 dark:bg-zinc-800 border-stone-200 dark:border-zinc-700 text-stone-500 dark:text-stone-400 hover:border-[#b04a15]/50"
+                    }`}>
+                    {d.docType.replace(/_/g, " ")}
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }

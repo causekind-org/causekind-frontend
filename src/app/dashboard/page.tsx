@@ -10,6 +10,7 @@ import {
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   pauseItemListing, resumeItemListing, withdrawItemListing, deleteMyListing,
   getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer, confirmNoIssue,
+  reopenItemRequest,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +24,7 @@ import {
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
   Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { ListingDetailPanel } from "@/components/ListingDetailPanel";
@@ -130,6 +132,127 @@ function getRequestStatusBadge(status: string) {
     REJECTED: { label: "Rejected", variant: "destructive" },
   };
   return map[status] ?? { label: status, variant: "outline" as const };
+}
+
+/* Fix & Resubmit: reopens a REJECTED request as a draft (REJECTED -> DRAFT) and
+   jumps into the request wizard with everything prefilled and documents intact. */
+function FixResubmitButton({ requestId }: { requestId: number }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={busy}
+      className="h-7 px-2.5 text-[11px] font-bold border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await reopenItemRequest(requestId);
+          toast.success("Request reopened — fix the issues and resubmit");
+          router.push(`/requests/new?draftId=${requestId}`);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Could not reopen request");
+          setBusy(false);
+        }
+      }}
+    >
+      {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <><RefreshCw className="w-3 h-3 mr-1" /> Fix & Resubmit</>}
+    </Button>
+  );
+}
+
+/* The donee pipeline, drawn: every request travels Posted -> Verified -> Matched ->
+   Received. The rail pulses at the current station and breaks (red) where a
+   rejection or expiry stopped it — the structure IS the status explanation. */
+const JOURNEY_STATIONS = ["Posted", "Verified", "Matched", "Received"];
+
+function journeyStage(status: string): { stage: number; state: "draft" | "active" | "done" | "broken" } {
+  if (status === "DRAFT") return { stage: 0, state: "draft" };
+  if (status === "REJECTED") return { stage: 1, state: "broken" };
+  if (status === "EXPIRED") return { stage: 2, state: "broken" };
+  if (["PENDING_VERIFICATION", "ON_HOLD"].includes(status)) return { stage: 1, state: "active" };
+  if (["FULFILLED", "FULLY_FULFILLED"].includes(status)) return { stage: 3, state: "done" };
+  if (["RESERVED", "MATCH_IN_PROGRESS", "FULFILMENT_IN_PROGRESS", "PARTIALLY_MATCHED", "PARTIALLY_FULFILLED"].includes(status)) return { stage: 3, state: "active" };
+  return { stage: 2, state: "active" }; // all matching-phase statuses
+}
+
+function JourneyRail({ status }: { status: string }) {
+  const { stage, state } = journeyStage(status);
+  return (
+    <div className="flex items-start mt-4 max-w-md">
+      {JOURNEY_STATIONS.map((label, i) => {
+        const reached = i < stage || (i === stage && state === "done");
+        const current = i === stage && state !== "done";
+        const brokenHere = current && state === "broken";
+        return (
+          <div key={label} className="flex items-start flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-1.5 shrink-0">
+              <span className={`relative flex items-center justify-center w-3.5 h-3.5 rounded-full border-2 transition-colors ${
+                brokenHere ? "border-red-500 bg-red-500" :
+                reached ? (i === 3 ? "border-emerald-500 bg-emerald-500" : "border-[#1e3a60] bg-[#1e3a60] dark:border-blue-400 dark:bg-blue-400") :
+                current ? "border-[#1e3a60] dark:border-blue-400 bg-white dark:bg-zinc-900" :
+                "border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"}`}>
+                {current && !brokenHere && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#1e3a60]/40 dark:bg-blue-400/40 animate-ping motion-reduce:hidden" />
+                )}
+                {brokenHere && <X className="w-2 h-2 text-white" strokeWidth={4} />}
+              </span>
+              <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                brokenHere ? "text-red-500" : reached || current ? "text-stone-600 dark:text-stone-300" : "text-stone-300 dark:text-zinc-600"}`}>
+                {label}
+              </span>
+            </div>
+            {i < 3 && (
+              <div className={`flex-1 h-[2px] mx-1.5 mt-1.5 rounded-full ${
+                i < stage ? "bg-[#1e3a60] dark:bg-blue-400" : "bg-stone-200 dark:bg-zinc-800"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DoneeRequestRow({ request: r, index }: { request: ItemRequest; index: number }) {
+  const badge = getRequestStatusBadge(r.status);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: 0.08 * index }}
+      className="border-b border-stone-200/70 dark:border-zinc-800 py-5 group"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors"
+            style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+            <TranslatedText text={r.title} />
+          </p>
+          <p className="text-xs text-stone-400 mt-0.5">
+            <TranslatedText text={r.category} /> &middot; Qty {r.quantity} &middot; <span className="capitalize">{r.urgency.toLowerCase()}</span> urgency
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">{badge.label}</Badge>
+          {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
+          {r.status === "DRAFT" && (
+            <Link href={`/requests/new?draftId=${r.id}`}
+              className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#1e3a60]/30 dark:border-blue-400/40 text-[11px] font-bold text-[#1e3a60] dark:text-blue-400 hover:bg-[#1e3a60]/5 dark:hover:bg-blue-400/10 transition-colors">
+              <Pencil className="w-3 h-3" /> Continue editing
+            </Link>
+          )}
+        </div>
+      </div>
+      <JourneyRail status={r.status} />
+      {r.status === "REJECTED" && r.rejectionReason && (
+        <p className="text-[11px] text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{r.rejectionReason}</p>
+      )}
+      {r.status === "DRAFT" && (
+        <p className="text-[11px] text-stone-400 mt-2.5">Saved as a draft &mdash; continue where you left off and submit when ready.</p>
+      )}
+    </motion.div>
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -642,6 +765,12 @@ function DoneeDashboard({
   const activeMatches = doneeMatches.filter(
     m => !["FULFILLED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)
   );
+  // True only when the backend matching engine is actually working on something:
+  // a request past admin verification, in the matching phase.
+  const hasRequestInMatching = itemRequests.some(r =>
+    ["VERIFIED_PRIVATE_MATCHING", "POTENTIAL_MATCH_FOUND", "AWAITING_MATCH_APPROVAL",
+     "PUBLICATION_CONSENT_REQUIRED", "PUBLIC_REQUEST", "PARTIALLY_MATCHED"].includes(r.status)
+  );
 
   return (
     <div className="min-h-screen bg-[#eef3f9] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-16">
@@ -653,92 +782,60 @@ function DoneeDashboard({
 
         <div className="mx-auto max-w-5xl relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
-            <div className="space-y-3">
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="space-y-3 min-w-0">
               <div className="inline-flex items-center gap-1.5 bg-[#f0b97a]/15 border border-[#f0b97a]/30 rounded-full px-3 py-1 text-xs text-[#f0b97a] font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified Donee
               </div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-                Your Needs
+              <h1 className="text-4xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+                Namaste, {myProfile.fullName?.split(" ")[0] || user.email.split("@")[0]}.
               </h1>
-              <p className="text-white/55 text-sm">
+              <p className="text-white/55 text-sm max-w-md">
                 {activeRequests.length > 0
-                  ? `${activeRequests.length} active request${activeRequests.length !== 1 ? "s" : ""} · Scanning for matches near you`
-                  : `Hello, ${myProfile.fullName?.split(" ")[0] || user.email.split("@")[0]} — start by posting a need`}
+                  ? `${activeRequests.length} request${activeRequests.length !== 1 ? "s" : ""} on the road — we're scanning donor inventories near ${myProfile.city?.split(",")[0] || "you"}.`
+                  : "Post your first need and we'll find a verified donor near you."}
               </p>
-            </div>
+            </motion.div>
             <Link href="/requests/new">
               <Button className="bg-[#f0b97a] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-2xl px-6 py-3 h-auto text-sm flex items-center gap-2 shadow-xl shadow-[#f0b97a]/20 shrink-0">
                 <Plus className="w-4 h-4" /> Post a Need
               </Button>
             </Link>
           </div>
+
+          {/* Impact ledger — live numbers over hairline rules, no stat cards */}
+          <div className="mt-10 grid grid-cols-3 border-t border-white/10">
+            {[
+              { n: itemRequests.length,      label: "needs posted"   },
+              { n: activeMatches.length,     label: "active matches" },
+              { n: fulfilledRequests.length, label: "needs received" },
+            ].map((stat, i) => (
+              <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
+                className={`py-5 ${i > 0 ? "border-l border-white/10 pl-5 sm:pl-8" : ""}`}>
+                <p className="text-4xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
+                <p className="text-[10px] uppercase tracking-[0.22em] text-white/45 mt-2">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
 
-        {/* ── Profile strip ── */}
-        <div className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-stone-100/80 dark:border-zinc-700/50 p-4 flex items-center gap-4 shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-[#1e3a60]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-lg text-[#1e3a60] dark:text-blue-400 shrink-0">
+        {/* ── Identity line ── */}
+        <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-4">
+          <div className="w-9 h-9 rounded-full bg-[#1e3a60]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-sm text-[#1e3a60] dark:text-blue-400 shrink-0">
             {getInitials(myProfile.fullName)}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-extrabold text-stone-900 dark:text-white truncate">{myProfile.fullName}</p>
-            <p className="text-xs text-stone-400 truncate">{user.email}</p>
-          </div>
+          <p className="font-bold text-stone-800 dark:text-stone-200 truncate">{myProfile.fullName}</p>
+          <span className="text-stone-300 dark:text-zinc-700 hidden sm:inline">&middot;</span>
+          <p className="truncate hidden sm:block">{user.email}</p>
           {myProfile.city && (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 shrink-0">
-              <MapPin className="w-3.5 h-3.5 text-[#1e3a60]" />
-              {myProfile.city}
-            </div>
+            <>
+              <span className="text-stone-300 dark:text-zinc-700 hidden md:inline">&middot;</span>
+              <p className="hidden md:flex items-center gap-1"><MapPin className="w-3 h-3 text-[#1e3a60] dark:text-blue-400" />{myProfile.city}</p>
+            </>
           )}
-          <Link href="/profile">
-            <Button variant="ghost" size="sm" className="text-xs text-stone-400 hover:text-[#1e3a60] dark:hover:text-blue-400 shrink-0">
-              Edit Profile
-            </Button>
-          </Link>
-        </div>
-
-        {/* ── Stats row ── */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div
-            className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-stone-100/80 dark:border-zinc-700/50 p-5 shadow-sm flex items-center gap-4"
-            style={{ borderLeft: "3px solid #1e3a60" }}
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#1e3a60]/10 flex items-center justify-center text-[#1e3a60] shrink-0">
-              <Package className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-stone-500 dark:text-stone-400">Needs Posted</p>
-              <p className="text-2xl font-black text-stone-900 dark:text-white">{itemRequests.length}</p>
-            </div>
-          </div>
-
-          <div
-            className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-stone-100/80 dark:border-zinc-700/50 p-5 shadow-sm flex items-center gap-4"
-            style={{ borderLeft: "3px solid #f0b97a" }}
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#f0b97a]/15 flex items-center justify-center text-[#b04a15] shrink-0">
-              <Handshake className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-stone-500 dark:text-stone-400">Active Matches</p>
-              <p className="text-2xl font-black text-stone-900 dark:text-white">{activeMatches.length}</p>
-            </div>
-          </div>
-
-          <div
-            className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-stone-100/80 dark:border-zinc-700/50 p-5 shadow-sm flex items-center gap-4"
-            style={{ borderLeft: "3px solid #10b981" }}
-          >
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-zinc-800 flex items-center justify-center text-emerald-600 shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-stone-500 dark:text-stone-400">Needs Fulfilled</p>
-              <p className="text-2xl font-black text-stone-900 dark:text-white">{fulfilledRequests.length}</p>
-            </div>
-          </div>
+          <Link href="/profile" className="ml-auto shrink-0 font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">Edit profile</Link>
         </div>
 
         {/* ── Incoming Donation Offers (Donor Flow 2) ── */}
@@ -1011,79 +1108,83 @@ function DoneeDashboard({
           </Card>
         )}
 
-        {/* ── Requests + Matches grid ── */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        {/* ── Requests journey ledger + matches ── */}
+        <div className="space-y-12">
 
-          {/* My Requests */}
-          <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#1e3a60]" />
-            <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none leading-none">01</div>
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-4 relative z-10">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Package className="w-4 h-4 text-[#1e3a60]" /> My Requests
-              </CardTitle>
-              <Link href="/requests/new">
-                <Button variant="ghost" size="sm" className="text-xs font-bold text-[#1e3a60] hover:text-[#1e3a60]">
-                  <Plus className="w-3.5 h-3.5 mr-1" /> New
-                </Button>
+          {/* Your requests — each one drawn as a journey down the pipeline */}
+          <section>
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
+                <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
+              </div>
+              <Link href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0">
+                <Plus className="w-3.5 h-3.5" /> New need
               </Link>
-            </CardHeader>
-            <CardContent className="relative z-10 pt-4">
-              {itemRequests.length === 0 ? (
-                <div className="py-10 text-center space-y-3">
-                  <div className="w-14 h-14 bg-[#1e3a60]/10 rounded-2xl flex items-center justify-center mx-auto">
-                    <Heart className="w-6 h-6 text-[#1e3a60]" />
-                  </div>
-                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No needs posted yet</p>
-                  <p className="text-xs text-stone-400 max-w-[220px] mx-auto">Tell us what you need — books, clothes, medical supplies — and we&apos;ll find donors nearby.</p>
-                  <Link href="/requests/new">
-                    <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="divide-y dark:divide-zinc-800">
-                  {itemRequests.map(r => {
-                    const badge = getRequestStatusBadge(r.status);
-                    return (
-                      <div key={r.id} className="py-3 flex items-start justify-between gap-3 group hover:bg-stone-50 dark:hover:bg-zinc-800/40 px-1 rounded-xl transition-all">
-                        <div className="min-w-0">
-                          <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors truncate">
-                            <TranslatedText text={r.title} />
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5 flex-wrap">
-                            <span><TranslatedText text={r.category} /></span>
-                            <span>·</span>
-                            <span>Qty: {r.quantity}</span>
-                            <span>·</span>
-                            <span className="capitalize">{r.urgency.toLowerCase()}</span>
-                          </div>
-                        </div>
-                        <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap shrink-0">{badge.label}</Badge>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Match Status */}
-          <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#f0b97a]" />
-            <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none leading-none">02</div>
-            <CardHeader className="border-b pb-4 relative z-10">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Handshake className="w-4 h-4 text-[#b04a15]" /> Match Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative z-10 pt-4">
+            {itemRequests.length === 0 ? (
+              <div className="py-14 text-center space-y-3">
+                <div className="w-14 h-14 bg-[#1e3a60]/10 rounded-2xl flex items-center justify-center mx-auto">
+                  <Heart className="w-6 h-6 text-[#1e3a60]" />
+                </div>
+                <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing posted yet</p>
+                <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Tell us what you need &mdash; books, clothes, medical supplies &mdash; and we&apos;ll find donors nearby.</p>
+                <Link href="/requests/new">
+                  <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
+                </Link>
+              </div>
+            ) : (
+              <div>
+                {itemRequests.map((r, i) => (
+                  <DoneeRequestRow key={r.id} request={r} index={i} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Matches */}
+          <section>
+            <div className="border-b-2 border-[#b04a15]/60 pb-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b04a15]">Matches</p>
+              <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
+            </div>
+            <div className="pt-5">
               {doneeMatches.length === 0 ? (
-                <div className="py-10 text-center space-y-3">
-                  <div className="w-14 h-14 bg-[#f0b97a]/15 rounded-2xl flex items-center justify-center mx-auto">
-                    <Handshake className="w-6 h-6 text-[#b04a15]" />
+                /* Truthful empty state: the sweep only spins when the matching engine
+                   is actually working (a request is verified and in the matching
+                   phase). Drafts/pending requests get honest guidance instead. */
+                <div className="py-12 text-center space-y-4">
+                  <div className="relative w-24 h-24 mx-auto rounded-full border border-[#b04a15]/20">
+                    <div className="absolute inset-3 rounded-full border border-[#b04a15]/15" />
+                    <div className="absolute inset-6 rounded-full border border-[#b04a15]/10" />
+                    {hasRequestInMatching && (
+                      <>
+                        <div className="absolute inset-0 rounded-full overflow-hidden motion-reduce:hidden">
+                          <div className="absolute inset-0 animate-[spin_3.5s_linear_infinite]"
+                            style={{ background: "conic-gradient(from 0deg, rgba(176,74,21,0.30), transparent 70deg)" }} />
+                        </div>
+                        <div className="absolute top-4 right-6 w-1.5 h-1.5 rounded-full bg-[#f0b97a] animate-pulse motion-reduce:animate-none" />
+                      </>
+                    )}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#b04a15]" />
                   </div>
-                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No matches yet</p>
-                  <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Our system is scanning donor inventories for items that match your needs. Check back soon.</p>
+                  {hasRequestInMatching ? (
+                    <div>
+                      <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Scanning donor inventories</p>
+                      <p className="text-xs text-stone-400 max-w-[250px] mx-auto mt-1">Your verified request is being matched against donor items &mdash; new listings are checked as they arrive. Matches appear here and we&apos;ll notify you.</p>
+                    </div>
+                  ) : itemRequests.length > 0 ? (
+                    <div>
+                      <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Matching starts after verification</p>
+                      <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1">Submit your request and once our team verifies it, the matching engine starts scanning donor inventories for you.</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No requests to match yet</p>
+                      <p className="text-xs text-stone-400 max-w-[240px] mx-auto mt-1">Post a need above &mdash; matching begins as soon as it&apos;s verified.</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="divide-y dark:divide-zinc-800 space-y-3">
@@ -1149,8 +1250,8 @@ function DoneeDashboard({
                   })}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
         </div>
 
@@ -1320,20 +1421,41 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f4f0] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-12">
-      {/* Header and Welcome */}
-      <div className="bg-[#1e2d10] bg-gradient-to-r from-[#0f1d30] via-[#1c0905] to-[#1e2d10] text-white py-10 px-4 shadow-md relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full filter blur-2xl pointer-events-none" />
+      {/* ── Hero: greeting + live giving ledger ── */}
+      <div className="relative overflow-hidden text-white px-4 pt-12 shadow-md"
+        style={{ background: "linear-gradient(140deg, #1c0905 0%, #3a1d0e 55%, #241206 100%)" }}>
+        <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[#e07b3a]/10 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b97a]/25 to-transparent" />
+
         <div className="mx-auto max-w-7xl relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 bg-[#b04a15]/20 border border-[#b04a15]/30 rounded-full px-3 py-1 text-xs text-[#f0b97a] font-semibold mb-3">
-                <ShieldCheck className="w-3.5 h-3.5" /> India verified setup
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="min-w-0 space-y-3">
+              <div className="inline-flex items-center gap-1.5 bg-[#b04a15]/20 border border-[#b04a15]/30 rounded-full px-3 py-1 text-xs text-[#f0b97a] font-semibold">
+                <ShieldCheck className="w-3.5 h-3.5" /> Verified Donor
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight">Your Dashboard</h1>
-              <p className="text-white/60 text-sm mt-1">Logged in as {user.email}</p>
-            </div>
-            
-            <div className="flex flex-wrap gap-3">
+              <h1 className="text-4xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+                Namaste, {myProfile?.fullName?.split(" ")[0] || user.email.split("@")[0]}.
+              </h1>
+              <p className="text-white/55 text-sm max-w-md">
+                {itemListings.length > 0
+                  ? `Your inventory is ${itemListings.some(l => ["ELIGIBLE_FOR_MATCHING", "AVAILABLE"].includes(l.status)) ? "live — we match it against verified needs as they arrive" : "with us — list something new or resume a paused item"}.`
+                  : "List an item privately and we'll match it with a verified need near you."}
+              </p>
+            </motion.div>
+
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              {myProfile?.role === "ADMIN" && (
+                <div className="grid grid-cols-2 gap-1 bg-white/10 border border-white/15 p-1 rounded-xl">
+                  <button onClick={() => setActiveTab("donor")}
+                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${activeTab === "donor" ? "bg-[#b04a15] text-white" : "text-white/60"}`}>
+                    Donor
+                  </button>
+                  <button onClick={() => setActiveTab("donee")}
+                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${activeTab === "donee" ? "bg-[#b04a15] text-white" : "text-white/60"}`}>
+                    Donee
+                  </button>
+                </div>
+              )}
               {(myProfile?.role === "DONOR" || myProfile?.role === "ADMIN") && (
                 <Link href="/items/new">
                   <Button className="bg-[#b04a15] hover:bg-[#943e11] text-white font-bold rounded-xl px-5 py-2.5 h-auto btn-shine flex items-center gap-1.5 text-sm">
@@ -1350,96 +1472,44 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+
+          {/* Giving ledger — live numbers over hairline rules, no stat cards */}
+          <div className="mt-10 grid grid-cols-3 border-t border-white/10">
+            {[
+              { n: itemListings.length, label: "items listed" },
+              { n: donorMatches.filter(m => !["FULFILLED", "COMPLETED", "CANCELLED", "REJECTED", "FAILED", "DONOR_REJECTED"].includes(m.status)).length, label: "active matches" },
+              { n: donorMatches.filter(m => ["FULFILLED", "COMPLETED"].includes(m.status)).length, label: "donations completed" },
+            ].map((stat, i) => (
+              <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
+                className={`py-5 ${i > 0 ? "border-l border-white/10 pl-5 sm:pl-8" : ""}`}>
+                <p className="text-4xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
+                <p className="text-[10px] uppercase tracking-[0.22em] text-white/45 mt-2">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Main Container */}
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
-          
-          {/* LEFT: Sticky Sidebar */}
-          <aside className="lg:sticky lg:top-24 bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm rounded-3xl p-6 shadow-sm border border-stone-100/80 dark:border-zinc-700/50 space-y-6 relative overflow-hidden">
-            {/* Left accent stripe */}
-            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#b04a15]" />
-            
-            {/* Avatar & Initials */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-[#b04a15]/10 text-[#b04a15] dark:bg-zinc-850 flex items-center justify-center shadow-inner font-black text-xl">
-                {myProfile ? getInitials(myProfile.fullName) : "U"}
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-stone-900 dark:text-white leading-tight">
-                  {myProfile?.fullName || user.email?.split("@")[0]}
-                </h2>
-                <div className="inline-block mt-1 bg-[#b04a15]/10 text-[#b04a15] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
-                  {myProfile?.role ?? "DONOR"}
-                </div>
-              </div>
-            </div>
+        <div className="space-y-8">
 
-            <div className="border-t border-stone-100 dark:border-zinc-800 pt-4 space-y-3">
-              <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
-                <Mail className="w-3.5 h-3.5 text-[#b04a15]" />
-                <span className="truncate">{user.email}</span>
-              </div>
-              {myProfile?.phone && (
-                <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
-                  <Phone className="w-3.5 h-3.5 text-[#b04a15]" />
-                  <span>{myProfile.phone}</span>
-                </div>
-              )}
-              {myProfile?.city && (
-                <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
-                  <MapPin className="w-3.5 h-3.5 text-[#b04a15]" />
-                  <span>{myProfile.city}</span>
-                </div>
-              )}
+          {/* ── Identity line ── */}
+          <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-4">
+            <div className="w-9 h-9 rounded-full bg-[#b04a15]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-sm text-[#b04a15] shrink-0">
+              {myProfile ? getInitials(myProfile.fullName) : "U"}
             </div>
-
-            {/* Quick Actions inside sidebar */}
-            <div className="border-t border-stone-100 dark:border-zinc-850 pt-4 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-wider text-stone-400 mb-2">Quick Actions</p>
-              {(myProfile?.role === "DONOR" || myProfile?.role === "ADMIN") && (
-                <Link href="/items/new" className="block w-full">
-                  <Button className="w-full bg-[#b04a15] hover:bg-[#943e11] text-white font-bold rounded-xl py-2.5 text-xs flex items-center justify-center gap-1.5 shadow-sm">
-                    <Plus className="w-3.5 h-3.5" /> List Item
-                  </Button>
-                </Link>
-              )}
-              {(myProfile?.role === "DONEE" || myProfile?.role === "ADMIN") && (
-                <Link href="/requests/new" className="block w-full">
-                  <Button className="w-full bg-[#f0b97a] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl py-2.5 text-xs flex items-center justify-center gap-1.5 shadow-sm">
-                    <Plus className="w-3.5 h-3.5" /> Post a Need
-                  </Button>
-                </Link>
-              )}
-            </div>
-
-            {/* Admin Switcher inside sidebar */}
-            {myProfile?.role === "ADMIN" && (
-              <div className="border-t border-stone-100 dark:border-zinc-800 pt-4 space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-wider text-stone-400 mb-2">View Mode</p>
-                <div className="grid grid-cols-2 gap-1 bg-stone-50 dark:bg-zinc-950 p-1 rounded-xl">
-                  <button
-                    onClick={() => setActiveTab("donor")}
-                    className={`py-1.5 text-[10px] font-bold rounded-lg transition-all ${
-                      activeTab === "donor" ? "bg-[#b04a15] text-white" : "text-stone-500"
-                    }`}
-                  >
-                    Donor
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("donee")}
-                    className={`py-1.5 text-[10px] font-bold rounded-lg transition-all ${
-                      activeTab === "donee" ? "bg-[#b04a15] text-white" : "text-stone-500"
-                    }`}
-                  >
-                    Donee
-                  </button>
-                </div>
-              </div>
+            <p className="font-bold text-stone-800 dark:text-stone-200 truncate">{myProfile?.fullName || user.email?.split("@")[0]}</p>
+            <span className="text-stone-300 dark:text-zinc-700 hidden sm:inline">&middot;</span>
+            <p className="truncate hidden sm:block">{user.email}</p>
+            {myProfile?.city && (
+              <>
+                <span className="text-stone-300 dark:text-zinc-700 hidden md:inline">&middot;</span>
+                <p className="hidden md:flex items-center gap-1"><MapPin className="w-3 h-3 text-[#b04a15]" />{myProfile.city}</p>
+              </>
             )}
-          </aside>
+            <Link href="/profile" className="ml-auto shrink-0 font-bold text-[#b04a15] hover:underline">Edit profile</Link>
+          </div>
 
           {/* RIGHT: Main Dashboard Content */}
           <div className="space-y-6">
@@ -1449,78 +1519,38 @@ export default function DashboardPage() {
               /* DONOR DASHBOARD VIEW */
               <div className="space-y-6">
                 
-                {/* Stats Row */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#b04a15]" />
-                    <CardContent className="flex items-center gap-4 p-5">
-                      <div className="h-11 w-11 rounded-xl bg-orange-100 text-[#b04a15] dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                        <Award className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-stone-500">Private Inventory Items</p>
-                        <p className="text-xl font-bold">{itemListings.length}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-
-                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-emerald-500" />
-                    <CardContent className="flex items-center gap-4 p-5">
-                      <div className="h-11 w-11 rounded-xl bg-green-100 text-green-600 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                        <Check className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-stone-500">Active Match Handovers</p>
-                        <p className="text-xl font-bold">{donorMatches.filter(m => m.status === "FULFILLED").length}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-500" />
-                    <CardContent className="flex items-center gap-4 p-5">
-                      <div className="h-11 w-11 rounded-xl bg-blue-100 text-blue-600 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                        <ShieldCheck className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-stone-500">Reliability Score</p>
-                        <p className="text-xl font-bold">100%</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
                 {/* Donor Flow 2 — Offer Tracker */}
                 {donationOffers.length > 0 && (
-                  <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm p-6">
+                  <section>
+                    <div className="border-b-2 border-[#f0b97a]/70 pb-3 mb-5">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b04a15] dark:text-[#f0b97a]">Your Offers</p>
+                      <p className="text-xs text-stone-400 mt-1">Items you offered directly against someone&apos;s request.</p>
+                    </div>
                     <DonorOfferSection
                       offers={donationOffers}
                       onReconfirm={handleOfferReconfirm}
                       onWithdraw={handleOfferWithdraw}
                     />
-                  </div>
+                  </section>
                 )}
 
-                {/* Donor Listings & Donor Matches Grid */}
-                <div className="grid gap-6 lg:grid-cols-2">
+                {/* Inventory ledger + match opportunities */}
+                <div className="space-y-12">
 
-                  {/* Private Inventory */}
-                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute left-0 top-0 w-full h-[3px] bg-[#b04a15]" />
-                    <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">01</div>
-                    <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-4 relative z-10">
-                      <CardTitle className="text-base font-bold flex items-center gap-2">
-                        <EyeOff className="w-4 h-4 text-stone-400" /> My Private Inventory
-                      </CardTitle>
-                      <Link href="/items/new">
-                        <Button variant="ghost" size="sm" className="text-xs font-bold text-[#b04a15]">
-                          <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                        </Button>
+                  {/* Your inventory — private, matched quietly */}
+                  <section>
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#b04a15]/70 pb-3">
+                      <div>
+                        <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#b04a15]">
+                          <EyeOff className="w-3.5 h-3.5" /> Your Private Inventory
+                        </p>
+                        <p className="text-xs text-stone-400 mt-1">Only our matching engine sees these — never other users.</p>
+                      </div>
+                      <Link href="/items/new" className="text-xs font-bold text-[#b04a15] hover:underline flex items-center gap-1 shrink-0 mb-0.5">
+                        <Plus className="w-3.5 h-3.5" /> Add an item
                       </Link>
-                    </CardHeader>
-                    <CardContent className="space-y-4 relative z-10">
+                    </div>
+                    <div className="pt-4 space-y-4">
                       {itemListings.length === 0 ? (
                         <div className="py-12 text-center">
                           <p className="text-sm text-stone-400">You haven&apos;t listed any items to donate yet.</p>
@@ -1543,7 +1573,7 @@ export default function DashboardPage() {
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
-                                      <p className="font-bold text-sm text-stone-900 dark:text-stone-100 truncate"><TranslatedText text={l.title} /></p>
+                                      <p className="text-lg font-bold text-stone-900 dark:text-stone-100 truncate leading-snug" style={{ fontFamily: "var(--font-source-serif-4), serif" }}><TranslatedText text={l.title} /></p>
                                       <div className="flex flex-wrap gap-1.5 items-center text-xs text-stone-400 mt-0.5">
                                         {l.category && <span><TranslatedText text={l.category} /></span>}
                                         {l.city && <><span>·</span><span><TranslatedText text={l.city} /></span></>}
@@ -1623,22 +1653,50 @@ export default function DashboardPage() {
                           })}
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-
+                    </div>
+                  </section>
 
                   {/* Donor Matches */}
-                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute left-0 top-0 w-full h-[3px] bg-emerald-500" />
-                    <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">02</div>
-                    <CardHeader className="border-b pb-4 mb-4 relative z-10">
-                      <CardTitle className="text-base font-bold">Donation Match Opportunities</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 relative z-10">
+                  <section>
+                    <div className="border-b-2 border-emerald-500/60 pb-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-400">Match Opportunities</p>
+                      <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
+                    </div>
+                    <div className="pt-5 space-y-4">
                       {donorMatches.length === 0 ? (
-                        <div className="py-12 text-center">
-                          <p className="text-sm text-stone-400">No active match proposals for your items yet.</p>
-                          <p className="text-xs text-stone-400/80 mt-1">When matching needs are submitted, matches will appear here.</p>
+                        /* Truthful empty state: the sweep only spins while a listing is
+                           live and the engine is actually checking incoming needs. */
+                        <div className="py-12 text-center space-y-4">
+                          <div className="relative w-24 h-24 mx-auto rounded-full border border-emerald-500/25">
+                            <div className="absolute inset-3 rounded-full border border-emerald-500/20" />
+                            <div className="absolute inset-6 rounded-full border border-emerald-500/15" />
+                            {itemListings.some(l => ["ELIGIBLE_FOR_MATCHING", "AVAILABLE"].includes(l.status)) && (
+                              <>
+                                <div className="absolute inset-0 rounded-full overflow-hidden motion-reduce:hidden">
+                                  <div className="absolute inset-0 animate-[spin_3.5s_linear_infinite]"
+                                    style={{ background: "conic-gradient(from 0deg, rgba(16,185,129,0.30), transparent 70deg)" }} />
+                                </div>
+                                <div className="absolute top-4 right-6 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse motion-reduce:animate-none" />
+                              </>
+                            )}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-500" />
+                          </div>
+                          {itemListings.some(l => ["ELIGIBLE_FOR_MATCHING", "AVAILABLE"].includes(l.status)) ? (
+                            <div>
+                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Scanning incoming needs</p>
+                              <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1">Your live items are checked against every verified need as it arrives. Matches appear here &mdash; and we&apos;ll notify you.</p>
+                            </div>
+                          ) : itemListings.length > 0 ? (
+                            <div>
+                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Matching starts once an item goes live</p>
+                              <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1">Your items are awaiting screening or paused &mdash; once one is live, the engine starts scanning for it.</p>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing to match yet</p>
+                              <p className="text-xs text-stone-400 max-w-[240px] mx-auto mt-1">List an item above &mdash; matching begins as soon as it passes screening.</p>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="divide-y space-y-4">
@@ -1730,8 +1788,8 @@ export default function DashboardPage() {
                           })}
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </section>
 
                 </div>
 
@@ -1807,10 +1865,22 @@ export default function DashboardPage() {
                                     <span>•</span>
                                     <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
                                   </div>
+                                  {r.status === "REJECTED" && r.rejectionReason && (
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{r.rejectionReason}</p>
+                                  )}
                                 </div>
-                                <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">
-                                  {badge.label}
-                                </Badge>
+                                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                  <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">
+                                    {badge.label}
+                                  </Badge>
+                                  {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
+                                  {r.status === "DRAFT" && (
+                                    <Link href={`/requests/new?draftId=${r.id}`}
+                                      className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#b04a15]/30 text-[11px] font-bold text-[#b04a15] hover:bg-[#b04a15]/5 transition-colors">
+                                      <Pencil className="w-3 h-3" /> Continue editing
+                                    </Link>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}

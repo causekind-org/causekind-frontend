@@ -504,16 +504,20 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
       <div style={{ width: "100%", height: "100%", borderRadius: "14px", overflow: "hidden", border: "2px solid rgba(255,255,255,0.18)" }}>
         <PosterFace gradient={card.gradient} title={card.title} />
       </div>
-      {/* Attention ring — plays once per card, staggered (always shows) */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute", inset: "-5px", borderRadius: "19px",
-          border: "2px solid rgba(176,74,21,0.65)",
-          animation: `ck-card-attn 2s cubic-bezier(0.4,0,0.6,1) ${0.6 + idx * 0.75}s 1 forwards`,
-          pointerEvents: "none", zIndex: 5, opacity: 0,
-        }}
-      />
+      {/* Ripple rings — two staggered rings per card for a continuous, smooth pulse */}
+      {!reducedMotion && [0, 1].map((n) => (
+        <div
+          key={n}
+          aria-hidden
+          style={{
+            position: "absolute", inset: "-5px", borderRadius: "19px",
+            border: `2px solid ${CARD_DETAILS[idx].accent}`,
+            animation: `ck-ripple 2.8s cubic-bezier(0.25,0.55,0.4,1) ${0.6 + idx * 0.45 + n * 1.4}s infinite`,
+            pointerEvents: "none", zIndex: 5, opacity: 0,
+            willChange: "transform, opacity",
+          }}
+        />
+      ))}
     </div>
   );
 }
@@ -567,10 +571,28 @@ export function ComingSoonMagnets() {
           .ck-modal-left  { width: 100% !important; min-height: 200px !important; flex: none !important; }
           .ck-modal-right { padding: 24px 20px 28px !important; }
         }
-        @keyframes ck-card-attn {
-          0%   { opacity: 0;   transform: scale(1);    }
-          30%  { opacity: 0.9; transform: scale(1.01); }
-          100% { opacity: 0;   transform: scale(1.12); }
+        @keyframes ck-ripple {
+          0%   { opacity: 0;    transform: scale(0.98); }
+          18%  { opacity: 0.55; }
+          100% { opacity: 0;    transform: scale(1.22); }
+        }
+        @keyframes ck-blob-a {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50%      { transform: translate(70px, -45px) scale(1.18); }
+        }
+        @keyframes ck-blob-b {
+          0%, 100% { transform: translate(0, 0) scale(1.1); }
+          50%      { transform: translate(-60px, 50px) scale(0.92); }
+        }
+        @keyframes ck-blob-c {
+          0%, 100% { transform: translate(0, 0) scale(0.95); }
+          50%      { transform: translate(45px, 60px) scale(1.15); }
+        }
+        @keyframes ck-spark-rise {
+          0%   { transform: translateY(0) scale(1);        opacity: 0;   }
+          12%  { opacity: 0.55; }
+          80%  { opacity: 0.35; }
+          100% { transform: translateY(-560px) scale(0.6); opacity: 0;   }
         }
         @keyframes ck-hint-enter {
           from { opacity: 0; transform: translateY(8px); }
@@ -586,7 +608,44 @@ export function ComingSoonMagnets() {
         }
       ` }} />
 
-      <div className="text-center mb-12">
+      {/* Ambient background — soft drifting glows + slow rising sparks */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+        <div style={{
+          position: "absolute", top: "-140px", left: "-100px", width: "440px", height: "440px",
+          borderRadius: "50%", background: `radial-gradient(circle, ${COPPER}30 0%, transparent 70%)`,
+          filter: "blur(48px)", willChange: "transform",
+          animation: reducedMotion ? "none" : "ck-blob-a 22s ease-in-out infinite",
+        }} />
+        <div style={{
+          position: "absolute", top: "20%", right: "-140px", width: "480px", height: "480px",
+          borderRadius: "50%", background: `radial-gradient(circle, ${GOLD}2e 0%, transparent 70%)`,
+          filter: "blur(52px)", willChange: "transform",
+          animation: reducedMotion ? "none" : "ck-blob-b 26s ease-in-out infinite",
+        }} />
+        <div style={{
+          position: "absolute", bottom: "-160px", left: "30%", width: "420px", height: "420px",
+          borderRadius: "50%", background: `radial-gradient(circle, ${INK}22 0%, transparent 70%)`,
+          filter: "blur(48px)", willChange: "transform",
+          animation: reducedMotion ? "none" : "ck-blob-c 24s ease-in-out infinite",
+        }} />
+        {!reducedMotion && [
+          { left: "10%", size: 6, delay: "0s",  dur: "13s", color: GOLD },
+          { left: "24%", size: 4, delay: "4s",  dur: "16s", color: TERRACOTTA },
+          { left: "46%", size: 5, delay: "8s",  dur: "14s", color: COPPER },
+          { left: "65%", size: 4, delay: "2s",  dur: "17s", color: GOLD },
+          { left: "81%", size: 6, delay: "6s",  dur: "15s", color: TERRACOTTA },
+          { left: "92%", size: 4, delay: "10s", dur: "18s", color: COPPER },
+        ].map((s, i) => (
+          <span key={i} style={{
+            position: "absolute", bottom: "-10px", left: s.left,
+            width: `${s.size}px`, height: `${s.size}px`, borderRadius: "50%",
+            background: s.color, opacity: 0, willChange: "transform, opacity",
+            animation: `ck-spark-rise ${s.dur} linear ${s.delay} infinite`,
+          }} />
+        ))}
+      </div>
+
+      <div className="text-center mb-12 relative z-[1]">
         <span
           className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4"
           style={{ background: `${TERRACOTTA}18`, color: TERRACOTTA }}
@@ -606,7 +665,7 @@ export function ComingSoonMagnets() {
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center" style={{ gap: "40px" }}>
+      <div className="flex flex-col sm:flex-row items-center justify-center" style={{ gap: "clamp(48px, 7vw, 110px)" }}>
         {CARDS.map((card, i) => (
           <MagnetCard
             key={card.title}
@@ -621,7 +680,7 @@ export function ComingSoonMagnets() {
 
       {/* Click hint — always visible, gentle pulse */}
       <div
-        className="flex items-center justify-center gap-2 mt-10 select-none pointer-events-none"
+        className="flex items-center justify-center gap-2 mt-10 select-none pointer-events-none relative z-[1]"
         style={{ animation: "ck-hint-enter 0.6s ease 0.5s both" }}
       >
         <span

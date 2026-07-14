@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
   superAdminList, superAdminUpdate, superAdminDelete, superAdminCreateUser,
-  type SuperAdminEntity, type SuperAdminRow,
+  type SuperAdminEntity, type SuperAdminRow, type SuperAdminDependent, type ApiConflictError,
 } from "@/lib/api";
 import { Search, Pencil, Trash2, X, Plus, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 
@@ -108,21 +108,59 @@ function RowForm({
 }
 
 /* ── Delete confirm — always dark overlay ────────────────────────────────── */
-function DeleteConfirm({ row, onCancel, onConfirm, deleting }: { row: SuperAdminRow; onCancel: () => void; onConfirm: () => void; deleting: boolean; }) {
+function DeleteConfirm({
+  row, onCancel, onConfirm, onCascade, deleting, blockers,
+}: {
+  row: SuperAdminRow;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onCascade: () => void;
+  deleting: boolean;
+  blockers: SuperAdminDependent[] | null;
+}) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onCancel} style={{ animation: "fadeIn 0.15s ease forwards" }}>
       <div className="w-full max-w-sm bg-[#1a0e0e] border border-red-500/30 rounded-2xl shadow-2xl p-6 text-center" onClick={e => e.stopPropagation()}>
         <div className="w-14 h-14 rounded-2xl bg-red-500/15 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="w-7 h-7 text-red-400" />
         </div>
-        <h3 className="text-base font-bold text-white">Hard-delete row #{String(row.id)}?</h3>
-        <p className="text-xs text-stone-400 mt-2 leading-relaxed">This permanently removes the row from the database. It cannot be undone.</p>
-        <div className="flex gap-2 mt-6">
-          <button onClick={onConfirm} disabled={deleting} className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg text-sm transition-colors">
-            {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete permanently"}
-          </button>
-          <button onClick={onCancel} className="px-5 py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
-        </div>
+        {blockers ? (
+          <>
+            <h3 className="text-base font-bold text-white">Row #{String(row.id)} has linked records</h3>
+            <p className="text-xs text-stone-400 mt-2 leading-relaxed">
+              {blockers.length === 0
+                ? "It's referenced by other records, but the exact rows couldn't be determined."
+                : "It's still referenced by these rows. You can delete everything together — this removes the row AND all rows below (and anything linked to them):"}
+            </p>
+            {blockers.length > 0 && (
+              <ul className="mt-3 space-y-1.5 text-left">
+                {blockers.map(b => (
+                  <li key={`${b.table}.${b.column}`} className="flex items-center justify-between text-xs bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                    <span className="font-mono text-stone-300">{b.table}<span className="text-stone-500">.{b.column}</span></span>
+                    <span className="font-bold text-red-400">{b.count} row{b.count !== 1 ? "s" : ""}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-2 mt-6">
+              <button onClick={onCascade} disabled={deleting} className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg text-sm transition-colors">
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete everything"}
+              </button>
+              <button onClick={onCancel} className="px-5 py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="text-base font-bold text-white">Hard-delete row #{String(row.id)}?</h3>
+            <p className="text-xs text-stone-400 mt-2 leading-relaxed">This permanently removes the row from the database. It cannot be undone.</p>
+            <div className="flex gap-2 mt-6">
+              <button onClick={onConfirm} disabled={deleting} className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg text-sm transition-colors">
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete permanently"}
+              </button>
+              <button onClick={onCancel} className="px-5 py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -145,6 +183,7 @@ export function EntityTable({
   const [editRow, setEditRow] = useState<SuperAdminRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleteRow, setDeleteRow] = useState<SuperAdminRow | null>(null);
+  const [deleteBlockers, setDeleteBlockers] = useState<SuperAdminDependent[] | null>(null);
   const [saving, setSaving] = useState(false);
 
   const tableCols = columns.filter(c => c.inTable !== false);
@@ -199,6 +238,28 @@ export function EntityTable({
       setRows(prev => prev.filter(r => r.id !== deleteRow.id));
       toast.success("Deleted");
       setDeleteRow(null);
+      setDeleteBlockers(null);
+    } catch (e) {
+      const dependents = (e as ApiConflictError)?.dependents;
+      if (dependents) {
+        setDeleteBlockers(dependents);
+      } else {
+        toast.error(e instanceof Error ? e.message : "Delete failed");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleCascadeDelete() {
+    if (!deleteRow) return;
+    setSaving(true);
+    try {
+      const result = await superAdminDelete(entity, Number(deleteRow.id), true);
+      setRows(prev => prev.filter(r => r.id !== deleteRow.id));
+      toast.success(result?.total ? `Deleted ${result.total} row${result.total !== 1 ? "s" : ""} (with dependencies)` : "Deleted");
+      setDeleteRow(null);
+      setDeleteBlockers(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Delete failed");
     } finally {
@@ -343,7 +404,7 @@ export function EntityTable({
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => setDeleteRow(row)}
+                          onClick={() => { setDeleteRow(row); setDeleteBlockers(null); }}
                           className={`p-1.5 rounded-lg transition-colors ${t.iconMuted} ${t.deleteHover}`}
                           title="Delete"
                         >
@@ -366,7 +427,14 @@ export function EntityTable({
         <RowForm title={`Create ${title}`} columns={createColumns ?? columns} initial={{}} saving={saving} onClose={() => setCreating(false)} onSave={handleCreate} />
       )}
       {deleteRow && (
-        <DeleteConfirm row={deleteRow} deleting={saving} onCancel={() => setDeleteRow(null)} onConfirm={handleDelete} />
+        <DeleteConfirm
+          row={deleteRow}
+          deleting={saving}
+          blockers={deleteBlockers}
+          onCancel={() => { setDeleteRow(null); setDeleteBlockers(null); }}
+          onConfirm={handleDelete}
+          onCascade={handleCascadeDelete}
+        />
       )}
     </div>
   );

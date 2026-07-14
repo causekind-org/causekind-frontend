@@ -2,28 +2,115 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck, Handshake, ShieldCheck, CheckCircle2, Info, X, AlertCircle } from "lucide-react";
+import { Bell, CheckCheck, Handshake, ShieldCheck, Info, X, AlertCircle, PartyPopper, ArrowRight } from "lucide-react";
 import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
 import { useAuth } from "@/hooks/useAuth";
 
-const TYPE_ICON = {
-  match:     { Icon: Handshake,     bg: "bg-sky-100 dark:bg-sky-900/30",       ic: "text-sky-600 dark:text-sky-400"        },
-  approved:  { Icon: ShieldCheck,   bg: "bg-emerald-100 dark:bg-emerald-900/30", ic: "text-emerald-600 dark:text-emerald-400" },
-  rejected:  { Icon: AlertCircle,   bg: "bg-red-100 dark:bg-red-900/30",       ic: "text-red-600 dark:text-red-400"        },
-  fulfilled: { Icon: CheckCircle2,  bg: "bg-[#b04a15]/10",                     ic: "text-[#b04a15]"                        },
-  info:      { Icon: Info,          bg: "bg-stone-100 dark:bg-zinc-800",        ic: "text-stone-500 dark:text-stone-400"    },
-};
+function timeAgo(ts: number): string {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(ts).toLocaleDateString();
+}
 
+// Each notification type gets its own visual layout so the tray is scannable:
+// match = action card with a CTA chip, approved = emerald accent-bar row,
+// rejected = red alert card, fulfilled = celebration gradient, info = compact row.
 function NotifItem({ n }: { n: AppNotification }) {
-  const cfg = TYPE_ICON[n.type];
+  const when = (
+    <span className="text-[10px] text-stone-400 dark:text-stone-500 font-medium shrink-0 whitespace-nowrap">
+      {timeAgo(n.receivedAt)}
+    </span>
+  );
+
+  if (n.type === "match") {
+    return (
+      <Link href={n.link} className="block mx-2 mb-1.5 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/60 dark:bg-sky-950/30 px-3.5 py-3 hover:border-sky-400 dark:hover:border-sky-700 transition-colors group">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center shrink-0">
+            <Handshake className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">{n.title}</p>
+              {when}
+            </div>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
+            <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/50 rounded-full px-2.5 py-1 group-hover:gap-1.5 transition-all">
+              Take action <ArrowRight className="w-3 h-3" />
+            </span>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
+  if (n.type === "approved") {
+    return (
+      <Link href={n.link} className="flex items-start gap-3 mx-2 mb-1.5 rounded-lg border-l-4 border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/25 pl-3 pr-3.5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
+        <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300 leading-tight">{n.title}</p>
+            {when}
+          </div>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
+        </div>
+      </Link>
+    );
+  }
+
+  if (n.type === "rejected") {
+    return (
+      <Link href={n.link} className="block mx-2 mb-1.5 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/25 px-3.5 py-3 hover:border-red-300 dark:hover:border-red-800 transition-colors">
+        <div className="flex items-start gap-2.5">
+          <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm font-bold text-red-700 dark:text-red-400 leading-tight">{n.title}</p>
+              {when}
+            </div>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
+  if (n.type === "fulfilled") {
+    return (
+      <Link href={n.link} className="block mx-2 mb-1.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200/70 dark:border-amber-900/50 px-3.5 py-3 hover:border-amber-300 dark:hover:border-amber-800 transition-colors">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#b04a15]/10 dark:bg-[#e07b3a]/15 flex items-center justify-center shrink-0">
+            <PartyPopper className="w-4 h-4 text-[#b04a15] dark:text-[#e07b3a]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm font-extrabold text-[#b04a15] dark:text-[#e07b3a] leading-tight">{n.title}</p>
+              {when}
+            </div>
+            <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
+  // info — compact neutral row
   return (
-    <Link href={n.link} className="flex items-start gap-3 px-4 py-3 hover:bg-stone-50 dark:hover:bg-zinc-800/60 transition-colors rounded-xl group">
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${cfg.bg}`}>
-        <cfg.Icon className={`w-4 h-4 ${cfg.ic}`} />
-      </div>
+    <Link href={n.link} className="flex items-start gap-2.5 mx-2 mb-1 rounded-lg px-3 py-2 hover:bg-stone-50 dark:hover:bg-zinc-800/60 transition-colors">
+      <Info className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight">{n.title}</p>
-        <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-200 leading-tight">{n.title}</p>
+          {when}
+        </div>
+        <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
       </div>
     </Link>
   );

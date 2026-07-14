@@ -9,7 +9,6 @@ import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
 import { ScrollProgress } from "@/components/ScrollProgress";
-import { ScrollRestoration } from "@/components/ScrollRestoration";
 import { Toaster } from "sonner";
 import { LocationGate } from "@/components/LocationGate";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -87,20 +86,22 @@ export default async function RootLayout({
                 <SuperAdminRedirect />
                 <AdminRedirect />
                 <ScrollProgress />
-                <ScrollRestoration />
                 <SiteHeader />
                 <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
                 <SiteFooter />
                 <MobileBottomNav />
                 <FloatingSupportButton />
+                {/* top-center: bottom-left sat on the admin sidebar's Sign Out and the
+                    mobile bottom nav; top corners hold the navbar's icons. The offset
+                    clears the 3.5rem sticky header. */}
                 <Toaster
                   richColors
-                  position="bottom-left"
-                  offset={24}
+                  position="top-center"
+                  offset={72}
+                  mobileOffset={64}
                   visibleToasts={3}
                   duration={4500}
                   style={{ zIndex: 2147483647 }}
-                  toastOptions={{ style: { zIndex: 2147483647 } }}
                 />
                 <LocationGate />
                 <CookieConsent />

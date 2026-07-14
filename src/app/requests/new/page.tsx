@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   getProfile,
+  getMyItemRequests,
+  getMyVerificationDocuments,
+  getMyRequestVerificationDetails,
   createItemRequestDraft,
   updateItemRequestDraft,
   submitItemRequestDraft,
@@ -28,6 +31,7 @@ import {
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
+import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -91,14 +95,14 @@ const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: strin
     { type: "AADHAAR_BACK", label: "Aadhaar Card — Back" },
     { type: "SELFIE_WITH_ID", label: "Selfie holding your Aadhaar" },
     { type: "PROOF_OF_NEED", label: "Proof of need (school/hospital/doctor letter)" },
-    { type: "BPL_CARD", label: "BPL card or income certificate" },
+    { type: "BPL_CARD", label: "BPL card" },
   ],
   TIER_3_HIGH_VALUE: [
     { type: "AADHAAR_FRONT", label: "Aadhaar Card — Front" },
     { type: "AADHAAR_BACK", label: "Aadhaar Card — Back" },
     { type: "SELFIE_WITH_ID", label: "Selfie holding your Aadhaar" },
     { type: "PROOF_OF_NEED", label: "Primary proof of need (hospital discharge / prescription)" },
-    { type: "BPL_CARD", label: "BPL card or income certificate" },
+    { type: "BPL_CARD", label: "BPL card" },
     { type: "REFERENCE_LETTER", label: "Third-party reference letter (NGO/Sarpanch/social worker)" },
     { type: "SITUATION_PHOTO", label: "Situation photo (home/patient/damage)" },
   ],
@@ -124,6 +128,19 @@ const STEPS = [
   { id: 3, label: "Verification Documents", sub: "Required for admin verification" },
   { id: 4, label: "Declarations", sub: "Final confirmation" },
 ];
+
+// Fix & Resubmit: guess which wizard step the rejection reason points at, so the
+// donee lands directly on what needs fixing instead of walking through prefilled
+// steps. Keyword heuristic over the admin's free-text reason (incl. AI drafts,
+// which quote the failed checklist items). Order matters: document terms first
+// ("situation photos", "reference letter" are documents), then people/story
+// terms (step 2), else the need details themselves (step 1).
+function stepForRejection(reason: string): number {
+  const r = reason.toLowerCase();
+  if (/aadhaar|selfie|photo|document|upload|bpl|proof|letter|blurry|unclear|unreadable|id card/.test(r)) return 3;
+  if (/contact|referr|doctor|hospital|story|income|household|family|dependent|alternate|situation|age|housing/.test(r)) return 2;
+  return 1;
+}
 
 // ── Field wrapper ─────────────────────────────────────────────────────────────
 function Field({ label, required, hint, error, children }: { label: string; required?: boolean; hint?: string; error?: string; children: React.ReactNode }) {
@@ -163,8 +180,19 @@ function DocSlot({
 }
 
 export default function NewRequestPage() {
+  // useSearchParams (for ?draftId= resume) requires a Suspense boundary in App Router
+  return (
+    <Suspense fallback={null}>
+      <NewRequestForm />
+    </Suspense>
+  );
+}
+
+function NewRequestForm() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resumeDraftId = searchParams.get("draftId");
 
   const [step, setStep] = useState(1);
   const [draftId, setDraftId] = useState<number | null>(null);
@@ -192,7 +220,7 @@ export default function NewRequestPage() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsBlocked, setGpsBlocked] = useState(false);
-  const { countries: countryOptions, states: stateOptions, cities: cityOptions } = useLocations(countryIso, stateIso);
+  const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
   const showCityFreeText = noStateOptions || noCityOptions || forceFreeTextCity;
@@ -205,15 +233,94 @@ export default function NewRequestPage() {
     setVerification((v) => ({ ...v, [key]: value }));
   }
 
+  // Reference contact — dial-code select + per-country digit limit, plus a
+  // self-reference guard against the donee's own saved phone (the backend
+  // flags SELF_REFERENCE on exact match with donee.phone, so we store the
+  // same `+<dialcode><digits>` format registration uses).
+  const [userPhone, setUserPhone] = useState("");
+  const [refDialCountry, setRefDialCountry] = useState("IN");
+  const [refPhone, setRefPhone] = useState("");
+  const refMaxLength = PHONE_LENGTHS[refDialCountry] ?? 15;
+  const refDialCode = getDialCode(refDialCountry, dialCodeOptions);
+
+  const digitsOnly = (s: string) => s.replace(/\D/g, "");
+  const isSelfReference =
+    refPhone.length >= 7 && userPhone !== "" &&
+    (digitsOnly(userPhone) === digitsOnly(refDialCode + refPhone) ||
+      digitsOnly(userPhone).endsWith(refPhone));
+  const refComplete = refPhone.length === (PHONE_LENGTHS[refDialCountry] ?? -1);
+  const refLiveError = isSelfReference
+    ? "Reference number cannot be your own phone number — give an independent reference"
+    : "";
+
+  // Keep verification.referrerContact in sync in full international format
+  useEffect(() => {
+    setVerification((v) => ({ ...v, referrerContact: refPhone ? `${refDialCode}${refPhone}` : "" }));
+  }, [refPhone, refDialCode]);
+
+  // Default the reference dial country to the GPS-detected country (until the user types)
+  useEffect(() => {
+    if (countryIso && refPhone === "") setRefDialCountry(countryIso);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryIso]);
+
   // Step 3 — Aadhaar + documents
   const [aadhaarNumber, setAadhaarNumber] = useState("");
   const [aadhaarSaved, setAadhaarSaved] = useState(false);
+  // Last 4 of the Aadhaar already on file (from profile) — full number never leaves the server
+  const [aadhaarLast4, setAadhaarLast4] = useState<string | null>(null);
   const [savingAadhaar, setSavingAadhaar] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<Set<VerificationDocumentType>>(new Set());
   const [uploadingDoc, setUploadingDoc] = useState<VerificationDocumentType | null>(null);
 
   // Step 4
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
+
+  // Fix & Resubmit: the old rejection reason, shown as guidance while editing
+  const [rejectionNote, setRejectionNote] = useState<string | null>(null);
+
+  // Resume an existing draft (?draftId=N) — used by "Fix & Resubmit" on rejected
+  // requests, which reopens them as drafts. Prefills need details and marks the
+  // still-attached documents as uploaded so the donee only redoes what's needed.
+  useEffect(() => {
+    if (!resumeDraftId || !user) return;
+    const idNum = Number(resumeDraftId);
+    if (!Number.isFinite(idNum)) return;
+    getMyItemRequests()
+      .then((list) => {
+        const r = list.find((x) => x.id === idNum);
+        if (!r || r.status !== "DRAFT") return;
+        setDraftId(idNum);
+        if (r.title && r.title !== "Draft") setTitle(r.title);
+        if (r.category) setCategory(r.category);
+        if (r.quantity) setQuantity(r.quantity);
+        if (r.urgency) setUrgency(r.urgency);
+        if (r.description) setDescription(r.description);
+        if (r.pincode) setPincode(r.pincode);
+        setIsEmergency(r.isEmergency);
+        if (r.emergencyNature) setEmergencyNature(r.emergencyNature);
+        if (r.rejectionReason) {
+          setRejectionNote(r.rejectionReason);
+          // Jump straight to the step the rejection points at — everything else
+          // is prefilled and already saved server-side; Back still works.
+          setStep(stepForRejection(r.rejectionReason));
+        }
+        getMyVerificationDocuments(idNum)
+          .then((docs) => setUploadedDocs(new Set(docs.map((d) => d.docType))))
+          .catch(() => {});
+        // Prefill step 2 (household & situation) with the previously saved answers
+        getMyRequestVerificationDetails(idNum)
+          .then((v) => {
+            if (!v) return;
+            const filled = Object.fromEntries(
+              Object.entries(v).filter(([, value]) => value !== null && value !== undefined)
+            ) as Partial<RequestVerification>;
+            setVerification((prev) => ({ ...prev, ...filled }));
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
+  }, [resumeDraftId, user]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -223,6 +330,12 @@ export default function NewRequestPage() {
         if (p.role !== "DONEE" && p.role !== "ADMIN") {
           toast.error("Access denied. Only Beneficiaries (Donees) can post needs.");
           router.push("/dashboard");
+        }
+        setUserPhone(p.phone ?? "");
+        // Aadhaar saved on a previous request — reflect it instead of asking again
+        if (p.aadhaarLast4) {
+          setAadhaarLast4(p.aadhaarLast4);
+          setAadhaarSaved(true);
         }
       })
       .catch(() => {});
@@ -249,11 +362,19 @@ export default function NewRequestPage() {
             const cc = addr.country_code?.toUpperCase();
             if (cc) {
               setCountryIso(cc);
-              const { stateIso: sIso, cityValue: cVal } = await resolveLocationFromGPS(cc, addr.state, addr.city || addr.town || addr.village);
+              // Nominatim reports smaller places under town/village/suburb, not city
+              // (e.g. Virar is a town) — use the same fallback chain everywhere.
+              const cityName = addr.city || addr.town || addr.village || addr.suburb || "";
+              const { stateIso: sIso, cityValue: cVal } = await resolveLocationFromGPS(cc, addr.state, cityName);
               if (sIso) {
                 setStateIso(sIso);
                 if (cVal) { setCityValue(cVal); setCityFreeText(""); setForceFreeTextCity(false); }
-                else { setCityValue(""); setCityFreeText(addr.city || ""); setForceFreeTextCity(true); }
+                else { setCityValue(""); setCityFreeText(cityName); setForceFreeTextCity(true); }
+              } else if (cityName) {
+                setStateIso("");
+                setCityValue("");
+                setCityFreeText(cityName);
+                setForceFreeTextCity(true);
               }
               if (addr.postcode) setPincode(addr.postcode.replace(/\s/g, ""));
             }
@@ -307,6 +428,12 @@ export default function NewRequestPage() {
       if (!gpsCoords) e.gps = "GPS location is required";
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
+    if (s === 2 && tier === "TIER_3_HIGH_VALUE" && refPhone.length > 0) {
+      if (PHONE_LENGTHS[refDialCountry] && refPhone.length !== PHONE_LENGTHS[refDialCountry])
+        e.referrerContact = `Reference number must be exactly ${PHONE_LENGTHS[refDialCountry]} digits for ${refDialCode || refDialCountry}`;
+      else if (isSelfReference)
+        e.referrerContact = "Reference number cannot be your own phone number — give an independent reference";
+    }
     if (s === 3) {
       // Tier 4 (Emergency) doesn't collect Aadhaar at all — the field isn't even
       // rendered for it (relaxed ID requirements), so don't block on it here.
@@ -352,6 +479,8 @@ export default function NewRequestPage() {
     setSavingAadhaar(true);
     try {
       await updateAadhaar(aadhaarNumber);
+      setAadhaarLast4(aadhaarNumber.slice(-4));
+      setAadhaarNumber("");
       setAadhaarSaved(true);
       toast.success("Aadhaar number saved securely");
     } catch (e) {
@@ -557,10 +686,10 @@ export default function NewRequestPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-5">
-            <Field label="Household size">
+            <Field label="How many people live in your home?" hint="Count everyone — yourself, children, parents, grandparents">
               <Input type="number" min={1} value={verification.householdSize ?? ""} onChange={(e) => setV("householdSize", Number(e.target.value))} className="h-11" />
             </Field>
-            <Field label="Number of dependents">
+            <Field label="How many of them cannot earn?" hint="Children, elderly, or sick members who depend on the family. Write 0 if none">
               <Input type="number" min={0} value={verification.dependents ?? ""} onChange={(e) => setV("dependents", Number(e.target.value))} className="h-11" />
             </Field>
           </div>
@@ -615,8 +744,40 @@ export default function NewRequestPage() {
                 <Field label="Reference person name" hint="Doctor / NGO worker / social worker who wrote your reference letter">
                   <Input value={verification.referrerName ?? ""} onChange={(e) => setV("referrerName", e.target.value)} className="h-11" />
                 </Field>
-                <Field label="Reference contact number">
-                  <Input value={verification.referrerContact ?? ""} onChange={(e) => setV("referrerContact", e.target.value)} className="h-11" />
+                <Field
+                  label="Reference contact number"
+                  error={fieldErrors.referrerContact || refLiveError}
+                  hint={refComplete && !isSelfReference ? undefined : `${PHONE_LENGTHS[refDialCountry] ?? "Up to 15"} digits for ${refDialCode || refDialCountry}`}
+                >
+                  <div className="flex gap-2">
+                    <div className="w-[104px] shrink-0">
+                      <SearchableSelect
+                        options={dialCodeOptions}
+                        value={refDialCountry}
+                        onChange={(iso) => {
+                          setRefDialCountry(iso);
+                          const max = PHONE_LENGTHS[iso] ?? 15;
+                          setRefPhone((p) => p.slice(0, max));
+                        }}
+                        placeholder="+–"
+                        searchPlaceholder="Search country"
+                        renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
+                      />
+                    </div>
+                    <div className="relative flex-1">
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        value={refPhone}
+                        maxLength={refMaxLength}
+                        onChange={(e) => setRefPhone(digitsOnly(e.target.value).slice(0, refMaxLength))}
+                        className={`h-11 pr-9 ${refLiveError ? "border-red-500 focus-visible:ring-red-500/30" : ""}`}
+                      />
+                      {refComplete && !isSelfReference && (
+                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500 pointer-events-none" />
+                      )}
+                    </div>
+                  </div>
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-5">
@@ -651,14 +812,41 @@ export default function NewRequestPage() {
       </div>
 
       {tier !== "TIER_4_EMERGENCY" && (
-        <Field label="Aadhaar Number" required error={fieldErrors.aadhaar} hint="12 digits, no spaces">
+        <Field
+          label="Aadhaar Number"
+          required
+          error={fieldErrors.aadhaar}
+          hint={aadhaarSaved ? "Already on file from your account — no need to re-enter" : "12 digits, no spaces"}
+        >
           <div className="flex gap-2">
-            <Input value={aadhaarNumber} onChange={(e) => { setAadhaarNumber(e.target.value.replace(/\D/g, "").slice(0, 12)); setAadhaarSaved(false); }}
-              placeholder="123456789012" maxLength={12} className="h-11 flex-1" disabled={aadhaarSaved} />
-            <button type="button" onClick={handleSaveAadhaar} disabled={savingAadhaar || aadhaarSaved || aadhaarNumber.length !== 12}
-              className="h-11 px-4 rounded-lg border border-[#b04a15]/40 text-[#b04a15] text-sm font-bold hover:bg-[#b04a15]/5 disabled:opacity-50 transition-colors shrink-0">
-              {savingAadhaar ? <Loader2 className="w-4 h-4 animate-spin" /> : aadhaarSaved ? <CheckCircle2 className="w-4 h-4" /> : "Save"}
-            </button>
+            <Input
+              value={aadhaarSaved && aadhaarLast4 ? `XXXX XXXX ${aadhaarLast4}` : aadhaarNumber}
+              onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, "").slice(0, 12))}
+              placeholder="123456789012" maxLength={14} className="h-11 flex-1" disabled={aadhaarSaved} />
+            {aadhaarSaved ? (
+              <>
+                <span className="h-11 px-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/20 dark:border-green-700 text-green-600 dark:text-green-400 text-sm font-bold flex items-center gap-1.5 shrink-0">
+                  <CheckCircle2 className="w-4 h-4" /> Saved
+                </span>
+                <button type="button" onClick={() => { setAadhaarSaved(false); setAadhaarNumber(""); }}
+                  className="h-11 px-4 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 text-sm font-bold hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shrink-0">
+                  Change
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={handleSaveAadhaar} disabled={savingAadhaar || aadhaarNumber.length !== 12}
+                  className="h-11 px-4 rounded-lg border border-[#b04a15]/40 text-[#b04a15] text-sm font-bold hover:bg-[#b04a15]/5 disabled:opacity-50 transition-colors shrink-0">
+                  {savingAadhaar ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                </button>
+                {aadhaarLast4 && (
+                  <button type="button" onClick={() => { setAadhaarSaved(true); setAadhaarNumber(""); }}
+                    className="h-11 px-4 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 text-sm font-bold hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shrink-0">
+                    Cancel
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </Field>
       )}
@@ -810,6 +998,17 @@ export default function NewRequestPage() {
             </div>
             {saving && <span className="text-xs text-stone-400 flex items-center gap-1.5 mt-1"><Loader2 className="w-3 h-3 animate-spin text-[#b04a15]" /> Saving…</span>}
           </div>
+
+          {rejectionNote && (
+            <div className="mb-6 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-amber-800 dark:text-amber-300">You&apos;re fixing a rejected request</p>
+                <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed whitespace-pre-line">{rejectionNote}</p>
+                <p className="text-[11px] text-stone-400 mt-1.5">We&apos;ve brought you to the step that needs attention — everything else is already filled. Use Back to review other steps, then resubmit.</p>
+              </div>
+            </div>
+          )}
 
           <div className="relative mb-8 h-1.5 rounded-full bg-stone-200 dark:bg-zinc-800 overflow-hidden">
             <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
