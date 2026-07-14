@@ -6,6 +6,7 @@ import {
   getAnonymizedRequest,
   getQuantityAllocation,
   getMyDonationOffers,
+  getOfferAvailability,
   createOfferDraft,
   updateOfferItemDetails,
   uploadOfferMedia,
@@ -17,9 +18,19 @@ import {
   type OfferStatus,
   type DonorFlowType,
   type CompatibilityCheck,
+  type ApiConflictError,
 } from "@/lib/api";
 import CompatibilityIndicator from "@/components/CompatibilityIndicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/lib/toast";
 import Link from "next/link";
@@ -253,6 +264,7 @@ export default function OfferWizardPage() {
   const [error, setError] = useState<string | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
+  const [blockedByOther, setBlockedByOther] = useState(false);
   const compatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load request data and check for an existing offer
@@ -265,7 +277,12 @@ export default function OfferWizardPage() {
       .then((offers) => {
         const found = offers.find((o) => o.requestId === requestId &&
           !["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(o.status));
-        if (!found) return;
+        if (!found) {
+          // No offer of our own yet — check whether another donor already has one
+          // actively in progress on this request before letting the donor start.
+          getOfferAvailability(requestId).then((a) => { if (a.blocked) setBlockedByOther(true); }).catch(() => {});
+          return;
+        }
         setExistingOffer(found);
         // Draft/needs-info offers are unfinished — resume straight into Step 2,
         // pre-filled, instead of re-showing the flow-type picker they already answered.
@@ -341,7 +358,11 @@ export default function OfferWizardPage() {
       setStep(2);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to create offer draft");
+      if ((e as ApiConflictError)?.code === "OFFER_BLOCKED_ACTIVE_ELSEWHERE") {
+        setBlockedByOther(true);
+      } else {
+        setError(e instanceof Error ? e.message : "Failed to create offer draft");
+      }
     } finally {
       setLoading(false);
     }
@@ -479,6 +500,24 @@ export default function OfferWizardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+      <AlertDialog open={blockedByOther} onOpenChange={setBlockedByOther}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Matching already in progress</AlertDialogTitle>
+            <AlertDialogDescription>
+              Another donor&apos;s offer is already being processed for this request, so you can&apos;t
+              offer right now. If that donation doesn&apos;t go through, we&apos;ll notify you so you
+              can come back and donate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => router.push("/requests")}>
+              Back to Requests
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className={`mx-auto px-4 pt-8 ${step === 1 ? "max-w-5xl" : step === 2 ? "max-w-4xl" : "max-w-2xl"}`}>
         {/* Progress */}
         <div className="mb-6 flex flex-col items-center gap-2">
@@ -619,7 +658,7 @@ export default function OfferWizardPage() {
                       <Tilt3DCard
                         key={type}
                         onClick={() => handleFlowSelect(type)}
-                        disabled={loading}
+                        disabled={loading || blockedByOther}
                         style={{ animationDelay: `${i * 100}ms`, animationFillMode: "backwards" }}
                         className="group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900"
                       >
