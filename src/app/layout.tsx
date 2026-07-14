@@ -13,6 +13,7 @@ import { Toaster } from "sonner";
 import { LocationGate } from "@/components/LocationGate";
 import { CookieConsent } from "@/components/CookieConsent";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
+import TourController from "@/components/tour/TourController";
 import { DonorListingPrompt } from "@/components/DonorListingPrompt";
 import { DoneeRequestPrompt } from "@/components/DoneeRequestPrompt";
 import { DoneeListingPrompt } from "@/components/DoneeListingPrompt";
@@ -106,6 +107,7 @@ export default async function RootLayout({
                 <LocationGate />
                 <CookieConsent />
                 <WelcomeOverlay />
+                <TourController />
                 <DonorCategoryModal />
                 <DoneeListingPrompt />
                 <DonorListingPrompt />

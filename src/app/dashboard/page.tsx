@@ -879,7 +879,7 @@ function DoneeDashboard({
                   : "Post your first need and we'll find a verified donor near you."}
               </p>
             </motion.div>
-            <Link href="/requests/new">
+            <Link href="/requests/new" data-tour="primary-cta">
               <Button className="bg-[#f0b97a] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-2xl px-6 py-3 h-auto text-sm flex items-center gap-2 shadow-xl shadow-[#f0b97a]/20 shrink-0">
                 <Plus className="w-4 h-4" /> Post a Need
               </Button>
@@ -887,7 +887,7 @@ function DoneeDashboard({
           </div>
 
           {/* Impact ledger — live numbers over hairline rules, no stat cards */}
-          <div className="mt-10 grid grid-cols-3 border-t border-white/10">
+          <div data-tour="ledger" className="mt-10 grid grid-cols-3 border-t border-white/10">
             {[
               { n: itemRequests.length,      label: "needs posted"   },
               { n: activeMatches.length,     label: "active matches" },
@@ -1178,7 +1178,7 @@ function DoneeDashboard({
         <div className="space-y-12">
 
           {/* Your requests — each one drawn as a journey down the pipeline */}
-          <section>
+          <section data-tour="requests-list">
             <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
@@ -1210,7 +1210,7 @@ function DoneeDashboard({
           </section>
 
           {/* Matches */}
-          <section>
+          <section data-tour="matches">
             <div className="border-b-2 border-[#b04a15]/60 pb-3">
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b04a15]">Matches</p>
               <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
@@ -1523,7 +1523,7 @@ export default function DashboardPage() {
                 </div>
               )}
               {(myProfile?.role === "DONOR" || myProfile?.role === "ADMIN") && (
-                <Link href="/items/new">
+                <Link href="/items/new" data-tour="primary-cta">
                   <Button className="bg-[#b04a15] hover:bg-[#943e11] text-white font-bold rounded-xl px-5 py-2.5 h-auto btn-shine flex items-center gap-1.5 text-sm">
                     <Plus className="w-4 h-4" /> List Item Privately
                   </Button>
@@ -1540,7 +1540,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Giving ledger — live numbers over hairline rules, no stat cards */}
-          <div className="mt-10 grid grid-cols-3 border-t border-white/10">
+          <div data-tour="ledger" className="mt-10 grid grid-cols-3 border-t border-white/10">
             {[
               { n: itemListings.length, label: "items listed" },
               { n: donorMatches.filter(m => !["FULFILLED", "COMPLETED", "CANCELLED", "REJECTED", "FAILED", "DONOR_REJECTED"].includes(m.status)).length, label: "active matches" },
@@ -1587,7 +1587,7 @@ export default function DashboardPage() {
                 
                 {/* Donor Flow 2 — Offer Tracker */}
                 {donationOffers.length > 0 && (
-                  <section>
+                  <section data-tour="offers">
                     <div className="border-b-2 border-[#f0b97a]/70 pb-3 mb-5">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b04a15] dark:text-[#f0b97a]">Your Offers</p>
                       <p className="text-xs text-stone-400 mt-1">Items you offered directly against someone&apos;s request.</p>
@@ -1723,7 +1723,7 @@ export default function DashboardPage() {
                   </section>
 
                   {/* Donor Matches */}
-                  <section>
+                  <section data-tour="matches">
                     <div className="border-b-2 border-emerald-500/60 pb-3">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-400">Match Opportunities</p>
                       <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>

@@ -57,7 +57,42 @@ export default function CertificatePage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 print:bg-transparent print:p-0">
+    <div id="certificate-page-root" className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 print:bg-transparent print:p-0">
+      {/* Print isolation: hide EVERYTHING (site chrome from the root layout included)
+          except the certificate, and let it fill the printed page. The certificate's
+          1414:1000 aspect ratio is A4 landscape, so it maps edge to edge. */}
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 0; }
+          body * { visibility: hidden; }
+          #certificate-print-area, #certificate-print-area * { visibility: visible; }
+          /* Kill every source of document height so only ONE page box exists:
+             the page wrapper's min-h-screen alone spans a full sheet even when
+             invisible, and the root layout's chrome adds more below it. */
+          html, body { height: auto !important; }
+          nav, header, footer, [data-sonner-toaster] { display: none !important; }
+          #certificate-page-root {
+            min-height: 0 !important;
+            height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+          }
+          /* absolute, NOT fixed — print treats fixed elements as running
+             decorations and repeats them on every page. */
+          #certificate-print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            max-width: none !important;
+            margin: 0 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          #certificate-print-area > div { box-shadow: none !important; }
+        }
+      `}</style>
       {/* Nav — hidden on print */}
       <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between print:hidden">
         <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
@@ -74,6 +109,7 @@ export default function CertificatePage() {
       {/* Certificate — landscape A4 */}
       <div
         ref={printRef}
+        id="certificate-print-area"
         className="mx-auto"
         style={{
           width: "100%",
