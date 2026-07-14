@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
@@ -12,11 +13,13 @@ import {
   getMyDonations,
   getMyCampaigns,
   getMyItemRequests,
+  getMyItemListings,
   getMyMatches,
   type UserProfile,
   type Donation,
   type Campaign,
   type ItemRequest,
+  type ItemListing,
   type ItemMatch,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -148,9 +151,10 @@ export default function ProfilePage() {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
-  // In-kind / requests
+  // In-kind / requests / matches (full lists — the chronicle is built from them)
   const [myRequests, setMyRequests] = useState<ItemRequest[]>([]);
-  const [inKindCount, setInKindCount] = useState(0);
+  const [myListings, setMyListings] = useState<ItemListing[]>([]);
+  const [myMatches, setMyMatches] = useState<ItemMatch[]>([]);
 
   // Settings panel toggle
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -187,16 +191,18 @@ export default function ProfilePage() {
       getMyDonations().catch((): Donation[] => []),
       getMyCampaigns().catch((): Campaign[] => []),
       getMyItemRequests().catch((): ItemRequest[] => []),
+      getMyItemListings({ silent401: true }).catch((): ItemListing[] => []),
       getMyMatches().catch((): ItemMatch[] => []),
       getDialCodes(),
     ])
-      .then(([detectedCountry, p, d, c, req, matches, serverDialCodes]) => {
+      .then(([detectedCountry, p, d, c, req, listings, matches, serverDialCodes]) => {
         setProfile(p);
         setFullName(p.fullName);
         setDonations(d);
         setCampaigns(c);
         setMyRequests(req);
-        setInKindCount(matches.length);
+        setMyListings(listings);
+        setMyMatches(matches);
 
         // Parse phone: if stored with dial code prefix "+XX …" split it out
         if (p.phone) {
@@ -429,263 +435,214 @@ export default function ProfilePage() {
   if (!user) return null;
 
   const initials = getInitials(fullName || profile?.fullName || user.email);
+  const isDonee = (profile?.role ?? "").toUpperCase() === "DONEE";
 
   const completedDonations = donations.filter((d) => d.status === "COMPLETED");
-  const totalGiven = completedDonations.reduce((sum, d) => sum + Number(d.amount), 0);
   const campaignsSupported = new Set(completedDonations.map((d) => d.campaignId)).size;
+  void campaigns;
 
-  // Derive supported campaigns list (deduplicated by campaignId)
-  const campaignMap = new Map<number, { id: number; title: string; amount: number }>();
-  completedDonations.forEach((d) => {
-    const existing = campaignMap.get(d.campaignId);
-    if (existing) existing.amount += Number(d.amount);
-    else campaignMap.set(d.campaignId, { id: d.campaignId, title: d.campaignTitle, amount: Number(d.amount) });
-  });
-  const supportedCampaigns = Array.from(campaignMap.values());
+  const fulfilledCount = myRequests.filter((r) => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status)).length;
 
-  // Badge eligibility
-  const hasFirstGiver = FEATURES.money ? completedDonations.length > 0 : inKindCount > 0;
-  const hasCommunityHero = FEATURES.money ? campaignsSupported >= 3 : inKindCount >= 3;
-  const hasEducationAdvocate = FEATURES.money
-    ? completedDonations.some((d) => d.campaignTitle?.toLowerCase().includes("education"))
-    : myRequests.some((r) => r.category?.toLowerCase().includes("education"));
+  // Role-aware milestones: a donee never "gives", a donor never "requests"
+  const milestones = isDonee
+    ? [
+        { label: "First Need",     desc: "Posted your first request",  icon: Package,      earned: myRequests.length > 0 },
+        { label: "First Match",    desc: "Matched with a donor",       icon: Handshake,    earned: myMatches.length > 0 },
+        { label: "Need Fulfilled", desc: "Received an item",           icon: CheckCircle2, earned: fulfilledCount > 0 },
+      ]
+    : [
+        { label: "First Listing",      desc: "Listed your first item",     icon: Package,      earned: myListings.length > 0 },
+        { label: "First Match",        desc: "An item found its person",   icon: Handshake,    earned: myMatches.length > 0 || (FEATURES.money && completedDonations.length > 0) },
+        { label: "Donation Completed", desc: "Delivered a donation",       icon: CheckCircle2, earned: myMatches.some((m) => ["FULFILLED", "COMPLETED"].includes(m.status)) || myListings.some((l) => ["DONATED", "FULFILLED", "PARTIALLY_DONATED"].includes(l.status)) },
+      ];
 
-  const badges = [
-    { label: "First Giver", icon: Heart, earned: hasFirstGiver },
-    { label: "Community Hero", icon: Sparkles, earned: hasCommunityHero },
-    { label: "Education Advocate", icon: Star, earned: hasEducationAdvocate },
-  ];
+  const ledger = isDonee
+    ? [
+        { n: myRequests.length, label: "needs posted"   },
+        { n: myMatches.length,  label: "matches made"   },
+        { n: fulfilledCount,    label: "needs received" },
+      ]
+    : [
+        { n: myListings.length, label: "items listed" },
+        { n: myMatches.filter((m) => !["FULFILLED", "COMPLETED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)).length, label: "active matches" },
+        { n: myMatches.filter((m) => ["FULFILLED", "COMPLETED"].includes(m.status)).length, label: "donations completed" },
+      ];
+
+  // The chronicle: real events only, newest first
+  const humanize = (v: string) => v.replace(/_/g, " ").toLowerCase();
+  const story = [
+    ...myListings.map((l) => ({
+      at: new Date(l.submittedAt ?? l.createdAt).getTime(),
+      title: `Listed "${l.title}"`,
+      detail: `${l.category ?? "item"} - now ${humanize(l.status)}`,
+      broken: ["REJECTED", "WITHDRAWN", "EXPIRED"].includes(l.status),
+      done: ["DONATED", "FULFILLED", "PARTIALLY_DONATED"].includes(l.status),
+    })),
+    ...myRequests.map((r) => ({
+      at: new Date(r.createdAt).getTime(),
+      title: `Posted "${r.title}"`,
+      detail: `${r.category} - now ${humanize(r.status)}`,
+      broken: ["REJECTED", "EXPIRED"].includes(r.status),
+      done: ["FULFILLED", "FULLY_FULFILLED"].includes(r.status),
+    })),
+    ...myMatches.map((m) => ({
+      at: new Date(m.createdAt).getTime(),
+      title: isDonee
+        ? `Matched with a donor for "${m.requestTitle ?? m.listingTitle ?? "your request"}"`
+        : `Your item matched: "${m.listingTitle ?? m.requestTitle ?? "an item"}"`,
+      detail: `now ${humanize(m.status)}`,
+      broken: ["REJECTED", "CANCELLED", "FAILED"].includes(m.status),
+      done: ["FULFILLED", "COMPLETED"].includes(m.status),
+    })),
+    ...(FEATURES.money
+      ? completedDonations.map((d) => ({
+          at: new Date(d.createdAt).getTime(),
+          title: `Donated ${formatINR(Number(d.amount))} to "${d.campaignTitle}"`,
+          detail: "completed",
+          broken: false,
+          done: true,
+        }))
+      : []),
+  ].sort((a, b) => b.at - a.at).slice(0, 12);
+
+  const fmtDate = (at: number) =>
+    new Date(at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   return (
-    <div className="bg-[#F7F0E8] min-h-screen pb-28 pt-8">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        
-        {/* Main Grid: Asymmetric 1fr / 3fr Split */}
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
-          
-          {/* LEFT: Sticky User Card */}
-          <aside className="lg:sticky lg:top-24 bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 space-y-6 relative overflow-hidden">
-            {/* Left accent stripe */}
-            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#C17A3A]" />
-            
-            {/* Avatar & Initials */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-[#C17A3A] flex items-center justify-center overflow-hidden shadow-md">
-                {avatarDataUrl ? (
-                  <Image
-                    src={avatarDataUrl}
-                    alt={initials}
-                    width={80}
-                    height={80}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-white font-bold text-2xl">{initials}</span>
-                )}
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-stone-900 dark:text-white leading-tight">
-                  {fullName || profile?.fullName}
-                </h2>
-                <p className="text-xs text-[#b04a15] font-black uppercase tracking-wider mt-1">
-                  {profile?.role ?? "DONOR"}
-                </p>
-              </div>
-            </div>
+    <div className="bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen pb-28">
 
-            <div className="border-t border-stone-100 dark:border-zinc-800 pt-4 space-y-3">
-              <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
-                <Mail className="w-3.5 h-3.5 text-[#C17A3A]" />
-                <span className="truncate">{profile?.email}</span>
-              </div>
-              {profile?.phone && (
-                <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
-                  <Phone className="w-3.5 h-3.5 text-[#C17A3A]" />
-                  <span>{profile.phone}</span>
-                </div>
-              )}
-              {profile?.city && (
-                <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
-                  <MapPin className="w-3.5 h-3.5 text-[#C17A3A]" />
-                  <span>{profile.city}</span>
-                </div>
-              )}
-            </div>
+      {/* Espresso header band: the member pass + name block */}
+      <div className="relative overflow-hidden text-white"
+        style={{ background: "linear-gradient(140deg, #2a1a10 0%, #40281a 52%, #241610 100%)" }}>
+        <div className="pointer-events-none absolute -top-24 right-[8%] w-[420px] h-[420px] rounded-full border border-[#C17A3A]/15" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 w-72 h-72 rounded-full border border-[#C17A3A]/10" />
+        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 75% 20%, rgba(193,122,58,0.14) 0%, transparent 55%)" }} />
 
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 pt-14 pb-2 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-10 lg:gap-16 items-center">
+          <MemberPass
+            name={fullName || profile?.fullName || user.email}
+            role={profile?.role ?? "MEMBER"}
+            city={profile?.city}
+            avatarDataUrl={avatarDataUrl}
+            initials={initials}
+          />
+
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }} className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#C17A3A]">CauseKind member</p>
+            <h1 className="mt-2 text-4xl sm:text-5xl leading-[1.05] break-words"
+              style={{ fontFamily: "var(--font-lora), serif", fontStyle: "italic", fontWeight: 600 }}>
+              {fullName || profile?.fullName}
+            </h1>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-white/55">
+              <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-[#C17A3A]" />{profile?.email}</span>
+              {profile?.phone && <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-[#C17A3A]" />{profile.phone}</span>}
+              {profile?.city && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#C17A3A]" />{profile.city}</span>}
+            </div>
             <button
               onClick={() => setSettingsOpen((v) => !v)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/15 text-[#C17A3A] text-xs font-bold rounded-xl transition-all"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#C17A3A]/40 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/20 px-4 py-2.5 text-xs font-bold text-[#e8b98a] transition-colors"
             >
-              <span>{settingsOpen ? "Close Settings" : "Account Settings"}</span>
+              {settingsOpen ? "Close account settings" : "Edit account details"}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${settingsOpen ? "rotate-180" : ""}`} />
             </button>
-          </aside>
+          </motion.div>
+        </div>
 
-          {/* RIGHT: Main content */}
-          <div className="space-y-8">
-            
-            {/* Page Title */}
-            <div className="flex items-baseline justify-between gap-4">
-              <h1 className="text-3xl font-black text-stone-900 dark:text-white tracking-tight">
-                {t("myImpact")}
-              </h1>
+        {/* Live ledger: hairline strip inside the band */}
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mt-10 grid grid-cols-3 border-t border-white/10">
+            {ledger.map((stat, i) => (
+              <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
+                className={`py-6 ${i > 0 ? "border-l border-white/10 pl-5 sm:pl-8" : ""}`}>
+                <p className="text-4xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
+                <p className="text-[10px] uppercase tracking-[0.22em] text-white/40 mt-2">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-12 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12 items-start">
+
+        {/* Your story: a chronicle of real events */}
+        <section>
+          <div className="border-b-2 border-[#C17A3A]/60 pb-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8B4513] dark:text-[#C17A3A]">Your story</p>
+            <p className="text-xs text-stone-400 mt-1">Everything that has happened on your CauseKind journey, newest first.</p>
+          </div>
+
+          {story.length === 0 ? (
+            <div className="py-14 text-center space-y-3">
+              <div className="w-14 h-14 bg-[#C17A3A]/10 rounded-2xl flex items-center justify-center mx-auto">
+                <BookOpen className="w-6 h-6 text-[#C17A3A]" />
+              </div>
+              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Your story starts here</p>
+              <p className="text-xs text-stone-400 max-w-[260px] mx-auto">
+                {isDonee ? "Post your first need and this page will chronicle every step of it." : "List your first item and this page will chronicle every donation."}
+              </p>
+              <Link href={isDonee ? "/requests/new" : "/items/new"} className="inline-block">
+                <Button size="sm" className="bg-[#C17A3A] hover:bg-[#a8642e] text-white mt-2">
+                  {isDonee ? "Post a need" : "List an item"}
+                </Button>
+              </Link>
             </div>
+          ) : (
+            <ol className="relative mt-2 border-l-2 border-[#C17A3A]/25 dark:border-[#C17A3A]/30 ml-2">
+              {story.map((ev, i) => (
+                <motion.li key={`${ev.title}-${ev.at}`}
+                  initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.08 * i }}
+                  className="relative pl-8 py-4 group">
+                  <span className={`absolute -left-[9px] top-5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    ev.broken ? "bg-red-500 border-red-500" : ev.done ? "bg-emerald-500 border-emerald-500" : "bg-[#F7F0E8] dark:bg-zinc-950 border-[#C17A3A]"}`}>
+                    {(ev.done || ev.broken) && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </span>
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <p className="text-[15px] font-bold text-stone-900 dark:text-stone-100 leading-snug group-hover:text-[#8B4513] dark:group-hover:text-[#C17A3A] transition-colors"
+                      style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+                      {ev.title}
+                    </p>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 shrink-0">{fmtDate(ev.at)}</span>
+                  </div>
+                  <p className={`text-xs mt-0.5 capitalize ${ev.broken ? "text-red-500" : ev.done ? "text-emerald-600" : "text-stone-400"}`}>{ev.detail}</p>
+                </motion.li>
+              ))}
+            </ol>
+          )}
+        </section>
 
-            {/* ── Hero Impact Card ── */}
-            <div className="rounded-3xl overflow-hidden shadow-sm">
-              <div className="bg-gradient-to-br from-[#C17A3A] to-[#8B4513] p-8 text-white relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full border border-white/10 pointer-events-none" />
-                <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full border border-white/8 pointer-events-none" />
-
-                <div className="relative z-10 flex flex-col sm:flex-row justify-between sm:items-center gap-6">
-                  {FEATURES.money ? (
-                    <>
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-widest opacity-80">{t("totalImpact")}</p>
-                        <p className="text-5xl font-black leading-none mt-2 tracking-tight">{formatINR(totalGiven)}</p>
-                        <p className="text-xs opacity-75 mt-1">{t("donated")}</p>
-                      </div>
-
-                      <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 shrink-0">
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Package className="w-5 h-5 text-white/90" strokeWidth={2} />
-                          {inKindCount > 1 && <Gift className="w-4 h-4 text-white/80" strokeWidth={2} />}
-                        </div>
-                        <div className="flex flex-col leading-none">
-                          <span className="text-3xl font-black tabular-nums tracking-tight">{inKindCount}</span>
-                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">
-                            {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
-                          </span>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-widest opacity-80">IN-KIND IMPACT</p>
-                      <p className="text-5xl font-black leading-none mt-2 tracking-tight">{inKindCount}</p>
-                      <p className="text-xs opacity-75 mt-1">
-                        {inKindCount !== 1 ? t("inKindItemsGiven") : t("inKindItemGiven")}
-                      </p>
-                    </div>
-                  )}
+        {/* Milestone stamps */}
+        <aside>
+          <div className="border-b-2 border-[#C17A3A]/60 pb-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8B4513] dark:text-[#C17A3A]">Milestones</p>
+            <p className="text-xs text-stone-400 mt-1">Earned by doing, never bought.</p>
+          </div>
+          <div className="mt-6 space-y-5">
+            {milestones.map(({ label, desc, icon: Icon, earned }, i) => (
+              <motion.div key={label}
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.15 + i * 0.12 }}
+                className="flex items-center gap-4">
+                <div className={`relative w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
+                  earned ? "bg-[#C17A3A] text-white shadow-lg shadow-[#C17A3A]/30" : "border-2 border-dashed border-stone-300 dark:border-zinc-700 text-stone-300 dark:text-zinc-600"}`}>
+                  {earned && <span className="absolute inset-[-4px] rounded-full border border-[#C17A3A]/35" />}
+                  <Icon className="w-6 h-6" />
                 </div>
-              </div>
-            </div>
-
-            {/* Badges and My Requests Row (Asymmetric cards) */}
-            <div className="grid grid-cols-1 md:grid-cols-[4fr_5fr] gap-6">
-              
-              {/* Badges Card */}
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50/50 dark:bg-zinc-850/20 rounded-bl-full pointer-events-none" />
-                <h3 className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-wider mb-5 flex items-center gap-2">
-                  <Award className="w-4 h-4 text-[#C17A3A]" /> {t("badges")}
-                </h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {badges.map(({ label, icon: Icon, earned }) => (
-                    <div
-                      key={label}
-                      className={`flex flex-col items-center transition-all ${earned ? "scale-100" : "opacity-35 scale-95"}`}
-                    >
-                      <div className="w-12 h-12 rounded-2xl bg-[#C17A3A]/10 flex items-center justify-center shadow-sm">
-                        <Icon className="w-6 h-6 text-[#C17A3A]" />
-                      </div>
-                      <p className="text-[10px] font-extrabold text-stone-600 dark:text-stone-400 text-center mt-2 leading-tight">
-                        {label}
-                      </p>
-                    </div>
-                  ))}
+                <div className="min-w-0">
+                  <p className={`text-sm font-bold ${earned ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-zinc-600"}`}>{label}</p>
+                  <p className="text-[11px] text-stone-400 dark:text-zinc-600 mt-0.5">{earned ? desc : `Locked - ${desc.toLowerCase()}`}</p>
                 </div>
-              </div>
+              </motion.div>
+            ))}
+          </div>
+        </aside>
+      </div>
 
-              {/* My Requests Card */}
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 relative">
-                <h3 className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-wider mb-5 flex items-center gap-2">
-                  <Package className="w-4 h-4 text-[#C17A3A]" /> {t("myRequests")}
-                </h3>
-                {myRequests.length === 0 ? (
-                  <p className="text-xs text-stone-400 dark:text-stone-505 py-4 font-medium">{t("noRequestsYet")}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {myRequests.slice(0, 3).map((req) => (
-                      <div key={req.id} className="flex items-center gap-3 py-1.5 border-b border-stone-50 dark:border-zinc-800 last:border-0">
-                        <div className="w-9 h-9 rounded-xl overflow-hidden bg-stone-50 dark:bg-zinc-800 shrink-0 flex items-center justify-center relative">
-                          {req.imageUrl ? (
-                            <Image
-                              src={req.imageUrl}
-                              alt={req.title}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : (
-                            <Package className="w-5 h-5 text-stone-400" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold truncate text-stone-900 dark:text-stone-100">{req.title}</p>
-                          <p className="text-[10px] text-stone-400 truncate mt-0.5">{req.city} · Qty: {req.quantity}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-            </div>
-
-            {/* Deduplicated Supported Campaigns */}
-            {FEATURES.money && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t("supportedCampaigns")}</h3>
-                {supportedCampaigns.length === 0 ? (
-                  <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-stone-100 dark:border-zinc-800 text-center">
-                    <p className="text-sm text-stone-400 dark:text-stone-500 font-medium">{t("noCampaignsSupported")}</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {supportedCampaigns.map((item) => {
-                      const campaignImage =
-                        campaigns.find((c) => c.id === item.id)?.imageUrl || "/images/hero-1.webp";
-                      return (
-                        <div
-                          key={item.id}
-                          className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm overflow-hidden border border-stone-100 dark:border-zinc-800 hover:shadow-md transition-shadow"
-                        >
-                          <div className="h-28 w-full relative">
-                            <Image
-                              src={campaignImage}
-                              alt={item.title}
-                              fill
-                              className="object-cover"
-                              onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = "/images/hero-1.webp";
-                              }}
-                            />
-                          </div>
-                          <div className="p-4">
-                            <p className="text-xs font-bold truncate text-stone-900 dark:text-stone-100">{item.title}</p>
-                            <p className="text-[10px] text-stone-405 mt-0.5">{t("campaignLabel")}</p>
-                            <p className="text-xs font-black text-[#C17A3A] mt-2">{formatINR(item.amount)}</p>
-                            <Link href={`/campaigns/${item.id}`} className="block mt-3">
-                              <button className="w-full py-2 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/15 text-[#C17A3A] text-xs rounded-xl font-bold transition-all">
-                                {t("donateNow")}
-                              </button>
-                            </Link>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Account Settings Forms */}
-            {settingsOpen && (
-              <Reveal>
-                <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-stone-100 dark:border-zinc-800 space-y-6">
-                  <h3 className="text-lg font-black text-stone-900 dark:text-white tracking-tight">Account Configuration</h3>
-                  
-                  <form onSubmit={handleSave} className="space-y-5">
+      {/* Account settings: same working form, new shell */}
+      {settingsOpen && (
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-12">
+          <Reveal>
+            <div className="border-t-2 border-[#C17A3A]/60 pt-6">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8B4513] dark:text-[#C17A3A] mb-6">Account settings</p>
+              <form onSubmit={handleSave} className="space-y-5">
                     {/* Avatar Upload */}
                     <div className="flex justify-center">
                       <AvatarUpload
@@ -882,14 +839,86 @@ export default function ProfilePage() {
                       </Button>
                     </div>
                   </form>
-                </div>
-              </Reveal>
-            )}
+            </div>
+          </Reveal>
+        </div>
+      )}
+    </div>
+  );
+}
 
+/* Interactive member pass: tilts toward the cursor with a moving glare */
+function MemberPass({ name, role, city, avatarDataUrl, initials }: {
+  name: string; role: string; city: string | null | undefined;
+  avatarDataUrl: string | null; initials: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 50 });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, rotate: -2 }}
+      animate={{ opacity: 1, y: 0, rotate: 0 }}
+      transition={{ duration: 0.6 }}
+      style={{ perspective: "900px" }}
+      className="mx-auto lg:mx-0 w-full max-w-[360px]"
+    >
+      <div
+        ref={ref}
+        onMouseMove={(e) => {
+          const r = ref.current?.getBoundingClientRect();
+          if (!r) return;
+          const px = (e.clientX - r.left) / r.width;
+          const py = (e.clientY - r.top) / r.height;
+          setTilt({ rx: (0.5 - py) * 10, ry: (px - 0.5) * 12, gx: px * 100, gy: py * 100 });
+        }}
+        onMouseLeave={() => setTilt({ rx: 0, ry: 0, gx: 50, gy: 50 })}
+        className="relative rounded-2xl p-6 overflow-hidden select-none transition-transform duration-150 ease-out motion-reduce:transition-none"
+        style={{
+          transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+          transformStyle: "preserve-3d",
+          background: "linear-gradient(135deg, #C17A3A 0%, #8B4513 60%, #5e2f10 100%)",
+          boxShadow: "0 24px 60px -18px rgba(0,0,0,0.55)",
+        }}
+      >
+        {/* Cursor-following glare */}
+        <div className="pointer-events-none absolute inset-0 transition-opacity"
+          style={{ background: `radial-gradient(circle at ${tilt.gx}% ${tilt.gy}%, rgba(255,255,255,0.22) 0%, transparent 55%)` }} />
+        {/* Engraved edge line */}
+        <div className="pointer-events-none absolute inset-2 rounded-xl border border-white/15" />
+
+        <div className="relative flex items-start justify-between">
+          <div className="w-14 h-14 rounded-full overflow-hidden bg-white/15 border border-white/25 flex items-center justify-center">
+            {avatarDataUrl ? (
+              <Image src={avatarDataUrl} alt={initials} width={56} height={56} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white font-black text-xl">{initials}</span>
+            )}
+          </div>
+          <div className="text-right">
+            <p className="text-[8px] font-black uppercase tracking-[0.3em] text-white/50">CauseKind</p>
+            <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/35 mt-0.5">In-kind network</p>
           </div>
         </div>
 
+        <p className="relative mt-7 text-2xl text-white leading-tight break-words"
+          style={{ fontFamily: "var(--font-lora), serif", fontStyle: "italic", fontWeight: 600 }}>
+          {name}
+        </p>
+
+        <div className="relative mt-6 flex items-end justify-between">
+          <div>
+            <p className="text-[8px] font-black uppercase tracking-[0.25em] text-white/45">Role</p>
+            <p className="text-xs font-black uppercase tracking-wider text-white mt-0.5">{role}</p>
+          </div>
+          {city && (
+            <div className="text-right max-w-[55%]">
+              <p className="text-[8px] font-black uppercase tracking-[0.25em] text-white/45">Based in</p>
+              <p className="text-xs font-bold text-white mt-0.5 truncate">{city}</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

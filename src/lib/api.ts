@@ -629,6 +629,16 @@ export function submitItemRequestDraft(id: number) {
   return request<ItemRequest>(`/api/v1/item-requests/${id}/submit`, { method: "POST" });
 }
 
+/** Fix & Resubmit: reopen a rejected request as an editable draft (REJECTED → DRAFT). */
+export function reopenItemRequest(id: number) {
+  return request<ItemRequest>(`/api/v1/item-requests/${id}/reopen`, { method: "POST" });
+}
+
+/** Read back my saved verification form (step 2 answers); undefined if never saved (204). */
+export function getMyRequestVerificationDetails(id: number) {
+  return request<RequestVerification | undefined>(`/api/v1/item-requests/${id}/verification-details`);
+}
+
 export type RequestVerification = {
   householdSize: number | null;
   dependents: number | null;

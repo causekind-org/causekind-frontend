@@ -78,9 +78,58 @@ const NOISE_BG = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
 
-function DoneeHero({ myRequestCount }: { myRequestCount: number }) {
+// Per-category tint for the hero's floating cards (dark hero needs its own
+// light-on-dark palette — CAT_GRADIENT below is for the light category grid).
+const HERO_TINT: Record<string, { bg: string; ic: string }> = {
+  "Medical aid": { bg: "bg-sky-500/20",     ic: "text-sky-400"     },
+  "Education":   { bg: "bg-amber-500/15",   ic: "text-amber-400"   },
+  "Livelihood":  { bg: "bg-emerald-500/15", ic: "text-emerald-400" },
+  "Relief":      { bg: "bg-violet-500/15",  ic: "text-violet-400"  },
+  "Household":   { bg: "bg-rose-500/15",    ic: "text-rose-400"    },
+  "Furniture":   { bg: "bg-indigo-500/15",  ic: "text-indigo-400"  },
+  "Clothing":    { bg: "bg-teal-500/15",    ic: "text-teal-400"    },
+  "Electronics": { bg: "bg-orange-500/15",  ic: "text-orange-400"  },
+  "Sports":      { bg: "bg-cyan-500/15",    ic: "text-cyan-400"    },
+};
+
+const INACTIVE_STATUSES = ["FULFILLED", "REJECTED", "EXPIRED"];
+
+// Status pill styling for the hero's primary card (dark-surface variant of getStatusBadge)
+function heroStatusPill(status: string): { label: string; cls: string; dot: string; pulse: boolean } {
+  const label = getStatusBadge(status).label;
+  if (status === "FULFILLED")
+    return { label, cls: "bg-emerald-500/15 border-emerald-400/25 text-emerald-400", dot: "bg-emerald-400", pulse: false };
+  if (status === "REJECTED" || status === "EXPIRED")
+    return { label, cls: "bg-red-500/15 border-red-400/25 text-red-400", dot: "bg-red-400", pulse: false };
+  if (status === "PENDING_VERIFICATION")
+    return { label, cls: "bg-amber-500/15 border-amber-400/25 text-amber-400", dot: "bg-amber-400", pulse: true };
+  return { label, cls: "bg-emerald-500/15 border-emerald-400/25 text-emerald-400", dot: "bg-emerald-400", pulse: true };
+}
+
+function byNewest(a: ItemRequest, b: ItemRequest) {
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+}
+
+function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; publicRequests: ItemRequest[] }) {
   const [mouse, setMouse] = useState({ x: 50, y: 45 });
   const [active, setActive] = useState(false);
+
+  const myRequestCount = myRequests.length;
+
+  // Cards show real data: the donee's own requests first; for visitors with none,
+  // recent public requests from the community board; the static example only when
+  // the platform has nothing at all to show.
+  const source = [...(myRequestCount > 0 ? myRequests : publicRequests)].sort(byNewest);
+  const primary = source.find((r) => !INACTIVE_STATUSES.includes(r.status)) ?? source[0];
+  const secondary =
+    source.find((r) => r.id !== primary?.id && r.status === "FULFILLED") ??
+    source.find((r) => r.id !== primary?.id);
+
+  const primaryTint = primary ? (HERO_TINT[primary.category] ?? { bg: "bg-white/10", ic: "text-white/70" }) : null;
+  const PrimaryIcon = primary ? (CAT_ICON[primary.category] ?? Package) : Package;
+  const primaryPill = primary ? heroStatusPill(primary.status) : null;
+  const secondaryTint = secondary ? (HERO_TINT[secondary.category] ?? { bg: "bg-white/10", ic: "text-white/70" }) : null;
+  const SecondaryIcon = secondary ? (CAT_ICON[secondary.category] ?? Package) : BookOpen;
 
   return (
     <div
@@ -182,51 +231,83 @@ function DoneeHero({ myRequestCount }: { myRequestCount: number }) {
             </div>
           </div>
 
-          {/* ── RIGHT: Floating request-card mockup ── */}
+          {/* ── RIGHT: Floating request cards (live data) ── */}
           <div className="hidden lg:flex flex-col gap-3 items-end">
 
-            {/* Primary card */}
-            <div className="float-card w-[296px] relative">
-              <div className="bg-white/8 backdrop-blur-md border border-white/15 rounded-3xl p-5 shadow-2xl">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-sky-500/20 flex items-center justify-center shrink-0">
-                    <Stethoscope className="w-4.5 h-4.5 text-sky-400" />
+            {/* Primary card — the donee's latest active request (or a recent community one) */}
+            {primary && primaryTint && primaryPill ? (
+              <div className="float-card w-[296px] relative">
+                <div className="bg-white/8 backdrop-blur-md border border-white/15 rounded-3xl p-5 shadow-2xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-9 h-9 rounded-xl ${primaryTint.bg} flex items-center justify-center shrink-0`}>
+                      <PrimaryIcon className={`w-4.5 h-4.5 ${primaryTint.ic}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`${primaryTint.ic} text-[10px] font-black uppercase tracking-wider truncate`}>{primary.category}</p>
+                      <p className="text-white/35 text-[10px] truncate">{primary.city} · {primary.quantity} needed</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sky-400 text-[10px] font-black uppercase tracking-wider">Medical Aid</p>
-                    <p className="text-white/35 text-[10px]">Bandra, Mumbai · 1 needed</p>
+                  <p className="text-white font-extrabold text-sm leading-snug mb-3 line-clamp-2">
+                    {primary.title}
+                  </p>
+                  <div className={`inline-flex items-center gap-2 border rounded-full px-3 py-1.5 ${primaryPill.cls}`}>
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      {primaryPill.pulse && (
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${primaryPill.dot} opacity-70`} />
+                      )}
+                      <span className={`relative inline-flex h-2 w-2 rounded-full ${primaryPill.dot}`} />
+                    </span>
+                    <span className="text-[10px] font-black">{primaryPill.label}</span>
                   </div>
                 </div>
-                <p className="text-white font-extrabold text-sm leading-snug mb-3">
-                  Wheelchair for elderly mother
-                </p>
-                <div className="flex items-center gap-2 bg-emerald-500/15 border border-emerald-400/25 rounded-full px-3 py-1.5">
-                  <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                  </span>
-                  <span className="text-emerald-400 text-[10px] font-black">Matching in progress…</span>
-                </div>
+                {/* Shadow card behind */}
+                <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-3xl -z-10 rotate-2" />
               </div>
-              {/* Shadow card behind */}
-              <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-3xl -z-10 rotate-2" />
-            </div>
+            ) : (
+              /* Static example — only when there is no request data at all */
+              <div className="float-card w-[296px] relative">
+                <div className="bg-white/8 backdrop-blur-md border border-white/15 rounded-3xl p-5 shadow-2xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-xl bg-sky-500/20 flex items-center justify-center shrink-0">
+                      <Stethoscope className="w-4.5 h-4.5 text-sky-400" />
+                    </div>
+                    <div>
+                      <p className="text-sky-400 text-[10px] font-black uppercase tracking-wider">Medical Aid</p>
+                      <p className="text-white/35 text-[10px]">Example request</p>
+                    </div>
+                  </div>
+                  <p className="text-white font-extrabold text-sm leading-snug mb-3">
+                    Wheelchair for elderly mother
+                  </p>
+                  <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-400/25 rounded-full px-3 py-1.5">
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    </span>
+                    <span className="text-emerald-400 text-[10px] font-black">Matching in progress…</span>
+                  </div>
+                </div>
+                <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-3xl -z-10 rotate-2" />
+              </div>
+            )}
 
-            {/* Secondary mini card */}
-            <div
-              className="w-[256px] bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4"
-              style={{ animation: "need-board-float 6s ease-in-out 1.4s infinite" }}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-                  <BookOpen className="w-4 h-4 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-white/80 text-xs font-extrabold leading-tight">Class 10 textbooks</p>
-                  <p className="text-white/30 text-[10px]">Pune · Received ✓</p>
+            {/* Secondary mini card — prefers a fulfilled request as social proof */}
+            {secondary && secondaryTint && (
+              <div
+                className="w-[256px] bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4"
+                style={{ animation: "need-board-float 6s ease-in-out 1.4s infinite" }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-xl ${secondaryTint.bg} flex items-center justify-center shrink-0`}>
+                    <SecondaryIcon className={`w-4 h-4 ${secondaryTint.ic}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white/80 text-xs font-extrabold leading-tight truncate">{secondary.title}</p>
+                    <p className="text-white/30 text-[10px] truncate">{secondary.city} · {getStatusBadge(secondary.status).label}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
         </div>
@@ -549,7 +630,7 @@ export function DoneeRequestsPage() {
 
   return (
     <div className="min-h-screen bg-[#f0f5ff] dark:bg-zinc-950 text-stone-900 dark:text-stone-100">
-      <DoneeHero myRequestCount={myRequests.length} />
+      <DoneeHero myRequests={myRequests} publicRequests={allRequests} />
       <HowItWorksSection />
       <CategoryStarterSection catCounts={catCounts} />
       <MyRequestsSection requests={myRequests} />

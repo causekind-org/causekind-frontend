@@ -171,13 +171,6 @@ function RequestsHero({
   const [mouse, setMouse] = useState({ x: 50, y: 40 });
   const [active, setActive] = useState(false);
 
-  const cats = ITEM_REQ_CATEGORIES.map(cat => ({
-    cat,
-    Icon: CAT_ICON[cat] ?? Package,
-    count: catCounts[cat] ?? 0,
-    col: CAT_COLOR[cat] ?? CAT_COLOR["Medical aid"],
-  }));
-
   return (
     <div
       onMouseMove={e => {
@@ -217,7 +210,7 @@ function RequestsHero({
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl px-6 py-14 lg:py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
+        <div className="max-w-2xl">
 
           {/* ── Left: headline ── */}
           <div className="space-y-7">
@@ -271,53 +264,6 @@ function RequestsHero({
               <span className="text-white/25 text-[10px] font-bold uppercase tracking-widest">Browse needs below</span>
               <ChevronDown className="h-4 w-4 text-white/25 animate-bounce-slow" />
             </div>
-          </div>
-
-          {/* ── Right: category need-board ── */}
-          <div className="hidden lg:grid grid-cols-2 gap-3 need-board-float">
-            {/* Top: "Needs Board" label */}
-            <div className="col-span-2 flex items-center gap-2 mb-1">
-              <Activity className="h-3.5 w-3.5 text-[#f0b97a]" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a]/70">Needs by Category</span>
-            </div>
-
-            {cats.map(({ cat, Icon, count, col }, idx) => {
-              const active = selected.includes(cat);
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => onToggle(cat)}
-                  disabled={count === 0}
-                  aria-pressed={active}
-                  className={`relative rounded-2xl p-4 text-left backdrop-blur-sm border transition-all duration-300 group overflow-hidden
-                              disabled:opacity-35 disabled:cursor-not-allowed
-                              ${active
-                                ? "bg-white/18 border-white/40 shadow-[0_0_0_1px_rgba(255,255,255,0.15)]"
-                                : "bg-white/6 border-white/10 hover:bg-white/10 hover:border-white/20"}`}
-                  style={{ transitionDelay: `${idx * 40}ms` }}
-                >
-                  {/* Subtle bottom-left tinted corner */}
-                  <div className={`absolute bottom-0 left-0 w-20 h-20 rounded-tr-3xl ${col.bar} opacity-[0.08] pointer-events-none`} />
-
-                  {active && (
-                    <span className={`absolute top-3 right-3 h-2 w-2 rounded-full ${col.bar}`} aria-hidden="true" />
-                  )}
-
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-white/10 group-hover:scale-110 transition-transform">
-                    <Icon className="w-4.5 h-4.5 text-white/70" />
-                  </div>
-                  <p className="text-white/85 text-sm font-extrabold leading-tight">{cat}</p>
-                  <div className="flex items-end gap-1.5 mt-1">
-                    <span className="text-2xl font-black text-white tabular-nums leading-none">{count}</span>
-                    <span className="text-white/35 text-[10px] font-bold uppercase tracking-wide pb-0.5">needs</span>
-                  </div>
-                  {count > 0 && (
-                    <div className={`mt-2 h-0.5 rounded-full ${col.bar} opacity-40`} style={{ width: `${Math.min(100, count * 10)}%` }} />
-                  )}
-                </button>
-              );
-            })}
           </div>
         </div>
       </div>

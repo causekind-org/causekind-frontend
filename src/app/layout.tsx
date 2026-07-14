@@ -91,10 +91,14 @@ export default async function RootLayout({
                 <SiteFooter />
                 <MobileBottomNav />
                 <FloatingSupportButton />
+                {/* top-center: bottom-left sat on the admin sidebar's Sign Out and the
+                    mobile bottom nav; top corners hold the navbar's icons. The offset
+                    clears the 3.5rem sticky header. */}
                 <Toaster
                   richColors
-                  position="bottom-left"
-                  offset={24}
+                  position="top-center"
+                  offset={72}
+                  mobileOffset={64}
                   visibleToasts={3}
                   duration={4500}
                   style={{ zIndex: 2147483647 }}

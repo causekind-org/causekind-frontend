@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   getProfile,
+  getMyItemRequests,
+  getMyVerificationDocuments,
+  getMyRequestVerificationDetails,
   createItemRequestDraft,
   updateItemRequestDraft,
   submitItemRequestDraft,
@@ -126,6 +129,19 @@ const STEPS = [
   { id: 4, label: "Declarations", sub: "Final confirmation" },
 ];
 
+// Fix & Resubmit: guess which wizard step the rejection reason points at, so the
+// donee lands directly on what needs fixing instead of walking through prefilled
+// steps. Keyword heuristic over the admin's free-text reason (incl. AI drafts,
+// which quote the failed checklist items). Order matters: document terms first
+// ("situation photos", "reference letter" are documents), then people/story
+// terms (step 2), else the need details themselves (step 1).
+function stepForRejection(reason: string): number {
+  const r = reason.toLowerCase();
+  if (/aadhaar|selfie|photo|document|upload|bpl|proof|letter|blurry|unclear|unreadable|id card/.test(r)) return 3;
+  if (/contact|referr|doctor|hospital|story|income|household|family|dependent|alternate|situation|age|housing/.test(r)) return 2;
+  return 1;
+}
+
 // ── Field wrapper ─────────────────────────────────────────────────────────────
 function Field({ label, required, hint, error, children }: { label: string; required?: boolean; hint?: string; error?: string; children: React.ReactNode }) {
   return (
@@ -164,8 +180,19 @@ function DocSlot({
 }
 
 export default function NewRequestPage() {
+  // useSearchParams (for ?draftId= resume) requires a Suspense boundary in App Router
+  return (
+    <Suspense fallback={null}>
+      <NewRequestForm />
+    </Suspense>
+  );
+}
+
+function NewRequestForm() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resumeDraftId = searchParams.get("draftId");
 
   const [step, setStep] = useState(1);
   const [draftId, setDraftId] = useState<number | null>(null);
@@ -249,6 +276,52 @@ export default function NewRequestPage() {
   // Step 4
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
 
+  // Fix & Resubmit: the old rejection reason, shown as guidance while editing
+  const [rejectionNote, setRejectionNote] = useState<string | null>(null);
+
+  // Resume an existing draft (?draftId=N) — used by "Fix & Resubmit" on rejected
+  // requests, which reopens them as drafts. Prefills need details and marks the
+  // still-attached documents as uploaded so the donee only redoes what's needed.
+  useEffect(() => {
+    if (!resumeDraftId || !user) return;
+    const idNum = Number(resumeDraftId);
+    if (!Number.isFinite(idNum)) return;
+    getMyItemRequests()
+      .then((list) => {
+        const r = list.find((x) => x.id === idNum);
+        if (!r || r.status !== "DRAFT") return;
+        setDraftId(idNum);
+        if (r.title && r.title !== "Draft") setTitle(r.title);
+        if (r.category) setCategory(r.category);
+        if (r.quantity) setQuantity(r.quantity);
+        if (r.urgency) setUrgency(r.urgency);
+        if (r.description) setDescription(r.description);
+        if (r.pincode) setPincode(r.pincode);
+        setIsEmergency(r.isEmergency);
+        if (r.emergencyNature) setEmergencyNature(r.emergencyNature);
+        if (r.rejectionReason) {
+          setRejectionNote(r.rejectionReason);
+          // Jump straight to the step the rejection points at — everything else
+          // is prefilled and already saved server-side; Back still works.
+          setStep(stepForRejection(r.rejectionReason));
+        }
+        getMyVerificationDocuments(idNum)
+          .then((docs) => setUploadedDocs(new Set(docs.map((d) => d.docType))))
+          .catch(() => {});
+        // Prefill step 2 (household & situation) with the previously saved answers
+        getMyRequestVerificationDetails(idNum)
+          .then((v) => {
+            if (!v) return;
+            const filled = Object.fromEntries(
+              Object.entries(v).filter(([, value]) => value !== null && value !== undefined)
+            ) as Partial<RequestVerification>;
+            setVerification((prev) => ({ ...prev, ...filled }));
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
+  }, [resumeDraftId, user]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.push("/login"); return; }
@@ -289,11 +362,19 @@ export default function NewRequestPage() {
             const cc = addr.country_code?.toUpperCase();
             if (cc) {
               setCountryIso(cc);
-              const { stateIso: sIso, cityValue: cVal } = await resolveLocationFromGPS(cc, addr.state, addr.city || addr.town || addr.village);
+              // Nominatim reports smaller places under town/village/suburb, not city
+              // (e.g. Virar is a town) — use the same fallback chain everywhere.
+              const cityName = addr.city || addr.town || addr.village || addr.suburb || "";
+              const { stateIso: sIso, cityValue: cVal } = await resolveLocationFromGPS(cc, addr.state, cityName);
               if (sIso) {
                 setStateIso(sIso);
                 if (cVal) { setCityValue(cVal); setCityFreeText(""); setForceFreeTextCity(false); }
-                else { setCityValue(""); setCityFreeText(addr.city || ""); setForceFreeTextCity(true); }
+                else { setCityValue(""); setCityFreeText(cityName); setForceFreeTextCity(true); }
+              } else if (cityName) {
+                setStateIso("");
+                setCityValue("");
+                setCityFreeText(cityName);
+                setForceFreeTextCity(true);
               }
               if (addr.postcode) setPincode(addr.postcode.replace(/\s/g, ""));
             }
@@ -917,6 +998,17 @@ export default function NewRequestPage() {
             </div>
             {saving && <span className="text-xs text-stone-400 flex items-center gap-1.5 mt-1"><Loader2 className="w-3 h-3 animate-spin text-[#b04a15]" /> Saving…</span>}
           </div>
+
+          {rejectionNote && (
+            <div className="mb-6 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-amber-800 dark:text-amber-300">You&apos;re fixing a rejected request</p>
+                <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed whitespace-pre-line">{rejectionNote}</p>
+                <p className="text-[11px] text-stone-400 mt-1.5">We&apos;ve brought you to the step that needs attention — everything else is already filled. Use Back to review other steps, then resubmit.</p>
+              </div>
+            </div>
+          )}
 
           <div className="relative mb-8 h-1.5 rounded-full bg-stone-200 dark:bg-zinc-800 overflow-hidden">
             <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"

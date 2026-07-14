@@ -1,58 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Reveal } from "@/components/Reveal";
 import { TranslatedText, useDynamicTranslation } from "@/hooks/useDynamicTranslation";
 import { DONOR_CATEGORY_EVENT } from "@/components/DonorCategoryModal";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS, readSelectedDonorCategories } from "@/lib/categoryVisuals";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowRight, MapPin, Bell } from "lucide-react";
+import { ArrowRight, MapPin, Bell, HandHeart } from "lucide-react";
 import type { ItemRequest } from "@/lib/api";
 
-type CategoryEntry = { category: string; requests: ItemRequest[] };
+/* ── The Need Board ──────────────────────────────────────────────────────────
+   Open requests are the headlines — set large on a warm notice-board panel,
+   most urgent first, each with an always-ready "I can help" action. The quiet
+   categories collapse into one "watching for you" strip instead of eight
+   empty sections. ── */
 
-const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-const VISIBLE_PER_CATEGORY = 4;
+const URGENCY_RANK: Record<string, number> = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
 
-/* ─── Titles decode into place instead of a plain fade — the whole point of ── */
-/* dropping images was to let the words themselves carry the "cool" moment. ── */
-function ScrambleText({ text, className }: { text: string; className?: string }) {
-  const [display, setDisplay] = useState(text);
-  const started = useRef(false);
-  const reduceMotion = useReducedMotion();
-
-  useEffect(() => { setDisplay(text); started.current = false; }, [text]);
-
-  function start() {
-    if (started.current || reduceMotion) return;
-    started.current = true;
-    let frame = 0;
-    const totalFrames = 12;
-    const timer = setInterval(() => {
-      frame++;
-      const revealCount = Math.ceil((frame / totalFrames) * text.length);
-      setDisplay(
-        text
-          .split("")
-          .map((ch, i) => (ch === " " || i < revealCount ? ch : SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]))
-          .join("")
-      );
-      if (frame >= totalFrames) {
-        setDisplay(text);
-        clearInterval(timer);
-      }
-    }, 32);
-  }
-
-  return (
-    <motion.span className={className} onViewportEnter={start} viewport={{ once: true, amount: 0.6 }}>
-      {display}
-    </motion.span>
-  );
-}
+// Tinted icon tiles per category — same warm treatment used across the site
+const CAT_TILE: Record<string, string> = {
+  "Medical aid": "bg-sky-100 dark:bg-sky-900/30",
+  "Education":   "bg-amber-100 dark:bg-amber-900/30",
+  "Livelihood":  "bg-emerald-100 dark:bg-emerald-900/30",
+  "Relief":      "bg-violet-100 dark:bg-violet-900/30",
+  "Household":   "bg-rose-100 dark:bg-rose-900/30",
+  "Furniture":   "bg-indigo-100 dark:bg-indigo-900/30",
+  "Clothing":    "bg-teal-100 dark:bg-teal-900/30",
+  "Electronics": "bg-orange-100 dark:bg-orange-900/30",
+  "Sports":      "bg-cyan-100 dark:bg-cyan-900/30",
+};
 
 export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemRequest[] }) {
   const router = useRouter();
@@ -90,152 +69,170 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
       : ALL_REQUEST_CATEGORIES;
   if (categoriesToShow.length === 0) return null;
 
-  const categoryData: CategoryEntry[] = categoriesToShow.map(cat => ({
-    category: cat,
-    requests: itemRequests.filter(r => r.category === cat),
-  }));
-  const hasAnyRequests = categoryData.some(c => c.requests.length > 0);
+  // Most urgent first, then newest — the board reads top-down by need
+  const openRequests = itemRequests
+    .filter(r => categoriesToShow.includes(r.category))
+    .sort((a, b) =>
+      (URGENCY_RANK[a.urgency] ?? 3) - (URGENCY_RANK[b.urgency] ?? 3) ||
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  const quietCategories = categoriesToShow.filter(
+    cat => !openRequests.some(r => r.category === cat)
+  );
 
   return (
-    <section className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 py-20 border-t border-stone-200/60 dark:border-stone-800">
-      <div className="mx-auto max-w-7xl px-6 sm:px-10">
-        <Reveal className="mb-14">
+    <section className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 py-20 border-t border-stone-200/60 dark:border-stone-800 overflow-hidden">
+      {/* Warm ambient glow behind the board */}
+      <div className="pointer-events-none absolute -top-32 right-[10%] w-[480px] h-[480px] rounded-full bg-[#e07b3a]/8 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 left-[5%] w-72 h-72 rounded-full bg-[#f0b97a]/10 blur-3xl" />
+
+      <div className="relative mx-auto max-w-5xl px-6 sm:px-10">
+
+        {/* ── Masthead ── */}
+        <Reveal className="mb-8">
           <div className="flex items-end justify-between gap-6 flex-wrap">
             <div>
-              <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
-                Requests near your focus
+              <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#b04a15] dark:text-[#e07b3a]">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping motion-reduce:hidden absolute inline-flex h-full w-full rounded-full bg-[#b04a15] opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#b04a15]" />
+                </span>
+                Live &middot; your focus areas
+              </p>
+              <h2 className="mt-3 text-4xl lg:text-5xl tracking-tight leading-[1.02] font-bold text-stone-900 dark:text-white"
+                style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+                {openRequests.length > 0 ? (
+                  <>Someone nearby <span className="text-[#b04a15] dark:text-[#e07b3a]">needs a hand.</span></>
+                ) : (
+                  <>All quiet <span className="text-[#b04a15] dark:text-[#e07b3a]">on your board.</span></>
+                )}
               </h2>
-              <p className="text-stone-500 dark:text-stone-400 mt-2 max-w-xl">
-                {selected && selected.length > 0
-                  ? "Scoped to the categories you picked. Change them anytime."
-                  : "You chose to see everything. Narrow this to specific focus areas anytime."}
+              <p className="text-stone-500 dark:text-stone-400 mt-3 text-sm max-w-xl">
+                {openRequests.length > 0
+                  ? `${openRequests.length} verified request${openRequests.length !== 1 ? "s" : ""} open in the areas you follow — every one checked by our team before it reached you.`
+                  : "No open requests in the areas you follow right now. We keep watch so you don't have to."}
               </p>
             </div>
-            <Link href="/requests" className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[#b04a15] dark:text-[#e07b3a] hover:underline shrink-0">
+            <Link href="/requests" className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[#b04a15] dark:text-[#e07b3a] hover:underline shrink-0 mb-1">
               Browse all requests <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </Reveal>
 
-        {!hasAnyRequests ? (
-          <EmptyBoard categories={categoriesToShow} />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-14 gap-y-10">
-            {categoryData.map((entry, i) => (
-              <CategoryGroup key={entry.category} category={entry.category} requests={entry.requests} delay={i * 100} onOpen={openRequest} />
-            ))}
+        {/* ── The board ── */}
+        <Reveal delay={120}>
+          <div className="rounded-[2rem] border border-[#b04a15]/15 dark:border-[#e07b3a]/20 bg-white/80 dark:bg-zinc-900/70 backdrop-blur-sm shadow-xl shadow-[#b04a15]/5 overflow-hidden">
+            {/* Board top accent */}
+            <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #b04a15, #e07b3a 45%, #f0b97a)" }} />
+
+            {openRequests.length > 0 && (
+              <div className="divide-y divide-stone-100 dark:divide-zinc-800 px-3 sm:px-5">
+                {openRequests.map((req, i) => (
+                  <NoticeRow key={req.id} request={req} index={i} onOpen={openRequest} />
+                ))}
+              </div>
+            )}
+
+            {/* Quiet categories — one strip, not eight empty sections */}
+            {quietCategories.length > 0 && (
+              <div className={`px-6 sm:px-8 py-6 ${openRequests.length > 0 ? "bg-stone-50/70 dark:bg-zinc-950/40 border-t border-stone-100 dark:border-zinc-800" : ""}`}>
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex items-center justify-center w-7 h-7 rounded-full bg-[#f0b97a]/20">
+                    <Bell className="h-3.5 w-3.5 text-[#b04a15] dark:text-[#e07b3a]" />
+                  </span>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-stone-500 dark:text-stone-400">Watching for you</p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {quietCategories.map((cat, i) => {
+                    const col = CATEGORY_VISUALS[cat] ?? CATEGORY_VISUALS["Medical aid"];
+                    return (
+                      <motion.span
+                        key={cat}
+                        initial={{ opacity: 0, y: 8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.35, delay: 0.04 * i }}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold ${CAT_TILE[cat] ?? "bg-stone-100"} ${col.text}`}
+                      >
+                        <col.Icon className="h-3.5 w-3.5" strokeWidth={2.2} />
+                        <TranslatedText text={cat} />
+                      </motion.span>
+                    );
+                  })}
+                </div>
+                <p className="mt-4 text-xs text-stone-400 dark:text-stone-500">
+                  Quiet right now &mdash; the moment a verified need is posted in any of these, you&apos;ll be the first to know.
+                </p>
+              </div>
+            )}
           </div>
-        )}
+        </Reveal>
       </div>
     </section>
   );
 }
 
-function CategoryGroup({
-  category, requests, delay, onOpen,
-}: { category: string; requests: ItemRequest[]; delay: number; onOpen: (id: number) => void }) {
-  const col = CATEGORY_VISUALS[category] ?? CATEGORY_VISUALS["Medical aid"];
-  const visible = requests.slice(0, VISIBLE_PER_CATEGORY);
-  const overflow = requests.length - visible.length;
-
-  return (
-    <Reveal delay={delay}>
-      <div className="mb-4 flex items-center gap-3">
-        <col.Icon className={`h-4 w-4 shrink-0 ${col.text}`} strokeWidth={2} />
-        <h3 className={`shrink-0 text-xs font-black uppercase tracking-widest ${col.text}`}>
-          <TranslatedText text={category} />
-        </h3>
-        <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
-        <span className="shrink-0 text-xs font-semibold text-stone-400 dark:text-stone-500">
-          {requests.length} open
-        </span>
-      </div>
-
-      {visible.length > 0 ? (
-        <div className="divide-y divide-stone-200/70 dark:divide-stone-800">
-          {visible.map(req => (
-            <RequestRow key={req.id} request={req} onOpen={onOpen} />
-          ))}
-        </div>
-      ) : (
-        <EmptyCategoryRow category={category} />
-      )}
-
-      {overflow > 0 && (
-        <Link
-          href="/requests"
-          className="group mt-1 flex items-center gap-2 pt-4 text-sm font-bold text-[#b04a15] dark:text-[#e07b3a]"
-        >
-          +{overflow} more in <TranslatedText text={category} />
-          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-        </Link>
-      )}
-    </Reveal>
-  );
-}
-
-function RequestRow({ request, onOpen }: { request: ItemRequest; onOpen: (id: number) => void }) {
+/* One request pinned to the board: tinted category tile, serif headline,
+   urgency accent on the row's own left edge, and an "I can help" action
+   that's always present and fills on hover. */
+function NoticeRow({ request, index, onOpen }: {
+  request: ItemRequest; index: number; onOpen: (id: number) => void;
+}) {
   const title = useDynamicTranslation(request.title) ?? request.title;
   const city = useDynamicTranslation(request.city) ?? request.city;
-  const urgent = request.urgency === "CRITICAL" || request.urgency === "HIGH";
+  const col = CATEGORY_VISUALS[request.category] ?? CATEGORY_VISUALS["Medical aid"];
+  const critical = request.urgency === "CRITICAL";
+  const high = request.urgency === "HIGH";
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(request.id)}
-      className="group flex w-full items-center justify-between gap-4 py-4 text-left"
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.4 }}
+      transition={{ duration: 0.45, delay: Math.min(index, 5) * 0.08 }}
     >
-      <span className="flex min-w-0 items-center gap-3">
-        {urgent && (
-          <span
-            aria-hidden="true"
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${request.urgency === "CRITICAL" ? "bg-[#b04a15]" : "bg-[#b04a15]/45"}`}
-          />
-        )}
-        <ScrambleText
-          text={title}
-          className="truncate text-lg font-bold text-stone-800 transition-colors dark:text-stone-100 sm:text-xl group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a]"
-        />
-      </span>
-      <span className="flex shrink-0 items-center gap-2 text-xs font-semibold text-stone-400 dark:text-stone-500">
-        <MapPin className="h-3 w-3" />
-        <span className="hidden sm:inline">{city}</span>
-        <ArrowRight className="h-3.5 w-3.5 text-stone-300 transition-all dark:text-stone-600 group-hover:translate-x-0.5 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a]" />
-      </span>
-    </button>
-  );
-}
+      <button
+        type="button"
+        onClick={() => onOpen(request.id)}
+        className={`group w-full text-left flex items-center gap-4 sm:gap-5 px-3 sm:px-4 py-5 sm:py-6 rounded-2xl my-1.5 border-l-4 transition-all duration-200
+          hover:bg-[#faf8f5] dark:hover:bg-zinc-800/50 hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#b04a15]/5 motion-reduce:transform-none ${
+          critical ? "border-red-500" : high ? "border-[#e07b3a]" : "border-transparent"}`}
+      >
+        {/* Category tile */}
+        <span className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0 ${CAT_TILE[request.category] ?? "bg-stone-100"}`}>
+          <col.Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${col.text}`} strokeWidth={2} />
+        </span>
 
-function EmptyCategoryRow({ category }: { category: string }) {
-  return (
-    <p className="flex items-center gap-2 py-4 text-sm text-stone-400 dark:text-stone-500">
-      <Bell className="h-3.5 w-3.5 shrink-0" />
-      Nothing open here yet. You&apos;ll be the first to know about <TranslatedText text={category} />.
-    </p>
-  );
-}
-
-function EmptyBoard({ categories }: { categories: string[] }) {
-  return (
-    <Reveal>
-      <div className="flex max-w-xl flex-col items-start gap-4 py-6">
-        <Bell className="h-6 w-6 text-[#b04a15]" strokeWidth={1.5} />
-        <div>
-          <p className="text-lg font-semibold text-stone-800 dark:text-stone-100">
-            No open requests in your focus areas right now.
-          </p>
-          <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-400">
-            We&apos;ll keep watching{" "}
-            {categories.map((c, i) => (
-              <span key={c}>
-                {i > 0 && ", "}
-                <TranslatedText text={c} />
+        {/* Headline + meta */}
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <span className={`text-[10px] font-black uppercase tracking-[0.18em] ${col.text}`}>
+              <TranslatedText text={request.category} />
+            </span>
+            {critical && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-red-600 dark:text-red-400">
+                <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse motion-reduce:animate-none" /> Urgent
               </span>
-            ))}{" "}
-            and notify you the moment something comes in.
-          </p>
-        </div>
-      </div>
-    </Reveal>
+            )}
+          </span>
+          <span className="block mt-1 text-xl sm:text-2xl text-stone-900 dark:text-stone-50 leading-snug font-bold group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors truncate"
+            style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+            {title}
+          </span>
+          <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-stone-400 dark:text-stone-500">
+            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{city}</span>
+            <span>&middot;</span>
+            <span>{request.quantity} needed</span>
+          </span>
+        </span>
+
+        {/* Always-visible action — ghost that fills on hover */}
+        <span className="hidden xs:inline-flex sm:inline-flex items-center gap-1.5 rounded-xl border-2 border-[#b04a15]/25 text-[#b04a15] dark:text-[#e07b3a] dark:border-[#e07b3a]/30 text-xs font-extrabold px-3.5 py-2.5 shrink-0 transition-all duration-200
+          group-hover:bg-[#b04a15] group-hover:border-[#b04a15] group-hover:text-white group-hover:shadow-lg group-hover:shadow-[#b04a15]/25">
+          <HandHeart className="h-3.5 w-3.5" /> I can help
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </button>
+    </motion.div>
   );
 }
