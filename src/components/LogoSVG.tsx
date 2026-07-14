@@ -8,13 +8,14 @@ const D = `M 525 2.090 C 506.971 4.411, 490.449 8.903, 469.500 17.179 C 441.180 
 const LOOP_MS = 5500;
 const GRAD_MS = 7000;
 
-export function LogoSVG({ size = 32 }: { size?: number }) {
+export function LogoSVG({ size = 32, animated = true }: { size?: number; animated?: boolean }) {
   const maskPathRef = useRef<SVGPathElement>(null);
   const fillRef     = useRef<SVGPathElement>(null);
   const gradRef     = useRef<SVGLinearGradientElement>(null);
   const uid         = useId().replace(/:/g, "");
 
   useEffect(() => {
+    if (!animated) return;
     let raf: number;
     let t0: number | null = null;
     let pLen = 0;
@@ -64,7 +65,7 @@ export function LogoSVG({ size = 32 }: { size?: number }) {
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [animated]);
 
   return (
     <svg viewBox="0 0 747 738" width={size} height={size}
@@ -75,27 +76,33 @@ export function LogoSVG({ size = 32 }: { size?: number }) {
           <stop offset="45%"  stopColor="#c85218" />
           <stop offset="100%" stopColor="#6e1e06" />
         </linearGradient>
-        {/* Invisible thick-stroke mask: as dashoffset decreases it "paints" the gradient fill */}
-        <mask id={`ck-mask-${uid}`}>
-          <path
-            ref={maskPathRef}
-            d={D}
-            fill="none"
-            stroke="white"
-            strokeWidth="100"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </mask>
+        {/* Invisible thick-stroke mask: as dashoffset decreases it "paints" the gradient fill.
+            Skipped entirely when !animated — the fill just renders solid immediately, which
+            matters for contexts like the printable certificate where the logo must always
+            show fully-drawn rather than possibly being captured mid-reveal. */}
+        {animated && (
+          <mask id={`ck-mask-${uid}`}>
+            <path
+              ref={maskPathRef}
+              d={D}
+              fill="none"
+              stroke="white"
+              strokeWidth="100"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </mask>
+        )}
       </defs>
-      {/* Gradient fill — revealed only where mask stroke has passed */}
+      {/* Gradient fill — revealed only where mask stroke has passed (animated mode),
+          or shown immediately at full opacity (static mode). */}
       <path
         ref={fillRef}
         d={D}
         fill={`url(#ck-grad-${uid})`}
         fillRule="evenodd"
-        mask={`url(#ck-mask-${uid})`}
-        style={{ opacity: 0 }}
+        mask={animated ? `url(#ck-mask-${uid})` : undefined}
+        style={{ opacity: animated ? 0 : 1 }}
       />
     </svg>
   );

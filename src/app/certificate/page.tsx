@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { getOfferCertificate, verifyCertificate, type Certificate } from "@/lib/api";
 import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
-import { LogoSVG } from "@/components/LogoSVG";
+import QRCode from "qrcode";
 
 export default function CertificatePage() {
   const searchParams = useSearchParams();
@@ -17,6 +17,7 @@ export default function CertificatePage() {
   const [cert, setCert] = useState<Certificate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (certNumber) {
@@ -28,6 +29,16 @@ export default function CertificatePage() {
       setLoading(false);
     }
   }, [offerId, certNumber]);
+
+  // Generate a scannable QR pointing at this same verification page — this is what
+  // actually makes the certificate "QR-verifiable", not just the text label.
+  useEffect(() => {
+    if (!cert) return;
+    const verifyUrl = `${window.location.origin}/certificate?certNumber=${cert.certificateNumber}`;
+    QRCode.toDataURL(verifyUrl, { width: 160, margin: 1 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [cert]);
 
   function handlePrint() {
     window.print();
@@ -58,6 +69,38 @@ export default function CertificatePage() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 print:bg-transparent print:p-0">
+      {/* Print rules:
+          1. Color-adjust so backgrounds/borders survive "Save as PDF" instead of
+             being stripped to plain black-on-white (the browser default).
+          2. Isolate to just the certificate — the root layout wraps every page
+             (including this one) in a site header, footer, mobile nav, and a
+             floating support button, none of which have their own print-hidden
+             treatment. Rather than hunting down and print-hiding each of those
+             components individually (fragile — a new floating widget added later
+             would leak through again), hide everything on the page by default and
+             re-reveal only .cert-print-card and its contents. That's what actually
+             gets "one page, the certificate only" instead of the full page layout. */}
+      <style>{`
+        @media print {
+          @page { size: landscape; margin: 0; }
+          /* visibility:hidden still reserves the hidden element's layout height,
+             which pushed a blank second page — display:none actually removes it.
+             Targets the root layout's site chrome by tag/id/class directly (it's
+             a fixed, known set: header, #footer, the mobile bottom nav, and the
+             floating support button/panel — see src/app/layout.tsx). */
+          header, footer#footer, nav, .floating-support-item { display: none !important; }
+          html, body, .cert-print-card, .cert-print-card * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          .cert-print-card {
+            width: 100vw !important; height: 100vh !important; max-width: none !important;
+            box-shadow: none !important; page-break-inside: avoid; margin: 0 !important;
+          }
+        }
+      `}</style>
+
       {/* Nav — hidden on print */}
       <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between print:hidden">
         <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
@@ -74,7 +117,7 @@ export default function CertificatePage() {
       {/* Certificate — landscape A4 */}
       <div
         ref={printRef}
-        className="mx-auto"
+        className="mx-auto cert-print-card"
         style={{
           width: "100%",
           maxWidth: "960px",
@@ -101,11 +144,12 @@ export default function CertificatePage() {
           {/* Ornamental border */}
           <OrnamentalBorder />
 
-          {/* Logo */}
+          {/* Logo — the static filled PNG, not the animated LogoSVG (see LogoSVG.tsx:
+              that component draws itself in over ~3.5s and is meant for the live navbar;
+              on a printable/static page it risks being captured mid-reveal). */}
           <div style={{ marginBottom: "16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ width: "64px", height: "64px" }}>
-              <LogoSVG />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-filled.png" alt="CauseKind" style={{ width: "64px", height: "64px", objectFit: "contain" }} />
             <div style={{ fontSize: "18px", fontWeight: "700", letterSpacing: "0.05em", color: "#1a1008", marginTop: "4px" }}>
               <span style={{ color: "#c4501a" }}>Cause</span>Kind
             </div>
@@ -194,13 +238,39 @@ export default function CertificatePage() {
             fontStyle: "italic",
             color: "#7a6a5a",
             fontSize: "clamp(8px, 1.2vw, 11px)",
+            marginBottom: "10px",
           }}>
             This certificate is digitally issued and valid without a physical signature.
           </div>
+
+          {/* Scannable QR — bottom-right corner, tucked just inside the ornamental
+              border so it doesn't collide with the corner flourish. This is what's
+              actually printed/downloaded, so the verification path travels with the
+              certificate wherever it's shown. */}
+          {qrDataUrl && (
+            <div style={{
+              position: "absolute",
+              bottom: "clamp(28px, 6vw, 52px)",
+              right: "clamp(28px, 6vw, 52px)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrDataUrl}
+                alt="Scan to verify this certificate"
+                style={{ width: "clamp(48px, 7vw, 72px)", height: "clamp(48px, 7vw, 72px)" }}
+              />
+              <span style={{ fontSize: "clamp(7px, 1vw, 10px)", color: "#5a4a3a", marginTop: "3px" }}>
+                Scan to verify
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* QR info below */}
+      {/* Verify info below (screen-only convenience — the QR above is what's printed) */}
       <div className="mx-auto mt-4 max-w-4xl text-center print:hidden">
         <p className="text-xs text-gray-400">
           Certificate ID: <span className="font-mono font-semibold text-gray-600">{cert.certificateNumber}</span>
@@ -238,47 +308,43 @@ function TableRow({ label, value }: { label: string; value: string }) {
 }
 
 function OrnamentalBorder() {
+  // Woven interlocking-square lattice sitting at the corner joint where the double
+  // border lines meet — approximated by hand from a reference screenshot, not traced
+  // from a vector source. If you have the original asset for this motif, send it over
+  // (same as logo-filled.png) and this can be swapped for an exact match.
   const corner = (style: React.CSSProperties) => (
-    <div style={{
-      position: "absolute",
-      width: "70px",
-      height: "70px",
-      ...style,
-    }}>
-      <svg viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2" width="66" height="66" stroke="#c4501a" strokeWidth="1.5" fill="none" rx="2"/>
-        <rect x="6" y="6" width="58" height="58" stroke="#c4501a" strokeWidth="0.5" fill="none" rx="1"/>
-        <path d="M2 20 L2 2 L20 2" stroke="#c4501a" strokeWidth="2" fill="none"/>
-        <path d="M6 18 L6 6 L18 6" stroke="#c4501a" strokeWidth="1" fill="none"/>
-        <circle cx="12" cy="12" r="3" fill="#c4501a" opacity="0.6"/>
-        <path d="M2 14 Q8 8 14 2" stroke="#c4501a" strokeWidth="0.8" fill="none" opacity="0.5"/>
-        <path d="M20 8 Q14 14 8 20" stroke="#c4501a" strokeWidth="0.8" fill="none" opacity="0.5"/>
+    <div style={{ position: "absolute", width: "28px", height: "28px", ...style }}>
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0.5" y="0.5" width="9" height="9" stroke="#c4501a" strokeWidth="1"/>
+        <rect x="9.5" y="0.5" width="9" height="9" stroke="#c4501a" strokeWidth="1"/>
+        <rect x="0.5" y="9.5" width="9" height="9" stroke="#c4501a" strokeWidth="1"/>
+        <rect x="9.5" y="9.5" width="9" height="9" stroke="#c4501a" strokeWidth="1"/>
+        <rect x="4.5" y="4.5" width="9" height="9" stroke="#c4501a" strokeWidth="0.75" fill="#f5f0e8"/>
+        <rect x="8" y="8" width="4" height="4" fill="#c4501a"/>
       </svg>
     </div>
   );
 
   return (
     <>
-      {/* Outer border line */}
+      {/* Double-rule border — two close parallel lines running the whole perimeter */}
       <div style={{
         position: "absolute", inset: "12px",
         border: "1.5px solid #c4501a",
         pointerEvents: "none",
         borderRadius: "2px",
       }} />
-      {/* Inner border line */}
       <div style={{
-        position: "absolute", inset: "18px",
-        border: "0.5px solid #c4501a",
+        position: "absolute", inset: "15px",
+        border: "1px solid #c4501a",
         pointerEvents: "none",
-        borderRadius: "1px",
-        opacity: 0.5,
+        borderRadius: "2px",
       }} />
-      {/* Corner ornaments */}
-      {corner({ top: 0, left: 0 })}
-      {corner({ top: 0, right: 0, transform: "scaleX(-1)" })}
-      {corner({ bottom: 0, left: 0, transform: "scaleY(-1)" })}
-      {corner({ bottom: 0, right: 0, transform: "scale(-1)" })}
+      {/* Corner lattice, tucked right on the double lines' corner joint */}
+      {corner({ top: "5px", left: "5px" })}
+      {corner({ top: "5px", right: "5px", transform: "scaleX(-1)" })}
+      {corner({ bottom: "5px", left: "5px", transform: "scaleY(-1)" })}
+      {corner({ bottom: "5px", right: "5px", transform: "scale(-1)" })}
     </>
   );
 }
