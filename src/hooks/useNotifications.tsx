@@ -117,7 +117,7 @@ async function deriveNotifications(rawRole: string): Promise<IncomingNotificatio
     incomingOffers.forEach(o => {
       const ts = toTimestamp(o.createdAt);
       if (o.status === "PENDING_DONEE_REVIEW") {
-        notifs.push({ id: `offer-review-${o.id}`, title: "Someone wants to donate!", body: `A donor offered to fulfil "${o.requestTitle}" — review their offer now`, type: "match", link: "/donee/offers", timestamp: ts });
+        notifs.push({ id: `offer-review-${o.id}`, title: "Someone wants to donate!", body: `A donor offered to fulfil "${o.requestTitle}" — review their offer now`, type: "match", link: `/donee/offers?offerId=${o.id}`, timestamp: ts });
       }
       if (o.status === "DONOR_RECONFIRMED") {
         notifs.push({ id: `offer-reconfirmed-${o.id}`, title: "Donor confirmed availability", body: `The donor reconfirmed their item for "${o.requestTitle}" — pending admin approval`, type: "info", link: "/donee/offers", timestamp: ts });

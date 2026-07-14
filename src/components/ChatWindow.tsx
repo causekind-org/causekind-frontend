@@ -23,7 +23,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const lastSentAt = useRef<string | null>(null);
 
   // Initial load
@@ -37,9 +37,12 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
       .catch(() => {});
   }, [offerId]);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages — scroll ONLY the message list, never the
+  // page. scrollIntoView walks every scrollable ancestor, so on mount it yanked
+  // the whole handover page down to the chat.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   // Polling for new messages — skips when tab is in background. Kept as a fallback/
@@ -134,7 +137,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ maxHeight: 380 }}>
+      <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ maxHeight: 380 }}>
         {messages.length === 0 && (
           <p className="text-center text-sm text-gray-400 py-6">No messages yet.</p>
         )}
@@ -173,7 +176,6 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}

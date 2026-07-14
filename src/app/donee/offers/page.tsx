@@ -1,19 +1,120 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getOffersForMyRequests, doneeReviewOffer, type DonationOffer } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import CompatibilityIndicator from "@/components/CompatibilityIndicator";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
+
+// ── Fullscreen photo preview — the donee must be able to inspect the item
+// closely before accepting, so thumbnails open a zoomable lightbox. ──────────
+function PhotoLightbox({ urls, index, onClose, onNavigate }: {
+  urls: string[];
+  index: number;
+  onClose: () => void;
+  onNavigate: (idx: number) => void;
+}) {
+  const prev = useCallback(() => onNavigate((index - 1 + urls.length) % urls.length), [index, urls.length, onNavigate]);
+  const next = useCallback(() => onNavigate((index + 1) % urls.length), [index, urls.length, onNavigate]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && urls.length > 1) prev();
+      if (e.key === "ArrowRight" && urls.length > 1) next();
+    }
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose, prev, next, urls.length]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        aria-label="Close preview"
+        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      {urls.length > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); prev(); }}
+            aria-label="Previous photo"
+            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); next(); }}
+            aria-label="Next photo"
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </>
+      )}
+
+      <img
+        src={urls[index]}
+        alt={`Item photo ${index + 1} of ${urls.length}`}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[82vh] max-w-full rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-200"
+      />
+
+      {urls.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          {urls.map((u, i) => (
+            <button
+              key={u}
+              onClick={() => onNavigate(i)}
+              aria-label={`Photo ${i + 1}`}
+              className={`h-12 w-12 overflow-hidden rounded-lg border-2 transition-all ${
+                i === index ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-80"
+              }`}
+            >
+              <img src={u} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>,
+    document.body
+  );
+}
 
 export default function DoneeOffersPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-gray-50 dark:bg-gray-950" />}>
+      <DoneeOffersView />
+    </Suspense>
+  );
+}
+
+function DoneeOffersView() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [offers, setOffers] = useState<DonationOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
+
+  // ?offerId= scopes the page to one offer (dashboard "Details" deep-links here);
+  // without it the page remains the full inbox.
+  const focusedId = Number(searchParams.get("offerId")) || null;
 
   useEffect(() => {
     if (!user) {
@@ -45,13 +146,37 @@ export default function DoneeOffersPage() {
     finally { setActing(null); }
   }
 
+  const focused = focusedId ? offers.find((o) => o.id === focusedId) : undefined;
+  const visible = focused ? [focused] : offers;
+
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <div className="mx-auto max-w-2xl px-4 pt-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Donation Offers</h1>
-          <p className="text-sm text-gray-500">Donors who offered to fulfil your requests.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {focused ? "Offer Details" : "Donation Offers"}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {focused
+              ? <>For your request &ldquo;{focused.requestTitle}&rdquo;</>
+              : "Donors who offered to fulfil your requests."}
+          </p>
         </div>
+
+        {/* Scoped view — offer a way back to the full inbox */}
+        {focused && offers.length > 1 && (
+          <button
+            onClick={() => router.replace("/donee/offers")}
+            className="mb-4 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-xs font-semibold text-gray-500 shadow-sm transition-colors hover:border-gray-300 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            Show all offers ({offers.length})
+          </button>
+        )}
+        {focusedId && !loading && !focused && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
+            That offer could not be found — showing all offers instead.
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
@@ -69,7 +194,7 @@ export default function DoneeOffersPage() {
         )}
 
         <div className="space-y-5">
-          {offers.map((offer) => (
+          {visible.map((offer) => (
             <div key={offer.id} className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
               <div className="flex items-start justify-between">
                 <div>
@@ -102,16 +227,25 @@ export default function DoneeOffersPage() {
                 </div>
               )}
 
-              {/* Photos — deduplicated by URL */}
-              {offer.media.length > 0 && (
-                <div className="grid grid-cols-4 gap-2">
-                  {Array.from(new Map(offer.media.map(m => [m.mediaUrl, m])).values()).slice(0, 4).map((m) => (
-                    <div key={m.id} className="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-                      <img src={m.mediaUrl} alt="" className="h-full w-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Photos — deduplicated by URL, click to preview fullscreen */}
+              {offer.media.length > 0 && (() => {
+                const urls = Array.from(new Map(offer.media.map(m => [m.mediaUrl, m])).values())
+                  .slice(0, 4).map(m => m.mediaUrl);
+                return (
+                  <div className="grid grid-cols-4 gap-2">
+                    {urls.map((url, i) => (
+                      <button
+                        key={url}
+                        onClick={() => setLightbox({ urls, index: i })}
+                        aria-label={`Preview photo ${i + 1}`}
+                        className="group aspect-square cursor-zoom-in overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+                      >
+                        <img src={url} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* Compatibility */}
               {offer.compatibilityIndicator && (
@@ -159,6 +293,15 @@ export default function DoneeOffersPage() {
           ))}
         </div>
       </div>
+
+      {lightbox && (
+        <PhotoLightbox
+          urls={lightbox.urls}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onNavigate={(index) => setLightbox(lb => (lb ? { ...lb, index } : lb))}
+        />
+      )}
     </main>
   );
 }

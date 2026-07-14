@@ -22,7 +22,8 @@ import { Progress } from "@/components/ui/progress";
 import {
   Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
-  Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck
+  Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck,
+  ChevronDown, History
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
@@ -683,6 +684,89 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw }: {
 /* ─────────────────────────────────────────────────────────────────────────
    Dedicated Donee Dashboard — shown instead of the donor layout for DONEE role
 ───────────────────────────────────────────────────────────────────────────── */
+// ── Past offers strip — terminal offers collapse into quiet history ──────────
+// Dead offers must not compete with live ones for attention: full red panels
+// repeated per withdrawal buried the section, so history renders as slim
+// grouped rows behind a toggle, with the "request stays open" guidance shown
+// once — and only for requests that have no replacement offer in play.
+
+const TERMINAL_OFFER_STATUSES = ["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"];
+
+function pastOfferLabel(status: string): { label: string; tone: string } {
+  switch (status) {
+    case "ADMIN_REJECTED": return { label: "Not approved", tone: "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400" };
+    case "DONEE_DECLINED": return { label: "You declined", tone: "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" };
+    default:               return { label: "Withdrawn",    tone: "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" };
+  }
+}
+
+function PastOffersStrip({ offers, activeRequestIds }: {
+  offers: DonationOffer[];
+  activeRequestIds: Set<number>;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Group by request, newest first within each group
+  const groups = new Map<number, DonationOffer[]>();
+  for (const o of [...offers].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())) {
+    const g = groups.get(o.requestId);
+    if (g) g.push(o); else groups.set(o.requestId, [o]);
+  }
+  const someRequestStillOpen = [...groups.keys()].some(id => !activeRequestIds.has(id));
+
+  return (
+    <div className="border-t border-stone-100 dark:border-zinc-800 pt-3">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-stone-400 transition-colors hover:bg-stone-50 hover:text-stone-600 dark:hover:bg-zinc-800 dark:hover:text-stone-300"
+      >
+        <History className="h-3.5 w-3.5" />
+        Past offers ({offers.length})
+        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="mt-2 space-y-3">
+          {[...groups.entries()].map(([requestId, group]) => (
+            <div key={requestId} className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">{group[0].requestTitle}</p>
+                {group.length > 1 && (
+                  <span className="flex-shrink-0 text-[10px] font-semibold text-stone-400">{group.length} offers</span>
+                )}
+              </div>
+              <div className="mt-1.5 space-y-1">
+                {group.map(o => {
+                  const { label, tone } = pastOfferLabel(o.status);
+                  return (
+                    <div key={o.id} className="flex items-baseline gap-2 text-xs">
+                      <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}`}>{label}</span>
+                      <span className="flex-shrink-0 text-[10px] text-stone-400">
+                        {new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      </span>
+                      {o.rejectionReason && (
+                        <span className="min-w-0 truncate text-stone-400 dark:text-stone-500" title={o.rejectionReason}>
+                          {o.rejectionReason}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {someRequestStillOpen && (
+            <p className="px-2 text-[11px] leading-relaxed text-stone-400">
+              These requests remain open to other donors — you&apos;ll be notified the moment a new offer arrives.{" "}
+              <Link href="/requests" className="font-semibold text-[#b04a15] hover:underline">Browse donors offering to help →</Link>
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DoneeDashboard({
   user,
   myProfile,
@@ -839,7 +923,7 @@ function DoneeDashboard({
         </div>
 
         {/* ── Incoming Donation Offers (Donor Flow 2) ── */}
-        {incomingOffers.filter(o => o.status !== "DONEE_DECLINED").length > 0 && (
+        {incomingOffers.length > 0 && (
           <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
             <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#b04a15]" />
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4 relative z-10">
@@ -851,8 +935,13 @@ function DoneeDashboard({
               </Link>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
+              {incomingOffers.filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status)).length === 0 && (
+                <p className="py-2 text-center text-xs text-stone-400">
+                  No active offers right now — your requests stay visible to donors.
+                </p>
+              )}
               {incomingOffers
-                .filter(o => o.status !== "DONEE_DECLINED")
+                .filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status))
                 .map(offer => {
                   const isPendingReview = offer.status === "PENDING_DONEE_REVIEW";
                   const isApproved      = offer.status === "ADMIN_APPROVED";
@@ -925,39 +1014,8 @@ function DoneeDashboard({
                         </div>
                       )}
 
-                      {/* Withdrawn / rejected — special message instead of tracker */}
-                      {isWithdrawn && (
-                        <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4 space-y-2">
-                          <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-                            {offer.status === "ADMIN_REJECTED"
-                              ? "This donation offer was not approved by admin."
-                              : "The donor's item is no longer available."}
-                          </p>
-                          {offer.rejectionReason && (
-                            <div className="rounded-lg bg-white dark:bg-zinc-900 border border-red-100 dark:border-red-900 px-3 py-2">
-                              <p className="text-[10px] font-bold text-red-500 uppercase tracking-wide mb-0.5">
-                                {offer.status === "ADMIN_REJECTED" ? "Admin's reason" : "Reason given"}
-                              </p>
-                              <p className="text-xs text-red-600 dark:text-red-400">{offer.rejectionReason}</p>
-                            </div>
-                          )}
-                          <div className="pt-1 border-t border-red-100 dark:border-red-900 space-y-1">
-                            <p className="text-xs text-red-600 dark:text-red-400 font-semibold">What happens next:</p>
-                            <ul className="text-xs text-red-500 dark:text-red-500 space-y-0.5 list-disc list-inside">
-                              <li>Your request remains open and visible to other donors</li>
-                              {offer.status === "ADMIN_REJECTED"
-                                ? <li>The donor may re-submit an improved offer or offer to a different request</li>
-                                : <li>If another donor had expressed interest, they will be notified</li>}
-                              <li>You will receive a notification when a new offer arrives</li>
-                            </ul>
-                          </div>
-                          <Link href="/requests" className="block text-center rounded-xl border border-red-300 dark:border-red-800 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
-                            Browse donors offering to help →
-                          </Link>
-                        </div>
-                      )}
-
-                      {/* Stage Progress Tracker — only shown when offer is active */}
+                      {/* Stage Progress Tracker — terminal offers never reach here
+                          (they render in the PastOffersStrip below instead) */}
                       {!isWithdrawn && (() => {
                         const stages: { label: string; sublabel: string; statuses: string[] }[] = [
                           { label: "Offer Received",    sublabel: "Donor submitted their offer",            statuses: ["PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP"] },
@@ -1063,7 +1121,7 @@ function DoneeDashboard({
                           >
                             Decline
                           </button>
-                          <Link href="/donee/offers" className="rounded-xl border border-stone-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800">
+                          <Link href={`/donee/offers?offerId=${offer.id}`} className="rounded-xl border border-stone-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800">
                             Details
                           </Link>
                         </div>
@@ -1104,6 +1162,14 @@ function DoneeDashboard({
                     </div>
                   );
                 })}
+
+              {/* Terminal offers — slim grouped history instead of full cards */}
+              {incomingOffers.some(o => TERMINAL_OFFER_STATUSES.includes(o.status)) && (
+                <PastOffersStrip
+                  offers={incomingOffers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status))}
+                  activeRequestIds={new Set(incomingOffers.filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status)).map(o => o.requestId))}
+                />
+              )}
             </CardContent>
           </Card>
         )}

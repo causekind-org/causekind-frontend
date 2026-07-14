@@ -1132,6 +1132,16 @@ export type AnonymizedRequest = {
   quantityReserved: number;
   quantityDelivered: number;
   quantityRemaining: number;
+  // Trust context — structured, non-identifying facts only
+  verificationTier: string | null;
+  emergency: boolean;
+  imageUrl: string | null;
+  householdSize: number | null;
+  dependents: number | null;
+  peopleAffected: number | null;
+  housingType: string | null;
+  numberOfEarners: number | null;
+  reasonCannotBuy: string | null;
 };
 
 export type QuantityAllocation = {

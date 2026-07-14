@@ -249,9 +249,13 @@ export default function HandoverHubPage() {
             icon={CalendarDays}
             label="Step 2: Logistics"
             title="Handover Schedule"
-            description={!handover ? `Select a date and time that works for both you and the ${isDonee ? "donor" : "recipient"}.` : undefined}
+            description={!handover
+              ? isDonee
+                ? "The donor will pick a date and time — it's their item, so the schedule is theirs to set. You'll be notified as soon as it's fixed."
+                : "Select a date and time that works for both you and the recipient."
+              : undefined}
             colorClasses={statusStepColor("")}
-            action={!handover && (
+            action={!handover && !isDonee && (
               <button
                 onClick={() => setShowScheduleForm(true)}
                 className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
@@ -260,20 +264,30 @@ export default function HandoverHubPage() {
               </button>
             )}
           >
+            {!handover && isDonee && (
+              <div className="rounded-xl bg-white/60 dark:bg-white/5 p-4 text-sm text-gray-500 dark:text-gray-400">
+                ⏳ Waiting for the donor to schedule the handover…
+              </div>
+            )}
             {handover && (
               <div className="space-y-1.5 rounded-xl bg-white/60 dark:bg-white/5 p-4 text-sm text-gray-600 dark:text-gray-400">
                 <div><span className="font-medium">Method:</span> {handover.method}</div>
                 <div><span className="font-medium">Date/Time:</span> {handover.scheduledDateTime ? new Date(handover.scheduledDateTime).toLocaleString() : "—"}</div>
                 {handover.locationAddress && <div><span className="font-medium">Location:</span> {handover.locationAddress}</div>}
                 <div><span className="font-medium">Reschedules used:</span> {handover.rescheduleCount} / 2</div>
-                {handover.rescheduleCount < 2 && (
+                {!isDonee && handover.rescheduleCount < 2 && (
                   <button onClick={() => setShowScheduleForm(true)} className="mt-1 rounded-lg bg-white/80 dark:bg-black/20 px-3 py-1.5 text-xs font-semibold text-[#b04a15] hover:bg-white transition-colors">
                     Reschedule
                   </button>
                 )}
+                {isDonee && (
+                  <p className="pt-1 text-xs text-gray-400">
+                    Need a different time? Ask the donor in the chat below — scheduling is in their hands.
+                  </p>
+                )}
               </div>
             )}
-            {showScheduleForm && (
+            {showScheduleForm && !isDonee && (
               <div className="mt-4 rounded-2xl bg-white/80 dark:bg-gray-900/80 p-5 space-y-3">
                 <h3 className="font-semibold text-gray-800 dark:text-gray-200">
                   {handover ? "Reschedule Handover" : "Schedule Handover"}
@@ -501,9 +515,8 @@ export default function HandoverHubPage() {
                   )}
 
                   <div className="flex flex-col gap-2">
-                    {/* Reschedule — only if no dispute (donor hasn't confirmed yet or it's the donor reporting) */}
-                    {handover && handover.rescheduleCount < 2 &&
-                      !(isDonee && handover.confirmation?.donorConfirmedAt) && (
+                    {/* Reschedule — donor only (it's their item and their schedule) */}
+                    {!isDonee && handover && handover.rescheduleCount < 2 && (
                       <button
                         onClick={() => { setShowProblemForm(false); setShowScheduleForm(true); }}
                         className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 px-4 py-2.5 text-sm font-semibold text-amber-700 dark:text-amber-400 text-left hover:bg-amber-100 transition-colors">
@@ -514,10 +527,14 @@ export default function HandoverHubPage() {
                         </span>
                       </button>
                     )}
+                    {isDonee && handover && !handover.confirmation?.donorConfirmedAt && (
+                      <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                        Scheduling is in the donor&apos;s hands — ask for a new time in the chat, or notify CauseKind below if you can&apos;t reach them.
+                      </div>
+                    )}
 
                     {/* Reschedule limit reached */}
-                    {handover && handover.rescheduleCount >= 2 &&
-                      !(isDonee && handover.confirmation?.donorConfirmedAt) && (
+                    {!isDonee && handover && handover.rescheduleCount >= 2 && (
                       <div className="rounded-lg bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 px-3 py-2 text-xs text-stone-500">
                         Maximum reschedules reached — only admin intervention is available.
                       </div>
@@ -538,13 +555,11 @@ export default function HandoverHubPage() {
                   </div>
                 </div>
 
-                {/* Rescheduling explanation */}
-                {handover && handover.rescheduleCount < 2 && !(isDonee && handover?.confirmation?.donorConfirmedAt) && (
+                {/* Rescheduling explanation — donor only, since only they can reschedule */}
+                {!isDonee && handover && handover.rescheduleCount < 2 && (
                   <div className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
                     <span className="font-medium">How rescheduling works:</span>{" "}
-                    A new time is agreed between both parties. {isDonee
-                      ? "The donor will need to re-confirm the handover at the new time."
-                      : "The recipient will need to confirm receipt at the new time."}{" "}
+                    A new time is agreed between both parties. The recipient will need to confirm receipt at the new time.{" "}
                     After {2 - handover.rescheduleCount} more reschedule{2 - handover.rescheduleCount > 1 ? "s" : ""}, the case is automatically flagged for admin review.
                   </div>
                 )}

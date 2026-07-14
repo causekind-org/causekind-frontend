@@ -1565,6 +1565,56 @@ section:focus-within {
   -webkit-text-fill-color: transparent;
 }
 
+/* ── Coming Soon flow cards (offer wizard step 1) ── */
+@keyframes cs-card-sheen {
+  0%, 60% { transform: translateX(-160%) skewX(-18deg); }
+  100%    { transform: translateX(320%) skewX(-18deg); }
+}
+.cs-card-sheen {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 0%, rgba(224, 123, 58, 0.10) 45%, rgba(240, 185, 122, 0.22) 55%, transparent 100%);
+  animation: cs-card-sheen 3.4s ease-in-out infinite;
+}
+:is(.dark) .cs-card-sheen {
+  background: linear-gradient(105deg, transparent 0%, rgba(224, 123, 58, 0.08) 45%, rgba(240, 185, 122, 0.14) 55%, transparent 100%);
+}
+
+@keyframes cs-icon-drift {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  50%       { translate: 0 -6px; rotate: -5deg; }
+}
+.cs-icon-drift { animation: cs-icon-drift 3s ease-in-out infinite; }
+
+@keyframes cs-card-nudge {
+  0%, 100% { translate: 0 0; }
+  15%  { translate: -7px 0; rotate: -0.6deg; }
+  35%  { translate: 6px 0;  rotate: 0.5deg; }
+  55%  { translate: -4px 0; rotate: -0.3deg; }
+  75%  { translate: 2px 0;  rotate: 0.15deg; }
+}
+.cs-card-nudge { animation: cs-card-nudge 0.6s ease-in-out; }
+
+@keyframes cs-dot-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50%       { opacity: 1;    transform: scale(1.15); }
+}
+.cs-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: #e07b3a;
+  animation: cs-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes cs-badge-spark {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+  50%       { transform: scale(1.3) rotate(20deg); opacity: 1; }
+}
+.cs-badge-spark { animation: cs-badge-spark 2.5s ease-in-out infinite; }
+
 /* ── Donee Requests page ── */
 @keyframes float-card {
   0%, 100% { transform: translateY(0px) rotate(-1deg); }
