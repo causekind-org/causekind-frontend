@@ -34,4 +34,5 @@ ds-bundle/
 # Graphify
 graphify-out/
 
-
+# Obsidian
+.obsidian/

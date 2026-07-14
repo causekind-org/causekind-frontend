@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, use } from "react";
+import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "isomorphic-dompurify";
+import { Search, X } from "lucide-react";
 import { blogPosts } from "../../../data/blogData";
+import { searchBlogPosts } from "@/lib/blogSearch";
 import { AnimatedWrapper } from "../../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
 
@@ -19,6 +21,21 @@ export default function BlogReadingPage({ params }: PageProps) {
   const [boldMode, setBoldMode] = useState(false);
   const [fontMode, setFontMode] = useState("font-serif-mode");
   const [copied, setCopied] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+  const liveSearchResults = searchBlogPosts(blogPosts, searchQuery, 6);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -53,8 +70,12 @@ export default function BlogReadingPage({ params }: PageProps) {
     );
   }
 
-  // Filter out the current post from recommendations
-  const recommendedPosts = blogPosts.filter((p) => p.slug !== slug).slice(0, 2);
+  // Recommend other stories in the same category first, so "Read Next"
+  // helps readers stay within the kind of story they're already engaged with.
+  const otherPosts = blogPosts.filter((p) => p.slug !== slug);
+  const sameCategoryPosts = otherPosts.filter((p) => p.category === post.category);
+  const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
+  const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 2);
 
   return (
     <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-24`}>
@@ -80,11 +101,15 @@ export default function BlogReadingPage({ params }: PageProps) {
                   style={{ backgroundImage: `url('${post.image}')` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                {/* Category badge overlaid bottom-left */}
+                {/* Category badge overlaid bottom-left — links back to the
+                    listing page pre-filtered to this category */}
                 <div className="absolute top-5 left-5">
-                  <span className="inline-block px-3 py-1 bg-orange-300 text-orange-900 font-label-sm text-xs rounded-full uppercase tracking-wider font-semibold">
+                  <Link
+                    href={`/blog?category=${encodeURIComponent(post.category)}`}
+                    className="inline-block px-3 py-1 bg-orange-300 hover:bg-orange-200 text-orange-900 font-label-sm text-xs rounded-full uppercase tracking-wider font-semibold transition-colors"
+                  >
                     {post.category}
-                  </span>
+                  </Link>
                 </div>
               </div>
             </AnimatedWrapper>
@@ -208,6 +233,77 @@ export default function BlogReadingPage({ params }: PageProps) {
               transition={{ duration: 0.55, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               <div className="sticky top-[120px]">
+                {/* Search Stories — live dropdown, same ranking as the blog listing page */}
+                <div ref={searchBoxRef} className="relative mb-8">
+                  <div className="relative flex items-center">
+                    <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
+                    <input
+                      className="pl-9 pr-8 py-2.5 w-full bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] transition-all"
+                      placeholder="Search stories..."
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setIsSearchFocused(false);
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        aria-label="Clear search"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <AnimatePresence>
+                    {isSearchFocused && searchQuery.trim() !== "" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl z-30 overflow-hidden"
+                      >
+                        {liveSearchResults.length > 0 ? (
+                          <ul className="max-h-96 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800">
+                            {liveSearchResults.map((result) => (
+                              <li key={result.slug}>
+                                <Link
+                                  href={`/blog/${result.slug}`}
+                                  onClick={() => setIsSearchFocused(false)}
+                                  className="flex items-center gap-3 p-3 hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors"
+                                >
+                                  <img
+                                    src={result.image}
+                                    alt={result.title}
+                                    className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="text-[10px] font-bold text-[#b04a15] dark:text-orange-400 uppercase tracking-wide truncate">
+                                      {result.category}
+                                    </p>
+                                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 truncate">
+                                      {result.title}
+                                    </p>
+                                  </div>
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="p-4 text-sm text-stone-500 dark:text-stone-400 text-center">
+                            No stories match &ldquo;{searchQuery}&rdquo;.
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <h3 className="font-display-lg text-2xl text-[#b04a15] dark:text-[#e07b3a] mb-6 font-bold">Read Next</h3>
                 <StaggerContainer delayStart={0.6} staggerDelay={0.12} className="flex flex-col gap-6">
                   {recommendedPosts.map((rec) => (
