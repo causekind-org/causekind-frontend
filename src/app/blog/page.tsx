@@ -1,14 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { blogPosts, insiderTips } from "../../data/blogData";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
+import { searchBlogPosts } from "@/lib/blogSearch";
 import { Sparkles } from "lucide-react";
+
+// Categories are derived from blogPosts itself, so adding a new post with a
+// new category automatically shows up here — no manual list to maintain.
+const ALL_CATEGORIES = "All";
 
 function timeAgo(date: Date): string {
   const mins = Math.floor((Date.now() - date.getTime()) / 60000);
@@ -27,10 +33,47 @@ function activityToFeedItem(a: RecentActivity, i: number) {
   return { id: i, time: timeAgo(new Date(Date.now() - i * 8 * 60000)), user: name, text };
 }
 
-export default function BlogListingPage() {
+function BlogListingContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const categoryFromUrl = searchParams.get("category");
+
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || ALL_CATEGORIES);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
   const [liveFeed, setLiveFeed] = useState<{ id: number; time: string; user: string; text: string }[]>([]);
   const [positiveUpdate, setPositiveUpdate] = useState<string | null>(null);
+
+  // Category list is computed from the live blogPosts array — new posts with
+  // a new category value appear here automatically.
+  const categories = useMemo(
+    () => [ALL_CATEGORIES, ...Array.from(new Set(blogPosts.map((p) => p.category)))],
+    []
+  );
+
+  // Keep the selected category in sync if the URL's ?category= changes
+  // (e.g. navigating here from a category link on the reading page).
+  useEffect(() => {
+    setSelectedCategory(categoryFromUrl || ALL_CATEGORIES);
+  }, [categoryFromUrl]);
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    const query = category === ALL_CATEGORIES ? "" : `?category=${encodeURIComponent(category)}`;
+    router.replace(`/blog${query}`, { scroll: false });
+  };
+
+  // Close the live-results dropdown when clicking outside the search box.
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Carousel state for Insider Tips section
   const [tipIndex, setTipIndex] = useState(0);
@@ -84,71 +127,20 @@ export default function BlogListingPage() {
     return () => clearInterval(interval);
   }, [liveFeed.length]);
 
-  // Advanced relevance-based search ranking
-  const getSearchScore = (post: typeof blogPosts[0], query: string) => {
-    if (!query) return 0;
-    const cleanQuery = query.toLowerCase().trim();
-    if (cleanQuery === "") return 0;
-
-    let score = 0;
-    const title = post.title.toLowerCase();
-    const desc = post.description.toLowerCase();
-    const cat = post.category.toLowerCase();
-    const content = (post.content || "").toLowerCase();
-
-    // 1. Exact full match in title
-    if (title === cleanQuery) {
-      score += 1000;
-    }
-    // 2. Query is a substring of the title
-    if (title.includes(cleanQuery)) {
-      score += 500;
-    }
-    // 3. Query is a substring of the description
-    if (desc.includes(cleanQuery)) {
-      score += 250;
-    }
-
-    // 4. Individual word matches
-    const words = cleanQuery.split(/\s+/).filter(Boolean);
-    words.forEach((word) => {
-      // Title word boundary match
-      const wordRegex = new RegExp(`\\b${word}\\b`, 'i');
-      if (wordRegex.test(title)) {
-        score += 150;
-      } else if (title.includes(word)) {
-        score += 80;
-      }
-
-      // Description word boundary match
-      if (wordRegex.test(desc)) {
-        score += 60;
-      } else if (desc.includes(word)) {
-        score += 30;
-      }
-
-      // Category match
-      if (cat.includes(word)) {
-        score += 100;
-      }
-
-      // Content match
-      if (content.includes(word)) {
-        score += 20;
-      }
-    });
-
-    return score;
-  };
-
-  // Search filtering & dynamic relevance sorting
-  const filteredPosts = searchQuery.trim() === ""
+  // Category filtering happens first, then search relevance ranking runs on
+  // top of it — the two combine rather than override each other.
+  const categoryScopedPosts = selectedCategory === ALL_CATEGORIES
     ? blogPosts
-    : blogPosts
-        .map((post) => ({ post, score: getSearchScore(post, searchQuery) }))
-        .filter((item) => item.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .map((item) => item.post);
+    : blogPosts.filter((post) => post.category === selectedCategory);
+
+  const filteredPosts = searchQuery.trim() === ""
+    ? categoryScopedPosts
+    : searchBlogPosts(categoryScopedPosts, searchQuery);
+
+  // Instant-results dropdown: always searches the full catalog (ignores the
+  // active category pill) so typing surfaces a result no matter what's
+  // selected, then the user jumps straight to it.
+  const liveSearchResults = searchBlogPosts(blogPosts, searchQuery, 6);
 
   return (
     <div className="pt-24 pb-16 bg-[#faf8f5] dark:bg-[#0c0a09]">
@@ -175,21 +167,107 @@ export default function BlogListingPage() {
             </div>
             
             <AnimatedWrapper delay={0.3} duration={0.55} direction="left">
-              <div className="flex items-center gap-4 bg-white dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs">
-                <div className="relative flex items-center">
+              <div ref={searchBoxRef} className="relative flex items-center gap-4 bg-white dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs">
+                <div className="relative flex items-center w-full">
                   <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
                   <input
-                    className="pl-9 pr-4 py-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-850 rounded-full text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] transition-all w-full md:w-64"
+                    className="pl-9 pr-8 py-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-850 rounded-full text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] transition-all w-full md:w-64"
                     placeholder="Search stories..."
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setIsSearchFocused(false);
+                    }}
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      aria-label="Clear search"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
+
+                {/* Live results dropdown — updates on every keystroke */}
+                <AnimatePresence>
+                  {isSearchFocused && searchQuery.trim() !== "" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-4 right-4 md:left-auto md:w-80 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl z-30 overflow-hidden"
+                    >
+                      {liveSearchResults.length > 0 ? (
+                        <ul className="max-h-96 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800">
+                          {liveSearchResults.map((post) => (
+                            <li key={post.slug}>
+                              <Link
+                                href={`/blog/${post.slug}`}
+                                onClick={() => setIsSearchFocused(false)}
+                                className="flex items-center gap-3 p-3 hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors"
+                              >
+                                <img
+                                  src={post.image}
+                                  alt={post.title}
+                                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-[#b04a15] dark:text-orange-400 uppercase tracking-wide truncate">
+                                    {post.category}
+                                  </p>
+                                  <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 truncate">
+                                    {post.title}
+                                  </p>
+                                </div>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="p-4 text-sm text-stone-500 dark:text-stone-400 text-center">
+                          No stories match &ldquo;{searchQuery}&rdquo;.
+                        </p>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </AnimatedWrapper>
           </div>
 
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* Category Sidebar (vertical) */}
+            <AnimatedWrapper delay={0.35} duration={0.5} direction="up" className="w-full lg:w-56 flex-shrink-0">
+              <nav className="lg:sticky lg:top-28 bg-white dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 rounded-2xl p-3">
+                <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                  Categories
+                </p>
+                <div className="flex flex-col gap-1">
+                  {categories.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => handleCategorySelect(category)}
+                      className={`text-left px-3 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                        selectedCategory === category
+                          ? "bg-[#b04a15] text-white shadow-sm"
+                          : "text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800/60 hover:text-[#b04a15] dark:hover:text-orange-400"
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+            </AnimatedWrapper>
+
+            <div className="flex-1 min-w-0">
           {/* Featured Story Bento */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             {/* Large Featured Card */}
@@ -239,7 +317,22 @@ export default function BlogListingPage() {
                 })()
               ) : (
                 <div className="bg-white dark:bg-stone-900/20 border border-stone-200 dark:border-stone-800 p-12 rounded-2xl text-center">
-                  <p className="text-stone-500 dark:text-stone-400 font-medium">No stories match your search query.</p>
+                  <p className="text-stone-500 dark:text-stone-400 font-medium">
+                    {searchQuery.trim() !== "" && selectedCategory !== ALL_CATEGORIES
+                      ? `No stories match "${searchQuery}" in ${selectedCategory}.`
+                      : searchQuery.trim() !== ""
+                        ? `No stories match "${searchQuery}".`
+                        : `No stories in ${selectedCategory} yet.`}
+                  </p>
+                  {selectedCategory !== ALL_CATEGORIES && (
+                    <button
+                      type="button"
+                      onClick={() => handleCategorySelect(ALL_CATEGORIES)}
+                      className="mt-4 text-sm font-bold text-[#b04a15] dark:text-orange-400 hover:underline cursor-pointer"
+                    >
+                      View all categories →
+                    </button>
+                  )}
                 </div>
               )}
             </AnimatedWrapper>
@@ -329,6 +422,8 @@ export default function BlogListingPage() {
               ))}
             </StaggerContainer>
           )}
+            </div>
+          </div>
         </section>
 
         {/* Insider Tips and Tricks Section */}
@@ -492,5 +587,13 @@ export default function BlogListingPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function BlogListingPage() {
+  return (
+    <Suspense fallback={null}>
+      <BlogListingContent />
+    </Suspense>
   );
 }
