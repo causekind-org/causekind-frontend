@@ -23,12 +23,13 @@ import {
   Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
   Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck,
-  ChevronDown, History
+  ChevronDown, History, MessageCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { ListingDetailPanel } from "@/components/ListingDetailPanel";
+import MatchChatPopup from "@/components/MatchChatPopup";
 
 // Once both parties accept, scheduling/confirmation/chat all live on the
 // Handover Hub page instead of inline dashboard forms.
@@ -783,6 +784,8 @@ function DoneeDashboard({
   const [matchActionLoading, setMatchActionLoading] = useState<number | null>(null);
   const [incomingOffers, setIncomingOffers] = useState<DonationOffer[]>([]);
   const [offerActionLoading, setOfferActionLoading] = useState<number | null>(null);
+  // Floating match chat — same thread as the Handover Hub, popped over the dashboard
+  const [chatMatch, setChatMatch] = useState<ItemMatch | null>(null);
 
   useEffect(() => {
     getOffersForMyRequests().then(setIncomingOffers).catch(() => {});
@@ -1305,10 +1308,16 @@ function DoneeDashboard({
                           </div>
                         )}
                         {HANDOVER_HUB_STATUSES.has(m.status) && (
-                          <div className="pt-1">
-                            <Link href={`/matches/${m.id}/handover`} className="flex items-center justify-center gap-1.5 w-full bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                          <div className="flex gap-2 pt-1">
+                            <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
                               <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
                             </Link>
+                            <button
+                              onClick={() => setChatMatch(m)}
+                              className="flex items-center justify-center gap-1.5 border border-[#1e3a60]/40 text-[#1e3a60] hover:bg-[#1e3a60]/5 dark:text-blue-400 dark:border-blue-400/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" /> Chat
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1322,6 +1331,17 @@ function DoneeDashboard({
         </div>
 
       </div>
+
+      {chatMatch && (
+        <MatchChatPopup
+          matchId={chatMatch.id}
+          partnerName={chatMatch.donorName || "Donor"}
+          itemTitle={chatMatch.listingTitle || chatMatch.requestTitle}
+          currentUserEmail={user.email}
+          accent="navy"
+          onClose={() => setChatMatch(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1355,6 +1375,9 @@ export default function DashboardPage() {
   const [declineReason, setDeclineReason] = useState("");
   const [declineConditionChanged, setDeclineConditionChanged] = useState(false);
   const [reviewLoading, setReviewLoading] = useState<number | null>(null);
+
+  // Floating match chat — same thread as the Handover Hub, popped over the dashboard
+  const [chatMatch, setChatMatch] = useState<ItemMatch | null>(null);
 
   const refreshListings = async () => {
     try { const fresh = await getMyItemListings(); setItemListings(fresh); } catch { /* silent */ }
@@ -1843,10 +1866,16 @@ export default function DashboardPage() {
                                   </div>
                                 )}
                                 {HANDOVER_HUB_STATUSES.has(m.status) && (
-                                  <div className="pt-1">
-                                    <Link href={`/matches/${m.id}/handover`} className="flex items-center justify-center gap-1.5 w-full bg-[#b04a15] hover:bg-[#c45520] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                  <div className="flex gap-2 pt-1">
+                                    <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[#b04a15] hover:bg-[#c45520] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
                                       <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
                                     </Link>
+                                    <button
+                                      onClick={() => setChatMatch(m)}
+                                      className="flex items-center justify-center gap-1.5 border border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5 dark:text-[#e07b3a] dark:border-[#e07b3a]/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
+                                    >
+                                      <MessageCircle className="w-3.5 h-3.5" /> Chat
+                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -1987,9 +2016,17 @@ export default function DashboardPage() {
                                   <div><p className="text-stone-500">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
                                   {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[#b04a15]">{m.matchScore}%</p></div>)}
                                 </div>
-                                {m.status === "TRANSPORT_DISCUSSION" && (
-                                  <div className="flex justify-end gap-2 pt-1">
-                                    <Button size="sm" className="bg-[#b04a15] text-white text-xs font-bold rounded-lg flex items-center gap-1">Call Donor (Masked)</Button>
+                                {HANDOVER_HUB_STATUSES.has(m.status) && (
+                                  <div className="flex gap-2 pt-1">
+                                    <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                      <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
+                                    </Link>
+                                    <button
+                                      onClick={() => setChatMatch(m)}
+                                      className="flex items-center justify-center gap-1.5 border border-[#1e3a60]/40 text-[#1e3a60] hover:bg-[#1e3a60]/5 dark:text-blue-400 dark:border-blue-400/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
+                                    >
+                                      <MessageCircle className="w-3.5 h-3.5" /> Chat
+                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -2009,6 +2046,17 @@ export default function DashboardPage() {
 
         </div>
       </div>
+
+      {chatMatch && user?.email && (
+        <MatchChatPopup
+          matchId={chatMatch.id}
+          partnerName={(chatMatch.doneeName === myProfile?.fullName ? chatMatch.donorName : chatMatch.doneeName) || "Match partner"}
+          itemTitle={chatMatch.listingTitle || chatMatch.requestTitle}
+          currentUserEmail={user.email}
+          accent={chatMatch.doneeName === myProfile?.fullName ? "navy" : "copper"}
+          onClose={() => setChatMatch(null)}
+        />
+      )}
 
       <ListingDetailPanel
         listing={selectedListing}
