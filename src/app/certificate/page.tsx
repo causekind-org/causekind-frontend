@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getOfferCertificate, verifyCertificate, type Certificate } from "@/lib/api";
+import { getOfferCertificate, getMatchCertificate, verifyCertificate, type Certificate } from "@/lib/api";
 import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import QRCode from "qrcode";
@@ -11,6 +11,7 @@ export default function CertificatePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const offerId = searchParams.get("offerId");
+  const matchId = searchParams.get("matchId");
   const certNumber = searchParams.get("certNumber");
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -24,11 +25,13 @@ export default function CertificatePage() {
       verifyCertificate(certNumber).then(setCert).catch(() => setError("Certificate not found")).finally(() => setLoading(false));
     } else if (offerId) {
       getOfferCertificate(Number(offerId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
+    } else if (matchId) {
+      getMatchCertificate(Number(matchId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
     } else {
       setError("No certificate reference provided");
       setLoading(false);
     }
-  }, [offerId, certNumber]);
+  }, [offerId, matchId, certNumber]);
 
   // Generate a scannable QR pointing at this same verification page — this is what
   // actually makes the certificate "QR-verifiable", not just the text label.
