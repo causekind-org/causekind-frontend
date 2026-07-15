@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import DOMPurify from "isomorphic-dompurify";
-import { Search, X } from "lucide-react";
-import { blogPosts } from "../../../data/blogData";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { AnimatedWrapper } from "../../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
+import { Search, X } from "lucide-react";
+import { blogPosts } from "../../../data/blogData";
+
+
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -112,6 +113,16 @@ export default function BlogReadingPage({ params }: PageProps) {
   const [boldMode, setBoldMode] = useState(false);
   const [fontMode, setFontMode] = useState("font-serif-mode");
   const [copied, setCopied] = useState(false);
+  const [sanitizedContent, setSanitizedContent] = useState("");
+
+  useEffect(() => {
+    if (post) {
+      import("isomorphic-dompurify").then((DOMPurify) => {
+        setSanitizedContent(DOMPurify.default.sanitize(post.content || ""));
+      });
+    }
+  }, [post]);
+
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -298,7 +309,7 @@ export default function BlogReadingPage({ params }: PageProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
               // Fix #3: sanitize HTML before injection — strips <script>, onerror, etc.
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || "") }}
+              dangerouslySetInnerHTML={{ __html: sanitizedContent || post.content || "" }}
             />
 
             {/* Right Sidebar: Next For You */}
