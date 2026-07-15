@@ -183,34 +183,69 @@ export default function BlogReadingPage({ params }: PageProps) {
   // post — otherwise the page renders fine but carries zero structured data.
   const postSchemaData = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": `https://www.causekind.com/blog/${post.slug}`,
-    },
-    "headline": post.title,
-    "description": post.description,
-    "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
-    "author": {
-      "@type": "Person",
-      "name": post.author,
-      "image": post.authorImage,
-      "url": "https://www.causekind.com/about",
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "CauseKind",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://www.causekind.com/logo-filled.png",
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": `https://www.causekind.com/blog/${post.slug}`,
+        },
+        "headline": post.title,
+        "description": post.description,
+        "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
+        "author": {
+          "@type": "Person",
+          "name": post.author,
+          "image": post.authorImage,
+          "url": "https://www.causekind.com/about",
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "CauseKind",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.causekind.com/logo-filled.png",
+          },
+        },
+        // publishedDate is stored as "Month YYYY" (e.g. "June 2026") — Date parses that
+        // to the 1st of the month. Outputting the full ISO string ensures a valid timezone.
+        "datePublished": !isNaN(new Date(post.publishedDate).getTime())
+          ? new Date(post.publishedDate).toISOString()
+          : undefined,
+        "url": `https://www.causekind.com/blog/${post.slug}`,
       },
-    },
-    // publishedDate is stored as "Month YYYY" (e.g. "June 2026") — Date parses that
-    // to the 1st of the month. Outputting the full ISO string ensures a valid timezone.
-    "datePublished": !isNaN(new Date(post.publishedDate).getTime())
-      ? new Date(post.publishedDate).toISOString()
-      : undefined,
-    "url": `https://www.causekind.com/blog/${post.slug}`,
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://www.causekind.com"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Blog",
+            "item": "https://www.causekind.com/blog"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": post.title,
+            "item": `https://www.causekind.com/blog/${post.slug}`
+          }
+        ]
+      },
+      {
+        "@type": "Organization",
+        "name": "CauseKind",
+        "url": "https://www.causekind.com",
+        "logo": "https://www.causekind.com/logo-filled.png",
+        "image": "https://www.causekind.com/logo-filled.png",
+        "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs."
+      }
+    ]
   };
 
   return (
