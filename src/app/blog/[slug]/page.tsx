@@ -179,8 +179,45 @@ export default function BlogReadingPage({ params }: PageProps) {
   const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
   const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 2);
 
+  // Schema.org BlogPosting markup so Google's Rich Results can pick up this
+  // post — otherwise the page renders fine but carries zero structured data.
+  const postSchemaData = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.causekind.com/blog/${post.slug}`,
+    },
+    "headline": post.title,
+    "description": post.description,
+    "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
+    "author": {
+      "@type": "Person",
+      "name": post.author,
+      "image": post.authorImage,
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "CauseKind",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.causekind.com/logo-filled.png",
+      },
+    },
+    // publishedDate is stored as "Month YYYY" (e.g. "June 2026") — Date parses that
+    // to the 1st of the month, which is the best ISO date this data supports.
+    "datePublished": !isNaN(new Date(post.publishedDate).getTime())
+      ? new Date(post.publishedDate).toISOString().slice(0, 10)
+      : undefined,
+    "url": `https://www.causekind.com/blog/${post.slug}`,
+  };
+
   return (
     <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-24`}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(postSchemaData) }}
+      />
       {/* Main Content Area */}
       <main className="pb-24">
         <article>

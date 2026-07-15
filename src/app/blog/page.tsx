@@ -142,8 +142,39 @@ function BlogListingContent() {
   // selected, then the user jumps straight to it.
   const liveSearchResults = searchBlogPosts(blogPosts, searchQuery, 6);
 
+  // Schema.org Blog markup listing every post, so the blog index itself is
+  // eligible for Google's Rich Results (mirrors the BlogPosting markup on
+  // each post's own page).
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "CauseKind Blog",
+    "url": "https://www.causekind.com/blog",
+    "description": "Real impact, verified by the community. Discover stories of in-kind giving and change.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "CauseKind",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.causekind.com/logo-filled.png",
+      },
+    },
+    "blogPost": blogPosts.map((post) => ({
+      "@type": "BlogPosting",
+      "headline": post.title,
+      "description": post.description,
+      "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
+      "author": { "@type": "Person", "name": post.author },
+      "url": `https://www.causekind.com/blog/${post.slug}`,
+    })),
+  };
+
   return (
     <div className="pt-24 pb-16 bg-[#faf8f5] dark:bg-[#0c0a09]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <div className="max-w-[1280px] mx-auto px-6">
         {/* Search & Header Section */}
         <section className="mb-12">
