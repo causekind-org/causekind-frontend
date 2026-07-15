@@ -261,6 +261,7 @@ export default async function AboutPage() {
         </Reveal>
 
       </div>
+      </div>
 
     </>
   );
