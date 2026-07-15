@@ -6,6 +6,9 @@ import { getOfferCertificate, getMatchCertificate, verifyCertificate, type Certi
 import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import QRCode from "qrcode";
+import { Dancing_Script } from "next/font/google";
+
+const dancingScript = Dancing_Script({ weight: "700", subsets: ["latin"] });
 
 export default function CertificatePage() {
   const searchParams = useSearchParams();
@@ -204,12 +207,12 @@ export default function CertificatePage() {
           <div style={{ marginBottom: "24px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "8px", justifyContent: "center" }}>
               <span style={{ fontSize: "clamp(10px, 1.4vw, 14px)", color: "#5a4a3a" }}>Mr./Ms.</span>
-              <div style={{ borderBottom: "1.5px solid #5a4a3a", minWidth: "200px", textAlign: "center" }}>
+              <div style={{ borderBottom: "1.5px solid #5a4a3a", minWidth: "220px", textAlign: "center" }}>
                 <span style={{
-                  fontFamily: "'Brush Script MT', 'Dancing Script', cursive",
-                  fontSize: "clamp(22px, 4vw, 38px)",
+                  fontFamily: dancingScript.style.fontFamily,
+                  fontWeight: 700,
+                  fontSize: "clamp(26px, 4.6vw, 46px)",
                   color: "#1a1008",
-                  letterSpacing: "0.02em",
                 }}>
                   {cert.donorName}
                 </span>
@@ -257,8 +260,8 @@ export default function CertificatePage() {
           {qrDataUrl && (
             <div style={{
               position: "absolute",
-              bottom: "clamp(28px, 6vw, 52px)",
-              right: "clamp(28px, 6vw, 52px)",
+              bottom: "clamp(56px, 8vw, 80px)",
+              right: "clamp(56px, 8vw, 80px)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -315,43 +318,34 @@ function TableRow({ label, value }: { label: string; value: string }) {
 }
 
 function OrnamentalBorder() {
-  // Woven interlocking-square lattice sitting at the corner joint where the double
-  // border lines meet — approximated by hand from a reference screenshot, not traced
-  // from a vector source. If you have the original asset for this motif, send it over
-  // (same as logo-filled.png) and this can be swapped for an exact match.
+  // Woven interlocking-square lattice sitting on the frame's corner joint —
+  // matched against the reference certificate design (see docs/design assets).
   const corner = (style: React.CSSProperties) => (
-    <div style={{ position: "absolute", width: "28px", height: "28px", ...style }}>
-      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0.5" y="0.5" width="9" height="9" stroke="#c4501a" strokeWidth="1"/>
-        <rect x="9.5" y="0.5" width="9" height="9" stroke="#c4501a" strokeWidth="1"/>
-        <rect x="0.5" y="9.5" width="9" height="9" stroke="#c4501a" strokeWidth="1"/>
-        <rect x="9.5" y="9.5" width="9" height="9" stroke="#c4501a" strokeWidth="1"/>
-        <rect x="4.5" y="4.5" width="9" height="9" stroke="#c4501a" strokeWidth="0.75" fill="#f5f0e8"/>
-        <rect x="8" y="8" width="4" height="4" fill="#c4501a"/>
+    <div style={{ position: "absolute", width: "52px", height: "52px", ...style }}>
+      <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="16" height="16" stroke="#c4501a" strokeWidth="1.5"/>
+        <rect x="17" y="1" width="16" height="16" stroke="#c4501a" strokeWidth="1.5"/>
+        <rect x="1" y="17" width="16" height="16" stroke="#c4501a" strokeWidth="1.5"/>
+        <rect x="17" y="17" width="16" height="16" stroke="#c4501a" strokeWidth="1.5"/>
+        <rect x="9" y="9" width="16" height="16" stroke="#c4501a" strokeWidth="1.25" fill="#f5f0e8"/>
+        <rect x="14.5" y="14.5" width="5" height="5" fill="#c4501a"/>
       </svg>
     </div>
   );
 
   return (
     <>
-      {/* Double-rule border — two close parallel lines running the whole perimeter */}
+      {/* Single hairline frame running the whole perimeter */}
       <div style={{
-        position: "absolute", inset: "12px",
-        border: "1.5px solid #c4501a",
+        position: "absolute", inset: "22px",
+        border: "1.25px solid #c4501a",
         pointerEvents: "none",
-        borderRadius: "2px",
       }} />
-      <div style={{
-        position: "absolute", inset: "15px",
-        border: "1px solid #c4501a",
-        pointerEvents: "none",
-        borderRadius: "2px",
-      }} />
-      {/* Corner lattice, tucked right on the double lines' corner joint */}
-      {corner({ top: "5px", left: "5px" })}
-      {corner({ top: "5px", right: "5px", transform: "scaleX(-1)" })}
-      {corner({ bottom: "5px", left: "5px", transform: "scaleY(-1)" })}
-      {corner({ bottom: "5px", right: "5px", transform: "scale(-1)" })}
+      {/* Corner lattice, sitting right on the frame's corner joint */}
+      {corner({ top: "0px", left: "0px" })}
+      {corner({ top: "0px", right: "0px", transform: "scaleX(-1)" })}
+      {corner({ bottom: "0px", left: "0px", transform: "scaleY(-1)" })}
+      {corner({ bottom: "0px", right: "0px", transform: "scale(-1)" })}
     </>
   );
 }
