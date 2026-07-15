@@ -51,13 +51,13 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="w-full flex items-center justify-between gap-2 pl-4 pr-3 py-3 bg-white dark:bg-stone-800 border border-[#b04a15]/20 dark:border-[#e07b3a]/20 rounded-xl font-body-md text-sm text-[#1c1917] dark:text-[#e7e5e4] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 dark:focus-visible:ring-[#e07b3a]/40 hover:border-[#b04a15]/50 dark:hover:border-[#e07b3a]/50 transition-colors cursor-pointer shadow-sm"
+        className="w-full flex items-center justify-between gap-1 pl-2.5 pr-1.5 py-2 bg-white dark:bg-stone-800 border border-[#b04a15]/20 dark:border-[#e07b3a]/20 rounded-xl font-body-md text-xs text-[#1c1917] dark:text-[#e7e5e4] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 dark:focus-visible:ring-[#e07b3a]/40 hover:border-[#b04a15]/50 dark:hover:border-[#e07b3a]/50 transition-colors cursor-pointer shadow-sm"
       >
         <span className="truncate" style={{ fontFamily: selected.family }}>{selected.label}</span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="material-symbols-outlined text-[#b04a15] dark:text-[#e07b3a] text-[20px] leading-none shrink-0"
+          className="material-symbols-outlined text-[#b04a15] dark:text-[#e07b3a] text-[18px] leading-none shrink-0"
         >
           expand_more
         </motion.span>
@@ -85,7 +85,7 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
                 <button
                   type="button"
                   onClick={() => { onChange(opt.value); setOpen(false); }}
-                  className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-left cursor-pointer transition-colors ${
+                  className={`w-full flex items-center justify-between gap-1 px-2.5 py-2 text-xs text-left cursor-pointer transition-colors ${
                     opt.value === value
                       ? "bg-orange-50 dark:bg-stone-700/60 text-[#b04a15] dark:text-[#e07b3a] font-semibold"
                       : "text-stone-700 dark:text-stone-200 hover:bg-orange-50 dark:hover:bg-stone-700/60 hover:text-[#b04a15] dark:hover:text-[#e07b3a]"
@@ -94,7 +94,7 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
                 >
                   <span className="truncate">{opt.label}</span>
                   {opt.value === value && (
-                    <span className="material-symbols-outlined text-[16px] leading-none shrink-0">check</span>
+                    <span className="material-symbols-outlined text-[14px] leading-none shrink-0">check</span>
                   )}
                 </button>
               </motion.li>
@@ -195,6 +195,7 @@ export default function BlogReadingPage({ params }: PageProps) {
       "@type": "Person",
       "name": post.author,
       "image": post.authorImage,
+      "url": "https://www.causekind.com/about",
     },
     "publisher": {
       "@type": "Organization",
@@ -205,9 +206,9 @@ export default function BlogReadingPage({ params }: PageProps) {
       },
     },
     // publishedDate is stored as "Month YYYY" (e.g. "June 2026") — Date parses that
-    // to the 1st of the month, which is the best ISO date this data supports.
+    // to the 1st of the month. Outputting the full ISO string ensures a valid timezone.
     "datePublished": !isNaN(new Date(post.publishedDate).getTime())
-      ? new Date(post.publishedDate).toISOString().slice(0, 10)
+      ? new Date(post.publishedDate).toISOString()
       : undefined,
     "url": `https://www.causekind.com/blog/${post.slug}`,
   };
@@ -280,14 +281,14 @@ export default function BlogReadingPage({ params }: PageProps) {
               <div className="sticky top-[120px] flex flex-col gap-8">
                 {/* Reading Tools Panel */}
                 {/* Reading Tools Panel */}
-                <div className="relative z-30 bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-6 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
+                <div className="relative z-30 bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-3 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
                   <h3 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
                     Reading Tools
                   </h3>
                   {/* Bold Mode Toggle */}
                   <div className="flex items-center justify-between mb-8">
-                    <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-2 font-medium">
-                      <span className="material-symbols-outlined text-[20px] leading-none text-[#b04a15] dark:text-[#e07b3a]">format_bold</span>
+                    <span className="font-label-sm text-xs text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-1.5 font-medium whitespace-nowrap">
+                      <span className="material-symbols-outlined text-[18px] leading-none text-[#b04a15] dark:text-[#e07b3a]">format_bold</span>
                       Bold Text
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -298,7 +299,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                         checked={boldMode}
                         onChange={(e) => setBoldMode(e.target.checked)}
                       />
-                      <div className="w-11 h-6 bg-stone-200 dark:bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#b04a15] dark:peer-checked:bg-[#e07b3a] shadow-inner" />
+                      <div className="w-9 h-5 bg-stone-200 dark:bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#b04a15] dark:peer-checked:bg-[#e07b3a] shadow-inner" />
                     </label>
                   </div>
                   {/* Font Selector */}

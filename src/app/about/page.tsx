@@ -15,8 +15,28 @@ export const metadata = {
 export default async function AboutPage() {
   const t = await getTranslations("about");
 
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "About Us — CauseKind",
+    "description": "Learn about CauseKind's mission, story, and how we facilitate verified in-kind donations.",
+    "url": "https://causekind.com/about",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "CauseKind",
+      "url": "https://causekind.com",
+      "logo": "https://causekind.com/logo-filled.png",
+      "description": "Connecting kind hearts directly with verified needs."
+    }
+  };
+
   return (
-    <div className="bg-[#faf8f5] dark:bg-zinc-950 min-h-screen text-stone-800 dark:text-stone-200">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
+      <div className="bg-[#faf8f5] dark:bg-zinc-950 min-h-screen text-stone-800 dark:text-stone-200">
 
       {/* ── Hero with cursor glow + LEFT-FLUSH oversized heading ── */}
       <CursorGlowHero>
@@ -242,6 +262,6 @@ export default async function AboutPage() {
 
       </div>
 
-    </div>
+    </>
   );
 }

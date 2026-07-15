@@ -164,7 +164,14 @@ function BlogListingContent() {
       "headline": post.title,
       "description": post.description,
       "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
-      "author": { "@type": "Person", "name": post.author },
+      "author": { 
+        "@type": "Person", 
+        "name": post.author,
+        "url": "https://www.causekind.com/about"
+      },
+      "datePublished": !isNaN(new Date(post.publishedDate).getTime())
+        ? new Date(post.publishedDate).toISOString()
+        : undefined,
       "url": `https://www.causekind.com/blog/${post.slug}`,
     })),
   };
@@ -412,50 +419,50 @@ function BlogListingContent() {
               </div>
             </AnimatedWrapper>
           </div>
+        </div>
+      </div>
 
-          {/* List remaining filtered posts */}
-          {filteredPosts.length > 1 && (
-            <StaggerContainer inView delayStart={0.05} staggerDelay={0.12} className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-              {filteredPosts.slice(1).map((post) => (
-                <motion.div key={post.slug} variants={itemVariants} className="h-full">
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="group bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden hover:shadow-[0_20px_40px_rgba(30,58,96,0.04)] transition-all duration-500 hover:-translate-y-1 flex flex-col h-full"
-                  >
-                    <div className="aspect-[16/9] overflow-hidden relative flex-shrink-0">
-                      <img
-                        alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
-                        src={post.image}
-                      />
-                      <div className="absolute top-4 left-4 z-20">
-                        <span className="bg-[#b04a15] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
-                          {post.category}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-6 flex flex-col flex-1">
-                      <h3 className="font-bold text-lg md:text-xl text-stone-900 dark:text-stone-100 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors">
-                        {post.title}
-                      </h3>
-                      <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm mb-4 line-clamp-2 leading-relaxed flex-1">
-                        {post.description}
-                      </p>
-                      <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400 mt-auto">
-                        <span>{post.readTime}</span>
-                        <span className="flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
-                          Read Story →
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </StaggerContainer>
-          )}
-            </div>
-          </div>
-        </section>
+      {/* List remaining filtered posts */}
+      {filteredPosts.length > 1 && (
+        <StaggerContainer inView delayStart={0.05} staggerDelay={0.12} className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+          {filteredPosts.slice(1).map((post) => (
+            <motion.div key={post.slug} variants={itemVariants} className="h-full">
+              <Link
+                href={`/blog/${post.slug}`}
+                className="group bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden hover:shadow-[0_20px_40px_rgba(30,58,96,0.04)] transition-all duration-500 hover:-translate-y-1 flex flex-col h-full"
+              >
+                <div className="aspect-[16/9] overflow-hidden relative flex-shrink-0">
+                  <img
+                    alt={post.title}
+                    className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                    src={post.image}
+                  />
+                  <div className="absolute top-4 left-4 z-20">
+                    <span className="bg-[#b04a15] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
+                      {post.category}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-6 flex flex-col flex-1">
+                  <h3 className="font-bold text-lg md:text-xl text-stone-900 dark:text-stone-100 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors">
+                    {post.title}
+                  </h3>
+                  <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm mb-4 line-clamp-2 leading-relaxed flex-1">
+                    {post.description}
+                  </p>
+                  <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400 mt-auto">
+                    <span>{post.readTime}</span>
+                    <span className="flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                      Read Story →
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </StaggerContainer>
+      )}
+    </section>
 
         {/* Insider Tips and Tricks Section */}
         <section className="mb-16 overflow-hidden">
