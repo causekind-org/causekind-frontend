@@ -941,6 +941,7 @@ export type ItemMatch = {
   verifiedDeliveryCertificate: string | null;
   // Call masking
   callMaskingRequested: boolean;
+  donorAllowsDoneeCall: boolean;
   // Dual handover confirmation (Handover Hub)
   donorConfirmedQty: number | null;
   donorConfirmedAt: string | null;
@@ -1022,6 +1023,10 @@ export function saveMatchLogistics(id: number, data: {
 
 export function requestCallMasking(id: number) {
   return request<ItemMatch>(`/api/v1/matches/${id}/request-call`, { method: "POST" });
+}
+
+export function setMatchDoneeCallPermission(id: number, allowed: boolean) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/donee-call-permission?allowed=${allowed}`, { method: "POST" });
 }
 
 export function generateDeliveryOtp(id: number): Promise<{ otp: string }> {

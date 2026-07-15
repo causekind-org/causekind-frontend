@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   getMatch, saveMatchLogistics, generateDeliveryOtp,
   confirmMatchHandoverDonor, confirmMatchHandoverDonee,
-  sendMatchChatMessage, requestCallMasking,
+  sendMatchChatMessage, setMatchDoneeCallPermission,
   type ItemMatch,
 } from "@/lib/api";
 import MatchChatWindow from "@/components/MatchChatWindow";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
-  ArrowLeft, ShieldCheck, CalendarDays, Phone, Package, type LucideIcon,
+  ArrowLeft, ShieldCheck, CalendarDays, Phone, PhoneCall, Lock, ChevronRight,
+  Package, type LucideIcon,
 } from "lucide-react";
 
 const STATUS_STEP_INFO: Record<string, { title: string; description: string }> = {
@@ -58,7 +59,7 @@ export default function MatchHandoverHubPage() {
   const [otp, setOtp] = useState<string | null>(null);
   const [otpInput, setOtpInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [callRequested, setCallRequested] = useState(false);
+  const [allowingCall, setAllowingCall] = useState(false);
 
   // Schedule form
   const [showScheduleForm, setShowScheduleForm] = useState(false);
@@ -138,13 +139,13 @@ export default function MatchHandoverHubPage() {
     finally { setSubmitting(false); }
   }
 
-  async function handleRequestCall() {
-    setCallRequested(true);
+  async function handleToggleDoneeCall(next: boolean) {
+    setAllowingCall(true);
     try {
-      const updated = await requestCallMasking(matchId);
+      const updated = await setMatchDoneeCallPermission(matchId, next);
       setMatch(updated);
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Failed to request call"); }
-    finally { setCallRequested(false); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Failed to update"); }
+    finally { setAllowingCall(false); }
   }
 
   async function handleReportProblem() {
@@ -306,25 +307,37 @@ export default function MatchHandoverHubPage() {
             )}
           </TimelineStep>
 
-          {/* Contact — masked call request, real-time coordination lives in chat below */}
+          {/* Contact — direct calls, real-time coordination lives in chat below */}
           {!CLOSED_STATUSES.has(match.status) && match.status !== "DONOR_REVIEW" && match.status !== "PENDING_APPROVAL"
             && match.status !== "AWAITING_DONEE_CONFIRMATION" && match.status !== "DONEE_ACCEPTED" && (
             <TimelineStep
               icon={Phone}
               label="Step 3: Direct Contact"
               title="Contact Coordination"
-              description="Use the chat below for details, or request a masked call and our team will help coordinate."
+              description="Use platform chat for details. Tap the button below to call directly — numbers are never shown."
               colorClasses={statusStepColor("")}
               isLast={!HANDOVER_CONFIRMABLE_STATUSES.has(match.status)}
             >
-              <button
-                onClick={handleRequestCall}
-                disabled={callRequested || match.callMaskingRequested}
-                className="flex items-center gap-2 rounded-xl bg-white/60 dark:bg-white/5 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
-              >
-                <Phone className="h-3.5 w-3.5" />
-                {match.callMaskingRequested ? "Call requested" : "Request a masked call"}
-              </button>
+              {isDonee ? (
+                <CallButton
+                  phone={match.donorContact}
+                  label="Call Donor"
+                  lockedMessage="The donor hasn't enabled calls yet — use chat, or check back soon."
+                />
+              ) : (
+                <div className="space-y-3">
+                  <CallButton
+                    phone={match.doneeContact}
+                    label="Call Recipient"
+                    lockedMessage="The recipient's number isn't available yet."
+                  />
+                  <CallPermissionToggle
+                    allowed={match.donorAllowsDoneeCall}
+                    onToggle={handleToggleDoneeCall}
+                    loading={allowingCall}
+                  />
+                </div>
+              )}
             </TimelineStep>
           )}
         </div>
@@ -549,6 +562,99 @@ function TimelineStep({
           {action && <div className="flex-shrink-0">{action}</div>}
         </div>
         {children && <div className="mt-4">{children}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Direct-call button — numbers are never rendered as text. Tap to place the
+// call straight away (tel: link), or see a locked state with a why-not notice.
+
+function CallButton({
+  phone, label, lockedMessage,
+}: {
+  phone: string | null;
+  label: string;
+  lockedMessage: string;
+}) {
+  const [showNotice, setShowNotice] = useState(false);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  if (phone) {
+    return (
+      <a
+        href={`tel:${phone}`}
+        className="flex w-full items-center gap-3 rounded-xl bg-white/60 dark:bg-white/5 px-4 py-3.5 text-left transition-colors hover:bg-white dark:hover:bg-white/10"
+      >
+        <div className="animate-call-pulse flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#b04a15] text-white">
+          <PhoneCall className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
+          <p className="text-xs text-gray-400">Tap to call — numbers stay private</p>
+        </div>
+        <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-300" />
+      </a>
+    );
+  }
+
+  function handleClick() {
+    setShowNotice(true);
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setShowNotice(false), 3200);
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={handleClick}
+        className="animate-locked-pulse flex w-full items-center gap-3 rounded-xl bg-white/60 dark:bg-white/5 px-4 py-3.5 text-left"
+      >
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white dark:bg-gray-800 text-gray-400">
+          <Lock className="h-3.5 w-3.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">{label}</p>
+        </div>
+      </button>
+
+      {showNotice && (
+        <div className="animate-notice-pop absolute inset-x-0 top-full z-10 mt-2 rounded-xl bg-gray-900 dark:bg-gray-800 px-4 py-3 text-xs text-white shadow-lg">
+          {lockedMessage}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Donor-only permission switch — reversible any time, no numbers involved ────
+
+function CallPermissionToggle({
+  allowed, onToggle, loading,
+}: {
+  allowed: boolean;
+  onToggle: (next: boolean) => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="rounded-xl bg-white/60 dark:bg-white/5 p-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Let the recipient call you</p>
+          <p className="text-xs text-gray-400">
+            {allowed ? "On — they can call you now. Turn off any time." : "Off — turn on whenever you're ready to take calls."}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={allowed}
+          disabled={loading}
+          onClick={() => onToggle(!allowed)}
+          className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors duration-300 disabled:opacity-50 ${allowed ? "bg-[#b04a15]" : "bg-gray-300 dark:bg-gray-700"}`}
+        >
+          <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 ${allowed ? "translate-x-5" : "translate-x-0"}`} />
+        </button>
       </div>
     </div>
   );
