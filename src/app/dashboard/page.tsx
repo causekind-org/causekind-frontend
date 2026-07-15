@@ -1320,6 +1320,11 @@ function DoneeDashboard({
                             </button>
                           </div>
                         )}
+                        {m.status === "COMPLETED" && (
+                          <Link href={`/certificate?matchId=${m.id}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                            <Award className="w-3.5 h-3.5" /> View Certificate
+                          </Link>
+                        )}
                       </div>
                     );
                   })}
@@ -1878,6 +1883,11 @@ export default function DashboardPage() {
                                     </button>
                                   </div>
                                 )}
+                                {m.status === "COMPLETED" && (
+                                  <Link href={`/certificate?matchId=${m.id}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                    <Award className="w-3.5 h-3.5" /> View Certificate
+                                  </Link>
+                                )}
                               </div>
                             );
                           })}
@@ -2028,6 +2038,11 @@ export default function DashboardPage() {
                                       <MessageCircle className="w-3.5 h-3.5" /> Chat
                                     </button>
                                   </div>
+                                )}
+                                {m.status === "COMPLETED" && (
+                                  <Link href={`/certificate?matchId=${m.id}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                    <Award className="w-3.5 h-3.5" /> View Certificate
+                                  </Link>
                                 )}
                               </div>
                             );

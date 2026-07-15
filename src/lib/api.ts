@@ -1281,7 +1281,8 @@ export type HandoverRecord = {
 
 export type Certificate = {
   id: number;
-  offerId: number;
+  offerId: number | null;
+  matchId: number | null;
   certificateNumber: string;
   donorName: string;
   category: string;
@@ -1517,6 +1518,10 @@ export function confirmNoIssue(offerId: number) {
 
 export function getOfferCertificate(offerId: number) {
   return request<Certificate>(`/api/v1/offers/${offerId}/certificate`);
+}
+
+export function getMatchCertificate(matchId: number) {
+  return request<Certificate>(`/api/v1/matches/${matchId}/certificate`);
 }
 
 export function verifyCertificate(certNumber: string) {
