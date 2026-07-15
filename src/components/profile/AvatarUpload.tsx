@@ -8,11 +8,14 @@ interface AvatarUploadProps {
   imageDataUrl: string | null;
   initials: string;
   onImageChange: (dataUrl: string | null) => void;
+  /** copper (default, donor) or navy (donee dashboard palette) */
+  tone?: "copper" | "navy";
 }
 
 const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 
-export function AvatarUpload({ imageDataUrl, initials, onImageChange }: AvatarUploadProps) {
+export function AvatarUpload({ imageDataUrl, initials, onImageChange, tone = "copper" }: AvatarUploadProps) {
+  const navy = tone === "navy";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -55,7 +58,7 @@ export function AvatarUpload({ imageDataUrl, initials, onImageChange }: AvatarUp
             className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-zinc-900 shadow-md"
           />
         ) : (
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] border-4 border-white dark:border-zinc-900 shadow-md flex items-center justify-center">
+          <div className={`w-24 h-24 rounded-full bg-gradient-to-tr ${navy ? "from-[#0d1e36] to-[#3a6aa8]" : "from-[#b04a15] to-[#e07b3a]"} border-4 border-white dark:border-zinc-900 shadow-md flex items-center justify-center`}>
             <span className="text-white text-3xl font-bold uppercase select-none">
               {initials}
             </span>
@@ -67,7 +70,7 @@ export function AvatarUpload({ imageDataUrl, initials, onImageChange }: AvatarUp
           type="button"
           onClick={() => fileInputRef.current?.click()}
           aria-label="Upload profile photo"
-          className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#b04a15] hover:bg-[#963c0d] text-white flex items-center justify-center shadow-md border-2 border-white dark:border-zinc-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40"
+          className={`absolute bottom-0 right-0 w-8 h-8 rounded-full ${navy ? "bg-[#1e3a60] hover:bg-[#162d4a] focus-visible:ring-[#1e3a60]/40" : "bg-[#b04a15] hover:bg-[#963c0d] focus-visible:ring-[#b04a15]/40"} text-white flex items-center justify-center shadow-md border-2 border-white dark:border-zinc-900 transition-colors focus:outline-none focus-visible:ring-2`}
         >
           <Camera className="w-3.5 h-3.5" />
         </button>

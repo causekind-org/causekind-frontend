@@ -526,7 +526,7 @@ export function SiteHeader() {
           {/* Right buttons */}
           <div className="flex items-center gap-3 sm:gap-4">
             <GlobalSearch />
-            <span data-tour="search" className="inline-flex"><SearchTrigger /></span>
+            {user && <span data-tour="search" className="inline-flex"><SearchTrigger /></span>}
             <span data-tour="bell" className="inline-flex"><NotificationBell /></span>
 
             {/* Sleek Theme Toggle */}

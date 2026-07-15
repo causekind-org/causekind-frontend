@@ -5,7 +5,7 @@ import { MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
-import { updateLocation } from "@/lib/api";
+import { updateLocation, getMyProfile } from "@/lib/api";
 import { detectLocationFromServer } from "@/app/actions/locations";
 
 type ModalState = "hidden" | "visible" | "loading";
@@ -17,18 +17,69 @@ export function LocationGate() {
   const [shown, setShown] = useState(false);
   const isAdminPath = !!pathname?.startsWith("/admin/dashboard") || !!pathname?.startsWith("/super-admin");
 
+  // Per-account gate: the "prompted" flag is scoped to the signed-in account
+  // (a shared browser holds many test/family accounts — one account dismissing
+  // the prompt must not silence it for every other account forever). And if the
+  // browser permission is ALREADY granted, we skip the modal entirely and sync
+  // coordinates to whichever account just signed in without one.
   useEffect(() => {
     if (isAdminPath) return;
     if (typeof window === "undefined") return;
-    if (localStorage.getItem("ck_location_prompted")) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    const timer = setTimeout(() => {
-      setShown(true);
-      setState("visible");
-    }, 1200);
+    const promptedKey = user ? `ck_location_prompted_${user.email}` : "ck_location_prompted";
 
-    return () => clearTimeout(timer);
-  }, [isAdminPath]);
+    async function decide() {
+      if (user) {
+        // Already has coordinates on this account? Nothing to do.
+        try {
+          const profile = await getMyProfile();
+          if (cancelled) return;
+          if (profile.latitude != null && profile.longitude != null) return;
+        } catch {
+          return; // can't read profile — don't nag
+        }
+
+        // Account lacks coordinates. If the site already has geolocation
+        // permission, save silently — no modal.
+        let permState: PermissionState = "prompt";
+        try {
+          permState = (await navigator.permissions.query({ name: "geolocation" })).state;
+        } catch {
+          // Permissions API unavailable — fall through to the modal path
+        }
+        if (cancelled) return;
+        if (permState === "granted") {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              try {
+                await updateLocation(pos.coords.latitude, pos.coords.longitude);
+                toast.success("Location saved to your account");
+              } catch { /* non-fatal */ }
+            },
+            () => {},
+            { timeout: 10000 }
+          );
+          return;
+        }
+        if (permState === "denied") return;
+      }
+
+      if (localStorage.getItem(promptedKey)) return;
+      timer = setTimeout(() => {
+        if (cancelled) return;
+        setShown(true);
+        setState("visible");
+      }, 1200);
+    }
+
+    decide();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [isAdminPath, user]);
 
   // When a previously logged-out visitor who shared a location signs in, sync it to their account.
   useEffect(() => {
@@ -50,9 +101,9 @@ export function LocationGate() {
   }, [user, isAdminPath]);
 
   const dismiss = useCallback(() => {
-    localStorage.setItem("ck_location_prompted", "1");
+    localStorage.setItem(user ? `ck_location_prompted_${user.email}` : "ck_location_prompted", "1");
     setState("hidden");
-  }, []);
+  }, [user]);
 
   const handleMaybeLater = useCallback(() => {
     dismiss();

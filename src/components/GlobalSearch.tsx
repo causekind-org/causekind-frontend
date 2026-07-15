@@ -94,13 +94,13 @@ export function GlobalSearch() {
     function handleKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setOpen(true);
+        if (user) setOpen(true);
       }
       if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, []);
+  }, [user]);
 
   /* Focus input when opened */
   useEffect(() => {

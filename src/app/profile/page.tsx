@@ -437,6 +437,37 @@ export default function ProfilePage() {
   const initials = getInitials(fullName || profile?.fullName || user.email);
   const isDonee = (profile?.role ?? "").toUpperCase() === "DONEE";
 
+  // Section accents: copper for donors, the donee dashboard's navy for donees
+  const acc = isDonee
+    ? {
+        eyebrow:   "text-[#1e3a60] dark:text-blue-400",
+        rule:      "border-[#1e3a60]/60",
+        softBg:    "bg-[#1e3a60]/10",
+        icon:      "text-[#1e3a60] dark:text-blue-400",
+        solidBtn:  "bg-[#1e3a60] hover:bg-[#162d4a]",
+        timeline:  "border-[#1e3a60]/25 dark:border-blue-400/30",
+        dotBorder: "border-[#1e3a60]",
+        hoverText: "group-hover:text-[#1e3a60] dark:group-hover:text-blue-400",
+        badge:     "bg-[#1e3a60] text-white shadow-lg shadow-[#1e3a60]/30",
+        badgeRing: "border-[#1e3a60]/35",
+        focusRing: "focus-visible:ring-[#1e3a60]/20",
+        gpsBtn:    "bg-[#1e3a60] hover:bg-[#162d4a]",
+      }
+    : {
+        eyebrow:   "text-[#8B4513] dark:text-[#C17A3A]",
+        rule:      "border-[#C17A3A]/60",
+        softBg:    "bg-[#C17A3A]/10",
+        icon:      "text-[#C17A3A]",
+        solidBtn:  "bg-[#C17A3A] hover:bg-[#a8642e]",
+        timeline:  "border-[#C17A3A]/25 dark:border-[#C17A3A]/30",
+        dotBorder: "border-[#C17A3A]",
+        hoverText: "group-hover:text-[#8B4513] dark:group-hover:text-[#C17A3A]",
+        badge:     "bg-[#C17A3A] text-white shadow-lg shadow-[#C17A3A]/30",
+        badgeRing: "border-[#C17A3A]/35",
+        focusRing: "focus-visible:ring-[#C17A3A]/20",
+        gpsBtn:    "bg-[#b04a15] hover:bg-[#943e11]",
+      };
+
   const completedDonations = donations.filter((d) => d.status === "COMPLETED");
   const campaignsSupported = new Set(completedDonations.map((d) => d.campaignId)).size;
   void campaigns;
@@ -511,12 +542,16 @@ export default function ProfilePage() {
   return (
     <div className="bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen pb-28">
 
-      {/* Espresso header band: the member pass + name block */}
+      {/* Header band: espresso/copper for donors, deep navy (donee dashboard theme) for donees */}
       <div className="relative overflow-hidden text-white"
-        style={{ background: "linear-gradient(140deg, #2a1a10 0%, #40281a 52%, #241610 100%)" }}>
-        <div className="pointer-events-none absolute -top-24 right-[8%] w-[420px] h-[420px] rounded-full border border-[#C17A3A]/15" />
-        <div className="pointer-events-none absolute -bottom-32 -left-16 w-72 h-72 rounded-full border border-[#C17A3A]/10" />
-        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 75% 20%, rgba(193,122,58,0.14) 0%, transparent 55%)" }} />
+        style={{ background: isDonee
+          ? "linear-gradient(140deg, #0a1626 0%, #1e3a60 52%, #0a2040 100%)"
+          : "linear-gradient(140deg, #2a1a10 0%, #40281a 52%, #241610 100%)" }}>
+        <div className={`pointer-events-none absolute -top-24 right-[8%] w-[420px] h-[420px] rounded-full border ${isDonee ? "border-[#5b8fd6]/15" : "border-[#C17A3A]/15"}`} />
+        <div className={`pointer-events-none absolute -bottom-32 -left-16 w-72 h-72 rounded-full border ${isDonee ? "border-[#5b8fd6]/10" : "border-[#C17A3A]/10"}`} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: isDonee
+          ? "radial-gradient(ellipse at 75% 20%, rgba(96,165,250,0.14) 0%, transparent 55%)"
+          : "radial-gradient(ellipse at 75% 20%, rgba(193,122,58,0.14) 0%, transparent 55%)" }} />
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 pt-14 pb-2 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-10 lg:gap-16 items-center">
           <div data-tour="member-pass">
@@ -530,20 +565,24 @@ export default function ProfilePage() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }} className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#C17A3A]">CauseKind member</p>
+            <p className={`text-[10px] font-black uppercase tracking-[0.28em] ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`}>CauseKind member</p>
             <h1 className="mt-2 text-4xl sm:text-5xl leading-[1.05] break-words"
               style={{ fontFamily: "var(--font-lora), serif", fontStyle: "italic", fontWeight: 600 }}>
               {fullName || profile?.fullName}
             </h1>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-white/55">
-              <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-[#C17A3A]" />{profile?.email}</span>
-              {profile?.phone && <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-[#C17A3A]" />{profile.phone}</span>}
-              {profile?.city && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#C17A3A]" />{profile.city}</span>}
+              <span className="flex items-center gap-1.5"><Mail className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile?.email}</span>
+              {profile?.phone && <span className="flex items-center gap-1.5"><Phone className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.phone}</span>}
+              {profile?.city && <span className="flex items-center gap-1.5"><MapPin className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.city}</span>}
             </div>
             <button
               onClick={() => setSettingsOpen((v) => !v)}
               data-tour="account-settings"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#C17A3A]/40 bg-[#C17A3A]/10 hover:bg-[#C17A3A]/20 px-4 py-2.5 text-xs font-bold text-[#e8b98a] transition-colors"
+              className={`mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl hover:-translate-y-0.5 ${
+                isDonee
+                  ? "from-[#3a6aa8] to-[#1e3a60] hover:from-[#4678b8] hover:to-[#26497a] shadow-[#0d1e36]/50 hover:shadow-[#0d1e36]/60"
+                  : "from-[#e07b3a] to-[#b04a15] hover:from-[#e8894c] hover:to-[#c25620] shadow-[#b04a15]/40 hover:shadow-[#b04a15]/50"
+              }`}
             >
               {settingsOpen ? "Close account settings" : "Edit account details"}
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${settingsOpen ? "rotate-180" : ""}`} />
@@ -569,38 +608,38 @@ export default function ProfilePage() {
 
         {/* Your story: a chronicle of real events */}
         <section data-tour="story">
-          <div className="border-b-2 border-[#C17A3A]/60 pb-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8B4513] dark:text-[#C17A3A]">Your story</p>
+          <div className={`border-b-2 ${acc.rule} pb-3`}>
+            <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>Your story</p>
             <p className="text-xs text-stone-400 mt-1">Everything that has happened on your CauseKind journey, newest first.</p>
           </div>
 
           {story.length === 0 ? (
             <div className="py-14 text-center space-y-3">
-              <div className="w-14 h-14 bg-[#C17A3A]/10 rounded-2xl flex items-center justify-center mx-auto">
-                <BookOpen className="w-6 h-6 text-[#C17A3A]" />
+              <div className={`w-14 h-14 ${acc.softBg} rounded-2xl flex items-center justify-center mx-auto`}>
+                <BookOpen className={`w-6 h-6 ${acc.icon}`} />
               </div>
               <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Your story starts here</p>
               <p className="text-xs text-stone-400 max-w-[260px] mx-auto">
                 {isDonee ? "Post your first need and this page will chronicle every step of it." : "List your first item and this page will chronicle every donation."}
               </p>
               <Link href={isDonee ? "/requests/new" : "/items/new"} className="inline-block">
-                <Button size="sm" className="bg-[#C17A3A] hover:bg-[#a8642e] text-white mt-2">
+                <Button size="sm" className={`${acc.solidBtn} text-white mt-2`}>
                   {isDonee ? "Post a need" : "List an item"}
                 </Button>
               </Link>
             </div>
           ) : (
-            <ol className="relative mt-2 border-l-2 border-[#C17A3A]/25 dark:border-[#C17A3A]/30 ml-2">
+            <ol className={`relative mt-2 border-l-2 ${acc.timeline} ml-2`}>
               {story.map((ev, i) => (
                 <motion.li key={`${ev.title}-${ev.at}`}
                   initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.08 * i }}
                   className="relative pl-8 py-4 group">
                   <span className={`absolute -left-[9px] top-5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    ev.broken ? "bg-red-500 border-red-500" : ev.done ? "bg-emerald-500 border-emerald-500" : "bg-[#F7F0E8] dark:bg-zinc-950 border-[#C17A3A]"}`}>
+                    ev.broken ? "bg-red-500 border-red-500" : ev.done ? "bg-emerald-500 border-emerald-500" : `bg-[#F7F0E8] dark:bg-zinc-950 ${acc.dotBorder}`}`}>
                     {(ev.done || ev.broken) && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                   </span>
                   <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <p className="text-[15px] font-bold text-stone-900 dark:text-stone-100 leading-snug group-hover:text-[#8B4513] dark:group-hover:text-[#C17A3A] transition-colors"
+                    <p className={`text-[15px] font-bold text-stone-900 dark:text-stone-100 leading-snug ${acc.hoverText} transition-colors`}
                       style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
                       {ev.title}
                     </p>
@@ -615,8 +654,8 @@ export default function ProfilePage() {
 
         {/* Milestone stamps */}
         <aside data-tour="milestones">
-          <div className="border-b-2 border-[#C17A3A]/60 pb-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8B4513] dark:text-[#C17A3A]">Milestones</p>
+          <div className={`border-b-2 ${acc.rule} pb-3`}>
+            <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>Milestones</p>
             <p className="text-xs text-stone-400 mt-1">Earned by doing, never bought.</p>
           </div>
           <div className="mt-6 space-y-5">
@@ -625,8 +664,8 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.15 + i * 0.12 }}
                 className="flex items-center gap-4">
                 <div className={`relative w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
-                  earned ? "bg-[#C17A3A] text-white shadow-lg shadow-[#C17A3A]/30" : "border-2 border-dashed border-stone-300 dark:border-zinc-700 text-stone-300 dark:text-zinc-600"}`}>
-                  {earned && <span className="absolute inset-[-4px] rounded-full border border-[#C17A3A]/35" />}
+                  earned ? acc.badge : "border-2 border-dashed border-stone-300 dark:border-zinc-700 text-stone-300 dark:text-zinc-600"}`}>
+                  {earned && <span className={`absolute inset-[-4px] rounded-full border ${acc.badgeRing}`} />}
                   <Icon className="w-6 h-6" />
                 </div>
                 <div className="min-w-0">
@@ -643,8 +682,8 @@ export default function ProfilePage() {
       {settingsOpen && (
         <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-12">
           <Reveal>
-            <div className="border-t-2 border-[#C17A3A]/60 pt-6">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8B4513] dark:text-[#C17A3A] mb-6">Account settings</p>
+            <div className={`border-t-2 ${acc.rule} pt-6`}>
+              <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow} mb-6`}>Account settings</p>
               <form onSubmit={handleSave} className="space-y-5">
                     {/* Avatar Upload */}
                     <div className="flex justify-center">
@@ -652,6 +691,7 @@ export default function ProfilePage() {
                         imageDataUrl={avatarDataUrl}
                         initials={initials}
                         onImageChange={handleAvatarChange}
+                        tone={isDonee ? "navy" : "copper"}
                       />
                     </div>
 
@@ -665,7 +705,7 @@ export default function ProfilePage() {
                           <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                           <Input
                             id="fullName"
-                            className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
+                            className={`pl-10 rounded-xl border-stone-200 py-5 font-medium ${acc.focusRing}`}
                             placeholder={t("fullNamePlaceholder")}
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
@@ -710,7 +750,7 @@ export default function ProfilePage() {
                           id="phone"
                           type="tel"
                           inputMode="numeric"
-                          className="flex-1 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
+                          className={`flex-1 rounded-xl border-stone-200 py-5 font-medium ${acc.focusRing}`}
                           placeholder={t("phonePlaceholder")}
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
@@ -759,7 +799,7 @@ export default function ProfilePage() {
                             <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                             <Input
                               id="city"
-                              className="pl-10 rounded-xl border-stone-200 focus-visible:ring-[#C17A3A]/20 py-5 font-medium"
+                              className={`pl-10 rounded-xl border-stone-200 py-5 font-medium ${acc.focusRing}`}
                               placeholder={t("enterCity")}
                               value={cityFreeText}
                               onChange={(e) => setCityFreeText(e.target.value)}
@@ -811,7 +851,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={handleUseMyLocation}
                           disabled={locStatus === "requesting"}
-                          className="shrink-0 flex items-center gap-1.5 rounded-lg bg-[#b04a15] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#943e11] disabled:opacity-60"
+                          className={`shrink-0 flex items-center gap-1.5 rounded-lg ${acc.gpsBtn} px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60`}
                         >
                           {locStatus === "requesting" ? (
                             <><Loader2 className="w-3 h-3 animate-spin" /> {t("getting")}</>
@@ -829,7 +869,7 @@ export default function ProfilePage() {
                     <div className="pt-2">
                       <Button
                         type="submit"
-                        className="w-full bg-[#C17A3A] hover:bg-[#a8642e] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors"
+                        className={`w-full ${acc.solidBtn} text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors`}
                         disabled={saving}
                       >
                         {saving ? (
@@ -857,6 +897,8 @@ function MemberPass({ name, role, city, avatarDataUrl, initials }: {
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 50 });
+  // Copper pass for donors, navy pass (donee dashboard palette) for donees
+  const donee = role.toUpperCase() === "DONEE";
 
   return (
     <motion.div
@@ -880,7 +922,9 @@ function MemberPass({ name, role, city, avatarDataUrl, initials }: {
         style={{
           transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
           transformStyle: "preserve-3d",
-          background: "linear-gradient(135deg, #C17A3A 0%, #8B4513 60%, #5e2f10 100%)",
+          background: donee
+            ? "linear-gradient(135deg, #3a6aa8 0%, #1e3a60 60%, #0d1e36 100%)"
+            : "linear-gradient(135deg, #C17A3A 0%, #8B4513 60%, #5e2f10 100%)",
           boxShadow: "0 24px 60px -18px rgba(0,0,0,0.55)",
         }}
       >
