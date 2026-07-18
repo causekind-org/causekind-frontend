@@ -3,18 +3,22 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { Stethoscope, BookOpen, Sprout, Users, Home, Package, X, Sparkles } from "lucide-react";
+import { Package, X, Sparkles, Check } from "lucide-react";
+import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 
 export const DONOR_CATEGORY_EVENT = "ck-category-changed";
 const STORAGE_KEY = "causekind_donor_category";
 
+// Derived from the shared category source — no hardcoded copy here. Adding a
+// category to ALL_REQUEST_CATEGORIES/CATEGORY_VISUALS updates this grid too.
 const CATEGORIES = [
-  { name: "Medical aid", Icon: Stethoscope, col: "text-sky-300",     iconBg: "bg-sky-500/20",      border: "border-sky-400/40",    ring: "ring-sky-400/50"     },
-  { name: "Education",   Icon: BookOpen,    col: "text-amber-300",   iconBg: "bg-amber-500/20",    border: "border-amber-400/40",  ring: "ring-amber-400/50"   },
-  { name: "Livelihood",  Icon: Sprout,      col: "text-emerald-300", iconBg: "bg-emerald-500/20",  border: "border-emerald-400/40",ring: "ring-emerald-400/50" },
-  { name: "Relief",      Icon: Users,       col: "text-violet-300",  iconBg: "bg-violet-500/20",   border: "border-violet-400/40", ring: "ring-violet-400/50"  },
-  { name: "Household",   Icon: Home,        col: "text-rose-300",    iconBg: "bg-rose-500/20",     border: "border-rose-400/40",   ring: "ring-rose-400/50"    },
-  { name: "List Item",   Icon: Package,     col: "text-orange-300",  iconBg: "bg-orange-500/20",   border: "border-orange-400/40", ring: "ring-orange-400/50"  },
+  ...ALL_REQUEST_CATEGORIES.map(name => {
+    const v = CATEGORY_VISUALS[name];
+    return { name, Icon: v.Icon, col: v.col, iconBg: v.iconBg, border: v.border, ring: v.ring, badge: v.badge, blurb: v.blurb };
+  }),
+  // Action tile, not a category — jumps straight to listing an item.
+  { name: "List Item", Icon: Package, col: "text-orange-300", iconBg: "bg-orange-500/20", border: "border-orange-400/40", ring: "ring-orange-400/50", badge: "bg-orange-400",
+    blurb: "Skip choosing — go straight to listing an item you want to give." },
 ];
 
 export function DonorCategoryModal() {
@@ -61,10 +65,46 @@ export function DonorCategoryModal() {
         .ck-cat-backdrop-el { animation: ck-cat-backdrop 0.38s ease both; }
         .ck-cat-card-el     { animation: ck-cat-card 0.62s cubic-bezier(0.16,1,0.3,1) 0.07s both; }
         .ck-cat-item-el     { animation: ck-cat-item 0.48s cubic-bezier(0.16,1,0.3,1) both; }
-        .ck-glow-a          { animation: ck-glow-breathe 4.5s ease-in-out infinite; }
-        .ck-glow-b          { animation: ck-glow-breathe 5.5s ease-in-out infinite 2s; }
+        .ck-glow-a          { animation: ck-glow-breathe 4.5s ease-in-out infinite, ck-cat-drift 26s ease-in-out infinite alternate; }
+        .ck-glow-b          { animation: ck-glow-breathe 5.5s ease-in-out infinite 2s, ck-cat-drift 32s ease-in-out infinite alternate-reverse; }
         .ck-shimmer-btn:hover .ck-shimmer-inner {
           animation: ck-shimmer-slide 0.65s ease forwards;
+        }
+
+        /* Faint ambient motion — same treatment as the welcome overlay */
+        @keyframes ck-cat-drift {
+          from { translate: 0 0; }
+          to   { translate: 7vmax 5vmax; }
+        }
+        .ck-cat-ember {
+          position: absolute; bottom: -6px; border-radius: 9999px;
+          background: #f0b97a; opacity: 0; pointer-events: none;
+          animation: ck-cat-ember-rise linear infinite;
+        }
+        @keyframes ck-cat-ember-rise {
+          0%   { opacity: 0;    transform: translateY(0) translateX(0); }
+          12%  { opacity: 0.4;  }
+          70%  { opacity: 0.18; }
+          100% { opacity: 0;    transform: translateY(-78vh) translateX(3vw); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ck-glow-a, .ck-glow-b { animation: none; }
+          .ck-cat-ember { animation: none; display: none; }
+        }
+
+        /* Hover tooltip — springy pop in the category's own theme color */
+        @keyframes ck-tip-pop {
+          0%   { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.86); }
+          60%  { opacity: 1; transform: translateX(-50%) translateY(-3px) scale(1.04); }
+          100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        }
+        .ck-cat-tip {
+          animation: ck-tip-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          box-shadow: 0 10px 32px -6px color-mix(in srgb, currentColor 45%, transparent),
+                      inset 0 1px 0 rgba(255,255,255,0.12);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ck-cat-tip { animation: none; }
         }
       `}</style>
 
@@ -86,6 +126,22 @@ export function DonorCategoryModal() {
           className="ck-glow-b absolute bottom-[15%] right-[28%] w-[360px] h-[360px] rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(30,58,96,0.22) 0%, transparent 65%)" }}
         />
+
+        {/* Rising embers — same faint treatment as the welcome overlay */}
+        {[
+          { left: "10%", size: 4, delay: "0s",   dur: "11s" },
+          { left: "26%", size: 3, delay: "3.5s", dur: "13s" },
+          { left: "44%", size: 5, delay: "1.2s", dur: "10s" },
+          { left: "63%", size: 3, delay: "5s",   dur: "14s" },
+          { left: "79%", size: 4, delay: "2.2s", dur: "12s" },
+          { left: "91%", size: 3, delay: "6.5s", dur: "13s" },
+        ].map((e, i) => (
+          <span
+            key={i}
+            className="ck-cat-ember"
+            style={{ left: e.left, width: e.size, height: e.size, animationDelay: e.delay, animationDuration: e.dur }}
+          />
+        ))}
 
         {/* ── Glass card ── */}
         <div
@@ -138,13 +194,14 @@ export function DonorCategoryModal() {
 
           {/* ── Category grid ── */}
           <div className="grid grid-cols-3 gap-2.5">
-            {CATEGORIES.map(({ name, Icon, col, iconBg, border, ring }, idx) => {
+            {CATEGORIES.map(({ name, Icon, col, iconBg, border, ring, badge, blurb }, idx) => {
               const isSelected = tempSelected.includes(name);
+              const isAction = name === "List Item";
               return (
                 <button
                   key={name}
                   onClick={() => {
-                    if (name === "List Item") {
+                    if (isAction) {
                       setShow(false);
                       router.push("/items/new");
                       return;
@@ -153,23 +210,43 @@ export function DonorCategoryModal() {
                       prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
                     );
                   }}
-                  className={`ck-cat-item-el relative flex flex-col items-center gap-2 py-4 px-2 rounded-2xl border transition-all duration-200 active:scale-95 group
+                  className={`ck-cat-item-el relative border transition-all duration-200 active:scale-95 group
+                    ${isAction
+                      ? "col-span-3 flex flex-row items-center justify-center gap-2.5 py-3 px-2 rounded-2xl"
+                      : "flex flex-col items-center gap-2 py-4 px-2 rounded-2xl"}
                     ${isSelected
-                      ? `${border} ring-1 ${ring}`
+                      ? `${border} ring-2 ${ring} ${iconBg} scale-[1.03]`
                       : "border-white/[0.08] hover:border-white/20"}`}
                   style={{
-                    animationDelay: `${0.2 + idx * 0.07}s`,
-                    background: isSelected ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
-                    transition: "background 0.2s ease, border-color 0.2s ease, transform 0.15s ease",
+                    animationDelay: `${0.2 + idx * 0.06}s`,
+                    ...(isSelected ? {} : { background: "rgba(255,255,255,0.03)" }),
+                    transition: "background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease",
                   }}
                 >
-                  {/* Selected dot */}
+                  {/* Selected check badge — unmistakable vs. the old faint dot */}
                   {isSelected && (
-                    <span
-                      className={`absolute top-2 right-2 w-2 h-2 rounded-full ${col.replace("text-", "bg-")}`}
-                      style={{ boxShadow: "0 0 6px 2px currentColor" }}
-                    />
+                    <span className={`absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full ${badge} shadow-lg z-10`}>
+                      <Check className="h-3 w-3 text-stone-950" strokeWidth={3.5} />
+                    </span>
                   )}
+
+                  {/* Hover tooltip — themed sticky card explaining the category */}
+                  <span
+                    className={`ck-cat-tip pointer-events-none absolute bottom-full left-1/2 z-30 mb-2.5 hidden w-48 flex-col items-center rounded-xl border px-3 py-2.5 text-center group-hover:flex ${border} ${col}`}
+                    style={{ background: "rgba(15, 10, 5, 0.92)", backdropFilter: "blur(8px)" }}
+                    role="tooltip"
+                  >
+                    <span className={`mb-1 flex h-6 w-6 items-center justify-center rounded-lg ${iconBg}`}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="text-[11px] font-extrabold leading-tight">{name}</span>
+                    <span className="mt-1 text-[10px] font-medium leading-snug text-stone-300">{blurb}</span>
+                    {/* Arrow */}
+                    <span
+                      className={`absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r ${border}`}
+                      style={{ background: "rgba(15, 10, 5, 0.92)" }}
+                    />
+                  </span>
 
                   {/* Icon */}
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${iconBg} transition-transform duration-200 ${isSelected ? "scale-110" : "group-hover:scale-105"}`}>

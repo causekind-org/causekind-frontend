@@ -20,6 +20,9 @@ import {
   Languages,
 } from "lucide-react";
 import { getPlatformStats, type PlatformStats } from "@/lib/api";
+import { ALL_REQUEST_CATEGORIES } from "@/lib/categoryVisuals";
+import { locales } from "@/i18n/config";
+import { MATCH_RADIUS_KM } from "@/lib/constants";
 
 /* ─── Brand tokens ─────────────────────────────────────────────────── */
 const TERRACOTTA = "#b04a15";
@@ -413,6 +416,9 @@ export function BeTheChangeSection() {
     },
   ];
 
+  // Derived from real sources, not hardcoded: categories from the shared
+  // category list, languages from the i18n locale registry, radius from the
+  // shared matching constant. "100% admin-verified" is a policy statement.
   const PROMISE_STATS = [
     {
       value: 100,
@@ -424,7 +430,7 @@ export function BeTheChangeSection() {
       progress: 100,
     },
     {
-      value: 10,
+      value: MATCH_RADIUS_KM,
       suffix: " km",
       label: "Match Radius",
       caption: "Local donor and donee connections come first.",
@@ -433,7 +439,7 @@ export function BeTheChangeSection() {
       progress: 82,
     },
     {
-      value: 6,
+      value: ALL_REQUEST_CATEGORIES.length,
       suffix: "",
       label: "Cause Categories",
       caption: "Support across medical, education, livelihood, and more.",
@@ -442,7 +448,7 @@ export function BeTheChangeSection() {
       progress: 72,
     },
     {
-      value: 14,
+      value: locales.length,
       suffix: "",
       label: "Languages Supported",
       caption: "Designed for donors and donees across India.",

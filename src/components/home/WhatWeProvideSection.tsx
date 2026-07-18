@@ -6,7 +6,7 @@ import { Heart, Package, ChevronDown } from "lucide-react";
 
 const STEP_COUNT = 2;
 
-const ROW1 = ["MONEY", "·", "ITEMS", "·", "DONATE", "·", "GIVE", "·", "MONEY", "·", "ITEMS", "·", "DONATE", "·"];
+const ROW1 = ["SHARE", "·", "ITEMS", "·", "DONATE", "·", "GIVE", "·", "SHARE", "·", "ITEMS", "·", "DONATE", "·"];
 const ROW2 = ["LOCAL", "·", "VERIFIED", "·", "DIRECT", "·", "IMPACT", "·", "LOCAL", "·", "VERIFIED", "·"];
 
 export function WhatWeProvideSection() {
