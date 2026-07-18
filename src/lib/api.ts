@@ -511,6 +511,21 @@ export type AiAssessmentResponse = {
   detectedLabels: string | null;
   moderationLabels: string | null;
   createdAt: string;
+  // Listing + donor context for auditing the verdict
+  listingStatus: string | null;
+  category: string | null;
+  subcategory: string | null;
+  condition: string | null;
+  workingStatus: string | null;
+  knownDefects: string | null;
+  description: string | null;
+  city: string | null;
+  locality: string | null;
+  pincode: string | null;
+  images: string[];
+  donorId: number | null;
+  donorName: string | null;
+  donorEmail: string | null;
 };
 
 export function adminGetListingAiAssessment(id: number) {
@@ -1570,6 +1585,54 @@ export function adminActionOffer(offerId: number, action: string, reason?: strin
     method: "POST",
     body: JSON.stringify({ action, reason, backupOfferId }),
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin — User Journey (full per-user lifecycle timeline)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type UserSearchHit = {
+  id: number;
+  fullName: string;
+  email: string;
+  role: string | null;
+  city: string | null;
+  registeredAt: string | null;
+};
+
+export type JourneyEvent = {
+  at: string;
+  category: string;
+  type: string;
+  title: string;
+  detail: string | null;
+  entityType: string | null;
+  entityId: number | null;
+  actor: string | null;
+};
+
+export type UserJourney = {
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    role: string | null;
+    city: string | null;
+    registeredAt: string | null;
+    aadhaarLast4: string | null;
+    aadhaarVerified: boolean;
+  };
+  stats: Record<string, number>;
+  events: JourneyEvent[];
+};
+
+export function adminSearchUsers(q: string) {
+  return request<UserSearchHit[]>(`/api/v1/admin/users/search?q=${encodeURIComponent(q)}`);
+}
+
+export function adminGetUserJourney(userId: number) {
+  return request<UserJourney>(`/api/v1/admin/users/${userId}/journey`);
 }
 
 export type StatusHistoryEntry = {

@@ -140,14 +140,14 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
         <>
           <button
             onClick={prev}
-            className="absolute top-1/2 -translate-y-8 -left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm shadow-md border border-orange-100/80 dark:border-stone-800 text-stone-500 hover:bg-[#b04a15] hover:text-white hover:border-[#b04a15] hover:scale-105 active:scale-95 transition-all duration-200"
+            className="glass-pill glass-pill-hover absolute top-1/2 -translate-y-8 -left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full text-stone-500 hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-all duration-200"
             aria-label="Previous slide"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             onClick={next}
-            className="absolute top-1/2 -translate-y-8 -right-5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm shadow-md border border-orange-100/80 dark:border-stone-800 text-stone-500 hover:bg-[#b04a15] hover:text-white hover:border-[#b04a15] hover:scale-105 active:scale-95 transition-all duration-200"
+            className="glass-pill glass-pill-hover absolute top-1/2 -translate-y-8 -right-5 z-20 flex h-10 w-10 items-center justify-center rounded-full text-stone-500 hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-all duration-200"
             aria-label="Next slide"
           >
             <ChevronRight className="h-5 w-5" />

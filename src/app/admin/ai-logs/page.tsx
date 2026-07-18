@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Bot, ArrowLeft, Search, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { PhotoStrip } from "@/components/admin/PhotoStrip";
 
 const REC_BADGE: Record<string, string> = {
   APPROVE: "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-700",
@@ -239,7 +240,7 @@ function AiLogCard({ assessment: a }: { assessment: AiAssessmentResponse }) {
                   Fraud: {a.fraudRisk}
                 </span>
               )}
-              <span className="text-[11px] text-stone-400">{Math.round(a.confidence * 100)}% conf</span>
+              <span className="text-[11px] text-stone-400">{Math.round(a.confidence)}% conf</span>
               <span className="text-[11px] text-stone-400">{new Date(a.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
@@ -254,11 +255,6 @@ function AiLogCard({ assessment: a }: { assessment: AiAssessmentResponse }) {
             {/* Score bars */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-2">
               <MiniBar label="Confidence" value={a.confidence} color="bg-violet-500" />
-              <MiniBar
-                label="Image ↔ Description"
-                value={a.imageDescriptionScore}
-                color={a.imageDescriptionScore > 0.6 ? "bg-emerald-500" : a.imageDescriptionScore > 0.3 ? "bg-amber-500" : "bg-red-500"}
-              />
             </div>
 
             {/* Meta grid */}
@@ -266,7 +262,52 @@ function AiLogCard({ assessment: a }: { assessment: AiAssessmentResponse }) {
               {a.eligibilityResult && <Cell label="Eligibility" value={a.eligibilityResult} />}
               {a.conditionGrade && <Cell label="Condition Grade" value={a.conditionGrade} />}
               {a.modelVersion && <Cell label="Model" value={a.modelVersion} />}
+              {a.listingStatus && <Cell label="Listing Status" value={a.listingStatus.replace(/_/g, " ")} />}
             </div>
+
+            {/* Donor + origin */}
+            <div className="rounded-xl border border-stone-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
+                    {a.donorName?.charAt(0)?.toUpperCase() ?? "?"}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-semibold">{a.donorName ?? "Unknown donor"}</span>
+                    <span className="block truncate text-[11px] text-stone-500">{a.donorEmail ?? "—"}</span>
+                  </span>
+                </div>
+                <div className="text-right text-[11px] text-stone-500">
+                  <span className="block">{[a.locality, a.city].filter(Boolean).join(", ") || "Location not given"}</span>
+                  {a.pincode && <span className="block">PIN {a.pincode}</span>}
+                </div>
+              </div>
+              {a.donorId && (
+                <Link
+                  href={`/admin/dashboard?journeyUser=${a.donorId}`}
+                  className="mt-2 inline-block text-[11px] font-semibold text-[#b04a15] hover:underline"
+                >
+                  View donor&apos;s full journey →
+                </Link>
+              )}
+            </div>
+
+            {/* What the donor submitted */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+              {a.category && <Cell label="Category" value={a.subcategory ? `${a.category} / ${a.subcategory}` : a.category} />}
+              {a.condition && <Cell label="Condition (stated)" value={a.condition} />}
+              {a.workingStatus && <Cell label="Working Status" value={a.workingStatus} />}
+            </div>
+            {a.knownDefects && (
+              <p className="text-xs text-stone-600 dark:text-stone-400"><span className="text-stone-400">Known defects: </span>{a.knownDefects}</p>
+            )}
+            {a.description && (
+              <p className="text-xs text-stone-600 dark:text-stone-400"><span className="text-stone-400">Description: </span>{a.description}</p>
+            )}
+
+            {/* Photos the AI assessed — click any thumbnail for a full-size preview */}
+            {a.images && a.images.length > 0 && <PhotoStrip images={a.images} label="Photos assessed" />}
 
             {/* Evidence */}
             {a.evidenceNotes && (
@@ -325,7 +366,7 @@ function AiLogCard({ assessment: a }: { assessment: AiAssessmentResponse }) {
 }
 
 function MiniBar({ label, value, color }: { label: string; value: number; color: string }) {
-  const pct = Math.round(value * 100);
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
   return (
     <div>
       <div className="flex justify-between text-[10px] text-stone-500 mb-0.5">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bell, CheckCheck, Handshake, ShieldCheck, Info, X, AlertCircle, PartyPopper, ArrowRight } from "lucide-react";
 import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
 import { useAuth } from "@/hooks/useAuth";
+import { useTilt } from "@/hooks/useTilt";
 
 function timeAgo(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -120,6 +121,7 @@ export function NotificationBell() {
   const { user } = useAuth();
   const { notifications, unread, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
+  const tilt = useTilt();
   const ref = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -145,7 +147,8 @@ export function NotificationBell() {
       <button
         onClick={toggle}
         aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
-        className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-700 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all duration-200 active:scale-95 bg-white dark:bg-zinc-900"
+        className="glass-pill glass-3d relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-stone-700 dark:text-stone-300"
+        {...tilt}
       >
         <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
         {unread > 0 && (

@@ -9,6 +9,7 @@ import {
   updateItemListingDraft,
   submitItemListing,
   uploadListingImage,
+  getProfile,
   type CreateListingPayload,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -57,11 +58,13 @@ const DECLARATIONS = [
 const NEEDS_WORKING_STATUS = ["Electronics", "Household", "Medical aid", "Sports", "Tools & Equipment"];
 const NEEDS_DIMENSIONS     = ["Furniture", "Clothing", "Medical aid", "Tools & Equipment"];
 
+// Step 3 (Location & Delivery) removed 2026-07-15: pickup scheduling now happens
+// post-match in the Handover Hub, and item location defaults from the donor's
+// profile — confirmed via a compact editable block on the final step.
 const STEPS = [
-  { id: 1, label: "Item Details",        sub: "What are you giving?" },
-  { id: 2, label: "Photos",              sub: "Show what you have" },
-  { id: 3, label: "Location & Delivery", sub: "Where & when?" },
-  { id: 4, label: "Declarations",        sub: "Final confirmation" },
+  { id: 1, label: "Item Details", sub: "What are you giving?" },
+  { id: 2, label: "Photos",       sub: "Show what you have" },
+  { id: 3, label: "Declarations", sub: "Location & confirmation" },
 ];
 
 const TRUST_BADGES = [
@@ -163,17 +166,10 @@ export default function NewItemPage() {
   const [locality, setLocality]         = useState("");
   const [latitude, setLatitude]         = useState<number | undefined>();
   const [longitude, setLongitude]       = useState<number | undefined>();
-  const [pickupYN, setPickupYN]         = useState(true);
-  const [pickupDays, setPickupDays]     = useState<string[]>([]);
-  const [pickupSlots, setPickupSlots]   = useState<string[]>([]);
-  const [dropOffYN, setDropOffYN]       = useState(false);
-  const [maxTravel, setMaxTravel]       = useState<number>(10);
-  const [packaging, setPackaging]       = useState("");
-  const [specialHandling, setSpecialHandling] = useState<string[]>([]);
-  const [handoverDate, setHandoverDate] = useState("");
-  const [deliveryRadius, setDeliveryRadius] = useState(25);
+  // (Pickup scheduling, transport and packaging preferences were removed from the
+  // wizard — donor & donee coordinate those in the Handover Hub after matching.)
 
-  // Step 4
+  // Step 3 (Declarations + location confirmation)
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -190,6 +186,21 @@ export default function NewItemPage() {
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
   }, [user, authLoading, router]);
+
+  // ── Prefill item location from the donor's profile (city + GPS) — the reason
+  // the wizard no longer needs a dedicated location step. ─────────────────────
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (!user || prefilledRef.current) return;
+    prefilledRef.current = true;
+    getProfile()
+      .then((p) => {
+        if (p.city) { setCityFreeText((prev) => prev || p.city || ""); setForceFreeTextCity(true); }
+        if (p.latitude != null) setLatitude((prev) => prev ?? p.latitude ?? undefined);
+        if (p.longitude != null) setLongitude((prev) => prev ?? p.longitude ?? undefined);
+      })
+      .catch(() => { /* profile prefill is best-effort */ });
+  }, [user]);
 
   // ── Magnetic cursor ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -232,11 +243,7 @@ export default function NewItemPage() {
       approximateWeight: weight || undefined, description: description || undefined,
       imageUrl, imageUrls, city: city || undefined, pincode: pincode || undefined,
       locality: locality || undefined, latitude, longitude,
-      pickupAvailableYN: pickupYN, pickupDays: pickupDays.join(",") || undefined,
-      pickupTimeSlots: pickupSlots.join(",") || undefined, donorDropOffAvailable: dropOffYN,
-      maxTravelDistance: dropOffYN ? maxTravel : undefined, packagingAvailable: packaging || undefined,
-      specialHandling: specialHandling.join("|") || undefined, preferredHandoverDate: handoverDate || undefined,
-      maximumDeliveryRadius: deliveryRadius, policyVersion: "1.0",
+      policyVersion: "1.0",
       declarationsAccepted: declarations.every(Boolean),
     };
   }, [
@@ -244,8 +251,7 @@ export default function NewItemPage() {
     approximateAge, workingStatus, noDefects, knownDefects, accessories,
     dimensions, weight, description, photos, cityFreeText, cityValue,
     stateIso, countryIso, pincode, locality, latitude, longitude,
-    pickupYN, pickupDays, pickupSlots, dropOffYN, maxTravel, packaging,
-    specialHandling, handoverDate, deliveryRadius, declarations, showCityFreeText,
+    declarations, showCityFreeText,
   ]);
 
   async function saveDraft() {
@@ -276,8 +282,8 @@ export default function NewItemPage() {
       const city = showCityFreeText ? cityFreeText : cityValue;
       if (!city) e.city = "City is required";
       if (!pincode) e.pincode = "PIN code is required";
+      if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted";
     }
-    if (s === 4) { if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted"; }
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -288,7 +294,7 @@ export default function NewItemPage() {
     spawnParticles();
     setAnimDir("forward");
     setIsAnimating(true);
-    setTimeout(() => { setStep((s) => Math.min(s + 1, 4)); setIsAnimating(false); window.scrollTo({ top: 0, behavior: "smooth" }); }, 380);
+    setTimeout(() => { setStep((s) => Math.min(s + 1, 3)); setIsAnimating(false); window.scrollTo({ top: 0, behavior: "smooth" }); }, 380);
   }
 
   function handleBack() {
@@ -299,7 +305,7 @@ export default function NewItemPage() {
   }
 
   async function handleSubmit() {
-    if (!validateStep(4)) { toast.error("Please fix the highlighted fields"); return; }
+    if (!validateStep(3)) { toast.error("Please fix the highlighted fields"); return; }
     setSubmitting(true);
     try {
       let id = draftId;
@@ -591,9 +597,10 @@ export default function NewItemPage() {
   );
 
   // ── Step 3 ────────────────────────────────────────────────────────────────
-  const step3 = (
-    <div className="space-y-6">
-      {/* Location */}
+  // Compact location confirmation — lives on the final step now. Prefilled from
+  // the donor's profile; pickup scheduling moved to the post-match Handover Hub.
+  const locationCard = (
+    <div className="rounded-2xl border border-stone-200 dark:border-zinc-700 p-5">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -633,90 +640,18 @@ export default function NewItemPage() {
         </div>
       </div>
 
-      {/* Pickup */}
-      <div className="rounded-2xl border border-stone-200 dark:border-zinc-700 p-5 space-y-4">
-        <label className="flex items-center gap-3 cursor-pointer">
-          <div onClick={() => setPickupYN(!pickupYN)}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer
-              ${pickupYN ? "bg-[#1e3a60] border-[#1e3a60]" : "border-stone-300 hover:border-[#1e3a60]"}`}>
-            {pickupYN && <CheckCircle2 className="w-3 h-3 text-white" />}
-          </div>
-          <span className="text-sm font-bold text-stone-700 dark:text-stone-200">Pickup from my location is available</span>
-        </label>
-        {pickupYN && (
-          <div className="space-y-4 pt-1">
-            <div>
-              <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2.5">Available Days</p>
-              <div className="flex flex-wrap gap-2">
-                <Chip label="Any Day" active={pickupDays.includes("ANY")} onClick={() => { if (pickupDays.includes("ANY")) { setPickupDays([]); } else { setPickupDays(["ANY"]); } }} color="ink" />
-                {DAYS.map((d) => <Chip key={d} label={d.slice(0, 3)} active={pickupDays.includes(d) && !pickupDays.includes("ANY")} onClick={() => { if (pickupDays.includes("ANY")) { setPickupDays([d]); } else { toggle(setPickupDays, d); } }} color="ink" />)}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2.5">Time Slots</p>
-              <div className="flex flex-wrap gap-2">
-                <Chip label="Anytime" active={pickupSlots.includes("ANYTIME")} onClick={() => { if (pickupSlots.includes("ANYTIME")) { setPickupSlots([]); } else { setPickupSlots(["ANYTIME"]); } }} color="ink" />
-                {TIME_SLOTS.map((s) => <Chip key={s} label={s} active={pickupSlots.includes(s) && !pickupSlots.includes("ANYTIME")} onClick={() => { if (pickupSlots.includes("ANYTIME")) { setPickupSlots([s]); } else { toggle(setPickupSlots, s); } }} color="ink" />)}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Drop-off */}
-      <div className="rounded-2xl border border-stone-200 dark:border-zinc-700 p-5 space-y-4">
-        <label className="flex items-center gap-3 cursor-pointer">
-          <div onClick={() => setDropOffYN(!dropOffYN)}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer
-              ${dropOffYN ? "bg-[#e07b3a] border-[#e07b3a]" : "border-stone-300 hover:border-[#e07b3a]"}`}>
-            {dropOffYN && <CheckCircle2 className="w-3 h-3 text-white" />}
-          </div>
-          <span className="text-sm font-bold text-stone-700 dark:text-stone-200">I can drop off the item</span>
-        </label>
-        {dropOffYN && (
-          <Field label="Maximum travel distance (km)">
-            <Input type="number" min={1} max={200} value={maxTravel} onChange={(e) => setMaxTravel(Number(e.target.value))} className="h-11 w-40" />
-          </Field>
-        )}
-      </div>
-
-      {/* Packaging */}
-      <Field label="Packaging Available">
-        <Select value={packaging} onValueChange={setPackaging}>
-          <SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="YES">Yes — I can pack it safely</SelectItem>
-            <SelectItem value="NO">No — recipient needs to bring packaging</SelectItem>
-            <SelectItem value="NOT_REQUIRED">Not required for this item</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-
-      {/* Special handling */}
-      <div className="space-y-2">
-        <Label className="text-sm font-bold text-stone-700 dark:text-stone-200">Special Handling Notes</Label>
-        <div className="flex flex-wrap gap-2">
-          {SPECIAL_HANDLING_OPTIONS.map((h) => <Chip key={h} label={h} active={specialHandling.includes(h)} onClick={() => toggle(setSpecialHandling, h)} color="gold" />)}
-        </div>
-      </div>
-
-      {/* Handover */}
-      <div className="rounded-2xl border border-stone-200 dark:border-zinc-700 p-5 space-y-4">
-        <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Preferred Handover</p>
-        <Field label="Earliest Available Date">
-          <Input type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="h-11 w-48" />
-        </Field>
-      </div>
-
-      <Field label="Maximum Delivery Radius (km)" hint="How far can this item travel to reach a recipient?">
-        <Input type="number" min={1} value={deliveryRadius} onChange={(e) => setDeliveryRadius(Number(e.target.value))} className="h-11 w-40" />
-      </Field>
     </div>
   );
 
   // ── Step 4 ────────────────────────────────────────────────────────────────
   const step4 = (
     <div className="space-y-6">
+      {locationCard}
+      <p className="text-xs text-stone-400 -mt-3">
+        Pickup timing, packaging and delivery details are arranged directly with your matched
+        recipient later, in the Handover Hub — no need to decide them now.
+      </p>
+
       <div className="rounded-2xl bg-[#f0b97a]/15 border border-[#f0b97a]/40 p-4">
         <p className="text-sm font-black text-[#b04a15] mb-1">Mandatory Donor Declarations</p>
         <p className="text-xs text-stone-600 dark:text-stone-400">All 8 declarations must be accepted before your listing can be submitted.</p>
@@ -957,8 +892,7 @@ export default function NewItemPage() {
             }}>
             {step === 1 && step1}
             {step === 2 && step2}
-            {step === 3 && step3}
-            {step === 4 && step4}
+            {step === 3 && step4}
           </div>
 
           {/* ── Navigation ── */}
@@ -973,7 +907,7 @@ export default function NewItemPage() {
 
             <div className="flex-1" />
 
-            {step < 4 ? (
+            {step < 3 ? (
               <button type="button" onClick={handleNext} disabled={saving}
                 className="flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-60 shadow-[0_6px_24px_rgba(176,74,21,0.35)] hover:shadow-[0_8px_32px_rgba(176,74,21,0.50)] hover:-translate-y-0.5"
                 style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}>

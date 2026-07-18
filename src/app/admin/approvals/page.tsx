@@ -255,6 +255,11 @@ export default function ApprovalsPage() {
                       <div className="min-w-0">
                         <p className="font-medium">{r.title}</p>
                         <p className="text-sm text-muted-foreground">{r.doneeName} · {r.city} · {r.category} · {t("qty")} {r.quantity} · {r.urgency} {t("urgency")}</p>
+                        {r.doneeId && (
+                          <Link href={`/admin/dashboard?journeyUser=${r.doneeId}`} className="mt-0.5 inline-block text-xs font-semibold text-[#b04a15] hover:underline">
+                            View donee&apos;s full journey →
+                          </Link>
+                        )}
                       </div>
                       <Badge variant="secondary">{t("pending")}</Badge>
                     </div>
@@ -285,6 +290,11 @@ export default function ApprovalsPage() {
                           {l.model && ` ${l.model}`}
                           {` · Qty ${l.quantity}`}
                         </p>
+                        {l.donorId && (
+                          <Link href={`/admin/dashboard?journeyUser=${l.donorId}`} className="mt-0.5 inline-block text-xs font-semibold text-[#b04a15] hover:underline">
+                            View donor&apos;s full journey →
+                          </Link>
+                        )}
                       </div>
                       <Badge variant={l.status === "MANUAL_REVIEW" ? "destructive" : "secondary"}>
                         {l.status === "MANUAL_REVIEW" ? "⚠ Manual Review" : "Submitted"}
@@ -566,11 +576,6 @@ function AiPanel({ listingId }: { listingId: number }) {
           {/* Score bars */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
             <ScoreBar label="Confidence" value={ai.confidence} />
-            <ScoreBar
-              label="Image ↔ Desc"
-              value={ai.imageDescriptionScore}
-              colorClass={ai.imageDescriptionScore > 0.6 ? "bg-emerald-500" : ai.imageDescriptionScore > 0.3 ? "bg-amber-500" : "bg-red-500"}
-            />
           </div>
 
           {/* Evidence notes */}
@@ -618,7 +623,7 @@ function AiPanel({ listingId }: { listingId: number }) {
 }
 
 function ScoreBar({ label, value, colorClass = "bg-violet-500" }: { label: string; value: number; colorClass?: string }) {
-  const pct = Math.round(value * 100);
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
   return (
     <div>
       <div className="flex justify-between text-[10px] text-stone-500 mb-0.5">

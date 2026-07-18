@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, X, ClipboardList, Loader2, ArrowRight } from "lucide-react";
 import { getItemRequests, type ItemRequest } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useTilt } from "@/hooks/useTilt";
 
 // Need-first privacy: donor listings are private inventory — never searchable.
 // Global search covers only requests published on the public need board.
@@ -230,6 +231,7 @@ export function GlobalSearch() {
 
 /* ── Trigger button (goes in Navbar) ─────────────────────────────────────── */
 export function SearchTrigger({ className = "" }: { className?: string }) {
+  const tilt = useTilt();
   function open() {
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }));
   }
@@ -238,7 +240,8 @@ export function SearchTrigger({ className = "" }: { className?: string }) {
       onClick={open}
       aria-label="Search"
       title="Search (Ctrl+K)"
-      className={`relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-700 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all duration-200 active:scale-95 overflow-hidden bg-white dark:bg-zinc-900 ${className}`}
+      className={`glass-pill glass-3d relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-stone-700 dark:text-stone-300 ${className}`}
+      {...tilt}
     >
       <Search className="w-4 h-4 sm:w-5 sm:h-5" />
     </button>

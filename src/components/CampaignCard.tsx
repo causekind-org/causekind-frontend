@@ -58,7 +58,7 @@ export function CampaignCard({ campaign }: Props) {
         
         {/* Floating Category and Location Glassmorphic tags */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2">
-          <Badge className="bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md text-[#006c49] dark:text-[#4edea3] border border-white/20 dark:border-white/10 font-bold hover:bg-white/80 text-[10px] px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+          <Badge className="glass-pill text-[#006c49] dark:text-[#4edea3] font-bold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
             <TranslatedText text={campaign.category} />
           </Badge>
           <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white font-bold border border-white/10 shadow-xs">
