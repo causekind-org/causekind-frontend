@@ -505,7 +505,7 @@
     },
     "what": {
       "title": "What we Provide",
-      "subtitle": "Three ways to give, all under one roof."
+      "subtitle": "Give items directly to someone nearby — money donations coming soon."
     },
     "inkindSection": {
       "title": "In-Kind Requests",
@@ -536,8 +536,8 @@
     "provide": {
       "verifiedCampaigns": "Verified Campaigns",
       "verifiedCampaignsDesc": "Every person who posts a campaign is checked by our team first. You know your money is going somewhere real.",
-      "moneyOrItems": "Money or Items",
-      "moneyOrItemsDesc": "Donate cash to a campaign, or give physical items like books, clothes, or a laptop to someone nearby.",
+      "moneyOrItems": "Give Items",
+      "moneyOrItemsDesc": "Give physical items like books, clothes, or a laptop to someone nearby. Cash donations to campaigns are coming soon.",
       "localDropoffs": "Local Drop-offs",
       "localDropoffsDesc": "Item donations are matched within 10 km. No couriers, no shipping fees — just direct giving to a neighbour."
     }

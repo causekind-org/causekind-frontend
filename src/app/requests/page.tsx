@@ -171,6 +171,14 @@ function RequestsHero({
   const [mouse, setMouse] = useState({ x: 50, y: 40 });
   const [active, setActive] = useState(false);
 
+  // "List from here" hint — appears next to the CTA ~10s after landing, stays
+  // until dismissed.
+  const [showHint, setShowHint] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowHint(true), 10_000);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div
       onMouseMove={e => {
@@ -259,8 +267,58 @@ function RequestsHero({
               </div>
             </div>
 
+            {/* Primary CTA — moved here from the category bar, with attention pulse */}
+            <div className="relative inline-block anim-up anim-d5">
+              <style>{`
+                @keyframes ck-cta-pulse {
+                  0%, 100% { box-shadow: 0 8px 28px rgba(176,74,21,0.45), 0 0 0 0 rgba(240,185,122,0.45); }
+                  50%      { box-shadow: 0 8px 28px rgba(176,74,21,0.45), 0 0 0 12px rgba(240,185,122,0); }
+                }
+                .ck-cta-list { animation: ck-cta-pulse 2.4s ease-out infinite; }
+                @keyframes ck-hint-pop {
+                  0%   { opacity: 0; transform: translateY(8px) scale(0.88); }
+                  60%  { opacity: 1; transform: translateY(-3px) scale(1.03); }
+                  100% { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .ck-cta-hint { animation: ck-hint-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+                @media (prefers-reduced-motion: reduce) {
+                  .ck-cta-list, .ck-cta-hint { animation: none; }
+                }
+              `}</style>
+
+              <Link
+                href="/items/new"
+                className="ck-cta-list inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-extrabold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.97]"
+                style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}
+              >
+                <Plus className="w-4 h-4" strokeWidth={3} />
+                List an Item
+              </Link>
+
+              {/* Sticky hint — pops in beside the button after 10s, dismissible */}
+              {showHint && (
+                <div className="ck-cta-hint absolute left-0 top-full mt-3 sm:left-full sm:top-1/2 sm:mt-0 sm:ml-4 sm:-translate-y-1/2 z-20 w-60">
+                  <div className="relative rounded-2xl border border-[#f0b97a]/40 bg-[#1c0905]/95 backdrop-blur-md px-4 py-3 shadow-xl shadow-black/40">
+                    {/* Arrow — points up on mobile, left on desktop */}
+                    <span className="absolute -top-1 left-8 h-2.5 w-2.5 rotate-45 border-l border-t border-[#f0b97a]/40 bg-[#1c0905] sm:top-1/2 sm:-left-1.5 sm:-mt-1.5 sm:border-b sm:border-t-0" />
+                    <button
+                      onClick={() => setShowHint(false)}
+                      aria-label="Dismiss hint"
+                      className="absolute top-2 right-2 text-white/30 hover:text-white/70 transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                    <p className="text-[#f0b97a] text-[10px] font-black uppercase tracking-widest mb-1">Got spare items?</p>
+                    <p className="text-white/80 text-xs leading-relaxed pr-3">
+                      List your item from here — books, clothes, electronics. Someone nearby needs it.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Scroll cue */}
-            <div className="flex items-center gap-2 anim-up anim-d5">
+            <div className="flex items-center gap-2 anim-up anim-d6">
               <span className="text-white/25 text-[10px] font-bold uppercase tracking-widest">Browse needs below</span>
               <ChevronDown className="h-4 w-4 text-white/25 animate-bounce-slow" />
             </div>
@@ -332,17 +390,6 @@ function CategoryBar({
               </button>
             );
           })}
-        </div>
-
-        {/* Pinned CTA — doesn't scroll with the pills */}
-        <div className="shrink-0 pl-2 border-l border-stone-200 dark:border-zinc-700">
-          <Link
-            href="/items/new"
-            className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold border-2 border-[#b04a15] text-[#b04a15] hover:bg-[#b04a15] hover:text-white transition-all duration-200 whitespace-nowrap"
-          >
-            <Plus className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">List an Item</span>
-          </Link>
         </div>
 
       </div>

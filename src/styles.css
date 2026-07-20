@@ -298,6 +298,10 @@ body {
   animation-delay: 0.52s;
 }
 
+.anim-d6 {
+  animation-delay: 0.64s;
+}
+
 /* ── Carousel timer bar ── */
 @keyframes timer-bar-fill {
   from {

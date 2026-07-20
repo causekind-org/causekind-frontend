@@ -505,7 +505,7 @@
     },
     "what": {
       "title": "Lo que ofrecemos",
-      "subtitle": "Tres formas de donar, todas bajo un mismo techo."
+      "subtitle": "Dona artículos directamente a alguien cercano — las donaciones de dinero llegarán pronto."
     },
     "inkindSection": {
       "title": "Solicitudes en especie",
@@ -536,8 +536,8 @@
     "provide": {
       "verifiedCampaigns": "Campañas verificadas",
       "verifiedCampaignsDesc": "Nuestro equipo verifica primero a cada persona que publica una campaña. Sabes que tu dinero va a algún lugar real.",
-      "moneyOrItems": "Dinero o artículos",
-      "moneyOrItemsDesc": "Done dinero en efectivo a una campaña o regale artículos físicos como libros, ropa o una computadora portátil a alguien cercano.",
+      "moneyOrItems": "Dona Artículos",
+      "moneyOrItemsDesc": "Regala artículos físicos como libros, ropa o una computadora portátil a alguien cercano. Las donaciones en efectivo a campañas llegarán pronto.",
       "localDropoffs": "Entregas locales",
       "localDropoffsDesc": "Las donaciones de artículos se igualan en un radio de 10 km. Sin mensajería ni gastos de envío, solo entrega directa a un vecino."
     }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { HandHeart, Sparkles, X, Terminal, ShieldCheck, Database, Lock, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname, useRouter } from "next/navigation";
+import { getMyProfile } from "@/lib/api";
 
 type OverlayConfig = {
   icon: React.ReactNode;
@@ -75,10 +76,29 @@ function Sparkles12({ color }: { color: string }) {
 }
 
 function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
+  const [firstName, setFirstName] = useState<string | null>(null);
+
+  useEffect(() => {
+    getMyProfile()
+      .then(p => {
+        const first = p?.fullName?.trim().split(/\s+/)[0];
+        if (first) setFirstName(first);
+      })
+      .catch(() => {});
+  }, []);
 
   function go() {
     dismiss();
   }
+
+  const embers = [
+    { left: "12%", size: 4, delay: "0s",   dur: "11s" },
+    { left: "28%", size: 3, delay: "3.5s", dur: "13s" },
+    { left: "45%", size: 5, delay: "1.2s", dur: "10s" },
+    { left: "62%", size: 3, delay: "5s",   dur: "14s" },
+    { left: "78%", size: 4, delay: "2.2s", dur: "12s" },
+    { left: "90%", size: 3, delay: "6.5s", dur: "13s" },
+  ];
 
   return (
     <>
@@ -92,17 +112,60 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         .ck-donor-card { animation: ck-donor-rise 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+
+        /* Faint ambient background: two slow-drifting warm glows + rising embers */
+        .ck-welcome-blob {
+          position: absolute; width: 46vmax; height: 46vmax; border-radius: 50%;
+          background: radial-gradient(circle, rgba(224, 123, 58, 0.13) 0%, transparent 68%);
+          animation: ck-blob-drift 24s ease-in-out infinite alternate;
+        }
+        .ck-welcome-blob2 {
+          background: radial-gradient(circle, rgba(30, 58, 96, 0.18) 0%, transparent 68%);
+          animation-duration: 30s; animation-delay: -10s; animation-direction: alternate-reverse;
+        }
+        @keyframes ck-blob-drift {
+          from { transform: translate(0, 0) scale(1); }
+          to   { transform: translate(9vmax, 6vmax) scale(1.18); }
+        }
+        .ck-ember {
+          position: absolute; bottom: -6px; border-radius: 9999px;
+          background: #f0b97a; opacity: 0;
+          animation: ck-ember-rise linear infinite;
+        }
+        @keyframes ck-ember-rise {
+          0%   { opacity: 0;    transform: translateY(0) translateX(0); }
+          12%  { opacity: 0.4;  }
+          70%  { opacity: 0.18; }
+          100% { opacity: 0;    transform: translateY(-78vh) translateX(3vw); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ck-welcome-blob, .ck-ember { animation: none; }
+          .ck-ember { display: none; }
+        }
       `}</style>
 
       <div
         className={`fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-stone-950/85 backdrop-blur-xl ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
         onClick={dismiss}
       >
+        {/* Ambient animated backdrop — deliberately faint, behind the card */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
+          <div className="ck-welcome-blob" style={{ top: "-14%", left: "-10%" }} />
+          <div className="ck-welcome-blob ck-welcome-blob2" style={{ bottom: "-18%", right: "-12%" }} />
+          {embers.map((e, i) => (
+            <span
+              key={i}
+              className="ck-ember"
+              style={{ left: e.left, width: e.size, height: e.size, animationDelay: e.delay, animationDuration: e.dur }}
+            />
+          ))}
+        </div>
+
         <button onClick={dismiss} className="absolute top-6 right-6 text-white/40 hover:text-white hover:rotate-90 transition-all duration-300 p-2">
           <X className="w-7 h-7" />
         </button>
 
-        <div className="ck-donor-card w-full max-w-sm text-center" onClick={e => e.stopPropagation()}>
+        <div className="ck-donor-card relative w-full max-w-sm text-center" onClick={e => e.stopPropagation()}>
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-[#b04a15]/25 blur-[60px] -z-10 rounded-full" />
             <div className="w-20 h-20 rounded-[1.8rem] bg-gradient-to-br from-[#b04a15] to-[#e07b3a] flex items-center justify-center mx-auto shadow-xl shadow-[#b04a15]/30">
@@ -111,7 +174,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
           </div>
 
           <h2 className="text-3xl font-black text-white tracking-tight mb-3">
-            Welcome back, Donor!
+            Welcome back, {firstName ?? "Donor"}!
           </h2>
           <p className="text-stone-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
             Ready to make a difference? Choose what you&apos;d like to donate and we&apos;ll match you with someone nearby.

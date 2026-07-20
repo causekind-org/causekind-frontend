@@ -505,7 +505,7 @@
     },
     "what": {
       "title": "Ce que nous proposons",
-      "subtitle": "Trois façons de donner, toutes sous un même toit."
+      "subtitle": "Donnez des objets directement à quelqu'un près de chez vous — les dons en argent arrivent bientôt."
     },
     "inkindSection": {
       "title": "Demandes en nature",
@@ -536,8 +536,8 @@
     "provide": {
       "verifiedCampaigns": "Campagnes vérifiées",
       "verifiedCampaignsDesc": "Chaque personne qui publie une campagne est d'abord vérifiée par notre équipe. Vous savez que votre argent va dans un endroit réel.",
-      "moneyOrItems": "Argent ou objets",
-      "moneyOrItemsDesc": "Faites un don d'argent à une campagne ou offrez des objets physiques comme des livres, des vêtements ou un ordinateur portable à quelqu'un à proximité.",
+      "moneyOrItems": "Donnez des objets",
+      "moneyOrItemsDesc": "Offrez des objets physiques comme des livres, des vêtements ou un ordinateur portable à quelqu'un à proximité. Les dons en argent aux campagnes arrivent bientôt.",
       "localDropoffs": "Dépôts locaux",
       "localDropoffsDesc": "Les dons d'articles sont doublés dans un rayon de 10 km. Pas de coursier, pas de frais d'expédition : il suffit de donner directement à un voisin."
     }
