@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
-  adminSearchUsers, adminGetUserJourney,
+  adminSearchUsers, adminGetUserJourney, adminSuspendUser, adminUnsuspendUser,
   type UserSearchHit, type UserJourney, type JourneyEvent,
 } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Bot, ClipboardList, Coins, FileText, Flag, Gift, Handshake,
-  Loader2, MessageSquare, Package, Search, ShieldCheck, UserRound,
+  Loader2, MessageSquare, Package, Search, ShieldCheck, ShieldOff, UserRound,
 } from "lucide-react";
 
 // ── Category styling ─────────────────────────────────────────────────────────
@@ -55,6 +57,10 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
   const loadedInitial = useRef(false);
   const [allUsers, setAllUsers] = useState<UserSearchHit[]>([]);
   const [allLoading, setAllLoading] = useState(true);
+  const [suspendFormOpen, setSuspendFormOpen] = useState(false);
+  const [suspendReason, setSuspendReason] = useState("");
+  const [suspendUntil, setSuspendUntil] = useState("");
+  const [suspendBusy, setSuspendBusy] = useState(false);
 
   // Default view: the full user directory (backend excludes admin/superadmin).
   useEffect(() => {
@@ -80,6 +86,41 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
       loadJourney(initialUserId);
     }
   }, [initialUserId, loadJourney]);
+
+  async function handleSuspend() {
+    if (!journey || !suspendReason.trim()) { toast.error("Enter a reason first."); return; }
+    setSuspendBusy(true);
+    try {
+      await adminSuspendUser(
+        journey.user.id,
+        suspendReason.trim(),
+        suspendUntil ? new Date(suspendUntil).toISOString() : null
+      );
+      toast.success("User suspended.");
+      setSuspendFormOpen(false);
+      setSuspendReason("");
+      setSuspendUntil("");
+      loadJourney(journey.user.id);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to suspend user.");
+    } finally {
+      setSuspendBusy(false);
+    }
+  }
+
+  async function handleUnsuspend() {
+    if (!journey) return;
+    setSuspendBusy(true);
+    try {
+      await adminUnsuspendUser(journey.user.id);
+      toast.success("Suspension lifted.");
+      loadJourney(journey.user.id);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to lift suspension.");
+    } finally {
+      setSuspendBusy(false);
+    }
+  }
 
   function onQueryChange(v: string) {
     setQuery(v);
@@ -212,6 +253,11 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                           <ShieldCheck className="h-3 w-3" /> Aadhaar ····{journey.user.aadhaarLast4}
                         </Badge>
                       )}
+                      {journey.user.suspended && (
+                        <Badge variant="destructive" className="gap-1">
+                          <ShieldOff className="h-3 w-3" /> Suspended{journey.user.suspendedUntil ? ` until ${fmtDate(journey.user.suspendedUntil)}` : ""}
+                        </Badge>
+                      )}
                       <span className="text-xs text-stone-400">member since {fmtDate(journey.user.registeredAt)}</span>
                     </div>
                   </div>
@@ -224,6 +270,48 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Suspend/unsuspend */}
+              <div className="mt-4 border-t border-stone-100 pt-4 dark:border-zinc-800">
+                {journey.user.suspended ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-stone-500">
+                      {journey.user.suspensionReason && <>Reason: {journey.user.suspensionReason}</>}
+                    </p>
+                    <Button variant="outline" size="sm" disabled={suspendBusy} onClick={handleUnsuspend} className="gap-1.5">
+                      {suspendBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                      Lift suspension
+                    </Button>
+                  </div>
+                ) : suspendFormOpen ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      rows={2}
+                      placeholder="Reason for suspension"
+                      value={suspendReason}
+                      onChange={(e) => setSuspendReason(e.target.value)}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Input
+                        type="date"
+                        value={suspendUntil}
+                        onChange={(e) => setSuspendUntil(e.target.value)}
+                        className="w-auto"
+                        placeholder="Until (optional)"
+                      />
+                      <Button variant="destructive" size="sm" disabled={suspendBusy} onClick={handleSuspend} className="gap-1.5">
+                        {suspendBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldOff className="h-3.5 w-3.5" />}
+                        Confirm suspend
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setSuspendFormOpen(false)}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => setSuspendFormOpen(true)} className="gap-1.5 text-red-600 hover:text-red-700">
+                    <ShieldOff className="h-3.5 w-3.5" /> Suspend user
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
