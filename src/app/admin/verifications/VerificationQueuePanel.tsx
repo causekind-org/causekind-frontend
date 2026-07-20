@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest,
@@ -12,8 +10,9 @@ import {
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
+import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import {
-  Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Clock, User, FileText, Gauge,
+  Check, X, ChevronDown, ChevronUp, Clock, User, FileText, Gauge,
   AlertTriangle, Loader2, ShieldCheck, Lock, Pause, Play, ListChecks, Eye, EyeOff, ExternalLink, Sparkles,
 } from "lucide-react";
 
@@ -407,18 +406,6 @@ function VerificationDetail({
   // (this component unmounts) since expanded is a single id, not a set — see the parent.
   const [revealedAadhaar, setRevealedAadhaar] = useState<string | null>(null);
   const [revealing, setRevealing] = useState(false);
-  const [docIndex, setDocIndex] = useState<number | null>(null);
-
-  // Warm the image optimizer + browser cache the moment the card expands, so the
-  // lightbox is usually instant by the time the admin clicks a document chip.
-  useEffect(() => {
-    detail.documents.forEach((d) => {
-      if (!isPdfUrl(d.url)) {
-        const img = new window.Image();
-        img.src = optimizedDocUrl(d.url);
-      }
-    });
-  }, [detail.documents]);
 
   async function handleRevealAadhaar() {
     if (revealedAadhaar) { setRevealedAadhaar(null); return; } // toggle off — re-hide
@@ -472,6 +459,52 @@ function VerificationDetail({
         </div>
       </div>
 
+      {/* Submitted by */}
+      <div className="rounded-xl border border-stone-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
+              {request.doneeName?.charAt(0)?.toUpperCase() ?? "?"}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-xs font-semibold text-stone-700 dark:text-stone-200">{request.doneeName ?? "Unknown donee"}</span>
+              <span className="block truncate text-[11px] text-stone-500 dark:text-stone-400">{detail.doneeEmail ?? "—"}</span>
+            </span>
+          </div>
+          <div className="text-right text-[11px] text-stone-500 dark:text-stone-400">
+            <span className="block">{request.city || "Location not given"}</span>
+            {request.pincode && <span className="block">PIN {request.pincode}</span>}
+          </div>
+        </div>
+        {detail.doneeId && (
+          <a
+            href={`/admin/dashboard?journeyUser=${detail.doneeId}`}
+            className="mt-2 inline-block text-[11px] font-semibold text-[#b04a15] hover:underline"
+          >
+            View donee&apos;s full journey →
+          </a>
+        )}
+      </div>
+
+      {/* What the donee submitted */}
+      <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700">
+        <p className="font-bold mb-2">What the donee submitted</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div><span className="text-stone-400">Category: </span><strong className="text-stone-700 dark:text-stone-200">{request.category}</strong></div>
+          <div><span className="text-stone-400">Quantity: </span><strong className="text-stone-700 dark:text-stone-200">{request.quantity}</strong></div>
+          <div><span className="text-stone-400">Urgency: </span><strong className="text-stone-700 dark:text-stone-200">{request.urgency}</strong></div>
+          {request.isEmergency && (
+            <div><span className="text-stone-400">Emergency: </span><strong className="text-red-600">{request.emergencyNature ?? "Yes"}</strong></div>
+          )}
+          <div><span className="text-stone-400">City: </span><strong className="text-stone-700 dark:text-stone-200">{request.city}</strong></div>
+          {request.pincode && <div><span className="text-stone-400">PIN: </span><strong className="text-stone-700 dark:text-stone-200">{request.pincode}</strong></div>}
+        </div>
+        {request.description && (
+          <p className="mt-2 text-stone-600 dark:text-stone-400"><span className="text-stone-400">Description: </span>{request.description}</p>
+        )}
+      </div>
+
       {/* Need assessment */}
       {detail.needAssessment && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700 space-y-2">
@@ -498,27 +531,29 @@ function VerificationDetail({
         </div>
       )}
 
-      {/* Documents — inline lightbox preview instead of leaving the page */}
-      {detail.documents.length > 0 && (
-        <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700">
-          <p className="font-bold mb-2 flex items-center gap-1"><FileText className="w-3 h-3" /> Documents ({detail.documents.length})</p>
-          <div className="flex flex-wrap gap-2">
-            {detail.documents.map((d, i) => (
-              <button key={d.id} type="button" onClick={() => setDocIndex(i)}
-                className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-300 hover:bg-[#b04a15]/10 hover:text-[#b04a15] transition-colors cursor-pointer">
-                <Eye className="w-3 h-3" /> {d.docType.replace(/_/g, " ")}
-              </button>
-            ))}
+      {/* Supporting documents — images go in the shared lightbox strip, non-image docs (PDFs etc.) as labeled links */}
+      {detail.documents.length > 0 && (() => {
+        const imageDocs = detail.documents.filter((d) => !isPdfUrl(d.url));
+        const otherDocs = detail.documents.filter((d) => isPdfUrl(d.url));
+        return (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700 space-y-2">
+            <p className="font-bold flex items-center gap-1"><FileText className="w-3 h-3" /> Documents ({detail.documents.length})</p>
+            {imageDocs.length > 0 && (
+              <PhotoStrip images={imageDocs.map((d) => d.url)} />
+            )}
+            {otherDocs.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {otherDocs.map((d) => (
+                  <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-300 hover:bg-[#b04a15]/10 hover:text-[#b04a15] transition-colors">
+                    <ExternalLink className="w-3 h-3" /> {d.docType.replace(/_/g, " ")}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      )}
-
-      <DocLightbox
-        documents={detail.documents}
-        index={docIndex}
-        onNavigate={setDocIndex}
-        onClose={() => setDocIndex(null)}
-      />
+        );
+      })()}
 
       {/* Verification form */}
       {detail.verification && <VerificationFormGrid v={detail.verification} isEmergency={request.isEmergency} />}
@@ -607,170 +642,7 @@ function VerificationFormGrid({ v, isEmergency }: { v: NonNullable<AdminRequestV
   );
 }
 
-// ── Document lightbox ─────────────────────────────────────────────────────────
-// Inline preview so admins never leave the verification queue: animated overlay,
-// image or PDF viewer, arrow-key/button navigation across all of the request's
-// documents, Escape/backdrop to close. Rendered via portal so no ancestor
-// stacking context (backdrop-blur etc.) can trap it.
-
-type VerificationDocument = AdminRequestVerificationDetail["documents"][number];
-
-const DOC_PREVIEW_WIDTH = 1920;
 
 function isPdfUrl(url: string) {
   return /\.pdf(\?|$)/i.test(url);
-}
-
-// Docs are raw S3 originals (phone photos, often 3-8 MB). Routing them through
-// Next's image optimizer (host already allowed in next.config remotePatterns)
-// serves a resized WebP instead — typically 10-20x fewer bytes, no backend change.
-function optimizedDocUrl(url: string) {
-  return `/_next/image?url=${encodeURIComponent(url)}&w=${DOC_PREVIEW_WIDTH}&q=75`;
-}
-
-// Optimized image with a spinner until it decodes, fading in when ready.
-// Falls back to the raw S3 URL if the optimizer errors for any reason.
-function DocImage({ doc }: { doc: VerificationDocument }) {
-  const [loaded, setLoaded] = useState(false);
-  const [useOriginal, setUseOriginal] = useState(false);
-  const src = useOriginal ? doc.url : optimizedDocUrl(doc.url);
-
-  return (
-    <>
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
-        </div>
-      )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={doc.docType.replace(/_/g, " ")}
-        onLoad={() => setLoaded(true)}
-        onError={() => { if (!useOriginal) { setUseOriginal(true); setLoaded(false); } }}
-        className={`max-w-full max-h-[70vh] object-contain select-none transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
-        draggable={false}
-      />
-    </>
-  );
-}
-
-function DocLightbox({
-  documents, index, onNavigate, onClose,
-}: {
-  documents: VerificationDocument[];
-  index: number | null;
-  onNavigate: (i: number) => void;
-  onClose: () => void;
-}) {
-  const open = index !== null && documents[index] != null;
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight") onNavigate(((index as number) + 1) % documents.length);
-      if (e.key === "ArrowLeft") onNavigate(((index as number) - 1 + documents.length) % documents.length);
-    }
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, index, documents.length, onNavigate, onClose]);
-
-  if (typeof document === "undefined") return null;
-
-  const doc = open ? documents[index as number] : null;
-  const isPdf = doc ? /\.pdf(\?|$)/i.test(doc.url) : false;
-
-  return createPortal(
-    <AnimatePresence>
-      {open && doc && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            key={doc.id}
-            initial={{ opacity: 0, scale: 0.92, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 8 }}
-            transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="relative w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-stone-200 dark:border-zinc-700">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText className="w-4 h-4 text-[#b04a15] shrink-0" />
-                <p className="text-sm font-bold text-stone-800 dark:text-stone-100 truncate">
-                  {doc.docType.replace(/_/g, " ")}
-                </p>
-                <span className="text-xs text-stone-400 shrink-0">
-                  {(index as number) + 1} / {documents.length}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <a href={doc.url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 text-stone-500 dark:text-stone-400 hover:text-[#b04a15] hover:border-[#b04a15]/50 transition-colors">
-                  <ExternalLink className="w-3 h-3" /> Open
-                </a>
-                <button type="button" onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Preview */}
-            <div className="relative flex-1 min-h-[320px] bg-stone-950/95 flex items-center justify-center overflow-hidden">
-              {isPdf ? (
-                <iframe src={doc.url} title={doc.docType} className="w-full h-[70vh] bg-white" />
-              ) : (
-                <DocImage key={doc.id} doc={doc} />
-              )}
-
-              {documents.length > 1 && (
-                <>
-                  <button type="button" aria-label="Previous document"
-                    onClick={() => onNavigate(((index as number) - 1 + documents.length) % documents.length)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-zinc-800/90 text-stone-700 dark:text-stone-200 shadow-md hover:scale-110 transition-transform">
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button type="button" aria-label="Next document"
-                    onClick={() => onNavigate(((index as number) + 1) % documents.length)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-zinc-800/90 text-stone-700 dark:text-stone-200 shadow-md hover:scale-110 transition-transform">
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Thumbnail strip */}
-            {documents.length > 1 && (
-              <div className="flex gap-1.5 px-4 py-2.5 border-t border-stone-200 dark:border-zinc-700 overflow-x-auto">
-                {documents.map((d, i) => (
-                  <button key={d.id} type="button" onClick={() => onNavigate(i)}
-                    className={`shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border transition-colors ${
-                      i === index
-                        ? "bg-[#b04a15] text-white border-[#b04a15]"
-                        : "bg-stone-50 dark:bg-zinc-800 border-stone-200 dark:border-zinc-700 text-stone-500 dark:text-stone-400 hover:border-[#b04a15]/50"
-                    }`}>
-                    {d.docType.replace(/_/g, " ")}
-                  </button>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>,
-    document.body
-  );
 }
