@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Bot, ClipboardList, Coins, FileText, Flag, Gift, Handshake,
+  ArrowDown, Bot, ClipboardList, Coins, FileText, Flag, Gift, Handshake,
   Loader2, MessageSquare, Package, Search, ShieldCheck, ShieldOff, UserRound,
 } from "lucide-react";
 
@@ -42,6 +42,26 @@ function fmtDay(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 }
 
+// ── Role styling — lets the admin tell donors and donees apart at a glance ───
+const ROLE_STYLE: Record<string, { avatarBg: string; avatarText: string; badge: string }> = {
+  DONOR: {
+    avatarBg: "bg-[#b04a15]/10", avatarText: "text-[#b04a15]",
+    badge: "border-transparent bg-[#b04a15]/10 text-[#b04a15] dark:bg-orange-950/30 dark:text-orange-400",
+  },
+  DONEE: {
+    avatarBg: "bg-teal-100 dark:bg-teal-950/40", avatarText: "text-teal-700 dark:text-teal-400",
+    badge: "border-transparent bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400",
+  },
+};
+const DEFAULT_ROLE_STYLE = { avatarBg: "bg-stone-100 dark:bg-stone-800/60", avatarText: "text-stone-500 dark:text-stone-400", badge: "" };
+
+function roleStyle(role: string | null) {
+  return (role && ROLE_STYLE[role]) || DEFAULT_ROLE_STYLE;
+}
+
+const ROLE_FILTERS = ["ALL", "DONOR", "DONEE"] as const;
+type RoleFilter = (typeof ROLE_FILTERS)[number];
+
 /**
  * Admin User Journey — search a user, render their complete lifecycle as an
  * animated timeline. Hosted as a tab inside the admin dashboard shell.
@@ -61,6 +81,8 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
   const [suspendReason, setSuspendReason] = useState("");
   const [suspendUntil, setSuspendUntil] = useState("");
   const [suspendBusy, setSuspendBusy] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
+  const timelineEndRef = useRef<HTMLDivElement | null>(null);
 
   // Default view: the full user directory (backend excludes admin/superadmin).
   useEffect(() => {
@@ -143,9 +165,28 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
     });
   }
 
+  // Backend returns events oldest-first; reverse so the newest update is always
+  // on top — with a long-lived journey, scrolling to the bottom to see today's
+  // activity is hectic for an admin.
   const visibleEvents = journey
-    ? journey.events.filter((e) => activeCats.size === 0 || activeCats.has(e.category))
+    ? journey.events
+        .filter((e) => activeCats.size === 0 || activeCats.has(e.category))
+        .slice()
+        .reverse()
     : [];
+
+  function scrollToOldest() {
+    timelineEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+
+  // Alphabetical by name so a long directory stays scannable, with an
+  // optional donor/donee filter for when the admin only wants one side.
+  const visibleUsers = allUsers
+    .filter((u) => roleFilter === "ALL" || u.role === roleFilter)
+    .slice()
+    .sort((a, b) => (a.fullName ?? "").localeCompare(b.fullName ?? ""));
+  const donorCount = allUsers.filter((u) => u.role === "DONOR").length;
+  const doneeCount = allUsers.filter((u) => u.role === "DONEE").length;
 
   return (
     <div className="max-w-3xl">
@@ -161,21 +202,24 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
         {searching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-stone-400" />}
         {hits.length > 0 && (
           <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
-            {hits.map((h) => (
-              <button
-                key={h.id}
-                onClick={() => { setQuery(""); setJourney(null); loadJourney(h.id); }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#b04a15]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
-              >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
-                  {h.fullName?.charAt(0)?.toUpperCase() ?? "?"}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold">{h.fullName}</span>
-                  <span className="block truncate text-xs text-stone-500">{h.email} · {h.role ?? "—"}{h.city ? ` · ${h.city}` : ""}</span>
-                </span>
-              </button>
-            ))}
+            {hits.map((h) => {
+              const rs = roleStyle(h.role);
+              return (
+                <button
+                  key={h.id}
+                  onClick={() => { setQuery(""); setJourney(null); loadJourney(h.id); }}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#b04a15]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
+                >
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${rs.avatarBg} ${rs.avatarText}`}>
+                    {h.fullName?.charAt(0)?.toUpperCase() ?? "?"}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold">{h.fullName}</span>
+                    <span className="block truncate text-xs text-stone-500">{h.email} · {h.role ?? "—"}{h.city ? ` · ${h.city}` : ""}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -199,30 +243,62 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
             <p className="text-sm">No users registered yet. New sign-ups will appear here.</p>
           </div>
         ) : (
-          <Card className="overflow-hidden border-stone-200/70 bg-white/90 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/80">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2.5 dark:border-zinc-800">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">All users</p>
-                <p className="text-xs text-stone-400">{allUsers.length}</p>
-              </div>
-              {allUsers.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => loadJourney(u.id)}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#b04a15]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
-                    {u.fullName?.charAt(0)?.toUpperCase() ?? "?"}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold">{u.fullName}</span>
-                    <span className="block truncate text-xs text-stone-500">{u.email}{u.city ? ` · ${u.city}` : ""}</span>
-                  </span>
-                  <Badge variant="secondary" className="shrink-0">{u.role ?? "—"}</Badge>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
+          <>
+            {/* Role filter — lets the admin isolate donors or donees instead of scanning a mixed list */}
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {ROLE_FILTERS.map((rf) => {
+                const label = rf === "ALL" ? `All · ${allUsers.length}` : rf === "DONOR" ? `Donors · ${donorCount}` : `Donees · ${doneeCount}`;
+                const active = roleFilter === rf;
+                const activeBg = rf === "DONOR" ? "#b04a15" : rf === "DONEE" ? "#0d9488" : "#57534e";
+                return (
+                  <button
+                    key={rf}
+                    onClick={() => setRoleFilter(rf)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                      active ? "border-transparent text-white shadow-sm" : "border-stone-300 text-stone-400 dark:border-zinc-700"
+                    }`}
+                    style={{ background: active ? activeBg : undefined }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <Card className="overflow-hidden border-stone-200/70 bg-white/90 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/80">
+              <CardContent className="p-0">
+                <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2.5 dark:border-zinc-800">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                    {roleFilter === "ALL" ? "All users" : roleFilter === "DONOR" ? "Donors" : "Donees"} · A–Z
+                  </p>
+                  <p className="text-xs text-stone-400">{visibleUsers.length}</p>
+                </div>
+                {visibleUsers.length === 0 ? (
+                  <p className="py-10 text-center text-sm text-stone-400">No users match this filter.</p>
+                ) : (
+                  visibleUsers.map((u) => {
+                    const rs = roleStyle(u.role);
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => loadJourney(u.id)}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#b04a15]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
+                      >
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${rs.avatarBg} ${rs.avatarText}`}>
+                          {u.fullName?.charAt(0)?.toUpperCase() ?? "?"}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">{u.fullName}</span>
+                          <span className="block truncate text-xs text-stone-500">{u.email}{u.city ? ` · ${u.city}` : ""}</span>
+                        </span>
+                        <Badge variant="secondary" className={`shrink-0 ${rs.badge}`}>{u.role ?? "—"}</Badge>
+                      </button>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </>
         )
       )}
 
@@ -351,7 +427,20 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
             {visibleEvents.length === 0 && (
               <p className="py-10 text-sm text-stone-400">No events in the selected categories.</p>
             )}
+            <div ref={timelineEndRef} />
           </div>
+
+          {/* Jump to the oldest event — timeline is newest-first, so "bottom" is the start of the journey */}
+          {visibleEvents.length > 4 && (
+            <button
+              onClick={scrollToOldest}
+              aria-label="Jump to the start of the journey"
+              title="Jump to the start of the journey"
+              className="fixed bottom-6 right-6 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[#b04a15] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#963c0d]"
+            >
+              <ArrowDown className="h-5 w-5" />
+            </button>
+          )}
         </>
       )}
     </div>

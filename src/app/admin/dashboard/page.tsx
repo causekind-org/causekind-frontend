@@ -1408,15 +1408,39 @@ function ListingApprovalCard({
           </div>
 
           {photos.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {photos.map((url, i) => (
-                <a key={i} href={url} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-24 rounded-xl border object-cover hover:opacity-80 transition" />
-                </a>
-              ))}
+            <div onClick={event => event.stopPropagation()}>
+              <PhotoStrip images={photos} />
             </div>
           )}
+
+          {/* Submitted by */}
+          <div className="rounded-xl border border-stone-200 bg-white p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
+                  {l.donorName?.charAt(0)?.toUpperCase() ?? "?"}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-semibold">{l.donorName ?? "Unknown donor"}</span>
+                  <span className="block truncate text-[11px] text-stone-500">{l.donorEmail ?? "—"}</span>
+                </span>
+              </div>
+              <div className="text-right text-[11px] text-stone-500">
+                <span className="block">{[l.locality, l.city].filter(Boolean).join(", ") || "Location not given"}</span>
+                {l.pincode && <span className="block">PIN {l.pincode}</span>}
+              </div>
+            </div>
+            {l.donorId && (
+              <a
+                href={`/admin/dashboard?journeyUser=${l.donorId}`}
+                onClick={event => event.stopPropagation()}
+                className="mt-2 inline-block text-[11px] font-semibold text-[#b04a15] hover:underline"
+              >
+                View donor&apos;s full journey →
+              </a>
+            )}
+          </div>
 
           {(l.approximateAge || l.workingStatus || l.dimensions || l.approximateWeight || l.locality || l.pincode) && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-stone-50 rounded-xl p-3">

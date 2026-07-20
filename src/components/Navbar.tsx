@@ -413,11 +413,12 @@ export function SiteHeader() {
     return pathname === href || pathname.startsWith(href + "/");
   }
 
-  // Shared icon-button class (matches the theme toggle button exactly)
+  // Hooks must run unconditionally — keep this above the hideChrome early return.
   const tilt = useTilt();
 
   if (hideChrome) return null;
 
+  // Shared icon-button class (matches the theme toggle button exactly)
   const iconBtnCls =
     "glass-pill glass-3d relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-stone-700 dark:text-stone-300";
 

@@ -329,6 +329,7 @@ export type ItemListing = {
   rejectionReason: string | null;
   donorId: number;
   donorName: string;
+  donorEmail: string | null;
   createdAt: string;
   submittedAt: string | null;
   imageUrl: string | null;
@@ -798,6 +799,8 @@ export type AdminRequestVerificationDetail = {
   tierOverrideReason: string | null;
   doneeAadhaarLast4: string | null;
   doneeAadhaarOnFile: boolean;
+  doneeId: number | null;
+  doneeEmail: string | null;
   verification: RequestVerification | null;
   documents: VerificationDocument[];
   needAssessment: NeedAssessment | null;
