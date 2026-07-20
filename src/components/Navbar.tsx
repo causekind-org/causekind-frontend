@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTilt } from "@/hooks/useTilt";
 import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
@@ -250,6 +251,16 @@ export function SiteHeader() {
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
 
+  // Elevate-on-scroll: flat at the top of the page, soft shadow fades in once
+  // content scrolls beneath the bar (same pattern as the admin panel header).
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   useEffect(() => {
     if (user && isSidebarOpen) {
       const savedAvatar = localStorage.getItem(`ck_profile_image_${user.email}`);
@@ -301,7 +312,8 @@ export function SiteHeader() {
 
   const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
-  const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
+  const dashHref = user?.role === "SUPER_ADMIN" ? "/super-admin"
+    : user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
 
   /** Opens the confirmation dialog — actual logout happens only on confirm. */
   function requestLogout() { setLogoutDialogOpen(true); }
@@ -404,8 +416,9 @@ export function SiteHeader() {
   if (hideChrome) return null;
 
   // Shared icon-button class (matches the theme toggle button exactly)
+  const tilt = useTilt();
   const iconBtnCls =
-    "relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-700 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all duration-300 active:scale-95 overflow-hidden shadow-xs bg-white dark:bg-zinc-900";
+    "glass-pill glass-3d relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-stone-700 dark:text-stone-300";
 
   return (
     <>
@@ -430,7 +443,11 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className="sticky top-0 z-50 w-full bg-[#faf8f5]/75 dark:bg-zinc-950/75 backdrop-blur-md border-b border-[#e5e2d5]/60 dark:border-stone-850/30 shadow-[0_2px_20px_rgba(0,0,0,0.07)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.35)] transition-all duration-200">
+      <header className={`sticky top-0 z-50 w-full bg-[#faf8f5]/75 dark:bg-zinc-950/75 backdrop-blur-md border-b border-[#e5e2d5]/60 dark:border-stone-850/30 transition-shadow duration-300 ease-out ${
+        scrolled
+          ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
+          : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
+      }`}>
         {/* Mobile Header (lg:hidden) */}
         <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-transparent">
           <button
@@ -462,7 +479,7 @@ export function SiteHeader() {
           </Link>
 
           {/* Center navigation capsule */}
-          <nav className="hidden lg:flex items-center gap-1 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-[#e5e2d5] dark:border-stone-800 rounded-full p-1 shadow-sm">
+          <nav className="hidden lg:flex items-center gap-1 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
             {navLinks.map((link) => {
               // FAQ and Contact live inside the "About Us" dropdown on desktop
               // instead of as separate pills — skip them here.
@@ -479,14 +496,21 @@ export function SiteHeader() {
                   <DropdownMenu key="about-dropdown">
                     <DropdownMenuTrigger asChild>
                       <button
-                        className={`group text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-1.5 font-semibold outline-none ${groupActive
-                            ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6] dark:bg-zinc-800 border border-[#e5e2d5] dark:border-zinc-700 shadow-2xs"
+                        className={`group relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none ${groupActive
+                            ? "text-[#b04a15] dark:text-orange-400"
                             : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
                           }`}
                       >
-                        {groupActive && <span className="w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
-                        {triggerLabel}
-                        <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        {groupActive && (
+                          <motion.span
+                            layoutId="nav-glass-pill"
+                            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                            className="glass-pill absolute inset-0 rounded-full"
+                          />
+                        )}
+                        {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
+                        <span className="relative z-10">{triggerLabel}</span>
+                        <ChevronDown className="relative z-10 w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="center" className="min-w-[11rem]">
@@ -511,13 +535,20 @@ export function SiteHeader() {
                   key={link.label}
                   href={link.href}
                   data-tour={link.href === "/requests" ? "nav-requests" : undefined}
-                  className={`text-sm px-4 py-2 transition-all duration-200 rounded-full flex items-center gap-2 font-semibold ${active
-                      ? "text-[#b04a15] dark:text-orange-400 bg-[#f0eee6] dark:bg-zinc-800 border border-[#e5e2d5] dark:border-zinc-700 shadow-2xs"
+                  className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
+                      ? "text-[#b04a15] dark:text-orange-400"
                       : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
                     }`}
                 >
-                  {active && <span className="w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
-                  {link.label}
+                  {active && (
+                    <motion.span
+                      layoutId="nav-glass-pill"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                      className="glass-pill absolute inset-0 rounded-full"
+                    />
+                  )}
+                  {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
+                  <span className="relative z-10">{link.label}</span>
                 </Link>
               );
             })}
@@ -535,6 +566,7 @@ export function SiteHeader() {
               className={iconBtnCls}
               aria-label={t("nav.toggleTheme")}
               suppressHydrationWarning
+              {...tilt}
             >
               <div className="relative w-5 h-5 flex items-center justify-center">
                 <Sun className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
@@ -548,6 +580,7 @@ export function SiteHeader() {
               className={iconBtnCls}
               aria-label="Open workspace menu"
               data-tour="menu"
+              {...tilt}
             >
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
             </button>

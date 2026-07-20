@@ -106,7 +106,7 @@ function HorizontalCampaignCard({
             />
             {/* Pulsating Play Button overlay (image-only fallback) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 transition-all duration-300 group-hover:bg-white/30 group-hover:scale-110">
+              <div className="glass-pill w-10 h-10 rounded-full flex items-center justify-center text-white transition-all duration-300 group-hover:scale-110">
                 <Play className="w-4 h-4 fill-white ml-0.5 text-white" />
               </div>
             </div>
@@ -322,28 +322,18 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
             <button
               onClick={prev}
               aria-label="Previous"
-              className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
-                         bg-white/25 dark:bg-zinc-900/25 backdrop-blur-md backdrop-saturate-150
-                         border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
-                         shadow-[0_8px_32px_-8px_rgba(176,74,21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
+              className="glass-pill glass-pill-hover pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
                          text-[#b04a15] dark:text-[#e07b3a]
-                         hover:bg-[#b04a15]/90 hover:text-white hover:border-[#b04a15]/50 hover:scale-110
-                         hover:shadow-[0_12px_40px_-6px_rgba(176,74,21,0.5)]
-                         active:scale-95 transition-all duration-300 ease-out"
+                         transition-all duration-300 ease-out"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
             <button
               onClick={next}
               aria-label="Next"
-              className="pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
-                         bg-white/25 dark:bg-zinc-900/25 backdrop-blur-md backdrop-saturate-150
-                         border border-white/40 dark:border-white/15 ring-1 ring-inset ring-white/30 dark:ring-white/5
-                         shadow-[0_8px_32px_-8px_rgba(176,74,21,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)]
+              className="glass-pill glass-pill-hover pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
                          text-[#b04a15] dark:text-[#e07b3a]
-                         hover:bg-[#b04a15]/90 hover:text-white hover:border-[#b04a15]/50 hover:scale-110
-                         hover:shadow-[0_12px_40px_-6px_rgba(176,74,21,0.5)]
-                         active:scale-95 transition-all duration-300 ease-out"
+                         transition-all duration-300 ease-out"
             >
               <ChevronRight className="h-6 w-6" />
             </button>

@@ -598,84 +598,14 @@ export default function EditItemPage() {
         </div>
       </div>
 
-      <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <input type="checkbox" id="pickupYN" checked={pickupYN} onChange={(e) => setPickupYN(e.target.checked)} className="rounded" />
-          <label htmlFor="pickupYN" className="text-sm font-semibold text-stone-700 dark:text-stone-300">Pickup from my location is available</label>
-        </div>
-        {pickupYN && (
-          <>
-            <div>
-              <p className="text-xs font-semibold text-stone-500 mb-2">Available Days</p>
-              <div className="flex flex-wrap gap-2">
-                {DAYS.map((d) => (
-                  <button key={d} type="button" onClick={() => toggleDay(d)}
-                    className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${pickupDays.includes(d) ? "bg-[#1e3a60] text-white border-[#1e3a60]" : "border-stone-300 text-stone-500 hover:border-[#1e3a60]"}`}>
-                    {d.slice(0, 3)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-stone-500 mb-2">Available Time Slots</p>
-              <div className="flex flex-wrap gap-2">
-                {TIME_SLOTS.map((s) => (
-                  <button key={s} type="button" onClick={() => toggleSlot(s)}
-                    className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${pickupSlots.includes(s) ? "bg-[#1e3a60] text-white border-[#1e3a60]" : "border-stone-300 text-stone-500 hover:border-[#1e3a60]"}`}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <input type="checkbox" id="dropOff" checked={dropOffYN} onChange={(e) => setDropOffYN(e.target.checked)} className="rounded" />
-          <label htmlFor="dropOff" className="text-sm font-semibold text-stone-700 dark:text-stone-300">I can drop off the item</label>
-        </div>
-        {dropOffYN && (
-          <Field label="Maximum travel distance (km)">
-            <Input type="number" min={1} max={200} value={maxTravel} onChange={(e) => setMaxTravel(Number(e.target.value))} />
-          </Field>
-        )}
-      </div>
-
-      <Field label="Packaging Available">
-        <Select value={packaging} onValueChange={setPackaging}>
-          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="YES">Yes — I can pack it safely</SelectItem>
-            <SelectItem value="NO">No — recipient needs to bring packaging</SelectItem>
-            <SelectItem value="NOT_REQUIRED">Not required for this item</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold text-stone-700 dark:text-stone-300">Special Handling Notes</Label>
-        <div className="flex flex-wrap gap-2">
-          {SPECIAL_HANDLING_OPTIONS.map((h) => (
-            <button key={h} type="button" onClick={() => toggleHandling(h)}
-              className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-all ${specialHandling.includes(h) ? "bg-amber-500 text-white border-amber-500" : "border-stone-300 text-stone-500 hover:border-amber-400"}`}>
-              {h}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-3 border border-stone-200 dark:border-zinc-700 rounded-xl p-4">
-        <p className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Preferred Handover Period</p>
-        <Field label="Earliest Available Date">
-          <Input type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
-        </Field>
-      </div>
-
-      <Field label="Maximum Delivery Radius (km)" hint="How far can this item travel to reach a recipient?">
-        <Input type="number" min={1} value={deliveryRadius} onChange={(e) => setDeliveryRadius(Number(e.target.value))} />
-      </Field>
+      {/* Pickup scheduling, transport, packaging and handover-period fields were
+          removed from the wizard (2026-07-15) — donor & donee arrange logistics
+          in the Handover Hub after matching. Existing values still round-trip
+          through load/save so older listings lose nothing. */}
+      <p className="text-xs text-stone-400">
+        Pickup timing, packaging and delivery details are arranged with your matched recipient
+        in the Handover Hub — no need to set them here.
+      </p>
     </div>
   );
 

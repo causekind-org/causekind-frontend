@@ -10,20 +10,40 @@ import {
   adminGetMatches, adminApproveMatch, adminRejectMatch, adminGetMatchHistory, type ItemMatch, type StatusHistoryEntry,
   adminGetAllOffers,
   adminGetAllAiAssessments, type AiAssessmentResponse,
+  adminGetMyPermissions,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { OffersQueuePanel } from "../offers/OffersQueuePanel";
 import { VerificationQueuePanel } from "../verifications/VerificationQueuePanel";
 import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
+import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
+import { PhotoStrip } from "@/components/admin/PhotoStrip";
+import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
+import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import {
   Bot, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
-  Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageSquare,
-  Package, Phone, RefreshCw, Search, ShieldCheck, Tag, Truck, UserRound, X,
+  Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
+  Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
 } from "lucide-react";
 
-type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs";
+type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
+
+/** Which AdminCapability (see backend AdminCapability enum) gates each tab —
+ * used to hide tabs an admin has had revoked rather than just 403ing on click. */
+const TAB_CAPABILITY: Record<TabKey, string> = {
+  campaigns: "CAMPAIGNS",
+  requests: "ITEMS_REQUESTS",
+  listings: "ITEMS_REQUESTS",
+  matches: "MATCHES",
+  offers: "OFFERS",
+  "match-history": "MATCHES",
+  "ai-logs": "ITEMS_REQUESTS",
+  "user-journey": "USERS",
+  analytics: "DONATIONS",
+  whatsapp: "WHATSAPP",
+};
 type RejectType = "campaign" | "listing" | "match";
 type DetailSelection =
   | { type: "request"; item: ItemRequest }
@@ -138,6 +158,47 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const [tab, setTab] = useState<TabKey>("campaigns");
+  const [journeyUserId, setJourneyUserId] = useState<number | null>(null);
+
+  // Effective permissions — null while loading (treated as "everything granted"
+  // to avoid a flash-hide before the response arrives; SUPER_ADMIN also always
+  // resolves to all-true here since AdminPermissionService default-allows).
+  const [myPermissions, setMyPermissions] = useState<Record<string, boolean> | null>(null);
+  useEffect(() => {
+    adminGetMyPermissions().then(setMyPermissions).catch(() => {});
+  }, []);
+  const canSeeTab = useCallback(
+    (key: TabKey) => myPermissions === null || myPermissions[TAB_CAPABILITY[key]] !== false,
+    [myPermissions]
+  );
+  // If the tab currently open gets revoked (or the default "campaigns" tab
+  // itself is revoked), fall back to the first tab this admin can still see.
+  useEffect(() => {
+    if (myPermissions === null || canSeeTab(tab)) return;
+    const fallback = (Object.keys(TAB_CAPABILITY) as TabKey[]).find(canSeeTab);
+    if (fallback) setTab(fallback);
+  }, [myPermissions, tab, canSeeTab]);
+
+  // Elevate-on-scroll: the sticky header casts a shadow only once content
+  // actually slides beneath it, fading in/out via transition-shadow.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Deep-link support: /admin/dashboard?journeyUser=<id> opens the User Journey
+  // tab preloaded with that user (used by the approvals queue links).
+  // window.location (not useSearchParams) — avoids the Suspense/CSR-bailout requirement.
+  useEffect(() => {
+    const ju = new URLSearchParams(window.location.search).get("journeyUser");
+    if (ju && !Number.isNaN(Number(ju))) {
+      setJourneyUserId(Number(ju));
+      setTab("user-journey");
+    }
+  }, []);
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectType, setRejectType] = useState<RejectType | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -349,7 +410,7 @@ export default function AdminDashboardPage() {
   if (!user) return null;
 
   const total = campaigns.length + requests.length + listings.length + matches.length + offersNeedingAction;
-  const isReportTab = tab === "match-history" || tab === "ai-logs";
+  const isReportTab = tab === "match-history" || tab === "ai-logs" || tab === "analytics" || tab === "whatsapp";
 
   const TABS = [
     { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#e07b3a" },
@@ -357,14 +418,23 @@ export default function AdminDashboardPage() {
     { key: "listings"  as TabKey, label: "Listings",     count: listings.length,    icon: Package,        color: "#a78bfa" },
     { key: "matches"   as TabKey, label: "Matches",      count: matches.length,     icon: Handshake,      color: "#34d399" },
     { key: "offers"    as TabKey, label: "Offers",       count: offersNeedingAction, icon: Gift,          color: "#f472b6" },
-  ];
+  ].filter(t => canSeeTab(t.key));
 
   const headerTitle = tab === "match-history" ? "Match History"
     : tab === "ai-logs" ? "AI Screening Logs"
+    : tab === "user-journey" ? "User Journey"
+    : tab === "analytics" ? "Analytics"
+    : tab === "whatsapp" ? "WhatsApp"
     : "Approval Queue";
 
   const headerSubtitle = tab === "match-history"
     ? `${allMatches.length} match${allMatches.length !== 1 ? "es" : ""} · complete lifecycle view`
+    : tab === "user-journey"
+    ? "One user's complete story — every step on record, from registration to today"
+    : tab === "analytics"
+    ? "Donation and campaign performance"
+    : tab === "whatsapp"
+    ? "Templates, flows, sends, and the message log"
     : tab === "ai-logs"
     ? `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} across all listings`
     : loading ? "Loading..." : total > 0
@@ -435,30 +505,76 @@ export default function AdminDashboardPage() {
         {/* Reports */}
         <div className="px-5 pb-3 pt-2 space-y-1">
           <p className="text-[10px] font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Reports</p>
-          <button
-            onClick={() => setTab("match-history")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-              tab === "match-history"
-                ? "border-[#b04a15]/40 text-white"
-                : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-            }`}
-            style={{ background: tab === "match-history" ? "rgba(176,74,21,0.12)" : undefined }}
-          >
-            <Handshake className={`w-4 h-4 shrink-0 ${tab === "match-history" ? "text-[#b04a15]" : "text-teal-400"}`} />
-            Match History
-          </button>
-          <button
-            onClick={() => setTab("ai-logs")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-              tab === "ai-logs"
-                ? "border-[#b04a15]/40 text-white"
-                : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-            }`}
-            style={{ background: tab === "ai-logs" ? "rgba(176,74,21,0.12)" : undefined }}
-          >
-            <Bot className={`w-4 h-4 shrink-0 ${tab === "ai-logs" ? "text-[#b04a15]" : "text-violet-400"}`} />
-            AI Screening Logs
-          </button>
+          {canSeeTab("match-history") && (
+            <button
+              onClick={() => setTab("match-history")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "match-history"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "match-history" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <Handshake className={`w-4 h-4 shrink-0 ${tab === "match-history" ? "text-[#b04a15]" : "text-teal-400"}`} />
+              Match History
+            </button>
+          )}
+          {canSeeTab("ai-logs") && (
+            <button
+              onClick={() => setTab("ai-logs")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "ai-logs"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "ai-logs" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <Bot className={`w-4 h-4 shrink-0 ${tab === "ai-logs" ? "text-[#b04a15]" : "text-violet-400"}`} />
+              AI Screening Logs
+            </button>
+          )}
+          {canSeeTab("user-journey") && (
+            <button
+              onClick={() => setTab("user-journey")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "user-journey"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "user-journey" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <UserRound className={`w-4 h-4 shrink-0 ${tab === "user-journey" ? "text-[#b04a15]" : "text-sky-400"}`} />
+              User Journey
+            </button>
+          )}
+          {canSeeTab("analytics") && (
+            <button
+              onClick={() => setTab("analytics")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "analytics"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "analytics" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <TrendingUp className={`w-4 h-4 shrink-0 ${tab === "analytics" ? "text-[#b04a15]" : "text-amber-400"}`} />
+              Analytics
+            </button>
+          )}
+          {canSeeTab("whatsapp") && (
+            <button
+              onClick={() => setTab("whatsapp")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "whatsapp"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "whatsapp" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <MessageCircle className={`w-4 h-4 shrink-0 ${tab === "whatsapp" ? "text-[#b04a15]" : "text-green-400"}`} />
+              WhatsApp
+            </button>
+          )}
         </div>
 
         {/* Sign out */}
@@ -477,7 +593,9 @@ export default function AdminDashboardPage() {
       <main className="flex-1 lg:pl-[296px] min-w-0 flex flex-col bg-[#faf7f2]">
 
         {/* Mobile top bar */}
-        <div className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 border-b border-white/[0.07]"
+        <div className={`lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 border-b border-white/[0.07] transition-shadow duration-300 ${
+            scrolled ? "shadow-[0_10px_28px_-10px_rgba(0,0,0,0.55)]" : "shadow-none"
+          }`}
           style={{ background: "#17141f" }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -497,8 +615,10 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
-        {/* Sticky content header */}
-        <div className="sticky top-0 lg:top-0 z-10 border-b border-stone-200 bg-[#faf7f2]/96 backdrop-blur-sm">
+        {/* Sticky content header — gains an elevated shadow once content scrolls under it */}
+        <div className={`sticky top-0 lg:top-0 z-10 border-b border-stone-200 bg-[#faf7f2]/96 backdrop-blur-sm transition-shadow duration-300 ease-out ${
+            scrolled ? "shadow-[0_12px_32px_-14px_rgba(28,25,23,0.28)]" : "shadow-none"
+          }`}>
           <div className="px-7 lg:px-10 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-[22px] font-black text-stone-900 tracking-tight leading-none">{headerTitle}</h1>
@@ -567,18 +687,38 @@ export default function AdminDashboardPage() {
           {/* Mobile report links */}
           {isReportTab && (
             <div className="sm:hidden flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
-              <button
-                onClick={() => setTab("match-history")}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "match-history" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
-              >
-                Match History
-              </button>
-              <button
-                onClick={() => setTab("ai-logs")}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "ai-logs" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
-              >
-                AI Screening Logs
-              </button>
+              {canSeeTab("match-history") && (
+                <button
+                  onClick={() => setTab("match-history")}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "match-history" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
+                >
+                  Match History
+                </button>
+              )}
+              {canSeeTab("ai-logs") && (
+                <button
+                  onClick={() => setTab("ai-logs")}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "ai-logs" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
+                >
+                  AI Screening Logs
+                </button>
+              )}
+              {canSeeTab("analytics") && (
+                <button
+                  onClick={() => setTab("analytics")}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "analytics" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
+                >
+                  Analytics
+                </button>
+              )}
+              {canSeeTab("whatsapp") && (
+                <button
+                  onClick={() => setTab("whatsapp")}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "whatsapp" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
+                >
+                  WhatsApp
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -802,6 +942,17 @@ export default function AdminDashboardPage() {
               )}
             </div>
           )}
+
+          {/* ── USER JOURNEY TAB ── */}
+          {tab === "user-journey" && (
+            <UserJourneyPanel initialUserId={journeyUserId} />
+          )}
+
+          {/* ── ANALYTICS TAB — previously the standalone /admin/analytics page ── */}
+          {tab === "analytics" && <AnalyticsPanel />}
+
+          {/* ── WHATSAPP TAB — previously the standalone /admin/whatsapp page ── */}
+          {tab === "whatsapp" && <WhatsAppPanel />}
         </div>
 
         <ApprovalDetailDrawer
@@ -941,7 +1092,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
                 Fraud: {a.fraudRisk}
               </span>
             )}
-            <span className="text-[11px] text-stone-400">{Math.round(a.confidence * 100)}% conf</span>
+            <span className="text-[11px] text-stone-400">{Math.round(a.confidence)}% conf</span>
             <span className="text-[11px] text-stone-400">{new Date(a.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
@@ -955,9 +1106,6 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
           {/* Score bars */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-2">
             <MiniBar label="Confidence" value={a.confidence} color="bg-violet-500" />
-            <MiniBar label="Image ↔ Description" value={a.imageDescriptionScore}
-              color={a.imageDescriptionScore > 0.6 ? "bg-emerald-500" : a.imageDescriptionScore > 0.3 ? "bg-amber-500" : "bg-red-500"}
-            />
           </div>
 
           {/* Meta grid */}
@@ -965,7 +1113,52 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             {a.eligibilityResult && <InfoCell label="Eligibility" value={a.eligibilityResult} />}
             {a.conditionGrade && <InfoCell label="Condition Grade" value={a.conditionGrade} />}
             {a.modelVersion && <InfoCell label="Model" value={a.modelVersion} />}
+            {a.listingStatus && <InfoCell label="Listing Status" value={a.listingStatus.replace(/_/g, " ")} />}
           </div>
+
+          {/* Donor + origin */}
+          <div className="rounded-xl border border-stone-200 bg-white p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
+                  {a.donorName?.charAt(0)?.toUpperCase() ?? "?"}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-semibold">{a.donorName ?? "Unknown donor"}</span>
+                  <span className="block truncate text-[11px] text-stone-500">{a.donorEmail ?? "—"}</span>
+                </span>
+              </div>
+              <div className="text-right text-[11px] text-stone-500">
+                <span className="block">{[a.locality, a.city].filter(Boolean).join(", ") || "Location not given"}</span>
+                {a.pincode && <span className="block">PIN {a.pincode}</span>}
+              </div>
+            </div>
+            {a.donorId && (
+              <a
+                href={`/admin/dashboard?journeyUser=${a.donorId}`}
+                className="mt-2 inline-block text-[11px] font-semibold text-[#b04a15] hover:underline"
+              >
+                View donor&apos;s full journey →
+              </a>
+            )}
+          </div>
+
+          {/* What the donor submitted */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+            {a.category && <InfoCell label="Category" value={a.subcategory ? `${a.category} / ${a.subcategory}` : a.category} />}
+            {a.condition && <InfoCell label="Condition (stated)" value={a.condition} />}
+            {a.workingStatus && <InfoCell label="Working Status" value={a.workingStatus} />}
+          </div>
+          {a.knownDefects && (
+            <p className="text-xs text-stone-600"><span className="text-stone-400">Known defects: </span>{a.knownDefects}</p>
+          )}
+          {a.description && (
+            <p className="text-xs text-stone-600"><span className="text-stone-400">Description: </span>{a.description}</p>
+          )}
+
+          {/* Photos the AI assessed — click any thumbnail for a full-size preview */}
+          {a.images && a.images.length > 0 && <PhotoStrip images={a.images} label="Photos assessed" />}
 
           {a.evidenceNotes && <p className="text-xs italic text-stone-600">{a.evidenceNotes}</p>}
 
@@ -1006,7 +1199,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
 }
 
 function MiniBar({ label, value, color }: { label: string; value: number; color: string }) {
-  const pct = Math.round(value * 100);
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
   return (
     <div>
       <div className="flex justify-between text-[10px] text-stone-500 mb-0.5">
@@ -1399,7 +1592,7 @@ function RequestDetailContent({ request: r }: { request: ItemRequest }) {
 
   return (
     <>
-      <PhotoStrip photos={photos} />
+      <SectionPhotoStrip photos={photos} />
 
       <DetailSection icon={UserRound} title="Requester">
         <DetailGrid
@@ -1451,7 +1644,7 @@ function ListingDetailContent({ listing: l }: { listing: ItemListing }) {
 
   return (
     <>
-      <PhotoStrip photos={photos} />
+      <SectionPhotoStrip photos={photos} />
 
       <DetailSection icon={UserRound} title="Donor">
         <DetailGrid
@@ -1594,7 +1787,7 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
 
       {m.requestId && (
         <>
-          <PhotoStrip photos={requestPhotos} title="Request Photo" />
+          <SectionPhotoStrip photos={requestPhotos} title="Request Photo" />
           <DetailSection icon={ClipboardList} title="Donee Request Data">
             <DetailGrid
               items={[
@@ -1617,7 +1810,7 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
 
       {m.listingId && (
         <>
-          <PhotoStrip photos={listingPhotos} title="Listing Photos" />
+          <SectionPhotoStrip photos={listingPhotos} title="Listing Photos" />
           <DetailSection icon={Package} title="Donor Listing Data">
             <DetailGrid
               items={[
@@ -1654,7 +1847,7 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
 
       {(m.donorItemDescription || donorPhotos.length > 0 || m.doneeReason) && (
         <>
-          <PhotoStrip photos={donorPhotos} title="Donor Uploaded Match Photos" />
+          <SectionPhotoStrip photos={donorPhotos} title="Donor Uploaded Match Photos" />
           <DetailSection icon={MessageSquare} title="Match Notes">
             <DetailTextBlock label="Donor item description" value={m.donorItemDescription} />
             <DetailTextBlock label="Donee reason" value={m.doneeReason} />
@@ -1722,7 +1915,10 @@ function PersonInfoCard({
   );
 }
 
-function PhotoStrip({ photos, title = "Photos" }: { photos: string[]; title?: string }) {
+/** Section wrapper around the shared lightbox PhotoStrip (kept for the queue panels'
+ * framed style). The old target=_blank links silently did nothing for base64
+ * images — the shared component opens an in-app preview instead. */
+function SectionPhotoStrip({ photos, title = "Photos" }: { photos: string[]; title?: string }) {
   if (photos.length === 0) return null;
 
   return (
@@ -1731,20 +1927,7 @@ function PhotoStrip({ photos, title = "Photos" }: { photos: string[]; title?: st
         <ImageIcon className="h-4 w-4 text-[#b04a15]" />
         <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{title}</p>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {photos.map((src, index) => (
-          <a
-            key={`${src}-${index}`}
-            href={src}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-stone-100"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={`Uploaded photo ${index + 1}`} className="h-full w-full object-cover" />
-          </a>
-        ))}
-      </div>
+      <PhotoStrip images={photos} />
     </div>
   );
 }

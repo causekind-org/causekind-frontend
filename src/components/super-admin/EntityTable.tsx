@@ -6,7 +6,7 @@ import {
   superAdminList, superAdminUpdate, superAdminDelete, superAdminCreateUser,
   type SuperAdminEntity, type SuperAdminRow, type SuperAdminDependent, type ApiConflictError,
 } from "@/lib/api";
-import { Search, Pencil, Trash2, X, Plus, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Search, Pencil, Trash2, X, Plus, Loader2, AlertTriangle, RefreshCw, Eye } from "lucide-react";
 
 export type ColumnType = "text" | "number" | "textarea" | "boolean" | "select";
 
@@ -168,7 +168,7 @@ function DeleteConfirm({
 
 /* ── Main table ──────────────────────────────────────────────────────────── */
 export function EntityTable({
-  entity, title, columns, canCreate = false, createColumns, isDark = true,
+  entity, title, columns, canCreate = false, createColumns, isDark = true, onView,
 }: {
   entity: SuperAdminEntity;
   title: string;
@@ -176,6 +176,8 @@ export function EntityTable({
   canCreate?: boolean;
   createColumns?: Column[];
   isDark?: boolean;
+  /** Optional per-row "view" action (e.g. deep-link to a user's full profile). */
+  onView?: (row: SuperAdminRow) => void;
 }) {
   const [rows, setRows] = useState<SuperAdminRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -396,6 +398,15 @@ export function EntityTable({
                     ))}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        {onView && (
+                          <button
+                            onClick={() => onView(row)}
+                            className={`p-1.5 rounded-lg transition-colors ${t.iconMuted} ${t.editHover}`}
+                            title="View full profile"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => setEditRow(row)}
                           className={`p-1.5 rounded-lg transition-colors ${t.iconMuted} ${t.editHover}`}

@@ -6,11 +6,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { superAdminOverview, type SuperAdminOverview } from "@/lib/api";
 import { EntityTable, type Column } from "@/components/super-admin/EntityTable";
 import { SqlConsole } from "@/components/super-admin/SqlConsole";
-import { WhatsAppPanel } from "@/components/super-admin/WhatsAppPanel";
+import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
+import { AdminPermissionsPanel } from "@/components/super-admin/AdminPermissionsPanel";
+import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
+import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
-  Sun, Moon, AlertTriangle, MessageCircle,
+  Sun, Moon, AlertTriangle, MessageCircle, KeyRound, Flag, History,
 } from "lucide-react";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -163,6 +166,9 @@ const NAV = [
   { key: "item-listings", label: "Listings",    icon: Package },
   { key: "matches",       label: "Matches",     icon: Handshake },
   { key: "whatsapp",      label: "WhatsApp",    icon: MessageCircle },
+  { key: "admin-permissions", label: "Admin Access", icon: KeyRound },
+  { key: "disputes",      label: "Disputes",    icon: Flag },
+  { key: "audit-log",     label: "Audit Log",   icon: History },
   { key: "sql",           label: "SQL Console", icon: Terminal },
 ] as const;
 
@@ -326,13 +332,17 @@ export default function SuperAdminPage() {
   const content = useMemo(() => {
     switch (section) {
       case "overview":      return <OverviewSection th={th} />;
-      case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark} />;
+      case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
+                              onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
       case "donations":     return <EntityTable entity="donations"     title="Donations"     columns={DONATION_COLS} isDark={isDark} />;
       case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS}   isDark={isDark} />;
       case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS}   isDark={isDark} />;
       case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
-      case "whatsapp":      return <WhatsAppPanel isDark={isDark} />;
+      case "whatsapp":      return <WhatsAppPanel />;
+      case "admin-permissions": return <AdminPermissionsPanel />;
+      case "disputes":      return <DisputesPanel />;
+      case "audit-log":     return <AuditLogPanel />;
       case "sql":           return <SqlConsole isDark={isDark} />;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

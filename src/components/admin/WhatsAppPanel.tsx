@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   getWhatsAppTemplates, createWhatsAppTemplate, deleteWhatsAppTemplate, type WhatsAppTemplate,
   getWhatsAppFlows, createWhatsAppFlow, updateWhatsAppFlowJson, publishWhatsAppFlow, deleteWhatsAppFlow, type WhatsAppFlow,
   sendWhatsAppTemplateMessage, getWhatsAppMessages, type WhatsAppMessageLog,
 } from "@/lib/api";
-import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,39 +31,24 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
   return "outline";
 }
 
-export default function WhatsAppAdminPage() {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isLoading) return;
-    if (!user) { router.push("/login"); return; }
-    if (user.role !== "ADMIN") { router.push("/"); return; }
-  }, [user, isLoading, router]);
-
-  if (isLoading || !user || user.role !== "ADMIN") return null;
-
+/** WhatsApp admin console — previously duplicated as a standalone ADMIN page
+ * (shadcn-styled) and a separate raw-HTML super-admin panel. This is now the
+ * single implementation, shared by both dashboards. */
+export function WhatsAppPanel() {
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">WhatsApp</h1>
-        <Link href="/admin/approvals"><Button variant="outline">Back to Approvals</Button></Link>
-      </div>
+    <Tabs defaultValue="send">
+      <TabsList>
+        <TabsTrigger value="send">Send Message</TabsTrigger>
+        <TabsTrigger value="templates">Templates</TabsTrigger>
+        <TabsTrigger value="flows">Flows</TabsTrigger>
+        <TabsTrigger value="log">Message Log</TabsTrigger>
+      </TabsList>
 
-      <Tabs defaultValue="send">
-        <TabsList>
-          <TabsTrigger value="send">Send Message</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="flows">Flows</TabsTrigger>
-          <TabsTrigger value="log">Message Log</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="send"><SendMessageTab /></TabsContent>
-        <TabsContent value="templates"><TemplatesTab /></TabsContent>
-        <TabsContent value="flows"><FlowsTab /></TabsContent>
-        <TabsContent value="log"><MessageLogTab /></TabsContent>
-      </Tabs>
-    </div>
+      <TabsContent value="send"><SendMessageTab /></TabsContent>
+      <TabsContent value="templates"><TemplatesTab /></TabsContent>
+      <TabsContent value="flows"><FlowsTab /></TabsContent>
+      <TabsContent value="log"><MessageLogTab /></TabsContent>
+    </Tabs>
   );
 }
 
