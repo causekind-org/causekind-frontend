@@ -312,7 +312,8 @@ export function SiteHeader() {
 
   const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
-  const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
+  const dashHref = user?.role === "SUPER_ADMIN" ? "/super-admin"
+    : user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
 
   /** Opens the confirmation dialog — actual logout happens only on confirm. */
   function requestLogout() { setLogoutDialogOpen(true); }
