@@ -10,6 +10,7 @@ import {
   adminGetMatches, adminApproveMatch, adminRejectMatch, adminGetMatchHistory, type ItemMatch, type StatusHistoryEntry,
   adminGetAllOffers,
   adminGetAllAiAssessments, type AiAssessmentResponse,
+  adminGetMyPermissions,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
@@ -18,14 +19,31 @@ import { VerificationQueuePanel } from "../verifications/VerificationQueuePanel"
 import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
+import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
+import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import {
   Bot, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
-  Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageSquare,
-  Package, Phone, RefreshCw, Search, ShieldCheck, Tag, Truck, UserRound, X,
+  Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
+  Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
 } from "lucide-react";
 
-type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs" | "user-journey";
+type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
+
+/** Which AdminCapability (see backend AdminCapability enum) gates each tab —
+ * used to hide tabs an admin has had revoked rather than just 403ing on click. */
+const TAB_CAPABILITY: Record<TabKey, string> = {
+  campaigns: "CAMPAIGNS",
+  requests: "ITEMS_REQUESTS",
+  listings: "ITEMS_REQUESTS",
+  matches: "MATCHES",
+  offers: "OFFERS",
+  "match-history": "MATCHES",
+  "ai-logs": "ITEMS_REQUESTS",
+  "user-journey": "USERS",
+  analytics: "DONATIONS",
+  whatsapp: "WHATSAPP",
+};
 type RejectType = "campaign" | "listing" | "match";
 type DetailSelection =
   | { type: "request"; item: ItemRequest }
@@ -141,6 +159,25 @@ export default function AdminDashboardPage() {
 
   const [tab, setTab] = useState<TabKey>("campaigns");
   const [journeyUserId, setJourneyUserId] = useState<number | null>(null);
+
+  // Effective permissions — null while loading (treated as "everything granted"
+  // to avoid a flash-hide before the response arrives; SUPER_ADMIN also always
+  // resolves to all-true here since AdminPermissionService default-allows).
+  const [myPermissions, setMyPermissions] = useState<Record<string, boolean> | null>(null);
+  useEffect(() => {
+    adminGetMyPermissions().then(setMyPermissions).catch(() => {});
+  }, []);
+  const canSeeTab = useCallback(
+    (key: TabKey) => myPermissions === null || myPermissions[TAB_CAPABILITY[key]] !== false,
+    [myPermissions]
+  );
+  // If the tab currently open gets revoked (or the default "campaigns" tab
+  // itself is revoked), fall back to the first tab this admin can still see.
+  useEffect(() => {
+    if (myPermissions === null || canSeeTab(tab)) return;
+    const fallback = (Object.keys(TAB_CAPABILITY) as TabKey[]).find(canSeeTab);
+    if (fallback) setTab(fallback);
+  }, [myPermissions, tab, canSeeTab]);
 
   // Elevate-on-scroll: the sticky header casts a shadow only once content
   // actually slides beneath it, fading in/out via transition-shadow.
@@ -373,7 +410,7 @@ export default function AdminDashboardPage() {
   if (!user) return null;
 
   const total = campaigns.length + requests.length + listings.length + matches.length + offersNeedingAction;
-  const isReportTab = tab === "match-history" || tab === "ai-logs";
+  const isReportTab = tab === "match-history" || tab === "ai-logs" || tab === "analytics" || tab === "whatsapp";
 
   const TABS = [
     { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#e07b3a" },
@@ -381,17 +418,23 @@ export default function AdminDashboardPage() {
     { key: "listings"  as TabKey, label: "Listings",     count: listings.length,    icon: Package,        color: "#a78bfa" },
     { key: "matches"   as TabKey, label: "Matches",      count: matches.length,     icon: Handshake,      color: "#34d399" },
     { key: "offers"    as TabKey, label: "Offers",       count: offersNeedingAction, icon: Gift,          color: "#f472b6" },
-  ];
+  ].filter(t => canSeeTab(t.key));
 
   const headerTitle = tab === "match-history" ? "Match History"
     : tab === "ai-logs" ? "AI Screening Logs"
     : tab === "user-journey" ? "User Journey"
+    : tab === "analytics" ? "Analytics"
+    : tab === "whatsapp" ? "WhatsApp"
     : "Approval Queue";
 
   const headerSubtitle = tab === "match-history"
     ? `${allMatches.length} match${allMatches.length !== 1 ? "es" : ""} · complete lifecycle view`
     : tab === "user-journey"
     ? "One user's complete story — every step on record, from registration to today"
+    : tab === "analytics"
+    ? "Donation and campaign performance"
+    : tab === "whatsapp"
+    ? "Templates, flows, sends, and the message log"
     : tab === "ai-logs"
     ? `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} across all listings`
     : loading ? "Loading..." : total > 0
@@ -462,42 +505,76 @@ export default function AdminDashboardPage() {
         {/* Reports */}
         <div className="px-5 pb-3 pt-2 space-y-1">
           <p className="text-[10px] font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Reports</p>
-          <button
-            onClick={() => setTab("match-history")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-              tab === "match-history"
-                ? "border-[#b04a15]/40 text-white"
-                : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-            }`}
-            style={{ background: tab === "match-history" ? "rgba(176,74,21,0.12)" : undefined }}
-          >
-            <Handshake className={`w-4 h-4 shrink-0 ${tab === "match-history" ? "text-[#b04a15]" : "text-teal-400"}`} />
-            Match History
-          </button>
-          <button
-            onClick={() => setTab("ai-logs")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-              tab === "ai-logs"
-                ? "border-[#b04a15]/40 text-white"
-                : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-            }`}
-            style={{ background: tab === "ai-logs" ? "rgba(176,74,21,0.12)" : undefined }}
-          >
-            <Bot className={`w-4 h-4 shrink-0 ${tab === "ai-logs" ? "text-[#b04a15]" : "text-violet-400"}`} />
-            AI Screening Logs
-          </button>
-          <button
-            onClick={() => setTab("user-journey")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-              tab === "user-journey"
-                ? "border-[#b04a15]/40 text-white"
-                : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-            }`}
-            style={{ background: tab === "user-journey" ? "rgba(176,74,21,0.12)" : undefined }}
-          >
-            <UserRound className={`w-4 h-4 shrink-0 ${tab === "user-journey" ? "text-[#b04a15]" : "text-sky-400"}`} />
-            User Journey
-          </button>
+          {canSeeTab("match-history") && (
+            <button
+              onClick={() => setTab("match-history")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "match-history"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "match-history" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <Handshake className={`w-4 h-4 shrink-0 ${tab === "match-history" ? "text-[#b04a15]" : "text-teal-400"}`} />
+              Match History
+            </button>
+          )}
+          {canSeeTab("ai-logs") && (
+            <button
+              onClick={() => setTab("ai-logs")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "ai-logs"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "ai-logs" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <Bot className={`w-4 h-4 shrink-0 ${tab === "ai-logs" ? "text-[#b04a15]" : "text-violet-400"}`} />
+              AI Screening Logs
+            </button>
+          )}
+          {canSeeTab("user-journey") && (
+            <button
+              onClick={() => setTab("user-journey")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "user-journey"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "user-journey" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <UserRound className={`w-4 h-4 shrink-0 ${tab === "user-journey" ? "text-[#b04a15]" : "text-sky-400"}`} />
+              User Journey
+            </button>
+          )}
+          {canSeeTab("analytics") && (
+            <button
+              onClick={() => setTab("analytics")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "analytics"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "analytics" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <TrendingUp className={`w-4 h-4 shrink-0 ${tab === "analytics" ? "text-[#b04a15]" : "text-amber-400"}`} />
+              Analytics
+            </button>
+          )}
+          {canSeeTab("whatsapp") && (
+            <button
+              onClick={() => setTab("whatsapp")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                tab === "whatsapp"
+                  ? "border-[#b04a15]/40 text-white"
+                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ background: tab === "whatsapp" ? "rgba(176,74,21,0.12)" : undefined }}
+            >
+              <MessageCircle className={`w-4 h-4 shrink-0 ${tab === "whatsapp" ? "text-[#b04a15]" : "text-green-400"}`} />
+              WhatsApp
+            </button>
+          )}
         </div>
 
         {/* Sign out */}
@@ -610,18 +687,38 @@ export default function AdminDashboardPage() {
           {/* Mobile report links */}
           {isReportTab && (
             <div className="sm:hidden flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
-              <button
-                onClick={() => setTab("match-history")}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "match-history" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
-              >
-                Match History
-              </button>
-              <button
-                onClick={() => setTab("ai-logs")}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "ai-logs" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
-              >
-                AI Screening Logs
-              </button>
+              {canSeeTab("match-history") && (
+                <button
+                  onClick={() => setTab("match-history")}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "match-history" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
+                >
+                  Match History
+                </button>
+              )}
+              {canSeeTab("ai-logs") && (
+                <button
+                  onClick={() => setTab("ai-logs")}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "ai-logs" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
+                >
+                  AI Screening Logs
+                </button>
+              )}
+              {canSeeTab("analytics") && (
+                <button
+                  onClick={() => setTab("analytics")}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "analytics" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
+                >
+                  Analytics
+                </button>
+              )}
+              {canSeeTab("whatsapp") && (
+                <button
+                  onClick={() => setTab("whatsapp")}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "whatsapp" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
+                >
+                  WhatsApp
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -850,6 +947,12 @@ export default function AdminDashboardPage() {
           {tab === "user-journey" && (
             <UserJourneyPanel initialUserId={journeyUserId} />
           )}
+
+          {/* ── ANALYTICS TAB — previously the standalone /admin/analytics page ── */}
+          {tab === "analytics" && <AnalyticsPanel />}
+
+          {/* ── WHATSAPP TAB — previously the standalone /admin/whatsapp page ── */}
+          {tab === "whatsapp" && <WhatsAppPanel />}
         </div>
 
         <ApprovalDetailDrawer

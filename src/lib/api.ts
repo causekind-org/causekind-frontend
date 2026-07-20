@@ -1622,6 +1622,10 @@ export type UserJourney = {
     registeredAt: string | null;
     aadhaarLast4: string | null;
     aadhaarVerified: boolean;
+    active: boolean;
+    suspended: boolean;
+    suspensionReason: string | null;
+    suspendedUntil: string | null;
   };
   stats: Record<string, number>;
   events: JourneyEvent[];
@@ -1930,4 +1934,107 @@ export function sendWhatsAppTemplateMessage(body: {
 
 export function getWhatsAppMessages(page = 0, size = 25) {
   return request<WhatsAppMessagePage>(`/api/v1/admin/whatsapp/messages?page=${page}&size=${size}`);
+}
+
+// ── Admin permissions (super-admin grants/revokes per ADMIN) ────────────────
+
+export type AdminCapabilityMap = Record<string, boolean>;
+
+export type AdminAccount = {
+  id: number;
+  fullName: string;
+  email: string;
+  role: string;
+  active: boolean;
+  permissions: AdminCapabilityMap;
+};
+
+/** The signed-in admin's own effective permissions — used to hide tabs they
+ * don't have access to rather than just 403ing when clicked. */
+export function adminGetMyPermissions() {
+  return request<AdminCapabilityMap>("/api/v1/admin/self/permissions");
+}
+
+export function superAdminListAdmins() {
+  return request<AdminAccount[]>("/api/v1/super-admin/admins");
+}
+
+export function superAdminGetAdminPermissions(adminId: number) {
+  return request<AdminCapabilityMap>(`/api/v1/super-admin/admins/${adminId}/permissions`);
+}
+
+export function superAdminSetAdminPermissions(adminId: number, changes: AdminCapabilityMap) {
+  return request<AdminCapabilityMap>(`/api/v1/super-admin/admins/${adminId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify(changes),
+  });
+}
+
+// ── Admin disputes (post-delivery issues) ───────────────────────────────────
+
+export type PostDeliveryIssueResponse = {
+  id: number;
+  offerId: number | null;
+  offerTitle: string | null;
+  reportedByEmail: string | null;
+  issueType: string | null;
+  description: string;
+  windowCategory: string | null;
+  windowExpiresAt: string;
+  evidenceUrls: string[];
+  adminResolution: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+};
+
+export function adminListDisputes(status: "open" | "resolved" | "all" = "open") {
+  return request<PostDeliveryIssueResponse[]>(`/api/v1/admin/disputes?status=${status}`);
+}
+
+export function adminResolveDispute(id: number, resolution: string) {
+  return request<PostDeliveryIssueResponse>(`/api/v1/admin/disputes/${id}/resolve`, {
+    method: "POST",
+    body: JSON.stringify({ resolution }),
+  });
+}
+
+// ── Admin user suspend/ban ───────────────────────────────────────────────────
+
+export function adminSuspendUser(userId: number, reason: string, until?: string | null) {
+  return request<void>(`/api/v1/admin/users/${userId}/suspend`, {
+    method: "POST",
+    body: JSON.stringify({ reason, until: until ?? null }),
+  });
+}
+
+export function adminUnsuspendUser(userId: number) {
+  return request<void>(`/api/v1/admin/users/${userId}/unsuspend`, { method: "POST" });
+}
+
+// ── Super-admin audit log ───────────────────────────────────────────────────
+
+export type AuditLogEntry = {
+  id: number;
+  actorEmail: string;
+  actorRole: string;
+  action: string;
+  entityType: string | null;
+  entityId: number | null;
+  detail: string | null;
+  createdAt: string;
+};
+
+export type AuditLogPage = {
+  content: AuditLogEntry[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
+};
+
+export function superAdminAuditLog(page = 0, size = 25, filters?: { actorEmail?: string; entityType?: string; action?: string }) {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (filters?.actorEmail) params.set("actorEmail", filters.actorEmail);
+  if (filters?.entityType) params.set("entityType", filters.entityType);
+  if (filters?.action) params.set("action", filters.action);
+  return request<AuditLogPage>(`/api/v1/super-admin/audit-log?${params.toString()}`);
 }
