@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
@@ -52,8 +51,6 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState({ email: "", password: "" });
-  // Start with no animation class — set AFTER mount so the correct direction is known
-  const [panelAnimClass, setPanelAnimClass] = useState("");
 
   const triggerGoogle = useGoogleLogin({
     scope: "openid email profile",
@@ -81,13 +78,6 @@ function LoginContent() {
   });
 
   useEffect(() => { if (user) router.replace(homeForRole(user.role)); }, [user, router]);
-
-  useEffect(() => {
-    const dir = sessionStorage.getItem("ck_auth_direction");
-    // Set direction-aware class AFTER mount so animation plays with correct direction
-    setPanelAnimClass(dir === "register-to-login" ? "auth-panel-from-right" : "auth-panel-from-left");
-    if (dir) sessionStorage.removeItem("ck_auth_direction");
-  }, []);
 
   useEffect(() => {
     if (searchParams.get("expired") === "1") {
@@ -128,60 +118,11 @@ function LoginContent() {
 
   function goToRegister(e: React.MouseEvent) {
     e.preventDefault();
-    // flag so register page plays the slide-in-from-right animation
-    sessionStorage.setItem("ck_auth_direction", "login-to-register");
     router.push("/register");
   }
 
   return (
-    <div className="min-h-[calc(100svh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
-
-      {/* ── LEFT: Brand/Image panel — slides in from direction of navigation ── */}
-      <div className={`hidden lg:flex lg:w-[40%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-850 shrink-0 ${panelAnimClass}`}>
-        <div className="relative z-10 flex items-center gap-2 mb-8">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3 py-1">
-            Verified In-Kind
-          </span>
-        </div>
-
-        <div className="relative z-10 space-y-6">
-          <blockquote className="space-y-4">
-            <p className="text-white text-3xl font-extrabold leading-tight tracking-tight font-serif">
-              &ldquo;The smallest act of kindness is worth more than the grandest intention.&rdquo;
-            </p>
-            <footer className="flex items-center gap-2">
-              <span className="block h-px w-8 bg-[#e07b3a]" />
-              <cite className="text-[#f0b97a] text-sm not-italic font-bold">Oscar Wilde</cite>
-            </footer>
-          </blockquote>
-        </div>
-
-        {/* Illustration — a direct, verified handover */}
-        <div className="absolute inset-0 pointer-events-none">
-          <Image
-            src="/login-illustration.png"
-            alt=""
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#120c04] via-transparent to-[#120c04]" />
-        </div>
-
-        <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          CauseKind India · 2026
-        </div>
-      </div>
-
-      {/* ── RIGHT: Form panel — fades in ── */}
-      <div className="flex flex-1 flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 px-6 py-8 lg:px-12 overflow-y-auto relative overflow-hidden auth-form-appear">
-        {/* Breathing warmth glows representing community light & hope */}
-        <div className="absolute top-10 right-10 w-80 h-80 rounded-full bg-[#b04a15]/12 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-[#1e3a60]/10 blur-3xl pointer-events-none" />
-
-        <div />
-
-        <div className="w-full max-w-[420px] mx-auto space-y-7 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-3xl px-8 py-10 shadow-xl">
+    <div className="w-full max-w-[420px] mx-auto space-y-7 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-3xl px-8 py-10 shadow-xl">
           {/* Heading */}
           <Reveal>
             <div className="space-y-1.5">
@@ -336,14 +277,6 @@ function LoginContent() {
             </p>
           </Reveal>
         </div>
-
-        {/* Footer */}
-        <p className="mt-8 text-center text-xs text-stone-400 dark:text-zinc-600">
-          &copy; 2026 CauseKind
-        </p>
-      </div>
-
-    </div>
   );
 }
 

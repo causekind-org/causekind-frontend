@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowDown, Bot, ClipboardList, Coins, FileText, Flag, Gift, Handshake,
-  Loader2, MessageSquare, Package, Search, ShieldCheck, UserRound,
+  Loader2, MessageSquare, Package, Search, UserRound,
 } from "lucide-react";
 
 // ── Category styling ─────────────────────────────────────────────────────────
@@ -283,11 +283,6 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <Badge variant="secondary">{journey.user.role ?? "USER"}</Badge>
                       {journey.user.city && <Badge variant="outline">{journey.user.city}</Badge>}
-                      {journey.user.aadhaarVerified && (
-                        <Badge className="gap-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300">
-                          <ShieldCheck className="h-3 w-3" /> Aadhaar ····{journey.user.aadhaarLast4}
-                        </Badge>
-                      )}
                       <span className="text-xs text-stone-400">member since {fmtDate(journey.user.registeredAt)}</span>
                     </div>
                   </div>

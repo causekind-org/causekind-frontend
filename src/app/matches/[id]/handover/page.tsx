@@ -9,6 +9,8 @@ import {
   type ItemMatch,
 } from "@/lib/api";
 import MatchChatWindow from "@/components/MatchChatWindow";
+import LocationPinPicker from "@/components/LocationPinPicker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
@@ -66,6 +68,8 @@ export default function MatchHandoverHubPage() {
   const [handoverMethod, setHandoverMethod] = useState("IN_PERSON");
   const [pickupDateTime, setPickupDateTime] = useState("");
   const [handoverAddress, setHandoverAddress] = useState("");
+  const [pinLat, setPinLat] = useState<number | null>(null);
+  const [pinLng, setPinLng] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
   // Confirmation
@@ -94,6 +98,14 @@ export default function MatchHandoverHubPage() {
     getMatch(matchId).then(setMatch).catch(() => {});
   });
 
+  // Opens the schedule/reschedule form, seeding the pin from whatever lat/lng
+  // is already stored on the match so re-opening to reschedule doesn't reset it.
+  function openScheduleForm() {
+    setPinLat(match?.handoverLatitude ?? null);
+    setPinLng(match?.handoverLongitude ?? null);
+    setShowScheduleForm(true);
+  }
+
   async function handleSchedule() {
     if (!pickupDateTime) { setError("Please select a date and time"); return; }
     setSubmitting(true); setError(null);
@@ -101,6 +113,7 @@ export default function MatchHandoverHubPage() {
       const updated = await saveMatchLogistics(matchId, {
         handoverMethod, pickupDateTime: new Date(pickupDateTime).toISOString(),
         handoverAddress: handoverAddress || undefined, notes: notes || undefined,
+        ...(pinLat != null && pinLng != null ? { handoverLatitude: pinLat, handoverLongitude: pinLng } : {}),
       });
       setMatch(updated);
       setShowScheduleForm(false);
@@ -241,7 +254,7 @@ export default function MatchHandoverHubPage() {
             colorClasses={statusStepColor("")}
             action={isDonor && !match.handoverMethod && (
               <button
-                onClick={() => setShowScheduleForm(true)}
+                onClick={openScheduleForm}
                 className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
               >
                 Schedule Handover
@@ -252,11 +265,41 @@ export default function MatchHandoverHubPage() {
               <div className="space-y-1.5 rounded-xl bg-white/60 dark:bg-white/5 p-4 text-sm text-gray-600 dark:text-gray-400">
                 <div><span className="font-medium">Method:</span> {match.handoverMethod.replace(/_/g, " ")}</div>
                 <div><span className="font-medium">Date/Time:</span> {match.pickupDateTime ? new Date(match.pickupDateTime).toLocaleString() : "—"}</div>
-                {match.handoverAddress && <div><span className="font-medium">Location:</span> {match.handoverAddress}</div>}
+                {match.handoverAddress && (
+                  <div>
+                    <span className="font-medium">Location:</span> {match.handoverAddress}
+                    {match.handoverLatitude != null && match.handoverLongitude != null && (
+                      <>
+                        {" "}
+                        <a
+                          href={`https://www.google.com/maps?q=${match.handoverLatitude},${match.handoverLongitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-[#b04a15] dark:text-[#e07b3a] hover:underline"
+                        >
+                          View on Google Maps →
+                        </a>
+                      </>
+                    )}
+                  </div>
+                )}
+                {!match.handoverAddress && match.handoverLatitude != null && match.handoverLongitude != null && (
+                  <div>
+                    <span className="font-medium">Location:</span>{" "}
+                    <a
+                      href={`https://www.google.com/maps?q=${match.handoverLatitude},${match.handoverLongitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-[#b04a15] dark:text-[#e07b3a] hover:underline"
+                    >
+                      View on Google Maps →
+                    </a>
+                  </div>
+                )}
                 {match.fulfilmentNotes && <div><span className="font-medium">Notes:</span> {match.fulfilmentNotes}</div>}
                 <div><span className="font-medium">Reschedules used:</span> {rescheduleCount} / {MAX_RESCHEDULES}</div>
                 {isDonor && rescheduleCount < MAX_RESCHEDULES && !CLOSED_STATUSES.has(match.status) && (
-                  <button onClick={() => setShowScheduleForm(true)} className="mt-1 rounded-lg bg-white/80 dark:bg-black/20 px-3 py-1.5 text-xs font-semibold text-[#b04a15] hover:bg-white transition-colors">
+                  <button onClick={openScheduleForm} className="mt-1 rounded-lg bg-white/80 dark:bg-black/20 px-3 py-1.5 text-xs font-semibold text-[#b04a15] hover:bg-white transition-colors">
                     Reschedule
                   </button>
                 )}
@@ -272,12 +315,16 @@ export default function MatchHandoverHubPage() {
                 </h3>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Method</label>
-                  <select value={handoverMethod} onChange={(e) => setHandoverMethod(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm">
-                    <option value="IN_PERSON">In Person</option>
-                    <option value="COURIER">Courier</option>
-                    <option value="THIRD_PARTY">Third Party</option>
-                  </select>
+                  <Select value={handoverMethod} onValueChange={setHandoverMethod}>
+                    <SelectTrigger className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 h-auto text-sm font-normal focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/25 data-[state=open]:border-[#b04a15]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IN_PERSON" className="focus:bg-[#b04a15]/10 focus:text-[#b04a15]">In Person</SelectItem>
+                      <SelectItem value="COURIER" className="focus:bg-[#b04a15]/10 focus:text-[#b04a15]">Courier</SelectItem>
+                      <SelectItem value="THIRD_PARTY" className="focus:bg-[#b04a15]/10 focus:text-[#b04a15]">Third Party</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Date & Time</label>
@@ -288,6 +335,14 @@ export default function MatchHandoverHubPage() {
                   <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Address (optional)</label>
                   <input type="text" value={handoverAddress} onChange={(e) => setHandoverAddress(e.target.value)} placeholder="e.g. Andheri East, Mumbai"
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Pin exact location (optional)</label>
+                  <LocationPinPicker
+                    lat={pinLat}
+                    lng={pinLng}
+                    onChange={(lat, lng) => { setPinLat(lat); setPinLng(lng); }}
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Notes (optional)</label>
@@ -411,12 +466,16 @@ export default function MatchHandoverHubPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Condition matches description?</label>
-                      <select value={conditionRating} onChange={(e) => setConditionRating(e.target.value)}
-                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm">
-                        <option value="AS_DESCRIBED">Yes, as described</option>
-                        <option value="MINOR_DIFF">Minor differences — I still accept it</option>
-                        <option value="MAJOR_DIFF">Major differences — I have concerns</option>
-                      </select>
+                      <Select value={conditionRating} onValueChange={setConditionRating}>
+                        <SelectTrigger className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 h-auto text-sm font-normal focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/25 data-[state=open]:border-[#b04a15]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AS_DESCRIBED" className="focus:bg-[#b04a15]/10 focus:text-[#b04a15]">Yes, as described</SelectItem>
+                          <SelectItem value="MINOR_DIFF" className="focus:bg-[#b04a15]/10 focus:text-[#b04a15]">Minor differences — I still accept it</SelectItem>
+                          <SelectItem value="MAJOR_DIFF" className="focus:bg-[#b04a15]/10 focus:text-[#b04a15]">Major differences — I have concerns</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <button onClick={handleDoneeConfirm} disabled={submitting}
                       className="w-full rounded-xl bg-[#b04a15] py-2.5 text-sm font-semibold text-white disabled:opacity-50">
@@ -479,7 +538,7 @@ export default function MatchHandoverHubPage() {
 
                   {isDonor && rescheduleCount < MAX_RESCHEDULES && (
                     <button
-                      onClick={() => { setShowProblemForm(false); setShowScheduleForm(true); }}
+                      onClick={() => { setShowProblemForm(false); openScheduleForm(); }}
                       className="w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 px-4 py-2.5 text-sm font-semibold text-amber-700 dark:text-amber-400 text-left hover:bg-amber-100 transition-colors">
                       📅 Reschedule for a different time
                       <span className="block text-xs font-normal opacity-70 mt-0.5">
