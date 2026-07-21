@@ -187,8 +187,6 @@ export type UserProfile = {
   role: string;
   latitude: number | null;
   longitude: number | null;
-  /** Last 4 digits of the saved Aadhaar, or null if none on file yet. */
-  aadhaarLast4: string | null;
 };
 
 export function getProfile() {
@@ -555,6 +553,33 @@ export async function uploadListingImage(file: File): Promise<string> {
   return data.url as string;
 }
 
+export type ListingImageAnalysis = {
+  aiAvailable: boolean;
+  category: string | null;
+  subcategory: string | null;
+  title: string | null;
+  brand: string | null;
+  model: string | null;
+  condition: string | null;
+  workingStatus: string | null;
+  approximateAge: string | null;
+  knownDefects: string | null;
+  dimensions: string | null;
+  approximateWeight: string | null;
+  description: string | null;
+  confidence: number | null;
+  uncertainFields: string[] | null;
+  note: string | null;
+};
+
+/** Sends already-uploaded S3 photo URLs to Claude vision for listing-field suggestions. */
+export function analyzeListingImages(imageUrls: string[]) {
+  return request<ListingImageAnalysis>(`/api/v1/items/analyze-images`, {
+    method: "POST",
+    body: JSON.stringify({ imageUrls }),
+  });
+}
+
 // ── Item Requests ─────────────────────────────────────────────────────────────
 
 export type ItemRequest = {
@@ -697,7 +722,7 @@ export function saveRequestVerificationDetails(id: number, data: Partial<Request
 }
 
 export type VerificationDocumentType =
-  | "AADHAAR_FRONT" | "AADHAAR_BACK" | "SELFIE_WITH_ID" | "RATION_CARD" | "VOTER_ID"
+  | "RESIDENCE_PROOF" | "SELFIE_WITH_ID" | "RATION_CARD" | "VOTER_ID"
   | "PROOF_OF_NEED" | "BPL_CARD" | "INCOME_CERT" | "REFERENCE_LETTER" | "SITUATION_PHOTO"
   | "BANK_PASSBOOK" | "GOVT_ID_ANY" | "EMERGENCY_PROOF" | "SCENE_SELFIE" | "OFFICIAL_LETTER";
 
@@ -731,10 +756,22 @@ export function deleteVerificationDocument(requestId: number, docId: number) {
   return request<void>(`/api/v1/item-requests/${requestId}/documents/${docId}`, { method: "DELETE" });
 }
 
-export function updateAadhaar(aadhaarNumber: string) {
-  return request<UserProfile>("/api/v1/users/aadhaar", {
-    method: "PUT",
-    body: JSON.stringify({ aadhaarNumber }),
+export type ResidenceProofAnalysis = {
+  aiAvailable: boolean;
+  looksLikeResidenceProof: boolean | null;
+  confidence: number | null;
+  reason: string | null;
+  documentTypeGuess: string | null;
+  note: string | null;
+};
+
+/** Fast, non-blocking AI check on an already-uploaded residence-proof document
+ *  (S3 URL) — mirrors analyzeListingImages(). Never a hard gate on submission;
+ *  a human admin still reviews the whole request afterward. */
+export function analyzeResidenceProof(documentUrl: string) {
+  return request<ResidenceProofAnalysis>(`/api/v1/item-requests/analyze-residence-proof`, {
+    method: "POST",
+    body: JSON.stringify({ documentUrl }),
   });
 }
 
@@ -797,8 +834,6 @@ export type AdminRequestVerificationDetail = {
   verificationDueAt: string | null;
   tierOverriddenBy: string | null;
   tierOverrideReason: string | null;
-  doneeAadhaarLast4: string | null;
-  doneeAadhaarOnFile: boolean;
   doneeId: number | null;
   doneeEmail: string | null;
   verification: RequestVerification | null;
@@ -835,12 +870,6 @@ export function adminHoldItemRequest(requestId: number, reason: string) {
 
 export function adminResumeItemRequestReview(requestId: number) {
   return request<ItemRequest>(`/api/v1/admin/item-requests/${requestId}/resume-review`, { method: "PATCH" });
-}
-
-// Click-to-reveal: decrypts on demand server-side, audit-logged. Never cache this
-// value beyond the component that displayed it — re-fetch on every reveal.
-export function adminRevealAadhaar(userId: number) {
-  return request<{ aadhaarNumber: string }>(`/api/v1/admin/users/${userId}/aadhaar`);
 }
 
 export function adminGetItemRequestAiReview(id: number) {
@@ -947,6 +976,8 @@ export type ItemMatch = {
   expectedDeliveryDate: string | null;
   packagingResponsibility: string | null;
   handoverAddress: string | null;
+  handoverLatitude: number | null;
+  handoverLongitude: number | null;
   deliveryAddress: string | null;
   allocatedQuantity: number | null;
   reservationExpiry: string | null;
@@ -1030,6 +1061,8 @@ export function saveMatchLogistics(id: number, data: {
   expectedDeliveryDate?: string;
   packagingResponsibility?: string;
   handoverAddress?: string;
+  handoverLatitude?: number;
+  handoverLongitude?: number;
   deliveryAddress?: string;
   allocatedQuantity?: number;
   notes?: string;
@@ -1287,6 +1320,8 @@ export type HandoverRecord = {
   method: OfferHandoverMethod | null;
   scheduledDateTime: string | null;
   locationAddress: string | null;
+  locationLatitude: number | null;
+  locationLongitude: number | null;
   transportArrangedBy: string | null;
   transportCostBornBy: string | null;
   rescheduleCount: number;
@@ -1488,7 +1523,9 @@ export function scheduleHandover(offerId: number, data: {
 }
 
 export function rescheduleHandover(offerId: number, data: {
-  scheduledDateTime: string; locationAddress?: string; rescheduleReason?: string;
+  scheduledDateTime: string; locationAddress?: string;
+  locationLatitude?: number; locationLongitude?: number;
+  rescheduleReason?: string;
 }) {
   return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/reschedule`, {
     method: "PATCH",
@@ -1633,8 +1670,6 @@ export type UserJourney = {
     role: string | null;
     city: string | null;
     registeredAt: string | null;
-    aadhaarLast4: string | null;
-    aadhaarVerified: boolean;
     active: boolean;
     suspended: boolean;
     suspensionReason: string | null;

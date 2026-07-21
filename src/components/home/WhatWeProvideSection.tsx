@@ -198,13 +198,18 @@ export function WhatWeProvideSection() {
               >
                 <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] items-center gap-10 lg:gap-16">
 
-                  {/* Left — big dim number + icon (scale in on scroll) */}
-                  <div className="flex items-center gap-4 flex-shrink-0">
+                  {/* Left — the dim step number IS the focal shape; the icon rides on
+                      top as a small tilted badge instead of its own big colored tile
+                      (a large Lucide glyph centered in a flat rounded square reads as
+                      generic AI-poster iconography — this keeps the icon as an accent,
+                      not the main event). */}
+                  <div className="relative flex items-center flex-shrink-0 lg:w-[clamp(3rem,5vw,5rem)]">
                     <span
                       className="hidden lg:block font-black leading-none select-none"
                       style={{
                         fontSize: "clamp(3rem, 5vw, 5rem)",
                         color: `${s.accent}22`,
+                        WebkitTextStroke: `1px ${s.accent}45`,
                         opacity: numOp,
                         willChange: "opacity",
                       }}
@@ -212,16 +217,16 @@ export function WhatWeProvideSection() {
                       {s.step}
                     </span>
                     <div
-                      className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center"
+                      className="relative lg:absolute lg:-right-4 lg:-bottom-3 w-14 h-14 lg:w-11 lg:h-11 rounded-2xl lg:rounded-xl flex items-center justify-center"
                       style={{
                         backgroundColor: s.accent,
-                        boxShadow: `0 20px 56px ${s.accent}55`,
-                        transform: `scale(${iconSc})`,
+                        boxShadow: `0 12px 28px ${s.accent}50, 0 0 0 3px #120c04`,
+                        transform: `scale(${iconSc}) rotate(-8deg)`,
                         opacity: iconOp,
                         willChange: "transform, opacity",
                       }}
                     >
-                      <SIcon className="h-10 w-10 lg:h-12 lg:w-12 text-white" />
+                      <SIcon className="h-7 w-7 lg:h-5 lg:w-5 text-white" strokeWidth={2.25} />
                     </div>
                   </div>
 

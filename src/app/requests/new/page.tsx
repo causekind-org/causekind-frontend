@@ -14,7 +14,6 @@ import {
   submitItemRequestDraft,
   saveRequestVerificationDetails,
   uploadVerificationDocument,
-  updateAadhaar,
   type UpdateRequestPayload,
   type RequestVerification,
   type VerificationDocumentType,
@@ -86,21 +85,18 @@ const TIER_TAT: Record<Tier, string> = {
 // Mirrors backend TierService.requiredDocuments() — flat list, no "one-of" alternatives.
 const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: string }[]> = {
   TIER_1_BASIC: [
-    { type: "AADHAAR_FRONT", label: "Aadhaar Card — Front" },
-    { type: "AADHAAR_BACK", label: "Aadhaar Card — Back" },
-    { type: "SELFIE_WITH_ID", label: "Selfie holding your Aadhaar" },
+    { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
+    { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
   ],
   TIER_2_MODERATE: [
-    { type: "AADHAAR_FRONT", label: "Aadhaar Card — Front" },
-    { type: "AADHAAR_BACK", label: "Aadhaar Card — Back" },
-    { type: "SELFIE_WITH_ID", label: "Selfie holding your Aadhaar" },
+    { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
+    { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
     { type: "PROOF_OF_NEED", label: "Proof of need (school/hospital/doctor letter)" },
     { type: "BPL_CARD", label: "BPL card" },
   ],
   TIER_3_HIGH_VALUE: [
-    { type: "AADHAAR_FRONT", label: "Aadhaar Card — Front" },
-    { type: "AADHAAR_BACK", label: "Aadhaar Card — Back" },
-    { type: "SELFIE_WITH_ID", label: "Selfie holding your Aadhaar" },
+    { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
+    { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
     { type: "PROOF_OF_NEED", label: "Primary proof of need (hospital discharge / prescription)" },
     { type: "BPL_CARD", label: "BPL card" },
     { type: "REFERENCE_LETTER", label: "Third-party reference letter (NGO/Sarpanch/social worker)" },
@@ -113,9 +109,19 @@ const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: strin
   ],
 };
 
+// Only these actually block submission — everything else in REQUIRED_DOCS above
+// is shown as a helpful (optional) upload but isn't mandatory. Tier 4 Emergency
+// keeps all three of its docs mandatory (unchanged, separate concern).
+const MANDATORY_DOC_TYPES: Record<Tier, VerificationDocumentType[]> = {
+  TIER_1_BASIC: ["RESIDENCE_PROOF"],
+  TIER_2_MODERATE: ["RESIDENCE_PROOF"],
+  TIER_3_HIGH_VALUE: ["RESIDENCE_PROOF"],
+  TIER_4_EMERGENCY: ["GOVT_ID_ANY", "EMERGENCY_PROOF", "SCENE_SELFIE"],
+};
+
 const DECLARATIONS = [
   "The information I have provided in this request is true and accurate to the best of my knowledge.",
-  "I understand my Aadhaar number and uploaded documents are used only for admin verification and will never be shown to donors or other users.",
+  "I understand my uploaded documents are used only for admin verification and will never be shown to donors or other users.",
   "I have not already received this same item from CauseKind within the last 60 days, and I have not submitted this same request elsewhere.",
   "I understand that providing false information may result in my request being rejected and my account being restricted.",
   "I consent to CauseKind contacting any reference or alternate contact I provide, to verify this request.",
@@ -137,7 +143,7 @@ const STEPS = [
 // terms (step 2), else the need details themselves (step 1).
 function stepForRejection(reason: string): number {
   const r = reason.toLowerCase();
-  if (/aadhaar|selfie|photo|document|upload|bpl|proof|letter|blurry|unclear|unreadable|id card/.test(r)) return 3;
+  if (/residence|selfie|photo|document|upload|bpl|proof|letter|blurry|unclear|unreadable|id card/.test(r)) return 3;
   if (/contact|referr|doctor|hospital|story|income|household|family|dependent|alternate|situation|age|housing/.test(r)) return 2;
   return 1;
 }
@@ -159,15 +165,20 @@ function Field({ label, required, hint, error, children }: { label: string; requ
 
 // ── Document upload slot ─────────────────────────────────────────────────────
 function DocSlot({
-  label, uploaded, uploading, onUpload,
-}: { label: string; uploaded: boolean; uploading: boolean; onUpload: (file: File) => void }) {
+  label, required, uploaded, uploading, onUpload,
+}: { label: string; required: boolean; uploaded: boolean; uploading: boolean; onUpload: (file: File) => void }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
     <div className={`flex items-center justify-between gap-3 rounded-xl border-2 p-3.5 transition-all
       ${uploaded ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700" : "border-stone-200 dark:border-zinc-700"}`}>
       <div className="flex items-center gap-2.5 min-w-0">
         {uploaded ? <FileCheck2 className="w-4 h-4 text-green-500 shrink-0" /> : <UploadCloud className="w-4 h-4 text-stone-400 shrink-0" />}
-        <span className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">{label}</span>
+        <span className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">
+          {label}
+          {required
+            ? <span className="text-[#b04a15] ml-0.5">*</span>
+            : <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">(optional)</span>}
+        </span>
       </div>
       <input ref={ref} type="file" accept="image/*,.pdf" className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
@@ -264,12 +275,7 @@ function NewRequestForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [countryIso]);
 
-  // Step 3 — Aadhaar + documents
-  const [aadhaarNumber, setAadhaarNumber] = useState("");
-  const [aadhaarSaved, setAadhaarSaved] = useState(false);
-  // Last 4 of the Aadhaar already on file (from profile) — full number never leaves the server
-  const [aadhaarLast4, setAadhaarLast4] = useState<string | null>(null);
-  const [savingAadhaar, setSavingAadhaar] = useState(false);
+  // Step 3 — verification documents
   const [uploadedDocs, setUploadedDocs] = useState<Set<VerificationDocumentType>>(new Set());
   const [uploadingDoc, setUploadingDoc] = useState<VerificationDocumentType | null>(null);
 
@@ -332,11 +338,6 @@ function NewRequestForm() {
           router.push("/dashboard");
         }
         setUserPhone(p.phone ?? "");
-        // Aadhaar saved on a previous request — reflect it instead of asking again
-        if (p.aadhaarLast4) {
-          setAadhaarLast4(p.aadhaarLast4);
-          setAadhaarSaved(true);
-        }
       })
       .catch(() => {});
   }, [user, authLoading, router]);
@@ -435,10 +436,7 @@ function NewRequestForm() {
         e.referrerContact = "Reference number cannot be your own phone number — give an independent reference";
     }
     if (s === 3) {
-      // Tier 4 (Emergency) doesn't collect Aadhaar at all — the field isn't even
-      // rendered for it (relaxed ID requirements), so don't block on it here.
-      if (tier !== "TIER_4_EMERGENCY" && !aadhaarSaved) e.aadhaar = "Aadhaar number must be saved before continuing";
-      const missing = REQUIRED_DOCS[tier].filter((d) => !uploadedDocs.has(d.type));
+      const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !uploadedDocs.has(t));
       if (missing.length > 0) e.documents = `${missing.length} required document(s) still missing`;
     }
     if (s === 4) {
@@ -472,22 +470,6 @@ function NewRequestForm() {
     setFieldErrors({});
     setStep((s) => Math.max(s - 1, 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function handleSaveAadhaar() {
-    if (!/^\d{12}$/.test(aadhaarNumber)) { toast.error("Aadhaar number must be exactly 12 digits"); return; }
-    setSavingAadhaar(true);
-    try {
-      await updateAadhaar(aadhaarNumber);
-      setAadhaarLast4(aadhaarNumber.slice(-4));
-      setAadhaarNumber("");
-      setAadhaarSaved(true);
-      toast.success("Aadhaar number saved securely");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not save Aadhaar number");
-    } finally {
-      setSavingAadhaar(false);
-    }
   }
 
   async function handleDocUpload(docType: VerificationDocumentType, file: File) {
@@ -687,10 +669,23 @@ function NewRequestForm() {
         <>
           <div className="grid grid-cols-2 gap-5">
             <Field label="How many people live in your home?" hint="Count everyone — yourself, children, parents, grandparents">
-              <Input type="number" min={1} value={verification.householdSize ?? ""} onChange={(e) => setV("householdSize", Number(e.target.value))} className="h-11" />
+              <Input type="number" min={1} value={verification.householdSize ?? ""} onChange={(e) => {
+                const n = Number(e.target.value);
+                setV("householdSize", n);
+                // "Family size" (below, Tier 3 only) asks the exact same thing — kept in
+                // sync automatically instead of asking the donee the same question twice.
+                setV("familySize", n);
+                // "Number of earners" (Tier 3) is derived from this minus dependents below
+                // rather than asked separately — see the dependents onChange too.
+                setV("numberOfEarners", Math.max(0, n - (verification.dependents ?? 0)));
+              }} className="h-11" />
             </Field>
             <Field label="How many of them cannot earn?" hint="Children, elderly, or sick members who depend on the family. Write 0 if none">
-              <Input type="number" min={0} value={verification.dependents ?? ""} onChange={(e) => setV("dependents", Number(e.target.value))} className="h-11" />
+              <Input type="number" min={0} value={verification.dependents ?? ""} onChange={(e) => {
+                const d = Number(e.target.value);
+                setV("dependents", d);
+                setV("numberOfEarners", Math.max(0, (verification.householdSize ?? 0) - d));
+              }} className="h-11" />
             </Field>
           </div>
 
@@ -707,8 +702,8 @@ function NewRequestForm() {
                   </Select>
                 </Field>
               </div>
-              <Field label="Who is this item for?" hint="e.g. 'for my 10-year-old daughter studying in Class 5'">
-                <Input value={verification.beneficiaryDetails ?? ""} onChange={(e) => setV("beneficiaryDetails", e.target.value)} className="h-11" />
+              <Field label="Who is this item for, and their condition?" hint="e.g. 'for my father, cannot stand properly due to a knee injury' or 'for my 10-year-old daughter studying in Class 5'">
+                <Textarea rows={2} value={verification.beneficiaryDetails ?? ""} onChange={(e) => setV("beneficiaryDetails", e.target.value)} />
               </Field>
               <Field label="Why can't you buy this yourself?">
                 <Textarea rows={3} value={verification.reasonCannotBuy ?? ""} onChange={(e) => setV("reasonCannotBuy", e.target.value)} />
@@ -726,19 +721,14 @@ function NewRequestForm() {
 
           {tier === "TIER_3_HIGH_VALUE" && (
             <>
-              <div className="grid grid-cols-2 gap-5">
-                <Field label="Family size">
-                  <Input type="number" min={1} value={verification.familySize ?? ""} onChange={(e) => setV("familySize", Number(e.target.value))} className="h-11" />
-                </Field>
-                <Field label="Number of earners">
-                  <Input type="number" min={0} value={verification.numberOfEarners ?? ""} onChange={(e) => setV("numberOfEarners", Number(e.target.value))} className="h-11" />
-                </Field>
-              </div>
+              {/* "Family size" removed — same question as "How many people live in your
+                  home?" above, kept in sync automatically there. "Number of earners" also
+                  removed — derived from household size minus dependents above, rather than
+                  asked separately (donees could otherwise enter numbers that don't add up).
+                  "Medical condition / disability" folded into "Who is this item for?" above
+                  — donees were repeating the same detail across both fields. */}
               <Field label="Income source" hint="e.g. 'daily labour — ₹300/day'">
                 <Input value={verification.incomeSource ?? ""} onChange={(e) => setV("incomeSource", e.target.value)} className="h-11" />
-              </Field>
-              <Field label="Medical condition / disability" hint="Describe the diagnosed condition that necessitates this item, if applicable">
-                <Textarea rows={2} value={verification.medicalCondition ?? ""} onChange={(e) => setV("medicalCondition", e.target.value)} />
               </Field>
               <div className="grid grid-cols-2 gap-5">
                 <Field label="Reference person name" hint="Doctor / NGO worker / social worker who wrote your reference letter">
@@ -807,55 +797,27 @@ function NewRequestForm() {
       <div className="rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-4 flex items-start gap-3">
         <Lock className="w-4 h-4 text-[#1e3a60] mt-0.5 shrink-0" />
         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
-          Your Aadhaar number and documents are encrypted and visible only to CauseKind admins for verification — never to donors or other users.
+          Your documents are stored securely and visible only to CauseKind admins for verification — never to donors or other users.
         </p>
       </div>
-
-      {tier !== "TIER_4_EMERGENCY" && (
-        <Field
-          label="Aadhaar Number"
-          required
-          error={fieldErrors.aadhaar}
-          hint={aadhaarSaved ? "Already on file from your account — no need to re-enter" : "12 digits, no spaces"}
-        >
-          <div className="flex gap-2">
-            <Input
-              value={aadhaarSaved && aadhaarLast4 ? `XXXX XXXX ${aadhaarLast4}` : aadhaarNumber}
-              onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, "").slice(0, 12))}
-              placeholder="123456789012" maxLength={14} className="h-11 flex-1" disabled={aadhaarSaved} />
-            {aadhaarSaved ? (
-              <>
-                <span className="h-11 px-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/20 dark:border-green-700 text-green-600 dark:text-green-400 text-sm font-bold flex items-center gap-1.5 shrink-0">
-                  <CheckCircle2 className="w-4 h-4" /> Saved
-                </span>
-                <button type="button" onClick={() => { setAadhaarSaved(false); setAadhaarNumber(""); }}
-                  className="h-11 px-4 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 text-sm font-bold hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shrink-0">
-                  Change
-                </button>
-              </>
-            ) : (
-              <>
-                <button type="button" onClick={handleSaveAadhaar} disabled={savingAadhaar || aadhaarNumber.length !== 12}
-                  className="h-11 px-4 rounded-lg border border-[#b04a15]/40 text-[#b04a15] text-sm font-bold hover:bg-[#b04a15]/5 disabled:opacity-50 transition-colors shrink-0">
-                  {savingAadhaar ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
-                </button>
-                {aadhaarLast4 && (
-                  <button type="button" onClick={() => { setAadhaarSaved(true); setAadhaarNumber(""); }}
-                    className="h-11 px-4 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 text-sm font-bold hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shrink-0">
-                    Cancel
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        </Field>
-      )}
 
       <div className="space-y-3">
         <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Required Documents</p>
         {REQUIRED_DOCS[tier].map((d) => (
-          <DocSlot key={d.type} label={d.label} uploaded={uploadedDocs.has(d.type)}
-            uploading={uploadingDoc === d.type} onUpload={(f) => handleDocUpload(d.type, f)} />
+          <div key={d.type} className="space-y-2">
+            <DocSlot
+              label={d.label}
+              required={MANDATORY_DOC_TYPES[tier].includes(d.type)}
+              uploaded={uploadedDocs.has(d.type)}
+              uploading={uploadingDoc === d.type}
+              onUpload={(f) => handleDocUpload(d.type, f)}
+            />
+            {d.type === "RESIDENCE_PROOF" && !uploadedDocs.has(d.type) && (
+              <p className="text-xs text-stone-400 pl-1">
+                Anything works as long as it shows your residential address — a utility bill, rental agreement, ration card, voter ID, or bank statement are all fine.
+              </p>
+            )}
+          </div>
         ))}
         {fieldErrors.documents && <p className="text-xs text-[#b04a15] font-semibold">{fieldErrors.documents}</p>}
       </div>
@@ -951,7 +913,7 @@ function NewRequestForm() {
           <div className="space-y-2.5 mt-auto">
             {[
               { icon: Shield, title: "Privacy First", desc: "Your need stays private unless it must go public" },
-              { icon: Lock, title: "Aadhaar Encrypted", desc: "Admin-only, never shown to other users" },
+              { icon: Lock, title: "Documents Secured", desc: "Admin-only, never shown to other users" },
               { icon: Award, title: "Donation Certificate", desc: "Official record once fulfilled" },
             ].map((b) => {
               const Icon = b.icon;

@@ -5,7 +5,7 @@ import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
   adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest,
   adminGetItemRequestVerification, adminUpdateChecklistItem, adminOverrideTier,
-  adminHoldItemRequest, adminResumeItemRequestReview, adminRevealAadhaar,
+  adminHoldItemRequest, adminResumeItemRequestReview,
   type ItemRequest, type AdminRequestVerificationDetail,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
@@ -13,7 +13,7 @@ import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import {
   Check, X, ChevronDown, ChevronUp, Clock, User, FileText, Gauge,
-  AlertTriangle, Loader2, ShieldCheck, Lock, Pause, Play, ListChecks, Eye, EyeOff, ExternalLink, Sparkles,
+  AlertTriangle, Loader2, ShieldCheck, Pause, Play, ListChecks, ExternalLink, Sparkles,
 } from "lucide-react";
 
 const TIERS = [
@@ -402,60 +402,22 @@ function VerificationDetail({
   const checklistDone = detail.checklist.length > 0 && detail.checklist.every((i) => i.status === "PASS");
   const checklistFailed = detail.checklist.some((i) => i.status === "FAIL");
 
-  // Deliberately local-only, never persisted: cleared the instant this card collapses
-  // (this component unmounts) since expanded is a single id, not a set — see the parent.
-  const [revealedAadhaar, setRevealedAadhaar] = useState<string | null>(null);
-  const [revealing, setRevealing] = useState(false);
-
-  async function handleRevealAadhaar() {
-    if (revealedAadhaar) { setRevealedAadhaar(null); return; } // toggle off — re-hide
-    setRevealing(true);
-    try {
-      const { aadhaarNumber } = await adminRevealAadhaar(request.doneeId);
-      setRevealedAadhaar(aadhaarNumber);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to reveal Aadhaar number");
-    } finally {
-      setRevealing(false);
-    }
-  }
-
   return (
     <>
-      {/* Tier + Aadhaar summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs space-y-1.5 border border-stone-100 dark:border-zinc-700">
-          <p className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1"><Gauge className="w-3 h-3" /> Tier & Timing</p>
-          <p>{TIER_LABELS[detail.tier ?? ""] ?? detail.tier ?? "—"}</p>
-          {detail.tierOverriddenBy && <p className="text-stone-400">Overridden by {detail.tierOverriddenBy}: {detail.tierOverrideReason}</p>}
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {TIERS.filter((t) => t.key !== "ALL" && t.key !== detail.tier).map((t) => (
-              <button key={t.key} onClick={() => onOverrideTier(t.key)}
-                className="text-[10px] font-semibold px-2 py-1 rounded-lg border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-[#b04a15] hover:text-[#b04a15]">
-                → {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs space-y-1 border border-stone-100 dark:border-zinc-700">
-          <p className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1"><Lock className="w-3 h-3" /> Identity (admin-only)</p>
-          {detail.doneeAadhaarOnFile ? (
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-mono">
-                {revealedAadhaar ?? `•••• •••• ${detail.doneeAadhaarLast4}`}
-              </p>
-              <button onClick={handleRevealAadhaar} disabled={revealing}
-                className="shrink-0 flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-[#b04a15] hover:text-[#b04a15] disabled:opacity-50">
-                {revealing ? <Loader2 className="w-3 h-3 animate-spin" /> : revealedAadhaar ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                {revealedAadhaar ? "Hide" : "Reveal"}
-              </button>
-            </div>
-          ) : (
-            <p className="text-amber-600 font-semibold">No Aadhaar on file yet</p>
-          )}
-          {revealedAadhaar && (
-            <p className="text-[10px] text-stone-400">This reveal has been logged for audit purposes.</p>
-          )}
+      {/* Tier & Timing summary — full-width now that the Aadhaar reveal card is gone.
+          The uploaded residence-proof document itself is still visible below via the
+          generic "Supporting documents" PhotoStrip section. */}
+      <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs space-y-1.5 border border-stone-100 dark:border-zinc-700">
+        <p className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1"><Gauge className="w-3 h-3" /> Tier & Timing</p>
+        <p>{TIER_LABELS[detail.tier ?? ""] ?? detail.tier ?? "—"}</p>
+        {detail.tierOverriddenBy && <p className="text-stone-400">Overridden by {detail.tierOverriddenBy}: {detail.tierOverrideReason}</p>}
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {TIERS.filter((t) => t.key !== "ALL" && t.key !== detail.tier).map((t) => (
+            <button key={t.key} onClick={() => onOverrideTier(t.key)}
+              className="text-[10px] font-semibold px-2 py-1 rounded-lg border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-[#b04a15] hover:text-[#b04a15]">
+              → {t.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -618,9 +580,15 @@ function VerificationFormGrid({ v, isEmergency }: { v: NonNullable<AdminRequestV
     ["Supporting institution", v.supportingInstitution],
     ["Monthly income", v.monthlyIncome],
     ["Landlord contact", v.landlordNameContact],
-    ["Family size", v.familySize],
+    // "Family size" dropped from display (2026-07-20) — same question as "Household
+    // size" above, kept in sync automatically now instead of asked twice.
+    // "Number of earners" is now derived (household size − dependents) rather than
+    // asked separately, but still shown here since it's still meaningful to admins.
     ["Number of earners", v.numberOfEarners],
     ["Income source", v.incomeSource],
+    // Form no longer collects this separately (2026-07-20, folded into "Beneficiary"
+    // above) — kept here since the grid below hides empty rows automatically, so this
+    // still surfaces the value on older submissions without adding an empty row on new ones.
     ["Medical condition", v.medicalCondition],
     ["Referrer", v.referrerName ? `${v.referrerName} (${v.referrerContact ?? "no phone"})` : null],
     ["Alt. contact", v.altContactName ? `${v.altContactName} (${v.altContactPhone ?? "no phone"})` : null],

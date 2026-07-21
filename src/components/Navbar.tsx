@@ -296,17 +296,29 @@ export function SiteHeader() {
   useEffect(() => {
     const html = window.document.documentElement;
     const body = window.document.body;
-    if (isSidebarOpen) {
-      html.classList.add("mobile-menu-open");
-      body.classList.add("mobile-menu-open");
-    } else {
-      html.classList.remove("mobile-menu-open");
-      body.classList.remove("mobile-menu-open");
-    }
     window.dispatchEvent(new CustomEvent("ck-mobile-menu-toggle", { detail: { open: isSidebarOpen } }));
+
+    if (!isSidebarOpen) return;
+
+    // Plain `overflow: hidden` doesn't stop touch-drag scrolling on iOS Safari —
+    // pinning the body with `position: fixed` (and restoring the exact scroll
+    // offset on close) is the reliable cross-browser lock. Scroll position is
+    // captured in this closure so the cleanup below always restores the right
+    // spot, regardless of what happened to body.style in between.
+    const scrollY = window.scrollY;
+    html.classList.add("mobile-menu-open");
+    body.classList.add("mobile-menu-open");
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+
     return () => {
       html.classList.remove("mobile-menu-open");
       body.classList.remove("mobile-menu-open");
+      body.style.position = "";
+      body.style.top = "";
+      body.style.width = "";
+      window.scrollTo(0, scrollY);
     };
   }, [isSidebarOpen]);
 
@@ -799,8 +811,10 @@ export function SiteHeader() {
                       </>
                     )}
 
-                    {/* Language Switcher row */}
-                    <div className="relative w-full flex items-center justify-between py-2 px-1">
+                    {/* Language Switcher row — same py-2.5/px-3 rhythm as Dashboard/My
+                        Profile/Take the tour above so its icon+label sit in the same
+                        column instead of drifting left. */}
+                    <div className="relative w-full flex items-center justify-between py-2.5 px-3">
                       <div className="flex items-center gap-3.5">
                         <Globe className="w-5.5 h-5.5 shrink-0 text-stone-400" />
                         <span className="text-[15px] text-stone-500 dark:text-stone-400 font-medium">Language</span>

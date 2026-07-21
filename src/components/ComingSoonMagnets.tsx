@@ -10,16 +10,6 @@ const INK        = "#1e3a60";
 const GOLD       = "#f0b97a";
 const CREAM      = "#faf8f5";
 
-function HeartSprout({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
-      <path d="M12 21.5C7.5 18 4.5 14.5 4.5 10.5C4.5 7.5 6.5 5.5 9.5 5.5C10.8 5.5 11.6 6 12 6.5C12.4 6 13.2 5.5 14.5 5.5C17.5 5.5 19.5 7.5 19.5 10.5C19.5 14.5 16.5 18 12 21.5Z"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 18V9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function TapeAccent({ color }: { color: string }) {
   return (
     <div aria-hidden="true" style={{
@@ -46,13 +36,13 @@ function Stamp() {
   );
 }
 
-function PosterFace({ gradient, title }: { gradient: string; title: string }) {
+function PosterFace({ gradient, title, Illustration }: { gradient: string; title: string; Illustration: React.ComponentType }) {
   return (
     <div style={{
       position: "relative", width: "100%", height: "100%", background: gradient,
       borderRadius: "inherit", display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center", gap: "12px",
-      padding: "28px 20px 20px", overflow: "hidden",
+      alignItems: "center", justifyContent: "center", gap: "8px",
+      padding: "24px 16px 20px", overflow: "hidden",
     }}>
       <div aria-hidden="true" style={{
         position: "absolute", inset: 0,
@@ -60,7 +50,11 @@ function PosterFace({ gradient, title }: { gradient: string; title: string }) {
         pointerEvents: "none",
       }} />
       <Stamp />
-      <HeartSprout className="w-10 h-10" style={{ color: GOLD, opacity: 0.85 }} />
+      {/* Same bespoke line-art scene shown inside the modal — a real illustration
+          rather than a stock heart glyph floating in a colored square. */}
+      <div style={{ width: "104px", height: "78px", opacity: 0.95 }}>
+        <Illustration />
+      </div>
       <p style={{
         margin: 0, color: CREAM, fontWeight: 800,
         fontSize: "clamp(15px, 4vw, 18px)", textAlign: "center" as const,
@@ -502,7 +496,7 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
     >
       <TapeAccent color={card.tapeColor} />
       <div style={{ width: "100%", height: "100%", borderRadius: "14px", overflow: "hidden", border: "2px solid rgba(255,255,255,0.18)" }}>
-        <PosterFace gradient={card.gradient} title={card.title} />
+        <PosterFace gradient={card.gradient} title={card.title} Illustration={CARD_DETAILS[idx].Illustration} />
       </div>
       {/* Ripple rings — two staggered rings per card for a continuous, smooth pulse */}
       {!reducedMotion && [0, 1].map((n) => (
