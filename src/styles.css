@@ -1352,6 +1352,15 @@ section:focus-within {
   }
 }
 
+/* Lock the page's own scroll while the workspace drawer is open — otherwise the
+   background page still scrolls underneath the (visually blurred) drawer. The
+   drawer's own content area keeps its `overflow-y-auto` scroll independently. */
+html.mobile-menu-open,
+body.mobile-menu-open {
+  overflow: hidden;
+  height: 100%;
+}
+
 /* ── Floating Support Button Mobile Menu Animation ── */
 .floating-support-item {
   transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, border-color 0.2s, background-color 0.2s, color 0.2s;
@@ -1536,18 +1545,6 @@ section:focus-within {
   from { transform: translateX(-60px); opacity: 0; }
   to   { transform: translateX(0);     opacity: 1; }
 }
-@keyframes auth-panel-slide-enter-left {
-  from { transform: translateX(60px);  opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
-}
-@keyframes auth-form-fade-in {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.auth-panel-from-left  { animation: auth-panel-slide-enter-right 0.7s cubic-bezier(0.16,1,0.3,1) both; }
-.auth-panel-from-right { animation: auth-panel-slide-enter-left  0.7s cubic-bezier(0.16,1,0.3,1) both; }
-.auth-form-appear      { animation: auth-form-fade-in 0.6s cubic-bezier(0.16,1,0.3,1) 0.15s both; }
-
 /* ── Masonry in-kind card hover lift ── */
 @keyframes inkind-card-float {
   0%, 100% { transform: translateY(0); }

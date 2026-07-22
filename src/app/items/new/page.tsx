@@ -9,6 +9,7 @@ import {
   updateItemListingDraft,
   submitItemListing,
   uploadListingImage,
+  analyzeListingImages,
   getProfile,
   type CreateListingPayload,
 } from "@/lib/api";
@@ -18,23 +19,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Loader2, ImagePlus, X, MapPin, ChevronRight, ChevronLeft, CheckCircle2, Circle, Shield, Award, Package, Lock, Info, Ban, ListChecks } from "lucide-react";
+import { Loader2, ImagePlus, X, MapPin, ChevronRight, ChevronLeft, CheckCircle2, Circle, Shield, Award, Package, Lock, Info, Ban, ListChecks, Sparkles, RefreshCw } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
+import { DONOR_LISTING_CATEGORIES as CATEGORIES, ITEM_SUBCATEGORIES as SUBCATEGORIES } from "@/lib/categoryVisuals";
 
 // ── Constants ────────────────────────────────────────────────────────────────
-
-const CATEGORIES = ["Education", "Clothing", "Furniture", "Electronics", "Household", "Sports", "Medical aid"];
-
-const SUBCATEGORIES: Record<string, string[]> = {
-  Education:    ["Books", "Stationery", "School Bags", "Educational Toys", "Uniforms", "Other"],
-  Clothing:     ["Men's", "Women's", "Children's", "Baby & Infant", "Footwear", "Accessories"],
-  Furniture:    ["Chairs", "Tables", "Beds", "Sofas", "Wardrobes", "Storage", "Other"],
-  Electronics:  ["Phones", "Laptops", "Tablets", "TVs", "Kitchen Appliances", "Accessories", "Other"],
-  Household:    ["Cookware", "Utensils", "Bedding", "Curtains", "Cleaning Equipment", "Other"],
-  Sports:       ["Fitness Equipment", "Outdoor Sports", "Indoor Sports", "Cycling", "Other"],
-  "Medical aid":["Wheelchair", "Crutches / Walker", "Hospital Bed", "Medical Device", "Mobility Aid", "Other"],
-};
 
 const CONDITIONS = ["Unused", "Like New", "Good", "Fair", "Needs Minor Repair", "Not Working"];
 const AGE_RANGES  = ["Less than 1 year", "1–3 years", "3–5 years", "5–10 years", "10+ years", "Unknown"];
@@ -61,10 +51,12 @@ const NEEDS_DIMENSIONS     = ["Furniture", "Clothing", "Medical aid", "Tools & E
 // Step 3 (Location & Delivery) removed 2026-07-15: pickup scheduling now happens
 // post-match in the Handover Hub, and item location defaults from the donor's
 // profile — confirmed via a compact editable block on the final step.
+// Photos folded into step 1 (2026-07-20): the donor uploads photos FIRST, thing,
+// and Claude vision auto-fills the rest of this same step from them (donor can
+// edit every suggested field before continuing) — no more separate photo step.
 const STEPS = [
-  { id: 1, label: "Item Details", sub: "What are you giving?" },
-  { id: 2, label: "Photos",       sub: "Show what you have" },
-  { id: 3, label: "Declarations", sub: "Location & confirmation" },
+  { id: 1, label: "Item Details", sub: "Photos + what you're giving" },
+  { id: 2, label: "Declarations", sub: "Location & confirmation" },
 ];
 
 const TRUST_BADGES = [
@@ -151,10 +143,18 @@ export default function NewItemPage() {
   const [weight, setWeight]                 = useState("");
   const [description, setDescription]       = useState("");
 
-  // Step 2
+  // Photos — now collected at the top of Step 1
   const [photos, setPhotos]         = useState<string[]>([]);
   const [photoBlobs, setPhotoBlobs] = useState<string[]>([]);
   const photoInputRef               = useRef<HTMLInputElement>(null);
+
+  // AI photo analysis (Claude vision) — auto-fills the fields below from the
+  // photos, but every field stays fully editable; ran-once guard so re-adding
+  // photos later doesn't silently overwrite fields the donor already edited.
+  const [analyzing, setAnalyzing]         = useState(false);
+  const [aiRan, setAiRan]                 = useState(false);
+  const [uncertainFields, setUncertainFields] = useState<string[]>([]);
+  const [aiUnavailableNote, setAiUnavailableNote] = useState<string | null>(null);
 
   // Step 3
   const [countryIso, setCountryIso]     = useState("IN");
@@ -268,6 +268,7 @@ export default function NewItemPage() {
   function validateStep(s: number): boolean {
     const e: Record<string, string> = {};
     if (s === 1) {
+      if (photos.length < 2) e.photos = "At least 2 photos are required";
       if (!category) e.category = "Category is required";
       if (!title.trim()) e.title = "Item title is required";
       if (quantity < 1) e.quantity = "Quantity must be at least 1";
@@ -277,8 +278,7 @@ export default function NewItemPage() {
       if (!description || description.length < 30) e.description = `Must be at least 30 characters (currently ${description.length})`;
       if (NEEDS_WORKING_STATUS.includes(category) && !workingStatus) e.workingStatus = "Working status is required";
     }
-    if (s === 2) { if (photos.length < 2) e.photos = "At least 2 photos are required"; }
-    if (s === 3) {
+    if (s === 2) {
       const city = showCityFreeText ? cityFreeText : cityValue;
       if (!city) e.city = "City is required";
       if (!pincode) e.pincode = "PIN code is required";
@@ -294,7 +294,7 @@ export default function NewItemPage() {
     spawnParticles();
     setAnimDir("forward");
     setIsAnimating(true);
-    setTimeout(() => { setStep((s) => Math.min(s + 1, 3)); setIsAnimating(false); window.scrollTo({ top: 0, behavior: "smooth" }); }, 380);
+    setTimeout(() => { setStep((s) => Math.min(s + 1, 2)); setIsAnimating(false); window.scrollTo({ top: 0, behavior: "smooth" }); }, 380);
   }
 
   function handleBack() {
@@ -305,7 +305,7 @@ export default function NewItemPage() {
   }
 
   async function handleSubmit() {
-    if (!validateStep(3)) { toast.error("Please fix the highlighted fields"); return; }
+    if (!validateStep(2)) { toast.error("Please fix the highlighted fields"); return; }
     setSubmitting(true);
     try {
       let id = draftId;
@@ -372,14 +372,57 @@ export default function NewItemPage() {
     try {
       blobUrls = selected.map((f) => URL.createObjectURL(f));
       const urls = await Promise.all(selected.map((f) => uploadListingImage(f)));
-      setPhotos((prev) => [...prev, ...urls].slice(0, 5));
+      const allPhotos = [...photos, ...urls].slice(0, 5);
+      setPhotos(allPhotos);
       setPhotoBlobs((prev) => [...prev, ...blobUrls].slice(0, 5));
       toast.success(selected.length === 1 ? "Photo uploaded" : `${selected.length} photos uploaded`);
+      // Auto-run once, right after the first successful upload — before the donor
+      // has typed anything, so there's nothing yet for the AI's suggestions to clobber.
+      if (!aiRan) runAiAnalysis(allPhotos);
     } catch {
       blobUrls.forEach((u) => URL.revokeObjectURL(u));
       toast.error("Image upload failed. Please try again.");
     }
     finally { setImageUploading(false); }
+  }
+
+  /** Only fills a field if it's still at its untouched/empty default — never
+   *  overwrites something the donor already typed or picked themselves. */
+  async function runAiAnalysis(urls: string[]) {
+    if (!urls.length) return;
+    setAiRan(true);
+    setAnalyzing(true);
+    setAiUnavailableNote(null);
+    try {
+      const r = await analyzeListingImages(urls);
+      if (!r.aiAvailable) {
+        setAiUnavailableNote(r.note ?? "AI photo analysis isn't available right now — please fill in the details manually.");
+        return;
+      }
+      // Backend already validates subcategory against its returned category's own
+      // whitelist, so these two are guaranteed consistent with each other.
+      if (r.category && !category) setCategory(r.category);
+      if (r.subcategory && !subcategory) setSubcategory(r.subcategory);
+      if (r.title && !title) setTitle(r.title);
+      if (r.brand && !brand) setBrand(r.brand);
+      if (r.model && !model) setModel(r.model);
+      if (r.condition && !condition) setCondition(r.condition);
+      if (r.workingStatus && !workingStatus) setWorkingStatus(r.workingStatus);
+      if (r.approximateAge && !approximateAge) setApproximateAge(r.approximateAge);
+      if (r.knownDefects && !knownDefects && !noDefects) {
+        if (r.knownDefects === "NONE") setNoDefects(true);
+        else setKnownDefects(r.knownDefects);
+      }
+      if (r.dimensions && !dimensions) setDimensions(r.dimensions);
+      if (r.approximateWeight && !weight) setWeight(r.approximateWeight);
+      if (r.description && !description) setDescription(r.description);
+      setUncertainFields(r.uncertainFields ?? []);
+      toast.success("Details filled in from your photos — please review before continuing.");
+    } catch {
+      setAiUnavailableNote("AI photo analysis failed — please fill in the details manually.");
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   function removePhoto(idx: number) {
@@ -398,6 +441,87 @@ export default function NewItemPage() {
   // ── Step 1 ────────────────────────────────────────────────────────────────
   const step1 = (
     <div className="space-y-6">
+      {/* Photos come first — Claude vision analyzes them right after upload and
+          suggests the fields below, which stay fully editable either way. */}
+      <div className="rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-4">
+        <p className="text-xs font-black text-[#1e3a60] uppercase tracking-widest mb-2">Photos — Minimum 2 Required</p>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-stone-500">
+          {["Front view of the item", "Full or side view", "Visible defects or damage", "No faces, documents, phone numbers"].map((g) => (
+            <div key={g} className="flex items-start gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#e07b3a] mt-1 shrink-0" />
+              <span>{g}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoAdd} />
+
+      <div className="grid grid-cols-3 gap-3">
+        {photos.map((p, i) => (
+          <div key={i} className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-stone-200 bg-stone-100 dark:bg-zinc-800 shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photoBlobs[i] ?? p} alt={`Photo ${i + 1}`} className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
+            <button type="button" onClick={() => removePhoto(i)}
+              className="absolute top-2 right-2 rounded-full bg-[#b04a15] p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+              <X className="w-3 h-3" />
+            </button>
+            {i === 0 && (
+              <span className="absolute bottom-2 left-2 text-[9px] bg-[#1e3a60] text-white rounded-full px-2 py-0.5 font-black tracking-wider">MAIN</span>
+            )}
+          </div>
+        ))}
+        {photos.length < 5 && (
+          <button type="button" onClick={() => photoInputRef.current?.click()} disabled={imageUploading}
+            className="aspect-square rounded-2xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400
+              hover:border-[#b04a15] hover:text-[#b04a15] transition-all hover:bg-[#b04a15]/4 group">
+            {imageUploading ? <Loader2 className="w-7 h-7 animate-spin" /> : <ImagePlus className="w-7 h-7 group-hover:scale-110 transition-transform" />}
+            <span className="text-xs font-bold">{imageUploading ? "Uploading…" : photos.length === 0 ? "Add Photos" : "Add More"}</span>
+            <span className="text-[10px] font-semibold text-stone-300">{photos.length}/5</span>
+          </button>
+        )}
+      </div>
+
+      {fieldErrors.photos && <p className="text-sm text-[#b04a15] font-bold">{fieldErrors.photos}</p>}
+      {!fieldErrors.photos && photos.length < 2 && (
+        <div className="flex items-center gap-2 text-sm text-amber-600 font-semibold">
+          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          {photos.length === 0 ? "Please add at least 2 photos to continue." : "Add 1 more photo (minimum 2 required)."}
+        </div>
+      )}
+
+      {/* AI analysis status */}
+      {analyzing && (
+        <div className="flex items-center gap-2.5 rounded-2xl bg-[#b04a15]/8 border border-[#b04a15]/20 px-4 py-3 text-sm font-bold text-[#b04a15]">
+          <Sparkles className="w-4 h-4 animate-pulse shrink-0" />
+          Analyzing your photos with AI — filling in the details below…
+        </div>
+      )}
+      {!analyzing && aiRan && !aiUnavailableNote && (
+        <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 space-y-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-400">
+              <Sparkles className="w-4 h-4 shrink-0" /> Filled in from your photos — please review before continuing
+            </p>
+            <button type="button" onClick={() => runAiAnalysis(photos)}
+              className="flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0">
+              <RefreshCw className="w-3 h-3" /> Re-analyze
+            </button>
+          </div>
+          {uncertainFields.length > 0 && (
+            <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">
+              Double-check: <span className="font-bold">{uncertainFields.join(", ")}</span> — AI wasn't fully confident here.
+            </p>
+          )}
+        </div>
+      )}
+      {!analyzing && aiUnavailableNote && (
+        <div className="flex items-center gap-2.5 rounded-2xl bg-stone-100 dark:bg-zinc-800 px-4 py-3 text-sm font-semibold text-stone-500 dark:text-stone-400">
+          <Info className="w-4 h-4 shrink-0" /> {aiUnavailableNote}
+        </div>
+      )}
+
       {/* Listing guidelines — click-to-open popover, stays open until dismissed */}
       <div className="flex justify-end -mt-2 -mb-2">
         <Popover>
@@ -540,59 +664,6 @@ export default function NewItemPage() {
           value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000}
           className={`${ie("description")} focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20`} />
       </Field>
-    </div>
-  );
-
-  // ── Step 2 ────────────────────────────────────────────────────────────────
-  const step2 = (
-    <div className="space-y-6">
-      <div className="rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-4">
-        <p className="text-xs font-black text-[#1e3a60] uppercase tracking-widest mb-2">Photo Guidelines — Minimum 2 Required</p>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-stone-500">
-          {["Front view of the item", "Full or side view", "Visible defects or damage", "No faces, documents, phone numbers"].map((g) => (
-            <div key={g} className="flex items-start gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#e07b3a] mt-1 shrink-0" />
-              <span>{g}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoAdd} />
-
-      <div className="grid grid-cols-3 gap-3">
-        {photos.map((p, i) => (
-          <div key={i} className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-stone-200 bg-stone-100 dark:bg-zinc-800 shadow-sm">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photoBlobs[i] ?? p} alt={`Photo ${i + 1}`} className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
-            <button type="button" onClick={() => removePhoto(i)}
-              className="absolute top-2 right-2 rounded-full bg-[#b04a15] p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-              <X className="w-3 h-3" />
-            </button>
-            {i === 0 && (
-              <span className="absolute bottom-2 left-2 text-[9px] bg-[#1e3a60] text-white rounded-full px-2 py-0.5 font-black tracking-wider">MAIN</span>
-            )}
-          </div>
-        ))}
-        {photos.length < 5 && (
-          <button type="button" onClick={() => photoInputRef.current?.click()} disabled={imageUploading}
-            className="aspect-square rounded-2xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400
-              hover:border-[#b04a15] hover:text-[#b04a15] transition-all hover:bg-[#b04a15]/4 group">
-            {imageUploading ? <Loader2 className="w-7 h-7 animate-spin" /> : <ImagePlus className="w-7 h-7 group-hover:scale-110 transition-transform" />}
-            <span className="text-xs font-bold">{imageUploading ? "Uploading…" : photos.length === 0 ? "Add Photos" : "Add More"}</span>
-            <span className="text-[10px] font-semibold text-stone-300">{photos.length}/5</span>
-          </button>
-        )}
-      </div>
-
-      {fieldErrors.photos && <p className="text-sm text-[#b04a15] font-bold">{fieldErrors.photos}</p>}
-      {!fieldErrors.photos && photos.length < 2 && (
-        <div className="flex items-center gap-2 text-sm text-amber-600 font-semibold">
-          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          {photos.length === 0 ? "Please add at least 2 photos to continue." : "Add 1 more photo (minimum 2 required)."}
-        </div>
-      )}
     </div>
   );
 
@@ -891,8 +962,7 @@ export default function NewItemPage() {
               boxShadow: "0 20px 60px -12px rgba(176,74,21,0.10), 0 4px 20px -4px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
             }}>
             {step === 1 && step1}
-            {step === 2 && step2}
-            {step === 3 && step4}
+            {step === 2 && step4}
           </div>
 
           {/* ── Navigation ── */}
@@ -907,7 +977,7 @@ export default function NewItemPage() {
 
             <div className="flex-1" />
 
-            {step < 3 ? (
+            {step < 2 ? (
               <button type="button" onClick={handleNext} disabled={saving}
                 className="flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-60 shadow-[0_6px_24px_rgba(176,74,21,0.35)] hover:shadow-[0_8px_32px_rgba(176,74,21,0.50)] hover:-translate-y-0.5"
                 style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}>

@@ -153,11 +153,10 @@ export function GlobalSearch() {
     <div
       className="fixed inset-0 z-[300] flex items-start justify-center pt-[10vh] px-4"
       onClick={e => { if (e.target === e.currentTarget) setOpen(false); }}
-      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
     >
       <div
-        className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-[#e5e2d5] dark:border-zinc-700"
-        style={{ animation: "fadeIn 0.15s ease forwards" }}
+        className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-[#e5e2d5] dark:border-zinc-700"
+        style={{ animation: "fadeIn 0.15s ease forwards", boxShadow: "0 24px 60px -12px rgba(28,25,23,0.35), 0 0 0 1px rgba(28,25,23,0.04)" }}
       >
         {/* Search input row */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-stone-100 dark:border-zinc-800">

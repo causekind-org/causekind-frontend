@@ -730,7 +730,7 @@ export default function AdminDashboardPage() {
           {tab === "offers" && <OffersQueuePanel />}
 
           {/* ── REQUESTS TAB — merged with Donee Verification: the tiered verification
-                 queue (checklist, SLA, hold, Aadhaar reveal) is the single review path,
+                 queue (checklist, SLA, hold, documents) is the single review path,
                  so high-value requests can't be approved past the checklist. Same panel
                  as the standalone /admin/verifications page. ── */}
           {tab === "requests" && <VerificationQueuePanel />}

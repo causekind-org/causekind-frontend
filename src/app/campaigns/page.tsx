@@ -17,22 +17,9 @@ import {
   HeartHandshake, SearchX, SlidersHorizontal, X, ChevronDown,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { CAMPAIGN_CATEGORIES as ALL_CATEGORIES, CAMPAIGN_CATEGORY_IMAGES as CATEGORY_IMAGES } from "@/lib/campaignCategories";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-const CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:         ["/images/medical-1.webp", "/images/medical-2.webp"],
-  Education:       ["/images/hero-7.webp"],
-  Livelihood:      ["/images/hero-3.webp"],
-  Community:       ["/images/hero-6.webp"],
-  "Animal Welfare":["/images/hero-5.webp"],
-  Environment:     ["/images/hero-8.webp"],
-};
-
-const ALL_CATEGORIES = [
-  "Medical", "Education", "Disaster Relief",
-  "Animal Welfare", "Environment", "Community", "Other",
-];
 
 const SORT_OPTIONS = [
   { value: "urgent"  as const, label: "Urgent Needs"  },

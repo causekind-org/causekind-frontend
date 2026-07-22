@@ -11,15 +11,9 @@ import { MapPin, Target, TrendingUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { CAMPAIGN_CATEGORY_IMAGES as CATEGORY_IMAGES } from "@/lib/campaignCategories";
 
 type Props = { campaign: Campaign };
-
-const CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
-  Education:  ["/images/hero-7.webp"],
-  Livelihood: ["/images/hero-3.webp"],
-  Community:  ["/images/hero-6.webp"],
-};
 
 function getCardImage(category: string, id: number): string {
   const imgs = CATEGORY_IMAGES[category];

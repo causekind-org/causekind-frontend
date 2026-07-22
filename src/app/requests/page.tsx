@@ -23,14 +23,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DoneeRequestsPage } from "./donee-view";
+import { ALL_REQUEST_CATEGORIES as ITEM_REQ_CATEGORIES } from "@/lib/categoryVisuals";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-
-// Kept symmetric with donor listing categories — see src/lib/categoryVisuals.ts.
-const ITEM_REQ_CATEGORIES = [
-  "Medical aid", "Education", "Livelihood", "Relief", "Household",
-  "Furniture", "Clothing", "Electronics", "Sports",
-];
 
 const URGENCY_LEVELS = [
   { value: "CRITICAL", label: "Critical",  dot: "bg-red-500"    },

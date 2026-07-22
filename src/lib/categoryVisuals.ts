@@ -11,6 +11,27 @@ export const ALL_REQUEST_CATEGORIES = [
   "Furniture", "Clothing", "Electronics", "Sports",
 ];
 
+// Donor item-listing categories are ALL_REQUEST_CATEGORIES minus the two
+// request-only need-framings (Livelihood/Relief have no matching physical-item
+// listing category — see MatchingEngineService). Single source for the
+// donate/edit-listing forms so they can't drift from the request-side list.
+export const DONOR_LISTING_CATEGORIES = ALL_REQUEST_CATEGORIES.filter(
+  (c) => c !== "Livelihood" && c !== "Relief"
+);
+
+// Subcategory options per donor listing category — shared by the item-listing
+// create/edit forms. Mirrored by hand on the backend in ListingVisionService
+// (Java can't import this file) — keep both in sync if this changes.
+export const ITEM_SUBCATEGORIES: Record<string, string[]> = {
+  Education:    ["Books", "Stationery", "School Bags", "Educational Toys", "Uniforms", "Other"],
+  Clothing:     ["Men's", "Women's", "Children's", "Baby & Infant", "Footwear", "Accessories"],
+  Furniture:    ["Chairs", "Tables", "Beds", "Sofas", "Wardrobes", "Storage", "Other"],
+  Electronics:  ["Phones", "Laptops", "Tablets", "TVs", "Kitchen Appliances", "Accessories", "Other"],
+  Household:    ["Cookware", "Utensils", "Bedding", "Curtains", "Cleaning Equipment", "Other"],
+  Sports:       ["Fitness Equipment", "Outdoor Sports", "Indoor Sports", "Cycling", "Other"],
+  "Medical aid":["Wheelchair", "Crutches / Walker", "Hospital Bed", "Medical Device", "Mobility Aid", "Other"],
+};
+
 export type CategoryVisual = {
   Icon: LucideIcon;
   text: string;

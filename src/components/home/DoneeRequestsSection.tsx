@@ -119,53 +119,61 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
           </div>
         </Reveal>
 
-        {/* ── The board ── */}
+        {/* ── The board — an editorial notice list, not a boxed card. Hierarchy comes
+               from the rule beneath the masthead, per-row left accents and dividers,
+               not from a white panel sitting on top of the page. ── */}
         <Reveal delay={120}>
-          <div className="rounded-[2rem] border border-[#b04a15]/15 dark:border-[#e07b3a]/20 bg-white/80 dark:bg-zinc-900/70 backdrop-blur-sm shadow-xl shadow-[#b04a15]/5 overflow-hidden">
-            {/* Board top accent */}
-            <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #b04a15, #e07b3a 45%, #f0b97a)" }} />
+          <div className="h-px w-full mb-2" style={{ background: "linear-gradient(90deg, #b04a15, #e07b3a 45%, transparent)" }} />
 
-            {openRequests.length > 0 && (
-              <div className="divide-y divide-stone-100 dark:divide-zinc-800 px-3 sm:px-5">
-                {openRequests.map((req, i) => (
-                  <NoticeRow key={req.id} request={req} index={i} onOpen={openRequest} />
-                ))}
-              </div>
-            )}
+          {openRequests.length > 0 && (
+            <div className="divide-y divide-stone-200/70 dark:divide-zinc-800">
+              {openRequests.map((req, i) => (
+                <NoticeRow key={req.id} request={req} index={i} onOpen={openRequest} />
+              ))}
+            </div>
+          )}
 
-            {/* Quiet categories — one strip, not eight empty sections */}
-            {quietCategories.length > 0 && (
-              <div className={`px-6 sm:px-8 py-6 ${openRequests.length > 0 ? "bg-stone-50/70 dark:bg-zinc-950/40 border-t border-stone-100 dark:border-zinc-800" : ""}`}>
-                <div className="flex items-center gap-2.5">
-                  <span className="relative flex items-center justify-center w-7 h-7 rounded-full bg-[#f0b97a]/20">
-                    <Bell className="h-3.5 w-3.5 text-[#b04a15] dark:text-[#e07b3a]" />
-                  </span>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-stone-500 dark:text-stone-400">Watching for you</p>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {quietCategories.map((cat, i) => {
-                    const col = CATEGORY_VISUALS[cat] ?? CATEGORY_VISUALS["Medical aid"];
-                    return (
-                      <motion.span
-                        key={cat}
-                        initial={{ opacity: 0, y: 8 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.35, delay: 0.04 * i }}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold ${CAT_TILE[cat] ?? "bg-stone-100"} ${col.text}`}
-                      >
-                        <col.Icon className="h-3.5 w-3.5" strokeWidth={2.2} />
-                        <TranslatedText text={cat} />
-                      </motion.span>
-                    );
-                  })}
-                </div>
-                <p className="mt-4 text-xs text-stone-400 dark:text-stone-500">
-                  Quiet right now &mdash; the moment a verified need is posted in any of these, you&apos;ll be the first to know.
-                </p>
+          {/* Quiet categories — one slim, non-interactive aside, not a wall of pills
+              pretending to be filter buttons (they aren't clickable — this is a
+              reassurance strip, not a browse tool; "Browse all requests" above
+              already owns that job). */}
+          {quietCategories.length > 0 && (
+            <div className={`py-6 ${openRequests.length > 0 ? "border-t border-stone-200/70 dark:border-zinc-800" : ""}`}>
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-[#f0b97a]/20">
+                  <Bell className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" />
+                </span>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-stone-500 dark:text-stone-400">Watching for you</p>
               </div>
-            )}
-          </div>
+
+              {/* Category names carry their own accent as a small solid dot, not an
+                  icon-in-circle avatar stack — a row of Lucide glyphs in tinted
+                  bubbles is exactly the kind of generic iconography that reads as
+                  templated/AI-made rather than something someone actually designed. */}
+              <motion.p
+                initial={{ opacity: 0, y: 6 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3 }}
+                className="mt-3 text-xs font-bold text-stone-500 dark:text-stone-400"
+              >
+                {quietCategories.map((cat, i) => {
+                  const col = CATEGORY_VISUALS[cat] ?? CATEGORY_VISUALS["Medical aid"];
+                  return (
+                    <span key={cat}>
+                      {i > 0 && (i === quietCategories.length - 1 ? " and " : ", ")}
+                      <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1.5 align-middle ${col.badge}`} aria-hidden="true" />
+                      <TranslatedText text={cat} />
+                    </span>
+                  );
+                })}
+              </motion.p>
+
+              <p className="mt-2.5 text-xs text-stone-400 dark:text-stone-500">
+                The moment a verified need is posted here, you&apos;ll be first to know.
+              </p>
+            </div>
+          )}
         </Reveal>
       </div>
     </section>
@@ -194,8 +202,8 @@ function NoticeRow({ request, index, onOpen }: {
       <button
         type="button"
         onClick={() => onOpen(request.id)}
-        className={`group w-full text-left flex items-center gap-4 sm:gap-5 px-3 sm:px-4 py-5 sm:py-6 rounded-2xl my-1.5 border-l-4 transition-all duration-200
-          hover:bg-[#faf8f5] dark:hover:bg-zinc-800/50 hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#b04a15]/5 motion-reduce:transform-none ${
+        className={`group w-full text-left flex items-center gap-4 sm:gap-5 py-5 sm:py-6 pl-4 sm:pl-5 pr-1 border-l-4 transition-colors duration-200
+          hover:bg-[#b04a15]/[0.03] dark:hover:bg-orange-500/[0.04] ${
           critical ? "border-red-500" : high ? "border-[#e07b3a]" : "border-transparent"}`}
       >
         {/* Category tile */}
