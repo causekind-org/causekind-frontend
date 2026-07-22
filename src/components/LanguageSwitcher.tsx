@@ -6,7 +6,7 @@ import { ChevronDown, Globe } from "lucide-react";
 import { LANGUAGE_OPTIONS } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) {
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>("en");
   const [open, setOpen] = useState(false);
@@ -55,7 +55,9 @@ export function LanguageSwitcher() {
       {open && (
         <div
           role="listbox"
-          className="absolute right-0 top-full mt-2 z-[9999] w-44 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden"
+          className={`absolute right-0 z-[9999] w-44 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden ${
+            dropUp ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
         >
           <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
             {LANGUAGE_OPTIONS.map(({ code, nativeName }) => (

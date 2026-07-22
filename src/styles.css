@@ -1354,11 +1354,27 @@ section:focus-within {
 
 /* Lock the page's own scroll while the workspace drawer is open — otherwise the
    background page still scrolls underneath the (visually blurred) drawer. The
-   drawer's own content area keeps its `overflow-y-auto` scroll independently. */
-html.mobile-menu-open,
-body.mobile-menu-open {
+   drawer's own content area keeps its `overflow-y-auto` scroll independently.
+
+   IMPORTANT: body must NOT get `height: 100%` here. Navbar.tsx sets
+   `body.style.position = 'fixed'` + `top: -scrollY` to hold the scroll
+   position. If body's height is clamped to one viewport (100%) while
+   `overflow: hidden` clips it, the ENTIRE document gets clipped down to a
+   single viewport-tall box — and once `top: -scrollY` shifts that box, at any
+   scroll position other than 0 the whole clipped box lands off-screen, so
+   NOTHING of the real page paints behind the menu (only the plain <html>
+   background shows through the blur). Body needs its natural full-document
+   height so the fixed+top offset correctly re-positions the whole page; only
+   `overflow: hidden` (which stops user scroll) is needed. Confirmed via
+   live Playwright inspection 2026-07-22 — body computed height was pinned to
+   one viewport (793.6px) and its rect sat entirely above the visible area at
+   scrollY=1400. */
+html.mobile-menu-open {
   overflow: hidden;
   height: 100%;
+}
+body.mobile-menu-open {
+  overflow: hidden;
 }
 
 /* ── Floating Support Button Mobile Menu Animation ── */
@@ -2151,6 +2167,50 @@ div:has(.searchable-select-open) {
 }
 .dark .glass-pill::after {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* ── Liquid-glass sheen: a slow, continuous specular light sweep that gives a
+   glass surface the sense of light refracting as it "flows" across it. Add the
+   .glass-liquid class to any rounded glass surface (the navbar capsule, the
+   active-link pill). The sheen sits at z-index:-1 inside an isolated stacking
+   context so it glides over the frosted background but behind the content, and
+   `overflow:hidden` keeps it clipped to the rounded shape. Respects
+   prefers-reduced-motion. ── */
+.glass-liquid {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.glass-liquid::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 62%
+  );
+  mix-blend-mode: screen;
+  animation: glass-liquid-sheen 7s ease-in-out infinite;
+}
+.dark .glass-liquid::before {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 62%
+  );
+}
+@keyframes glass-liquid-sheen {
+  0%   { transform: translateX(-55%); }
+  50%  { transform: translateX(55%); }
+  100% { transform: translateX(-55%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-liquid::before { animation: none; opacity: 0; }
 }
 
 /* ── 3D cursor-tracking tilt for glass icon buttons (pairs with useTilt hook) ──

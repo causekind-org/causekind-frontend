@@ -383,7 +383,7 @@ export default function HomeClient({
         )}
 
         {/* "Be the Change" feature cards */}
-        <BeTheChangeSection />
+        <BeTheChangeSection initialStats={stats} />
 
         {/* Donee requests, filtered by the donor's chosen focus areas — hidden for donees themselves */}
         {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={itemRequests} />}
@@ -519,7 +519,7 @@ export default function HomeClient({
         </section>
 
         {/* Be the Change */}
-        <BeTheChangeSection />
+        <BeTheChangeSection initialStats={stats} />
       </div>
     </div>
   );

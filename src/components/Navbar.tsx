@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+// @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
+import StaggeredMenu from "@/components/StaggeredMenu";
 import Link from "next/link";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -493,7 +495,7 @@ export function SiteHeader() {
           </Link>
 
           {/* Center navigation capsule */}
-          <nav className="hidden lg:flex items-center gap-1 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <nav className="glass-liquid hidden lg:flex items-center gap-1 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
             {navLinks.map((link) => {
               // FAQ and Contact live inside the "About Us" dropdown on desktop
               // instead of as separate pills — skip them here.
@@ -519,7 +521,7 @@ export function SiteHeader() {
                           <motion.span
                             layoutId="nav-glass-pill"
                             transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                            className="glass-pill absolute inset-0 rounded-full"
+                            className="glass-pill glass-liquid absolute inset-0 rounded-full"
                           />
                         )}
                         {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
@@ -605,308 +607,83 @@ export function SiteHeader() {
 
       </header>
 
-      {/* ── Unified Side Drawer — outside <header> to avoid backdrop-filter stacking context clipping ── */}
-      <AnimatePresence>
-          {isSidebarOpen && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsSidebarOpen(false)}
-                className="fixed inset-0 z-[9990] bg-stone-950/40 dark:bg-black/60 backdrop-blur-xs"
-              />
-
-              {/* Sidebar Container */}
-              <motion.div
-                initial={{ x: "100%", rotateY: 15, opacity: 0.9, transformOrigin: "right center" }}
-                animate={{ x: 0, rotateY: 0, opacity: 1 }}
-                exit={{ x: "100%", rotateY: 15, opacity: 0.9 }}
-                transition={{ type: "spring", damping: 26, stiffness: 210 }}
-                style={{ perspective: "1200px" }}
-                className="fixed right-0 top-0 bottom-0 z-[9995] w-[88%] max-w-[390px] bg-gradient-to-b from-[#f0f6fa] via-[#faf8f5] to-[#edf4f9] dark:from-zinc-950 dark:via-zinc-950 dark:to-[#0e1726] border-l border-[#e5e2d5]/40 dark:border-zinc-850 shadow-2xl p-6 sm:p-8 flex flex-col justify-between overflow-y-auto scrollbar-hide"
+      {/* ── Mobile menu — StaggeredMenu (replaces the former rich side drawer).
+          Nav + auth destinations become the staggered items; theme / language /
+          sign-out live in the footer slot; a compact profile line is the header.
+          The decorative profile-completion & latest-impact cards were dropped
+          in favour of StaggeredMenu's cleaner list. ── */}
+      <StaggeredMenu
+        open={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        position="right"
+        accentColor="#b04a15"
+        colors={["#f0b97a", "#b04a15"]}
+        displayItemNumbering
+        onNavigate={(link: string) => router.push(link)}
+        items={[
+          ...navLinks.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
+          ...(user
+            ? [
+                { label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" },
+                { label: "My Profile", link: "/profile", ariaLabel: "View profile" },
+              ]
+            : [
+                { label: t("nav.logIn"), link: "/login", ariaLabel: "Log in" },
+                { label: t("nav.signUp"), link: "/register", ariaLabel: "Sign up" },
+              ]),
+        ]}
+        header={
+          user ? (
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shrink-0">
+                {avatarDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-[#b04a15]/10 flex items-center justify-center text-lg font-black text-[#b04a15] dark:text-orange-400 uppercase">
+                    {user.email[0]}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-stone-850 dark:text-white truncate">
+                  {profile?.fullName || user.email.split("@")[0]}
+                </p>
+                <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+                  {(roleLabel[user.role] ?? user.role)} · {livesTouched} lives touched
+                </p>
+              </div>
+            </div>
+          ) : null
+        }
+        footer={
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Theme</span>
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="relative flex items-center justify-center w-9 h-9 rounded-full border border-[#e5e2d5] dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-[#f0eee6] dark:hover:bg-zinc-800 transition-all active:scale-95"
               >
-                {/* Close Button on top right */}
-                <button
-                  onClick={() => setIsSidebarOpen(false)}
-                  aria-label="Close menu"
-                  className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-400 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-colors z-10"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-
-                <div className="flex flex-col flex-1 items-center w-full">
-                  {/* 1. Profile Block */}
-                  {user && (
-                    <div className="flex flex-col items-center mt-6 w-full text-center">
-                      <div className="relative">
-                        <div className="w-24 h-24 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shadow-md">
-                          {avatarDataUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={avatarDataUrl}
-                              alt="Profile Avatar"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-[#b04a15]/10 flex items-center justify-center text-2xl font-black text-[#b04a15] dark:text-orange-400 uppercase">
-                              {user.email[0]}
-                            </div>
-                          )}
-                        </div>
-                        {/* Green checkmark badge */}
-                        <div className="absolute bottom-0 right-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 flex items-center justify-center shadow-xs">
-                          <div className="w-4.5 h-4.5 rounded-full bg-emerald-500 flex items-center justify-center text-white">
-                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 mt-4 flex flex-col items-center">
-                        <h3 className="text-xl font-bold text-stone-850 dark:text-white leading-tight">
-                          {profile?.fullName || user.email.split("@")[0]}
-                        </h3>
-                        
-                        <div className="inline-flex items-center gap-1 bg-[#fbeee9] dark:bg-orange-950/20 text-[#8d4332] dark:text-orange-400 text-xs font-bold px-3 py-1 rounded-full">
-                          <Heart className="w-3 h-3 fill-current text-[#8d4332] dark:text-orange-400 shrink-0" />
-                          <span>{roleLabel[user.role] ?? user.role}</span>
-                        </div>
-
-                        <p className="text-[14px] sm:text-base font-semibold text-stone-500 dark:text-stone-400 mt-2">
-                          Lives Touched: <span className="font-bold text-[#b04a15] dark:text-orange-400">{livesTouched}</span>
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Spacer between profile and nav links */}
-                  <div className="w-full mt-10" />
-
-                  {/* 2. Menu Navigation List */}
-                  <div className="w-full flex flex-col gap-6">
-                    {/* Mobile Navigation Links */}
-                    <div className="lg:hidden flex flex-col gap-2 w-full pb-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500 px-1 mb-1">Navigation</span>
-                      {navLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          onClick={() => setIsSidebarOpen(false)}
-                          className={`text-sm font-bold py-2 px-1 rounded-xl transition-all duration-200 ${
-                            isActive(link.href)
-                              ? "text-[#b04a15] dark:text-orange-400"
-                              : "text-stone-500 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-orange-400"
-                          }`}
-                        >
-                          {link.label}
-                        </Link>
-                      ))}
-                    </div>
-
-                    <span className="hidden lg:block text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500 px-1">Workspace</span>
-
-                    {user ? (
-                      <>
-                        {/* Dashboard Link */}
-                        <button
-                          onClick={() => {
-                            setIsSidebarOpen(false);
-                            router.push(dashHref);
-                          }}
-                          className={`group relative w-full flex items-center gap-3.5 py-2.5 px-3 rounded-xl overflow-hidden transition-all duration-200 bg-transparent ${
-                            isActive(dashHref)
-                              ? "text-[#b04a15] dark:text-orange-400 font-bold"
-                              : "text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
-                          }`}
-                        >
-                          {/* Slide-in background */}
-                          <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#b04a15]/10 to-transparent -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out pointer-events-none" />
-                          <LayoutGrid className={`relative z-10 w-5.5 h-5.5 shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 ${isActive(dashHref) ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
-                          <span className="relative z-10 text-[15px] transition-transform duration-200 group-hover:translate-x-0.5">Dashboard</span>
-                          {!isActive(dashHref) && (
-                            <ChevronRight className="relative z-10 ml-auto w-3.5 h-3.5 text-[#b04a15] dark:text-orange-400 opacity-0 translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
-                          )}
-                          {isActive(dashHref) && (
-                            <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
-                              <path d="M2 2 C 8 8, 8 22, 2 28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
-                          )}
-                        </button>
-
-                        {/* My Profile Link */}
-                        <button
-                          onClick={() => {
-                            setIsSidebarOpen(false);
-                            router.push("/profile");
-                          }}
-                          className={`group relative w-full flex items-center gap-3.5 py-2.5 px-3 rounded-xl overflow-hidden transition-all duration-200 bg-transparent ${
-                            isActive("/profile")
-                              ? "text-[#b04a15] dark:text-orange-400 font-bold"
-                              : "text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
-                          }`}
-                        >
-                          {/* Slide-in background */}
-                          <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#b04a15]/10 to-transparent -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out pointer-events-none" />
-                          <User className={`relative z-10 w-5.5 h-5.5 shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 ${isActive("/profile") ? "text-[#b04a15] dark:text-orange-400" : "text-stone-400"}`} />
-                          <span className="relative z-10 text-[15px] transition-transform duration-200 group-hover:translate-x-0.5">My Profile</span>
-                          {!isActive("/profile") && (
-                            <ChevronRight className="relative z-10 ml-auto w-3.5 h-3.5 text-[#b04a15] dark:text-orange-400 opacity-0 translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
-                          )}
-                          {isActive("/profile") && (
-                            <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-8 text-[#b04a15] dark:text-orange-400" viewBox="0 0 10 30" fill="none">
-                              <path d="M2 2 C 8 8, 8 22, 2 28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
-                          )}
-                        </button>
-
-                        {/* Take the tour again — replays the first-time guided tour */}
-                        {(user.role === "DONOR" || user.role === "DONEE") && (
-                          <button
-                            onClick={() => {
-                              setIsSidebarOpen(false);
-                              setTimeout(() => window.dispatchEvent(new Event("ck-start-tour")), 350);
-                            }}
-                            className="group relative w-full flex items-center gap-3.5 py-2.5 px-3 rounded-xl overflow-hidden transition-all duration-200 bg-transparent text-stone-500 dark:text-stone-400 hover:text-stone-850 dark:hover:text-white font-medium"
-                          >
-                            <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#b04a15]/10 to-transparent -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out pointer-events-none" />
-                            <Compass className="relative z-10 w-5.5 h-5.5 shrink-0 text-stone-400 transition-all duration-200 group-hover:scale-110 group-hover:text-[#b04a15] dark:group-hover:text-orange-400" />
-                            <span className="relative z-10 text-[15px] transition-transform duration-200 group-hover:translate-x-0.5">Take the tour</span>
-                            <ChevronRight className="relative z-10 ml-auto w-3.5 h-3.5 text-[#b04a15] dark:text-orange-400 opacity-0 translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {/* Log In */}
-                        <button
-                          onClick={() => { setIsSidebarOpen(false); router.push("/login"); }}
-                          className="group relative w-full flex items-center gap-3.5 py-3 px-3 rounded-2xl transition-all duration-200 hover:bg-stone-100 dark:hover:bg-zinc-800/70 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white font-semibold overflow-hidden"
-                        >
-                          {/* left accent bar that grows in on hover */}
-                          <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[#b04a15] scale-y-0 group-hover:scale-y-100 transition-transform duration-200 origin-center" />
-                          <span className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-[#b04a15]/10 transition-colors duration-200">
-                            <LogIn className="w-4.5 h-4.5 text-stone-400 group-hover:text-[#b04a15] group-hover:translate-x-0.5 transition-all duration-200" />
-                          </span>
-                          <span className="text-[15px] group-hover:translate-x-0.5 transition-transform duration-200">{t("nav.logIn")}</span>
-                          <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 text-[#b04a15] -translate-x-1 group-hover:translate-x-0 transition-all duration-200" />
-                        </button>
-
-                        {/* Sign Up */}
-                        <button
-                          onClick={() => { setIsSidebarOpen(false); router.push("/register"); }}
-                          className="group relative w-full flex items-center gap-3.5 py-3 px-3 rounded-2xl overflow-hidden font-bold text-white transition-all duration-200 active:scale-[0.98]"
-                          style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)", boxShadow: "0 4px 14px rgba(176,74,21,0.35)" }}
-                        >
-                          {/* shimmer sweep on hover */}
-                          <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 ease-in-out pointer-events-none" />
-                          <span className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 group-hover:bg-white/25 transition-colors duration-200">
-                            <UserPlus className="w-4.5 h-4.5 text-white" />
-                          </span>
-                          <span className="text-[15px] relative z-10">{t("nav.signUp")}</span>
-                          <ChevronRight className="w-4 h-4 ml-auto relative z-10 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200" />
-                        </button>
-                      </>
-                    )}
-
-                    {/* Language Switcher row — same py-2.5/px-3 rhythm as Dashboard/My
-                        Profile/Take the tour above so its icon+label sit in the same
-                        column instead of drifting left. */}
-                    <div className="relative w-full flex items-center justify-between py-2.5 px-3">
-                      <div className="flex items-center gap-3.5">
-                        <Globe className="w-5.5 h-5.5 shrink-0 text-stone-400" />
-                        <span className="text-[15px] text-stone-500 dark:text-stone-400 font-medium">Language</span>
-                      </div>
-                      <div onClick={e => e.stopPropagation()}>
-                        <LanguageSwitcher />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Bottom Cards Section */}
-                <div className="w-full mt-8 space-y-6">
-                  {/* Daily Kindness Goal Card */}
-                  {user && (
-                    <div className="bg-[#eaeaea]/45 dark:bg-zinc-900/50 rounded-[24px] p-5 shadow-xs">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs sm:text-[13px] font-bold text-stone-800 dark:text-stone-200">Profile Completion</p>
-                          <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-semibold mt-1">{profileCompletion}% complete</p>
-                          {missingProfileFields.length > 0 && (
-                            <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">
-                              Missing: {missingProfileFields.join(", ")}
-                            </p>
-                          )}
-                        </div>
-                        <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                          <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" className="text-stone-250/20 dark:text-zinc-800/40" fill="transparent" />
-                            <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" className="text-[#b04a15]" strokeDasharray="125.6" strokeDashoffset={125.6 * (1 - profileCompletion / 100)} fill="transparent" strokeLinecap="round" />
-                          </svg>
-                          <Heart className="absolute w-3.5 h-3.5 text-[#b04a15] fill-[#b04a15]" />
-                        </div>
-                      </div>
-                      {profileCompletion < 100 && (
-                        <button
-                          onClick={() => { setIsSidebarOpen(false); router.push("/profile"); }}
-                          className="mt-3 w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#b04a15] dark:text-orange-400 bg-[#b04a15]/8 dark:bg-orange-950/20 hover:bg-[#b04a15]/15 dark:hover:bg-orange-950/40 rounded-xl py-2 transition-colors duration-200"
-                        >
-                          Complete Profile
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Latest Impact Card */}
-                  {user && (
-                    <div className="flex items-start gap-3.5 mt-6 px-1">
-                      <div className="h-9 w-9 rounded-full bg-[#e3efe9] dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <HandHeart className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs sm:text-[13px] font-bold text-[#1b8a5a] dark:text-emerald-400">Latest Impact</p>
-                        <p className="text-xs sm:text-[13px] text-stone-550 dark:text-stone-400 font-medium leading-relaxed mt-1">
-                          {impactText}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Footer Signout and Mobile Theme Toggle */}
-                  <div className="pt-2 space-y-4">
-                    {/* Mobile Theme switcher */}
-                    <div className="lg:hidden flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Theme</span>
-                      <button
-                        onClick={toggleTheme}
-                        className="relative flex items-center justify-center w-9 h-9 rounded-full border border-[#e5e2d5] dark:border-zinc-800 text-stone-755 dark:text-stone-300 hover:bg-[#f0eee6] dark:hover:bg-zinc-900 transition-all active:scale-95 bg-white dark:bg-zinc-900"
-                        aria-label="Toggle theme"
-                      >
-                        <div className="relative w-4 h-4 flex items-center justify-center">
-                          <Sun className={`w-3.5 h-3.5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
-                          <Moon className={`w-3.5 h-3.5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 transform ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
-                        </div>
-                      </button>
-                    </div>
-
-                    {user && (
-                      <button
-                        onClick={() => { setIsSidebarOpen(false); requestLogout(); }}
-                        className="flex items-center justify-center gap-2 text-stone-500 hover:text-stone-850 dark:text-stone-400 dark:hover:text-white text-sm font-semibold transition-all py-3 w-full"
-                      >
-                        <LogOut className="w-4 h-4 shrink-0" /> {t("nav.signOut")}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
-      </AnimatePresence>
+                <Sun className={`w-3.5 h-3.5 absolute text-amber-500 transition-all duration-500 ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
+                <Moon className={`w-3.5 h-3.5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Language</span>
+              <LanguageSwitcher dropUp />
+            </div>
+            {user && (
+              <button
+                onClick={() => { setIsSidebarOpen(false); requestLogout(); }}
+                className="flex items-center justify-center gap-2 text-stone-500 hover:text-stone-850 dark:text-stone-400 dark:hover:text-white text-sm font-semibold transition-all py-2.5 w-full border-t border-stone-200/60 dark:border-zinc-800 mt-1"
+              >
+                <LogOut className="w-4 h-4" /> {t("nav.signOut")}
+              </button>
+            )}
+          </div>
+        }
+      />
     </>
   );
 }

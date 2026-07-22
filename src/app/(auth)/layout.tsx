@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AuthDotGrid } from "@/components/AuthDotGrid";
 
 /* ── Shared auth shell for /login and /register ──────────────────────────────
    One persistent layout so the illustration panel is a single element that
@@ -112,6 +113,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         style={{ order: variant === "register" ? 1 : 2 }}
         className="flex flex-1 flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 px-6 py-8 lg:px-12 overflow-y-auto relative overflow-hidden"
       >
+        {/* Interactive dot-grid — subtle texture behind the form card */}
+        <AuthDotGrid />
+
         {/* Breathing warmth glows representing community light & hope */}
         <div className="absolute top-10 right-10 w-80 h-80 rounded-full bg-[#b04a15]/12 blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-[#1e3a60]/10 blur-3xl pointer-events-none" />
