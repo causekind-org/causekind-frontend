@@ -358,14 +358,16 @@ function CategoryPill({
 }
 
 /* ─── Main exported section ─────────────────────────────────────────── */
-export function BeTheChangeSection() {
+export function BeTheChangeSection({ initialStats }: { initialStats?: PlatformStats | null } = {}) {
   const { ref: statsRef, inView: statsInView } = useInView(0.3);
   const { user } = useAuth();
-  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
+  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(initialStats ?? null);
 
   useEffect(() => {
-    getPlatformStats().then(setPlatformStats).catch(() => {});
-  }, []);
+    if (!initialStats) {
+      getPlatformStats().then(setPlatformStats).catch(() => {});
+    }
+  }, [initialStats]);
 
   // Below this combined-activity threshold, real counters would mostly read "0" and
   // undercut the trust message this section is making — show static platform facts

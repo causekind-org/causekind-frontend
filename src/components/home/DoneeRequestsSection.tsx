@@ -11,6 +11,8 @@ import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS, readSelectedDonorCategories }
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, MapPin, Bell, HandHeart } from "lucide-react";
 import type { ItemRequest } from "@/lib/api";
+// @ts-expect-error — MagicBento is the JS/CSS React Bits variant (no types shipped)
+import MagicBento from "@/components/MagicBento";
 
 /* ── The Need Board ──────────────────────────────────────────────────────────
    Open requests are the headlines — set large on a warm notice-board panel,
@@ -146,30 +148,34 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
                 <p className="text-[10px] font-black uppercase tracking-[0.24em] text-stone-500 dark:text-stone-400">Watching for you</p>
               </div>
 
-              {/* Category names carry their own accent as a small solid dot, not an
-                  icon-in-circle avatar stack — a row of Lucide glyphs in tinted
-                  bubbles is exactly the kind of generic iconography that reads as
-                  templated/AI-made rather than something someone actually designed. */}
-              <motion.p
+              {/* Focus areas as an interactive MagicBento grid — one glowing card
+                  per category the donor follows, tinted to the brand orange
+                  (176,74,21). Each card's copy is the category's shared blurb. */}
+              <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.3 }}
-                className="mt-3 text-xs font-bold text-stone-500 dark:text-stone-400"
+                className="mt-4"
               >
-                {quietCategories.map((cat, i) => {
-                  const col = CATEGORY_VISUALS[cat] ?? CATEGORY_VISUALS["Medical aid"];
-                  return (
-                    <span key={cat}>
-                      {i > 0 && (i === quietCategories.length - 1 ? " and " : ", ")}
-                      <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1.5 align-middle ${col.badge}`} aria-hidden="true" />
-                      <TranslatedText text={cat} />
-                    </span>
-                  );
-                })}
-              </motion.p>
+                <MagicBento
+                  glowColor="176, 74, 21"
+                  enableTilt
+                  enableStars
+                  enableSpotlight
+                  enableBorderGlow
+                  enableMagnetism
+                  clickEffect
+                  cards={quietCategories.map((cat) => ({
+                    color: "#ffffff",
+                    label: "Watching",
+                    title: cat,
+                    description: CATEGORY_VISUALS[cat]?.blurb ?? "",
+                  }))}
+                />
+              </motion.div>
 
-              <p className="mt-2.5 text-xs text-stone-400 dark:text-stone-500">
+              <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">
                 The moment a verified need is posted here, you&apos;ll be first to know.
               </p>
             </div>
