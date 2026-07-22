@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers } from "@/lib/api";
 import { useAuth } from "./useAuth";
@@ -392,14 +392,17 @@ function useNotificationState(): NotificationsContextValue {
     return () => window.removeEventListener("ck-listing-submitted", onListingSubmit);
   }, [refresh]);
 
-  function markAllRead() {
+  const markAllRead = useCallback(() => {
     const seen = loadSeen();
     notifications.forEach(n => seen.add(n.id));
     saveSeen(seen);
     setUnread(0);
-  }
+  }, [notifications]);
 
-  return { notifications, unread, markAllRead, refresh };
+  return useMemo(
+    () => ({ notifications, unread, markAllRead, refresh }),
+    [notifications, unread, markAllRead, refresh],
+  );
 }
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
