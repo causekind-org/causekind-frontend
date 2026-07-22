@@ -60,6 +60,8 @@ export function ParticleBackground({ className = "" }: Props) {
           ci: Math.floor(Math.random() * COLS.length),
         };
       });
+      // Sort back-to-front once by radius so small nodes draw before big nodes
+      pts.sort((a, b) => a.r - b.r);
     };
 
     /* ── draw glow aura around big nodes ───────────────────── */
@@ -134,8 +136,7 @@ export function ParticleBackground({ className = "" }: Props) {
       }
 
       /* draw nodes (back to front: small → big) */
-      const sorted = [...pts].sort((a, b) => a.r - b.r);
-      for (const p of sorted) {
+      for (const p of pts) {
         const [r, g, b] = COLS[p.ci];
         // glow aura for large nodes
         if (p.r > 5) drawGlow(p);

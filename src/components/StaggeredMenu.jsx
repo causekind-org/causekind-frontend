@@ -210,7 +210,7 @@ export const StaggeredMenu = ({
       {/* Backdrop — click away to close */}
       <button
         type="button"
-        className="sm-backdrop"
+        className="sm-backdrop backdrop-blur-md"
         aria-label="Close menu"
         tabIndex={open ? 0 : -1}
         onClick={() => onClose?.()}

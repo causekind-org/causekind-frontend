@@ -24,63 +24,95 @@ type RequestOptions = RequestInit & {
 export type SuperAdminDependent = { table: string; column: string; count: number };
 export type ApiConflictError = Error & { dependents?: SuperAdminDependent[] };
 
+// Request deduplication & GET cache (3s TTL for GET requests to prevent redundant fetch cascades)
+const inFlightGetRequests = new Map<string, Promise<any>>();
+const getCacheMap = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL_MS = 3000;
+
 async function request<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { silent401, ...fetchOptions } = options;
+  const method = (options.method ?? "GET").toUpperCase();
+  const isGet = method === "GET" && !options.body;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    // Fix #14: ngrok dev header is no longer sent to production — only in local dev.
-    ...(process.env.NODE_ENV === "development"
-      ? { "ngrok-skip-browser-warning": "true" }
-      : {}),
-    ...(fetchOptions.headers as Record<string, string>),
-  };
-
-  // Fix #4: credentials:"include" makes the browser attach the httpOnly session
-  // cookie automatically. We no longer read the JWT from localStorage or send an
-  // Authorization header — the cookie does that job, and JavaScript can't steal it.
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...fetchOptions,
-    headers,
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    if (res.status === 401) {
-      // Read body first — login endpoint returns "Bad credentials" here, not a session expiry
-      const body401 = await res.json().catch(() => ({}));
-      const msg401 = body401?.message ?? body401?.title;
-      if (!silent401) handleUnauthorized();
-      throw new Error(msg401 ?? "Invalid email or password. Please try again.");
+  // Invalidate cache on mutations
+  if (!isGet) {
+    getCacheMap.clear();
+  } else {
+    const cached = getCacheMap.get(path);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return Promise.resolve(cached.data as T);
     }
-    if (res.status === 403) throw new Error("You don't have permission to do that.");
-    if (res.status === 404) throw new Error("The requested item was not found.");
-    if (res.status === 409) {
-      const body = await res.json().catch(() => ({}));
-      const err = new Error(body?.message ?? "This action has already been done.");
-      if (Array.isArray(body?.dependents)) (err as ApiConflictError).dependents = body.dependents;
-      throw err;
+    if (inFlightGetRequests.has(path)) {
+      return inFlightGetRequests.get(path) as Promise<T>;
     }
-    if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
-    const body = await res.json().catch(() => ({}));
-    const msg =
-      body?.message ??
-      body?.detail ??
-      (Array.isArray(body?.errors) && body.errors.length > 0
-        ? body.errors.map((e: { defaultMessage?: string; field?: string }) =>
-            e.field ? `${e.field}: ${e.defaultMessage}` : e.defaultMessage
-          ).join(", ")
-        : null) ??
-      (body?.title !== "Bad Request" ? body?.title : null) ??
-      `Something went wrong (${res.status})`;
-    throw new Error(msg);
   }
 
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const { silent401, ...fetchOptions } = options;
+
+  const execute = async (): Promise<T> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(process.env.NODE_ENV === "development"
+        ? { "ngrok-skip-browser-warning": "true" }
+        : {}),
+      ...(fetchOptions.headers as Record<string, string>),
+    };
+
+    const res = await fetch(`${BASE_URL}${path}`, {
+      ...fetchOptions,
+      headers,
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        const body401 = await res.json().catch(() => ({}));
+        const msg401 = body401?.message ?? body401?.title;
+        if (!silent401) handleUnauthorized();
+        throw new Error(msg401 ?? "Invalid email or password. Please try again.");
+      }
+      if (res.status === 403) throw new Error("You don't have permission to do that.");
+      if (res.status === 404) throw new Error("The requested item was not found.");
+      if (res.status === 409) {
+        const body = await res.json().catch(() => ({}));
+        const err = new Error(body?.message ?? "This action has already been done.");
+        if (Array.isArray(body?.dependents)) (err as ApiConflictError).dependents = body.dependents;
+        throw err;
+      }
+      if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        body?.message ??
+        body?.detail ??
+        (Array.isArray(body?.errors) && body.errors.length > 0
+          ? body.errors.map((e: { defaultMessage?: string; field?: string }) =>
+              e.field ? `${e.field}: ${e.defaultMessage}` : e.defaultMessage
+            ).join(", ")
+          : null) ??
+        (body?.title !== "Bad Request" ? body?.title : null) ??
+        `Something went wrong (${res.status})`;
+      throw new Error(msg);
+    }
+
+    if (res.status === 204) return undefined as T;
+    const data = (await res.json()) as T;
+    if (isGet) {
+      getCacheMap.set(path, { data, timestamp: Date.now() });
+    }
+    return data;
+  };
+
+  if (isGet) {
+    const promise = execute().finally(() => {
+      inFlightGetRequests.delete(path);
+    });
+    inFlightGetRequests.set(path, promise);
+    return promise;
+  }
+
+  return execute();
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────

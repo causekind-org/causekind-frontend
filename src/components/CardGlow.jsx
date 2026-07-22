@@ -38,32 +38,42 @@ const CardGlow = ({
   style,
 }) => {
   const ref = useRef(null);
+  const rafRef = useRef(null);
 
   const handlePointerMove = useCallback(e => {
     const card = ref.current;
     if (!card) return;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const cx = rect.width / 2;
-    const cy = rect.height / 2;
-    const dx = x - cx;
-    const dy = y - cy;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    let kx = Infinity;
-    let ky = Infinity;
-    if (dx !== 0) kx = cx / Math.abs(dx);
-    if (dy !== 0) ky = cy / Math.abs(dy);
-    const edge = Math.min(Math.max(1 / Math.min(kx, ky), 0), 1);
+    if (rafRef.current) return;
 
-    let angle = 0;
-    if (dx !== 0 || dy !== 0) {
-      angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-      if (angle < 0) angle += 360;
-    }
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      if (!ref.current) return;
+      const rect = card.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const dx = x - cx;
+      const dy = y - cy;
 
-    card.style.setProperty('--edge-proximity', (edge * 100).toFixed(3));
-    card.style.setProperty('--cursor-angle', `${angle.toFixed(3)}deg`);
+      let kx = Infinity;
+      let ky = Infinity;
+      if (dx !== 0) kx = cx / Math.abs(dx);
+      if (dy !== 0) ky = cy / Math.abs(dy);
+      const edge = Math.min(Math.max(1 / Math.min(kx, ky), 0), 1);
+
+      let angle = 0;
+      if (dx !== 0 || dy !== 0) {
+        angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+        if (angle < 0) angle += 360;
+      }
+
+      card.style.setProperty('--edge-proximity', (edge * 100).toFixed(3));
+      card.style.setProperty('--cursor-angle', `${angle.toFixed(3)}deg`);
+    });
   }, []);
 
   return (
