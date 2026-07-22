@@ -22,20 +22,9 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Loader2, ImagePlus, X, MapPin, ChevronRight, ChevronLeft, CheckCircle2, Circle, Shield, Award, Package, Lock, Info, Ban, ListChecks, Sparkles, RefreshCw } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
+import { DONOR_LISTING_CATEGORIES as CATEGORIES, ITEM_SUBCATEGORIES as SUBCATEGORIES } from "@/lib/categoryVisuals";
 
 // ── Constants ────────────────────────────────────────────────────────────────
-
-const CATEGORIES = ["Education", "Clothing", "Furniture", "Electronics", "Household", "Sports", "Medical aid"];
-
-const SUBCATEGORIES: Record<string, string[]> = {
-  Education:    ["Books", "Stationery", "School Bags", "Educational Toys", "Uniforms", "Other"],
-  Clothing:     ["Men's", "Women's", "Children's", "Baby & Infant", "Footwear", "Accessories"],
-  Furniture:    ["Chairs", "Tables", "Beds", "Sofas", "Wardrobes", "Storage", "Other"],
-  Electronics:  ["Phones", "Laptops", "Tablets", "TVs", "Kitchen Appliances", "Accessories", "Other"],
-  Household:    ["Cookware", "Utensils", "Bedding", "Curtains", "Cleaning Equipment", "Other"],
-  Sports:       ["Fitness Equipment", "Outdoor Sports", "Indoor Sports", "Cycling", "Other"],
-  "Medical aid":["Wheelchair", "Crutches / Walker", "Hospital Bed", "Medical Device", "Mobility Aid", "Other"],
-};
 
 const CONDITIONS = ["Unused", "Like New", "Good", "Fair", "Needs Minor Repair", "Not Working"];
 const AGE_RANGES  = ["Less than 1 year", "1–3 years", "3–5 years", "5–10 years", "10+ years", "Unknown"];

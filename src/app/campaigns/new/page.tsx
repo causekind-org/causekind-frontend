@@ -19,8 +19,7 @@ import { ImagePlus, Link2, Loader2, Paperclip, Upload, X } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
-
-const CATEGORIES = ["Medical", "Education", "Disaster", "Community", "Livelihood"];
+import { CAMPAIGN_CATEGORIES as CATEGORIES } from "@/lib/campaignCategories";
 
 const empty = { title: "", category: "", targetAmount: "", description: "", imageUrl: "", videoUrl: "" };
 

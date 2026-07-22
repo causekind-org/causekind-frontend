@@ -12,14 +12,9 @@ import { getItemRequests, getMyItemRequests, type ItemRequest } from "@/lib/api"
 import { Reveal } from "@/components/Reveal";
 import { Badge } from "@/components/ui/badge";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
+import { ALL_REQUEST_CATEGORIES as CATEGORIES } from "@/lib/categoryVisuals";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-// Kept symmetric with donor listing categories — see src/lib/categoryVisuals.ts.
-const CATEGORIES = [
-  "Medical aid", "Education", "Livelihood", "Relief", "Household",
-  "Furniture", "Clothing", "Electronics", "Sports",
-];
 
 const CAT_ICON: Record<string, React.ElementType> = {
   "Medical aid": Stethoscope,

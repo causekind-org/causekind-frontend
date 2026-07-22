@@ -19,15 +19,9 @@ import type { Campaign } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
+import { CAMPAIGN_CATEGORY_IMAGES as CATEGORY_IMAGES } from "@/lib/campaignCategories";
 
 const INTERVAL = 3000; // ms between auto-slides
-
-const CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
-  Education:  ["/images/hero-7.webp"],
-  Livelihood: ["/images/hero-3.webp"],
-  Community:  ["/images/hero-6.webp"],
-};
 
 function getCardImage(category: string, id: number): string {
   const imgs = CATEGORY_IMAGES[category];

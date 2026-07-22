@@ -31,15 +31,9 @@ import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
+import { ALL_REQUEST_CATEGORIES as CATEGORIES } from "@/lib/categoryVisuals";
 
 // ── Constants ────────────────────────────────────────────────────────────────
-
-// Kept symmetric with donor listing categories so a donor-listed item can always
-// find a matching donee request category — see src/lib/categoryVisuals.ts.
-const CATEGORIES = [
-  "Medical aid", "Education", "Livelihood", "Relief", "Household",
-  "Furniture", "Clothing", "Electronics", "Sports",
-];
 const URGENCIES = [
   { value: "NORMAL", label: "Normal" },
   { value: "HIGH", label: "High" },
