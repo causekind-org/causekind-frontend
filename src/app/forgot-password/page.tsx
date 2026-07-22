@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Reveal } from "@/components/Reveal";
+import { AuthDotGrid } from "@/components/AuthDotGrid";
 
 export default function ForgotPasswordPage() {
   const t = useTranslations("forgotPassword");
@@ -78,6 +79,9 @@ export default function ForgotPasswordPage() {
 
       {/* ── RIGHT: Form panel ───────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col justify-between bg-white dark:bg-zinc-950 px-6 py-10 lg:px-16 overflow-y-auto relative overflow-hidden">
+        {/* Interactive dot-grid — subtle texture behind the form */}
+        <AuthDotGrid />
+
         {/* Breathing warmth glows */}
         <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-[#b04a15]/5 blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-[#1e3a60]/5 blur-3xl pointer-events-none" />

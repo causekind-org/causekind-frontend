@@ -11,6 +11,8 @@ import { MapPin, Target, TrendingUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+// @ts-expect-error — CardGlow is the JS/CSS edge-glow wrapper (no types shipped)
+import CardGlow from "@/components/CardGlow";
 
 type Props = { campaign: Campaign };
 
@@ -36,6 +38,7 @@ export function CampaignCard({ campaign }: Props) {
   const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
 
   return (
+    <CardGlow className="h-full" borderRadius={16}>
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -47,7 +50,7 @@ export function CampaignCard({ campaign }: Props) {
     >
     <HoverCard openDelay={300}>
       <HoverCardTrigger asChild>
-        <Card className="card-3d card-shimmer card-glow flex flex-col h-full overflow-hidden glass-card rounded-2xl group border-stone-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 cursor-pointer">
+        <Card className="card-3d card-shimmer flex flex-col h-full overflow-hidden glass-card rounded-2xl group border-stone-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 cursor-pointer">
       {/* Top-Heavy Image Container (Flush with top/left/right) */}
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-zinc-950 shrink-0">
         <Image src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)} alt={campaign.title} fill
@@ -133,5 +136,6 @@ export function CampaignCard({ campaign }: Props) {
       </HoverCardContent>
     </HoverCard>
     </motion.div>
+    </CardGlow>
   );
 }

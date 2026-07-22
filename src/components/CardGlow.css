@@ -1,0 +1,75 @@
+/* Non-destructive edge glow — only the outer directional glow layer from
+   BorderGlow. The wrapper is transparent and imposes no background/border, so
+   the wrapped card keeps its own look. The glow tracks the cursor's angle and
+   fades in as the pointer nears an edge. */
+
+.card-glow-fx {
+  --edge-proximity: 0;
+  --cursor-angle: 45deg;
+  --edge-sensitivity: 30;
+  --cg-radius: 16px;
+  --glow-padding: 34px;
+
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--cg-radius);
+  transform: translate3d(0, 0, 0.01px);
+}
+
+/* Outer glow layer — extends beyond the card via negative inset, then its
+   ::before insets back to the card edge to draw the box-shadow glow ring. */
+.card-glow-fx > .cg-edge {
+  content: "";
+  position: absolute;
+  inset: calc(var(--glow-padding) * -1);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: plus-lighter;
+  transition: opacity 0.25s ease-out;
+  opacity: calc((var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
+  mask-image: conic-gradient(
+    from var(--cursor-angle) at center,
+    black 2.5%,
+    transparent 10%,
+    transparent 90%,
+    black 97.5%
+  );
+  -webkit-mask-image: conic-gradient(
+    from var(--cursor-angle) at center,
+    black 2.5%,
+    transparent 10%,
+    transparent 90%,
+    black 97.5%
+  );
+}
+
+/* When not hovered, fade the glow out slowly */
+.card-glow-fx:not(:hover) > .cg-edge {
+  opacity: 0;
+  transition: opacity 0.7s ease-in-out;
+}
+
+.card-glow-fx > .cg-edge::before {
+  content: "";
+  position: absolute;
+  inset: var(--glow-padding);
+  border-radius: var(--cg-radius);
+  box-shadow:
+    inset 0 0 0 1px var(--glow-color, hsl(22deg 85% 55% / 100%)),
+    inset 0 0 1px 0 var(--glow-color-60, hsl(22deg 85% 55% / 60%)),
+    inset 0 0 3px 0 var(--glow-color-50, hsl(22deg 85% 55% / 50%)),
+    inset 0 0 6px 0 var(--glow-color-40, hsl(22deg 85% 55% / 40%)),
+    inset 0 0 15px 0 var(--glow-color-30, hsl(22deg 85% 55% / 30%)),
+    inset 0 0 25px 2px var(--glow-color-20, hsl(22deg 85% 55% / 20%)),
+    0 0 1px 0 var(--glow-color-60, hsl(22deg 85% 55% / 60%)),
+    0 0 3px 0 var(--glow-color-50, hsl(22deg 85% 55% / 50%)),
+    0 0 6px 0 var(--glow-color-40, hsl(22deg 85% 55% / 40%)),
+    0 0 15px 0 var(--glow-color-30, hsl(22deg 85% 55% / 30%)),
+    0 0 25px 2px var(--glow-color-20, hsl(22deg 85% 55% / 20%)),
+    0 0 50px 2px var(--glow-color-10, hsl(22deg 85% 55% / 10%));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-glow-fx > .cg-edge { transition: none; }
+}

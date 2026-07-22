@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import MatchChatWindow from "@/components/MatchChatWindow";
 import LocationPinPicker from "@/components/LocationPinPicker";
+import HandoverCelebration from "@/components/handover/HandoverCelebration";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
@@ -81,6 +82,7 @@ export default function MatchHandoverHubPage() {
   const [problemNote, setProblemNote] = useState("");
   const [problemSubmitting, setProblemSubmitting] = useState(false);
   const [problemSent, setProblemSent] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const isDonee = match ? user?.email === match.doneeEmail : user?.role === "DONEE";
   const isDonor = match ? user?.email === match.donorEmail : !isDonee;
@@ -97,6 +99,22 @@ export default function MatchHandoverHubPage() {
     if (!matchId || !batch.some((d) => d.entityId === matchId)) return;
     getMatch(matchId).then(setMatch).catch(() => {});
   });
+
+  // Show the one-time celebration overlay once this handover reaches a
+  // terminal, successful state — gated per-user via localStorage so it
+  // never reappears on a later visit.
+  useEffect(() => {
+    if (!match || !matchId) return;
+    if (match.status !== "COMPLETED" && match.status !== "FULFILLED") return;
+    const key = `ck_celebrated_MATCH_${matchId}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+      setShowCelebration(true);
+    } catch {
+      // localStorage unavailable — skip silently, never block the page.
+    }
+  }, [match, matchId]);
 
   // Opens the schedule/reschedule form, seeding the pin from whatever lat/lng
   // is already stored on the match so re-opening to reschedule doesn't reset it.
@@ -349,6 +367,9 @@ export default function MatchHandoverHubPage() {
                   <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm" />
                 </div>
+                {error && (
+                  <p className="text-xs font-medium text-red-500">{error}</p>
+                )}
                 <div className="flex gap-2">
                   <button onClick={handleSchedule} disabled={submitting}
                     className="flex-1 rounded-xl bg-[#b04a15] py-2.5 text-sm font-semibold text-white disabled:opacity-50">
@@ -588,6 +609,13 @@ export default function MatchHandoverHubPage() {
           </div>
         )}
       </div>
+
+      <HandoverCelebration
+        contextType="MATCH"
+        contextId={matchId}
+        open={showCelebration}
+        onClose={() => setShowCelebration(false)}
+      />
     </main>
   );
 }

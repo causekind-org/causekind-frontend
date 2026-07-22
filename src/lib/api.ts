@@ -305,6 +305,42 @@ export function getMyDonations() {
   return request<Donation[]>("/api/v1/donations/mine", { silent401: true });
 }
 
+// ── Platform Tips & Handover Feedback ───────────────────────────────────────
+
+export type PlatformTipOrder = {
+  tipId: number;
+  razorpayOrderId: string;
+  amountInPaise: number;
+  currency: string;
+  razorpayKeyId: string;
+};
+
+export type HandoverFeedbackContextType = "OFFER" | "MATCH";
+
+export function initiatePlatformTip(
+  amount: number,
+  contextType: HandoverFeedbackContextType,
+  contextId: number
+) {
+  return request<PlatformTipOrder>("/api/v1/tips", {
+    method: "POST",
+    body: JSON.stringify({ amount, contextType, contextId }),
+  });
+}
+
+export function submitHandoverFeedback(params: {
+  contextType: HandoverFeedbackContextType;
+  contextId: number;
+  rating: number;
+  note?: string;
+  tipId?: number;
+}) {
+  return request<void>("/api/v1/handover-feedback", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 export function getCampaignDonations(campaignId: number) {
   return request<Donation[]>(`/api/v1/campaigns/${campaignId}/donations`);
 }

@@ -2153,6 +2153,50 @@ div:has(.searchable-select-open) {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
+/* ── Liquid-glass sheen: a slow, continuous specular light sweep that gives a
+   glass surface the sense of light refracting as it "flows" across it. Add the
+   .glass-liquid class to any rounded glass surface (the navbar capsule, the
+   active-link pill). The sheen sits at z-index:-1 inside an isolated stacking
+   context so it glides over the frosted background but behind the content, and
+   `overflow:hidden` keeps it clipped to the rounded shape. Respects
+   prefers-reduced-motion. ── */
+.glass-liquid {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.glass-liquid::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 62%
+  );
+  mix-blend-mode: screen;
+  animation: glass-liquid-sheen 7s ease-in-out infinite;
+}
+.dark .glass-liquid::before {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 62%
+  );
+}
+@keyframes glass-liquid-sheen {
+  0%   { transform: translateX(-55%); }
+  50%  { transform: translateX(55%); }
+  100% { transform: translateX(-55%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-liquid::before { animation: none; opacity: 0; }
+}
+
 /* ── 3D cursor-tracking tilt for glass icon buttons (pairs with useTilt hook) ──
    --tilt-x/--tilt-y are written by the hook as the mouse moves; the button
    rotates toward the cursor, floats up on hover, and presses in on click. */
