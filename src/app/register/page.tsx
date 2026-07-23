@@ -421,7 +421,7 @@ function RegisterContent() {
         {/* Illustration — donors giving together */}
         <div className="absolute inset-0 pointer-events-none">
           <Image
-            src="/signup-illustration.jpg"
+            src="/signup-illustration.webp"
             alt=""
             fill
             className="object-cover"

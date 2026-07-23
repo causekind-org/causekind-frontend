@@ -30,15 +30,43 @@ const LANGUAGES = {
   ar: "Arabic",
 };
 
+// next-intl interpolation placeholders ({query}, {count}, …) and rich-text
+// tags (<b>…</b>, <email></email>) must survive translation verbatim — the
+// app calls t("key", { query }) expecting the literal English name back.
+// Google Translate doesn't know that, and word-like placeholder names (e.g.
+// {query}, {category}) get translated as if they were content. Swap them
+// for opaque tokens before sending, then restore the originals after.
+function protectPlaceholders(text) {
+  const tokens = [];
+  const protectedText = text.replace(/\{[^}]+\}|<\/?[a-zA-Z][^>]*>/g, (match) => {
+    tokens.push(match);
+    return ` XXPLACEHOLDERXX${tokens.length - 1}XX `;
+  });
+  return { protectedText, tokens };
+}
+
+function restorePlaceholders(text, tokens) {
+  // Translation sometimes drops the padding space on one side (seen with
+  // Arabic/Spanish producing "in{category}") — rather than trust what
+  // survived, enforce exactly one space on each side of every restored
+  // placeholder/tag, then collapse any doubled-up spacing that creates.
+  return text
+    .replace(/\s*XXPLACEHOLDERXX\s*(\d+)\s*XX\s*/gi, (_, i) => ` ${tokens[Number(i)] ?? ""} `)
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
 async function translate(text, lang) {
+  const { protectedText, tokens } = protectPlaceholders(text);
   const url =
     `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=` +
-    encodeURIComponent(text);
+    encodeURIComponent(protectedText);
   const r = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const d = await r.json();
   // d[0] is array of [translated, original, ...] segments
-  return d[0].map((s) => s[0]).join("");
+  const translated = d[0].map((s) => s[0]).join("");
+  return tokens.length ? restorePlaceholders(translated, tokens) : translated;
 }
 
 function sleep(ms) {

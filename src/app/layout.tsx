@@ -57,7 +57,7 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "CauseKind — Give With Purpose",
   description: "Discover and support verified charity campaigns.",
-  icons: { icon: "/logo-filled.png" },
+  icons: { icon: "/logo-filled.webp" },
 };
 
 export default async function RootLayout({

@@ -792,7 +792,7 @@ export default function NewItemPage() {
       ════════════════════════════════ */}
       <aside className="hidden lg:flex lg:w-[280px] xl:w-[300px] shrink-0 flex-col relative overflow-hidden"
         style={{
-          backgroundImage: "linear-gradient(160deg, rgba(14, 9, 4, 0.82) 0%, rgba(26, 15, 7, 0.88) 50%, rgba(12, 22, 33, 0.92) 100%), url('/Item listing Doner.png')",
+          backgroundImage: "linear-gradient(160deg, rgba(14, 9, 4, 0.82) 0%, rgba(26, 15, 7, 0.88) 50%, rgba(12, 22, 33, 0.92) 100%), url('/Item listing Doner.webp')",
           backgroundSize: "cover",
           backgroundPosition: "center"
         }}>

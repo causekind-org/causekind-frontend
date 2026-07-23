@@ -159,7 +159,7 @@ export default function CertificatePage() {
               on a printable/static page it risks being captured mid-reveal). */}
           <div style={{ marginBottom: "16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-filled.png" alt="CauseKind" style={{ width: "64px", height: "64px", objectFit: "contain" }} />
+            <img src="/logo-filled.webp" alt="CauseKind" style={{ width: "64px", height: "64px", objectFit: "contain" }} />
             <div style={{ fontSize: "18px", fontWeight: "700", letterSpacing: "0.05em", color: "#1a1008", marginTop: "4px" }}>
               <span style={{ color: "#c4501a" }}>Cause</span>Kind
             </div>

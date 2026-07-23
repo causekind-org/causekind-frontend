@@ -159,7 +159,7 @@ function LoginContent() {
         {/* Illustration — a direct, verified handover */}
         <div className="absolute inset-0 pointer-events-none">
           <Image
-            src="/login-illustration.png"
+            src="/login-illustration.webp"
             alt=""
             fill
             className="object-cover"

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocale, useTranslations } from "next-intl";
+import { fetchBlogTranslation, getBlogTranslation, type BlogTranslation } from "@/data/blogTranslations";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { AnimatedWrapper } from "../../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
@@ -115,13 +117,180 @@ export default function BlogReadingPage({ params }: PageProps) {
   const [copied, setCopied] = useState(false);
   const [sanitizedContent, setSanitizedContent] = useState("");
 
+  // Statically pre-translated content (see scripts/generate-blog-translations.mjs),
+  // fetched on demand from public/blog-translations/<locale>.json — not a
+  // live per-pageview translation call (no quota risk), and not bundled
+  // into the JS build either (13 locales of full article HTML is too much
+  // to ship to every visitor, or to hand the compiler in one module graph).
+  // Locales without a generated file (or posts not yet covered) fall back
+  // to the original English.
+  const locale = useLocale();
+  const t = useTranslations("blog_page");
+  const [translation, setTranslation] = useState<BlogTranslation | null>(null);
+
   useEffect(() => {
-    if (post) {
+    setTranslation(null);
+    if (!post || locale === "en") return;
+    let cancelled = false;
+    // Fetching this post's translation warms the whole locale file in
+    // memory (see loadLocale in blogTranslations/index.ts) — the Read Next
+    // cards and live search results below read from that same cache via
+    // the synchronous getBlogTranslation, so no separate fetch is needed
+    // for them; they just pick up translated data on the next render.
+    fetchBlogTranslation(locale, post.slug).then((t) => {
+      if (!cancelled) setTranslation(t);
+    });
+    return () => { cancelled = true; };
+  }, [locale, post]);
+
+  const translatePost = (p: (typeof blogPosts)[number]) => {
+    const tr = getBlogTranslation(locale, p.slug);
+    return { title: tr?.title || p.title, category: tr?.category || p.category };
+  };
+
+  const displayTitle = translation?.title || post?.title || "";
+  const displayDescription = translation?.description || post?.description || "";
+  const displayCategory = translation?.category || post?.category || "";
+  const rawContentForLocale = translation?.content || post?.content || "";
+
+  useEffect(() => {
+    if (rawContentForLocale) {
       import("isomorphic-dompurify").then((DOMPurify) => {
-        setSanitizedContent(DOMPurify.default.sanitize(post.content || ""));
+        setSanitizedContent(DOMPurify.default.sanitize(rawContentForLocale));
       });
     }
-  }, [post]);
+  }, [rawContentForLocale]);
+
+  // Voice narration — English and Hindi stories only, using a Web Speech API
+  // voice (a Google Hindi female voice, per design) rather than a
+  // synthesised backend track, so this ships with zero audio infrastructure.
+  // sanitizedContent above already reflects the active locale, so narration
+  // just reads whatever's currently on screen.
+  const [narrationSupported, setNarrationSupported] = useState(false);
+  const [narrationState, setNarrationState] = useState<"idle" | "playing" | "paused">("idle");
+  const narrationChunksRef = useRef<string[]>([]);
+  const narrationIndexRef = useRef(0);
+  const narrationVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  // Chrome's native speechSynthesis.pause()/resume() is unreliable (a
+  // long-standing Chromium bug, worst on Windows — resume() often just does
+  // nothing). Pause/Restart/Play are implemented as cancel() + replay from a
+  // remembered chunk index instead, which works consistently everywhere.
+  // cancel() fires the outgoing utterance's onend/onerror asynchronously —
+  // this flag tells those handlers "we did this on purpose, don't react".
+  const suppressCallbacksRef = useRef(false);
+  const canNarrate = locale === "en" || locale === "hi";
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    setNarrationSupported(true);
+
+    const pickVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return;
+      narrationVoiceRef.current =
+        voices.find((v) => /hindi/i.test(v.name) && /female/i.test(v.name)) ||
+        voices.find((v) => v.name === "Google हिन्दी") ||
+        voices.find((v) => /google/i.test(v.name) && /hi[-_]?in/i.test(v.lang)) ||
+        voices.find((v) => /hi[-_]?in/i.test(v.lang)) ||
+        null;
+    };
+
+    pickVoice();
+    window.speechSynthesis.addEventListener("voiceschanged", pickVoice);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", pickVoice);
+  }, []);
+
+  // Reset narration whenever the underlying article text changes (new post
+  // or the sanitized HTML finishes loading) so stale chunks/playback don't
+  // carry over between stories or locales.
+  useEffect(() => {
+    suppressCallbacksRef.current = true;
+    narrationChunksRef.current = [];
+    narrationIndexRef.current = 0;
+    setNarrationState("idle");
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [sanitizedContent]);
+
+  useEffect(() => {
+    return () => {
+      suppressCallbacksRef.current = true;
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const getNarrationChunks = () => {
+    if (narrationChunksRef.current.length) return narrationChunksRef.current;
+    const container = document.createElement("div");
+    container.innerHTML = sanitizedContent || post?.content || "";
+    const text = (container.textContent || "").replace(/\s+/g, " ").trim();
+    // Split into sentence-sized chunks — most browsers silently cut off very
+    // long single utterances partway through, and chunking also lets Pause
+    // land at a sentence boundary instead of mid-word.
+    const chunks = text.match(/[^.!?]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) ?? (text ? [text] : []);
+    narrationChunksRef.current = chunks;
+    return chunks;
+  };
+
+  const speakFrom = (index: number) => {
+    const chunks = getNarrationChunks();
+    if (index >= chunks.length) {
+      narrationIndexRef.current = 0;
+      setNarrationState("idle");
+      return;
+    }
+    narrationIndexRef.current = index;
+    const utterance = new SpeechSynthesisUtterance(chunks[index]);
+    utterance.lang = "hi-IN";
+    if (narrationVoiceRef.current) utterance.voice = narrationVoiceRef.current;
+    utterance.onend = () => {
+      if (suppressCallbacksRef.current) return;
+      speakFrom(index + 1);
+    };
+    utterance.onerror = () => {
+      if (suppressCallbacksRef.current) return;
+      narrationIndexRef.current = 0;
+      setNarrationState("idle");
+    };
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Stop whatever's currently queued/speaking, marking the outgoing
+  // utterance's callbacks as intentional so they don't fight the state
+  // change that's about to happen, then run `after` once Chrome has
+  // actually processed the cancel (immediate speak() right after cancel()
+  // is a well-known race that silently drops the new utterance).
+  const stopThenRun = (after: () => void) => {
+    suppressCallbacksRef.current = true;
+    window.speechSynthesis.cancel();
+    setTimeout(() => {
+      suppressCallbacksRef.current = false;
+      after();
+    }, 50);
+  };
+
+  const handleNarrationPlay = () => {
+    if (!narrationSupported) return;
+    const resumeIndex = narrationState === "paused" ? narrationIndexRef.current : 0;
+    setNarrationState("playing");
+    stopThenRun(() => speakFrom(resumeIndex));
+  };
+
+  const handleNarrationPause = () => {
+    if (!narrationSupported) return;
+    suppressCallbacksRef.current = true;
+    window.speechSynthesis.cancel();
+    setNarrationState("paused");
+  };
+
+  const handleNarrationRestart = () => {
+    if (!narrationSupported) return;
+    setNarrationState("playing");
+    stopThenRun(() => speakFrom(0));
+  };
 
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -204,7 +373,7 @@ export default function BlogReadingPage({ params }: PageProps) {
           "name": "CauseKind",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://www.causekind.com/logo-filled.png",
+            "url": "https://www.causekind.com/logo-filled.webp",
           },
         },
         // publishedDate is stored as "Month YYYY" (e.g. "June 2026") — Date parses that
@@ -241,8 +410,8 @@ export default function BlogReadingPage({ params }: PageProps) {
         "@type": "Organization",
         "name": "CauseKind",
         "url": "https://www.causekind.com",
-        "logo": "https://www.causekind.com/logo-filled.png",
-        "image": "https://www.causekind.com/logo-filled.png",
+        "logo": "https://www.causekind.com/logo-filled.webp",
+        "image": "https://www.causekind.com/logo-filled.webp",
         "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs."
       }
     ]
@@ -283,7 +452,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                     href={`/blog?category=${encodeURIComponent(post.category)}`}
                     className="inline-block px-3 py-1 bg-orange-300 hover:bg-orange-200 text-orange-900 font-label-sm text-xs rounded-full uppercase tracking-wider font-semibold transition-colors"
                   >
-                    {post.category}
+                    {displayCategory}
                   </Link>
                 </div>
               </div>
@@ -293,12 +462,12 @@ export default function BlogReadingPage({ params }: PageProps) {
             <div className="max-w-3xl">
               <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
                 <h1 className="font-display-lg text-[#b04a15] dark:text-[#e07b3a] mb-4 leading-tight text-4xl md:text-5xl font-bold">
-                  {post.title}
+                  {displayTitle}
                 </h1>
               </AnimatedWrapper>
               <AnimatedWrapper delay={0.25} duration={0.55} direction="up">
                 <p className="font-body-lg text-stone-600 dark:text-stone-400 text-lg mb-6 leading-relaxed">
-                  {post.description}
+                  {displayDescription}
                 </p>
               </AnimatedWrapper>
             </div>
@@ -344,6 +513,39 @@ export default function BlogReadingPage({ params }: PageProps) {
                     </span>
                     <FontDropdown value={fontMode} onChange={setFontMode} />
                   </div>
+                  {/* Voice Narration — English and Hindi only, for now */}
+                  {canNarrate && narrationSupported && (
+                    <div className="space-y-3 mt-8 pt-6 border-t border-[#b04a15]/20 dark:border-[#e07b3a]/20">
+                      <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
+                        Listen to Story
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={narrationState === "playing" ? handleNarrationPause : handleNarrationPlay}
+                          aria-label={narrationState === "playing" ? "Pause narration" : "Play narration"}
+                          title={narrationState === "playing" ? "Pause" : "Play"}
+                          className="w-10 h-10 rounded-full bg-[#b04a15] dark:bg-[#e07b3a] text-white flex items-center justify-center hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[20px] leading-none">
+                            {narrationState === "playing" ? "pause" : "play_arrow"}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNarrationRestart}
+                          aria-label="Restart narration"
+                          title="Restart"
+                          className="w-10 h-10 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 transition-colors cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px] leading-none">replay</span>
+                        </button>
+                        <span className="font-label-sm text-[11px] text-[#78716c] dark:text-[#a8a29e]">
+                          {narrationState === "playing" ? "Playing…" : narrationState === "paused" ? "Paused" : "Read aloud"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {/* Social Share */}
                 <div className="flex flex-col gap-3 relative">
@@ -399,7 +601,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                     <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
                     <input
                       className="pl-9 pr-8 py-2.5 w-full bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] transition-all"
-                      placeholder="Search stories..."
+                      placeholder={t("searchPlaceholder")}
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -411,7 +613,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                     {searchQuery && (
                       <button
                         type="button"
-                        aria-label="Clear search"
+                        aria-label={t("clearSearch")}
                         onClick={() => setSearchQuery("")}
                         className="absolute right-2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors cursor-pointer"
                       >
@@ -430,33 +632,36 @@ export default function BlogReadingPage({ params }: PageProps) {
                       >
                         {liveSearchResults.length > 0 ? (
                           <ul className="max-h-96 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800">
-                            {liveSearchResults.map((result) => (
-                              <li key={result.slug}>
-                                <Link
-                                  href={`/blog/${result.slug}`}
-                                  onClick={() => setIsSearchFocused(false)}
-                                  className="flex items-center gap-3 p-3 hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors"
-                                >
-                                  <img
-                                    src={result.image}
-                                    alt={result.title}
-                                    className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                                  />
-                                  <div className="min-w-0">
-                                    <p className="text-[10px] font-bold text-[#b04a15] dark:text-orange-400 uppercase tracking-wide truncate">
-                                      {result.category}
-                                    </p>
-                                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 truncate">
-                                      {result.title}
-                                    </p>
-                                  </div>
-                                </Link>
-                              </li>
-                            ))}
+                            {liveSearchResults.map((result) => {
+                              const tr = translatePost(result);
+                              return (
+                                <li key={result.slug}>
+                                  <Link
+                                    href={`/blog/${result.slug}`}
+                                    onClick={() => setIsSearchFocused(false)}
+                                    className="flex items-center gap-3 p-3 hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors"
+                                  >
+                                    <img
+                                      src={result.image}
+                                      alt={tr.title}
+                                      className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                    />
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] font-bold text-[#b04a15] dark:text-orange-400 uppercase tracking-wide truncate">
+                                        {tr.category}
+                                      </p>
+                                      <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 truncate">
+                                        {tr.title}
+                                      </p>
+                                    </div>
+                                  </Link>
+                                </li>
+                              );
+                            })}
                           </ul>
                         ) : (
                           <p className="p-4 text-sm text-stone-500 dark:text-stone-400 text-center">
-                            No stories match &ldquo;{searchQuery}&rdquo;.
+                            {t("noSearchResults", { query: searchQuery })}
                           </p>
                         )}
                       </motion.div>
@@ -464,26 +669,29 @@ export default function BlogReadingPage({ params }: PageProps) {
                   </AnimatePresence>
                 </div>
 
-                <h3 className="font-display-lg text-2xl text-[#b04a15] dark:text-[#e07b3a] mb-6 font-bold">Read Next</h3>
+                <h3 className="font-display-lg text-2xl text-[#b04a15] dark:text-[#e07b3a] mb-6 font-bold">{t("readNext")}</h3>
                 <StaggerContainer delayStart={0.6} staggerDelay={0.12} className="flex flex-col gap-6">
-                  {recommendedPosts.map((rec) => (
-                    <motion.div key={rec.slug} variants={itemVariants}>
-                      <Link className="group block" href={`/blog/${rec.slug}`}>
-                        <div className="w-full h-32 rounded-xl overflow-hidden mb-3 border border-stone-200 dark:border-stone-700">
-                          <div
-                            className="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500"
-                            style={{ backgroundImage: `url('${rec.image}')` }}
-                          />
-                        </div>
-                        <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
-                          {rec.category}
-                        </span>
-                        <h4 className="font-headline-md text-[16px] text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
-                          {rec.title}
-                        </h4>
-                      </Link>
-                    </motion.div>
-                  ))}
+                  {recommendedPosts.map((rec) => {
+                    const tr = translatePost(rec);
+                    return (
+                      <motion.div key={rec.slug} variants={itemVariants}>
+                        <Link className="group block" href={`/blog/${rec.slug}`}>
+                          <div className="w-full h-32 rounded-xl overflow-hidden mb-3 border border-stone-200 dark:border-stone-700">
+                            <div
+                              className="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500"
+                              style={{ backgroundImage: `url('${rec.image}')` }}
+                            />
+                          </div>
+                          <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
+                            {tr.category}
+                          </span>
+                          <h4 className="font-headline-md text-[16px] text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
+                            {tr.title}
+                          </h4>
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
                 </StaggerContainer>
               </div>
             </motion.aside>
