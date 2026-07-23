@@ -119,6 +119,38 @@
     "sortNewest": "Je viens de commencer",
     "sortFunded": "Les plus financés"
   },
+  "blog_page": {
+    "readNext": "Lire ensuite",
+    "badge": "Donner plus intelligemment",
+    "headline": "Des histoires qui font avancer le monde.",
+    "subtitle": "Impact réel, vérifié par la communauté. Découvrez des histoires de dons en nature et de changement.",
+    "searchPlaceholder": "Rechercher des histoires...",
+    "clearSearch": "Effacer la recherche",
+    "noSearchResults": "Aucune histoire ne correspond à « {query} ».",
+    "categories": "Catégories",
+    "allCategories": "Tous",
+    "featuredStory": "Histoire en vedette",
+    "readStory": "Lire l'histoire →",
+    "emptyNoMatchInCategory": "Aucune histoire ne correspond à « {query} » dans {category} .",
+    "emptyNoMatch": "Aucune histoire ne correspond à « {query} ».",
+    "emptyNoCategory": "Aucune histoire dans {category} pour l’instant.",
+    "viewAllCategories": "Voir toutes les catégories →",
+    "liveFeedTitle": "Live CauseKind Feed",
+    "startYourImpact": "Commencez votre impact",
+    "insiderTipsTitle": "Conseils d’initiés pour un don efficace",
+    "insiderTipsSubtitle": "Découvrez des conseils pratiques pour rationaliser vos dons et maximiser votre impact communautaire.",
+    "viewInKindNeeds": "Voir les besoins en nature →",
+    "bannerHeadline": "Prêt à transformer les histoires en changement ?",
+    "bannerPoint1": "Connectez-vous avec des causes vérifiées localement",
+    "bannerPoint2": "Coordonner les transferts directs sur 10 km",
+    "bannerPoint3": "100 % gratuit pour lister et faire correspondre",
+    "startSupporting": "Commencer à soutenir",
+    "optimizeTitle": "Optimisez votre impact avec CauseKind",
+    "optimizeSubtitle": "Restez informé de nos dernières informations, de nos réussites et des mises à jour de la communauté locale.",
+    "newsletterLabel": "Bulletin",
+    "emailPlaceholder": "Quel est votre email ?",
+    "subscribe": "S'abonner"
+  },
   "listings": {
     "title": "Listes d'articles",
     "new": "Lister un élément",
@@ -199,6 +231,7 @@
     "city": "Ville",
     "category": "Catégorie",
     "description": "Description",
+    "urgency": "Urgence",
     "status": "Statut",
     "statusCompleted": "Complété",
     "statusPending": "En attente",
@@ -219,8 +252,7 @@
     "urgencyNormal": "Urgence normale",
     "urgencyCritical": "Urgence critique",
     "statusInitiated": "Initiated",
-    "statusFailed": "Failed",
-    "urgency": "Urgence"
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {
@@ -980,7 +1012,19 @@
     "storyTitle": "Combler le Fossé",
     "storyText": "CauseKind a commencé avec une idée simple : la charité doit être directe, locale et transparente. Nous avons remarqué que d'immenses quantités d'objets utilisables accumulent la poussière dans les maisons, tandis que les étudiants locaux luttent pour les acquérir. En intégrant un système de correspondance géographique, nous rendons le partage fluide et immédiat.",
     "communityTitle": "Impact Local Direct",
-    "communityText": "Notre plateforme vous met en relation avec des besoins vérifiés dans un rayon de 10 km, évitant ainsi totalement les frais d'expédition."
+    "communityText": "Notre plateforme vous met en relation avec des besoins vérifiés dans un rayon de 10 km, évitant ainsi totalement les frais d'expédition.",
+    "localFocus": "Orientation locale",
+    "standForHeading": "Ce que nous défendons",
+    "securePlatformTitle": "Secure Platform",
+    "securePlatformText": "Nous facilitons les connexions directes sous stricte modération administrative et correspondance de localisation.",
+    "razorpaySecured": "Razorpay Sécurisé",
+    "verifiedNeedsTitle": "Besoins vérifiés uniquement",
+    "verifiedNeedsText": "Notre équipe examine chaque annonce et demande manuellement. Assistance sûre, vérifiée et directe.",
+    "adminAudited": "Administrateur audité",
+    "ctaTitle": "Envie de rejoindre le mouvement ?",
+    "ctaText": "Inscrivez-vous en tant que donateur pour commencer à répertorier les fournitures de rechange et répondre aux besoins vérifiés dans votre communauté, ou inscrivez-vous en tant que donataire pour rechercher du soutien pour vos causes éducatives, médicales ou familiales.",
+    "becomeDonor": "Devenez donateur",
+    "receiveSupport": "Bénéficier d'une assistance"
   },
   "itemDetail": {
     "verified": "Vérifié",

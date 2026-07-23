@@ -6,7 +6,7 @@ import { useLocale } from "next-intl";
 // Module-level in-memory cache — survives re-renders, cleared on page reload
 const memCache = new Map<string, string>();
 
-async function translateText(text: string, targetLang: string): Promise<string> {
+export async function translateText(text: string, targetLang: string): Promise<string> {
   const key = `${targetLang}:${text}`;
 
   if (memCache.has(key)) return memCache.get(key)!;
@@ -27,6 +27,13 @@ async function translateText(text: string, targetLang: string): Promise<string> 
     );
     const data = await res.json();
     const result: string = data?.responseData?.translatedText ?? text;
+    // MyMemory reports rate-limit/quota failures via responseStatus in the
+    // JSON body (the HTTP status itself is 200), stuffing its warning text
+    // into translatedText — without this check that notice gets cached and
+    // shown to readers as if it were the translation.
+    if ((data?.responseStatus && data.responseStatus !== 200) || /mymemory warning/i.test(result)) {
+      return text;
+    }
     memCache.set(key, result);
     try { sessionStorage.setItem(key, result); } catch {}
     return result;
@@ -102,4 +109,64 @@ export function useDynamicTranslations(texts: (string | null | undefined)[]): (s
 export function TranslatedText({ text }: { text: string | null | undefined }): ReactNode {
   const translated = useDynamicTranslation(text);
   return translated ?? "";
+}
+
+/**
+ * Translates an HTML string node-by-node (walking text nodes only, tags
+ * untouched) so long-form content — e.g. a blog article body — keeps its
+ * markup while its text is translated. Each text node is cached/translated
+ * the same way useDynamicTranslation caches plain strings.
+ */
+export async function translateHtml(html: string, targetLang: string): Promise<string> {
+  if (typeof window === "undefined" || !html || targetLang === "en") return html;
+
+  const container = document.createElement("div");
+  container.innerHTML = html;
+
+  const textNodes: Text[] = [];
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    if (node.textContent && node.textContent.trim()) textNodes.push(node as Text);
+  }
+
+  const translations = await Promise.all(
+    textNodes.map((n) => translateText(n.textContent || "", targetLang))
+  );
+  textNodes.forEach((n, i) => {
+    n.textContent = translations[i];
+  });
+
+  return container.innerHTML;
+}
+
+/**
+ * Translates an HTML string dynamically based on the current locale, the
+ * same way useDynamicTranslation does for plain strings.
+ *
+ * Usage:
+ *   const content = useTranslatedHtml(sanitizedContent);
+ */
+export function useTranslatedHtml(html: string | null | undefined): string | null | undefined {
+  const locale = useLocale();
+  const [translated, setTranslated] = useState(html);
+  const lastHtml = useRef(html);
+
+  useEffect(() => {
+    if (!html) { setTranslated(html); return; }
+    if (locale === "en") { setTranslated(html); return; }
+
+    if (lastHtml.current !== html) {
+      setTranslated(html);
+      lastHtml.current = html;
+    }
+
+    let cancelled = false;
+    translateHtml(html, locale).then((result) => {
+      if (!cancelled) setTranslated(result);
+    });
+    return () => { cancelled = true; };
+  }, [html, locale]);
+
+  return translated;
 }

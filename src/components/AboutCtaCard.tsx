@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 
 export function AboutCtaCard() {
   const { user } = useAuth();
+  const t = useTranslations("about");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -22,18 +24,18 @@ export function AboutCtaCard() {
       <div className="relative">
         <span className="text-[11px] font-black uppercase tracking-widest text-[#f0b97a] mb-4 block">03</span>
         <h3 className="text-2xl font-extrabold text-white mb-4">
-          Want to join the movement?
+          {t("ctaTitle")}
         </h3>
         <p className="text-stone-400 max-w-xl leading-relaxed text-sm font-medium">
-          Register as a Donor to start listing spare supplies and help verified needs in your community, or sign up as a Donee to seek support for your educational, medical, or family causes.
+          {t("ctaText")}
         </p>
       </div>
       <div className="flex gap-4 pt-8 mt-8 border-t border-stone-800 flex-wrap relative z-10">
         <Link href="/requests" className="px-6 py-3 rounded-full bg-[#b04a15] hover:bg-[#963c0d] text-white text-xs font-extrabold uppercase tracking-wider transition-colors shadow-md shadow-[#b04a15]/20 flex items-center gap-2">
-          Become a Donor <ArrowRight className="w-3.5 h-3.5" />
+          {t("becomeDonor")} <ArrowRight className="w-3.5 h-3.5" />
         </Link>
         <Link href="/contact" className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-extrabold uppercase tracking-wider transition-colors flex items-center gap-2">
-          Receive Support <ArrowRight className="w-3.5 h-3.5" />
+          {t("receiveSupport")} <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
     </div>

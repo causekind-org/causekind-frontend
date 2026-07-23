@@ -26,8 +26,8 @@ export default async function HomePage() {
         "@id": "https://causekind.com/#organization",
         "name": "CauseKind",
         "url": "https://causekind.com",
-        "logo": "https://causekind.com/logo-filled.png",
-        "image": "https://causekind.com/logo-filled.png",
+        "logo": "https://causekind.com/logo-filled.webp",
+        "image": "https://causekind.com/logo-filled.webp",
         "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs."
       },
       {

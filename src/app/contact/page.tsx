@@ -16,7 +16,7 @@ export default function ContactPage() {
       "@type": "Organization",
       "name": "CauseKind",
       "url": "https://causekind.com",
-      "logo": "https://causekind.com/logo-filled.png",
+      "logo": "https://causekind.com/logo-filled.webp",
       "contactPoint": {
         "@type": "ContactPoint",
         "contactType": "customer support",

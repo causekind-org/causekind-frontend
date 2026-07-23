@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
         {/* Decorative graphic / background image */}
         <div className="absolute inset-0 opacity-[0.25] pointer-events-none mix-blend-luminosity">
           <Image
-            src="/Change_stories.jpg"
+            src="/Change_stories.webp"
             alt=""
             fill
             className="object-cover"

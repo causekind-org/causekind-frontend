@@ -119,6 +119,38 @@
     "sortNewest": "Recién comenzado",
     "sortFunded": "Más financiado"
   },
+  "blog_page": {
+    "readNext": "Leer siguiente",
+    "badge": "Dar de forma más inteligente",
+    "headline": "Historias que hacen avanzar al mundo.",
+    "subtitle": "Impacto real, verificado por la comunidad. Descubra historias de donaciones y cambios en especie.",
+    "searchPlaceholder": "Buscar historias...",
+    "clearSearch": "Borrar búsqueda",
+    "noSearchResults": "Ninguna historia coincide con \" {query} \".",
+    "categories": "Categorías",
+    "allCategories": "Todo",
+    "featuredStory": "Historia destacada",
+    "readStory": "Leer historia →",
+    "emptyNoMatchInCategory": "No hay historias que coincidan con \" {query} \" en {category} .",
+    "emptyNoMatch": "Ninguna historia coincide con \" {query} \".",
+    "emptyNoCategory": "Aún no hay historias en {category} .",
+    "viewAllCategories": "Ver todas las categorías →",
+    "liveFeedTitle": "Causa vivaAlimentación amable",
+    "startYourImpact": "Comience su impacto",
+    "insiderTipsTitle": "Consejos de expertos para donar de forma eficaz",
+    "insiderTipsSubtitle": "Descubra consejos prácticos para optimizar sus donaciones y maximizar su impacto en la comunidad.",
+    "viewInKindNeeds": "Ver necesidades en especie →",
+    "bannerHeadline": "¿Listo para convertir las historias en cambios?",
+    "bannerPoint1": "Conéctese con causas verificadas localmente",
+    "bannerPoint2": "Coordinar traspasos directos de 10 km.",
+    "bannerPoint3": "100% gratis para enumerar y combinar",
+    "startSupporting": "Empezar a apoyar",
+    "optimizeTitle": "Optimice su impacto con CauseKind",
+    "optimizeSubtitle": "Manténgase actualizado con nuestras últimas ideas, historias de éxito y actualizaciones de la comunidad local.",
+    "newsletterLabel": "Hoja informativa",
+    "emailPlaceholder": "¿Cuál es tu correo electrónico?",
+    "subscribe": "Suscribir"
+  },
   "listings": {
     "title": "Listados de artículos",
     "new": "Listar un artículo",
@@ -199,6 +231,7 @@
     "city": "Ciudad",
     "category": "Categoría",
     "description": "Descripción",
+    "urgency": "Urgencia",
     "status": "Estado",
     "statusCompleted": "Terminado",
     "statusPending": "Pendiente",
@@ -219,8 +252,7 @@
     "urgencyNormal": "urgencia normal",
     "urgencyCritical": "Urgencia crítica",
     "statusInitiated": "Initiated",
-    "statusFailed": "Failed",
-    "urgency": "Urgencia"
+    "statusFailed": "Failed"
   },
   "auth": {
     "login": {
@@ -980,7 +1012,19 @@
     "storyTitle": "Cerrando la Brecha",
     "storyText": "CauseKind comenzó con una idea simple: la caridad debe ser directa, localizada y transparente. Nos dimos cuenta de que grandes cantidades de artículos útiles acumulan polvo en los hogares, mientras que los estudiantes locales luchan por adquirirlos. Al integrar un sistema de emparejamiento por radio geográfico, hacemos que compartir sea inmediato y sin problemas.",
     "communityTitle": "Impacto Local Directo",
-    "communityText": "Nuestra plataforma lo conecta con necesidades verificadas dentro de un radio de 10 km, evitando por completo las tarifas de envío."
+    "communityText": "Nuestra plataforma lo conecta con necesidades verificadas dentro de un radio de 10 km, evitando por completo las tarifas de envío.",
+    "localFocus": "Enfoque local",
+    "standForHeading": "Lo que representamos",
+    "securePlatformTitle": "Plataforma segura",
+    "securePlatformText": "Facilitamos conexiones directas bajo estricta moderación administrativa y coincidencia de ubicación.",
+    "razorpaySecured": "Razorpay asegurado",
+    "verifiedNeedsTitle": "Sólo necesidades verificadas",
+    "verifiedNeedsText": "Nuestro equipo revisa cada listado y solicitud manualmente. Soporte seguro, verificado y directo.",
+    "adminAudited": "Administrador auditado",
+    "ctaTitle": "¿Quieres unirte al movimiento?",
+    "ctaText": "Regístrese como donante para comenzar a enumerar suministros de repuesto y ayudar a las necesidades verificadas en su comunidad, o regístrese como donatario para buscar apoyo para sus causas educativas, médicas o familiares.",
+    "becomeDonor": "Conviértete en donante",
+    "receiveSupport": "Recibir soporte"
   },
   "itemDetail": {
     "verified": "Verificado",

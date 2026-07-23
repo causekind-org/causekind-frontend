@@ -25,7 +25,7 @@ export default async function AboutPage() {
       "@type": "Organization",
       "name": "CauseKind",
       "url": "https://causekind.com",
-      "logo": "https://causekind.com/logo-filled.png",
+      "logo": "https://causekind.com/logo-filled.webp",
       "description": "Connecting kind hearts directly with verified needs."
     }
   };
@@ -106,7 +106,7 @@ export default async function AboutPage() {
             <div className="absolute -inset-3 bg-gradient-to-bl from-[#b04a15] to-[#1e3a60] rounded-3xl blur-md opacity-20 group-hover:opacity-35 transition duration-500" />
             <div className="relative bg-white dark:bg-zinc-900 p-2 rounded-2xl border border-[#e5e2d5]/60 dark:border-stone-800 shadow-2xl overflow-hidden">
               <Image
-                src="/local_handover.png"
+                src="/local_handover.webp"
                 alt="Local handover donation"
                 width={600}
                 height={500}
@@ -191,7 +191,7 @@ export default async function AboutPage() {
         <div className="mb-16">
           <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-2 block">02</span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-stone-900 dark:text-white leading-snug max-w-md">
-            What We Stand For
+            {t("standForHeading")}
           </h2>
         </div>
         </Reveal>
@@ -203,7 +203,7 @@ export default async function AboutPage() {
           <div className="bg-white dark:bg-zinc-900 border border-[#e5e2d5]/60 dark:border-stone-800 rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 grid sm:grid-cols-2">
             <div className="relative min-h-[240px]">
               <Image
-                src="/distribution.png"
+                src="/Distribution.webp"
                 alt="Community donation packing"
                 fill
                 className="object-cover"
@@ -212,7 +212,7 @@ export default async function AboutPage() {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white dark:to-zinc-900 z-10" />
             </div>
             <div className="p-8 flex flex-col justify-center relative z-20">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#b04a15] mb-2 block">Local Focus</span>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-[#b04a15] mb-2 block">{t("localFocus")}</span>
               <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-3">{t("communityTitle")}</h3>
               <p className="text-stone-600 dark:text-stone-400 leading-relaxed font-medium text-sm">{t("communityText")}</p>
             </div>
@@ -224,13 +224,13 @@ export default async function AboutPage() {
               <div className="w-12 h-12 rounded-2xl bg-[#1e3a60]/10 flex items-center justify-center text-[#1e3a60] dark:text-blue-400 mb-6 group-hover:scale-110 transition-transform">
                 <Shield className="w-6 h-6" />
               </div>
-              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white mb-2">Secure Platform</h4>
+              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white mb-2">{t("securePlatformTitle")}</h4>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
-                We facilitate direct connections under strict administrative moderation and location matching.
+                {t("securePlatformText")}
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-stone-100 dark:border-zinc-800 text-[11px] font-bold text-stone-400 uppercase tracking-widest">
-              Razorpay Secured
+              {t("razorpaySecured")}
             </div>
           </div>
         </div>
@@ -245,13 +245,13 @@ export default async function AboutPage() {
               <div className="w-12 h-12 rounded-2xl bg-[#b04a15]/10 flex items-center justify-center text-[#b04a15] mb-6 group-hover:scale-110 transition-transform">
                 <Heart className="w-6 h-6 fill-[#b04a15]" />
               </div>
-              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white mb-2">Verified Needs Only</h4>
+              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white mb-2">{t("verifiedNeedsTitle")}</h4>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
-                Our team reviews every listing and request manually. Safe, verified, direct support.
+                {t("verifiedNeedsText")}
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-stone-100 dark:border-zinc-800 text-[11px] font-bold text-stone-400 uppercase tracking-widest">
-              Admin Audited
+              {t("adminAudited")}
             </div>
           </div>
 
