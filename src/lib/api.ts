@@ -747,6 +747,15 @@ export function reopenItemRequest(id: number) {
   return request<ItemRequest>(`/api/v1/item-requests/${id}/reopen`, { method: "POST" });
 }
 
+/** Withdraw my own request at any stage short of completion — cancels any live
+ *  matches/offers against it too. `reason` is optional. */
+export function cancelItemRequest(id: number, reason?: string) {
+  return request<ItemRequest>(`/api/v1/item-requests/${id}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 /** Read back my saved verification form (step 2 answers); undefined if never saved (204). */
 export function getMyRequestVerificationDetails(id: number) {
   return request<RequestVerification | undefined>(`/api/v1/item-requests/${id}/verification-details`);

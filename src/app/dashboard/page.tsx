@@ -10,7 +10,7 @@ import {
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   pauseItemListing, resumeItemListing, withdrawItemListing, deleteMyListing,
   getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer, confirmNoIssue,
-  reopenItemRequest,
+  reopenItemRequest, cancelItemRequest,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -132,9 +132,14 @@ function getRequestStatusBadge(status: string) {
     FULFILLED: { label: "Completed", variant: "default" },
     EXPIRED: { label: "Expired", variant: "outline" },
     REJECTED: { label: "Rejected", variant: "destructive" },
+    CANCELLED: { label: "Withdrawn", variant: "outline" },
   };
   return map[status] ?? { label: status, variant: "outline" as const };
 }
+
+// Statuses a donee can no longer withdraw from — already a finished (or
+// not-yet-real) transaction. Mirrors ItemRequestService.NOT_CANCELLABLE_STATUSES.
+const NOT_CANCELLABLE_STATUSES = new Set(["DRAFT", "FULFILLED", "FULLY_FULFILLED", "REJECTED", "EXPIRED", "CANCELLED"]);
 
 /* Fix & Resubmit: reopens a REJECTED request as a draft (REJECTED -> DRAFT) and
    jumps into the request wizard with everything prefilled and documents intact. */
@@ -164,6 +169,36 @@ function FixResubmitButton({ requestId }: { requestId: number }) {
   );
 }
 
+/* Withdraw my own request — works at any stage short of completion, including
+ * mid-handover. Cancels any live match/offer against it and notifies the donor,
+ * same as the backend's cancelRequest(). */
+function CancelRequestButton({ requestId, onCancelled }: { requestId: number; onCancelled: () => void }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={busy}
+      className="h-7 px-2.5 text-[11px] font-bold border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+      onClick={async () => {
+        if (!confirm("Withdraw this request? If a donor is already matched or mid-handover, they'll be notified and released.")) return;
+        setBusy(true);
+        try {
+          await cancelItemRequest(requestId);
+          onCancelled();
+          toast.success("Request withdrawn");
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Could not withdraw request");
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <><X className="w-3 h-3 mr-1" /> Withdraw</>}
+    </Button>
+  );
+}
+
 /* The donee pipeline, drawn: every request travels Posted -> Verified -> Matched ->
    Received. The rail pulses at the current station and breaks (red) where a
    rejection or expiry stopped it — the structure IS the status explanation. */
@@ -173,6 +208,7 @@ function journeyStage(status: string): { stage: number; state: "draft" | "active
   if (status === "DRAFT") return { stage: 0, state: "draft" };
   if (status === "REJECTED") return { stage: 1, state: "broken" };
   if (status === "EXPIRED") return { stage: 2, state: "broken" };
+  if (status === "CANCELLED") return { stage: 2, state: "broken" };
   if (["PENDING_VERIFICATION", "ON_HOLD"].includes(status)) return { stage: 1, state: "active" };
   if (["FULFILLED", "FULLY_FULFILLED"].includes(status)) return { stage: 3, state: "done" };
   if (["RESERVED", "MATCH_IN_PROGRESS", "FULFILMENT_IN_PROGRESS", "PARTIALLY_MATCHED", "PARTIALLY_FULFILLED"].includes(status)) return { stage: 3, state: "active" };
@@ -216,7 +252,7 @@ function JourneyRail({ status }: { status: string }) {
   );
 }
 
-function DoneeRequestRow({ request: r, index }: { request: ItemRequest; index: number }) {
+function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequest; index: number; onCancelled: () => void }) {
   const badge = getRequestStatusBadge(r.status);
   return (
     <motion.div
@@ -244,6 +280,7 @@ function DoneeRequestRow({ request: r, index }: { request: ItemRequest; index: n
               <Pencil className="w-3 h-3" /> Continue editing
             </Link>
           )}
+          {!NOT_CANCELLABLE_STATUSES.has(r.status) && <CancelRequestButton requestId={r.id} onCancelled={onCancelled} />}
         </div>
       </div>
       <JourneyRail status={r.status} />
@@ -1206,7 +1243,7 @@ function DoneeDashboard({
             ) : (
               <div>
                 {itemRequests.map((r, i) => (
-                  <DoneeRequestRow key={r.id} request={r} index={i} />
+                  <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
                 ))}
               </div>
             )}
@@ -1387,6 +1424,10 @@ export default function DashboardPage() {
     try { const fresh = await getMyMatches(); setMatches(fresh); } catch { /* silent */ }
   };
 
+  const refreshRequests = async () => {
+    try { const fresh = await getMyItemRequests(); setItemRequests(fresh); } catch { /* silent */ }
+  };
+
   async function handleOfferReconfirm(offerId: number) {
     try {
       const updated = await reconfirmOfferAvailability(offerId);
@@ -1503,7 +1544,7 @@ export default function DashboardPage() {
         myProfile={myProfile}
         itemRequests={itemRequests}
         doneeMatches={doneeMatches}
-        onRefresh={refreshMatches}
+        onRefresh={async () => { await refreshMatches(); await refreshRequests(); }}
       />
     );
   }
