@@ -14,9 +14,11 @@ import {
   submitItemRequestDraft,
   saveRequestVerificationDetails,
   uploadVerificationDocument,
+  deleteVerificationDocument,
   type UpdateRequestPayload,
   type RequestVerification,
   type VerificationDocumentType,
+  type VerificationDocument,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -25,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Loader2, ChevronRight, ChevronLeft, CheckCircle2, Circle, MapPin,
-  Shield, Award, Lock, UploadCloud, X, FileCheck2, AlertTriangle,
+  Shield, Award, Lock, UploadCloud, X, FileCheck2, AlertTriangle, Trash2,
 } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
@@ -165,27 +167,55 @@ function Field({ label, required, hint, error, children }: { label: string; requ
 
 // ── Document upload slot ─────────────────────────────────────────────────────
 function DocSlot({
-  label, required, uploaded, uploading, onUpload,
-}: { label: string; required: boolean; uploaded: boolean; uploading: boolean; onUpload: (file: File) => void }) {
+  label, required, doc, uploading, onUpload, onRemove,
+}: {
+  label: string; required: boolean; doc: VerificationDocument | undefined;
+  uploading: boolean; onUpload: (file: File) => void; onRemove: () => void;
+}) {
   const ref = useRef<HTMLInputElement>(null);
+  const uploaded = !!doc;
   return (
-    <div className={`flex items-center justify-between gap-3 rounded-xl border-2 p-3.5 transition-all
-      ${uploaded ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700" : "border-stone-200 dark:border-zinc-700"}`}>
-      <div className="flex items-center gap-2.5 min-w-0">
-        {uploaded ? <FileCheck2 className="w-4 h-4 text-green-500 shrink-0" /> : <UploadCloud className="w-4 h-4 text-stone-400 shrink-0" />}
-        <span className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">
+    <div className={`flex items-center gap-3 rounded-2xl border-2 p-3.5 transition-all
+      ${uploaded
+        ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700"
+        : required
+          ? "border-[#b04a15]/30 bg-[#b04a15]/[0.03] dark:border-[#b04a15]/40"
+          : "border-stone-200 dark:border-zinc-700"}`}>
+      <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center
+        ${uploaded ? "bg-green-100 dark:bg-green-900/40" : required ? "bg-[#b04a15]/10" : "bg-stone-100 dark:bg-zinc-800"}`}>
+        {uploaded
+          ? <FileCheck2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+          : <UploadCloud className={`w-4 h-4 ${required ? "text-[#b04a15]" : "text-stone-400"}`} />}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {label}
           {required
             ? <span className="text-[#b04a15] ml-0.5">*</span>
             : <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">(optional)</span>}
         </span>
+        {uploaded && (
+          <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+            Uploaded {new Date(doc.uploadedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+          </p>
+        )}
       </div>
+
       <input ref={ref} type="file" accept="image/*,.pdf" className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
-      <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
-        className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg border border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5 disabled:opacity-50 transition-colors">
-        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : uploaded ? "Replace" : "Upload"}
-      </button>
+      <div className="shrink-0 flex items-center gap-1.5">
+        {uploaded && (
+          <button type="button" onClick={onRemove} aria-label={`Remove ${label}`}
+            className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+        <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
+          className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5 disabled:opacity-50 transition-colors">
+          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : uploaded ? "Replace" : "Upload"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -276,7 +306,7 @@ function NewRequestForm() {
   }, [countryIso]);
 
   // Step 3 — verification documents
-  const [uploadedDocs, setUploadedDocs] = useState<Set<VerificationDocumentType>>(new Set());
+  const [uploadedDocs, setUploadedDocs] = useState<Map<VerificationDocumentType, VerificationDocument>>(new Map());
   const [uploadingDoc, setUploadingDoc] = useState<VerificationDocumentType | null>(null);
 
   // Step 4
@@ -312,7 +342,7 @@ function NewRequestForm() {
           setStep(stepForRejection(r.rejectionReason));
         }
         getMyVerificationDocuments(idNum)
-          .then((docs) => setUploadedDocs(new Set(docs.map((d) => d.docType))))
+          .then((docs) => setUploadedDocs(new Map(docs.map((d) => [d.docType, d]))))
           .catch(() => {});
         // Prefill step 2 (household & situation) with the previously saved answers
         getMyRequestVerificationDetails(idNum)
@@ -476,13 +506,25 @@ function NewRequestForm() {
     if (!draftId) return;
     setUploadingDoc(docType);
     try {
-      await uploadVerificationDocument(draftId, docType, file);
-      setUploadedDocs((prev) => new Set(prev).add(docType));
+      const doc = await uploadVerificationDocument(draftId, docType, file);
+      setUploadedDocs((prev) => new Map(prev).set(docType, doc));
       toast.success("Document uploaded");
     } catch {
       toast.error("Upload failed — please try again");
     } finally {
       setUploadingDoc(null);
+    }
+  }
+
+  async function handleDocRemove(docType: VerificationDocumentType) {
+    const doc = uploadedDocs.get(docType);
+    if (!draftId || !doc) return;
+    try {
+      await deleteVerificationDocument(draftId, doc.id);
+      setUploadedDocs((prev) => { const next = new Map(prev); next.delete(docType); return next; });
+      toast.success("Document removed");
+    } catch {
+      toast.error("Couldn't remove document — please try again");
     }
   }
 
@@ -792,6 +834,32 @@ function NewRequestForm() {
   );
 
   // ── Step 3: Verification Documents ────────────────────────────────────────
+  const mandatoryTypes = MANDATORY_DOC_TYPES[tier];
+  const requiredDocList = REQUIRED_DOCS[tier].filter((d) => mandatoryTypes.includes(d.type));
+  const optionalDocList = REQUIRED_DOCS[tier].filter((d) => !mandatoryTypes.includes(d.type));
+  const requiredDoneCount = requiredDocList.filter((d) => uploadedDocs.has(d.type)).length;
+  const optionalDoneCount = optionalDocList.filter((d) => uploadedDocs.has(d.type)).length;
+
+  function renderDocSlot(d: { type: VerificationDocumentType; label: string }, required: boolean) {
+    return (
+      <div key={d.type} className="space-y-2">
+        <DocSlot
+          label={d.label}
+          required={required}
+          doc={uploadedDocs.get(d.type)}
+          uploading={uploadingDoc === d.type}
+          onUpload={(f) => handleDocUpload(d.type, f)}
+          onRemove={() => handleDocRemove(d.type)}
+        />
+        {d.type === "RESIDENCE_PROOF" && !uploadedDocs.has(d.type) && (
+          <p className="text-xs text-stone-400 pl-1">
+            Anything works as long as it shows your residential address — a utility bill, rental agreement, ration card, voter ID, or bank statement are all fine.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   const step3 = (
     <div className="space-y-6">
       <div className="rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-4 flex items-start gap-3">
@@ -802,25 +870,26 @@ function NewRequestForm() {
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Required Documents</p>
-        {REQUIRED_DOCS[tier].map((d) => (
-          <div key={d.type} className="space-y-2">
-            <DocSlot
-              label={d.label}
-              required={MANDATORY_DOC_TYPES[tier].includes(d.type)}
-              uploaded={uploadedDocs.has(d.type)}
-              uploading={uploadingDoc === d.type}
-              onUpload={(f) => handleDocUpload(d.type, f)}
-            />
-            {d.type === "RESIDENCE_PROOF" && !uploadedDocs.has(d.type) && (
-              <p className="text-xs text-stone-400 pl-1">
-                Anything works as long as it shows your residential address — a utility bill, rental agreement, ration card, voter ID, or bank statement are all fine.
-              </p>
-            )}
-          </div>
-        ))}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Required to submit</p>
+          <span className={`text-xs font-bold ${requiredDoneCount === requiredDocList.length ? "text-green-600" : "text-[#b04a15]"}`}>
+            {requiredDoneCount} of {requiredDocList.length}
+          </span>
+        </div>
+        {requiredDocList.map((d) => renderDocSlot(d, true))}
         {fieldErrors.documents && <p className="text-xs text-[#b04a15] font-semibold">{fieldErrors.documents}</p>}
       </div>
+
+      {optionalDocList.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Strengthens your case</p>
+            <span className="text-xs font-bold text-stone-400">{optionalDoneCount} of {optionalDocList.length}</span>
+          </div>
+          <p className="text-xs text-stone-400 -mt-1">Optional, but each one helps our team verify and approve your request faster.</p>
+          {optionalDocList.map((d) => renderDocSlot(d, false))}
+        </div>
+      )}
     </div>
   );
 
