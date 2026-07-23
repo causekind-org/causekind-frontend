@@ -842,6 +842,26 @@ export function analyzeResidenceProof(documentUrl: string) {
   });
 }
 
+export type IdProofAnalysis = {
+  aiAvailable: boolean;
+  looksLikeValidIdProof: boolean | null;
+  confidence: number | null;
+  reason: string | null;
+  documentTypeGuess: string | null;
+  note: string | null;
+};
+
+/** Fast, non-blocking AI check on an already-uploaded government-ID document
+ *  (Aadhaar / PAN / Voter ID / etc., S3 URL) — sibling of analyzeResidenceProof().
+ *  Never a hard gate on submission; a human admin still reviews the whole
+ *  request afterward. */
+export function analyzeIdProof(documentUrl: string) {
+  return request<IdProofAnalysis>(`/api/v1/item-requests/analyze-id-proof`, {
+    method: "POST",
+    body: JSON.stringify({ documentUrl }),
+  });
+}
+
 export function adminGetItemRequests(status?: string) {
   const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return request<ItemRequest[]>(`/api/v1/admin/item-requests${qs}`);
