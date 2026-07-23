@@ -14,9 +14,13 @@ import {
   submitItemRequestDraft,
   saveRequestVerificationDetails,
   uploadVerificationDocument,
+  deleteVerificationDocument,
+  analyzeResidenceProof,
+  analyzeIdProof,
   type UpdateRequestPayload,
   type RequestVerification,
   type VerificationDocumentType,
+  type VerificationDocument,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -25,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Loader2, ChevronRight, ChevronLeft, CheckCircle2, Circle, MapPin,
-  Shield, Award, Lock, UploadCloud, X, FileCheck2, AlertTriangle,
+  Shield, Award, Lock, UploadCloud, X, FileCheck2, AlertTriangle, Trash2,
 } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
@@ -80,16 +84,19 @@ const TIER_TAT: Record<Tier, string> = {
 const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: string }[]> = {
   TIER_1_BASIC: [
     { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
+    { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
     { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
   ],
   TIER_2_MODERATE: [
     { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
+    { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
     { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
     { type: "PROOF_OF_NEED", label: "Proof of need (school/hospital/doctor letter)" },
     { type: "BPL_CARD", label: "BPL card" },
   ],
   TIER_3_HIGH_VALUE: [
     { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
+    { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
     { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
     { type: "PROOF_OF_NEED", label: "Primary proof of need (hospital discharge / prescription)" },
     { type: "BPL_CARD", label: "BPL card" },
@@ -107,10 +114,22 @@ const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: strin
 // is shown as a helpful (optional) upload but isn't mandatory. Tier 4 Emergency
 // keeps all three of its docs mandatory (unchanged, separate concern).
 const MANDATORY_DOC_TYPES: Record<Tier, VerificationDocumentType[]> = {
-  TIER_1_BASIC: ["RESIDENCE_PROOF"],
-  TIER_2_MODERATE: ["RESIDENCE_PROOF"],
-  TIER_3_HIGH_VALUE: ["RESIDENCE_PROOF"],
+  TIER_1_BASIC: ["RESIDENCE_PROOF", "GOVT_ID_ANY"],
+  TIER_2_MODERATE: ["RESIDENCE_PROOF", "GOVT_ID_ANY"],
+  TIER_3_HIGH_VALUE: ["RESIDENCE_PROOF", "GOVT_ID_ANY"],
   TIER_4_EMERGENCY: ["GOVT_ID_ANY", "EMERGENCY_PROOF", "SCENE_SELFIE"],
+};
+
+// Doc types that get an immediate AI screening pass right after upload —
+// residence proof and government ID are the two documents with a dedicated
+// Claude-vision check (ResidenceProofVisionService / IdProofVisionService on
+// the backend). Everything else is admin-reviewed only, same as before.
+const AI_SCREENED_DOC_TYPES: VerificationDocumentType[] = ["RESIDENCE_PROOF", "GOVT_ID_ANY"];
+
+type DocScreening = {
+  status: "checking" | "valid" | "invalid" | "unavailable";
+  reason: string | null;
+  documentTypeGuess: string | null;
 };
 
 const DECLARATIONS = [
@@ -159,27 +178,75 @@ function Field({ label, required, hint, error, children }: { label: string; requ
 
 // ── Document upload slot ─────────────────────────────────────────────────────
 function DocSlot({
-  label, required, uploaded, uploading, onUpload,
-}: { label: string; required: boolean; uploaded: boolean; uploading: boolean; onUpload: (file: File) => void }) {
+  label, required, doc, uploading, screening, onUpload, onRemove,
+}: {
+  label: string; required: boolean; doc: VerificationDocument | undefined;
+  uploading: boolean; screening?: DocScreening; onUpload: (file: File) => void; onRemove: () => void;
+}) {
   const ref = useRef<HTMLInputElement>(null);
+  const uploaded = !!doc;
+  const invalid = screening?.status === "invalid";
+  const checking = screening?.status === "checking";
+
+  const borderClass = invalid
+    ? "border-red-400 bg-red-50 dark:bg-red-950/20 dark:border-red-700"
+    : uploaded
+      ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700"
+      : required
+        ? "border-[#b04a15]/30 bg-[#b04a15]/[0.03] dark:border-[#b04a15]/40"
+        : "border-stone-200 dark:border-zinc-700";
+
   return (
-    <div className={`flex items-center justify-between gap-3 rounded-xl border-2 p-3.5 transition-all
-      ${uploaded ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700" : "border-stone-200 dark:border-zinc-700"}`}>
-      <div className="flex items-center gap-2.5 min-w-0">
-        {uploaded ? <FileCheck2 className="w-4 h-4 text-green-500 shrink-0" /> : <UploadCloud className="w-4 h-4 text-stone-400 shrink-0" />}
-        <span className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">
+    <div className={`flex items-center gap-3 rounded-2xl border-2 p-3.5 transition-all ${borderClass}`}>
+      <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center
+        ${invalid ? "bg-red-100 dark:bg-red-900/40" : uploaded ? "bg-green-100 dark:bg-green-900/40" : required ? "bg-[#b04a15]/10" : "bg-stone-100 dark:bg-zinc-800"}`}>
+        {checking
+          ? <Loader2 className="w-4 h-4 text-stone-400 animate-spin" />
+          : invalid
+            ? <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+            : uploaded
+              ? <FileCheck2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+              : <UploadCloud className={`w-4 h-4 ${required ? "text-[#b04a15]" : "text-stone-400"}`} />}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {label}
           {required
             ? <span className="text-[#b04a15] ml-0.5">*</span>
             : <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">(optional)</span>}
         </span>
+        {uploaded && (
+          checking ? (
+            <p className="text-xs text-stone-400 mt-0.5">Checking with AI…</p>
+          ) : invalid ? (
+            <p className="text-xs text-red-600 dark:text-red-400 font-semibold mt-0.5">
+              {screening?.reason ?? "This doesn't look valid"} — please re-upload.
+            </p>
+          ) : (
+            <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+              Uploaded {new Date(doc.uploadedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+              {screening?.status === "valid" && (screening.documentTypeGuess ? ` · AI verified — ${screening.documentTypeGuess}` : " · AI verified")}
+            </p>
+          )
+        )}
       </div>
+
       <input ref={ref} type="file" accept="image/*,.pdf" className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
-      <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
-        className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg border border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5 disabled:opacity-50 transition-colors">
-        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : uploaded ? "Replace" : "Upload"}
-      </button>
+      <div className="shrink-0 flex items-center gap-1.5">
+        {uploaded && (
+          <button type="button" onClick={onRemove} aria-label={`Remove ${label}`}
+            className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+        <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
+          className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-50 transition-colors
+            ${invalid ? "border-red-400 text-red-600 hover:bg-red-100 dark:hover:bg-red-950/30" : "border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5"}`}>
+          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : uploaded ? "Replace" : "Upload"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -270,8 +337,9 @@ function NewRequestForm() {
   }, [countryIso]);
 
   // Step 3 — verification documents
-  const [uploadedDocs, setUploadedDocs] = useState<Set<VerificationDocumentType>>(new Set());
+  const [uploadedDocs, setUploadedDocs] = useState<Map<VerificationDocumentType, VerificationDocument>>(new Map());
   const [uploadingDoc, setUploadingDoc] = useState<VerificationDocumentType | null>(null);
+  const [docScreening, setDocScreening] = useState<Map<VerificationDocumentType, DocScreening>>(new Map());
 
   // Step 4
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
@@ -306,7 +374,22 @@ function NewRequestForm() {
           setStep(stepForRejection(r.rejectionReason));
         }
         getMyVerificationDocuments(idNum)
-          .then((docs) => setUploadedDocs(new Set(docs.map((d) => d.docType))))
+          .then((docs) => {
+            setUploadedDocs(new Map(docs.map((d) => [d.docType, d])));
+            // Restore any persisted AI screening verdict (e.g. Fix & Resubmit reopening
+            // a previously-uploaded, already-screened document) without re-calling the AI.
+            setDocScreening((prev) => {
+              const next = new Map(prev);
+              docs.forEach((d) => {
+                if (d.aiVerified === null) return;
+                next.set(d.docType, {
+                  status: d.aiVerified ? "valid" : "invalid",
+                  reason: d.aiReason, documentTypeGuess: d.aiDocumentTypeGuess,
+                });
+              });
+              return next;
+            });
+          })
           .catch(() => {});
         // Prefill step 2 (household & situation) with the previously saved answers
         getMyRequestVerificationDetails(idNum)
@@ -470,13 +553,59 @@ function NewRequestForm() {
     if (!draftId) return;
     setUploadingDoc(docType);
     try {
-      await uploadVerificationDocument(draftId, docType, file);
-      setUploadedDocs((prev) => new Set(prev).add(docType));
+      const doc = await uploadVerificationDocument(draftId, docType, file);
+      setUploadedDocs((prev) => new Map(prev).set(docType, doc));
       toast.success("Document uploaded");
+      if (AI_SCREENED_DOC_TYPES.includes(docType)) screenDocument(docType, doc.url, doc.id);
     } catch {
       toast.error("Upload failed — please try again");
     } finally {
       setUploadingDoc(null);
+    }
+  }
+
+  async function handleDocRemove(docType: VerificationDocumentType) {
+    const doc = uploadedDocs.get(docType);
+    if (!draftId || !doc) return;
+    try {
+      await deleteVerificationDocument(draftId, doc.id);
+      setUploadedDocs((prev) => { const next = new Map(prev); next.delete(docType); return next; });
+      setDocScreening((prev) => { const next = new Map(prev); next.delete(docType); return next; });
+      toast.success("Document removed");
+    } catch {
+      toast.error("Couldn't remove document — please try again");
+    }
+  }
+
+  // Fires the moment upload finishes, so the donee finds out right away if a
+  // document doesn't look right instead of waiting for admin review days later.
+  // Non-blocking by design (see IdProofVisionService/ResidenceProofVisionService
+  // doc comments) — an "invalid" verdict is a strong, immediate warning to
+  // re-upload, but a human admin always makes the final call.
+  async function screenDocument(docType: VerificationDocumentType, documentUrl: string, documentId: number) {
+    setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, documentTypeGuess: null }));
+    try {
+      if (docType === "RESIDENCE_PROOF") {
+        const r = await analyzeResidenceProof(documentUrl, documentId);
+        applyScreeningResult(docType, r.aiAvailable, r.looksLikeResidenceProof, r.reason, r.documentTypeGuess);
+      } else if (docType === "GOVT_ID_ANY") {
+        const r = await analyzeIdProof(documentUrl, documentId);
+        applyScreeningResult(docType, r.aiAvailable, r.looksLikeValidIdProof, r.reason, r.documentTypeGuess);
+      }
+    } catch {
+      setDocScreening((prev) => new Map(prev).set(docType, { status: "unavailable", reason: null, documentTypeGuess: null }));
+    }
+  }
+
+  function applyScreeningResult(
+    docType: VerificationDocumentType, aiAvailable: boolean, looksValid: boolean | null,
+    reason: string | null, documentTypeGuess: string | null
+  ) {
+    const status: DocScreening["status"] =
+      !aiAvailable || looksValid === null ? "unavailable" : looksValid ? "valid" : "invalid";
+    setDocScreening((prev) => new Map(prev).set(docType, { status, reason, documentTypeGuess }));
+    if (status === "invalid") {
+      toast.error(`This doesn't look valid — ${reason ?? "please check and re-upload"}`);
     }
   }
 
@@ -786,6 +915,39 @@ function NewRequestForm() {
   );
 
   // ── Step 3: Verification Documents ────────────────────────────────────────
+  const mandatoryTypes = MANDATORY_DOC_TYPES[tier];
+  const requiredDocList = REQUIRED_DOCS[tier].filter((d) => mandatoryTypes.includes(d.type));
+  const optionalDocList = REQUIRED_DOCS[tier].filter((d) => !mandatoryTypes.includes(d.type));
+  const requiredDoneCount = requiredDocList.filter((d) => uploadedDocs.has(d.type)).length;
+  const optionalDoneCount = optionalDocList.filter((d) => uploadedDocs.has(d.type)).length;
+
+  function renderDocSlot(d: { type: VerificationDocumentType; label: string }, required: boolean) {
+    return (
+      <div key={d.type} className="space-y-2">
+        <DocSlot
+          label={d.label}
+          required={required}
+          doc={uploadedDocs.get(d.type)}
+          uploading={uploadingDoc === d.type}
+          screening={docScreening.get(d.type)}
+          onUpload={(f) => handleDocUpload(d.type, f)}
+          onRemove={() => handleDocRemove(d.type)}
+        />
+        {d.type === "RESIDENCE_PROOF" && !uploadedDocs.has(d.type) && (
+          <p className="text-xs text-stone-400 pl-1">
+            Anything works as long as it shows your residential address — a utility bill, rental agreement, ration card, voter ID, or bank statement are all fine.
+          </p>
+        )}
+        {d.type === "GOVT_ID_ANY" && !uploadedDocs.has(d.type) && (
+          <p className="text-xs text-stone-400 pl-1">
+            Any one government photo ID works — Aadhaar card, PAN card, Voter ID, driving licence, or passport.
+            We check it automatically as soon as you upload.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   const step3 = (
     <div className="space-y-6">
       <div className="rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-4 flex items-start gap-3">
@@ -796,25 +958,26 @@ function NewRequestForm() {
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Required Documents</p>
-        {REQUIRED_DOCS[tier].map((d) => (
-          <div key={d.type} className="space-y-2">
-            <DocSlot
-              label={d.label}
-              required={MANDATORY_DOC_TYPES[tier].includes(d.type)}
-              uploaded={uploadedDocs.has(d.type)}
-              uploading={uploadingDoc === d.type}
-              onUpload={(f) => handleDocUpload(d.type, f)}
-            />
-            {d.type === "RESIDENCE_PROOF" && !uploadedDocs.has(d.type) && (
-              <p className="text-xs text-stone-400 pl-1">
-                Anything works as long as it shows your residential address — a utility bill, rental agreement, ration card, voter ID, or bank statement are all fine.
-              </p>
-            )}
-          </div>
-        ))}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Required to submit</p>
+          <span className={`text-xs font-bold ${requiredDoneCount === requiredDocList.length ? "text-green-600" : "text-[#b04a15]"}`}>
+            {requiredDoneCount} of {requiredDocList.length}
+          </span>
+        </div>
+        {requiredDocList.map((d) => renderDocSlot(d, true))}
         {fieldErrors.documents && <p className="text-xs text-[#b04a15] font-semibold">{fieldErrors.documents}</p>}
       </div>
+
+      {optionalDocList.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Strengthens your case</p>
+            <span className="text-xs font-bold text-stone-400">{optionalDoneCount} of {optionalDocList.length}</span>
+          </div>
+          <p className="text-xs text-stone-400 -mt-1">Optional, but each one helps our team verify and approve your request faster.</p>
+          {optionalDocList.map((d) => renderDocSlot(d, false))}
+        </div>
+      )}
     </div>
   );
 

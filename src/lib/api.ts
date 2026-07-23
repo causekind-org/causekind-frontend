@@ -748,6 +748,15 @@ export function reopenItemRequest(id: number) {
   return request<ItemRequest>(`/api/v1/item-requests/${id}/reopen`, { method: "POST" });
 }
 
+/** Withdraw my own request at any stage short of completion — cancels any live
+ *  matches/offers against it too. `reason` is optional. */
+export function cancelItemRequest(id: number, reason?: string) {
+  return request<ItemRequest>(`/api/v1/item-requests/${id}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 /** Read back my saved verification form (step 2 answers); undefined if never saved (204). */
 export function getMyRequestVerificationDetails(id: number) {
   return request<RequestVerification | undefined>(`/api/v1/item-requests/${id}/verification-details`);
@@ -799,6 +808,10 @@ export type VerificationDocument = {
   docType: VerificationDocumentType;
   url: string;
   uploadedAt: string;
+  aiVerified: boolean | null;
+  aiConfidence: number | null;
+  aiReason: string | null;
+  aiDocumentTypeGuess: string | null;
 };
 
 export async function uploadVerificationDocument(
@@ -835,11 +848,34 @@ export type ResidenceProofAnalysis = {
 
 /** Fast, non-blocking AI check on an already-uploaded residence-proof document
  *  (S3 URL) — mirrors analyzeListingImages(). Never a hard gate on submission;
- *  a human admin still reviews the whole request afterward. */
-export function analyzeResidenceProof(documentUrl: string) {
+ *  a human admin still reviews the whole request afterward. Passing documentId
+ *  persists the verdict onto that document row (feeds the admin-side auto-approve
+ *  eligibility check) — omit it for a throwaway/preview check. */
+export function analyzeResidenceProof(documentUrl: string, documentId?: number) {
   return request<ResidenceProofAnalysis>(`/api/v1/item-requests/analyze-residence-proof`, {
     method: "POST",
-    body: JSON.stringify({ documentUrl }),
+    body: JSON.stringify({ documentUrl, documentId }),
+  });
+}
+
+export type IdProofAnalysis = {
+  aiAvailable: boolean;
+  looksLikeValidIdProof: boolean | null;
+  confidence: number | null;
+  reason: string | null;
+  documentTypeGuess: string | null;
+  note: string | null;
+};
+
+/** Fast, non-blocking AI check on an already-uploaded government-ID document
+ *  (Aadhaar / PAN / Voter ID / etc., S3 URL) — sibling of analyzeResidenceProof().
+ *  Never a hard gate on submission; a human admin still reviews the whole
+ *  request afterward. Passing documentId persists the verdict onto that document
+ *  row (feeds the admin-side auto-approve eligibility check). */
+export function analyzeIdProof(documentUrl: string, documentId?: number) {
+  return request<IdProofAnalysis>(`/api/v1/item-requests/analyze-id-proof`, {
+    method: "POST",
+    body: JSON.stringify({ documentUrl, documentId }),
   });
 }
 

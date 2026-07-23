@@ -6,9 +6,9 @@ import { usePathname } from "next/navigation";
 import GradualBlur from "@/components/GradualBlur";
 
 // How close (px) to the page bottom before the blur fades out. Roughly the
-// blur's own height (6rem ≈ 96px) plus a little, so the fade finishes right as
-// the footer content clears the blurred band.
-const FADE_THRESHOLD = 160;
+// blur's own max height (clamp(...) tops out at 3.5rem = 56px) plus a little,
+// so the fade finishes right as the footer content clears the blurred band.
+const FADE_THRESHOLD = 95;
 
 /* Site-wide bottom fade — but suppressed on the admin / super-admin panels
    (their own dark dashboard chrome), and faded out once the user reaches the
@@ -49,7 +49,7 @@ export function SiteBottomBlur() {
     <GradualBlur
       target="page"
       position="bottom"
-      height="6rem"
+      height="clamp(1.5rem, 6vh, 3.5rem)"
       strength={2}
       divCount={5}
       curve="bezier"

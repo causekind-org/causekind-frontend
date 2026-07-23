@@ -4,7 +4,9 @@ import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocale, useTranslations } from "next-intl";
 import { blogPosts, insiderTips } from "../../data/blogData";
+import { getBlogTranslation, getInsiderTipTranslation, preloadBlogTranslations } from "@/data/blogTranslations";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
 import { Search, X } from "lucide-react";
@@ -37,6 +39,49 @@ function BlogListingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category");
+
+  const locale = useLocale();
+  const t = useTranslations("blog_page");
+
+  // Cards show pre-translated static content (see scripts/generate-blog-translations.mjs),
+  // fetched once per locale from public/blog-translations/<locale>.json (not
+  // bundled into the JS build — 13 locales of translated article HTML is too
+  // large to ship to every visitor or hand the compiler in one module graph).
+  // getBlogTranslation/getInsiderTipTranslation below read synchronously from
+  // that fetch's in-memory cache; this bump forces a re-render once it lands.
+  const [, setTranslationsVersion] = useState(0);
+  useEffect(() => {
+    if (locale === "en") return;
+    let cancelled = false;
+    preloadBlogTranslations(locale).then(() => {
+      if (!cancelled) setTranslationsVersion((v) => v + 1);
+    });
+    return () => { cancelled = true; };
+  }, [locale]);
+
+  // Category values themselves stay English internally (filtering/URLs
+  // depend on them); only the label shown to the reader is translated, via
+  // the first post carrying that category.
+  const translatePost = (post: (typeof blogPosts)[number]) => {
+    const translation = getBlogTranslation(locale, post.slug);
+    return {
+      title: translation?.title || post.title,
+      description: translation?.description || post.description,
+      category: translation?.category || post.category,
+    };
+  };
+  const translateCategoryLabel = (category: string) => {
+    if (category === ALL_CATEGORIES) return t("allCategories");
+    const samplePost = blogPosts.find((p) => p.category === category);
+    return (samplePost && getBlogTranslation(locale, samplePost.slug)?.category) || category;
+  };
+  const translateTip = (tip: (typeof insiderTips)[number]) => {
+    const translation = getInsiderTipTranslation(locale, tip.slug);
+    return {
+      title: translation?.title || tip.title,
+      description: translation?.description || tip.description,
+    };
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || ALL_CATEGORIES);
@@ -156,7 +201,7 @@ function BlogListingContent() {
       "name": "CauseKind",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://www.causekind.com/logo-filled.png",
+        "url": "https://www.causekind.com/logo-filled.webp",
       },
     },
     "blogPost": blogPosts.map((post) => ({
@@ -189,17 +234,17 @@ function BlogListingContent() {
             <div className="max-w-2xl">
               <AnimatedWrapper delay={0} duration={0.5} direction="up">
                 <span className="inline-block py-1 px-3 bg-orange-100 dark:bg-orange-950/40 text-[#b04a15] dark:text-orange-400 rounded-lg font-bold text-xs uppercase tracking-wider mb-3">
-                  Giving Smarter
+                  {t("badge")}
                 </span>
               </AnimatedWrapper>
               <AnimatedWrapper delay={0.1} duration={0.6} direction="up">
                 <h1 className="font-extrabold text-3xl md:text-5xl text-stone-900 dark:text-stone-100 mb-3 tracking-tight">
-                  Stories that drive the world forward.
+                  {t("headline")}
                 </h1>
               </AnimatedWrapper>
               <AnimatedWrapper delay={0.22} duration={0.6} direction="up">
                 <p className="text-stone-600 dark:text-stone-400 text-base md:text-lg">
-                  Real impact, verified by the community. Discover stories of in-kind giving and change.
+                  {t("subtitle")}
                 </p>
               </AnimatedWrapper>
             </div>
@@ -210,7 +255,7 @@ function BlogListingContent() {
                   <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
                   <input
                     className="pl-9 pr-8 py-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-850 rounded-full text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] transition-all w-full md:w-64"
-                    placeholder="Search stories..."
+                    placeholder={t("searchPlaceholder")}
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -222,7 +267,7 @@ function BlogListingContent() {
                   {searchQuery && (
                     <button
                       type="button"
-                      aria-label="Clear search"
+                      aria-label={t("clearSearch")}
                       onClick={() => setSearchQuery("")}
                       className="absolute right-2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors cursor-pointer"
                     >
@@ -243,33 +288,36 @@ function BlogListingContent() {
                     >
                       {liveSearchResults.length > 0 ? (
                         <ul className="max-h-96 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800">
-                          {liveSearchResults.map((post) => (
-                            <li key={post.slug}>
-                              <Link
-                                href={`/blog/${post.slug}`}
-                                onClick={() => setIsSearchFocused(false)}
-                                className="flex items-center gap-3 p-3 hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors"
-                              >
-                                <img
-                                  src={post.image}
-                                  alt={post.title}
-                                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                                />
-                                <div className="min-w-0">
-                                  <p className="text-xs font-bold text-[#b04a15] dark:text-orange-400 uppercase tracking-wide truncate">
-                                    {post.category}
-                                  </p>
-                                  <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 truncate">
-                                    {post.title}
-                                  </p>
-                                </div>
-                              </Link>
-                            </li>
-                          ))}
+                          {liveSearchResults.map((post) => {
+                            const tr = translatePost(post);
+                            return (
+                              <li key={post.slug}>
+                                <Link
+                                  href={`/blog/${post.slug}`}
+                                  onClick={() => setIsSearchFocused(false)}
+                                  className="flex items-center gap-3 p-3 hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors"
+                                >
+                                  <img
+                                    src={post.image}
+                                    alt={tr.title}
+                                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-[#b04a15] dark:text-orange-400 uppercase tracking-wide truncate">
+                                      {tr.category}
+                                    </p>
+                                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 truncate">
+                                      {tr.title}
+                                    </p>
+                                  </div>
+                                </Link>
+                              </li>
+                            );
+                          })}
                         </ul>
                       ) : (
                         <p className="p-4 text-sm text-stone-500 dark:text-stone-400 text-center">
-                          No stories match &ldquo;{searchQuery}&rdquo;.
+                          {t("noSearchResults", { query: searchQuery })}
                         </p>
                       )}
                     </motion.div>
@@ -284,7 +332,7 @@ function BlogListingContent() {
             <AnimatedWrapper delay={0.35} duration={0.5} direction="up" className="w-full lg:w-56 flex-shrink-0">
               <nav className="lg:sticky lg:top-28 bg-white dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 rounded-2xl p-3">
                 <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
-                  Categories
+                  {t("categories")}
                 </p>
                 <div className="flex flex-col gap-1">
                   {categories.map((category) => (
@@ -298,7 +346,7 @@ function BlogListingContent() {
                           : "text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800/60 hover:text-[#b04a15] dark:hover:text-orange-400"
                       }`}
                     >
-                      {category}
+                      {translateCategoryLabel(category)}
                     </button>
                   ))}
                 </div>
@@ -313,6 +361,7 @@ function BlogListingContent() {
               {filteredPosts.length > 0 ? (
                 (() => {
                   const featured = filteredPosts[0];
+                  const tr = translatePost(featured);
                   return (
                     <Link
                       href={`/blog/${featured.slug}`}
@@ -321,32 +370,32 @@ function BlogListingContent() {
                       <div className="aspect-[16/9] overflow-hidden relative">
                         <div className="absolute inset-0 bg-stone-900/5 group-hover:bg-transparent transition-colors z-10"></div>
                         <img
-                          alt={featured.title}
+                          alt={tr.title}
                           className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
                           src={featured.image}
                         />
                         <div className="absolute top-4 left-4 z-20">
                           <span className="bg-[#b04a15] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm">
-                            {featured.category}
+                            {tr.category}
                           </span>
                         </div>
                       </div>
                       <div className="p-6 md:p-8">
                         <h2 className="font-extrabold text-2xl md:text-3xl text-stone-900 dark:text-stone-100 mb-3 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
-                          {featured.title}
+                          {tr.title}
                         </h2>
                         <p className="text-stone-600 dark:text-stone-400 text-sm md:text-base line-clamp-2 mb-5 leading-relaxed">
-                          {featured.description}
+                          {tr.description}
                         </p>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <span className="text-orange-500 animate-pulse text-sm">🔥</span>
                             <span className="text-xs text-orange-500 font-bold uppercase tracking-wider">
-                              Featured Story
+                              {t("featuredStory")}
                             </span>
                           </div>
                           <span className="text-[#b04a15] dark:text-orange-400 font-bold flex items-center gap-1 text-sm group-hover:translate-x-1 transition-transform">
-                            Read Story →
+                            {t("readStory")}
                           </span>
                         </div>
                       </div>
@@ -357,10 +406,10 @@ function BlogListingContent() {
                 <div className="bg-white dark:bg-stone-900/20 border border-stone-200 dark:border-stone-800 p-12 rounded-2xl text-center">
                   <p className="text-stone-500 dark:text-stone-400 font-medium">
                     {searchQuery.trim() !== "" && selectedCategory !== ALL_CATEGORIES
-                      ? `No stories match "${searchQuery}" in ${selectedCategory}.`
+                      ? t("emptyNoMatchInCategory", { query: searchQuery, category: translateCategoryLabel(selectedCategory) })
                       : searchQuery.trim() !== ""
-                        ? `No stories match "${searchQuery}".`
-                        : `No stories in ${selectedCategory} yet.`}
+                        ? t("emptyNoMatch", { query: searchQuery })
+                        : t("emptyNoCategory", { category: translateCategoryLabel(selectedCategory) })}
                   </p>
                   {selectedCategory !== ALL_CATEGORIES && (
                     <button
@@ -368,7 +417,7 @@ function BlogListingContent() {
                       onClick={() => handleCategorySelect(ALL_CATEGORIES)}
                       className="mt-4 text-sm font-bold text-[#b04a15] dark:text-orange-400 hover:underline cursor-pointer"
                     >
-                      View all categories →
+                      {t("viewAllCategories")}
                     </button>
                   )}
                 </div>
@@ -383,7 +432,7 @@ function BlogListingContent() {
                     <div className="flex items-center gap-2 mb-5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                       <h3 className="text-xs uppercase tracking-widest text-[#b04a15] dark:text-orange-400 font-bold">
-                        Live CauseKind Feed
+                        {t("liveFeedTitle")}
       </h3>
                     </div>
                     {positiveUpdate && (
@@ -413,7 +462,7 @@ function BlogListingContent() {
                     </div>
                   </div>
                   <Link href="/requests" className="mt-6 block text-center w-full py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
-                    Start Your Impact
+                    {t("startYourImpact")}
                   </Link>
                 </div>
               </div>
@@ -425,41 +474,44 @@ function BlogListingContent() {
       {/* List remaining filtered posts */}
       {filteredPosts.length > 1 && (
         <StaggerContainer inView delayStart={0.05} staggerDelay={0.12} className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
-          {filteredPosts.slice(1).map((post) => (
-            <motion.div key={post.slug} variants={itemVariants} className="h-full">
-              <Link
-                href={`/blog/${post.slug}`}
-                className="group bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden hover:shadow-[0_20px_40px_rgba(30,58,96,0.04)] transition-all duration-500 hover:-translate-y-1 flex flex-col h-full"
-              >
-                <div className="aspect-[16/9] overflow-hidden relative flex-shrink-0">
-                  <img
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
-                    src={post.image}
-                  />
-                  <div className="absolute top-4 left-4 z-20">
-                    <span className="bg-[#b04a15] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
-                      {post.category}
-                    </span>
+          {filteredPosts.slice(1).map((post) => {
+            const tr = translatePost(post);
+            return (
+              <motion.div key={post.slug} variants={itemVariants} className="h-full">
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="group bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden hover:shadow-[0_20px_40px_rgba(30,58,96,0.04)] transition-all duration-500 hover:-translate-y-1 flex flex-col h-full"
+                >
+                  <div className="aspect-[16/9] overflow-hidden relative flex-shrink-0">
+                    <img
+                      alt={tr.title}
+                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                      src={post.image}
+                    />
+                    <div className="absolute top-4 left-4 z-20">
+                      <span className="bg-[#b04a15] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
+                        {tr.category}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="p-6 flex flex-col flex-1">
-                  <h3 className="font-bold text-lg md:text-xl text-stone-900 dark:text-stone-100 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors">
-                    {post.title}
-                  </h3>
-                  <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm mb-4 line-clamp-2 leading-relaxed flex-1">
-                    {post.description}
-                  </p>
-                  <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400 mt-auto">
-                    <span>{post.readTime}</span>
-                    <span className="flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
-                      Read Story →
-                    </span>
+                  <div className="p-6 flex flex-col flex-1">
+                    <h3 className="font-bold text-lg md:text-xl text-stone-900 dark:text-stone-100 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors">
+                      {tr.title}
+                    </h3>
+                    <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm mb-4 line-clamp-2 leading-relaxed flex-1">
+                      {tr.description}
+                    </p>
+                    <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400 mt-auto">
+                      <span>{post.readTime}</span>
+                      <span className="flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                        {t("readStory")}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+                </Link>
+              </motion.div>
+            );
+          })}
         </StaggerContainer>
       )}
     </section>
@@ -470,10 +522,10 @@ function BlogListingContent() {
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
               <div className="flex flex-col">
                 <h2 className="font-extrabold text-2xl md:text-3xl text-stone-900 dark:text-stone-100">
-                  Insider Tips for Effective Giving
+                  {t("insiderTipsTitle")}
                 </h2>
                 <p className="text-stone-600 dark:text-stone-400 text-sm mt-1">
-                  Discover practical advice to streamline your donations and maximize your community impact.
+                  {t("insiderTipsSubtitle")}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -508,6 +560,7 @@ function BlogListingContent() {
               >
                 {[0, 1, 2].map((offset) => {
                   const tip = insiderTips[(tipIndex + offset) % insiderTips.length];
+                  const trTip = translateTip(tip);
                   return (
                     <div
                       key={tip.slug}
@@ -516,17 +569,17 @@ function BlogListingContent() {
                       <div className="relative z-10 flex flex-col h-full justify-between">
                         <div>
                           <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 mb-2">
-                            {tip.title}
+                            {trTip.title}
                           </h3>
                           <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm leading-relaxed mb-4">
-                            {tip.description}
+                            {trTip.description}
                           </p>
                         </div>
                         <Link
                           className="font-bold text-xs md:text-sm text-[#b04a15] dark:text-orange-400 flex items-center gap-1 hover:underline mt-auto group/link"
                           href="/requests"
                         >
-                          View In-Kind Needs →
+                          {t("viewInKindNeeds")}
                         </Link>
                       </div>
                     </div>
@@ -558,35 +611,35 @@ function BlogListingContent() {
                 <img
                   alt="Platform Dashboard Mockup"
                   className="w-full max-w-[360px] h-auto drop-shadow-2xl rounded-xl border border-stone-800 shadow-xl hover:scale-[1.01] transition-transform duration-500"
-                  src="/Change_stories.jpg"
+                  src="/Change_stories.webp"
                 />
               </div>
               <div className="w-full md:w-1/2 p-8 md:pr-12 md:py-12 relative z-10 flex flex-col items-start text-left">
                 <h2 className="font-extrabold text-2xl md:text-4xl text-orange-200 mb-6 leading-tight">
-                  Ready to turn stories into change?
+                  {t("bannerHeadline")}
                 </h2>
                 <div className="flex flex-col gap-3.5 mb-8 w-full">
                   <div className="flex items-center gap-3 text-stone-300">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs">
                       ✓
                     </span>
-                    <span className="text-xs md:text-sm font-medium">Connect with verified causes locally</span>
+                    <span className="text-xs md:text-sm font-medium">{t("bannerPoint1")}</span>
                   </div>
                   <div className="flex items-center gap-3 text-stone-300">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs">
                       ✓
                     </span>
-                    <span className="text-xs md:text-sm font-medium">Coordinate direct 10km handoffs</span>
+                    <span className="text-xs md:text-sm font-medium">{t("bannerPoint2")}</span>
                   </div>
                   <div className="flex items-center gap-3 text-stone-300">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs">
                       ✓
                     </span>
-                    <span className="text-xs md:text-sm font-medium">100% free to list and match</span>
+                    <span className="text-xs md:text-sm font-medium">{t("bannerPoint3")}</span>
                   </div>
                 </div>
                 <Link href="/requests" className="bg-[#b04a15] hover:bg-[#963c0d] text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
-                  Start Supporting
+                  {t("startSupporting")}
                 </Link>
               </div>
             </div>
@@ -599,24 +652,24 @@ function BlogListingContent() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-y-6 md:gap-x-12 py-10 border-t border-b border-stone-200 dark:border-stone-800">
               <div className="w-full md:flex-1 max-w-2xl">
                 <h2 className="font-extrabold text-stone-900 dark:text-stone-100 text-xl md:text-2xl mb-2 leading-tight">
-                  Optimize Your Impact with CauseKind
+                  {t("optimizeTitle")}
                 </h2>
                 <p className="text-stone-600 dark:text-stone-400 text-sm leading-relaxed">
-                  Stay updated with our latest insights, success stories, and local community updates.
+                  {t("optimizeSubtitle")}
                 </p>
               </div>
               <div className="w-full md:w-auto flex-shrink-0">
                 <p className="text-xs font-bold text-stone-600 dark:text-stone-400 mb-2 uppercase tracking-wider">
-                  Newsletter
+                  {t("newsletterLabel")}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     className="px-4 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-850 rounded-xl text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] w-full sm:w-64"
-                    placeholder="What's your email?"
+                    placeholder={t("emailPlaceholder")}
                     type="email"
                   />
                   <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
-                    Subscribe
+                    {t("subscribe")}
                   </button>
                 </div>
               </div>

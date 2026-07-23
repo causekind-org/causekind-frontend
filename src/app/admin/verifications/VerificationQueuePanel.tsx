@@ -340,8 +340,11 @@ export function VerificationQueuePanel() {
       {/* Reject modal */}
       {rejectId && (
         <Modal title="Reject Request" onClose={() => setRejectId(null)}>
-          <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={6}
+          <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={6} maxLength={2000}
             placeholder="Reason for rejection…" className="w-full rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 text-sm" />
+          <p className={`text-xs mt-1 ${rejectReason.length > 2000 ? "text-red-600 font-semibold" : "text-stone-400"}`}>
+            {rejectReason.length}/2000
+          </p>
           <div className="flex items-center justify-between gap-2 mt-3">
             <button
               onClick={() => {

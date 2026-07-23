@@ -1091,7 +1091,7 @@ export default function RequestsPage() {
           >
             <div
               className="relative hidden select-none flex-col justify-between overflow-hidden p-8 text-white md:flex md:min-h-[560px] md:w-[40%]"
-              style={{ backgroundImage: "url('/images/kindness_banner.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+              style={{ backgroundImage: "url('/images/kindness_banner.webp')", backgroundSize: "cover", backgroundPosition: "center" }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30 pointer-events-none" />
               <div className="relative z-10 space-y-4">
