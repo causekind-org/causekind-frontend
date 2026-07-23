@@ -380,7 +380,22 @@ function NewRequestForm() {
           setStep(stepForRejection(r.rejectionReason));
         }
         getMyVerificationDocuments(idNum)
-          .then((docs) => setUploadedDocs(new Map(docs.map((d) => [d.docType, d]))))
+          .then((docs) => {
+            setUploadedDocs(new Map(docs.map((d) => [d.docType, d])));
+            // Restore any persisted AI screening verdict (e.g. Fix & Resubmit reopening
+            // a previously-uploaded, already-screened document) without re-calling the AI.
+            setDocScreening((prev) => {
+              const next = new Map(prev);
+              docs.forEach((d) => {
+                if (d.aiVerified === null) return;
+                next.set(d.docType, {
+                  status: d.aiVerified ? "valid" : "invalid",
+                  reason: d.aiReason, documentTypeGuess: d.aiDocumentTypeGuess,
+                });
+              });
+              return next;
+            });
+          })
           .catch(() => {});
         // Prefill step 2 (household & situation) with the previously saved answers
         getMyRequestVerificationDetails(idNum)
@@ -547,7 +562,7 @@ function NewRequestForm() {
       const doc = await uploadVerificationDocument(draftId, docType, file);
       setUploadedDocs((prev) => new Map(prev).set(docType, doc));
       toast.success("Document uploaded");
-      if (AI_SCREENED_DOC_TYPES.includes(docType)) screenDocument(docType, doc.url);
+      if (AI_SCREENED_DOC_TYPES.includes(docType)) screenDocument(docType, doc.url, doc.id);
     } catch {
       toast.error("Upload failed — please try again");
     } finally {
@@ -573,14 +588,14 @@ function NewRequestForm() {
   // Non-blocking by design (see IdProofVisionService/ResidenceProofVisionService
   // doc comments) — an "invalid" verdict is a strong, immediate warning to
   // re-upload, but a human admin always makes the final call.
-  async function screenDocument(docType: VerificationDocumentType, documentUrl: string) {
+  async function screenDocument(docType: VerificationDocumentType, documentUrl: string, documentId: number) {
     setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, documentTypeGuess: null }));
     try {
       if (docType === "RESIDENCE_PROOF") {
-        const r = await analyzeResidenceProof(documentUrl);
+        const r = await analyzeResidenceProof(documentUrl, documentId);
         applyScreeningResult(docType, r.aiAvailable, r.looksLikeResidenceProof, r.reason, r.documentTypeGuess);
       } else if (docType === "GOVT_ID_ANY") {
-        const r = await analyzeIdProof(documentUrl);
+        const r = await analyzeIdProof(documentUrl, documentId);
         applyScreeningResult(docType, r.aiAvailable, r.looksLikeValidIdProof, r.reason, r.documentTypeGuess);
       }
     } catch {
