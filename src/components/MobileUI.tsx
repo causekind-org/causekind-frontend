@@ -120,17 +120,20 @@ export function MobileBottomNav() {
           </svg>
         </Link>
 
-        {/* Requests */}
-        <Link href={tabs[2].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-          <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[2].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
-            <ClipboardList className="w-5.5 h-5.5" />
-          </span>
-          <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[2].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
-            Requests
-          </span>
-        </Link>
+        {user && (
+          /* Requests tab — hidden for logged-out visitors (the page itself
+             redirects to login anyway; no point showing the entry point). */
+          <Link href={tabs[2].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
+            <span className={`flex items-center justify-center transition-all duration-200
+              ${isActive(tabs[2].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+              <ClipboardList className="w-5.5 h-5.5" />
+            </span>
+            <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
+              ${isActive(tabs[2].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+              Requests
+            </span>
+          </Link>
+        )}
 
         {/* Profile */}
         <Link href={tabs[3].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">

@@ -13,7 +13,7 @@ import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
-  Sun, Moon, AlertTriangle, MessageCircle, KeyRound, Flag, History,
+  Sun, Moon, AlertTriangle, MessageCircle, KeyRound, Flag, History, Scale,
 } from "lucide-react";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -165,6 +165,7 @@ const NAV = [
   { key: "item-requests", label: "Requests",    icon: ClipboardList },
   { key: "item-listings", label: "Listings",    icon: Package },
   { key: "matches",       label: "Matches",     icon: Handshake },
+  { key: "disputes",      label: "Disputes",    icon: Scale },
   { key: "whatsapp",      label: "WhatsApp",    icon: MessageCircle },
   { key: "admin-permissions", label: "Admin Access", icon: KeyRound },
   { key: "disputes",      label: "Disputes",    icon: Flag },
@@ -341,7 +342,7 @@ export default function SuperAdminPage() {
       case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
       case "whatsapp":      return <WhatsAppPanel />;
       case "admin-permissions": return <AdminPermissionsPanel />;
-      case "disputes":      return <DisputesPanel />;
+      case "disputes":      return <DisputesPanel isDark={isDark} />;
       case "audit-log":     return <AuditLogPanel />;
       case "sql":           return <SqlConsole isDark={isDark} />;
     }
