@@ -604,7 +604,7 @@ export function SiteHeader() {
                           <motion.span
                             layoutId="nav-glass-pill"
                             transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                            className="glass-pill glass-liquid absolute inset-0 rounded-full"
+                            className="glass-pill absolute inset-0 rounded-full"
                           />
                         )}
                         {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
