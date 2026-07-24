@@ -807,9 +807,13 @@ export function SiteFooter() {
     pathname?.startsWith("/admin/dashboard") ||
     user?.role === "SUPER_ADMIN"
   ) return null;
+  const giveBackLinks = [
+    ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
+    ...(user ? [{ href: "/requests", l: t("inkindRequests") }] : []),
+  ];
   return (
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
-      <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 md:grid-cols-4">
+      <div className={`mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
         <div className="space-y-4">
           <div className="inline-block bg-white dark:bg-zinc-900 px-4 py-2.5 rounded-2xl shadow-sm border border-stone-200/10 dark:border-zinc-800">
             <CareNestLogo size="lg" />
@@ -827,17 +831,16 @@ export function SiteFooter() {
             </span>
           </div>
         </div>
-        <div className="space-y-4">
-          <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
-          <ul className="space-y-3 text-stone-400 font-medium">
-            {[
-              ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
-              ...(user ? [{ href: "/requests", l: t("inkindRequests") }] : []),
-            ].map(({ href, l }) => (
-              <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
-            ))}
-          </ul>
-        </div>
+        {giveBackLinks.length > 0 && (
+          <div className="space-y-4">
+            <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
+            <ul className="space-y-3 text-stone-400 font-medium">
+              {giveBackLinks.map(({ href, l }) => (
+                <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="space-y-4">
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
