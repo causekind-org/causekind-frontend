@@ -78,14 +78,8 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
       (URGENCY_RANK[a.urgency] ?? 3) - (URGENCY_RANK[b.urgency] ?? 3) ||
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  const quietCategories = categoriesToShow.filter(
-    cat => !openRequests.some(r => r.category === cat)
-  );
-
-  // Per-category counts for categories that actually have open requests — the
-  // complement of quietCategories within categoriesToShow. Sorted by count
-  // desc, then by the same urgency rank the row list below uses, so the
-  // strip's order roughly mirrors what's about to appear beneath it.
+  // Per-category counts — feeds each "Watching for you" card's badge below,
+  // instead of a separate summary strip.
   const countsByCategory = new Map<string, { count: number; rank: number }>();
   for (const r of openRequests) {
     const entry = countsByCategory.get(r.category) ?? { count: 0, rank: 3 };
@@ -93,10 +87,6 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
     entry.rank = Math.min(entry.rank, URGENCY_RANK[r.urgency] ?? 3);
     countsByCategory.set(r.category, entry);
   }
-  const categoryCounts = categoriesToShow
-    .filter(cat => countsByCategory.has(cat))
-    .map(cat => ({ cat, ...countsByCategory.get(cat)! }))
-    .sort((a, b) => b.count - a.count || a.rank - b.rank);
 
   return (
     <section className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 py-20 border-t border-stone-200/60 dark:border-stone-800 overflow-hidden">
@@ -143,29 +133,6 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
         <Reveal delay={120}>
           <div className="h-px w-full mb-2" style={{ background: "linear-gradient(90deg, #b04a15, #e07b3a 45%, transparent)" }} />
 
-          {/* Per-category counts — a compact scanning aid above the flat, urgency-
-              interleaved row list below. Static/non-clickable, same reassurance-
-              strip philosophy as the quiet-cards block further down. */}
-          {categoryCounts.length > 0 && (
-            <div className="mb-5 flex flex-wrap items-center gap-2">
-              {categoryCounts.map(({ cat, count }) => {
-                const vis = CATEGORY_VISUALS[cat];
-                const Icon = vis?.Icon;
-                return (
-                  <span key={cat}
-                    className={`inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-3 py-1 text-xs font-bold ${CAT_TILE[cat] ?? "bg-stone-100 dark:bg-stone-800"} ${vis?.text ?? "text-stone-600 dark:text-stone-300"}`}>
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/60 dark:bg-black/20">
-                      {Icon && <Icon className="h-3 w-3" strokeWidth={2.5} />}
-                    </span>
-                    <span className="uppercase tracking-[0.08em]"><TranslatedText text={cat} /></span>
-                    <span className="opacity-60">&middot;</span>
-                    <span>{count}</span>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-
           {openRequests.length > 0 && (
             <div className="divide-y divide-stone-200/70 dark:divide-zinc-800">
               {openRequests.map((req, i) => (
@@ -174,51 +141,49 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
             </div>
           )}
 
-          {/* Quiet categories — one slim, non-interactive aside, not a wall of pills
-              pretending to be filter buttons (they aren't clickable — this is a
-              reassurance strip, not a browse tool; "Browse all requests" above
-              already owns that job). */}
-          {quietCategories.length > 0 && (
-            <div className={`py-6 ${openRequests.length > 0 ? "border-t border-stone-200/70 dark:border-zinc-800" : ""}`}>
-              <div className="flex items-center gap-2.5">
-                <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-[#f0b97a]/20">
-                  <Bell className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" />
-                </span>
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-stone-500 dark:text-stone-400">Watching for you</p>
-              </div>
+          {/* Every followed category as one glowing MagicBento card — each card
+              carries its own open-request count as a badge, so the count lives
+              on the category it belongs to instead of a separate summary row. */}
+          <div className={`py-6 ${openRequests.length > 0 ? "border-t border-stone-200/70 dark:border-zinc-800" : ""}`}>
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-[#f0b97a]/20">
+                <Bell className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" />
+              </span>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-stone-500 dark:text-stone-400">Watching for you</p>
+            </div>
 
-              {/* Focus areas as an interactive MagicBento grid — one glowing card
-                  per category the donor follows, tinted to the brand orange
-                  (176,74,21). Each card's copy is the category's shared blurb. */}
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3 }}
-                className="mt-4"
-              >
-                <MagicBento
-                  glowColor="176, 74, 21"
-                  enableTilt
-                  enableStars
-                  enableSpotlight
-                  enableBorderGlow
-                  enableMagnetism
-                  clickEffect
-                  cards={quietCategories.map((cat) => ({
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.3 }}
+              className="mt-4"
+            >
+              <MagicBento
+                glowColor="176, 74, 21"
+                enableTilt
+                enableStars
+                enableSpotlight
+                enableBorderGlow
+                enableMagnetism
+                clickEffect
+                cards={categoriesToShow.map((cat) => {
+                  const count = countsByCategory.get(cat)?.count ?? 0;
+                  return {
                     color: "#ffffff",
                     label: "Watching",
+                    badge: count > 0 ? `${count} open` : undefined,
                     title: cat,
                     description: CATEGORY_VISUALS[cat]?.blurb ?? "",
-                  }))}
-                />
-              </motion.div>
+                  };
+                })}
+              />
+            </motion.div>
 
-              <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">
-                The moment a verified need is posted here, you&apos;ll be first to know.
-              </p>
-            </div>
-          )}
+            <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">
+              The moment a verified need is posted in a quiet category, you&apos;ll be first to know.
+            </p>
+          </div>
         </Reveal>
       </div>
     </section>
