@@ -1463,8 +1463,8 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleDeleteRejected(id: number) {
-    if (!confirm("Permanently delete this rejected listing?")) return;
+  async function handleDeleteListing(id: number) {
+    if (!confirm("Delete this listing? It will no longer appear here.")) return;
     setListingActionLoading(id);
     try {
       await deleteMyListing(id);
@@ -1504,7 +1504,7 @@ export default function DashboardPage() {
     if (last && Date.now() - parseInt(last) < THIRTY_DAYS) return;
     localStorage.setItem(key, Date.now().toString());
     if (window.confirm(`You have ${rejected.length} rejected listing${rejected.length > 1 ? "s" : ""}. Delete ${rejected.length > 1 ? "them" : "it"} to keep your inventory clean?`)) {
-      rejected.forEach(l => handleDeleteRejected(l.id));
+      rejected.forEach(l => handleDeleteListing(l.id));
     }
   }, [itemListings]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1768,9 +1768,9 @@ export default function DashboardPage() {
                                       Withdraw
                                     </button>
                                   )}
-                                  {l.status === "REJECTED" && (
+                                  {["REJECTED", "WITHDRAWN", "EXPIRED"].includes(l.status) && (
                                     <button
-                                      onClick={() => handleDeleteRejected(l.id)}
+                                      onClick={() => handleDeleteListing(l.id)}
                                       disabled={listingActionLoading === l.id}
                                       className="text-xs text-red-600 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 font-semibold"
                                     >
