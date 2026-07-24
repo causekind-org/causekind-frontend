@@ -415,7 +415,7 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    { href: "/requests", label: t("nav.requests") },
+    ...(user ? [{ href: "/requests", label: t("nav.requests") }] : []),
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -721,7 +721,7 @@ export function SiteFooter() {
           <ul className="space-y-3 text-stone-400 font-medium">
             {[
               ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
-              { href: "/requests", l: t("inkindRequests") },
+              ...(user ? [{ href: "/requests", l: t("inkindRequests") }] : []),
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
