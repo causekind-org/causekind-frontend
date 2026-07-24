@@ -1982,6 +1982,35 @@ export function superAdminRunSql(query: string) {
   });
 }
 
+export type PostDeliveryIssue = {
+  id: number;
+  offerId: number | null;
+  itemTitle: string | null;
+  donorName: string | null;
+  doneeName: string | null;
+  reportedByName: string | null;
+  reportedByIsDonor: boolean;
+  issueType: string | null;
+  description: string | null;
+  windowCategory: string | null;
+  windowExpiresAt: string | null;
+  evidenceUrls: string[];
+  adminResolution: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+};
+
+export function superAdminListDisputes(status: "open" | "resolved" | "all") {
+  return request<PostDeliveryIssue[]>(`/api/v1/super-admin/disputes?status=${status}`);
+}
+
+export function superAdminResolveDispute(id: number, resolution: string) {
+  return request<PostDeliveryIssue>(`/api/v1/super-admin/disputes/${id}/resolve`, {
+    method: "POST",
+    body: JSON.stringify({ resolution }),
+  });
+}
+
 // ── WhatsApp (Meta Cloud API) ────────────────────────────────────────────────
 
 export type WhatsAppMessageLog = {
@@ -2119,34 +2148,6 @@ export function superAdminSetAdminPermissions(adminId: number, changes: AdminCap
   return request<AdminCapabilityMap>(`/api/v1/super-admin/admins/${adminId}/permissions`, {
     method: "PUT",
     body: JSON.stringify(changes),
-  });
-}
-
-// ── Admin disputes (post-delivery issues) ───────────────────────────────────
-
-export type PostDeliveryIssueResponse = {
-  id: number;
-  offerId: number | null;
-  offerTitle: string | null;
-  reportedByEmail: string | null;
-  issueType: string | null;
-  description: string;
-  windowCategory: string | null;
-  windowExpiresAt: string;
-  evidenceUrls: string[];
-  adminResolution: string | null;
-  resolvedAt: string | null;
-  createdAt: string;
-};
-
-export function adminListDisputes(status: "open" | "resolved" | "all" = "open") {
-  return request<PostDeliveryIssueResponse[]>(`/api/v1/admin/disputes?status=${status}`);
-}
-
-export function adminResolveDispute(id: number, resolution: string) {
-  return request<PostDeliveryIssueResponse>(`/api/v1/admin/disputes/${id}/resolve`, {
-    method: "POST",
-    body: JSON.stringify({ resolution }),
   });
 }
 
