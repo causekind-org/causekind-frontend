@@ -17,12 +17,14 @@ import { Switch } from "@/components/ui/switch";
 import {
   ImagePlus, Loader2, MapPin, PackageOpen, Search, SearchX,
   Sparkles, X, HandCoins, Package, Plus, ChevronDown,
-  ShieldCheck, Heart, SlidersHorizontal, AlertTriangle, ArrowRight,
+  ShieldCheck, Heart, SlidersHorizontal, ArrowRight,
   BookOpen, Stethoscope, Sprout, Users, Home, Activity,
   Armchair, Shirt, Smartphone, Dumbbell,
 } from "lucide-react";
 import Link from "next/link";
 import { DoneeRequestsPage } from "./donee-view";
+// @ts-expect-error — MagicBento is the JS/CSS React Bits variant (no types shipped)
+import MagicBento from "@/components/MagicBento";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -481,72 +483,6 @@ function RequestFilterPanel({
         Reset Filters
       </button>
     </div>
-  );
-}
-
-// ── Request listing block ─────────────────────────────────────────────────────
-// No card container — a category-colored top rule plus typography. Urgent requests
-// get a bigger type scale instead of a different "skin", so the masonry's natural
-// height variety is driven by real data (urgency, description length), not decoration.
-
-function RequestBlock({ r, onGive }: { r: ItemRequest; onGive: (r: ItemRequest) => void }) {
-  const col      = CAT_COLOR[r.category] ?? CAT_COLOR["Medical aid"];
-  const Icon     = CAT_ICON[r.category] ?? Package;
-  const isCrit   = r.urgency === "CRITICAL";
-  const isHigh   = r.urgency === "HIGH";
-  const featured = isCrit;
-
-  return (
-    <Reveal>
-      <div
-        onClick={() => onGive(r)}
-        className={`group cursor-pointer border-t-2 pt-4 ${col.border}`}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <span className={`inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide ${col.text}`}>
-            <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} /> <TranslatedText text={r.category} />
-          </span>
-          {r.isEmergency ? (
-            <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-black uppercase tracking-wide text-white bg-red-600 px-1.5 py-0.5 rounded">
-              <AlertTriangle className="h-3 w-3 shrink-0" /> Emergency
-            </span>
-          ) : (isCrit || isHigh) && (
-            <span className={`inline-flex shrink-0 items-center gap-1 text-[10px] font-black uppercase tracking-wide ${isCrit ? "text-[#b04a15]" : "text-amber-600 dark:text-amber-400"}`}>
-              <AlertTriangle className="h-3 w-3 shrink-0" /> {isCrit ? "Urgent" : "High"}
-            </span>
-          )}
-        </div>
-
-        <h3
-          className={`mt-2.5 font-extrabold leading-snug text-stone-900 transition-colors dark:text-stone-100 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] ${
-            featured ? "text-2xl line-clamp-2" : "text-base line-clamp-2"
-          }`}
-        >
-          <TranslatedText text={r.title} />
-        </h3>
-
-        {r.description && (
-          <p className={`mt-1.5 text-stone-500 dark:text-stone-400 leading-relaxed ${featured ? "text-sm line-clamp-4" : "text-xs line-clamp-2"}`}>
-            <TranslatedText text={r.description} />
-          </p>
-        )}
-
-        <div className="mt-3 flex items-center justify-between gap-3 border-t border-stone-100 pt-3 dark:border-zinc-800">
-          <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-stone-400 dark:text-stone-500">
-            <MapPin className="h-3 w-3 shrink-0" />
-            <span className="truncate"><TranslatedText text={r.city} /></span>
-            <span className="shrink-0 text-stone-300 dark:text-stone-700">·</span>
-            <span className="shrink-0 tabular-nums">{r.quantity} needed</span>
-          </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onGive(r); }}
-            className="flex shrink-0 items-center gap-1 text-xs font-extrabold text-[#b04a15] dark:text-[#e07b3a] hover:underline"
-          >
-            Give <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-          </button>
-        </div>
-      </div>
-    </Reveal>
   );
 }
 
@@ -1064,15 +1000,39 @@ export default function RequestsPage() {
               </div>
             ) : (
               <div className="pb-20">
-                {/* True masonry: each block keeps its own natural height and packs
-                    tightly against its neighbours — no forced equal-height stretching. */}
-                <div className="columns-1 sm:columns-2 lg:columns-3 gap-5">
-                  {filtered.map((r) => (
-                    <div key={r.id} className="mb-5 break-inside-avoid">
-                      <RequestBlock r={r} onGive={openDonateModal} />
-                    </div>
-                  ))}
-                </div>
+                <MagicBento
+                  cards={filtered.map((r) => {
+                    const isCrit = r.urgency === "CRITICAL";
+                    const isHigh = r.urgency === "HIGH";
+                    return {
+                      color: "#ffffff",
+                      label: <TranslatedText text={r.category} />,
+                      badge: r.isEmergency ? "Emergency" : isCrit ? "Urgent" : isHigh ? "High" : undefined,
+                      title: <TranslatedText text={r.title} />,
+                      description: r.description ? <TranslatedText text={r.description} /> : "",
+                      meta: (
+                        <>
+                          <span className="flex items-center gap-1 min-w-0">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate"><TranslatedText text={r.city} /></span>
+                          </span>
+                          <span className="shrink-0 tabular-nums">{r.quantity} needed</span>
+                        </>
+                      ),
+                      onClick: () => openDonateModal(r),
+                    };
+                  })}
+                  textAutoHide
+                  enableStars
+                  enableSpotlight
+                  enableBorderGlow
+                  enableTilt
+                  enableMagnetism
+                  clickEffect
+                  spotlightRadius={300}
+                  particleCount={10}
+                  glowColor="176, 74, 21"
+                />
               </div>
             )}
 
