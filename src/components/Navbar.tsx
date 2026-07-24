@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
+// @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
+import SpecularButton from "@/components/SpecularButton";
 import Link from "next/link";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -601,6 +603,30 @@ export function SiteHeader() {
             </button>
 
             {FEATURES.money && <Donate3DButton />}
+
+            {/* Auth action — login/logout, top-right */}
+            <SpecularButton
+              size="sm"
+              radius={999}
+              tint="#b04a15"
+              tintOpacity={1}
+              textColor="#ffffff"
+              lineColor="#f0b97a"
+              baseColor="#7a3410"
+              intensity={1}
+              shineSize={14}
+              shineFade={35}
+              thickness={1.2}
+              followMouse
+              proximity={220}
+              onClick={() => (user ? requestLogout() : router.push("/login"))}
+              className="font-bold"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                {user ? t("nav.signOut") : t("nav.logIn")}
+              </span>
+            </SpecularButton>
           </div>
         </div>
 
