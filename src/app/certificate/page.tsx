@@ -46,6 +46,12 @@ export default function CertificatePage() {
       .catch(() => setQrDataUrl(null));
   }, [cert]);
 
+  // Native browser print, not a client-side canvas re-render — this is the only
+  // way the download can be *exactly* the live page: it's the same DOM through
+  // the same rendering engine, so there's no separate layout/font/color
+  // approximation step that can ever drift from what's on screen. Colors are
+  // preserved via print-color-adjust:exact below rather than requiring the
+  // visitor to check "Background graphics" in the print dialog.
   function handlePrint() {
     window.print();
   }
@@ -99,6 +105,11 @@ export default function CertificatePage() {
              floating support button/panel, and the toast notification host —
              see src/app/layout.tsx). */
           header, footer#footer, nav, .floating-support-item, [data-sonner-toaster] { display: none !important; }
+          /* The root layout's <main> (src/app/layout.tsx) carries a viewport-height
+             min-height plus 72px of bottom padding reserved for the mobile nav on
+             screen — neither is reset by hiding the nav itself, and left alone pushes
+             a near-empty second page onto every print. */
+          main { min-height: 0 !important; padding-bottom: 0 !important; }
           html, body, .cert-print-card, .cert-print-card * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -318,30 +329,35 @@ function TableRow({ label, value }: { label: string; value: string }) {
 }
 
 function OrnamentalBorder() {
-  // Woven interlocking-square lattice sitting on the frame's corner joint —
-  // matched against the reference certificate design (see docs/design assets).
+  // Rounded flourish bracket + ring-and-dot medallion, sitting on the frame's
+  // corner joint. Replaces the earlier blocky interlocking-square lattice.
   const corner = (style: React.CSSProperties) => (
-    <div style={{ position: "absolute", width: "52px", height: "52px", ...style }}>
-      <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="16" height="16" stroke="#c4501a" strokeWidth="1.5"/>
-        <rect x="17" y="1" width="16" height="16" stroke="#c4501a" strokeWidth="1.5"/>
-        <rect x="1" y="17" width="16" height="16" stroke="#c4501a" strokeWidth="1.5"/>
-        <rect x="17" y="17" width="16" height="16" stroke="#c4501a" strokeWidth="1.5"/>
-        <rect x="9" y="9" width="16" height="16" stroke="#c4501a" strokeWidth="1.25" fill="#f5f0e8"/>
-        <rect x="14.5" y="14.5" width="5" height="5" fill="#c4501a"/>
+    <div style={{ position: "absolute", width: "56px", height: "56px", ...style }}>
+      <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 24 V7 Q3 3 7 3 H24" stroke="#c4501a" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M11 28 V15 Q11 11 15 11 H28" stroke="#c4501a" strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+        <circle cx="7" cy="7" r="3.5" stroke="#c4501a" strokeWidth="1.25" fill="#f5f0e8"/>
+        <circle cx="7" cy="7" r="1.25" fill="#c4501a"/>
       </svg>
     </div>
   );
 
   return (
     <>
-      {/* Single hairline frame running the whole perimeter */}
+      {/* Double-line frame — a thin outer rule and a fainter inner rule, the
+          classic diploma look, replacing the earlier single hairline. */}
       <div style={{
         position: "absolute", inset: "22px",
-        border: "1.25px solid #c4501a",
+        border: "1.5px solid #c4501a",
         pointerEvents: "none",
       }} />
-      {/* Corner lattice, sitting right on the frame's corner joint */}
+      <div style={{
+        position: "absolute", inset: "27px",
+        border: "0.75px solid #c4501a",
+        opacity: 0.45,
+        pointerEvents: "none",
+      }} />
+      {/* Corner flourish, sitting right on the frame's corner joint */}
       {corner({ top: "0px", left: "0px" })}
       {corner({ top: "0px", right: "0px", transform: "scaleX(-1)" })}
       {corner({ bottom: "0px", left: "0px", transform: "scaleY(-1)" })}
