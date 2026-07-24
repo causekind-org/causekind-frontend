@@ -9,6 +9,7 @@ import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
 import { Search } from "lucide-react";
 import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
 import { Sparkles } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 function timeAgo(date: Date): string {
   const mins = Math.floor((Date.now() - date.getTime()) / 60000);
@@ -175,7 +176,8 @@ export default function BlogListingPage() {
             </div>
             
             <AnimatedWrapper delay={0.3} duration={0.55} direction="left">
-              <div className="flex items-center gap-4 bg-white dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs">
+              <div className="flex items-center gap-3 bg-white dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs">
+                <LanguageSwitcher />
                 <div className="relative flex items-center">
                   <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
                   <input
