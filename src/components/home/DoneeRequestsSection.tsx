@@ -82,6 +82,22 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
     cat => !openRequests.some(r => r.category === cat)
   );
 
+  // Per-category counts for categories that actually have open requests — the
+  // complement of quietCategories within categoriesToShow. Sorted by count
+  // desc, then by the same urgency rank the row list below uses, so the
+  // strip's order roughly mirrors what's about to appear beneath it.
+  const countsByCategory = new Map<string, { count: number; rank: number }>();
+  for (const r of openRequests) {
+    const entry = countsByCategory.get(r.category) ?? { count: 0, rank: 3 };
+    entry.count += 1;
+    entry.rank = Math.min(entry.rank, URGENCY_RANK[r.urgency] ?? 3);
+    countsByCategory.set(r.category, entry);
+  }
+  const categoryCounts = categoriesToShow
+    .filter(cat => countsByCategory.has(cat))
+    .map(cat => ({ cat, ...countsByCategory.get(cat)! }))
+    .sort((a, b) => b.count - a.count || a.rank - b.rank);
+
   return (
     <section className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 py-20 border-t border-stone-200/60 dark:border-stone-800 overflow-hidden">
       {/* Warm ambient glow behind the board */}
@@ -126,6 +142,29 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
                not from a white panel sitting on top of the page. ── */}
         <Reveal delay={120}>
           <div className="h-px w-full mb-2" style={{ background: "linear-gradient(90deg, #b04a15, #e07b3a 45%, transparent)" }} />
+
+          {/* Per-category counts — a compact scanning aid above the flat, urgency-
+              interleaved row list below. Static/non-clickable, same reassurance-
+              strip philosophy as the quiet-cards block further down. */}
+          {categoryCounts.length > 0 && (
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              {categoryCounts.map(({ cat, count }) => {
+                const vis = CATEGORY_VISUALS[cat];
+                const Icon = vis?.Icon;
+                return (
+                  <span key={cat}
+                    className={`inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-3 py-1 text-xs font-bold ${CAT_TILE[cat] ?? "bg-stone-100 dark:bg-stone-800"} ${vis?.text ?? "text-stone-600 dark:text-stone-300"}`}>
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/60 dark:bg-black/20">
+                      {Icon && <Icon className="h-3 w-3" strokeWidth={2.5} />}
+                    </span>
+                    <span className="uppercase tracking-[0.08em]"><TranslatedText text={cat} /></span>
+                    <span className="opacity-60">&middot;</span>
+                    <span>{count}</span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
 
           {openRequests.length > 0 && (
             <div className="divide-y divide-stone-200/70 dark:divide-zinc-800">
