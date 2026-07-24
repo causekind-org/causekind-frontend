@@ -1968,6 +1968,35 @@ export function superAdminRunSql(query: string) {
   });
 }
 
+export type PostDeliveryIssue = {
+  id: number;
+  offerId: number | null;
+  itemTitle: string | null;
+  donorName: string | null;
+  doneeName: string | null;
+  reportedByName: string | null;
+  reportedByIsDonor: boolean;
+  issueType: string | null;
+  description: string | null;
+  windowCategory: string | null;
+  windowExpiresAt: string | null;
+  evidenceUrls: string[];
+  adminResolution: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+};
+
+export function superAdminListDisputes(status: "open" | "resolved" | "all") {
+  return request<PostDeliveryIssue[]>(`/api/v1/super-admin/disputes?status=${status}`);
+}
+
+export function superAdminResolveDispute(id: number, resolution: string) {
+  return request<PostDeliveryIssue>(`/api/v1/super-admin/disputes/${id}/resolve`, {
+    method: "POST",
+    body: JSON.stringify({ resolution }),
+  });
+}
+
 // ── WhatsApp (Meta Cloud API) ────────────────────────────────────────────────
 
 export type WhatsAppMessageLog = {
