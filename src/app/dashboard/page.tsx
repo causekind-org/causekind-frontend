@@ -989,9 +989,13 @@ function DoneeDashboard({
                   const isIssueWindow   = offer.status === "ISSUE_WINDOW_OPEN";
                   const isIssueRaised   = offer.status === "ISSUE_RAISED";
                   const isComplete      = offer.status === "COMPLETED";
+                  const isNeedsInfo     = offer.status === "NEEDS_INFORMATION";
+                  const isScreening     = ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "COMPATIBILITY_CHECKED"].includes(offer.status);
                   const isWithdrawn     = offer.status === "WITHDRAWN" || offer.status === "CANCELLED" || offer.status === "ADMIN_REJECTED";
                   const statusLabel =
                     isPendingReview ? "Awaiting your review" :
+                    isNeedsInfo ? "Waiting on donor to add details" :
+                    isScreening ? "AI screening in progress" :
                     offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? "Donor is reconfirming" :
                     offer.status === "DONOR_RECONFIRMED" ? "Under admin review" :
                     isApproved ? "Approved" :
@@ -1003,7 +1007,7 @@ function DoneeDashboard({
                     isWithdrawn ? "Offer withdrawn" :
                     offer.status.replace(/_/g, " ");
                   const statusColor =
-                    isPendingReview ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
+                    isPendingReview || isNeedsInfo ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
                     isApproved || isComplete || isIssueWindow ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" :
                     isHandover ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
                     isIssueRaised ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
@@ -1058,7 +1062,7 @@ function DoneeDashboard({
                           (they render in the PastOffersStrip below instead) */}
                       {!isWithdrawn && (() => {
                         const stages: { label: string; sublabel: string; statuses: string[] }[] = [
-                          { label: "Offer Received",    sublabel: "Donor submitted their offer",            statuses: ["PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP"] },
+                          { label: "Offer Received",    sublabel: "Donor submitted their offer",            statuses: ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "COMPATIBILITY_CHECKED", "NEEDS_INFORMATION", "PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP"] },
                           { label: "You Reviewed",      sublabel: "You accepted or reviewed the offer",     statuses: ["DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED"] },
                           { label: "Donor Confirmed",   sublabel: "Donor reconfirmed item availability",   statuses: ["DONOR_RECONFIRMED", "CONDITION_CHANGED_RESCREENING", "PENDING_ADMIN_APPROVAL"] },
                           { label: "Admin Approved",    sublabel: "CauseKind verified the match",          statuses: ["ADMIN_APPROVED"] },
