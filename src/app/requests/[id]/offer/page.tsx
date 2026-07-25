@@ -9,6 +9,8 @@ import {
   createOfferDraft,
   updateOfferItemDetails,
   uploadOfferMedia,
+  deleteOfferMedia,
+  analyzeOfferImages,
   checkOfferCompatibility,
   submitOffer,
   type AnonymizedRequest,
@@ -26,7 +28,7 @@ import Link from "next/link";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
   ShoppingBag, Shuffle, Loader2, Sparkles, type LucideIcon,
-  Camera, ImagePlus, CheckCircle2, Eye,
+  Camera, ImagePlus, CheckCircle2, Eye, RefreshCw, Info, ShieldAlert,
   Users, Home, UserRound, Wallet, BadgeCheck, Siren,
 } from "lucide-react";
 
@@ -352,8 +354,7 @@ export default function OfferWizardPage() {
   const [offer, setOffer] = useState<DonationOffer | null>(null);
   const [existingOffer, setExistingOffer] = useState<DonationOffer | null>(null);
   const [compat, setCompat] = useState<CompatibilityCheck | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
@@ -361,6 +362,14 @@ export default function OfferWizardPage() {
   const [nudged, setNudged] = useState<DonorFlowType | null>(null);
   const compatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Photo AI: prohibited-content check + auto-fill (mirrors items/new/page.tsx) ──
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiRan, setAiRan] = useState(false);
+  const [aiUnavailableNote, setAiUnavailableNote] = useState<string | null>(null);
+  const [prohibited, setProhibited] = useState(false);
+  const [prohibitedReason, setProhibitedReason] = useState<string | null>(null);
+  const [uncertainFields, setUncertainFields] = useState<string[]>([]);
 
   // Load request data and check for an existing offer
   useEffect(() => {
@@ -463,6 +472,8 @@ export default function OfferWizardPage() {
   }
 
   // ── Step 2: Save item details ──────────────────────────────────────────────
+  // Photos are uploaded immediately on selection (see handleFileChange) —
+  // offer.media is the source of truth by the time this runs, nothing to upload here.
   async function saveDetails() {
     if (!offer) return;
     setLoading(true);
@@ -483,12 +494,6 @@ export default function OfferWizardPage() {
         deliveryCostBornBy: form.deliveryCostBornBy || undefined,
         donorDropOffAvailable: form.donorDropOffAvailable,
       });
-
-      // Only upload if donor selected new files AND the offer doesn't already have media
-      // (prevents duplicate uploads on re-submission after a failed submit)
-      if (files.length > 0 && (offer.media?.length ?? 0) === 0) {
-        await uploadOfferMedia(offer.id, files);
-      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to save details");
       throw e;
@@ -500,8 +505,8 @@ export default function OfferWizardPage() {
   async function handleItemDetailsSubmit() {
     if (!form.condition) { setError("Please select item condition"); return; }
     if (!form.pickupCity) { setError("Pickup city is required"); return; }
-    const existingPhotoCount = offer?.media?.length ?? 0;
-    if (files.length + existingPhotoCount < 2) { setError("Please upload at least 2 photos"); return; }
+    if ((offer?.media?.length ?? 0) < 2) { setError("Please upload at least 2 photos"); return; }
+    if (prohibited) { setError("Please remove the flagged photo before continuing"); return; }
     if (!form.declarationsAccepted) { setError("Please accept all declarations"); return; }
     setError(null);
     try {
@@ -525,13 +530,63 @@ export default function OfferWizardPage() {
     }
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const selected = Array.from(e.target.files ?? []);
-    setFiles((prev) => [...prev, ...selected].slice(0, 8));
-    setPreviews((prev) => [
-      ...prev,
-      ...selected.map((f) => URL.createObjectURL(f)),
-    ].slice(0, 8));
+  // Uploads immediately (mirrors items/new/page.tsx's handlePhotoAdd) so the vision
+  // call below has real S3 URLs to analyze, instead of deferring to final submit.
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files ?? []).slice(0, 8 - (offer?.media?.length ?? 0));
+    if (!offer || selected.length === 0) return;
+    setUploadingPhoto(true);
+    setError(null);
+    try {
+      const updated = await uploadOfferMedia(offer.id, selected);
+      setOffer(updated);
+      if (!aiRan) await runVisionAnalysis();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Photo upload failed");
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleRemovePhoto(mediaId: number) {
+    if (!offer) return;
+    try {
+      await deleteOfferMedia(offer.id, mediaId);
+      setOffer({ ...offer, media: offer.media?.filter((m) => m.id !== mediaId) });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to remove photo");
+    }
+  }
+
+  async function runVisionAnalysis() {
+    if (!offer) return;
+    setAnalyzing(true);
+    setAiRan(true);
+    try {
+      const r = await analyzeOfferImages(offer.id);
+      if (!r.aiAvailable) { setAiUnavailableNote(r.note ?? "AI photo analysis is unavailable right now."); return; }
+      setAiUnavailableNote(null);
+      if (r.prohibited) {
+        setProhibited(true);
+        setProhibitedReason(r.prohibitedReason ?? "This photo isn't accepted on CauseKind.");
+        return;
+      }
+      setProhibited(false);
+      setProhibitedReason(null);
+      if (r.condition && !form.condition) set("condition", r.condition);
+      if (r.approximateAge && !form.approximateAge) set("approximateAge", r.approximateAge);
+      if (r.workingStatus && !form.workingStatus) set("workingStatus", r.workingStatus);
+      if (r.knownDefects && !form.knownDefects && !form.hasKnownDefects) {
+        if (r.knownDefects === "NONE") set("hasKnownDefects", false);
+        else { set("hasKnownDefects", true); set("knownDefects", r.knownDefects); }
+      }
+      setUncertainFields(r.uncertainFields ?? []);
+    } catch {
+      setAiUnavailableNote("AI photo analysis failed — please fill in the details manually.");
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   function handleUseMyLocation() {
@@ -915,6 +970,85 @@ export default function OfferWizardPage() {
               />
             )}
 
+            {/* Photos — first, so AI can screen + auto-fill before the rest of the form */}
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
+              <div className="mb-1 flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <Camera className="h-4.5 w-4.5" />
+                </div>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">Photos (min. 2, max. 8) *</h3>
+              </div>
+              <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">Upload recent, genuine photos. Include full item view, condition, and any defects.</p>
+
+              <div className="grid grid-cols-4 gap-2">
+                {(offer.media?.length ?? 0) < 8 && (
+                  <label
+                    htmlFor="photo-upload"
+                    className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-[#1e3a60] hover:text-[#1e3a60] dark:border-gray-700 dark:text-gray-500"
+                  >
+                    {uploadingPhoto ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+                    <span className="text-[11px] font-medium">{uploadingPhoto ? "Uploading…" : "Add Photo"}</span>
+                  </label>
+                )}
+                <input
+                  id="photo-upload"
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  disabled={uploadingPhoto}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                {offer.media?.map((m) => (
+                  <div key={m.id} className="relative aspect-square overflow-hidden rounded-lg">
+                    <img src={m.mediaUrl} alt="" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(m.id)}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs"
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+
+              {/* AI photo screening + auto-fill status */}
+              {analyzing && (
+                <div className="mt-3 flex items-center gap-2.5 rounded-xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 px-4 py-3 text-sm font-bold text-[#1e3a60] dark:text-blue-300">
+                  <Sparkles className="w-4 h-4 animate-pulse shrink-0" />
+                  Checking your photos and filling in the details below…
+                </div>
+              )}
+              {!analyzing && prohibited && (
+                <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm font-semibold text-red-700 dark:text-red-400">
+                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{prohibitedReason} Please remove this photo and upload a different one before continuing.</span>
+                </div>
+              )}
+              {!analyzing && !prohibited && aiRan && !aiUnavailableNote && (
+                <div className="mt-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                      <Sparkles className="w-4 h-4 shrink-0" /> Filled in from your photos — please review below
+                    </p>
+                    <button type="button" onClick={runVisionAnalysis}
+                      className="flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0">
+                      <RefreshCw className="w-3 h-3" /> Re-analyze
+                    </button>
+                  </div>
+                  {uncertainFields.length > 0 && (
+                    <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">
+                      Double-check: <span className="font-bold">{uncertainFields.join(", ")}</span> — AI wasn&apos;t fully confident here.
+                    </p>
+                  )}
+                </div>
+              )}
+              {!analyzing && aiUnavailableNote && (
+                <div className="mt-3 flex items-center gap-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                  <Info className="w-4 h-4 shrink-0" /> {aiUnavailableNote}
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -997,55 +1131,6 @@ export default function OfferWizardPage() {
                   displayMap={{ DONOR: "I will pay", DONEE: "Recipient pays", SHARED: "Share cost" }}
                 />
               )}
-            </div>
-
-            {/* Photos */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-              <div className="mb-1 flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
-                  <Camera className="h-4.5 w-4.5" />
-                </div>
-                <h3 className="font-semibold text-gray-800 dark:text-gray-200">Photos (min. 2, max. 8) *</h3>
-              </div>
-              <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">Upload recent, genuine photos. Include full item view, condition, and any defects.</p>
-              {offer?.media && offer.media.length > 0 && (
-                <div className="mb-3">
-                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Already uploaded</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {offer.media.map((m) => (
-                      <div key={m.id} className="relative aspect-square overflow-hidden rounded-lg">
-                        <img src={m.mediaUrl} alt="" className="h-full w-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-4 gap-2">
-                <label
-                  htmlFor="photo-upload"
-                  className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-[#1e3a60] hover:text-[#1e3a60] dark:border-gray-700 dark:text-gray-500"
-                >
-                  <ImagePlus className="h-5 w-5" />
-                  <span className="text-[11px] font-medium">Add Photo</span>
-                </label>
-                <input
-                  id="photo-upload"
-                  type="file"
-                  accept="image/*,video/*"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                {previews.map((src, i) => (
-                  <div key={i} className="relative aspect-square overflow-hidden rounded-lg">
-                    <img src={src} alt="" className="h-full w-full object-cover" />
-                    <button
-                      onClick={() => { setFiles((f) => f.filter((_, j) => j !== i)); setPreviews((p) => p.filter((_, j) => j !== i)); }}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs"
-                    >×</button>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Declarations */}

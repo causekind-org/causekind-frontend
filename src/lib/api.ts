@@ -622,6 +622,9 @@ export async function uploadListingImage(file: File): Promise<string> {
 
 export type ListingImageAnalysis = {
   aiAvailable: boolean;
+  prohibited: boolean;
+  prohibitedCategory: string | null;
+  prohibitedReason: string | null;
   category: string | null;
   subcategory: string | null;
   title: string | null;
@@ -645,6 +648,11 @@ export function analyzeListingImages(imageUrls: string[]) {
     method: "POST",
     body: JSON.stringify({ imageUrls }),
   });
+}
+
+/** Same vision analysis as analyzeListingImages(), run against an offer's already-uploaded photos. */
+export function analyzeOfferImages(offerId: number) {
+  return request<ListingImageAnalysis>(`/api/v1/offers/${offerId}/analyze-images`, { method: "POST" });
 }
 
 // ── Item Requests ─────────────────────────────────────────────────────────────
