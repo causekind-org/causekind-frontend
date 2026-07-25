@@ -28,7 +28,7 @@ import Link from "next/link";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
   ShoppingBag, Shuffle, Loader2, Sparkles, type LucideIcon,
-  Camera, ImagePlus, CheckCircle2, Eye, RefreshCw, Info, ShieldAlert,
+  Camera, ImagePlus, CheckCircle2, Eye, Info, ShieldAlert,
   Users, Home, UserRound, Wallet, BadgeCheck, Siren,
 } from "lucide-react";
 
@@ -363,13 +363,12 @@ export default function OfferWizardPage() {
   const compatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Photo AI: prohibited-content check + auto-fill (mirrors items/new/page.tsx) ──
+  // ── Photo AI: prohibited-content check only — no auto-fill. Condition, age,
+  // working status, and known defects are entered manually by the donor.
   const [analyzing, setAnalyzing] = useState(false);
-  const [aiRan, setAiRan] = useState(false);
   const [aiUnavailableNote, setAiUnavailableNote] = useState<string | null>(null);
   const [prohibited, setProhibited] = useState(false);
   const [prohibitedReason, setProhibitedReason] = useState<string | null>(null);
-  const [uncertainFields, setUncertainFields] = useState<string[]>([]);
 
   // Load request data and check for an existing offer
   useEffect(() => {
@@ -540,7 +539,7 @@ export default function OfferWizardPage() {
     try {
       const updated = await uploadOfferMedia(offer.id, selected);
       setOffer(updated);
-      if (!aiRan) await runVisionAnalysis();
+      await runVisionAnalysis();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Photo upload failed");
     } finally {
@@ -559,31 +558,24 @@ export default function OfferWizardPage() {
     }
   }
 
+  // Prohibited-content check only. Deliberately does not touch any form field —
+  // condition/age/working status/known defects are entered manually by the donor.
   async function runVisionAnalysis() {
     if (!offer) return;
     setAnalyzing(true);
-    setAiRan(true);
     try {
       const r = await analyzeOfferImages(offer.id);
-      if (!r.aiAvailable) { setAiUnavailableNote(r.note ?? "AI photo analysis is unavailable right now."); return; }
+      if (!r.aiAvailable) { setAiUnavailableNote(r.note ?? "AI photo screening is unavailable right now."); return; }
       setAiUnavailableNote(null);
       if (r.prohibited) {
         setProhibited(true);
         setProhibitedReason(r.prohibitedReason ?? "This photo isn't accepted on CauseKind.");
-        return;
+      } else {
+        setProhibited(false);
+        setProhibitedReason(null);
       }
-      setProhibited(false);
-      setProhibitedReason(null);
-      if (r.condition && !form.condition) set("condition", r.condition);
-      if (r.approximateAge && !form.approximateAge) set("approximateAge", r.approximateAge);
-      if (r.workingStatus && !form.workingStatus) set("workingStatus", r.workingStatus);
-      if (r.knownDefects && !form.knownDefects && !form.hasKnownDefects) {
-        if (r.knownDefects === "NONE") set("hasKnownDefects", false);
-        else { set("hasKnownDefects", true); set("knownDefects", r.knownDefects); }
-      }
-      setUncertainFields(r.uncertainFields ?? []);
     } catch {
-      setAiUnavailableNote("AI photo analysis failed — please fill in the details manually.");
+      setAiUnavailableNote("AI photo screening failed — you can still continue.");
     } finally {
       setAnalyzing(false);
     }
@@ -1011,35 +1003,17 @@ export default function OfferWizardPage() {
                 ))}
               </div>
 
-              {/* AI photo screening + auto-fill status */}
+              {/* AI photo screening status — prohibited-content check only, no auto-fill */}
               {analyzing && (
                 <div className="mt-3 flex items-center gap-2.5 rounded-xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 px-4 py-3 text-sm font-bold text-[#1e3a60] dark:text-blue-300">
                   <Sparkles className="w-4 h-4 animate-pulse shrink-0" />
-                  Checking your photos and filling in the details below…
+                  Checking your photos…
                 </div>
               )}
               {!analyzing && prohibited && (
                 <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm font-semibold text-red-700 dark:text-red-400">
                   <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{prohibitedReason} Please remove this photo and upload a different one before continuing.</span>
-                </div>
-              )}
-              {!analyzing && !prohibited && aiRan && !aiUnavailableNote && (
-                <div className="mt-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 space-y-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-400">
-                      <Sparkles className="w-4 h-4 shrink-0" /> Filled in from your photos — please review below
-                    </p>
-                    <button type="button" onClick={runVisionAnalysis}
-                      className="flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0">
-                      <RefreshCw className="w-3 h-3" /> Re-analyze
-                    </button>
-                  </div>
-                  {uncertainFields.length > 0 && (
-                    <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">
-                      Double-check: <span className="font-bold">{uncertainFields.join(", ")}</span> — AI wasn&apos;t fully confident here.
-                    </p>
-                  )}
                 </div>
               )}
               {!analyzing && aiUnavailableNote && (
