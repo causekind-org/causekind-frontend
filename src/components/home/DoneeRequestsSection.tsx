@@ -42,12 +42,12 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
       : ALL_REQUEST_CATEGORIES;
   if (categoriesToShow.length === 0) return null;
 
-  // Categories with zero open requests — these get a "Watching" card.
-  const openCategories = new Set(
-    itemRequests.filter(r => categoriesToShow.includes(r.category)).map(r => r.category)
-  );
-  const quietCategories = categoriesToShow.filter(cat => !openCategories.has(cat));
-  if (quietCategories.length === 0) return null;
+  // Open-request count per followed category — shown as a badge on its card.
+  const countByCategory = new Map<string, number>();
+  for (const r of itemRequests) {
+    if (!categoriesToShow.includes(r.category)) continue;
+    countByCategory.set(r.category, (countByCategory.get(r.category) ?? 0) + 1);
+  }
 
   return (
     <section className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 py-20 border-t border-stone-200/60 dark:border-stone-800 overflow-hidden">
@@ -79,17 +79,21 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
               enableBorderGlow
               enableMagnetism
               clickEffect
-              cards={quietCategories.map((cat) => ({
-                color: "#ffffff",
-                label: "Watching",
-                title: cat,
-                description: CATEGORY_VISUALS[cat]?.blurb ?? "",
-              }))}
+              cards={categoriesToShow.map((cat) => {
+                const count = countByCategory.get(cat) ?? 0;
+                return {
+                  color: "#ffffff",
+                  label: "Watching",
+                  badge: count > 0 ? `${count} open` : undefined,
+                  title: cat,
+                  description: CATEGORY_VISUALS[cat]?.blurb ?? "",
+                };
+              })}
             />
           </motion.div>
 
           <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">
-            The moment a verified need is posted here, you&apos;ll be first to know.
+            The moment a verified need is posted in a quiet category, you&apos;ll be first to know.
           </p>
         </Reveal>
       </div>
