@@ -13,6 +13,7 @@ import { Search, X } from "lucide-react";
 import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { Sparkles } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // Categories are derived from blogPosts itself, so adding a new post with a
 // new category automatically shows up here — no manual list to maintain.
@@ -251,6 +252,7 @@ function BlogListingContent() {
             
             <AnimatedWrapper delay={0.3} duration={0.55} direction="left">
               <div ref={searchBoxRef} className="relative flex items-center gap-4 bg-white dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs">
+                <LanguageSwitcher />
                 <div className="relative flex items-center w-full">
                   <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
                   <input

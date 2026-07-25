@@ -12,7 +12,7 @@ import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useTilt } from "@/hooks/useTilt";
 import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
@@ -185,6 +185,88 @@ function Donate3DButton() {
         </button>
       </div>
     </Link>
+  );
+}
+
+// ── Login nudge — a speech-bubble popover anchored to the navbar's Login
+// button (SpecularButton) itself, not a separate floating element. Shows
+// once per session, ~15s after load, only for logged-out visitors — and
+// only where the button it points at actually renders (desktop).
+const LOGIN_NUDGE_DELAY_MS     = 15_000;
+const LOGIN_NUDGE_VISIBLE_MS   = 12_000;
+const LOGIN_NUDGE_EXIT_MS      = 300;
+const LOGIN_NUDGE_SESSION_KEY  = "ck_login_nudge_shown";
+const LOGIN_NUDGE_SKIP_PATHS   = ["/login", "/register"];
+
+function LoginNudgeBubble({ user }: { user: AuthUser | null }) {
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  const [visible, setVisible] = useState(false);
+  const [entered, setEntered] = useState(false);
+
+  const t1 = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const t2 = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const t3 = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const t4 = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
+
+  useEffect(() => {
+    if (user) return;
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(LOGIN_NUDGE_SESSION_KEY) === "1") return;
+
+    t1.current = setTimeout(() => {
+      if (LOGIN_NUDGE_SKIP_PATHS.includes(pathnameRef.current ?? "")) return;
+      sessionStorage.setItem(LOGIN_NUDGE_SESSION_KEY, "1");
+      setVisible(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
+      t2.current = setTimeout(() => {
+        setEntered(false);
+        t3.current = setTimeout(() => setVisible(false), LOGIN_NUDGE_EXIT_MS);
+      }, LOGIN_NUDGE_VISIBLE_MS);
+    }, LOGIN_NUDGE_DELAY_MS);
+
+    return () => { [t1, t2, t3, t4].forEach(r => { if (r.current) clearTimeout(r.current); }); };
+  }, [user]);
+
+  function dismiss() {
+    [t1, t2, t3].forEach(r => { if (r.current) clearTimeout(r.current); });
+    setEntered(false);
+    t4.current = setTimeout(() => setVisible(false), LOGIN_NUDGE_EXIT_MS);
+  }
+
+  if (!visible || user) return null;
+
+  return (
+    <div
+      className="absolute top-full right-0 mt-3 z-50 w-64"
+      style={{
+        transformOrigin: "top right",
+        transform: entered ? "scale(1) translateY(0)" : "scale(0.85) translateY(-6px)",
+        opacity: entered ? 1 : 0,
+        transition: entered
+          ? "transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease"
+          : `transform ${LOGIN_NUDGE_EXIT_MS}ms ease-in, opacity ${LOGIN_NUDGE_EXIT_MS}ms ease`,
+      }}
+    >
+      {/* Pointer tip, aimed up at the button */}
+      <div className="absolute -top-1.5 right-6 w-3 h-3 bg-white dark:bg-zinc-900 border-t border-l border-stone-200 dark:border-zinc-700 rotate-45" />
+
+      <div className="relative rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 shadow-[0_12px_36px_rgba(0,0,0,0.16)] p-4">
+        <button
+          onClick={dismiss}
+          aria-label="Dismiss"
+          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+        >
+          <X className="w-3 h-3" />
+        </button>
+        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 pr-5">New here?</p>
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
+          Log in to donate items or request help — it only takes a moment.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -523,7 +605,7 @@ export function SiteHeader() {
                           <motion.span
                             layoutId="nav-glass-pill"
                             transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                            className="glass-pill glass-liquid absolute inset-0 rounded-full"
+                            className="glass-pill absolute inset-0 rounded-full"
                           />
                         )}
                         {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
@@ -606,28 +688,31 @@ export function SiteHeader() {
             {FEATURES.money && <Donate3DButton />}
 
             {/* Auth action — login/logout, top-right */}
-            <SpecularButton
-              size="sm"
-              radius={999}
-              tint="#b04a15"
-              tintOpacity={1}
-              textColor="#ffffff"
-              lineColor="#f0b97a"
-              baseColor="#7a3410"
-              intensity={1}
-              shineSize={14}
-              shineFade={35}
-              thickness={1.2}
-              followMouse
-              proximity={220}
-              onClick={() => (user ? requestLogout() : router.push("/login"))}
-              className="font-bold"
-            >
-              <span className="inline-flex items-center gap-1.5">
-                {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                {user ? t("nav.signOut") : t("nav.logIn")}
-              </span>
-            </SpecularButton>
+            <div className="relative">
+              <SpecularButton
+                size="sm"
+                radius={999}
+                tint="#b04a15"
+                tintOpacity={1}
+                textColor="#ffffff"
+                lineColor="#f0b97a"
+                baseColor="#7a3410"
+                intensity={1}
+                shineSize={14}
+                shineFade={35}
+                thickness={1.2}
+                followMouse
+                proximity={220}
+                onClick={() => (user ? requestLogout() : router.push("/login"))}
+                className="font-bold"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  {user ? t("nav.signOut") : t("nav.logIn")}
+                </span>
+              </SpecularButton>
+              <LoginNudgeBubble user={user} />
+            </div>
           </div>
         </div>
 
@@ -723,9 +808,13 @@ export function SiteFooter() {
     pathname?.startsWith("/admin/dashboard") ||
     user?.role === "SUPER_ADMIN"
   ) return null;
+  const giveBackLinks = [
+    ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
+    ...(user ? [{ href: "/requests", l: t("inkindRequests") }] : []),
+  ];
   return (
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
-      <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 md:grid-cols-4">
+      <div className={`mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
         <div className="space-y-4">
           <div className="inline-block bg-white dark:bg-zinc-900 px-4 py-2.5 rounded-2xl shadow-sm border border-stone-200/10 dark:border-zinc-800">
             <CareNestLogo size="lg" />
@@ -743,17 +832,16 @@ export function SiteFooter() {
             </span>
           </div>
         </div>
-        <div className="space-y-4">
-          <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
-          <ul className="space-y-3 text-stone-400 font-medium">
-            {[
-              ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
-              ...(user ? [{ href: "/requests", l: t("inkindRequests") }] : []),
-            ].map(({ href, l }) => (
-              <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
-            ))}
-          </ul>
-        </div>
+        {giveBackLinks.length > 0 && (
+          <div className="space-y-4">
+            <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
+            <ul className="space-y-3 text-stone-400 font-medium">
+              {giveBackLinks.map(({ href, l }) => (
+                <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="space-y-4">
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
