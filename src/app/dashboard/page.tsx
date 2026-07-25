@@ -989,9 +989,13 @@ function DoneeDashboard({
                   const isIssueWindow   = offer.status === "ISSUE_WINDOW_OPEN";
                   const isIssueRaised   = offer.status === "ISSUE_RAISED";
                   const isComplete      = offer.status === "COMPLETED";
+                  const isNeedsInfo     = offer.status === "NEEDS_INFORMATION";
+                  const isScreening     = ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "COMPATIBILITY_CHECKED"].includes(offer.status);
                   const isWithdrawn     = offer.status === "WITHDRAWN" || offer.status === "CANCELLED" || offer.status === "ADMIN_REJECTED";
                   const statusLabel =
                     isPendingReview ? "Awaiting your review" :
+                    isNeedsInfo ? "Waiting on donor to add details" :
+                    isScreening ? "AI screening in progress" :
                     offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? "Donor is reconfirming" :
                     offer.status === "DONOR_RECONFIRMED" ? "Under admin review" :
                     isApproved ? "Approved" :
@@ -1003,7 +1007,7 @@ function DoneeDashboard({
                     isWithdrawn ? "Offer withdrawn" :
                     offer.status.replace(/_/g, " ");
                   const statusColor =
-                    isPendingReview ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
+                    isPendingReview || isNeedsInfo ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
                     isApproved || isComplete || isIssueWindow ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" :
                     isHandover ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
                     isIssueRaised ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
@@ -1058,7 +1062,7 @@ function DoneeDashboard({
                           (they render in the PastOffersStrip below instead) */}
                       {!isWithdrawn && (() => {
                         const stages: { label: string; sublabel: string; statuses: string[] }[] = [
-                          { label: "Offer Received",    sublabel: "Donor submitted their offer",            statuses: ["PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP"] },
+                          { label: "Offer Received",    sublabel: "Donor submitted their offer",            statuses: ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "COMPATIBILITY_CHECKED", "NEEDS_INFORMATION", "PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP"] },
                           { label: "You Reviewed",      sublabel: "You accepted or reviewed the offer",     statuses: ["DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED"] },
                           { label: "Donor Confirmed",   sublabel: "Donor reconfirmed item availability",   statuses: ["DONOR_RECONFIRMED", "CONDITION_CHANGED_RESCREENING", "PENDING_ADMIN_APPROVAL"] },
                           { label: "Admin Approved",    sublabel: "CauseKind verified the match",          statuses: ["ADMIN_APPROVED"] },
@@ -1463,8 +1467,8 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleDeleteRejected(id: number) {
-    if (!confirm("Permanently delete this rejected listing?")) return;
+  async function handleDeleteListing(id: number) {
+    if (!confirm("Delete this listing? It will no longer appear here.")) return;
     setListingActionLoading(id);
     try {
       await deleteMyListing(id);
@@ -1504,7 +1508,7 @@ export default function DashboardPage() {
     if (last && Date.now() - parseInt(last) < THIRTY_DAYS) return;
     localStorage.setItem(key, Date.now().toString());
     if (window.confirm(`You have ${rejected.length} rejected listing${rejected.length > 1 ? "s" : ""}. Delete ${rejected.length > 1 ? "them" : "it"} to keep your inventory clean?`)) {
-      rejected.forEach(l => handleDeleteRejected(l.id));
+      rejected.forEach(l => handleDeleteListing(l.id));
     }
   }, [itemListings]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1768,9 +1772,9 @@ export default function DashboardPage() {
                                       Withdraw
                                     </button>
                                   )}
-                                  {l.status === "REJECTED" && (
+                                  {["REJECTED", "WITHDRAWN", "EXPIRED"].includes(l.status) && (
                                     <button
-                                      onClick={() => handleDeleteRejected(l.id)}
+                                      onClick={() => handleDeleteListing(l.id)}
                                       disabled={listingActionLoading === l.id}
                                       className="text-xs text-red-600 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 font-semibold"
                                     >
