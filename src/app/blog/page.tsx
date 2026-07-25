@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -9,7 +10,7 @@ import { blogPosts, insiderTips } from "../../data/blogData";
 import { getBlogTranslation, getInsiderTipTranslation, preloadBlogTranslations } from "@/data/blogTranslations";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
-import { Search, X } from "lucide-react";
+import { Search, X, BookOpen } from "lucide-react";
 import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { Sparkles } from "lucide-react";
@@ -227,6 +228,7 @@ function BlogListingContent() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
       />
+
       <div className="max-w-[1280px] mx-auto px-6">
         {/* Search & Header Section */}
         <section className="mb-12">
@@ -297,9 +299,11 @@ function BlogListingContent() {
                                   onClick={() => setIsSearchFocused(false)}
                                   className="flex items-center gap-3 p-3 hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors"
                                 >
-                                  <img
+                                  <Image
                                     src={post.image}
                                     alt={tr.title}
+                                    width={48}
+                                    height={48}
                                     className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                                   />
                                   <div className="min-w-0">
@@ -327,28 +331,55 @@ function BlogListingContent() {
             </AnimatedWrapper>
           </div>
 
+          {/* Manifesto strip — recurring editorial pull-quote motif */}
+          <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
+            <div className="border-y border-stone-200 dark:border-stone-800 py-6 mb-10 flex items-center gap-6">
+              <span className="hidden sm:flex items-center flex-shrink-0">
+                <BookOpen className="w-4 h-4 text-[#b04a15] dark:text-orange-400" strokeWidth={2} />
+              </span>
+              <p className="font-[family-name:--font-lora] italic text-xl md:text-2xl text-stone-700 dark:text-stone-300 leading-snug max-w-3xl">
+                {t("manifesto")}
+              </p>
+            </div>
+          </AnimatedWrapper>
+
           <div className="flex flex-col lg:flex-row gap-8 items-start">
-            {/* Category Sidebar (vertical) */}
+            {/* Category Sidebar (vertical) — a shared-layout sliding indicator
+                (Framer's layoutId/FLIP technique) marks the active item;
+                only that small element repaints, not the list, so this
+                stays cheap no matter how many categories exist. */}
             <AnimatedWrapper delay={0.35} duration={0.5} direction="up" className="w-full lg:w-56 flex-shrink-0">
-              <nav className="lg:sticky lg:top-28 bg-white dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 rounded-2xl p-3">
-                <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+              <nav className="lg:sticky lg:top-28 border-t border-stone-200 dark:border-stone-800">
+                <p className="pt-4 pb-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
                   {t("categories")}
                 </p>
-                <div className="flex flex-col gap-1">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => handleCategorySelect(category)}
-                      className={`text-left px-3 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                        selectedCategory === category
-                          ? "bg-[#b04a15] text-white shadow-sm"
-                          : "text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800/60 hover:text-[#b04a15] dark:hover:text-orange-400"
-                      }`}
-                    >
-                      {translateCategoryLabel(category)}
-                    </button>
-                  ))}
+                <div className="flex flex-col divide-y divide-stone-200 dark:divide-stone-800">
+                  {categories.map((category) => {
+                    const isActive = selectedCategory === category;
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => handleCategorySelect(category)}
+                        className={`group relative text-left py-2.5 pl-3 text-sm font-bold transition-colors cursor-pointer ${
+                          isActive
+                            ? "text-[#b04a15] dark:text-orange-400"
+                            : "text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200"
+                        }`}
+                      >
+                        {isActive ? (
+                          <motion.span
+                            layoutId="category-pill"
+                            className="absolute inset-y-0 left-0 w-0.5 bg-[#b04a15]"
+                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                          />
+                        ) : (
+                          <span className="absolute inset-y-0 left-0 w-0.5 bg-transparent transition-colors group-hover:bg-stone-300 dark:group-hover:bg-stone-700" />
+                        )}
+                        {translateCategoryLabel(category)}
+                      </button>
+                    );
+                  })}
                 </div>
               </nav>
             </AnimatedWrapper>
@@ -369,9 +400,12 @@ function BlogListingContent() {
                     >
                       <div className="aspect-[16/9] overflow-hidden relative">
                         <div className="absolute inset-0 bg-stone-900/5 group-hover:bg-transparent transition-colors z-10"></div>
-                        <img
+                        <Image
                           alt={tr.title}
-                          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                          fill
+                          priority
+                          sizes="(min-width: 768px) 66vw, 100vw"
+                          className="object-cover group-hover:scale-[1.02] transition-transform duration-700"
                           src={featured.image}
                         />
                         <div className="absolute top-4 left-4 z-20">
@@ -381,6 +415,9 @@ function BlogListingContent() {
                         </div>
                       </div>
                       <div className="p-6 md:p-8">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">
+                          {tr.category} · {featured.publishedDate}
+                        </p>
                         <h2 className="font-extrabold text-2xl md:text-3xl text-stone-900 dark:text-stone-100 mb-3 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
                           {tr.title}
                         </h2>
@@ -461,7 +498,7 @@ function BlogListingContent() {
                       ))}
                     </div>
                   </div>
-                  <Link href="/requests" className="mt-6 block text-center w-full py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
+                  <Link href="/requests" className="mt-6 block text-center w-full py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
                     {t("startYourImpact")}
                   </Link>
                 </div>
@@ -469,55 +506,94 @@ function BlogListingContent() {
             </AnimatedWrapper>
           </div>
         </div>
-      </div>
+        </div>
 
-      {/* List remaining filtered posts */}
-      {filteredPosts.length > 1 && (
-        <StaggerContainer inView delayStart={0.05} staggerDelay={0.12} className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
-          {filteredPosts.slice(1).map((post) => {
-            const tr = translatePost(post);
-            return (
-              <motion.div key={post.slug} variants={itemVariants} className="h-full">
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="group bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden hover:shadow-[0_20px_40px_rgba(30,58,96,0.04)] transition-all duration-500 hover:-translate-y-1 flex flex-col h-full"
+      {/* List remaining filtered posts — cards keep real spacing (gap-6) so
+          the page-wide decorative marquee (rendered once, near the top of
+          this component) can peek through the gaps between them. */}
+      {filteredPosts.length > 1 && (() => {
+        const remainingPosts = filteredPosts.slice(1);
+
+        // Bento rhythm instead of a uniform grid: every 4th card is a
+        // "large" tile (2 columns, taller banner image, bigger type) but
+        // stays vertically laid out like the rest — just bigger — so the
+        // variety reads as sizing, not a mismatched layout.
+        return (
+            <StaggerContainer
+              inView
+              delayStart={0.05}
+              staggerDelay={0.1}
+              className="relative z-10 mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 grid-flow-dense gap-6"
+            >
+            {remainingPosts.map((post, idx) => {
+              const tr = translatePost(post);
+              const isLarge = idx % 4 === 0;
+              return (
+                <motion.div
+                  key={post.slug}
+                  variants={itemVariants}
+                  className={`h-full ${isLarge ? "md:col-span-2" : ""}`}
                 >
-                  <div className="aspect-[16/9] overflow-hidden relative flex-shrink-0">
-                    <img
-                      alt={tr.title}
-                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
-                      src={post.image}
-                    />
-                    <div className="absolute top-4 left-4 z-20">
-                      <span className="bg-[#b04a15] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
-                        {tr.category}
-                      </span>
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className="group flex flex-col h-full rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/40 overflow-hidden shadow-xs hover:shadow-[0_20px_40px_rgba(30,58,96,0.04)] transition-all duration-500 hover:-translate-y-1"
+                  >
+                    <div className={`overflow-hidden relative flex-shrink-0 ${isLarge ? "aspect-[21/9]" : "aspect-[16/10]"}`}>
+                      <Image
+                        alt={tr.title}
+                        fill
+                        sizes={isLarge ? "(min-width: 1024px) 66vw, 100vw" : "(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"}
+                        className="object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                        src={post.image}
+                      />
                     </div>
-                  </div>
-                  <div className="p-6 flex flex-col flex-1">
-                    <h3 className="font-bold text-lg md:text-xl text-stone-900 dark:text-stone-100 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors">
-                      {tr.title}
-                    </h3>
-                    <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm mb-4 line-clamp-2 leading-relaxed flex-1">
-                      {tr.description}
-                    </p>
-                    <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400 mt-auto">
-                      <span>{post.readTime}</span>
-                      <span className="flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
-                        {t("readStory")}
-                      </span>
+                    <div className={`flex flex-col flex-1 ${isLarge ? "p-8" : "p-6"}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                        {tr.category} · {post.publishedDate}
+                      </p>
+                      <h3
+                        className={`font-bold text-stone-900 dark:text-stone-100 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors ${
+                          isLarge ? "text-2xl md:text-3xl" : "text-lg md:text-xl"
+                        }`}
+                      >
+                        {tr.title}
+                      </h3>
+                      <p
+                        className={`text-stone-600 dark:text-stone-400 mb-4 leading-relaxed flex-1 ${
+                          isLarge ? "text-sm md:text-base line-clamp-2" : "text-xs md:text-sm line-clamp-2"
+                        }`}
+                      >
+                        {tr.description}
+                      </p>
+                      <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400 mt-auto">
+                        <span>{post.readTime}</span>
+                        <span className="flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                          {t("readStory")}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </StaggerContainer>
-      )}
+                  </Link>
+                </motion.div>
+              );
+            })}
+            </StaggerContainer>
+        );
+      })()}
+
+      {/* See more — transitional cue into the rest of the journal */}
+      <div className="flex justify-center mt-10">
+        <a
+          href="#insider-tips"
+          className="group inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-orange-400 transition-colors"
+        >
+          {t("seeMore")}
+          <span aria-hidden className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+        </a>
+      </div>
     </section>
 
         {/* Insider Tips and Tricks Section */}
-        <section className="mb-16 overflow-hidden">
+        <section id="insider-tips" className="mb-16 overflow-hidden scroll-mt-24">
           <AnimatedWrapper inView direction="up" duration={0.5}>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
               <div className="flex flex-col">
@@ -532,14 +608,14 @@ function BlogListingContent() {
                 <button
                   id="tips-prev"
                   onClick={() => goToTip((tipIndex - 1 + insiderTips.length) % insiderTips.length)}
-                  className="p-2 border border-stone-200 dark:border-stone-850 rounded-full hover:bg-stone-50 dark:hover:bg-stone-900 hover:border-orange-500/40 transition-all text-stone-600 dark:text-stone-400 hover:text-[#b04a15] cursor-pointer"
+                  className="p-2 border border-stone-200 dark:border-stone-850 rounded-full hover:bg-stone-50 dark:hover:bg-stone-900 hover:border-orange-500/40 transition-all text-stone-600 dark:text-stone-400 hover:text-[#b04a15] cursor-pointer active:scale-90"
                 >
                   ←
                 </button>
                 <button
                   id="tips-next"
                   onClick={() => goToTip((tipIndex + 1) % insiderTips.length)}
-                  className="p-2 border border-stone-200 dark:border-stone-850 rounded-full hover:bg-stone-50 dark:hover:bg-stone-900 hover:border-orange-500/40 transition-all text-stone-600 dark:text-stone-400 hover:text-[#b04a15] cursor-pointer"
+                  className="p-2 border border-stone-200 dark:border-stone-850 rounded-full hover:bg-stone-50 dark:hover:bg-stone-900 hover:border-orange-500/40 transition-all text-stone-600 dark:text-stone-400 hover:text-[#b04a15] cursor-pointer active:scale-90"
                 >
                   →
                 </button>
@@ -595,8 +671,9 @@ function BlogListingContent() {
               <button
                 key={i}
                 onClick={() => goToTip(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === tipIndex ? "w-8 bg-[#b04a15]" : "w-2 bg-stone-300 dark:bg-stone-700"
+                aria-label={`Go to tip ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer active:scale-90 ${
+                  i === tipIndex ? "w-8 bg-[#b04a15]" : "w-2 bg-stone-300 dark:bg-stone-700 hover:bg-stone-400 dark:hover:bg-stone-600"
                 }`}
               />
             ))}
@@ -608,8 +685,10 @@ function BlogListingContent() {
           <AnimatedWrapper inView direction="up" duration={0.65}>
             <div className="bg-[#292524] dark:bg-stone-900 rounded-2xl overflow-hidden shadow-md flex flex-col md:flex-row items-center relative border border-stone-800">
               <div className="w-full md:w-1/2 p-8 md:p-12 relative z-10 flex justify-center">
-                <img
+                <Image
                   alt="Platform Dashboard Mockup"
+                  width={360}
+                  height={360}
                   className="w-full max-w-[360px] h-auto drop-shadow-2xl rounded-xl border border-stone-800 shadow-xl hover:scale-[1.01] transition-transform duration-500"
                   src="/Change_stories.webp"
                 />
@@ -638,7 +717,7 @@ function BlogListingContent() {
                     <span className="text-xs md:text-sm font-medium">{t("bannerPoint3")}</span>
                   </div>
                 </div>
-                <Link href="/requests" className="bg-[#b04a15] hover:bg-[#963c0d] text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
+                <Link href="/requests" className="bg-[#b04a15] hover:bg-[#963c0d] text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
                   {t("startSupporting")}
                 </Link>
               </div>
@@ -668,7 +747,7 @@ function BlogListingContent() {
                     placeholder={t("emailPlaceholder")}
                     type="email"
                   />
-                  <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
+                  <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97] cursor-pointer">
                     {t("subscribe")}
                   </button>
                 </div>

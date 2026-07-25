@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, MotionProps, Variants } from "framer-motion";
+import { motion, MotionProps, Variants, useReducedMotion } from "framer-motion";
 import React from "react";
 
 type Direction = "up" | "down" | "left" | "right" | "none";
@@ -57,7 +57,17 @@ export const AnimatedWrapper: React.FC<AnimatedWrapperProps> = ({
   inView = false,
   threshold = 0.15,
 }) => {
-  const resolvedVariants = variants ?? buildVariants(direction, duration, delay);
+  // Respect the OS-level motion preference: skip the slide/scale entrance
+  // (and the scroll observer work behind whileInView) and just fade content
+  // in instantly. Cheaper for the browser and required for a11y.
+  const prefersReducedMotion = useReducedMotion();
+  const resolvedVariants = prefersReducedMotion
+    ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
+    : variants ?? buildVariants(direction, duration, delay);
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
 
   if (inView) {
     return (

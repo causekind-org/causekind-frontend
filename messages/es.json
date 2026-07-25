@@ -149,7 +149,9 @@
     "optimizeSubtitle": "Manténgase actualizado con nuestras últimas ideas, historias de éxito y actualizaciones de la comunidad local.",
     "newsletterLabel": "Hoja informativa",
     "emailPlaceholder": "¿Cuál es tu correo electrónico?",
-    "subscribe": "Suscribir"
+    "subscribe": "Suscribir",
+    "manifesto": "Consideramos cada computadora portátil sin usar, cada mochila escolar que ya no le queda, cada hora libre, como una oportunidad para el punto de inflexión de otra persona.",
+    "seeMore": "Ver más historias"
   },
   "listings": {
     "title": "Listados de artículos",
