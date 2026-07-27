@@ -155,6 +155,138 @@
   }
 }
 
+/* ── Mosaic layout ─────────────────────────────────────────────────────────
+   Opt-in only: applied when a caller passes gridClassName="card-grid--mosaic"
+   (today, the donor-facing In-Kind Requests listing). Every rule below is
+   nested under that class so the plain equal-column grid other callers use is
+   completely untouched.
+
+   The point is a composition where footprint carries emphasis: a need shown
+   large reads as more consequential than one shown small. Row height is set on
+   the GRID (grid-auto-rows), not left to content — asymmetry driven by text
+   length is just ragged, whereas fixed row units make the size differences
+   deliberate and keep the tiling gap-free.
+
+   Desktop is a 4-column grid with a repeating 6-card unit that tiles exactly,
+   so there are no holes to fill and no need for grid-auto-flow: dense (which
+   would reorder cards away from DOM order and break reading/tab sequence):
+
+     cols:   1     2     3     4
+           +-----------+-----+-----+
+     row 1 |           |     |  C  |   A = featured  2x2
+     row 2 |     A     |  B  +-----+   B = tall      1x2
+           |           |     |  D  |   C, D = standard 1x1
+           +-----+-----+-----+-----+
+     row 3 |     E     |     F     |   E, F = wide    2x1
+           +-----------+-----------+                                        */
+
+.card-grid--mosaic {
+  gap: 0.85rem;
+}
+
+/* Mobile: one column, height follows content. Forcing row spans this narrow
+   would squash text, so every variant collapses to its natural size. */
+@media (max-width: 599px) {
+  .card-grid--mosaic {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+  }
+  .card-grid--mosaic > .magic-bento-card {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    min-height: 0;
+  }
+}
+
+/* Tablet: two columns. Only the featured card spans both — enough asymmetry to
+   read as composed without leaving either column starved. */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .card-grid--mosaic {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: minmax(178px, auto);
+  }
+  .card-grid--mosaic > .bento--featured { grid-column: span 2; grid-row: span 1; }
+  .card-grid--mosaic > .bento--wide     { grid-column: span 2; grid-row: span 1; }
+  .card-grid--mosaic > .bento--tall     { grid-row: span 2; }
+}
+
+@media (min-width: 1024px) {
+  .card-grid--mosaic {
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 172px;
+  }
+  .card-grid--mosaic > .bento--featured { grid-column: span 2; grid-row: span 2; }
+  .card-grid--mosaic > .bento--tall     { grid-column: span 1; grid-row: span 2; }
+  .card-grid--mosaic > .bento--wide     { grid-column: span 2; grid-row: span 1; }
+  .card-grid--mosaic > .bento--standard { grid-column: span 1; grid-row: span 1; }
+}
+
+/* Larger cards earn more generous type — the emphasis has to carry through to
+   the content, or a big card is just a small card with more padding. */
+@media (min-width: 1024px) {
+  .card-grid--mosaic > .bento--featured .magic-bento-card__title { font-size: 1.35em; line-height: 1.15; }
+  .card-grid--mosaic > .bento--tall .magic-bento-card__title     { font-size: 1.1em; }
+}
+
+/* Clamp the description per variant so a long need never pushes the meta row
+   out of a fixed-height card. Values are per-variant because the available
+   space genuinely differs — not a single global truncation. */
+.card-grid--mosaic > .magic-bento-card .magic-bento-card__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-grid--mosaic > .bento--featured .magic-bento-card__description { -webkit-line-clamp: 5; }
+.card-grid--mosaic > .bento--tall     .magic-bento-card__description { -webkit-line-clamp: 6; }
+.card-grid--mosaic > .bento--wide     .magic-bento-card__description { -webkit-line-clamp: 2; }
+.card-grid--mosaic > .bento--standard .magic-bento-card__description { -webkit-line-clamp: 2; }
+
+/* Media only appears on the two variants with room for it. Aspect ratio varies
+   by footprint so the image is framed for the shape it sits in; object-position
+   is top-weighted because a requested item is nearly always the upper subject
+   of the frame, and centre-cropping tends to cut it. */
+.magic-bento-card__media {
+  position: relative;
+  margin: -1.25em -1.25em 0.85em;
+  overflow: hidden;
+  background: #f5f2ed;
+  flex: none;
+}
+.magic-bento-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  display: block;
+}
+.card-grid--mosaic > .bento--featured .magic-bento-card__media { aspect-ratio: 16 / 7; }
+.card-grid--mosaic > .bento--tall     .magic-bento-card__media { aspect-ratio: 4 / 3; }
+
+/* Hover lift is a transform only — it must never change the box the grid laid
+   out, or neighbouring cards would shift on every mouse-over. */
+.card-grid--mosaic > .magic-bento-card {
+  min-height: 0;
+  will-change: transform;
+}
+
+/* Skeletons reuse the same span classes, so the loading composition matches the
+   real one and swapping in data doesn't jump the layout. */
+.bento-skeleton {
+  border-radius: 20px;
+  border: 1px solid #ece7df;
+  background: linear-gradient(100deg, #f6f4f0 30%, #efece6 50%, #f6f4f0 70%);
+  background-size: 200% 100%;
+  animation: bento-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.dark .bento-skeleton { border-color: #292524; background: #1c1917; }
+@keyframes bento-skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bento-skeleton { animation: none; }
+}
+
 /* Border glow effect — driven by --glow-color */
 .magic-bento-card--border-glow::after {
   content: '';

@@ -764,6 +764,16 @@ export function cancelItemRequest(id: number, reason?: string) {
   });
 }
 
+/**
+ * Permanently delete my own UNSUBMITTED draft. Distinct from cancelItemRequest:
+ * a submitted request is withdrawn and keeps its audit trail, whereas a draft was
+ * never visible to anyone and is removed outright. The backend enforces both the
+ * ownership and the DRAFT-only rule — this is not a client-side decision.
+ */
+export function deleteItemRequestDraft(id: number) {
+  return request<void>(`/api/v1/item-requests/${id}`, { method: "DELETE" });
+}
+
 /** Read back my saved verification form (step 2 answers); undefined if never saved (204). */
 export function getMyRequestVerificationDetails(id: number) {
   return request<RequestVerification | undefined>(`/api/v1/item-requests/${id}/verification-details`);
@@ -821,6 +831,17 @@ export type VerificationDocument = {
   aiDocumentTypeGuess: string | null;
 };
 
+/**
+ * Structured rejection from the donee-photo screener. `retryable` distinguishes
+ * "this photo isn't acceptable" (422) from "we couldn't check it" (503) — the
+ * two need very different messages, so never collapse them.
+ */
+export type DocUploadError = Error & {
+  code?: string;
+  prohibitedCategories?: string[];
+  retryable?: boolean;
+};
+
 export async function uploadVerificationDocument(
   requestId: number, docType: VerificationDocumentType, file: File
 ): Promise<VerificationDocument> {
@@ -832,7 +853,14 @@ export async function uploadVerificationDocument(
     body: fd,
     credentials: "include",
   });
-  if (!res.ok) throw new Error("Document upload failed");
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const err: DocUploadError = new Error(body?.message ?? "Document upload failed");
+    if (body?.code) err.code = body.code;
+    if (Array.isArray(body?.prohibitedCategories)) err.prohibitedCategories = body.prohibitedCategories;
+    err.retryable = body?.retryable === true || res.status === 503;
+    throw err;
+  }
   return res.json();
 }
 

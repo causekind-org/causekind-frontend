@@ -10,7 +10,7 @@ import {
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   pauseItemListing, resumeItemListing, withdrawItemListing, deleteMyListing,
   getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer, confirmNoIssue,
-  reopenItemRequest, cancelItemRequest,
+  reopenItemRequest, cancelItemRequest, deleteItemRequestDraft,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,8 +23,13 @@ import {
   Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
   Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck,
-  ChevronDown, History, MessageCircle
+  ChevronDown, History, MessageCircle, Trash2
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { canDeleteDraft, canWithdrawRequest } from "@/lib/requestActions";
 import { motion } from "framer-motion";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
@@ -137,9 +142,9 @@ function getRequestStatusBadge(status: string) {
   return map[status] ?? { label: status, variant: "outline" as const };
 }
 
-// Statuses a donee can no longer withdraw from — already a finished (or
-// not-yet-real) transaction. Mirrors ItemRequestService.NOT_CANCELLABLE_STATUSES.
-const NOT_CANCELLABLE_STATUSES = new Set(["DRAFT", "FULFILLED", "FULLY_FULFILLED", "REJECTED", "EXPIRED", "CANCELLED"]);
+// Which destructive actions apply to which status now lives in one pure module
+// (src/lib/requestActions.ts) so the rule can be read and tested on its own —
+// see its doc comment for why. It mirrors ItemRequestService's own sets.
 
 /* Fix & Resubmit: reopens a REJECTED request as a draft (REJECTED -> DRAFT) and
    jumps into the request wizard with everything prefilled and documents intact. */
@@ -169,33 +174,122 @@ function FixResubmitButton({ requestId }: { requestId: number }) {
   );
 }
 
+/* A destructive request action behind a real confirmation dialog.
+ *
+ * `busy` lives per instance, so the spinner and the disabled state belong to the
+ * one card being acted on — several request cards on screen stay independent.
+ * The guard on `busy` inside the handler (not just the disabled attribute) is
+ * what actually prevents a double submit, since the dialog's action button can
+ * be triggered by keyboard before React re-renders the disabled state.
+ *
+ * Replaces window.confirm(), which blocked the page, ignored the design system,
+ * and couldn't be styled to signal that the action is destructive. */
+function ConfirmRequestActionButton({
+  label, busyLabel, icon, title, description, confirmLabel, cancelLabel, onConfirm, successMessage, errorMessage,
+}: {
+  label: string;
+  busyLabel: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  onConfirm: () => Promise<unknown>;
+  successMessage: string;
+  errorMessage: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function run() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await onConfirm();
+      setOpen(false);
+      toast.success(successMessage);
+    } catch (e) {
+      // Leave the card exactly as it was — the caller only refreshes on success.
+      setOpen(false);
+      toast.error(e instanceof Error ? e.message : errorMessage);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={busy}
+        onClick={() => setOpen(true)}
+        className="h-7 px-2.5 text-[11px] font-bold border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+      >
+        {busy
+          ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> {busyLabel}</>
+          : <>{icon} {label}</>}
+      </Button>
+
+      <AlertDialog open={open} onOpenChange={(o) => { if (!busy) setOpen(o); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{title}</AlertDialogTitle>
+            <AlertDialogDescription>{description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              onClick={(e) => { e.preventDefault(); run(); }}
+              className="bg-red-600 hover:bg-red-700 text-white border-0"
+            >
+              {busy ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {busyLabel}</> : confirmLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
 /* Withdraw my own request — works at any stage short of completion, including
  * mid-handover. Cancels any live match/offer against it and notifies the donor,
  * same as the backend's cancelRequest(). */
 function CancelRequestButton({ requestId, onCancelled }: { requestId: number; onCancelled: () => void }) {
-  const [busy, setBusy] = useState(false);
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      disabled={busy}
-      className="h-7 px-2.5 text-[11px] font-bold border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-      onClick={async () => {
-        if (!confirm("Withdraw this request? If a donor is already matched or mid-handover, they'll be notified and released.")) return;
-        setBusy(true);
-        try {
-          await cancelItemRequest(requestId);
-          onCancelled();
-          toast.success("Request withdrawn");
-        } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Could not withdraw request");
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <><X className="w-3 h-3 mr-1" /> Withdraw</>}
-    </Button>
+    <ConfirmRequestActionButton
+      label="Withdraw"
+      busyLabel="Withdrawing"
+      icon={<X className="w-3 h-3 mr-1" />}
+      title="Withdraw this request?"
+      description="Verification and donor matching will stop. If a donor is already matched or mid-handover, they'll be notified and released."
+      confirmLabel="Withdraw request"
+      cancelLabel="Keep request"
+      successMessage="Request withdrawn"
+      errorMessage="Could not withdraw request"
+      onConfirm={async () => { await cancelItemRequest(requestId); onCancelled(); }}
+    />
+  );
+}
+
+/* Permanently delete an unsubmitted draft. Separate from withdrawal by design:
+ * a draft was never seen by anyone, so there's no audit trail to preserve and
+ * nothing to notify — see ItemRequestService.deleteDraftRequest(). */
+function DeleteDraftButton({ requestId, onDeleted }: { requestId: number; onDeleted: () => void }) {
+  return (
+    <ConfirmRequestActionButton
+      label="Delete draft"
+      busyLabel="Deleting"
+      icon={<Trash2 className="w-3 h-3 mr-1" />}
+      title="Delete this draft?"
+      description="This draft has not been submitted. Deleting it will permanently remove the saved request."
+      confirmLabel="Delete draft"
+      cancelLabel="Keep draft"
+      successMessage="Draft deleted"
+      errorMessage="Could not delete draft"
+      onConfirm={async () => { await deleteItemRequestDraft(requestId); onDeleted(); }}
+    />
   );
 }
 
@@ -274,13 +368,16 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
         <div className="flex items-center gap-2 shrink-0">
           <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">{badge.label}</Badge>
           {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
-          {r.status === "DRAFT" && (
-            <Link href={`/requests/new?draftId=${r.id}`}
-              className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#1e3a60]/30 dark:border-blue-400/40 text-[11px] font-bold text-[#1e3a60] dark:text-blue-400 hover:bg-[#1e3a60]/5 dark:hover:bg-blue-400/10 transition-colors">
-              <Pencil className="w-3 h-3" /> Continue editing
-            </Link>
+          {canDeleteDraft(r.status) && (
+            <>
+              <Link href={`/requests/new?draftId=${r.id}`}
+                className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#1e3a60]/30 dark:border-blue-400/40 text-[11px] font-bold text-[#1e3a60] dark:text-blue-400 hover:bg-[#1e3a60]/5 dark:hover:bg-blue-400/10 transition-colors">
+                <Pencil className="w-3 h-3" /> Continue editing
+              </Link>
+              <DeleteDraftButton requestId={r.id} onDeleted={onCancelled} />
+            </>
           )}
-          {!NOT_CANCELLABLE_STATUSES.has(r.status) && <CancelRequestButton requestId={r.id} onCancelled={onCancelled} />}
+          {canWithdrawRequest(r.status) && <CancelRequestButton requestId={r.id} onCancelled={onCancelled} />}
         </div>
       </div>
       <JourneyRail status={r.status} />

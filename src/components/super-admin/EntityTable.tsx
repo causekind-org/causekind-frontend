@@ -6,6 +6,7 @@ import {
   superAdminList, superAdminUpdate, superAdminDelete, superAdminCreateUser,
   type SuperAdminEntity, type SuperAdminRow, type SuperAdminDependent, type ApiConflictError,
 } from "@/lib/api";
+import { rowCode } from "@/lib/row-code";
 import { Search, Pencil, Trash2, X, Plus, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 
 export type ColumnType = "text" | "number" | "textarea" | "boolean" | "select";
@@ -109,9 +110,9 @@ function RowForm({
 
 /* ── Delete confirm — always dark overlay ────────────────────────────────── */
 function DeleteConfirm({
-  row, onCancel, onConfirm, onCascade, deleting, blockers,
+  code, onCancel, onConfirm, onCascade, deleting, blockers,
 }: {
-  row: SuperAdminRow;
+  code: string;
   onCancel: () => void;
   onConfirm: () => void;
   onCascade: () => void;
@@ -126,7 +127,7 @@ function DeleteConfirm({
         </div>
         {blockers ? (
           <>
-            <h3 className="text-base font-bold text-white">Row #{String(row.id)} has linked records</h3>
+            <h3 className="text-base font-bold text-white">Row {code} has linked records</h3>
             <p className="text-xs text-stone-400 mt-2 leading-relaxed">
               {blockers.length === 0
                 ? "It's referenced by other records, but the exact rows couldn't be determined."
@@ -151,7 +152,7 @@ function DeleteConfirm({
           </>
         ) : (
           <>
-            <h3 className="text-base font-bold text-white">Hard-delete row #{String(row.id)}?</h3>
+            <h3 className="text-base font-bold text-white">Hard-delete row {code}?</h3>
             <p className="text-xs text-stone-400 mt-2 leading-relaxed">This permanently removes the row from the database. It cannot be undone.</p>
             <div className="flex gap-2 mt-6">
               <button onClick={onConfirm} disabled={deleting} className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg text-sm transition-colors">
@@ -348,6 +349,12 @@ export function EntityTable({
           <table className="w-full text-sm">
             <thead className={t.thead}>
               <tr>
+                <th className={`px-4 py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                  #
+                </th>
+                <th className={`px-4 py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                  Code
+                </th>
                 {tableCols.map(c => (
                   <th key={c.key} className={`px-4 py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                     {c.label}
@@ -362,8 +369,8 @@ export function EntityTable({
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {tableCols.map(c => (
-                      <td key={c.key} className="px-4 py-3">
+                    {Array.from({ length: tableCols.length + 2 }).map((_, c) => (
+                      <td key={c} className="px-4 py-3">
                         <div className={`h-3.5 rounded animate-pulse ${t.skeleton}`} />
                       </td>
                     ))}
@@ -374,7 +381,7 @@ export function EntityTable({
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={tableCols.length + 1} className={`px-4 py-16 text-center text-sm ${t.empty}`}>
+                  <td colSpan={tableCols.length + 3} className={`px-4 py-16 text-center text-sm ${t.empty}`}>
                     No rows found.
                   </td>
                 </tr>
@@ -385,13 +392,13 @@ export function EntityTable({
                     className={`sa-row-cascade transition-colors ${t.rowHover}`}
                     style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
                   >
+                    <td className={`px-4 py-3 whitespace-nowrap tabular-nums ${t.cellId}`}>{i + 1}</td>
+                    <td className={`px-4 py-3 whitespace-nowrap font-mono text-xs ${t.cellId}`}>{rowCode(entity, row.id)}</td>
                     {tableCols.map(c => (
                       <td key={c.key} className={`px-4 py-3 whitespace-nowrap ${t.cell}`}>
-                        {c.key === "id"
-                          ? <span className={`font-mono ${t.cellId}`}>#{fmt(row[c.key])}</span>
-                          : c.type === "boolean"
-                            ? <span className={`text-xs font-bold ${row[c.key] ? "text-emerald-500" : t.iconMuted}`}>{fmt(row[c.key])}</span>
-                            : fmt(row[c.key])}
+                        {c.type === "boolean"
+                          ? <span className={`text-xs font-bold ${row[c.key] ? "text-emerald-500" : t.iconMuted}`}>{fmt(row[c.key])}</span>
+                          : fmt(row[c.key])}
                       </td>
                     ))}
                     <td className="px-4 py-3">
@@ -421,14 +428,14 @@ export function EntityTable({
       </div>
 
       {editRow && (
-        <RowForm title={`Edit ${title} #${String(editRow.id)}`} columns={columns} initial={editRow} saving={saving} onClose={() => setEditRow(null)} onSave={handleSave} />
+        <RowForm title={`Edit ${title} ${rowCode(entity, editRow.id)}`} columns={columns} initial={editRow} saving={saving} onClose={() => setEditRow(null)} onSave={handleSave} />
       )}
       {creating && (
         <RowForm title={`Create ${title}`} columns={createColumns ?? columns} initial={{}} saving={saving} onClose={() => setCreating(false)} onSave={handleCreate} />
       )}
       {deleteRow && (
         <DeleteConfirm
-          row={deleteRow}
+          code={rowCode(entity, deleteRow.id)}
           deleting={saving}
           blockers={deleteBlockers}
           onCancel={() => { setDeleteRow(null); setDeleteBlockers(null); }}

@@ -14,6 +14,7 @@ import {
   submitItemRequestDraft,
   saveRequestVerificationDetails,
   uploadVerificationDocument,
+  type DocUploadError,
   deleteVerificationDocument,
   analyzeResidenceProof,
   analyzeIdProof,
@@ -30,7 +31,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Loader2, ChevronRight, ChevronLeft, CheckCircle2, Circle, MapPin,
   Shield, Award, Lock, UploadCloud, X, FileCheck2, AlertTriangle, Trash2,
+  Camera, Upload,
 } from "lucide-react";
+import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
@@ -91,19 +94,19 @@ const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: strin
   TIER_1_BASIC: [
     { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
     { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
-    { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
+    { type: "SELFIE_WITH_ID", label: "A clear photo of yourself" },
   ],
   TIER_2_MODERATE: [
     { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
     { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
-    { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
+    { type: "SELFIE_WITH_ID", label: "A clear photo of yourself" },
     { type: "PROOF_OF_NEED", label: "Proof of need (school/hospital/doctor letter)" },
     { type: "BPL_CARD", label: "BPL card" },
   ],
   TIER_3_HIGH_VALUE: [
     { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
     { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
-    { type: "SELFIE_WITH_ID", label: "A photo of yourself" },
+    { type: "SELFIE_WITH_ID", label: "A clear photo of yourself" },
     { type: "PROOF_OF_NEED", label: "Primary proof of need (hospital discharge / prescription)" },
     { type: "BPL_CARD", label: "BPL card" },
     { type: "REFERENCE_LETTER", label: "Third-party reference letter (NGO/Sarpanch/social worker)" },
@@ -120,9 +123,9 @@ const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: strin
 // is shown as a helpful (optional) upload but isn't mandatory. Tier 4 Emergency
 // keeps all three of its docs mandatory (unchanged, separate concern).
 const MANDATORY_DOC_TYPES: Record<Tier, VerificationDocumentType[]> = {
-  TIER_1_BASIC: ["RESIDENCE_PROOF", "GOVT_ID_ANY"],
-  TIER_2_MODERATE: ["RESIDENCE_PROOF", "GOVT_ID_ANY"],
-  TIER_3_HIGH_VALUE: ["RESIDENCE_PROOF", "GOVT_ID_ANY"],
+  TIER_1_BASIC: ["RESIDENCE_PROOF", "GOVT_ID_ANY", "SELFIE_WITH_ID"],
+  TIER_2_MODERATE: ["RESIDENCE_PROOF", "GOVT_ID_ANY", "SELFIE_WITH_ID"],
+  TIER_3_HIGH_VALUE: ["RESIDENCE_PROOF", "GOVT_ID_ANY", "SELFIE_WITH_ID"],
   TIER_4_EMERGENCY: ["GOVT_ID_ANY", "EMERGENCY_PROOF", "SCENE_SELFIE"],
 };
 
@@ -131,6 +134,26 @@ const MANDATORY_DOC_TYPES: Record<Tier, VerificationDocumentType[]> = {
 // Claude-vision check (ResidenceProofVisionService / IdProofVisionService on
 // the backend). Everything else is admin-reviewed only, same as before.
 const AI_SCREENED_DOC_TYPES: VerificationDocumentType[] = ["RESIDENCE_PROOF", "GOVT_ID_ANY"];
+
+// The donee photo is screened differently from the two above: the backend runs
+// Rekognition DURING the upload request and refuses to store a photo that fails,
+// so there is no separate analyze call and a stored photo is by definition an
+// accepted one. That also means its verdict arrives as an upload ERROR (422 /
+// 503) rather than as a follow-up response — see handleDocUpload.
+const UPLOAD_SCREENED_DOC_TYPES: VerificationDocumentType[] = ["SELFIE_WITH_ID"];
+
+// Doc types that offer an in-app camera action alongside the file picker. Kept
+// separate from UPLOAD_SCREENED_DOC_TYPES on purpose: "screened during upload"
+// and "worth photographing right now" are different properties that happen to
+// coincide today. The camera is always an ADDITIONAL option, never a mode the
+// donee is forced into — anyone without a camera, or who declines permission,
+// must still be able to submit this mandatory document via Choose photo.
+const CAMERA_CAPTURE_DOC_TYPES: VerificationDocumentType[] = ["SELFIE_WITH_ID"];
+
+// Rekognition accepts JPEG and PNG only, so the picker must not offer PDFs (or
+// HEIC) for the photo — rejecting them after a slow upload would be worse.
+const PHOTO_ACCEPT = "image/jpeg,image/png";
+const DEFAULT_ACCEPT = "image/*,.pdf";
 
 type DocScreening = {
   status: "checking" | "valid" | "invalid" | "unavailable";
@@ -184,35 +207,70 @@ function Field({ label, required, hint, error, children }: { label: string; requ
 
 // ── Document upload slot ─────────────────────────────────────────────────────
 function DocSlot({
-  label, required, doc, uploading, screening, onUpload, onRemove,
+  label, required, doc, uploading, screening, uploadScreened = false, complete,
+  allowCamera = false, accept = "image/*,.pdf", onUpload, onRemove,
 }: {
   label: string; required: boolean; doc: VerificationDocument | undefined;
-  uploading: boolean; screening?: DocScreening; onUpload: (file: File) => void; onRemove: () => void;
+  uploading: boolean; screening?: DocScreening; uploadScreened?: boolean;
+  complete: boolean; allowCamera?: boolean; accept?: string;
+  onUpload: (file: File) => void; onRemove: () => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
-  const uploaded = !!doc;
+  const [cameraOpen, setCameraOpen] = useState(false);
   const invalid = screening?.status === "invalid";
+  const unavailable = screening?.status === "unavailable";
   const checking = screening?.status === "checking";
+  // `complete` is the single source of truth for the green state — it comes from
+  // the same isDocComplete() the required-counter uses, so the slot can never
+  // look finished while the counter disagrees.
+  const uploaded = complete && !checking;
+  // A photo that exists but hasn't passed screening: only reachable on a draft
+  // saved before the photo check existed, where aiVerified is null. Silently
+  // showing it as done would strand the donee at a submit-time server rejection.
+  const needsRescreen = uploadScreened && !!doc && !complete && !invalid && !unavailable && !checking;
 
   const borderClass = invalid
     ? "border-red-400 bg-red-50 dark:bg-red-950/20 dark:border-red-700"
-    : uploaded
-      ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700"
-      : required
-        ? "border-[#b04a15]/30 bg-[#b04a15]/[0.03] dark:border-[#b04a15]/40"
-        : "border-stone-200 dark:border-zinc-700";
+    : unavailable || needsRescreen
+      ? "border-amber-400 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700"
+      : uploaded
+        ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700"
+        : required
+          ? "border-[#b04a15]/30 bg-[#b04a15]/[0.03] dark:border-[#b04a15]/40"
+          : "border-stone-200 dark:border-zinc-700";
+
+  // Shared by both action buttons so the pair always reads as one state.
+  const actionBorderClass = invalid
+    ? "border-red-400 text-red-600 hover:bg-red-100 dark:hover:bg-red-950/30"
+    : unavailable || needsRescreen
+      ? "border-amber-400 text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-950/30"
+      : "border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5";
+
+  // "Take photo" only on a genuinely empty slot; anything the donee needs to
+  // redo — a rejection, an unscreened legacy photo, or an accepted one they want
+  // to change — reads as "Retake photo".
+  const cameraActionLabel = doc || invalid || needsRescreen ? "Retake photo" : "Take photo";
+  // The picker is the escape hatch when the camera path is what's failing, so it
+  // keeps a plain, always-available label and is never gated by screening state.
+  const pickerActionLabel = allowCamera
+    ? "Choose photo"
+    : invalid || needsRescreen ? "Re-upload"
+      : unavailable ? "Try again"
+        : uploaded ? "Replace" : "Upload";
 
   return (
     <div className={`flex items-center gap-3 rounded-2xl border-2 p-3.5 transition-all ${borderClass}`}>
       <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center
-        ${invalid ? "bg-red-100 dark:bg-red-900/40" : uploaded ? "bg-green-100 dark:bg-green-900/40" : required ? "bg-[#b04a15]/10" : "bg-stone-100 dark:bg-zinc-800"}`}>
+        ${invalid ? "bg-red-100 dark:bg-red-900/40" : unavailable || needsRescreen ? "bg-amber-100 dark:bg-amber-900/40" : uploaded ? "bg-green-100 dark:bg-green-900/40" : required ? "bg-[#b04a15]/10" : "bg-stone-100 dark:bg-zinc-800"}`}>
         {checking
           ? <Loader2 className="w-4 h-4 text-stone-400 animate-spin" />
           : invalid
             ? <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
-            : uploaded
-              ? <FileCheck2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-              : <UploadCloud className={`w-4 h-4 ${required ? "text-[#b04a15]" : "text-stone-400"}`} />}
+            : unavailable || needsRescreen
+              ? <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              : uploaded
+                ? <FileCheck2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                : <UploadCloud className={`w-4 h-4 ${required ? "text-[#b04a15]" : "text-stone-400"}`} />}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -222,35 +280,73 @@ function DocSlot({
             ? <span className="text-[#b04a15] ml-0.5">*</span>
             : <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">(optional)</span>}
         </span>
-        {uploaded && (
-          checking ? (
-            <p className="text-xs text-stone-400 mt-0.5">Checking with AI…</p>
-          ) : invalid ? (
-            <p className="text-xs text-red-600 dark:text-red-400 font-semibold mt-0.5">
-              {screening?.reason ?? "This doesn't look valid"} — please re-upload.
-            </p>
-          ) : (
-            <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
-              Uploaded {new Date(doc.uploadedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
-              {screening?.status === "valid" && (screening.documentTypeGuess ? ` · AI verified — ${screening.documentTypeGuess}` : " · AI verified")}
-            </p>
-          )
-        )}
+        {checking ? (
+          <p className="text-xs text-stone-400 mt-0.5">
+            {uploadScreened ? "Checking face visibility and photo safety…" : "Checking with AI…"}
+          </p>
+        ) : invalid ? (
+          <p className="text-xs text-red-600 dark:text-red-400 font-semibold mt-0.5">
+            {screening?.reason ?? "This doesn't look valid"}
+            {uploadScreened ? "" : " — please re-upload."}
+          </p>
+        ) : unavailable && uploadScreened ? (
+          <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mt-0.5">
+            We couldn&apos;t check your photo just now. Please try uploading it again in a moment.
+          </p>
+        ) : needsRescreen ? (
+          <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mt-0.5">
+            This photo was uploaded before we started checking photos. Please re-upload it so we can check it.
+          </p>
+        ) : uploaded && doc ? (
+          <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+            Uploaded {new Date(doc.uploadedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+            {screening?.status === "valid" && (
+              uploadScreened
+                ? " · Photo accepted"
+                : screening.documentTypeGuess ? ` · AI verified — ${screening.documentTypeGuess}` : " · AI verified"
+            )}
+          </p>
+        ) : null}
       </div>
 
-      <input ref={ref} type="file" accept="image/*,.pdf" className="hidden"
+      <input ref={ref} type="file" accept={accept} className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
-      <div className="shrink-0 flex items-center gap-1.5">
-        {uploaded && (
+      {allowCamera && (
+        <CameraCaptureDialog
+          open={cameraOpen}
+          onOpenChange={setCameraOpen}
+          onCapture={onUpload}
+          onChoosePhoto={() => ref.current?.click()}
+        />
+      )}
+      <div className={`shrink-0 flex gap-1.5 ${allowCamera ? "flex-col sm:flex-row sm:items-center" : "items-center"}`}>
+        {uploaded && doc && (
           <button type="button" onClick={onRemove} aria-label={`Remove ${label}`}
-            className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+            className={`p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors
+              ${allowCamera ? "self-end sm:self-auto" : ""}`}>
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         )}
+        {allowCamera && (
+          <button type="button" onClick={() => setCameraOpen(true)} disabled={uploading}
+            aria-label={`${cameraActionLabel} for ${label}`}
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-50 transition-colors
+              whitespace-nowrap inline-flex items-center justify-center gap-1.5 ${actionBorderClass}`}>
+            <Camera className="w-3.5 h-3.5" />
+            {cameraActionLabel}
+          </button>
+        )}
         <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
+          aria-label={`${pickerActionLabel} for ${label}`}
           className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-50 transition-colors
-            ${invalid ? "border-red-400 text-red-600 hover:bg-red-100 dark:hover:bg-red-950/30" : "border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5"}`}>
-          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : uploaded ? "Replace" : "Upload"}
+            whitespace-nowrap ${allowCamera ? "inline-flex items-center justify-center gap-1.5" : ""} ${actionBorderClass}`}>
+          {/* With two buttons there's no way to tell which one started the
+              upload, so a spinner on either would be a guess. Both go disabled
+              and the row's "Checking face visibility and photo safety…" line
+              carries the progress instead. */}
+          {uploading && !allowCamera
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : <>{allowCamera && <Upload className="w-3.5 h-3.5" />}{pickerActionLabel}</>}
         </button>
       </div>
     </div>
@@ -519,8 +615,15 @@ function NewRequestForm() {
         e.referrerContact = "Reference number cannot be your own phone number — give an independent reference";
     }
     if (s === 3) {
-      const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !uploadedDocs.has(t));
-      if (missing.length > 0) e.documents = `${missing.length} required document(s) still missing`;
+      const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !isDocComplete(t));
+      if (missing.length > 0) {
+        // Call out an unscreened photo specifically — "1 document still missing"
+        // is baffling when the donee can plainly see a photo sitting there.
+        const photoPending = missing.includes("SELFIE_WITH_ID") && uploadedDocs.has("SELFIE_WITH_ID");
+        e.documents = photoPending && missing.length === 1
+          ? "Your photo hasn't passed our photo check yet — please re-upload a clear photo of yourself"
+          : `${missing.length} required document(s) still missing`;
+      }
     }
     if (s === 4) {
       if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted";
@@ -555,16 +658,63 @@ function NewRequestForm() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  /**
+   * Whether a document counts toward the "required to submit" tally.
+   *
+   * For most types, uploaded == done. The donee photo additionally has to have
+   * PASSED screening: a rejected or not-yet-checked photo must never advance the
+   * counter, or the donee would be told they're finished and then be blocked at
+   * submit by the server-side gate in ItemRequestService.enforceMandatoryDocuments.
+   */
+  function isDocComplete(docType: VerificationDocumentType): boolean {
+    const doc = uploadedDocs.get(docType);
+    if (!doc) return false;
+    if (!UPLOAD_SCREENED_DOC_TYPES.includes(docType)) return true;
+    // On a resumed draft there is no in-memory screening state, so fall back to
+    // the persisted verdict — only a genuinely accepted photo restores as done.
+    const screening = docScreening.get(docType);
+    if (screening) return screening.status === "valid";
+    return doc.aiVerified === true;
+  }
+
   async function handleDocUpload(docType: VerificationDocumentType, file: File) {
     if (!draftId) return;
+    const uploadScreened = UPLOAD_SCREENED_DOC_TYPES.includes(docType);
     setUploadingDoc(docType);
+    // For the donee photo the screening happens inside this same request, so show
+    // the screening state up front rather than a generic "uploading".
+    if (uploadScreened) {
+      setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, documentTypeGuess: null }));
+    }
     try {
       const doc = await uploadVerificationDocument(draftId, docType, file);
       setUploadedDocs((prev) => new Map(prev).set(docType, doc));
-      toast.success("Document uploaded");
-      if (AI_SCREENED_DOC_TYPES.includes(docType)) screenDocument(docType, doc.url, doc.id);
-    } catch {
-      toast.error("Upload failed — please try again");
+      if (uploadScreened) {
+        // A stored photo has already passed screening server-side — the backend
+        // refuses to persist a failing one, so there is nothing left to check.
+        setDocScreening((prev) => new Map(prev).set(docType, { status: "valid", reason: null, documentTypeGuess: null }));
+        toast.success("Photo accepted");
+      } else {
+        toast.success("Document uploaded");
+        if (AI_SCREENED_DOC_TYPES.includes(docType)) screenDocument(docType, doc.url, doc.id);
+      }
+    } catch (e) {
+      if (uploadScreened) {
+        const err = e as DocUploadError;
+        // An outage must never read as "your photo is bad". Note the existing
+        // uploadedDocs entry is deliberately left alone: a failed replacement
+        // keeps whatever previously accepted photo the donee already had.
+        setDocScreening((prev) => new Map(prev).set(docType, {
+          status: err.retryable ? "unavailable" : "invalid",
+          reason: err.retryable ? null : (err.message || null),
+          documentTypeGuess: null,
+        }));
+        toast.error(err.retryable
+          ? "We couldn't check your photo just now — please try again in a moment"
+          : "Photo not accepted — see the note below");
+      } else {
+        toast.error("Upload failed — please try again");
+      }
     } finally {
       setUploadingDoc(null);
     }
@@ -924,7 +1074,7 @@ function NewRequestForm() {
   const mandatoryTypes = MANDATORY_DOC_TYPES[tier];
   const requiredDocList = REQUIRED_DOCS[tier].filter((d) => mandatoryTypes.includes(d.type));
   const optionalDocList = REQUIRED_DOCS[tier].filter((d) => !mandatoryTypes.includes(d.type));
-  const requiredDoneCount = requiredDocList.filter((d) => uploadedDocs.has(d.type)).length;
+  const requiredDoneCount = requiredDocList.filter((d) => isDocComplete(d.type)).length;
   const optionalDoneCount = optionalDocList.filter((d) => uploadedDocs.has(d.type)).length;
 
   function renderDocSlot(d: { type: VerificationDocumentType; label: string }, required: boolean) {
@@ -936,12 +1086,22 @@ function NewRequestForm() {
           doc={uploadedDocs.get(d.type)}
           uploading={uploadingDoc === d.type}
           screening={docScreening.get(d.type)}
+          uploadScreened={UPLOAD_SCREENED_DOC_TYPES.includes(d.type)}
+          complete={isDocComplete(d.type)}
+          allowCamera={CAMERA_CAPTURE_DOC_TYPES.includes(d.type)}
+          accept={UPLOAD_SCREENED_DOC_TYPES.includes(d.type) ? PHOTO_ACCEPT : DEFAULT_ACCEPT}
           onUpload={(f) => handleDocUpload(d.type, f)}
           onRemove={() => handleDocRemove(d.type)}
         />
         {d.type === "RESIDENCE_PROOF" && !uploadedDocs.has(d.type) && (
           <p className="text-xs text-stone-400 pl-1">
             Anything works as long as it shows your residential address — a utility bill, rental agreement, ration card, voter ID, or bank statement are all fine.
+          </p>
+        )}
+        {d.type === "SELFIE_WITH_ID" && !uploadedDocs.has(d.type) && (
+          <p className="text-xs text-stone-400 pl-1">
+            A simple photo of your face — no need to hold anything up. Take it somewhere well-lit and make sure
+            your face isn&apos;t covered. JPG or PNG, up to 5 MB. We check it automatically as soon as you upload.
           </p>
         )}
         {d.type === "GOVT_ID_ANY" && !uploadedDocs.has(d.type) && (
