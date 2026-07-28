@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
-  adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest,
+  adminGetItemRequests, adminApproveItemRequest, adminRejectItemRequest, reassessItemRequest,
   adminGetItemRequestVerification, adminUpdateChecklistItem, adminOverrideTier,
   adminHoldItemRequest, adminResumeItemRequestReview,
   type ItemRequest, type AdminRequestVerificationDetail,
@@ -13,7 +13,7 @@ import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import {
   Check, X, ChevronDown, ChevronUp, Clock, User, FileText, Gauge,
-  AlertTriangle, Loader2, ShieldCheck, Pause, Play, ListChecks, ExternalLink, Sparkles,
+  AlertTriangle, Loader2, ShieldCheck, Pause, Play, ListChecks, ExternalLink, Sparkles, RefreshCw,
 } from "lucide-react";
 
 const TIERS = [
@@ -29,6 +29,22 @@ const TIER_LABELS: Record<string, string> = {
   TIER_2_MODERATE: "Tier 2 — Moderate",
   TIER_3_HIGH_VALUE: "Tier 3 — High Value",
   TIER_4_EMERGENCY: "Tier 4 — Emergency",
+};
+
+/**
+ * Plain-English names for the auto-approval gate that stopped a request. Keys
+ * mirror NeedAssessmentService.firstAutoApproveBlocker(); anything unmapped falls
+ * back to the raw code so a new blocker still shows something readable.
+ */
+const BLOCKER_LABEL: Record<string, string> = {
+  TIER_NOT_ELIGIBLE: "tier requires human review (Tier 3+)",
+  MANDATORY_DOC_NOT_AI_VERIFIED: "a required document hasn't passed its AI check",
+  APPROVAL_RISK_HIGH: "the AI flagged a high risk in approving this",
+  APPROVAL_RISK_UNKNOWN: "the AI didn't report an approval-risk level",
+  AI_UNAVAILABLE: "the AI check couldn't run",
+  AUTO_APPROVE_FAILED: "auto-approval was attempted but errored",
+  HARD_ESCALATION_DUPLICATE_ADDRESS: "another account has used this address",
+  HARD_ESCALATION_AI_FLAGGED_MANDATORY_DOCUMENT: "the AI flagged a required document as invalid",
 };
 
 const STATUS_FILTERS = [
@@ -168,6 +184,27 @@ export function VerificationQueuePanel() {
       load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Approval failed");
+    } finally {
+      setActing(null);
+    }
+  }
+
+  /** Re-runs the AI gates. Deliberately not an approve — it may leave the request queued. */
+  async function handleReassess(id: number) {
+    if (acting === id) return;   // guard the handler too: the button's disabled
+    setActing(id);               // state lags a fast second click by one render
+    try {
+      const res = await reassessItemRequest(id);
+      // The run is async, so the outcome isn't known yet — report what was
+      // started, never what it decided. useEntityUpdates already refreshes this
+      // panel over SSE when the request changes, so an auto-approved request
+      // leaves the queue on its own without the admin refreshing.
+      toast.success(res.status === "ALREADY_RUNNING"
+        ? "An AI reassessment is already running for this request"
+        : "AI reassessment started — this card updates itself when it finishes");
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not re-run the AI checks");
     } finally {
       setActing(null);
     }
@@ -326,6 +363,15 @@ export function VerificationQueuePanel() {
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-stone-300 dark:border-zinc-600 text-stone-600 dark:text-stone-300 text-xs font-bold disabled:opacity-50">
                             <Pause className="w-3.5 h-3.5" /> Hold
                           </button>
+                          {/* Re-runs every gate rather than approving — for requests
+                              parked by a policy that has since been corrected. */}
+                          <button onClick={() => handleReassess(r.id)} disabled={acting === r.id}
+                            title="Re-run the AI checks. Approves only if it now passes every gate."
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-violet-300 text-violet-700 dark:border-violet-800 dark:text-violet-400 text-xs font-bold disabled:opacity-50">
+                            {acting === r.id
+                              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Re-running AI</>
+                              : <><RefreshCw className="w-3.5 h-3.5" /> Re-run AI</>}
+                          </button>
                         </>
                       )}
                     </div>
@@ -473,7 +519,12 @@ function VerificationDetail({
       {/* Need assessment */}
       {detail.needAssessment && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700 space-y-2">
-          <p className="font-bold flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Need Assessment ({detail.needAssessment.modelVersion})</p>
+          <p className="font-bold flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" /> Need Assessment ({detail.needAssessment.modelVersion})
+            <span className="ml-1 rounded-full bg-stone-100 dark:bg-zinc-700 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-stone-500">
+              decision of record
+            </span>
+          </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Metric label="Need" value={detail.needAssessment.needScore} />
             <Metric label="Fraud risk" value={detail.needAssessment.fraudScore} invert />
@@ -481,6 +532,14 @@ function VerificationDetail({
             <Metric label="Docs complete" value={detail.needAssessment.documentConfidence} />
           </div>
           <p className="text-stone-500">Recommendation: <strong>{detail.needAssessment.recommendation.replace(/_/g, " ")}</strong></p>
+          {/* Never show a recommendation without saying what produced it. A request
+              whose AI verdict was APPROVE but which is still queued must name the
+              gate that stopped it, or the two panels just look contradictory. */}
+          {detail.needAssessment.autoApproveBlockedBy && (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+              Auto-approval blocked by: <strong>{BLOCKER_LABEL[detail.needAssessment.autoApproveBlockedBy] ?? detail.needAssessment.autoApproveBlockedBy.replace(/_/g, " ").toLowerCase()}</strong>
+            </p>
+          )}
           {detail.needAssessment.evidenceNotes && <p className="text-stone-500">{detail.needAssessment.evidenceNotes}</p>}
           {detail.needAssessment.missingInfoFlags && <p className="text-amber-600">Missing: {detail.needAssessment.missingInfoFlags}</p>}
         </div>
@@ -526,9 +585,17 @@ function VerificationDetail({
       {/* Checklist */}
       {detail.checklist.length > 0 && (
         <div className={`rounded-xl p-3 text-xs border space-y-2 ${checklistFailed ? "bg-red-50 dark:bg-red-950/10 border-red-200" : checklistDone ? "bg-green-50 dark:bg-green-950/10 border-green-200" : "bg-white dark:bg-zinc-800 border-stone-100 dark:border-zinc-700"}`}>
+          {/* Count only the checks that actually gate approval. Counting every row
+              is what produced "6 of 6 remaining" on a request whose three
+              compulsory documents had all already passed screening. */}
           <p className="font-bold flex items-center gap-1"><ListChecks className="w-3 h-3" /> Verification Checklist
-            {checklistDone && <span className="text-green-600 ml-1">— all steps passed, ready to approve</span>}
+            <span className={`ml-1 font-semibold ${detail.requiredChecksBlocker ? "text-amber-600" : "text-green-600"}`}>
+              — {detail.requiredChecksPassed} of {detail.requiredChecksTotal} required checks passed
+            </span>
           </p>
+          {detail.requiredChecksBlocker && (
+            <p className="text-amber-700 dark:text-amber-400">{detail.requiredChecksBlocker}</p>
+          )}
           {detail.checklist.map((item) => (
             <div key={item.id} className="flex items-start justify-between gap-2 py-1.5 border-t border-stone-100 dark:border-zinc-700 first:border-t-0">
               <div className="flex-1 min-w-0">
@@ -536,16 +603,46 @@ function VerificationDetail({
                 <p className="text-stone-400">{item.howToVerify}</p>
                 {item.note && <p className="text-stone-500 italic">Note: {item.note}</p>}
               </div>
-              <div className="flex gap-1 shrink-0">
-                <button onClick={() => onChecklistUpdate(item.id, "PASS")}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "PASS" ? "bg-green-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-green-500 hover:text-green-600"}`}>
-                  PASS
-                </button>
-                <button onClick={() => onChecklistUpdate(item.id, "FAIL")}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "FAIL" ? "bg-red-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-red-500 hover:text-red-600"}`}>
-                  FAIL
-                </button>
-              </div>
+              {/* An automated row is a record of what the platform checked, not a
+                  task. Showing an empty PASS/FAIL control invites an admin to
+                  "confirm" something they never looked at — so these render as a
+                  read-only outcome, and the backend rejects edits to them too. */}
+              {/* NOT_APPLICABLE renders as an inactive note, never a failure — an
+                  optional document nobody had to provide, or a conditional step
+                  with no trigger, is not outstanding work. */}
+              {item.automated || item.status === "NOT_APPLICABLE" ? (
+                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                    item.status === "PASS" ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400"
+                    : item.status === "FAIL" ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                    : item.status === "ESCALATED" ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                    : "bg-stone-100 text-stone-500 dark:bg-zinc-700 dark:text-stone-400"}`}>
+                    <Sparkles className="w-2.5 h-2.5" />
+                    {item.status === "PASS" ? "Automatically passed"
+                      : item.status === "FAIL" ? "Failed"
+                      : item.status === "NOT_APPLICABLE" ? "Not applicable"
+                      : item.status === "UNAVAILABLE" ? "Check unavailable"
+                      : item.status === "ESCALATED" ? "Needs human review"
+                      : "Checking"}
+                  </span>
+                  {item.checkedAt && (
+                    <span className="text-[9px] text-stone-400">
+                      {new Date(item.checkedAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => onChecklistUpdate(item.id, "PASS")}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "PASS" ? "bg-green-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-green-500 hover:text-green-600"}`}>
+                    PASS
+                  </button>
+                  <button onClick={() => onChecklistUpdate(item.id, "FAIL")}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "FAIL" ? "bg-red-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-red-500 hover:text-red-600"}`}>
+                    FAIL
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

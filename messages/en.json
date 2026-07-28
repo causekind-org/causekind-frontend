@@ -149,7 +149,9 @@
     "optimizeSubtitle": "Stay updated with our latest insights, success stories, and local community updates.",
     "newsletterLabel": "Newsletter",
     "emailPlaceholder": "What's your email?",
-    "subscribe": "Subscribe"
+    "subscribe": "Subscribe",
+    "manifesto": "We view every unused laptop, every outgrown school bag, every spare hour, as an opportunity for someone else's turning point.",
+    "seeMore": "See more stories"
   },
   "listings": {
     "title": "Item Listings",
