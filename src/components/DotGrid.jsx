@@ -170,6 +170,7 @@ const DotGrid = ({
 
   useEffect(() => {
     const onMove = e => {
+      if (!canvasRef.current) return;
       const now = performance.now();
       const pr = pointerRef.current;
       const dt = pr.lastTime ? now - pr.lastTime : 16;
@@ -219,6 +220,7 @@ const DotGrid = ({
     };
 
     const onClick = e => {
+      if (!canvasRef.current) return;
       const rect = canvasRef.current.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
