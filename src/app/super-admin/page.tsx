@@ -13,7 +13,7 @@ import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
-  Sun, Moon, AlertTriangle, MessageCircle, KeyRound, Flag, History, Scale,
+  Sun, Moon, AlertTriangle, MessageCircle, KeyRound, History, Scale,
 } from "lucide-react";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -168,7 +168,6 @@ const NAV = [
   { key: "disputes",      label: "Disputes",    icon: Scale },
   { key: "whatsapp",      label: "WhatsApp",    icon: MessageCircle },
   { key: "admin-permissions", label: "Admin Access", icon: KeyRound },
-  { key: "disputes",      label: "Disputes",    icon: Flag },
   { key: "audit-log",     label: "Audit Log",   icon: History },
   { key: "sql",           label: "SQL Console", icon: Terminal },
 ] as const;

@@ -127,7 +127,9 @@ export function login(email: string, password: string, rememberMe = false) {
   );
 }
 
-export function register(data: {
+// Registration is email-OTP-gated: initiate sends the code, verify confirms it
+// and creates the account, resend re-sends if the code expired or was lost.
+export function initiateRegistration(data: {
   fullName: string;
   email: string;
   phone: string;
@@ -135,10 +137,24 @@ export function register(data: {
   password: string;
   role: string;
 }) {
+  return request<{ message: string }>("/api/v1/auth/register/initiate", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function verifyRegistrationOtp(email: string, otp: string) {
   return request<{ token: null; email: string; role: string; userId: number }>(
-    "/api/v1/auth/register",
-    { method: "POST", body: JSON.stringify(data) }
+    "/api/v1/auth/register/verify",
+    { method: "POST", body: JSON.stringify({ email, otp }) }
   );
+}
+
+export function resendRegistrationOtp(email: string) {
+  return request<{ message: string }>("/api/v1/auth/register/resend", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
 }
 
 export function serverLogout() {

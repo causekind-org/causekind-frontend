@@ -305,7 +305,17 @@
       "enterCity": "Enter your city",
       "searchCountry": "Search country…",
       "searchState": "Search state…",
-      "searchCity": "Search city…"
+      "searchCity": "Search city…",
+      "verifyEmailLabel": "Verify your email",
+      "verifyEmailTitle": "Check your inbox",
+      "verifyEmailSubtitle": "We sent a 6-digit code to",
+      "verifyButton": "Verify & continue",
+      "verifying": "Verifying…",
+      "editDetails": "Edit details",
+      "resendCode": "Resend code",
+      "resending": "Sending…",
+      "otpInvalid": "Incorrect code",
+      "otpExpired": "That code has expired. Request a new one."
     }
   },
   "profile": {
