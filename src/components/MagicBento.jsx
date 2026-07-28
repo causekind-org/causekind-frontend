@@ -423,8 +423,8 @@ const GlobalSpotlight = ({
   return null;
 };
 
-const BentoCardGrid = ({ children, gridRef }) => (
-  <div className="card-grid bento-section" ref={gridRef}>
+const BentoCardGrid = ({ children, gridRef, gridClassName = '' }) => (
+  <div className={`card-grid bento-section ${gridClassName}`.trim()} ref={gridRef}>
     {children}
   </div>
 );
@@ -456,7 +456,11 @@ const MagicBento = ({
   enableTilt = false,
   glowColor = DEFAULT_GLOW_COLOR,
   clickEffect = true,
-  enableMagnetism = true
+  enableMagnetism = true,
+  // Opt-in layout hook. Empty by default so every existing caller keeps the
+  // plain equal-column grid — only a caller that passes a class gets a
+  // different composition, and it supplies its own CSS for it.
+  gridClassName = ''
 }) => {
   const gridRef = useRef(null);
   const isMobile = useMobileDetection();
@@ -474,9 +478,9 @@ const MagicBento = ({
         />
       )}
 
-      <BentoCardGrid gridRef={gridRef}>
+      <BentoCardGrid gridRef={gridRef} gridClassName={gridClassName}>
         {cards.map((card, index) => {
-          const baseClassName = `magic-bento-card ${textAutoHide ? 'magic-bento-card--text-autohide' : ''} ${enableBorderGlow ? 'magic-bento-card--border-glow' : ''} ${card.onClick ? 'magic-bento-card--clickable' : ''}`;
+          const baseClassName = `magic-bento-card ${textAutoHide ? 'magic-bento-card--text-autohide' : ''} ${enableBorderGlow ? 'magic-bento-card--border-glow' : ''} ${card.onClick ? 'magic-bento-card--clickable' : ''} ${card.className ?? ''}`;
           const cardProps = {
             className: baseClassName,
             style: {
@@ -486,6 +490,7 @@ const MagicBento = ({
           };
           const cardBody = (
             <>
+              {card.media && <div className="magic-bento-card__media">{card.media}</div>}
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">{card.label}</div>
                 {card.badge && <div className="magic-bento-card__badge">{card.badge}</div>}
@@ -495,6 +500,7 @@ const MagicBento = ({
                 <p className="magic-bento-card__description">{card.description}</p>
               </div>
               {card.meta && <div className="magic-bento-card__meta">{card.meta}</div>}
+              {card.footer && <div className="magic-bento-card__footer">{card.footer}</div>}
             </>
           );
 

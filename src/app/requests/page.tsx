@@ -132,20 +132,52 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
-function RequestCardSkeleton() {
+/**
+ * Card footprints for the needs mosaic, as a repeating 6-card unit that tiles a
+ * 4-column grid exactly (see the .card-grid--mosaic block in MagicBento.css for
+ * the diagram).
+ *
+ * Index-based and therefore deterministic: the same list renders the same
+ * composition on every load, with no seeding or persistence needed. It is also
+ * append-stable — loading more needs onto the end cannot change the footprint of
+ * anything already on screen, because a card's variant depends only on its own
+ * position. Changing filters or sort deliberately does re-compose the mosaic,
+ * since that genuinely is a different list.
+ */
+const REQUEST_CARD_VARIANTS = ["featured", "tall", "standard", "standard", "wide", "wide"] as const;
+type RequestCardVariant = (typeof REQUEST_CARD_VARIANTS)[number];
+
+function requestCardVariant(index: number): RequestCardVariant {
+  return REQUEST_CARD_VARIANTS[index % REQUEST_CARD_VARIANTS.length];
+}
+
+/** How much description each footprint can carry without crowding its meta row. */
+const VARIANT_EXCERPT: Record<RequestCardVariant, number> = {
+  featured: 260,
+  tall: 210,
+  wide: 110,
+  standard: 90,
+};
+
+function excerpt(text: string | null | undefined, limit: number): string {
+  if (!text) return "";
+  const clean = text.trim();
+  if (clean.length <= limit) return clean;
+  // Cut on a word boundary so an excerpt never ends mid-word.
+  return clean.slice(0, clean.lastIndexOf(" ", limit) > 0 ? clean.lastIndexOf(" ", limit) : limit).trimEnd() + "…";
+}
+
+/**
+ * Skeletons carry the same variant classes as the real cards, so the loading
+ * state occupies the identical footprints and swapping in data doesn't jump the
+ * page. Count is a whole number of pattern units for the same reason.
+ */
+function RequestsMosaicSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className="rounded-3xl overflow-hidden border border-stone-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm animate-pulse">
-      <div className="w-full h-52 bg-stone-100 dark:bg-zinc-800" />
-      <div className="p-5 space-y-3">
-        <div className="h-3 w-24 bg-stone-100 dark:bg-zinc-800 rounded-full" />
-        <div className="h-5 w-4/5 bg-stone-100 dark:bg-zinc-800 rounded" />
-        <div className="h-4 w-full bg-stone-100 dark:bg-zinc-800 rounded" />
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-stone-100 dark:bg-zinc-800" />
-          <div className="h-3 w-28 bg-stone-100 dark:bg-zinc-800 rounded" />
-        </div>
-        <div className="h-11 w-full bg-stone-100 dark:bg-zinc-800 rounded-2xl" />
-      </div>
+    <div className="card-grid card-grid--mosaic" aria-busy="true" aria-label="Loading needs">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className={`bento-skeleton bento--${requestCardVariant(i)}`} />
+      ))}
     </div>
   );
 }
@@ -963,9 +995,7 @@ export default function RequestsPage() {
 
             {/* Grid / skeletons / empty state */}
             {loading ? (
-              <div className="grid gap-5 sm:grid-cols-2">
-                {Array.from({ length: 4 }).map((_, i) => <RequestCardSkeleton key={i} />)}
-              </div>
+              <RequestsMosaicSkeleton count={6} />
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 px-8 bg-white dark:bg-zinc-900 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm">
                 {requests.length === 0 ? (
@@ -996,15 +1026,28 @@ export default function RequestsPage() {
             ) : (
               <div className="pb-20">
                 <MagicBento
-                  cards={filtered.map((r) => {
+                  gridClassName="card-grid--mosaic"
+                  cards={filtered.map((r, i) => {
                     const isCrit = r.urgency === "CRITICAL";
                     const isHigh = r.urgency === "HIGH";
+                    const variant = requestCardVariant(i);
+                    const showsMedia = variant === "featured" || variant === "tall";
                     return {
                       color: "#ffffff",
+                      className: `bento--${variant}`,
+                      // Only the two roomiest footprints carry an image, and only
+                      // when the need actually has one — an empty media band on a
+                      // small card is the "meaningless empty space" to avoid.
+                      media: showsMedia && r.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.imageUrl} alt="" loading="lazy" />
+                      ) : undefined,
                       label: <TranslatedText text={r.category} />,
                       badge: r.isEmergency ? "Emergency" : isCrit ? "Urgent" : isHigh ? "High" : undefined,
                       title: <TranslatedText text={r.title} />,
-                      description: r.description ? <TranslatedText text={r.description} /> : "",
+                      description: r.description
+                        ? <TranslatedText text={excerpt(r.description, VARIANT_EXCERPT[variant])} />
+                        : "",
                       meta: (
                         <>
                           <span className="flex items-center gap-1 min-w-0">

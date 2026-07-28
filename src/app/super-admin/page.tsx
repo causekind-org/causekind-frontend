@@ -78,7 +78,6 @@ const URGENCY = ["NORMAL", "HIGH", "CRITICAL"];
 
 // ── Column configs per entity ─────────────────────────────────────────────────
 const USER_COLS: Column[] = [
-  { key: "id", label: "ID" },
   { key: "fullName", label: "Name", editable: true },
   { key: "email", label: "Email", editable: true },
   { key: "phone", label: "Phone", editable: true },
@@ -97,7 +96,6 @@ const USER_CREATE_COLS: Column[] = [
   { key: "role", label: "Role", editable: true, type: "select", options: ROLES },
 ];
 const CAMPAIGN_COLS: Column[] = [
-  { key: "id", label: "ID" },
   { key: "title", label: "Title", editable: true },
   { key: "doneeName", label: "Donee" },
   { key: "category", label: "Category", editable: true },
@@ -110,7 +108,6 @@ const CAMPAIGN_COLS: Column[] = [
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];
 const DONATION_COLS: Column[] = [
-  { key: "id", label: "ID" },
   { key: "donorName", label: "Donor" },
   { key: "campaignTitle", label: "Campaign" },
   { key: "amount", label: "Amount", editable: true, type: "number" },
@@ -120,7 +117,6 @@ const DONATION_COLS: Column[] = [
   { key: "razorpayPaymentId", label: "Payment ID", editable: true, type: "text", inTable: false },
 ];
 const REQUEST_COLS: Column[] = [
-  { key: "id", label: "ID" },
   { key: "title", label: "Title", editable: true },
   { key: "doneeName", label: "Donee" },
   { key: "category", label: "Category", editable: true },
@@ -133,7 +129,6 @@ const REQUEST_COLS: Column[] = [
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];
 const LISTING_COLS: Column[] = [
-  { key: "id", label: "ID" },
   { key: "title", label: "Title", editable: true },
   { key: "donorName", label: "Donor" },
   { key: "category", label: "Category", editable: true },
@@ -146,7 +141,6 @@ const LISTING_COLS: Column[] = [
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];
 const MATCH_COLS: Column[] = [
-  { key: "id", label: "ID" },
   { key: "matchType", label: "Type" },
   { key: "donorName", label: "Donor" },
   { key: "doneeName", label: "Donee" },

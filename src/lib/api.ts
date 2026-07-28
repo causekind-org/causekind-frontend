@@ -29,6 +29,36 @@ const inFlightGetRequests = new Map<string, Promise<any>>();
 const getCacheMap = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL_MS = 3000;
 
+/**
+ * Reads a successful response's body, tolerating the several legitimate ways a
+ * backend says "nothing to return".
+ *
+ * Returns `undefined` for 204, an explicit zero Content-Length, a non-JSON
+ * Content-Type, or a body that is empty/whitespace once read. Only actual JSON
+ * text is handed to JSON.parse, so a malformed body surfaces as a real error
+ * rather than the browser's "Unexpected end of JSON input", which tells an admin
+ * nothing about what went wrong.
+ */
+async function readJsonBody(res: Response): Promise<unknown> {
+  if (res.status === 204 || res.status === 205) return undefined;
+  if (res.headers.get("content-length") === "0") return undefined;
+
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType && !contentType.includes("json")) return undefined;
+
+  // Read as text first: res.json() on an empty body throws, and we cannot know
+  // the body is empty until it has been read (Content-Length is often absent
+  // under chunked encoding).
+  const text = await res.text();
+  if (!text.trim()) return undefined;
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error("The server sent a response we couldn't read. Please try again.");
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestOptions = {}
@@ -83,7 +113,18 @@ async function request<T>(
         throw err;
       }
       if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
-      const body = await res.json().catch(() => ({}));
+      // Errors don't always arrive as JSON — a proxy or gateway can return plain
+      // text or HTML. Read once as text, then parse only if it actually is JSON,
+      // so a non-JSON error still yields something readable instead of a blank
+      // "Something went wrong".
+      const raw = await res.text().catch(() => "");
+      let body: Record<string, unknown> = {};
+      if (raw.trim().startsWith("{")) {
+        try { body = JSON.parse(raw) as Record<string, unknown>; } catch { /* fall through to raw text */ }
+      }
+      const plainText = Object.keys(body).length === 0 && raw.trim() && !raw.trim().startsWith("<")
+        ? raw.trim().slice(0, 200)
+        : null;
       const msg =
         body?.message ??
         body?.detail ??
@@ -93,13 +134,18 @@ async function request<T>(
             ).join(", ")
           : null) ??
         (body?.title !== "Bad Request" ? body?.title : null) ??
+        plainText ??
         `Something went wrong (${res.status})`;
-      throw new Error(msg);
+      throw new Error(String(msg));
     }
 
-    if (res.status === 204) return undefined as T;
-    const data = (await res.json()) as T;
-    if (isGet) {
+    // A successful response does not guarantee a JSON body. 204 is the obvious
+    // case, but a `void` Spring handler returns 200 with Content-Length: 0, and
+    // calling res.json() on that throws "Unexpected end of JSON input" — a raw
+    // browser error with no useful meaning, which is exactly what an admin saw on
+    // the Re-run AI button. Check for a body before trying to parse one.
+    const data = (await readJsonBody(res)) as T;
+    if (isGet && data !== undefined) {
       getCacheMap.set(path, { data, timestamp: Date.now() });
     }
     return data;
@@ -781,6 +827,16 @@ export function cancelItemRequest(id: number, reason?: string) {
   });
 }
 
+/**
+ * Permanently delete my own UNSUBMITTED draft. Distinct from cancelItemRequest:
+ * a submitted request is withdrawn and keeps its audit trail, whereas a draft was
+ * never visible to anyone and is removed outright. The backend enforces both the
+ * ownership and the DRAFT-only rule — this is not a client-side decision.
+ */
+export function deleteItemRequestDraft(id: number) {
+  return request<void>(`/api/v1/item-requests/${id}`, { method: "DELETE" });
+}
+
 /** Read back my saved verification form (step 2 answers); undefined if never saved (204). */
 export function getMyRequestVerificationDetails(id: number) {
   return request<RequestVerification | undefined>(`/api/v1/item-requests/${id}/verification-details`);
@@ -838,6 +894,17 @@ export type VerificationDocument = {
   aiDocumentTypeGuess: string | null;
 };
 
+/**
+ * Structured rejection from the donee-photo screener. `retryable` distinguishes
+ * "this photo isn't acceptable" (422) from "we couldn't check it" (503) — the
+ * two need very different messages, so never collapse them.
+ */
+export type DocUploadError = Error & {
+  code?: string;
+  prohibitedCategories?: string[];
+  retryable?: boolean;
+};
+
 export async function uploadVerificationDocument(
   requestId: number, docType: VerificationDocumentType, file: File
 ): Promise<VerificationDocument> {
@@ -849,7 +916,14 @@ export async function uploadVerificationDocument(
     body: fd,
     credentials: "include",
   });
-  if (!res.ok) throw new Error("Document upload failed");
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const err: DocUploadError = new Error(body?.message ?? "Document upload failed");
+    if (body?.code) err.code = body.code;
+    if (Array.isArray(body?.prohibitedCategories)) err.prohibitedCategories = body.prohibitedCategories;
+    err.retryable = body?.retryable === true || res.status === 503;
+    throw err;
+  }
   return res.json();
 }
 
@@ -931,6 +1005,12 @@ export type NeedAssessment = {
   recommendation: string;
   evidenceNotes: string | null;
   missingInfoFlags: string | null;
+  /**
+   * The single gate that stopped auto-approval, or null if it went through.
+   * Present so the queue can explain why a request with an APPROVE verdict is
+   * still awaiting review, instead of showing two panels that contradict.
+   */
+  autoApproveBlockedBy: string | null;
   createdAt: string;
 };
 
@@ -947,10 +1027,24 @@ export type VerificationChecklistItem = {
   stepNumber: number;
   action: string;
   howToVerify: string;
-  status: "PENDING" | "PASS" | "FAIL";
+  /**
+   * NOT_APPLICABLE = genuinely doesn't apply (optional evidence not provided, or
+   * a conditional step with no trigger) — excluded from required totals, never a
+   * failure. UNAVAILABLE = the check couldn't run; absence of a result is not
+   * evidence against anyone.
+   */
+  status: "PENDING" | "PASS" | "FAIL" | "NOT_APPLICABLE" | "UNAVAILABLE" | "ESCALATED";
+  /** How this step is decided — see the backend VerificationMethod enum. */
+  method:
+    | "SYSTEM_RULE" | "AI_VISION" | "AI_DOCUMENT" | "AI_CONSISTENCY"
+    | "HUMAN_CONDITIONAL" | "WORKFLOW_ACTION" | null;
   note: string | null;
+  /** Admin email, or "AI_AUTOMATION" when the platform decided this step. */
   checkedByEmail: string | null;
   checkedAt: string | null;
+  /** Automated steps render read-only — the backend also rejects manual edits. */
+  automated: boolean;
+  automationSource: string | null;
 };
 
 export type AdminRequestVerificationDetail = {
@@ -969,6 +1063,15 @@ export type AdminRequestVerificationDetail = {
   needAssessment: NeedAssessment | null;
   fraudFlags: FraudFlag[];
   checklist: VerificationChecklistItem[];
+  /**
+   * Only the checks that genuinely gate approval. Optional "strengthens your
+   * case" evidence is excluded from the denominator, so a missing BPL card can
+   * never read as outstanding work.
+   */
+  requiredChecksPassed: number;
+  requiredChecksTotal: number;
+  /** Null when nothing is outstanding. */
+  requiredChecksBlocker: string | null;
 };
 
 export function adminGetItemRequestVerification(id: number) {
@@ -1331,7 +1434,104 @@ export type AnonymizedRequest = {
   housingType: string | null;
   numberOfEarners: number | null;
   reasonCannotBuy: string | null;
+  /** True when this donee consented AND their photo passed screening. */
+  doneePhotoAvailable: boolean;
+  /**
+   * The AI confirmed a face is clearly visible and the photo contains no
+   * prohibited content. It did NOT match the face against the government ID —
+   * never label this "identity verified" in the UI.
+   */
+  doneePhotoChecked: boolean;
+  /** Relative path to our authenticated image endpoint; null when unavailable. */
+  doneePhotoUrl: string | null;
 };
+
+/** Absolute URL for the donee portrait. Sent with credentials; re-authorized server-side. */
+export function doneePhotoSrc(path: string): string {
+  return `${BASE_URL}${path}`;
+}
+
+// ── Cancellation ─────────────────────────────────────────────────────────────
+
+/** Mirrors the backend CancellationReason enum. */
+export type CancellationReason =
+  | "ITEM_NO_LONGER_AVAILABLE" | "CANNOT_ARRANGE_HANDOVER" | "SCHEDULING_PROBLEM"
+  | "OTHER_PARTY_UNRESPONSIVE" | "SAFETY_CONCERN" | "CREATED_BY_MISTAKE" | "OTHER";
+
+export const CANCELLATION_REASONS: { value: CancellationReason; label: string; needsDetail: boolean }[] = [
+  { value: "ITEM_NO_LONGER_AVAILABLE", label: "The item is no longer available", needsDetail: false },
+  { value: "CANNOT_ARRANGE_HANDOVER", label: "Unable to arrange handover", needsDetail: false },
+  { value: "SCHEDULING_PROBLEM", label: "Scheduling problem", needsDetail: false },
+  { value: "OTHER_PARTY_UNRESPONSIVE", label: "The other party is unresponsive", needsDetail: false },
+  { value: "SAFETY_CONCERN", label: "Safety concern", needsDetail: true },
+  { value: "CREATED_BY_MISTAKE", label: "Created by mistake", needsDetail: false },
+  { value: "OTHER", label: "Other", needsDetail: true },
+];
+
+/**
+ * What the signed-in participant may do to this entity right now.
+ *
+ * The server is authoritative — the UI renders from this rather than keeping its
+ * own status list. The previous hardcoded list claimed to mirror the backend and
+ * didn't: it hid withdrawal for three statuses the API accepted, and showed
+ * nothing at all for ADMIN_APPROVED, which is how a donor ended up with no exit.
+ */
+export type CancellationOption = {
+  allowed: boolean;
+  outcome: "DELETE" | "WITHDRAW" | "CANCEL" | "HIDE" | "DISPUTE" | "NONE";
+  actionLabel: string | null;
+  requiresReason: boolean;
+  /** A counterpart has already committed — warn before proceeding. */
+  late: boolean;
+  warning: string | null;
+  blockedReason: string | null;
+};
+
+export function getOfferCancellationOptions(offerId: number) {
+  return request<CancellationOption>(`/api/v1/offers/${offerId}/cancellation-options`);
+}
+
+/** Role and resulting status are both decided server-side from ownership + policy. */
+export function cancelOffer(offerId: number, reason: CancellationReason | null, details?: string) {
+  return request<CancellationOption>(`/api/v1/offers/${offerId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason, details: details ?? null }),
+  });
+}
+
+/**
+ * Re-run the AI need assessment for a request still awaiting review (ADMIN).
+ * Re-evaluates every current gate and may auto-approve through the normal path —
+ * it never sets a status directly, so a request that genuinely needs review stays
+ * in the queue with a fresh, accurate blocker.
+ */
+export type ReassessmentResponse = {
+  requestId: number;
+  /** QUEUED = a fresh run started. ALREADY_RUNNING = one was in flight; no duplicate queued. */
+  status: "QUEUED" | "ALREADY_RUNNING";
+  message: string;
+};
+
+export function reassessItemRequest(id: number) {
+  return request<ReassessmentResponse>(`/api/v1/admin/item-requests/${id}/reassess`, { method: "POST" });
+}
+
+/**
+ * Remove a WITHDRAWN request from my dashboard. Soft hide — the row, its status
+ * history, offers and matches all survive for admins and auditing; only the
+ * donee's own view changes. The backend enforces both ownership and the
+ * CANCELLED-only rule.
+ */
+export function hideWithdrawnRequest(id: number) {
+  return request<void>(`/api/v1/item-requests/${id}/hide`, { method: "POST" });
+}
+
+/** Allow or withdraw showing my screened photo to donors. Revocable at any time. */
+export function setDoneePhotoConsent(requestId: number, consent: boolean) {
+  return request<void>(`/api/v1/item-requests/${requestId}/donee-photo-consent?consent=${consent}`, {
+    method: "POST",
+  });
+}
 
 export type QuantityAllocation = {
   requestId: number;
