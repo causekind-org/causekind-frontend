@@ -201,11 +201,11 @@ body {
 
 @keyframes ticker {
   0% {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
@@ -213,9 +213,25 @@ body {
   display: flex;
   width: max-content;
   animation: ticker 30s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* Same loop, opposite direction — for a layered marquee where a second
+   row drifts the other way instead of defining a mirrored keyframe. */
+.ticker-track-reverse {
+  display: flex;
+  width: max-content;
+  animation: ticker 34s linear infinite reverse;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.ticker-track-reverse:hover {
   animation-play-state: paused;
 }
 
@@ -1408,6 +1424,8 @@ body.mobile-menu-open {
   .support-btn-ripple,
   .stats-ticker-track,
   .animate-stats-ticker,
+  .ticker-track,
+  .ticker-track-reverse,
   .urgency-dot-critical,
   .urgency-dot-high,
   .animate-reel-disc,

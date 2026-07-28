@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, Variants } from "framer-motion";
+import { motion, Variants, useReducedMotion } from "framer-motion";
 import React from "react";
 
 /** Wraps a list of items and staggers their entrance animations. */
@@ -45,7 +45,12 @@ export const StaggerContainer: React.FC<StaggerContainerProps> = ({
   staggerDelay = 0.1,
   inView = false,
 }) => {
+  const prefersReducedMotion = useReducedMotion();
   const cv = containerVariants(delayStart, staggerDelay);
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
 
   if (inView) {
     return (

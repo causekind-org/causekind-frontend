@@ -149,7 +149,9 @@
     "optimizeSubtitle": "Restez informé de nos dernières informations, de nos réussites et des mises à jour de la communauté locale.",
     "newsletterLabel": "Bulletin",
     "emailPlaceholder": "Quel est votre email ?",
-    "subscribe": "S'abonner"
+    "subscribe": "S'abonner",
+    "manifesto": "Nous considérons chaque ordinateur portable inutilisé, chaque cartable devenu trop grand, chaque heure libre, comme une opportunité pour quelqu'un d'autre de prendre un tournant décisif.",
+    "seeMore": "Voir plus d'histoires"
   },
   "listings": {
     "title": "Listes d'articles",
