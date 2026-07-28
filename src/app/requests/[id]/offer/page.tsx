@@ -4,6 +4,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   getAnonymizedRequest,
+  doneePhotoSrc,
   getQuantityAllocation,
   getMyDonationOffers,
   createOfferDraft,
@@ -103,6 +104,12 @@ const TIER_LABEL: Record<string, string> = {
 };
 
 function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
+  // If the image 404s (consent withdrawn between page load and image fetch, or
+  // the object went missing) fall back to the no-portrait layout rather than
+  // showing a broken frame. Never surfaces WHY — that's the donee's business.
+  const [portraitFailed, setPortraitFailed] = useState(false);
+  const showPortrait = request.doneePhotoAvailable && !!request.doneePhotoUrl && !portraitFailed;
+
   const facts: { icon: LucideIcon; label: string; value: string }[] = [];
   if (request.householdSize != null)
     facts.push({ icon: Home, label: "Household", value: `${request.householdSize} member${request.householdSize === 1 ? "" : "s"}` });
@@ -120,18 +127,41 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
     });
 
   const hasBadges = !!request.verificationTier || request.emergency;
-  if (!request.imageUrl && facts.length === 0 && !request.reasonCannotBuy && !hasBadges) return null;
+  if (!showPortrait && !request.imageUrl && facts.length === 0 && !request.reasonCannotBuy && !hasBadges) return null;
 
   return (
     <section className="mb-8">
       <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">About This Need</p>
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div className="flex flex-col sm:flex-row">
-          {request.imageUrl && (
+          {showPortrait ? (
+            /* Portrait takes ~30% on desktop and sits above the facts on mobile.
+               Not wrapped in its own card — it shares this container's surface,
+               so the section stays one object rather than a card inside a card. */
+            <div className="donee-portrait flex-shrink-0 p-5 sm:w-[30%] sm:max-w-[260px] sm:pr-0">
+              <div className="donee-portrait__frame relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-gray-700 dark:bg-gray-800">
+                {/* Fixed 4:5 box reserves the space before the image loads, so a
+                    slow photo can't shift the facts beside it. */}
+                <div className="aspect-[4/5] w-full">
+                  <img
+                    src={doneePhotoSrc(request.doneePhotoUrl!)}
+                    alt="Photo of the person who posted this need"
+                    loading="lazy"
+                    onError={() => setPortraitFailed(true)}
+                    className="donee-portrait__img h-full w-full object-cover object-[center_28%]"
+                  />
+                </div>
+              </div>
+              <span className="donee-portrait__badge mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Photo checked
+              </span>
+            </div>
+          ) : request.imageUrl ? (
             <div className="flex-shrink-0 sm:w-56">
               <img src={request.imageUrl} alt={request.title} className="h-48 w-full object-cover sm:h-full" />
             </div>
-          )}
+          ) : null}
           <div className="flex-1 p-5">
             {hasBadges && (
               <div className="mb-4 flex flex-wrap items-center gap-2">

@@ -85,14 +85,26 @@ export function AiReviewPanel({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
+          {/* Labelled "second opinion" on purpose: this is a fresh, unbanded LLM
+              call made when the panel opens. It is NOT the decision the system
+              acted on — that's the Need Assessment below, which shows the banded
+              outcome and the exact auto-approval blocker. Reading this card as
+              the decision is what made an APPROVE verdict look like it had been
+              ignored. */}
           <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-violet-700">
-            <Bot className="h-3.5 w-3.5" /> AI Review
+            <Bot className="h-3.5 w-3.5" /> AI Second Opinion
+          </span>
+          <span className="rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[10px] font-bold text-stone-500">
+            advisory
           </span>
           <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${badgeClass}`}>
             {review.recommendation.replace(/_/g, " ")}
           </span>
+          {/* This field is severity — "how badly this person is harmed if denied".
+              It is deliberately NOT called risk any more: labelling it that way is
+              what led to a policy treating a desperate need as a reason to escalate. */}
           <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${riskClass}`}>
-            {review.riskLevel} risk
+            urgency if denied: {review.riskLevel}
           </span>
         </div>
         <span className="text-[10px] font-bold text-stone-400">{Math.round(review.confidence)}% confidence</span>

@@ -12,6 +12,7 @@ import {
   createItemRequestDraft,
   updateItemRequestDraft,
   submitItemRequestDraft,
+  setDoneePhotoConsent,
   saveRequestVerificationDetails,
   uploadVerificationDocument,
   type DocUploadError,
@@ -163,7 +164,7 @@ type DocScreening = {
 
 const DECLARATIONS = [
   "The information I have provided in this request is true and accurate to the best of my knowledge.",
-  "I understand my uploaded documents are used only for admin verification and will never be shown to donors or other users.",
+  "I understand my residence proof and government ID are used only for admin verification and are never shown to donors or other users.",
   "I have not already received this same item from CauseKind within the last 60 days, and I have not submitted this same request elsewhere.",
   "I understand that providing false information may result in my request being rejected and my account being restricted.",
   "I consent to CauseKind contacting any reference or alternate contact I provide, to verify this request.",
@@ -445,6 +446,8 @@ function NewRequestForm() {
 
   // Step 4
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
+  // Opt-in, defaults off — see the consent control on step 4.
+  const [photoConsent, setPhotoConsent] = useState(false);
 
   // Fix & Resubmit: the old rejection reason, shown as guidance while editing
   const [rejectionNote, setRejectionNote] = useState<string | null>(null);
@@ -770,6 +773,15 @@ function NewRequestForm() {
     if (!draftId) return;
     setSubmitting(true);
     try {
+      // Record consent before submitting. A failure here must not block the
+      // request — the safe default is "not consented", which is also what the
+      // backend already holds, so the request simply goes through without the
+      // photo being shared rather than failing outright.
+      try {
+        await setDoneePhotoConsent(draftId, photoConsent);
+      } catch {
+        if (photoConsent) toast.error("Couldn't save your photo-sharing choice — your photo stays private for now");
+      }
       await submitItemRequestDraft(draftId);
       toast.success("Your request has been submitted for verification!");
       router.push("/dashboard");
@@ -1119,7 +1131,8 @@ function NewRequestForm() {
       <div className="rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-4 flex items-start gap-3">
         <Lock className="w-4 h-4 text-[#1e3a60] mt-0.5 shrink-0" />
         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
-          Your documents are stored securely and visible only to CauseKind admins for verification — never to donors or other users.
+          Your residence and government ID proofs remain visible only to CauseKind admins. Your checked profile photo
+          may be shown to signed-in donors viewing your approved request — only if you choose to allow it on the next step.
         </p>
       </div>
 
@@ -1167,6 +1180,28 @@ function NewRequestForm() {
         Accept all declarations at once →
       </button>
       {fieldErrors.declarations && <p className="text-sm text-[#b04a15] font-bold">{fieldErrors.declarations}</p>}
+
+      {/* Photo consent — deliberately NOT part of DECLARATIONS above. Those are
+          all required to submit; a consent you cannot decline isn't consent. This
+          is opt-in, defaults off, never blocks submission, and is revocable. */}
+      <label
+        onClick={() => setPhotoConsent((v) => !v)}
+        className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200
+          ${photoConsent ? "border-[#1e3a60]/40 bg-[#1e3a60]/[0.04] dark:border-blue-700 dark:bg-blue-950/20" : "border-stone-200 dark:border-zinc-700 hover:border-stone-300"}`}>
+        <div className="mt-0.5 shrink-0">
+          {photoConsent ? <CheckCircle2 className="w-5 h-5 text-[#1e3a60] dark:text-blue-400" /> : <Circle className="w-5 h-5 text-stone-300" />}
+        </div>
+        <div className="select-none">
+          <span className="text-sm font-semibold text-stone-700 dark:text-stone-300">
+            Show my photo to donors <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">(optional)</span>
+          </span>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
+            Signed-in donors viewing your approved request will see the profile photo you uploaded. Your residence and
+            government ID proofs are never shown. You can change this at any time, and your request is treated exactly
+            the same either way.
+          </p>
+        </div>
+      </label>
 
       <div className="rounded-2xl bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 p-4 space-y-2">
         <p className="text-xs font-black text-stone-600 dark:text-stone-300 uppercase tracking-widest">What happens next</p>

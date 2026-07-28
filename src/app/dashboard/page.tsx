@@ -10,7 +10,8 @@ import {
   donorAcceptMatch, donorRejectMatch, doneeAcceptMatch, doneeRejectMatch, donorConfirmMatch,
   pauseItemListing, resumeItemListing, withdrawItemListing, deleteMyListing,
   getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer, confirmNoIssue,
-  reopenItemRequest, cancelItemRequest, deleteItemRequestDraft,
+  reopenItemRequest, cancelItemRequest, deleteItemRequestDraft, hideWithdrawnRequest,
+  getOfferCancellationOptions, type CancellationOption,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,8 +30,9 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { canDeleteDraft, canWithdrawRequest } from "@/lib/requestActions";
-import { motion } from "framer-motion";
+import { canDeleteDraft, canWithdrawRequest, canHideWithdrawnRequest, isRequestActive } from "@/lib/requestActions";
+import { CancelOfferDialog } from "@/components/CancelOfferDialog";
+import { motion, AnimatePresence } from "framer-motion";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { ListingDetailPanel } from "@/components/ListingDetailPanel";
@@ -273,6 +275,29 @@ function CancelRequestButton({ requestId, onCancelled }: { requestId: number; on
   );
 }
 
+/* Clear a withdrawn request off the donee's own dashboard.
+ *
+ * Worded as "removed from your dashboard" rather than "deleted", because that is
+ * what actually happens — the row, its history, and any offers or matches against
+ * it survive for admins. Saying "deleted" would be a promise the backend
+ * deliberately doesn't keep. */
+function HideWithdrawnRequestButton({ requestId, onHidden }: { requestId: number; onHidden: () => void }) {
+  return (
+    <ConfirmRequestActionButton
+      label="Delete"
+      busyLabel="Removing"
+      icon={<Trash2 className="w-3 h-3 mr-1" />}
+      title="Delete this withdrawn request?"
+      description="This request will be removed from your dashboard. CauseKind may retain its history for safety, support, and auditing."
+      confirmLabel="Delete request"
+      cancelLabel="Keep request"
+      successMessage="Withdrawn request removed."
+      errorMessage="Could not remove this request — please try again"
+      onConfirm={async () => { await hideWithdrawnRequest(requestId); onHidden(); }}
+    />
+  );
+}
+
 /* Permanently delete an unsubmitted draft. Separate from withdrawal by design:
  * a draft was never seen by anyone, so there's no audit trail to preserve and
  * nothing to notify — see ItemRequestService.deleteDraftRequest(). */
@@ -350,10 +375,12 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
   const badge = getRequestStatusBadge(r.status);
   return (
     <motion.div
+      layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
       transition={{ duration: 0.45, delay: 0.08 * index }}
-      className="border-b border-stone-200/70 dark:border-zinc-800 py-5 group"
+      className="border-b border-stone-200/70 dark:border-zinc-800 py-5 group overflow-hidden"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -378,6 +405,7 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
             </>
           )}
           {canWithdrawRequest(r.status) && <CancelRequestButton requestId={r.id} onCancelled={onCancelled} />}
+          {canHideWithdrawnRequest(r.status) && <HideWithdrawnRequestButton requestId={r.id} onHidden={onCancelled} />}
         </div>
       </div>
       <JourneyRail status={r.status} />
@@ -455,10 +483,13 @@ function OfferStageCard({
   offer,
   onReconfirm,
   onWithdraw,
+  onCancelled = () => {},
 }: {
   offer: DonationOffer;
   onReconfirm: (id: number) => void;
   onWithdraw: (id: number, reason: string) => void;
+  /** Refetch after a cancellation so the card and counters update. */
+  onCancelled?: () => void;
 }) {
   const meta = OFFER_STATUS_META[offer.status] ?? {
     label: offer.status.replace(/_/g, " "),
@@ -702,24 +733,10 @@ function OfferStageCard({
             >
               ✓ Yes, item is still available
             </button>
-            <button
-              onClick={() => {
-                const reasons = [
-                  "Donated outside CauseKind",
-                  "Item lost or damaged",
-                  "Item sold",
-                  "No longer available",
-                  "Other",
-                ];
-                const reason = window.prompt(
-                  "Why is the item no longer available?\n\n" + reasons.map((r, i) => `${i + 1}. ${r}`).join("\n") + "\n\nType one of the above or your own reason:"
-                );
-                if (reason !== null) onWithdraw(offer.id, reason || "No longer available");
-              }}
-              className="w-full rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 py-2 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
-            >
-              ✕ Item is no longer available
-            </button>
+            {/* Was a window.prompt containing a numbered list the donor had to
+                retype — unstructured, unstyled and unvalidatable. The reason now
+                comes from the same dialog every other cancellation uses. */}
+            <ReconfirmDeclineButton offerId={offer.id} onCancelled={onCancelled} />
           </div>
         ) : actionHref ? (
           <Link
@@ -736,14 +753,89 @@ function OfferStageCard({
           </Link>
         ) : null
       )}
+
+      {/* Exit path, rendered from the server's own policy rather than a hardcoded
+          status list. Deliberately a visible secondary action, not buried in a
+          menu: at ADMIN_APPROVED the donor previously had NO way out at all —
+          "Go to Handover Hub" was the only control on the card. */}
+      <OfferCancelAction offerId={offer.id} onCancelled={onCancelled} />
     </div>
   );
 }
 
-function DonorOfferSection({ offers, onReconfirm, onWithdraw }: {
+/** "Item is no longer available" on a reconfirmation prompt — same dialog, red styling. */
+function ReconfirmDeclineButton({ offerId, onCancelled }: { offerId: number; onCancelled: () => void }) {
+  const [option, setOption] = useState<CancellationOption | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    getOfferCancellationOptions(offerId)
+      .then((o) => { if (alive) setOption(o); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [offerId]);
+
+  if (!option?.allowed) return null;
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setDialogOpen(true)}
+        className="w-full rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 py-2 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+      >
+        ✕ Item is no longer available
+      </button>
+      <CancelOfferDialog offerId={offerId} option={option} open={dialogOpen}
+        onOpenChange={setDialogOpen} onCancelled={onCancelled} />
+    </>
+  );
+}
+
+/**
+ * Asks the backend what this participant may do, then renders it. Silent when
+ * there is no exit (already terminal) or when the honest route is a dispute —
+ * a completed donation is not something to offer a "cancel" button for.
+ */
+function OfferCancelAction({ offerId, onCancelled }: { offerId: number; onCancelled: () => void }) {
+  const [option, setOption] = useState<CancellationOption | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    getOfferCancellationOptions(offerId)
+      .then((o) => { if (alive) setOption(o); })
+      .catch(() => { /* no control rather than a broken one */ });
+    return () => { alive = false; };
+  }, [offerId]);
+
+  if (!option?.allowed || option.outcome === "HIDE") return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setDialogOpen(true)}
+        className="mt-2 w-full rounded-xl border border-red-200 bg-white py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/30"
+      >
+        {option.actionLabel}
+      </button>
+      <CancelOfferDialog
+        offerId={offerId}
+        option={option}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onCancelled={onCancelled}
+      />
+    </>
+  );
+}
+
+function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () => {} }: {
   offers: DonationOffer[];
   onReconfirm: (id: number) => void;
   onWithdraw: (id: number, reason: string) => void;
+  onCancelled?: () => void;
 }) {
   const active = offers.filter(o => !["WITHDRAWN", "CANCELLED", "COMPLETED"].includes(o.status));
   const completed = offers.filter(o => o.status === "COMPLETED");
@@ -771,7 +863,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw }: {
             <AlertTriangle className="w-3 h-3" /> Action Required
           </p>
           {needsAction.map(o => (
-            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} />
+            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
           ))}
         </div>
       )}
@@ -783,7 +875,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw }: {
             <p className="text-[10px] font-black uppercase tracking-wider text-stone-400">In Progress</p>
           )}
           {active.filter(o => !needsAction.includes(o)).map(o => (
-            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} />
+            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
           ))}
         </div>
       )}
@@ -793,7 +885,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw }: {
         <div className="space-y-3">
           <p className="text-[10px] font-black uppercase tracking-wider text-stone-400">Completed</p>
           {completed.map(o => (
-            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} />
+            <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
           ))}
         </div>
       )}
@@ -807,7 +899,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw }: {
           </summary>
           <div className="mt-2 space-y-2">
             {terminal.map(o => (
-              <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} />
+              <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
             ))}
           </div>
         </details>
@@ -979,9 +1071,10 @@ function DoneeDashboard({
     }
   };
 
-  const activeRequests = itemRequests.filter(
-    r => !["FULFILLED", "REJECTED", "EXPIRED"].includes(r.status)
-  );
+  // "On the road" means we are actively working the request. CANCELLED and
+  // FULLY_FULFILLED were missing here, so a withdrawn or completed request still
+  // told the donee we were "scanning donor inventories" for it.
+  const activeRequests = itemRequests.filter(r => isRequestActive(r.status));
   const fulfilledRequests = itemRequests.filter(r => r.status === "FULFILLED");
   const activeMatches = doneeMatches.filter(
     m => !["FULFILLED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)
@@ -1343,9 +1436,14 @@ function DoneeDashboard({
               </div>
             ) : (
               <div>
-                {itemRequests.map((r, i) => (
-                  <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
-                ))}
+                {/* AnimatePresence so a removed request eases out instead of
+                    vanishing — the row leaves on the next refetch, which is when
+                    the server has actually confirmed the change. */}
+                <AnimatePresence initial={false}>
+                  {itemRequests.map((r, i) => (
+                    <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                  ))}
+                </AnimatePresence>
               </div>
             )}
           </section>
@@ -1381,7 +1479,10 @@ function DoneeDashboard({
                       <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Scanning donor inventories</p>
                       <p className="text-xs text-stone-400 max-w-[250px] mx-auto mt-1">Your verified request is being matched against donor items &mdash; new listings are checked as they arrive. Matches appear here and we&apos;ll notify you.</p>
                     </div>
-                  ) : itemRequests.length > 0 ? (
+                  ) : activeRequests.length > 0 ? (
+                    /* activeRequests, not itemRequests — a dashboard whose only
+                       request is withdrawn has nothing awaiting verification, so
+                       promising that matching is about to start would be untrue. */
                     <div>
                       <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Matching starts after verification</p>
                       <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1">Submit your request and once our team verifies it, the matching engine starts scanning donor inventories for you.</p>
@@ -1528,6 +1629,12 @@ export default function DashboardPage() {
   const refreshRequests = async () => {
     try { const fresh = await getMyItemRequests(); setItemRequests(fresh); } catch { /* silent */ }
   };
+
+  /** Refetch after a cancellation — the status changed server-side, and the
+   *  cancel endpoint returns the policy result rather than the updated offer. */
+  function handleOfferCancelled() {
+    getMyDonationOffers().then(setDonationOffers).catch(() => {});
+  }
 
   async function handleOfferReconfirm(offerId: number) {
     try {
@@ -1761,6 +1868,7 @@ export default function DashboardPage() {
                       offers={donationOffers}
                       onReconfirm={handleOfferReconfirm}
                       onWithdraw={handleOfferWithdraw}
+                      onCancelled={handleOfferCancelled}
                     />
                   </section>
                 )}

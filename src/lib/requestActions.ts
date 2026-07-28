@@ -71,3 +71,32 @@ export function canDeleteDraft(status: string): boolean {
 export function canWithdrawRequest(status: string): boolean {
   return !NOT_CANCELLABLE_STATUSES.has(status);
 }
+
+/**
+ * A withdrawn request can be cleared off the donee's own dashboard.
+ *
+ * <p>CANCELLED only — deliberately NOT extended to FULFILLED or EXPIRED. Those
+ * are outcomes worth keeping in front of the person they happened to, and the
+ * backend refuses them anyway.
+ */
+export function canHideWithdrawnRequest(status: string): boolean {
+  return status === "CANCELLED";
+}
+
+/**
+ * Statuses where CauseKind is actively working the request — what "on the road"
+ * and "scanning donor inventories" claim. Every terminal state is excluded:
+ * telling someone we're searching for an item they already withdrew is just
+ * wrong, and that was the bug behind "1 request on the road" for a withdrawn one.
+ */
+const NOT_ACTIVE_STATUSES = new Set<string>([
+  "FULFILLED",
+  "FULLY_FULFILLED",
+  "REJECTED",
+  "EXPIRED",
+  "CANCELLED",
+]);
+
+export function isRequestActive(status: string): boolean {
+  return !NOT_ACTIVE_STATUSES.has(status);
+}
