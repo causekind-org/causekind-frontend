@@ -12,6 +12,8 @@ import {
   Check, X, Info, ChevronDown, ChevronUp, Clock, User, Package,
   MapPin, ShieldCheck, AlertTriangle, Loader2, RefreshCw, Phone, Bot,
 } from "lucide-react";
+import { ReasonField } from "@/components/ReasonField";
+import { isMeaningfulReason, REASON_HINT } from "@/lib/rejectionReason";
 
 // Offers where AI screening hasn't reached a reviewable outcome yet — either never
 // started (SUBMITTED) or is mid-flight. Admin previously had no visibility into these
@@ -167,7 +169,7 @@ export function OffersQueuePanel() {
   }
 
   async function handleReject() {
-    if (!rejectId || !rejectReason.trim()) { toast.error("Enter a rejection reason"); return; }
+    if (!rejectId || !isMeaningfulReason(rejectReason)) { toast.error(REASON_HINT); return; }
     setActing(rejectId);
     try {
       const updated = await adminActionOffer(rejectId, "REJECT", rejectReason.trim());
@@ -204,7 +206,7 @@ export function OffersQueuePanel() {
   }
 
   async function handleCancelDonation() {
-    if (!cancelId || !cancelReason.trim()) { toast.error("Enter a reason for cancellation"); return; }
+    if (!cancelId || !isMeaningfulReason(cancelReason)) { toast.error(REASON_HINT); return; }
     setDisputeActing(cancelId);
     try {
       const updated = await adminActionOffer(cancelId, "CANCEL_DONATION", cancelReason.trim());
@@ -308,11 +310,10 @@ export function OffersQueuePanel() {
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
             <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100">Reject Offer</h3>
             <p className="text-sm text-stone-500">The donor and donee will both receive a notification with this reason.</p>
-            <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3}
-              placeholder="Enter the reason for rejection..."
-              className="w-full rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:border-red-400" />
+            <ReasonField value={rejectReason} onChange={setRejectReason}
+              placeholder="Enter the reason for rejection..." disabled={acting !== null} />
             <div className="flex gap-2">
-              <button onClick={handleReject} disabled={acting !== null}
+              <button onClick={handleReject} disabled={acting !== null || !isMeaningfulReason(rejectReason)}
                 className="flex-1 rounded-xl bg-red-600 text-white py-2.5 text-sm font-semibold hover:bg-red-700 disabled:opacity-50">
                 {acting ? "Rejecting..." : "Confirm Rejection"}
               </button>
@@ -331,11 +332,10 @@ export function OffersQueuePanel() {
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
             <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100">Cancel Donation</h3>
             <p className="text-sm text-stone-500">This sides with the donee — the item was not received. Both parties will be notified and the reservation will be released.</p>
-            <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} rows={3}
-              placeholder="Reason for cancellation (shared with both parties)..."
-              className="w-full rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:border-red-400" />
+            <ReasonField value={cancelReason} onChange={setCancelReason}
+              placeholder="Reason for cancellation (shared with both parties)..." disabled={disputeActing !== null} />
             <div className="flex gap-2">
-              <button onClick={handleCancelDonation} disabled={disputeActing !== null}
+              <button onClick={handleCancelDonation} disabled={disputeActing !== null || !isMeaningfulReason(cancelReason)}
                 className="flex-1 rounded-xl bg-red-700 text-white py-2.5 text-sm font-semibold hover:bg-red-800 disabled:opacity-50">
                 {disputeActing ? "Cancelling..." : "Confirm Cancellation"}
               </button>

@@ -9,6 +9,7 @@ import {
   Truck, CalendarDays, Box, Info, ChevronRight,
 } from "lucide-react";
 import type { ItemListing, ItemMatch } from "@/lib/api";
+import { displayReason } from "@/lib/rejectionReason";
 
 // ── Journey phases ────────────────────────────────────────────────────────────
 
@@ -411,7 +412,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
                       {/* Admin note on the NEEDS_INFORMATION phase */}
                       {isProblem && listing.rejectionReason && (
                         <div className="mt-1.5 text-xs rounded-lg p-2 bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-medium">
-                          Admin note: {listing.rejectionReason}
+                          Admin note: {displayReason(listing.rejectionReason)}
                         </div>
                       )}
                     </div>

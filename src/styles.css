@@ -2320,3 +2320,90 @@ div:has(.searchable-select-open) {
   }
   .donee-portrait__frame:hover .donee-portrait__img { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Handover Hub — role-scoped accent tokens
+
+   The hub is the one place in CauseKind where the accent depends on WHO is
+   looking: the donor works in the brand terracotta, the recipient in the ink
+   navy, so at a glance you know which side of the transaction you are on.
+
+   These are additive tokens on a scoping class, NOT a redefinition of
+   --accent. Redefining --accent globally would recolour `ui/button`,
+   `ui/select` and `ui/badge` app-wide (they consume it as a near-white hover
+   tint consumed by ui/button, ui/select and ui/badge). Scoped tokens avoid that.
+
+   Neutral surfaces stay dominant; green/amber/red keep their existing meanings
+   and are deliberately NOT re-tinted per role — a success is a success whoever
+   is reading it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.handover-donor {
+  --handover-accent: var(--brand-terra);
+  --handover-accent-hover: #c45520;
+  --handover-on-accent: #ffffff;
+  --handover-soft: oklch(0.96 0.035 55);
+  /* Readable text ON --handover-soft. Used by selected/focused Select options,
+     which must never fall back to the browser's native blue menu. */
+  --handover-on-soft: oklch(0.28 0.10 45);
+  --handover-ring: var(--brand-terra);
+  --handover-rail: var(--brand-copper);
+}
+
+.handover-donee {
+  --handover-accent: #1e3a60;
+  /* Brighter than --brand-ink for AA contrast on the soft fill and for a
+     visible hover delta; the ink navy alone is too close to the text colour. */
+  --handover-accent-hover: #2d5a96;
+  --handover-on-accent: #ffffff;
+  --handover-soft: oklch(0.95 0.03 250);
+  --handover-on-soft: oklch(0.26 0.08 255);
+  --handover-ring: #2d5a96;
+  --handover-rail: #4a7fc1;
+}
+
+.dark .handover-donor {
+  --handover-accent: var(--brand-copper);
+  --handover-accent-hover: #f0955a;
+  --handover-on-accent: #1a1207;
+  --handover-soft: oklch(0.26 0.05 50);
+  --handover-on-soft: oklch(0.94 0.03 60);
+  --handover-ring: var(--brand-copper);
+}
+
+.dark .handover-donee {
+  /* Navy on a dark surface is unreadable, so dark mode lifts to a clear sky
+     blue. Same role signal, inverted for the surface it sits on. */
+  --handover-accent: #7fb0e8;
+  --handover-accent-hover: #a3c8f2;
+  --handover-on-accent: #0b1929;
+  --handover-soft: oklch(0.26 0.05 250);
+  --handover-on-soft: oklch(0.93 0.02 250);
+  --handover-ring: #7fb0e8;
+  --handover-rail: #4a7fc1;
+}
+
+/* ⚠️ PORTALS ESCAPE THIS SCOPE.
+   Radix Dialog, Select and vaul all portal to <body>, which is OUTSIDE the
+   .handover-donor / .handover-donee element. A portalled dialog therefore
+   resolves var(--handover-accent) to nothing and renders unstyled.
+
+   The fix is not to hoist these tokens to :root — that would make the donor and
+   donee themes global and mutually exclusive. Instead every portalled surface
+   re-applies the role class itself; `handoverScope(role)` in
+   features/handover/model.ts returns it, and DialogContent / SelectContent /
+   DrawerContent all take it. If a new overlay renders colourless, this is why. */
+
+/* Journey rail connector fill. Transform-only so completing a step cannot
+   shift layout (no CLS), and it collapses to an instant state change under
+   prefers-reduced-motion. */
+.handover-rail-fill {
+  transform-origin: left center;
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .handover-rail-fill {
+    transition: none;
+  }
+}

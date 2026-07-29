@@ -113,11 +113,24 @@ const DotGrid = ({
     let rafId;
     const proxSq = proximity * proximity;
 
+    let stopped = false;
+
     const draw = () => {
+      if (stopped) return;
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      // Reschedule rather than returning outright: bailing out used to kill the
+      // loop permanently on any transient null (a Strict Mode remount, a
+      // suspended subtree), leaving a frozen grid until a dependency changed.
+      // Cleanup is what stops it, via `stopped`.
+      if (!canvas || !canvas.isConnected) {
+        rafId = requestAnimationFrame(draw);
+        return;
+      }
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        rafId = requestAnimationFrame(draw);
+        return;
+      }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const { x: px, y: py } = pointerRef.current;
@@ -150,7 +163,10 @@ const DotGrid = ({
     };
 
     draw();
-    return () => cancelAnimationFrame(rafId);
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(rafId);
+    };
   }, [proximity, baseColor, activeRgb, baseRgb, circlePath]);
 
   useEffect(() => {
@@ -169,7 +185,29 @@ const DotGrid = ({
   }, [buildGrid]);
 
   useEffect(() => {
+    // Captured at registration. Both handlers are on `window`, so they outlive the
+    // canvas: during a route change React can null the ref before this effect's
+    // cleanup runs, and a mousemove landing in that gap crashed the app with
+    // "Cannot read properties of null (reading 'getBoundingClientRect')".
+    // Strict Mode's double mount/unmount makes the same window reliably reachable.
+    const canvasAtRegistration = canvasRef.current;
+
+    /**
+     * The canvas rect, or null if there is nothing safe to measure.
+     * `isConnected` matters as much as the null check — a detached node still
+     * answers getBoundingClientRect(), but with all-zero values, which would
+     * silently pin the pointer to the top-left corner instead of crashing.
+     */
+    const rectOf = () => {
+      const canvas = canvasRef.current ?? canvasAtRegistration;
+      if (!canvas || !canvas.isConnected) return null;
+      return canvas.getBoundingClientRect();
+    };
+
     const onMove = e => {
+      const rect = rectOf();
+      if (!rect) return;
+
       const now = performance.now();
       const pr = pointerRef.current;
       const dt = pr.lastTime ? now - pr.lastTime : 16;
@@ -191,7 +229,6 @@ const DotGrid = ({
       pr.vy = vy;
       pr.speed = speed;
 
-      const rect = canvasRef.current.getBoundingClientRect();
       pr.x = e.clientX - rect.left;
       pr.y = e.clientY - rect.top;
 
@@ -219,7 +256,10 @@ const DotGrid = ({
     };
 
     const onClick = e => {
-      const rect = canvasRef.current.getBoundingClientRect();
+      // Same guard as onMove: a click that lands mid-unmount must be a no-op,
+      // not a crash. This is the second half of the reported bug.
+      const rect = rectOf();
+      if (!rect) return;
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
       for (const dot of dotsRef.current) {
@@ -253,6 +293,17 @@ const DotGrid = ({
     return () => {
       window.removeEventListener('mousemove', throttledMove);
       window.removeEventListener('click', onClick);
+      // Inertia tweens hold references to dot objects and schedule onComplete
+      // callbacks that mutate them. Without this they keep firing after unmount,
+      // and on a Strict Mode remount the second effect's dots collide with the
+      // first effect's still-running tweens.
+      const dots = dotsRef.current;
+      if (dots) {
+        for (const dot of dots) {
+          gsap.killTweensOf(dot);
+          dot._inertiaApplied = false;
+        }
+      }
     };
   }, [maxSpeed, speedTrigger, proximity, resistance, returnDuration, shockRadius, shockStrength]);
 

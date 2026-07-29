@@ -1198,6 +1198,11 @@ export type ItemMatch = {
   fulfilmentNotes: string | null;
   logisticsRescheduleCount: number;
   logisticsAtRisk: boolean;
+  /** Server-computed XOR of the two confirmation timestamps — no status reflects it. */
+  handoverPartlyConfirmed: boolean;
+  closedAt: string | null;
+  hiddenByDonor: boolean;
+  hiddenByDonee: boolean;
   // Delivery verification
   deliveryOtpVerified: boolean;
   deliveryVerificationMethod: string | null;
@@ -1567,10 +1572,27 @@ export type DonationOffer = {
   compatibilityResult: CompatibilityResult | null;
   compatibilityIndicator: CompatibilityIndicator | null;
   matchScore: number | null;
+  /** Raw, exactly as an admin typed it. Admin/support surfaces only. */
   rejectionReason: string | null;
+  /**
+   * What a donor or donee should be shown — falls back to
+   * "No detailed reason was provided." when the stored value is meaningless.
+   * Use this on every user-facing screen; an admin once typed "." and the
+   * dashboard rendered "Reason: .".
+   */
+  displayRejectionReason: string | null;
   declarationsAccepted: boolean;
   submittedAt: string | null;
   createdAt: string;
+  /** When the offer reached a terminal status — the date on the Closed card. */
+  closedAt: string | null;
+  /** The donor archived this finished offer off their own dashboard. */
+  hiddenByDonor: boolean;
+  /**
+   * Which side of the transaction the caller is on, computed server-side from
+   * participation. Null/ADMIN means "not a participant" — never fall back to DONOR.
+   */
+  viewerRole: "DONOR" | "DONEE" | "ADMIN" | null;
   requestId: number;
   requestTitle: string;
   requestCategory: string;
@@ -1738,8 +1760,28 @@ export function submitOffer(offerId: number, declarationsAccepted: boolean) {
 // Donor Flow 2 — Donor read/manage
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getMyDonationOffers() {
-  return request<DonationOffer[]>("/api/v1/offers/mine", { silent401: true });
+/**
+ * @param includeArchived only for an explicit "Archived" filter. The default list
+ *   never silently reinstates an offer the donor removed from their dashboard.
+ */
+export function getMyDonationOffers(includeArchived = false) {
+  return request<DonationOffer[]>(
+    `/api/v1/offers/mine${includeArchived ? "?includeArchived=true" : ""}`,
+    { silent401: true },
+  );
+}
+
+/**
+ * Remove a closed offer from the donor's dashboard. A soft hide: the record, its
+ * status, rejection reason, AI assessments, history and audit trail all stay, and
+ * admins, support and the donee are unaffected. Reversible via {@link unhideOffer}.
+ */
+export function hideOffer(offerId: number) {
+  return request<CancellationOption>(`/api/v1/offers/${offerId}/hide`, { method: "POST" });
+}
+
+export function unhideOffer(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/unhide`, { method: "POST" });
 }
 
 export function getDonationOffer(offerId: number) {
@@ -1871,6 +1913,30 @@ export function reportPostDeliveryIssue(offerId: number, data: {
 
 export function confirmNoIssue(offerId: number) {
   return request<DonationOffer>(`/api/v1/offers/${offerId}/handover/confirm-no-issue`, { method: "POST" });
+}
+
+// ── Match cancellation ───────────────────────────────────────────────────────
+// The policy has answered forMatch() since it was written; until now nothing
+// executed its answer, so a match participant had no exit from any committed
+// status. Same shape as the offer endpoints so the hub can use one code path.
+
+export function getMatchCancellationOptions(matchId: number) {
+  return request<CancellationOption>(`/api/v1/matches/${matchId}/cancellation-options`);
+}
+
+export function cancelMatch(matchId: number, reason: CancellationReason | null, details?: string) {
+  return request<CancellationOption>(`/api/v1/matches/${matchId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason, details: details ?? null }),
+  });
+}
+
+export function hideMatch(matchId: number) {
+  return request<CancellationOption>(`/api/v1/matches/${matchId}/hide`, { method: "POST" });
+}
+
+export function unhideMatch(matchId: number) {
+  return request<void>(`/api/v1/matches/${matchId}/unhide`, { method: "POST" });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
