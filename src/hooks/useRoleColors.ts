@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ROLE_THEME_ATTR, currentRoleColors, type RolePalette } from "@/lib/roleTheme";
+import { ROLE_THEME_ATTR, currentRoleColors, roleColors, type RolePalette } from "@/lib/roleTheme";
 
 /**
  * The active role palette as **resolved literals**, for JavaScript that paints.
@@ -18,11 +18,27 @@ import { ROLE_THEME_ATTR, currentRoleColors, type RolePalette } from "@/lib/role
  * which flows through React state.
  */
 export function useRoleColors(): RolePalette {
-  const [palette, setPalette] = useState<RolePalette>(() => currentRoleColors());
+  /**
+   * Starts at the neutral palette ON PURPOSE — the same value the server
+   * rendered.
+   *
+   * <p>Reading the live theme in this initializer causes a hydration mismatch:
+   * it runs during the client's FIRST render, by which point the pre-paint boot
+   * script has already set `data-ck-role-theme`, so the client produced donee
+   * blue where the server's HTML had donor terracotta. React reported it as a
+   * prop diff on `.sm-prelayer` (`background: "#1e3a60"` vs the server's
+   * `rgb(176, 74, 21)`). A `useEffect` cannot fix that — the divergence happens
+   * before effects run.
+   *
+   * <p>The cost is one frame of neutral on these few JS-painted elements. The
+   * CSS-token path — almost everything — has no flash at all, because the boot
+   * script sets the attribute before first paint.
+   */
+  const [palette, setPalette] = useState<RolePalette>(() => roleColors(null, false));
 
   useEffect(() => {
     const sync = () => setPalette(currentRoleColors());
-    sync();   // re-resolve on mount: SSR had no document
+    sync();   // now safe: post-hydration, and the real theme is readable
     const mo = new MutationObserver(sync);
     mo.observe(document.documentElement, {
       attributes: true,
