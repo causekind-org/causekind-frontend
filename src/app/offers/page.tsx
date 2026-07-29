@@ -50,10 +50,13 @@ export default function MyOffersPage() {
   const [loading, setLoading] = useState(true);
   const [reconfirmingId, setReconfirmingId] = useState<number | null>(null);
   const [cancelingId, setCancelingId] = useState<number | null>(null);
+  // Offers the donor removed from their dashboard are archived, not deleted.
+  // Opt-in only — the default list must never silently reinstate them.
+  const [showArchived, setShowArchived] = useState(false);
 
   useEntityUpdates(["OFFER"], () => {
     if (!user) return;
-    getMyDonationOffers().then(setOffers).catch(() => {});
+    getMyDonationOffers(showArchived).then(setOffers).catch(() => {});
   });
 
   useEffect(() => {
@@ -61,11 +64,11 @@ export default function MyOffersPage() {
       router.push("/login");
       return;
     }
-    getMyDonationOffers()
+    getMyDonationOffers(showArchived)
       .then(setOffers)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [user, router]);
+  }, [user, router, showArchived]);
 
   async function handleReconfirm(offerId: number) {
     setReconfirmingId(offerId);
@@ -102,6 +105,24 @@ export default function MyOffersPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Donation Offers</h1>
           <p className="text-sm text-gray-500">Track offers you have made to fulfil specific requests.</p>
+
+          <div className="mt-3 flex items-center gap-2">
+            {([false, true] as const).map((archived) => (
+              <button
+                key={String(archived)}
+                type="button"
+                onClick={() => setShowArchived(archived)}
+                aria-pressed={showArchived === archived}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  showArchived === archived
+                    ? "bg-[#b04a15] text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                }`}
+              >
+                {archived ? "Include archived" : "Active"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {loading && <p className="text-center text-gray-400 py-8 animate-pulse">Loading offers...</p>}
@@ -127,6 +148,11 @@ export default function MyOffersPage() {
                       {offer.status.replace(/_/g, " ")}
                     </span>
                     <span className="text-xs text-gray-400">{offer.flowType?.replace(/_/g, " ")}</span>
+                    {offer.hiddenByDonor && (
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                        Archived
+                      </span>
+                    )}
                   </div>
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{offer.requestTitle}</h3>
                   <p className="text-xs text-gray-500 mt-0.5">{offer.requestCategory} · {offer.requestCity}</p>

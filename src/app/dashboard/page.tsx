@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { canDeleteDraft, canWithdrawRequest, canHideWithdrawnRequest, isRequestActive } from "@/lib/requestActions";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
+import { ClosedOfferCard } from "@/components/ClosedOfferCard";
+import { displayReason } from "@/lib/rejectionReason";
 import { motion, AnimatePresence } from "framer-motion";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
@@ -410,7 +412,7 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
       </div>
       <JourneyRail status={r.status} />
       {r.status === "REJECTED" && r.rejectionReason && (
-        <p className="text-[11px] text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{r.rejectionReason}</p>
+        <p className="text-[11px] text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{displayReason(r.rejectionReason)}</p>
       )}
       {r.status === "DRAFT" && (
         <p className="text-[11px] text-stone-400 mt-2.5">Saved as a draft &mdash; continue where you left off and submit when ready.</p>
@@ -553,7 +555,9 @@ function OfferStageCard({
       {/* Rejection reason */}
       {offer.rejectionReason && (
         <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-700 dark:text-red-400">
-          <span className="font-semibold">Reason: </span>{offer.rejectionReason}
+          {/* Never the raw value: an admin typed "." and this rendered "Reason: ." */}
+          <span className="font-semibold">Reason: </span>
+          {offer.displayRejectionReason ?? displayReason(offer.rejectionReason)}
         </div>
       )}
 
@@ -837,9 +841,16 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
   onWithdraw: (id: number, reason: string) => void;
   onCancelled?: () => void;
 }) {
-  const active = offers.filter(o => !["WITHDRAWN", "CANCELLED", "COMPLETED"].includes(o.status));
+  // Every bucket is derived from ONE list. It used to be two: `active` excluded
+  // WITHDRAWN/CANCELLED/COMPLETED while `terminal` also listed ADMIN_REJECTED and
+  // DONEE_DECLINED — so a rejected offer fell through into both, rendering once
+  // expanded under In Progress and again inside Closed. Deriving both from the
+  // same constant makes that class of bug unrepresentable.
+  const terminal = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status));
   const completed = offers.filter(o => o.status === "COMPLETED");
-  const terminal = offers.filter(o => ["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(o.status));
+  const active = offers.filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED");
+  // Derived from `active`, so closed offers can never reach Action Required —
+  // and neither can COMPLETED, which belongs in donation history, not a to-do.
   const needsAction = active.filter(o =>
     ["DRAFT", "NEEDS_INFORMATION", "DONOR_RECONFIRMATION_REQUIRED", "DONEE_ACCEPTED", "ADMIN_APPROVED"].includes(o.status)
   );
@@ -898,8 +909,10 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
             Closed ({terminal.length})
           </summary>
           <div className="mt-2 space-y-2">
+            {/* Compact summaries, not full stage cards: these are finished, and a
+                finished offer must not compete for attention with a live one. */}
             {terminal.map(o => (
-              <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
+              <ClosedOfferCard key={o.id} offer={o} onChanged={onCancelled} />
             ))}
           </div>
         </details>
@@ -972,8 +985,9 @@ function PastOffersStrip({ offers, activeRequestIds }: {
                         {new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                       </span>
                       {o.rejectionReason && (
-                        <span className="min-w-0 truncate text-stone-400 dark:text-stone-500" title={o.rejectionReason}>
-                          {o.rejectionReason}
+                        <span className="min-w-0 truncate text-stone-400 dark:text-stone-500"
+                          title={o.displayRejectionReason ?? displayReason(o.rejectionReason)}>
+                          {o.displayRejectionReason ?? displayReason(o.rejectionReason)}
                         </span>
                       )}
                     </div>
@@ -1931,7 +1945,7 @@ export default function DashboardPage() {
                                 {needsInfo && (
                                   <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 font-semibold bg-amber-100 dark:bg-amber-950/20 rounded-lg p-2">
                                     {l.rejectionReason
-                                      ? <>Admin note: {l.rejectionReason}</>
+                                      ? <>Admin note: {displayReason(l.rejectionReason)}</>
                                       : "Admin has requested more information. Please update your listing."}
                                   </div>
                                 )}
@@ -2216,7 +2230,7 @@ export default function DashboardPage() {
                                     <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
                                   </div>
                                   {r.status === "REJECTED" && r.rejectionReason && (
-                                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{r.rejectionReason}</p>
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{displayReason(r.rejectionReason)}</p>
                                   )}
                                 </div>
                                 <div className="flex flex-col items-end gap-1.5 shrink-0">
