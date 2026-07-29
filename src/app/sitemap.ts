@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { blogPosts } from '@/data/blogData';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://causekind.com';
+  const baseUrl = 'https://www.causekind.com';
   
   const routes = [
     '',
@@ -16,16 +16,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/refund',
     '/faq',
     '/contact',
-    '/login',
-    '/register',
-    '/thank-you',
     '/items',
     '/offers',
     '/requests',
-    '/campaigns/new',
-    '/items/new',
-    '/requests/new',
-    '/forgot-password',
   ];
 
   const sitemapEntries: MetadataRoute.Sitemap = routes.map((route) => ({
