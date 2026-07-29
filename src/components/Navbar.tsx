@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
+import { useRoleColors } from "@/hooks/useRoleColors";
 import { useTilt } from "@/hooks/useTilt";
 import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
@@ -329,6 +330,8 @@ function Sidebar3DItem({
 
 export function SiteHeader() {
   const { user, logout } = useAuth();
+  // Resolved literals for GSAP/canvas colour props — see useRoleColors.
+  const roleColors = useRoleColors();
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -692,10 +695,10 @@ export function SiteHeader() {
               <SpecularButton
                 size="sm"
                 radius={999}
-                tint="var(--ck-role-accent)"
+                tint={roleColors.accent}
                 tintOpacity={1}
                 textColor="#ffffff"
-                lineColor="var(--ck-role-highlight)"
+                lineColor={roleColors.highlight}
                 baseColor="#7a3410"
                 intensity={1}
                 shineSize={14}
@@ -727,8 +730,8 @@ export function SiteHeader() {
         open={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
-        accentColor="var(--ck-role-accent)"
-        colors={["var(--ck-role-highlight)", "var(--ck-role-accent)"]}
+        accentColor={roleColors.accent}
+        colors={[roleColors.highlight, roleColors.accent]}
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
         items={[
