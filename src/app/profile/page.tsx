@@ -465,7 +465,7 @@ export default function ProfilePage() {
         badge:     "bg-[#C17A3A] text-white shadow-lg shadow-[#C17A3A]/30",
         badgeRing: "border-[#C17A3A]/35",
         focusRing: "focus-visible:ring-[#C17A3A]/20",
-        gpsBtn:    "bg-[#b04a15] hover:bg-[#943e11]",
+        gpsBtn:    "bg-[var(--ck-role-accent)] hover:bg-[#943e11]",
       };
 
   const completedDonations = donations.filter((d) => d.status === "COMPLETED");
@@ -581,7 +581,7 @@ export default function ProfilePage() {
               className={`mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl hover:-translate-y-0.5 ${
                 isDonee
                   ? "from-[#3a6aa8] to-[#1e3a60] hover:from-[#4678b8] hover:to-[#26497a] shadow-[#0d1e36]/50 hover:shadow-[#0d1e36]/60"
-                  : "from-[#e07b3a] to-[#b04a15] hover:from-[#e8894c] hover:to-[#c25620] shadow-[#b04a15]/40 hover:shadow-[#b04a15]/50"
+                  : "from-[var(--ck-role-secondary)] to-[var(--ck-role-accent)] hover:from-[#e8894c] hover:to-[#c25620] shadow-[var(--ck-role-accent)]/40 hover:shadow-[var(--ck-role-accent)]/50"
               }`}
             >
               {settingsOpen ? "Close account settings" : "Edit account details"}

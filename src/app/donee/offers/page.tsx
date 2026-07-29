@@ -266,7 +266,7 @@ function DoneeOffersView() {
                   <button
                     onClick={() => handleAction(offer.id, "ACCEPT")}
                     disabled={acting === offer.id}
-                    className="flex-1 rounded-xl bg-[#b04a15] py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                    className="flex-1 rounded-xl bg-[var(--ck-role-accent)] py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                   >
                     {acting === offer.id ? "..." : "Accept Offer"}
                   </button>

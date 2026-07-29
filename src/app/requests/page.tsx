@@ -231,15 +231,15 @@ function RequestsHero({
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.15] pointer-events-none" />
 
       {/* Decorative rings */}
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full border border-[#b04a15]/10 animate-blob-a pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full border border-[var(--ck-role-accent)]/10 animate-blob-a pointer-events-none" />
       <div className="absolute -top-24 right-8  w-80 h-80 rounded-full border border-[#1e3a60]/12 animate-blob-b pointer-events-none" />
-      <div className="absolute bottom-8 right-32 w-48 h-48 rounded-full border border-[#e07b3a]/08 animate-blob-b pointer-events-none" />
+      <div className="absolute bottom-8 right-32 w-48 h-48 rounded-full border border-[var(--ck-role-secondary)]/08 animate-blob-b pointer-events-none" />
 
       {/* Floating ambient dots */}
-      <div className="absolute top-[22%] left-[10%] w-2 h-2 rounded-full bg-[#f0b97a]/30 animate-float-shape-1 pointer-events-none" />
-      <div className="absolute top-[60%] right-[12%] w-1.5 h-1.5 rounded-full bg-[#e07b3a]/40 animate-float-shape-3 pointer-events-none" />
+      <div className="absolute top-[22%] left-[10%] w-2 h-2 rounded-full bg-[var(--ck-role-highlight)]/30 animate-float-shape-1 pointer-events-none" />
+      <div className="absolute top-[60%] right-[12%] w-1.5 h-1.5 rounded-full bg-[var(--ck-role-secondary)]/40 animate-float-shape-3 pointer-events-none" />
       <div className="absolute top-[35%] right-[38%] w-1.5 h-1.5 rounded-full bg-white/15 animate-float-shape-2 pointer-events-none" />
-      <div className="absolute bottom-[20%] left-[45%] w-1 h-1 rounded-full bg-[#b04a15]/40 animate-float-shape-4 pointer-events-none" />
+      <div className="absolute bottom-[20%] left-[45%] w-1 h-1 rounded-full bg-[var(--ck-role-accent)]/40 animate-float-shape-4 pointer-events-none" />
 
       {/* Ghost large icon */}
       <div className="absolute bottom-4 right-6 opacity-[0.05] animate-blob-a pointer-events-none">
@@ -253,12 +253,12 @@ function RequestsHero({
           <div className="space-y-7">
 
             {/* Live badge */}
-            <div className="inline-flex items-center gap-2.5 bg-[#b04a15]/20 border border-[#b04a15]/35 rounded-full px-4 py-1.5 anim-up anim-d1">
+            <div className="inline-flex items-center gap-2.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/35 rounded-full px-4 py-1.5 anim-up anim-d1">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f0b97a] opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#f0b97a]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-highlight)] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--ck-role-highlight)]" />
               </span>
-              <span className="text-[#f0b97a] text-[10px] font-black uppercase tracking-widest">Live Community Needs</span>
+              <span className="text-[var(--ck-role-highlight)] text-[10px] font-black uppercase tracking-widest">Live Community Needs</span>
             </div>
 
             {/* Headline */}
@@ -291,7 +291,7 @@ function RequestsHero({
               )}
               <div className="hidden sm:block w-px h-10 bg-white/10" />
               <div className="hidden sm:block">
-                <p className="text-3xl font-black text-[#f0b97a]">0%</p>
+                <p className="text-3xl font-black text-[var(--ck-role-highlight)]">0%</p>
                 <p className="text-[10px] font-bold text-white/35 uppercase tracking-wider mt-0.5">Platform Fees</p>
               </div>
             </div>
@@ -318,7 +318,7 @@ function RequestsHero({
               <Link
                 href="/items/new"
                 className="ck-cta-list inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-extrabold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.97]"
-                style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}
+                style={{ background: "linear-gradient(135deg, var(--ck-role-accent) 0%, var(--ck-role-secondary) 100%)" }}
               >
                 <Plus className="w-4 h-4" strokeWidth={3} />
                 List an Item
@@ -327,9 +327,9 @@ function RequestsHero({
               {/* Sticky hint — pops in beside the button after 10s, dismissible */}
               {showHint && (
                 <div className="ck-cta-hint absolute left-0 top-full mt-3 sm:left-full sm:top-1/2 sm:mt-0 sm:ml-4 sm:-translate-y-1/2 z-20 w-60">
-                  <div className="relative rounded-2xl border border-[#f0b97a]/40 bg-[#1c0905]/95 backdrop-blur-md px-4 py-3 shadow-xl shadow-black/40">
+                  <div className="relative rounded-2xl border border-[var(--ck-role-highlight)]/40 bg-[#1c0905]/95 backdrop-blur-md px-4 py-3 shadow-xl shadow-black/40">
                     {/* Arrow — points up on mobile, left on desktop */}
-                    <span className="absolute -top-1 left-8 h-2.5 w-2.5 rotate-45 border-l border-t border-[#f0b97a]/40 bg-[#1c0905] sm:top-1/2 sm:-left-1.5 sm:-mt-1.5 sm:border-b sm:border-t-0" />
+                    <span className="absolute -top-1 left-8 h-2.5 w-2.5 rotate-45 border-l border-t border-[var(--ck-role-highlight)]/40 bg-[#1c0905] sm:top-1/2 sm:-left-1.5 sm:-mt-1.5 sm:border-b sm:border-t-0" />
                     <button
                       onClick={() => setShowHint(false)}
                       aria-label="Dismiss hint"
@@ -337,7 +337,7 @@ function RequestsHero({
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
-                    <p className="text-[#f0b97a] text-[10px] font-black uppercase tracking-widest mb-1">Got spare items?</p>
+                    <p className="text-[var(--ck-role-highlight)] text-[10px] font-black uppercase tracking-widest mb-1">Got spare items?</p>
                     <p className="text-white/80 text-xs leading-relaxed pr-3">
                       List your item from here — books, clothes, electronics. Someone nearby needs it.
                     </p>
@@ -385,7 +385,7 @@ function CategoryBar({
             onClick={onClearAll}
             className={`flex items-center gap-1.5 shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
               selected.length === 0
-                ? "bg-[#b04a15] text-white shadow-sm shadow-orange-900/25"
+                ? "bg-[var(--ck-role-accent)] text-white shadow-sm shadow-orange-900/25"
                 : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-700"
             }`}
           >
@@ -409,7 +409,7 @@ function CategoryBar({
                 className={`flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-xs font-bold border transition-all duration-200
                             disabled:opacity-35 disabled:cursor-not-allowed
                             ${act
-                              ? "bg-[#b04a15] text-white border-transparent shadow-sm shadow-orange-900/20"
+                              ? "bg-[var(--ck-role-accent)] text-white border-transparent shadow-sm shadow-orange-900/20"
                               : `${col.pill} hover:opacity-80`
                             }`}
               >
@@ -455,18 +455,18 @@ function RequestFilterPanel({
             <label
               key={value}
               className={`flex items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
-                active(value) ? "bg-[#b04a15]/8 dark:bg-[#b04a15]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
+                active(value) ? "bg-[var(--ck-role-accent)]/8 dark:bg-[var(--ck-role-accent)]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
               }`}
             >
               <input
                 type="checkbox"
                 checked={active(value)}
                 onChange={() => toggleUrgency(value)}
-                className="accent-[#b04a15] shrink-0"
+                className="accent-[var(--ck-role-accent)] shrink-0"
               />
               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
               <span className={`text-sm font-semibold transition-colors ${
-                active(value) ? "text-[#b04a15] dark:text-[#e07b3a]" : "text-stone-700 dark:text-stone-300"
+                active(value) ? "text-[var(--ck-role-accent)] dark:text-[var(--ck-role-secondary)]" : "text-stone-700 dark:text-stone-300"
               }`}>
                 {label}
               </span>
@@ -483,7 +483,7 @@ function RequestFilterPanel({
             <label
               key={opt.value}
               className={`flex items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
-                activeSort(opt.value) ? "bg-[#b04a15]/8 dark:bg-[#b04a15]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
+                activeSort(opt.value) ? "bg-[var(--ck-role-accent)]/8 dark:bg-[var(--ck-role-accent)]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
               }`}
             >
               <input
@@ -491,10 +491,10 @@ function RequestFilterPanel({
                 name="req-sort"
                 checked={activeSort(opt.value)}
                 onChange={() => setSort(opt.value)}
-                className="accent-[#b04a15] shrink-0"
+                className="accent-[var(--ck-role-accent)] shrink-0"
               />
               <span className={`text-sm font-semibold transition-colors ${
-                activeSort(opt.value) ? "text-[#b04a15] dark:text-[#e07b3a]" : "text-stone-700 dark:text-stone-300"
+                activeSort(opt.value) ? "text-[var(--ck-role-accent)] dark:text-[var(--ck-role-secondary)]" : "text-stone-700 dark:text-stone-300"
               }`}>
                 {opt.label}
               </span>
@@ -505,7 +505,7 @@ function RequestFilterPanel({
 
       <button
         onClick={resetFilters}
-        className="w-full text-xs font-bold text-stone-400 hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-colors py-2 border border-stone-200 dark:border-zinc-700 rounded-xl hover:border-[#b04a15]/40"
+        className="w-full text-xs font-bold text-stone-400 hover:text-[var(--ck-role-accent)] dark:hover:text-[var(--ck-role-secondary)] transition-colors py-2 border border-stone-200 dark:border-zinc-700 rounded-xl hover:border-[var(--ck-role-accent)]/40"
       >
         Reset Filters
       </button>
@@ -798,7 +798,7 @@ export default function RequestsPage() {
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f7f4f0] dark:bg-zinc-950">
-        <Loader2 className="w-6 h-6 animate-spin text-[#b04a15]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--ck-role-accent)]" />
       </div>
     );
   }
@@ -822,7 +822,7 @@ export default function RequestsPage() {
           <button
             onClick={requestGps}
             disabled={gpsLoading}
-            className="w-full bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-50 text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+            className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] disabled:opacity-50 text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
           >
             {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection 🎯"}
           </button>
@@ -872,12 +872,12 @@ export default function RequestsPage() {
         <div className="flex items-center gap-3 mb-5 lg:hidden">
           <button
             onClick={() => setShowFilters(v => !v)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-bold text-stone-700 dark:text-stone-300 hover:border-[#b04a15]/50 hover:text-[#b04a15] transition-all shrink-0 shadow-xs"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-bold text-stone-700 dark:text-stone-300 hover:border-[var(--ck-role-accent)]/50 hover:text-[var(--ck-role-accent)] transition-all shrink-0 shadow-xs"
           >
             <SlidersHorizontal className="h-4 w-4" />
             Filters
             {advancedFilterCount > 0 && (
-              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[#b04a15] text-white text-[10px] font-black">
+              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[var(--ck-role-accent)] text-white text-[10px] font-black">
                 {advancedFilterCount}
               </span>
             )}
@@ -885,7 +885,7 @@ export default function RequestsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
             <Input
-              className="pl-9 h-10 rounded-full border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 bg-white dark:bg-zinc-900 text-sm shadow-xs"
+              className="pl-9 h-10 rounded-full border-stone-200 dark:border-zinc-700 focus-visible:ring-[var(--ck-role-accent)]/20 bg-white dark:bg-zinc-900 text-sm shadow-xs"
               placeholder="Search needs…"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -947,7 +947,7 @@ export default function RequestsPage() {
                 <div className="relative w-60">
                   <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
                   <Input
-                    className="pl-9 h-9 rounded-full border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 bg-white dark:bg-zinc-900 text-sm"
+                    className="pl-9 h-9 rounded-full border-stone-200 dark:border-zinc-700 focus-visible:ring-[var(--ck-role-accent)]/20 bg-white dark:bg-zinc-900 text-sm"
                     placeholder="Search requests…"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
@@ -962,7 +962,7 @@ export default function RequestsPage() {
                 {search && (
                   <span className="inline-flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-stone-400 rounded-full px-3 py-1 text-xs font-semibold">
                     &ldquo;{search}&rdquo;
-                    <button onClick={() => setSearch("")} className="hover:text-[#b04a15] transition-colors"><X className="h-3 w-3" /></button>
+                    <button onClick={() => setSearch("")} className="hover:text-[var(--ck-role-accent)] transition-colors"><X className="h-3 w-3" /></button>
                   </span>
                 )}
                 {selectedCategories.map(cat => {
@@ -981,13 +981,13 @@ export default function RequestsPage() {
                   <button
                     key={u}
                     onClick={() => toggleUrgency(u)}
-                    className="inline-flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-stone-400 rounded-full px-3 py-1 text-xs font-bold hover:border-[#b04a15]/40 hover:text-[#b04a15] transition-colors"
+                    className="inline-flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-stone-400 rounded-full px-3 py-1 text-xs font-bold hover:border-[var(--ck-role-accent)]/40 hover:text-[var(--ck-role-accent)] transition-colors"
                   >
                     {URGENCY_LEVELS.find(l => l.value === u)?.label ?? u}
                     <X className="h-3 w-3" />
                   </button>
                 ))}
-                <button onClick={resetFilters} className="text-xs font-semibold text-stone-400 hover:text-[#b04a15] transition-colors underline underline-offset-2">
+                <button onClick={resetFilters} className="text-xs font-semibold text-stone-400 hover:text-[var(--ck-role-accent)] transition-colors underline underline-offset-2">
                   Clear all
                 </button>
               </div>
@@ -1001,7 +1001,7 @@ export default function RequestsPage() {
                 {requests.length === 0 ? (
                   <>
                     <div className="mb-5 w-20 h-20 rounded-3xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
-                      <PackageOpen className="w-9 h-9 text-[#b04a15]/35" />
+                      <PackageOpen className="w-9 h-9 text-[var(--ck-role-accent)]/35" />
                     </div>
                     <p className="font-extrabold text-stone-700 dark:text-stone-300 text-lg">No needs posted yet</p>
                     <p className="mt-2 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">
@@ -1017,7 +1017,7 @@ export default function RequestsPage() {
                     <p className="mt-2 text-sm text-stone-400 font-medium text-center max-w-xs">
                       Try a different category, urgency, or search term.
                     </p>
-                    <button onClick={resetFilters} className="mt-5 text-sm font-bold text-[#b04a15] hover:underline dark:text-[#e07b3a]">
+                    <button onClick={resetFilters} className="mt-5 text-sm font-bold text-[var(--ck-role-accent)] hover:underline dark:text-[var(--ck-role-secondary)]">
                       Clear all filters
                     </button>
                   </>
@@ -1098,12 +1098,12 @@ export default function RequestsPage() {
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30 pointer-events-none" />
               <div className="relative z-10 space-y-4">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-[#f0b97a] bg-white/10 backdrop-blur-md border border-white/20 py-1.5 px-3.5 rounded-full uppercase tracking-wider">
-                  <Heart className="w-3 h-3 fill-[#f0b97a]" /> Give Back
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-[var(--ck-role-highlight)] bg-white/10 backdrop-blur-md border border-white/20 py-1.5 px-3.5 rounded-full uppercase tracking-wider">
+                  <Heart className="w-3 h-3 fill-[var(--ck-role-highlight)]" /> Give Back
                 </span>
                 <h2 className="text-2xl font-extrabold leading-snug tracking-tight">
                   You&apos;re giving<br />
-                  <span className="text-[#f0b97a]">{modalTitle ?? donateTarget.title}</span>
+                  <span className="text-[var(--ck-role-highlight)]">{modalTitle ?? donateTarget.title}</span>
                 </h2>
                 <p className="text-white/70 text-xs leading-relaxed max-w-[220px]">
                   Upload photos of your item and a short description. Our admin will verify and connect you with the recipient.
@@ -1115,7 +1115,7 @@ export default function RequestsPage() {
                   <span className="text-[11px] text-white/80 font-semibold">Admin-verified before contact is shared</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#f0b97a] shrink-0" />
+                  <MapPin className="w-4 h-4 text-[var(--ck-role-highlight)] shrink-0" />
                   <span className="text-[11px] text-white/80 font-semibold">Local 10 km radius matching</span>
                 </div>
               </div>
@@ -1132,7 +1132,7 @@ export default function RequestsPage() {
                 </div>
                 <div>
                   <Label className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 block">Photos of item</Label>
-                  <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-orange-200 dark:border-zinc-700 hover:border-[#b04a15] rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all bg-orange-50/20 dark:bg-zinc-800/20 hover:bg-orange-50/40">
+                  <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-orange-200 dark:border-zinc-700 hover:border-[var(--ck-role-accent)] rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all bg-orange-50/20 dark:bg-zinc-800/20 hover:bg-orange-50/40">
                     {imagePreviews.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2 w-full mb-1" onClick={e => e.stopPropagation()}>
                         {imagePreviews.map((src, i) => (
@@ -1147,7 +1147,7 @@ export default function RequestsPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="h-10 w-10 bg-orange-100 dark:bg-zinc-700 text-[#b04a15] rounded-full flex items-center justify-center mb-2.5">
+                      <div className="h-10 w-10 bg-orange-100 dark:bg-zinc-700 text-[var(--ck-role-accent)] rounded-full flex items-center justify-center mb-2.5">
                         <ImagePlus className="h-5 w-5" />
                       </div>
                     )}
@@ -1173,24 +1173,24 @@ export default function RequestsPage() {
                   <div className="relative">
                     {analyzing && (
                       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs">
-                        <Loader2 className="h-4 w-4 text-[#b04a15] animate-spin" />
+                        <Loader2 className="h-4 w-4 text-[var(--ck-role-accent)] animate-spin" />
                         <p className="text-[11px] font-bold text-stone-700 dark:text-stone-300">Analysing your photo…</p>
                       </div>
                     )}
-                    <Textarea id="desc" rows={3} value={description} onChange={e => { setDescription(e.target.value); setAiGenerated(false); }} placeholder="Describe the item, its condition, and any notes…" className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[#b04a15]/20 text-sm resize-none" disabled={analyzing} />
+                    <Textarea id="desc" rows={3} value={description} onChange={e => { setDescription(e.target.value); setAiGenerated(false); }} placeholder="Describe the item, its condition, and any notes…" className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[var(--ck-role-accent)]/20 text-sm resize-none" disabled={analyzing} />
                   </div>
                   <div className="flex justify-between text-[10px] text-stone-400 font-semibold">
                     <span>{description.length >= 20 ? "✓ Minimum met" : `${description.length}/20 min`}</span>
                     <span>{description.length}/1000</span>
                   </div>
                 </div>
-                <button onClick={handleSubmitDonate} disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20} className="w-full bg-[#b04a15] hover:bg-[#963c0d] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine">
+                <button onClick={handleSubmitDonate} disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20} className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine">
                   {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : <><Heart className="h-4 w-4" /> Complete Donation <ArrowRight className="h-4 w-4" /></>}
                 </button>
                 <div className="flex justify-between text-[10px] text-stone-400 font-bold border-t border-stone-100 dark:border-zinc-800 pt-4">
                   <div className="flex gap-3">
-                    <Link href="/faq" className="hover:text-[#b04a15] transition-colors">Help</Link>
-                    <Link href="/privacy" className="hover:text-[#b04a15] transition-colors">Privacy</Link>
+                    <Link href="/faq" className="hover:text-[var(--ck-role-accent)] transition-colors">Help</Link>
+                    <Link href="/privacy" className="hover:text-[var(--ck-role-accent)] transition-colors">Privacy</Link>
                   </div>
                   <span>© 2026 CauseKind</span>
                 </div>

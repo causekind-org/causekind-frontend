@@ -2425,3 +2425,108 @@ div:has(.searchable-select-open) {
     transition: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Role-aware theme — donor terracotta, recipient blue
+
+   Set by `data-ck-role-theme` on <html> (RoleThemeBridge + the pre-paint boot
+   script in lib/roleTheme.ts). On <html> deliberately: Radix dialogs/selects/
+   popovers, vaul drawers and toasts all portal to <body>, so any scope deeper in
+   the tree would leave them unthemed — the failure already documented for
+   `--handover-*` in Decisions and Gotchas.
+
+   WHAT IS NOT ROLE-THEMED, and why:
+   - success green, warning amber, destructive red — these mean the same thing to
+     everyone; recolouring them by role would destroy the signal.
+   - category colours, the gold heart logo — brand/taxonomy, not role.
+   - shadcn's `--accent` — that is a near-white hover TINT consumed by ui/button,
+     ui/select and ui/badge. Redefining it here would recolour hover states across
+     the whole app. Never touch it.
+   - `--handover-*` — chosen from transaction participation, not account role.
+     A donor viewing a handover where they are the recipient still sees the
+     recipient colour there. Separate systems on purpose.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Neutral/public default: every token resolves even with no role attribute, so a
+   component using them never renders colourless for admins or logged-out users. */
+:root {
+  --ck-role-accent: var(--brand-terra);
+  --ck-role-hover: #c45520;
+  --ck-role-secondary: var(--brand-copper);
+  --ck-role-highlight: #f0b97a;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: oklch(0.96 0.035 55);
+  --ck-role-on-soft: oklch(0.28 0.10 45);
+  --ck-role-ring: var(--brand-terra);
+  --ck-role-gradient: linear-gradient(135deg, #b04a15 0%, #e07b3a 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #e07b3a 0%, #f0b97a 100%);
+}
+
+[data-ck-role-theme="donor"] {
+  --ck-role-accent: #b04a15;
+  --ck-role-hover: #c45520;
+  --ck-role-secondary: #e07b3a;
+  --ck-role-highlight: #f0b97a;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: oklch(0.96 0.035 55);
+  --ck-role-on-soft: oklch(0.28 0.10 45);
+  --ck-role-ring: #b04a15;
+  --ck-role-gradient: linear-gradient(135deg, #b04a15 0%, #e07b3a 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #e07b3a 0%, #f0b97a 100%);
+}
+
+[data-ck-role-theme="donee"] {
+  --ck-role-accent: #1e3a60;
+  --ck-role-hover: #2d5a96;
+  --ck-role-secondary: #4a7fc1;
+  --ck-role-highlight: #7fb0e8;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: oklch(0.95 0.03 250);
+  /* Readable text ON --ck-role-soft. Dark navy on the pale blue: ~13:1. */
+  --ck-role-on-soft: oklch(0.26 0.08 255);
+  /* Ring is the HOVER blue, not the accent: #1e3a60 against a white page is a
+     dark ring that reads as a border, and focus must be unmistakable. */
+  --ck-role-ring: #2d5a96;
+  --ck-role-gradient: linear-gradient(135deg, #1e3a60 0%, #4a7fc1 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #7fb0e8 100%);
+}
+
+.dark [data-ck-role-theme="donor"],
+.dark[data-ck-role-theme="donor"] {
+  --ck-role-accent: #e07b3a;
+  --ck-role-hover: #f0955a;
+  --ck-role-on-accent: #1a1207;
+  --ck-role-soft: oklch(0.26 0.05 50);
+  --ck-role-on-soft: oklch(0.94 0.03 60);
+  --ck-role-ring: #e07b3a;
+}
+
+/* `.dark` and the role attribute both land on <html>, so this is one element —
+   hence the compound selector, not a descendant one. */
+.dark[data-ck-role-theme="donee"],
+.dark [data-ck-role-theme="donee"] {
+  /* Navy is unreadable on a dark surface; lift to a clear sky blue. */
+  --ck-role-accent: #7fb0e8;
+  --ck-role-hover: #a3c8f2;
+  --ck-role-on-accent: #0b1929;
+  --ck-role-soft: oklch(0.26 0.05 250);
+  --ck-role-on-soft: oklch(0.93 0.02 250);
+  --ck-role-ring: #7fb0e8;
+  --ck-role-gradient: linear-gradient(135deg, #2d5a96 0%, #7fb0e8 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #a3c8f2 100%);
+}
+
+/* shadcn's primary + focus ring follow the role, so every `ui/button`,
+   `ui/input` focus state and `bg-primary` surface tracks it without each
+   component being edited. `--accent` is pointedly NOT included — see above. */
+[data-ck-role-theme="donee"] {
+  --primary: #1e3a60;
+  --primary-foreground: #ffffff;
+  --ring: #2d5a96;
+}
+.dark[data-ck-role-theme="donee"],
+.dark [data-ck-role-theme="donee"] {
+  --primary: #7fb0e8;
+  --primary-foreground: #0b1929;
+  --ring: #7fb0e8;
+}

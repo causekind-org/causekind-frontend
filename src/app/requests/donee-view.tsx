@@ -155,7 +155,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
       <div className="absolute -bottom-20 -left-16 w-80 h-80 rounded-full border border-[#5b21b6]/12 animate-blob-b pointer-events-none" />
 
       {/* Floating ambient dots */}
-      <div className="absolute top-[18%] left-[7%]  w-2   h-2   rounded-full bg-[#f0b97a]/22  animate-float-shape-1 pointer-events-none" />
+      <div className="absolute top-[18%] left-[7%]  w-2   h-2   rounded-full bg-[var(--ck-role-highlight)]/22  animate-float-shape-1 pointer-events-none" />
       <div className="absolute top-[64%] right-[9%] w-1.5 h-1.5 rounded-full bg-sky-400/28    animate-float-shape-3 pointer-events-none" />
       <div className="absolute top-[42%] left-[46%] w-1   h-1   rounded-full bg-violet-400/32 animate-float-shape-2 pointer-events-none" />
       <div className="absolute bottom-[24%] right-[34%] w-1.5 h-1.5 rounded-full bg-emerald-400/22 animate-float-shape-4 pointer-events-none" />
@@ -169,10 +169,10 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
             {/* Live badge */}
             <div className="inline-flex items-center gap-2.5 bg-[#1e3a60]/40 border border-[#4a7fba]/30 rounded-full px-4 py-1.5 anim-up anim-d1">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f0b97a] opacity-70" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#f0b97a]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-highlight)] opacity-70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--ck-role-highlight)]" />
               </span>
-              <span className="text-[#f0b97a] text-[10px] font-black uppercase tracking-widest">Donee Portal</span>
+              <span className="text-[var(--ck-role-highlight)] text-[10px] font-black uppercase tracking-widest">Donee Portal</span>
             </div>
 
             {/* Headline */}
@@ -181,7 +181,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
             >
               Tell us what<br />
               <span style={{
-                background: "linear-gradient(90deg, #f0b97a 0%, #e07b3a 48%, #f0b97a 100%)",
+                background: "linear-gradient(90deg, var(--ck-role-highlight) 0%, var(--ck-role-secondary) 48%, var(--ck-role-highlight) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -198,7 +198,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
             {/* CTA row */}
             <div className="flex flex-wrap items-center gap-4 anim-up anim-d4">
               <Link href="/requests/new">
-                <button className="flex items-center gap-2.5 bg-[#f0b97a] hover:bg-[#e0a96a] active:scale-[0.97] text-stone-950 font-extrabold px-7 py-3.5 rounded-2xl text-sm transition-all shadow-xl shadow-[#f0b97a]/20 btn-shine">
+                <button className="flex items-center gap-2.5 bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] active:scale-[0.97] text-stone-950 font-extrabold px-7 py-3.5 rounded-2xl text-sm transition-all shadow-xl shadow-[var(--ck-role-highlight)]/20 btn-shine">
                   <Plus className="w-4 h-4" />
                   Post a Need
                 </button>
@@ -215,7 +215,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
             <div className="flex flex-wrap gap-3 anim-up anim-d5">
               {[
                 { icon: ShieldCheck, text: "Admin verified", c: "text-emerald-400" },
-                { icon: MapPin,      text: "10 km radius",   c: "text-[#f0b97a]"  },
+                { icon: MapPin,      text: "10 km radius",   c: "text-[var(--ck-role-highlight)]"  },
                 { icon: Heart,       text: "Zero fees",       c: "text-rose-400"   },
               ].map(({ icon: Icon, text, c }) => (
                 <div key={text} className="flex items-center gap-1.5 bg-white/6 border border-white/10 rounded-full px-3 py-1.5 text-[11px] font-bold text-white/65">

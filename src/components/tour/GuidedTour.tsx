@@ -135,7 +135,7 @@ export default function GuidedTour({ steps, onFinish }: {
           height: rect.height + SPOT_PADDING * 2,
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="absolute rounded-2xl ring-2 ring-[#e07b3a]/90"
+        className="absolute rounded-2xl ring-2 ring-[var(--ck-role-secondary)]/90"
         style={{ boxShadow: "0 0 0 9999px rgba(15, 12, 8, 0.62), 0 0 24px 4px rgba(224, 123, 58, 0.35)" }}
       />
 
@@ -160,7 +160,7 @@ export default function GuidedTour({ steps, onFinish }: {
             <X className="h-4 w-4" />
           </button>
 
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#b04a15]">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ck-role-accent)]">
             Step {idx + 1} of {validSteps.length}
           </p>
           <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-100" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -174,7 +174,7 @@ export default function GuidedTour({ steps, onFinish }: {
             {/* Progress dots */}
             <div className="flex items-center gap-1.5">
               {validSteps.map((_, i) => (
-                <span key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? "w-4 bg-[#b04a15]" : "w-1.5 bg-stone-300 dark:bg-zinc-600"}`} />
+                <span key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? "w-4 bg-[var(--ck-role-accent)]" : "w-1.5 bg-stone-300 dark:bg-zinc-600"}`} />
               ))}
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -186,14 +186,14 @@ export default function GuidedTour({ steps, onFinish }: {
               {isLast && step.ctaHref ? (
                 <button
                   onClick={() => { finish(); router.push(step.ctaHref!); }}
-                  className="rounded-xl bg-[#b04a15] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#c45520]"
+                  className="rounded-xl bg-[var(--ck-role-accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--ck-role-hover)]"
                 >
                   {step.ctaLabel ?? "Finish"}
                 </button>
               ) : (
                 <button
                   onClick={next}
-                  className="rounded-xl bg-[#b04a15] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#c45520]"
+                  className="rounded-xl bg-[var(--ck-role-accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--ck-role-hover)]"
                 >
                   {isLast ? "Done" : "Next"}
                 </button>

@@ -294,7 +294,7 @@ export function CameraCaptureDialog({
             <button
               type="button"
               onClick={capturePhoto}
-              className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#b04a15]/25 bg-[#b04a15] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+              className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[var(--ck-role-accent)]/25 bg-[var(--ck-role-accent)] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
               aria-label="Capture photo"
               title="Capture photo"
             >
@@ -315,7 +315,7 @@ export function CameraCaptureDialog({
               <button
                 type="button"
                 onClick={usePhoto}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#b04a15] px-4 text-sm font-bold text-white transition-colors hover:bg-[#963e12]"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--ck-role-accent)] px-4 text-sm font-bold text-white transition-colors hover:bg-[#963e12]"
               >
                 <Check className="h-4 w-4" />
                 Use photo
@@ -336,7 +336,7 @@ export function CameraCaptureDialog({
               <button
                 type="button"
                 onClick={choosePhotoInstead}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#b04a15] px-4 text-sm font-bold text-white transition-colors hover:bg-[#963e12]"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--ck-role-accent)] px-4 text-sm font-bold text-white transition-colors hover:bg-[#963e12]"
               >
                 <Upload className="h-4 w-4" />
                 Choose photo

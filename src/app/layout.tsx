@@ -23,8 +23,9 @@ import { AdminRedirect } from "@/components/AdminRedirect";
 import { GoogleTagManager } from "@next/third-parties/google";
 import MetaPixel from "@/components/MetaPixel";
 import { SiteBottomBlur } from "@/components/SiteBottomBlur";
-// @ts-expect-error — ClickSpark is the JS variant (no types shipped)
-import ClickSpark from "@/components/ClickSpark";
+import { RoleClickSpark } from "@/components/RoleClickSpark";
+import { RoleThemeBridge } from "@/components/RoleThemeBridge";
+import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -76,6 +77,12 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <GoogleTagManager gtmId={gtmId} />
       <head>
+        {/* Sets data-ck-role-theme BEFORE first paint. Without it a recipient
+            sees a terracotta flash: useAuth hydrates from localStorage in a
+            useEffect, which runs after paint. Reads only the non-secret
+            {email, role} metadata the app already caches, and whitelists the
+            role to donor|donee — see lib/roleTheme.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: ROLE_THEME_BOOT_SCRIPT }} />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
@@ -87,12 +94,14 @@ export default async function RootLayout({
           <GoogleProvider>
             <AuthProvider>
               <NotificationsProvider>
+                <RoleThemeBridge />
                 <SuperAdminRedirect />
                 <AdminRedirect />
-                {/* Site-wide click spark — sparks burst from every click,
-                    brand orange so they're visible on the light cream pages. */}
-                <ClickSpark
-                  sparkColor="#b04a15"
+                {/* Site-wide click spark. The colour follows the signed-in
+                    role — canvas painting can't read a CSS custom property per
+                    frame, so RoleClickSpark resolves it from the same palette
+                    module the tokens come from. */}
+                <RoleClickSpark
                   sparkSize={10}
                   sparkRadius={15}
                   sparkCount={8}
@@ -126,7 +135,7 @@ export default async function RootLayout({
                 <DoneeListingPrompt />
                 <DonorListingPrompt />
                 <DoneeRequestPrompt />
-                </ClickSpark>
+                </RoleClickSpark>
               </NotificationsProvider>
             </AuthProvider>
           </GoogleProvider>

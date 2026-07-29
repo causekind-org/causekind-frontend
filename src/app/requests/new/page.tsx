@@ -190,11 +190,11 @@ function Field({ label, required, hint, error, children }: { label: string; requ
   return (
     <div className="space-y-1.5">
       <Label className="text-sm font-bold text-stone-700 dark:text-stone-200">
-        {label}{required && <span className="text-[#b04a15] ml-0.5">*</span>}
+        {label}{required && <span className="text-[var(--ck-role-accent)] ml-0.5">*</span>}
       </Label>
       {children}
       {error
-        ? <p className="text-xs text-[#b04a15] font-semibold">{error}</p>
+        ? <p className="text-xs text-[var(--ck-role-accent)] font-semibold">{error}</p>
         : hint && <p className="text-xs text-stone-400">{hint}</p>}
     </div>
   );
@@ -231,7 +231,7 @@ function DocSlot({
       : uploaded
         ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700"
         : required
-          ? "border-[#b04a15]/30 bg-[#b04a15]/[0.03] dark:border-[#b04a15]/40"
+          ? "border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-accent)]/[0.03] dark:border-[var(--ck-role-accent)]/40"
           : "border-stone-200 dark:border-zinc-700";
 
   // Shared by both action buttons so the pair always reads as one state.
@@ -239,7 +239,7 @@ function DocSlot({
     ? "border-red-400 text-red-600 hover:bg-red-100 dark:hover:bg-red-950/30"
     : unavailable || needsRescreen
       ? "border-amber-400 text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-950/30"
-      : "border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5";
+      : "border-[var(--ck-role-accent)]/40 text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5";
 
   // "Take photo" only on a genuinely empty slot; anything the donee needs to
   // redo — a rejection, an unscreened legacy photo, or an accepted one they want
@@ -256,7 +256,7 @@ function DocSlot({
   return (
     <div className={`flex items-center gap-3 rounded-2xl border-2 p-3.5 transition-all ${borderClass}`}>
       <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center
-        ${invalid ? "bg-red-100 dark:bg-red-900/40" : unavailable || needsRescreen ? "bg-amber-100 dark:bg-amber-900/40" : uploaded ? "bg-green-100 dark:bg-green-900/40" : required ? "bg-[#b04a15]/10" : "bg-stone-100 dark:bg-zinc-800"}`}>
+        ${invalid ? "bg-red-100 dark:bg-red-900/40" : unavailable || needsRescreen ? "bg-amber-100 dark:bg-amber-900/40" : uploaded ? "bg-green-100 dark:bg-green-900/40" : required ? "bg-[var(--ck-role-accent)]/10" : "bg-stone-100 dark:bg-zinc-800"}`}>
         {checking
           ? <Loader2 className="w-4 h-4 text-stone-400 animate-spin" />
           : invalid
@@ -265,14 +265,14 @@ function DocSlot({
               ? <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               : uploaded
                 ? <FileCheck2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                : <UploadCloud className={`w-4 h-4 ${required ? "text-[#b04a15]" : "text-stone-400"}`} />}
+                : <UploadCloud className={`w-4 h-4 ${required ? "text-[var(--ck-role-accent)]" : "text-stone-400"}`} />}
       </div>
 
       <div className="min-w-0 flex-1">
         <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {label}
           {required
-            ? <span className="text-[#b04a15] ml-0.5">*</span>
+            ? <span className="text-[var(--ck-role-accent)] ml-0.5">*</span>
             : <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">(optional)</span>}
         </span>
         {checking ? (
@@ -802,7 +802,7 @@ function NewRequestForm() {
             </p>
           </div>
           <button onClick={() => handleGPSLocation(false)} disabled={gpsLoading}
-            className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-colors">
+            className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-colors">
             {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection"}
           </button>
         </div>
@@ -815,13 +815,13 @@ function NewRequestForm() {
     <div className="space-y-6">
       <Field label="What do you need?" required error={fieldErrors.title}>
         <Input placeholder="e.g. Wheelchair for elderly family member" value={title} onChange={(e) => setTitle(e.target.value)}
-          className={fieldErrors.title ? "border-[#b04a15]" : ""} />
+          className={fieldErrors.title ? "border-[var(--ck-role-accent)]" : ""} />
       </Field>
 
       <div className="grid grid-cols-2 gap-5">
         <Field label="Category" required error={fieldErrors.category}>
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className={`h-11 ${fieldErrors.category ? "border-[#b04a15]" : ""}`}><SelectValue placeholder="Select category" /></SelectTrigger>
+            <SelectTrigger className={`h-11 ${fieldErrors.category ? "border-[var(--ck-role-accent)]" : ""}`}><SelectValue placeholder="Select category" /></SelectTrigger>
             <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
@@ -834,7 +834,7 @@ function NewRequestForm() {
         <div className="flex gap-2">
           {URGENCIES.map((u) => (
             <button key={u.value} type="button" onClick={() => setUrgency(u.value)}
-              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${urgency === u.value ? "bg-[#b04a15] text-white border-[#b04a15]" : "border-stone-300 text-stone-500 hover:border-[#b04a15]"}`}>
+              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${urgency === u.value ? "bg-[var(--ck-role-accent)] text-white border-[var(--ck-role-accent)]" : "border-stone-300 text-stone-500 hover:border-[var(--ck-role-accent)]"}`}>
               {u.label}
             </button>
           ))}
@@ -855,7 +855,7 @@ function NewRequestForm() {
       <Field label="Describe your need" required hint={`${description.length}/2000 — be specific: who it's for, why, and any relevant context`} error={fieldErrors.description}>
         <Textarea rows={5} placeholder="e.g. My father is 68 and cannot walk unassisted after a stroke last month. A wheelchair would let him move around the house safely."
           value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000}
-          className={fieldErrors.description ? "border-[#b04a15]" : ""} />
+          className={fieldErrors.description ? "border-[var(--ck-role-accent)]" : ""} />
       </Field>
 
       {/* Emergency toggle */}
@@ -888,10 +888,10 @@ function NewRequestForm() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-[#b04a15]" /> Location
+            <MapPin className="w-3.5 h-3.5 text-[var(--ck-role-accent)]" /> Location
           </p>
           <button type="button" onClick={() => handleGPSLocation(false)} disabled={gpsLoading}
-            className="text-xs font-bold text-[#b04a15] hover:underline disabled:opacity-50 flex items-center gap-1">
+            className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline disabled:opacity-50 flex items-center gap-1">
             {gpsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "📍"} {gpsLoading ? "Detecting…" : "Use GPS"}
           </button>
         </div>
@@ -913,14 +913,14 @@ function NewRequestForm() {
           <div className="space-y-1">
             <label className="text-xs text-stone-500 dark:text-stone-400">City</label>
             {showCityFreeText ? (
-              <Input placeholder="Enter city" value={cityFreeText} onChange={(e) => setCityFreeText(e.target.value)} className={fieldErrors.city ? "border-[#b04a15]" : ""} />
+              <Input placeholder="Enter city" value={cityFreeText} onChange={(e) => setCityFreeText(e.target.value)} className={fieldErrors.city ? "border-[var(--ck-role-accent)]" : ""} />
             ) : (
               <SearchableSelect id="city" options={cityOptions} value={cityValue} onChange={setCityValue}
                 placeholder="Select city" disabled={!stateIso && !noStateOptions} searchPlaceholder="Search…" />
             )}
           </div>
         </div>
-        {fieldErrors.city && <p className="text-xs text-[#b04a15] font-semibold">{fieldErrors.city}</p>}
+        {fieldErrors.city && <p className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.city}</p>}
         <Field label="PIN Code">
           <Input placeholder="e.g. 411001" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} className="h-11 w-40" />
         </Field>
@@ -931,8 +931,8 @@ function NewRequestForm() {
   // ── Step 2: Household & Situation (tier-driven) ──────────────────────────
   const step2 = (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-[#f0b97a]/15 border border-[#f0b97a]/40 p-4">
-        <p className="text-sm font-black text-[#b04a15]">{TIER_LABELS[tier]}</p>
+      <div className="rounded-2xl bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/40 p-4">
+        <p className="text-sm font-black text-[var(--ck-role-accent)]">{TIER_LABELS[tier]}</p>
         <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5">These questions help our admin team verify and prioritize your request fairly.</p>
       </div>
 
@@ -1133,12 +1133,12 @@ function NewRequestForm() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Required to submit</p>
-          <span className={`text-xs font-bold ${requiredDoneCount === requiredDocList.length ? "text-green-600" : "text-[#b04a15]"}`}>
+          <span className={`text-xs font-bold ${requiredDoneCount === requiredDocList.length ? "text-green-600" : "text-[var(--ck-role-accent)]"}`}>
             {requiredDoneCount} of {requiredDocList.length}
           </span>
         </div>
         {requiredDocList.map((d) => renderDocSlot(d, true))}
-        {fieldErrors.documents && <p className="text-xs text-[#b04a15] font-semibold">{fieldErrors.documents}</p>}
+        {fieldErrors.documents && <p className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.documents}</p>}
       </div>
 
       {optionalDocList.length > 0 && (
@@ -1170,10 +1170,10 @@ function NewRequestForm() {
         ))}
       </div>
       <button type="button" onClick={() => setDeclarations(new Array(DECLARATIONS.length).fill(true))}
-        className="text-xs font-black text-[#1e3a60] hover:text-[#b04a15] underline underline-offset-2 transition-colors">
+        className="text-xs font-black text-[#1e3a60] hover:text-[var(--ck-role-accent)] underline underline-offset-2 transition-colors">
         Accept all declarations at once →
       </button>
-      {fieldErrors.declarations && <p className="text-sm text-[#b04a15] font-bold">{fieldErrors.declarations}</p>}
+      {fieldErrors.declarations && <p className="text-sm text-[var(--ck-role-accent)] font-bold">{fieldErrors.declarations}</p>}
 
       {/* Photo consent — deliberately NOT part of DECLARATIONS above. Those are
           all required to submit; a consent you cannot decline isn't consent. This
@@ -1207,7 +1207,7 @@ function NewRequestForm() {
           "Handover is verified via OTP — then your donation certificate is issued",
         ].map((s, i) => (
           <div key={i} className="flex items-start gap-2 text-xs text-stone-500">
-            <span className="font-black text-[#b04a15] shrink-0">{i + 1}.</span>
+            <span className="font-black text-[var(--ck-role-accent)] shrink-0">{i + 1}.</span>
             <span>{s}</span>
           </div>
         ))}
@@ -1225,14 +1225,14 @@ function NewRequestForm() {
 
         <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
           <div className="mb-8">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3.5 py-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--ck-role-highlight)] bg-[var(--ck-role-accent)]/25 border border-[var(--ck-role-accent)]/40 rounded-full px-3.5 py-1.5">
               <Shield className="w-3 h-3" /> Verified Support
             </span>
           </div>
           <div className="mb-10">
             <h1 className="text-white text-4xl xl:text-5xl font-black leading-none tracking-tight mb-3" style={{ fontFamily: "serif" }}>
               Request<br />
-              <span style={{ background: "linear-gradient(90deg, #e07b3a, #f0b97a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Support</span>
+              <span style={{ background: "linear-gradient(90deg, var(--ck-role-secondary), var(--ck-role-highlight))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Support</span>
             </h1>
             <p className="text-stone-400 text-sm leading-relaxed">
               Tell us what you need. We verify your request privately, then look for a matching donor before anyone else ever hears about it.
@@ -1248,7 +1248,7 @@ function NewRequestForm() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-left ${active ? "bg-white/8" : "hover:bg-white/4"}`}>
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0 transition-all duration-300
                       ${done ? "bg-green-500/20 text-green-400" : active ? "text-white shadow-[0_0_20px_rgba(176,74,21,0.6)]" : "bg-white/6 text-white/30"}`}
-                      style={active ? { background: "linear-gradient(135deg, #b04a15, #e07b3a)" } : {}}>
+                      style={active ? { background: "linear-gradient(135deg, var(--ck-role-accent), var(--ck-role-secondary))" } : {}}>
                       {done ? <CheckCircle2 className="w-4 h-4" /> : s.id}
                     </div>
                     <div className={`transition-all duration-300 ${active ? "opacity-100" : done ? "opacity-60" : "opacity-30"}`}>
@@ -1272,7 +1272,7 @@ function NewRequestForm() {
               return (
                 <div key={b.title} className="flex items-center gap-3 px-3.5 py-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(176,74,21,0.18)", border: "1px solid rgba(176,74,21,0.25)" }}>
-                    <Icon className="w-4 h-4 text-[#e07b3a]" />
+                    <Icon className="w-4 h-4 text-[var(--ck-role-secondary)]" />
                   </div>
                   <div>
                     <p className="text-white text-xs font-bold leading-tight">{b.title}</p>
@@ -1295,7 +1295,7 @@ function NewRequestForm() {
               {STEPS.map((s, i) => (
                 <div key={s.id} className="flex items-center flex-1 last:flex-none">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black shrink-0 ${step > s.id ? "bg-green-500 text-white" : step === s.id ? "text-white" : "bg-stone-200 text-stone-400"}`}
-                    style={step === s.id ? { background: "linear-gradient(135deg,#b04a15,#e07b3a)" } : {}}>
+                    style={step === s.id ? { background: "linear-gradient(135deg,var(--ck-role-accent),var(--ck-role-secondary))" } : {}}>
                     {step > s.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : s.id}
                   </div>
                   {i < STEPS.length - 1 && <div className={`flex-1 h-0.5 mx-1 ${step > s.id ? "bg-green-400" : "bg-stone-200 dark:bg-zinc-700"}`} />}
@@ -1306,11 +1306,11 @@ function NewRequestForm() {
 
           <div className="flex items-start justify-between mb-8">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#b04a15] mb-1">Step {step} of {STEPS.length}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--ck-role-accent)] mb-1">Step {step} of {STEPS.length}</p>
               <h2 className="text-3xl xl:text-4xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-none">{STEPS[step - 1].label}</h2>
               <p className="text-stone-400 text-sm mt-1">{STEPS[step - 1].sub}</p>
             </div>
-            {saving && <span className="text-xs text-stone-400 flex items-center gap-1.5 mt-1"><Loader2 className="w-3 h-3 animate-spin text-[#b04a15]" /> Saving…</span>}
+            {saving && <span className="text-xs text-stone-400 flex items-center gap-1.5 mt-1"><Loader2 className="w-3 h-3 animate-spin text-[var(--ck-role-accent)]" /> Saving…</span>}
           </div>
 
           {rejectionNote && (
@@ -1326,7 +1326,7 @@ function NewRequestForm() {
 
           <div className="relative mb-8 h-1.5 rounded-full bg-stone-200 dark:bg-zinc-800 overflow-hidden">
             <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%`, background: "linear-gradient(90deg, #b04a15, #e07b3a, #f0b97a)" }} />
+              style={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%`, background: "linear-gradient(90deg, var(--ck-role-accent), var(--ck-role-secondary), var(--ck-role-highlight))" }} />
           </div>
 
           <div className="rounded-3xl p-8 sm:p-10 mb-6" style={{ background: "rgba(255,255,255,0.75)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.5)", boxShadow: "0 20px 60px -12px rgba(176,74,21,0.10)" }}>
@@ -1347,7 +1347,7 @@ function NewRequestForm() {
             {step < STEPS.length ? (
               <button type="button" onClick={handleNext} disabled={saving}
                 className="flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-60 shadow-[0_6px_24px_rgba(176,74,21,0.35)]"
-                style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}>
+                style={{ background: "linear-gradient(135deg, var(--ck-role-accent) 0%, var(--ck-role-secondary) 100%)" }}>
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />} Next: {STEPS[step].label} <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
@@ -1360,7 +1360,7 @@ function NewRequestForm() {
           </div>
 
           <div className="text-center pb-8">
-            <Link href="/dashboard" className="text-xs text-stone-400 hover:text-[#b04a15] transition-colors font-semibold underline underline-offset-2">
+            <Link href="/dashboard" className="text-xs text-stone-400 hover:text-[var(--ck-role-accent)] transition-colors font-semibold underline underline-offset-2">
               Save & exit — continue later from Dashboard
             </Link>
           </div>

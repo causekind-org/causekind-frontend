@@ -335,8 +335,8 @@ function NewCampaignPageInner() {
                     className={[
                       "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border transition-colors",
                       videoMode === "link"
-                        ? "bg-[#b04a15] text-white border-[#b04a15]"
-                        : "border-stone-300 text-stone-600 hover:border-[#b04a15] hover:text-[#b04a15]",
+                        ? "bg-[var(--ck-role-accent)] text-white border-[var(--ck-role-accent)]"
+                        : "border-stone-300 text-stone-600 hover:border-[var(--ck-role-accent)] hover:text-[var(--ck-role-accent)]",
                     ].join(" ")}
                   >
                     <Link2 className="h-3 w-3" /> {t("pasteLink")}
@@ -347,8 +347,8 @@ function NewCampaignPageInner() {
                     className={[
                       "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border transition-colors",
                       videoMode === "upload"
-                        ? "bg-[#b04a15] text-white border-[#b04a15]"
-                        : "border-stone-300 text-stone-600 hover:border-[#b04a15] hover:text-[#b04a15]",
+                        ? "bg-[var(--ck-role-accent)] text-white border-[var(--ck-role-accent)]"
+                        : "border-stone-300 text-stone-600 hover:border-[var(--ck-role-accent)] hover:text-[var(--ck-role-accent)]",
                     ].join(" ")}
                   >
                     <Upload className="h-3 w-3" /> {t("uploadFile")}

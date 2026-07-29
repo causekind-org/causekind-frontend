@@ -82,11 +82,11 @@ export function MobileBottomNav() {
         {/* Home */}
         <Link href={tabs[0].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
           <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[0].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[0].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
             <Home className="w-5.5 h-5.5" />
           </span>
           <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[0].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[0].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
             Home
           </span>
         </Link>
@@ -95,11 +95,11 @@ export function MobileBottomNav() {
           /* Campaigns tab — only shown when money feature is enabled */
           <Link href={tabs[1].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
             <span className={`flex items-center justify-center transition-all duration-200
-              ${isActive(tabs[1].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+              ${isActive(tabs[1].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
               <Megaphone className="w-5.5 h-5.5" />
             </span>
             <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-              ${isActive(tabs[1].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+              ${isActive(tabs[1].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
               Campaigns
             </span>
           </Link>
@@ -110,7 +110,7 @@ export function MobileBottomNav() {
           href={centerHref}
           aria-label={centerLabel}
           className={`relative -mt-4 flex items-center justify-center w-12 h-12 rounded-full
-                     bg-[#b04a15] hover:bg-[#963c0d]
+                     bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)]
                      shadow-[0_6px_20px_-3px_rgba(176,74,21,0.55)]
                      border-2 active:scale-95 transition-all duration-150 shrink-0
                      ${scrolled ? "border-[#faf8f3]/50 dark:border-zinc-950/50" : "border-[#faf8f3] dark:border-zinc-950"}`}
@@ -125,11 +125,11 @@ export function MobileBottomNav() {
              redirects to login anyway; no point showing the entry point). */
           <Link href={tabs[2].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
             <span className={`flex items-center justify-center transition-all duration-200
-              ${isActive(tabs[2].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+              ${isActive(tabs[2].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
               <ClipboardList className="w-5.5 h-5.5" />
             </span>
             <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-              ${isActive(tabs[2].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+              ${isActive(tabs[2].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
               Requests
             </span>
           </Link>
@@ -138,11 +138,11 @@ export function MobileBottomNav() {
         {/* Profile */}
         <Link href={tabs[3].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
           <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[3].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[3].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
             <User className="w-5.5 h-5.5" />
           </span>
           <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[3].href) ? "text-[#b04a15]" : "text-stone-500 dark:text-stone-300"}`}>
+            ${isActive(tabs[3].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
             Profile
           </span>
         </Link>
@@ -226,8 +226,8 @@ export function FloatingSupportButton() {
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors group"
           >
-            <span className="w-8 h-8 rounded-full bg-[#b04a15]/10 flex items-center justify-center shrink-0">
-              <Mail className="w-4 h-4 text-[#b04a15]" />
+            <span className="w-8 h-8 rounded-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center shrink-0">
+              <Mail className="w-4 h-4 text-[var(--ck-role-accent)]" />
             </span>
             <div>
               <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("emailUs")}</p>

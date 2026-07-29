@@ -87,12 +87,12 @@ function NotifItem({ n }: { n: AppNotification }) {
     return (
       <Link href={n.link} className="block mx-2 mb-1.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200/70 dark:border-amber-900/50 px-3.5 py-3 hover:border-amber-300 dark:hover:border-amber-800 transition-colors">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#b04a15]/10 dark:bg-[#e07b3a]/15 flex items-center justify-center shrink-0">
-            <PartyPopper className="w-4 h-4 text-[#b04a15] dark:text-[#e07b3a]" />
+          <div className="w-9 h-9 rounded-full bg-[var(--ck-role-accent)]/10 dark:bg-[var(--ck-role-secondary)]/15 flex items-center justify-center shrink-0">
+            <PartyPopper className="w-4 h-4 text-[var(--ck-role-accent)] dark:text-[var(--ck-role-secondary)]" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-sm font-extrabold text-[#b04a15] dark:text-[#e07b3a] leading-tight">{n.title}</p>
+              <p className="text-sm font-extrabold text-[var(--ck-role-accent)] dark:text-[var(--ck-role-secondary)] leading-tight">{n.title}</p>
               {when}
             </div>
             <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
@@ -152,7 +152,7 @@ export function NotificationBell() {
       >
         <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 rounded-full bg-[#b04a15] text-white text-[9px] font-black px-1 shadow-sm animate-pulse">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 rounded-full bg-[var(--ck-role-accent)] text-white text-[9px] font-black px-1 shadow-sm animate-pulse">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -190,7 +190,7 @@ export function NotificationBell() {
         {/* Footer */}
         {notifications.length > 0 && (
           <div className="border-t border-stone-100 dark:border-zinc-800 px-4 py-2.5 flex items-center justify-between">
-            <Link href="/dashboard" onClick={() => setOpen(false)} className="text-xs font-bold text-[#b04a15] hover:underline dark:text-[#e07b3a]">
+            <Link href="/dashboard" onClick={() => setOpen(false)} className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline dark:text-[var(--ck-role-secondary)]">
               View dashboard
             </Link>
             <button onClick={markAllRead} className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600 transition-colors font-medium">

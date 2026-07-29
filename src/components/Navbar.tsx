@@ -161,7 +161,7 @@ function Donate3DButton() {
               ? "0 0 0 2px rgba(240,185,122,0.5), 0 10px 36px rgba(176,74,21,0.65), 0 4px 14px rgba(0,0,0,0.18)"
               : undefined,
           }}
-          className="donate-navbar-3d relative bg-[#b04a15] text-white font-bold px-[18px] py-[6px] rounded-full text-xs sm:text-sm"
+          className="donate-navbar-3d relative bg-[var(--ck-role-accent)] text-white font-bold px-[18px] py-[6px] rounded-full text-xs sm:text-sm"
           aria-label="Donate"
         >
           <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
@@ -308,7 +308,7 @@ function Sidebar3DItem({
         transition: hovered ? "transform 0.08s ease-out" : "transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1)",
         transformStyle: "preserve-3d",
       }}
-      className={`relative group rounded-2xl border border-stone-200 dark:border-zinc-800/80 p-4 transition-all duration-200 cursor-pointer bg-white dark:bg-zinc-900/60 hover:bg-[#b04a15]/5 dark:hover:bg-orange-950/10 hover:border-[#b04a15]/30 dark:hover:border-orange-500/20 shadow-xs ${className}`}
+      className={`relative group rounded-2xl border border-stone-200 dark:border-zinc-800/80 p-4 transition-all duration-200 cursor-pointer bg-white dark:bg-zinc-900/60 hover:bg-[var(--ck-role-accent)]/5 dark:hover:bg-orange-950/10 hover:border-[var(--ck-role-accent)]/30 dark:hover:border-orange-500/20 shadow-xs ${className}`}
     >
       <div className="relative z-10 flex items-center gap-3">
         {children}
@@ -535,7 +535,7 @@ export function SiteHeader() {
             <AlertDialogCancel>{t("logout.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmLogout}
-              className="bg-[#b04a15] hover:bg-[#963c0d] text-white border-0"
+              className="bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white border-0"
             >
               {t("logout.confirm")}
             </AlertDialogAction>
@@ -564,7 +564,7 @@ export function SiteHeader() {
             <NotificationBell />
             <Link
               href={user ? "/profile" : "/login"}
-              className="flex items-center justify-center w-8 h-8 rounded-full border border-[#b04a15]/30 text-[#b04a15] active:scale-95 hover:bg-[#b04a15]/5 transition-all"
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-[var(--ck-role-accent)]/30 text-[var(--ck-role-accent)] active:scale-95 hover:bg-[var(--ck-role-accent)]/5 transition-all"
               aria-label="Profile"
             >
               <User className="w-4.5 h-4.5" />
@@ -597,8 +597,8 @@ export function SiteHeader() {
                     <DropdownMenuTrigger asChild>
                       <button
                         className={`group relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none ${groupActive
-                            ? "text-[#b04a15] dark:text-orange-400"
-                            : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
+                            ? "text-[var(--ck-role-accent)] dark:text-orange-400"
+                            : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-orange-400"
                           }`}
                       >
                         {groupActive && (
@@ -608,7 +608,7 @@ export function SiteHeader() {
                             className="glass-pill absolute inset-0 rounded-full"
                           />
                         )}
-                        {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
+                        {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                         <span className="relative z-10">{triggerLabel}</span>
                         <ChevronDown className="relative z-10 w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </button>
@@ -618,7 +618,7 @@ export function SiteHeader() {
                         <DropdownMenuItem key={item.href} asChild>
                           <Link
                             href={item.href}
-                            className={isActive(item.href) ? "text-[#b04a15] dark:text-orange-400" : ""}
+                            className={isActive(item.href) ? "text-[var(--ck-role-accent)] dark:text-orange-400" : ""}
                           >
                             {item.label}
                           </Link>
@@ -636,8 +636,8 @@ export function SiteHeader() {
                   href={link.href}
                   data-tour={link.href === "/requests" ? "nav-requests" : undefined}
                   className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
-                      ? "text-[#b04a15] dark:text-orange-400"
-                      : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
+                      ? "text-[var(--ck-role-accent)] dark:text-orange-400"
+                      : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-orange-400"
                     }`}
                 >
                   {active && (
@@ -647,7 +647,7 @@ export function SiteHeader() {
                       className="glass-pill absolute inset-0 rounded-full"
                     />
                   )}
-                  {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
+                  {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                   <span className="relative z-10">{link.label}</span>
                 </Link>
               );
@@ -692,10 +692,10 @@ export function SiteHeader() {
               <SpecularButton
                 size="sm"
                 radius={999}
-                tint="#b04a15"
+                tint="var(--ck-role-accent)"
                 tintOpacity={1}
                 textColor="#ffffff"
-                lineColor="#f0b97a"
+                lineColor="var(--ck-role-highlight)"
                 baseColor="#7a3410"
                 intensity={1}
                 shineSize={14}
@@ -727,8 +727,8 @@ export function SiteHeader() {
         open={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
-        accentColor="#b04a15"
-        colors={["#f0b97a", "#b04a15"]}
+        accentColor="var(--ck-role-accent)"
+        colors={["var(--ck-role-highlight)", "var(--ck-role-accent)"]}
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
         items={[
@@ -751,7 +751,7 @@ export function SiteHeader() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-[#b04a15]/10 flex items-center justify-center text-lg font-black text-[#b04a15] dark:text-orange-400 uppercase">
+                  <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] dark:text-orange-400 uppercase">
                     {user.email[0]}
                   </div>
                 )}
@@ -825,7 +825,7 @@ export function SiteFooter() {
           </div>
           <div className="flex gap-3 pt-2 flex-wrap">
             <span className="flex items-center gap-1.5 text-xs bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-full text-white">
-              <Shield className="h-3.5 w-3.5 text-[#b04a15]" /> {t("adminVerified")}
+              <Shield className="h-3.5 w-3.5 text-[var(--ck-role-accent)]" /> {t("adminVerified")}
             </span>
             <span className="flex items-center gap-1.5 text-xs bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-full text-white">
               <Shield className="h-3.5 w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
@@ -859,8 +859,8 @@ export function SiteFooter() {
         <div className="space-y-4">
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("trust")}</p>
           <ul className="space-y-3 text-stone-400 font-medium">
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b04a15]" /> {t("adminVerifiedFull")}</li>
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b04a15]" /> {t("zeroFees")}</li>
+            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[var(--ck-role-accent)]" /> {t("adminVerifiedFull")}</li>
+            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[var(--ck-role-accent)]" /> {t("zeroFees")}</li>
             <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
           </ul>
         </div>
@@ -868,7 +868,7 @@ export function SiteFooter() {
       <div className="border-t border-stone-900 py-6 text-center text-xs text-stone-500 font-medium px-4">
         <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-3">
           <span className="w-full sm:w-auto mb-2 sm:mb-0">
-            © {new Date().getFullYear()} <span className="font-bold text-[#b04a15]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
+            © {new Date().getFullYear()} <span className="font-bold text-[var(--ck-role-accent)]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
           </span>
           <Link href="/privacy" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
             Privacy Policy

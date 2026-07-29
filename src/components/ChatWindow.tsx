@@ -162,7 +162,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
                 <div
                   className={`rounded-2xl px-3.5 py-2 text-sm ${
                     isMe
-                      ? "bg-[#b04a15] text-white rounded-br-sm"
+                      ? "bg-[var(--ck-role-accent)] text-white rounded-br-sm"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-sm"
                   }`}
                 >
@@ -189,12 +189,12 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
               onKeyDown={handleKeyDown}
               rows={1}
               placeholder="Type a message... (Enter to send)"
-              className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#b04a15] placeholder:text-gray-400"
+              className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[var(--ck-role-accent)] placeholder:text-gray-400"
             />
             <button
               onClick={handleSend}
               disabled={sending || !input.trim()}
-              className="flex-shrink-0 rounded-xl bg-[#b04a15] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 hover:bg-[#c45520] transition-colors"
+              className="flex-shrink-0 rounded-xl bg-[var(--ck-role-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 hover:bg-[var(--ck-role-hover)] transition-colors"
             >
               {sending ? "..." : "Send"}
             </button>

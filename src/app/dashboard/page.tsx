@@ -567,7 +567,7 @@ function OfferStageCard({
           <p className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">What you can do next</p>
           <div className="space-y-1.5">
             <Link href={`/requests`}
-              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[#b04a15] transition-colors">
+              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[var(--ck-role-accent)] transition-colors">
               <span className="text-sm">🔍</span>
               <div>
                 <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">Offer to a different request</p>
@@ -575,7 +575,7 @@ function OfferStageCard({
               </div>
             </Link>
             <Link href={`/items/new`}
-              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[#b04a15] transition-colors">
+              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[var(--ck-role-accent)] transition-colors">
               <span className="text-sm">📦</span>
               <div>
                 <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">List the item as a general listing</p>
@@ -583,7 +583,7 @@ function OfferStageCard({
               </div>
             </Link>
             <Link href={`/requests/${offer.requestId}/offer`}
-              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[#b04a15] transition-colors">
+              className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[var(--ck-role-accent)] transition-colors">
               <span className="text-sm">✏️</span>
               <div>
                 <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">Re-offer with updated details</p>
@@ -678,7 +678,7 @@ function OfferStageCard({
                 <div key={i} className="flex-1 min-w-0">
                   <div className={`text-[9px] font-semibold leading-tight truncate text-center ${
                     i < currentDonorIdx  ? "text-green-600 dark:text-green-400" :
-                    i === currentDonorIdx ? (isAtRisk ? "text-amber-600 dark:text-amber-400" : "text-[#b04a15]") :
+                    i === currentDonorIdx ? (isAtRisk ? "text-amber-600 dark:text-amber-400" : "text-[var(--ck-role-accent)]") :
                     "text-stone-300 dark:text-zinc-600"
                   }`}>
                     {i < currentDonorIdx ? "✓ " : i === currentDonorIdx ? "● " : "○ "}{stage.label}
@@ -692,7 +692,7 @@ function OfferStageCard({
               <div className="rounded-xl p-3 space-y-2 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700">
                 {/* Current stage */}
                 <div className="flex items-start gap-2">
-                  <span className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-white ${isAtRisk ? "bg-amber-500" : "bg-[#b04a15]"}`}>
+                  <span className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-white ${isAtRisk ? "bg-amber-500" : "bg-[var(--ck-role-accent)]"}`}>
                     {currentDonorIdx + 1}
                   </span>
                   <div>
@@ -750,7 +750,7 @@ function OfferStageCard({
                 ? "bg-green-600 hover:bg-green-700 text-white"
                 : meta.severity === "warning"
                 ? "bg-amber-500 hover:bg-amber-600 text-white"
-                : "bg-[#b04a15] hover:bg-[#c45520] text-white"
+                : "bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white"
             }`}
           >
             {meta.actionLabel}
@@ -864,7 +864,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
           <h2 className="text-base font-black text-stone-800 dark:text-stone-100">Donation Offers</h2>
           <p className="text-xs text-stone-400">Offers you made to fulfil specific requests</p>
         </div>
-        <Link href="/offers" className="text-xs font-semibold text-[#b04a15] hover:underline">View all</Link>
+        <Link href="/offers" className="text-xs font-semibold text-[var(--ck-role-accent)] hover:underline">View all</Link>
       </div>
 
       {/* Needs action — shown first and highlighted */}
@@ -999,7 +999,7 @@ function PastOffersStrip({ offers, activeRequestIds }: {
           {someRequestStillOpen && (
             <p className="px-2 text-[11px] leading-relaxed text-stone-400">
               These requests remain open to other donors — you&apos;ll be notified the moment a new offer arrives.{" "}
-              <Link href="/requests" className="font-semibold text-[#b04a15] hover:underline">Browse donors offering to help →</Link>
+              <Link href="/requests" className="font-semibold text-[var(--ck-role-accent)] hover:underline">Browse donors offering to help →</Link>
             </p>
           )}
         </div>
@@ -1105,13 +1105,13 @@ function DoneeDashboard({
 
       {/* ── Hero header — ink/blue theme ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#0d1e36] via-[#1e3a60] to-[#0a2040] text-white py-12 px-4 shadow-lg">
-        <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[#f0b97a]/6 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b97a]/25 to-transparent" />
+        <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[var(--ck-role-highlight)]/6 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--ck-role-highlight)]/25 to-transparent" />
 
         <div className="mx-auto max-w-5xl relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="space-y-3 min-w-0">
-              <div className="inline-flex items-center gap-1.5 bg-[#f0b97a]/15 border border-[#f0b97a]/30 rounded-full px-3 py-1 text-xs text-[#f0b97a] font-bold uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/30 rounded-full px-3 py-1 text-xs text-[var(--ck-role-highlight)] font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified Donee
               </div>
               <h1 className="text-4xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
@@ -1124,7 +1124,7 @@ function DoneeDashboard({
               </p>
             </motion.div>
             <Link href="/requests/new" data-tour="primary-cta">
-              <Button className="bg-[#f0b97a] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-2xl px-6 py-3 h-auto text-sm flex items-center gap-2 shadow-xl shadow-[#f0b97a]/20 shrink-0">
+              <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-2xl px-6 py-3 h-auto text-sm flex items-center gap-2 shadow-xl shadow-[var(--ck-role-highlight)]/20 shrink-0">
                 <Plus className="w-4 h-4" /> Post a Need
               </Button>
             </Link>
@@ -1169,13 +1169,13 @@ function DoneeDashboard({
         {/* ── Incoming Donation Offers (Donor Flow 2) ── */}
         {incomingOffers.length > 0 && (
           <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#b04a15]" />
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4 relative z-10">
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Heart className="w-4 h-4 text-[#b04a15]" /> Donation Offers Received
+                <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation Offers Received
               </CardTitle>
               <Link href="/donee/offers">
-                <Button variant="ghost" size="sm" className="text-xs font-bold text-[#b04a15]">View all</Button>
+                <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
               </Link>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
@@ -1285,7 +1285,7 @@ function DoneeDashboard({
                                   key={i}
                                   className={`h-1.5 flex-1 rounded-full transition-all ${
                                     i < currentIdx  ? "bg-green-500" :
-                                    i === currentIdx ? (isAtRisk ? "bg-amber-500 animate-pulse" : "bg-[#b04a15] animate-pulse") :
+                                    i === currentIdx ? (isAtRisk ? "bg-amber-500 animate-pulse" : "bg-[var(--ck-role-accent)] animate-pulse") :
                                     "bg-stone-200 dark:bg-zinc-700"
                                   }`}
                                 />
@@ -1297,7 +1297,7 @@ function DoneeDashboard({
                                 <div key={i} className="flex-1 min-w-0">
                                   <div className={`text-[9px] font-semibold leading-tight truncate text-center ${
                                     i < currentIdx  ? "text-green-600 dark:text-green-400" :
-                                    i === currentIdx ? (isAtRisk ? "text-amber-600 dark:text-amber-400" : "text-[#b04a15]") :
+                                    i === currentIdx ? (isAtRisk ? "text-amber-600 dark:text-amber-400" : "text-[var(--ck-role-accent)]") :
                                     "text-stone-300 dark:text-zinc-600"
                                   }`}>
                                     {i < currentIdx ? "✓ " : i === currentIdx ? "● " : "○ "}{stage.label}
@@ -1310,7 +1310,7 @@ function DoneeDashboard({
                               {/* Current */}
                               {currentIdx >= 0 && (
                                 <div className="flex items-start gap-2">
-                                  <span className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-white ${isAtRisk ? "bg-amber-500" : "bg-[#b04a15]"}`}>
+                                  <span className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-white ${isAtRisk ? "bg-amber-500" : "bg-[var(--ck-role-accent)]"}`}>
                                     {currentIdx + 1}
                                   </span>
                                   <div>
@@ -1355,7 +1355,7 @@ function DoneeDashboard({
                           <button
                             onClick={() => handleOfferAction(offer.id, "ACCEPT")}
                             disabled={offerActionLoading === offer.id}
-                            className="flex-1 rounded-xl bg-[#b04a15] py-2 text-xs font-semibold text-white hover:bg-[#c45520] transition-colors disabled:opacity-50"
+                            className="flex-1 rounded-xl bg-[var(--ck-role-accent)] py-2 text-xs font-semibold text-white hover:bg-[var(--ck-role-hover)] transition-colors disabled:opacity-50"
                           >
                             {offerActionLoading === offer.id ? "..." : "Accept Offer"}
                           </button>
@@ -1464,8 +1464,8 @@ function DoneeDashboard({
 
           {/* Matches */}
           <section data-tour="matches">
-            <div className="border-b-2 border-[#b04a15]/60 pb-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b04a15]">Matches</p>
+            <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
               <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
             </div>
             <div className="pt-5">
@@ -1474,19 +1474,19 @@ function DoneeDashboard({
                    is actually working (a request is verified and in the matching
                    phase). Drafts/pending requests get honest guidance instead. */
                 <div className="py-12 text-center space-y-4">
-                  <div className="relative w-24 h-24 mx-auto rounded-full border border-[#b04a15]/20">
-                    <div className="absolute inset-3 rounded-full border border-[#b04a15]/15" />
-                    <div className="absolute inset-6 rounded-full border border-[#b04a15]/10" />
+                  <div className="relative w-24 h-24 mx-auto rounded-full border border-[var(--ck-role-accent)]/20">
+                    <div className="absolute inset-3 rounded-full border border-[var(--ck-role-accent)]/15" />
+                    <div className="absolute inset-6 rounded-full border border-[var(--ck-role-accent)]/10" />
                     {hasRequestInMatching && (
                       <>
                         <div className="absolute inset-0 rounded-full overflow-hidden motion-reduce:hidden">
                           <div className="absolute inset-0 animate-[spin_3.5s_linear_infinite]"
                             style={{ background: "conic-gradient(from 0deg, rgba(176,74,21,0.30), transparent 70deg)" }} />
                         </div>
-                        <div className="absolute top-4 right-6 w-1.5 h-1.5 rounded-full bg-[#f0b97a] animate-pulse motion-reduce:animate-none" />
+                        <div className="absolute top-4 right-6 w-1.5 h-1.5 rounded-full bg-[var(--ck-role-highlight)] animate-pulse motion-reduce:animate-none" />
                       </>
                     )}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#b04a15]" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[var(--ck-role-accent)]" />
                   </div>
                   {hasRequestInMatching ? (
                     <div>
@@ -1516,7 +1516,7 @@ function DoneeDashboard({
                       <div key={m.id} className="pt-3 first:pt-0 space-y-2 group px-1 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all pb-1">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors truncate">
+                            <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors truncate">
                               <TranslatedText text={m.listingTitle || "Matched item"} />
                             </p>
                             <p className="text-xs text-stone-400 mt-0.5 truncate">For: <TranslatedText text={m.requestTitle || ""} /></p>
@@ -1776,13 +1776,13 @@ export default function DashboardPage() {
       {/* ── Hero: greeting + live giving ledger ── */}
       <div className="relative overflow-hidden text-white px-4 pt-12 shadow-md"
         style={{ background: "linear-gradient(140deg, #1c0905 0%, #3a1d0e 55%, #241206 100%)" }}>
-        <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[#e07b3a]/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b97a]/25 to-transparent" />
+        <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[var(--ck-role-secondary)]/10 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--ck-role-highlight)]/25 to-transparent" />
 
         <div className="mx-auto max-w-7xl relative z-10">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="min-w-0 space-y-3">
-              <div className="inline-flex items-center gap-1.5 bg-[#b04a15]/20 border border-[#b04a15]/30 rounded-full px-3 py-1 text-xs text-[#f0b97a] font-semibold">
+              <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/30 rounded-full px-3 py-1 text-xs text-[var(--ck-role-highlight)] font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified Donor
               </div>
               <h1 className="text-4xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
@@ -1799,25 +1799,25 @@ export default function DashboardPage() {
               {myProfile?.role === "ADMIN" && (
                 <div className="grid grid-cols-2 gap-1 bg-white/10 border border-white/15 p-1 rounded-xl">
                   <button onClick={() => setActiveTab("donor")}
-                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${activeTab === "donor" ? "bg-[#b04a15] text-white" : "text-white/60"}`}>
+                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${activeTab === "donor" ? "bg-[var(--ck-role-accent)] text-white" : "text-white/60"}`}>
                     Donor
                   </button>
                   <button onClick={() => setActiveTab("donee")}
-                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${activeTab === "donee" ? "bg-[#b04a15] text-white" : "text-white/60"}`}>
+                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${activeTab === "donee" ? "bg-[var(--ck-role-accent)] text-white" : "text-white/60"}`}>
                     Donee
                   </button>
                 </div>
               )}
               {(myProfile?.role === "DONOR" || myProfile?.role === "ADMIN") && (
                 <Link href="/items/new" data-tour="primary-cta">
-                  <Button className="bg-[#b04a15] hover:bg-[#943e11] text-white font-bold rounded-xl px-5 py-2.5 h-auto btn-shine flex items-center gap-1.5 text-sm">
+                  <Button className="bg-[var(--ck-role-accent)] hover:bg-[#943e11] text-white font-bold rounded-xl px-5 py-2.5 h-auto btn-shine flex items-center gap-1.5 text-sm">
                     <Plus className="w-4 h-4" /> List Item Privately
                   </Button>
                 </Link>
               )}
               {(myProfile?.role === "DONEE" || myProfile?.role === "ADMIN") && (
                 <Link href="/requests/new">
-                  <Button className="bg-[#f0b97a] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl px-5 py-2.5 h-auto flex items-center gap-1.5 text-sm">
+                  <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl px-5 py-2.5 h-auto flex items-center gap-1.5 text-sm">
                     <Plus className="w-4 h-4" /> Post a Need
                   </Button>
                 </Link>
@@ -1848,7 +1848,7 @@ export default function DashboardPage() {
 
           {/* ── Identity line ── */}
           <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-4">
-            <div className="w-9 h-9 rounded-full bg-[#b04a15]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-sm text-[#b04a15] shrink-0">
+            <div className="w-9 h-9 rounded-full bg-[var(--ck-role-accent)]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-sm text-[var(--ck-role-accent)] shrink-0">
               {myProfile ? getInitials(myProfile.fullName) : "U"}
             </div>
             <p className="font-bold text-stone-800 dark:text-stone-200 truncate">{myProfile?.fullName || user.email?.split("@")[0]}</p>
@@ -1857,10 +1857,10 @@ export default function DashboardPage() {
             {myProfile?.city && (
               <>
                 <span className="text-stone-300 dark:text-zinc-700 hidden md:inline">&middot;</span>
-                <p className="hidden md:flex items-center gap-1"><MapPin className="w-3 h-3 text-[#b04a15]" />{myProfile.city}</p>
+                <p className="hidden md:flex items-center gap-1"><MapPin className="w-3 h-3 text-[var(--ck-role-accent)]" />{myProfile.city}</p>
               </>
             )}
-            <Link href="/profile" className="ml-auto shrink-0 font-bold text-[#b04a15] hover:underline">Edit profile</Link>
+            <Link href="/profile" className="ml-auto shrink-0 font-bold text-[var(--ck-role-accent)] hover:underline">Edit profile</Link>
           </div>
 
           {/* RIGHT: Main Dashboard Content */}
@@ -1874,8 +1874,8 @@ export default function DashboardPage() {
                 {/* Donor Flow 2 — Offer Tracker */}
                 {donationOffers.length > 0 && (
                   <section data-tour="offers">
-                    <div className="border-b-2 border-[#f0b97a]/70 pb-3 mb-5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b04a15] dark:text-[#f0b97a]">Your Offers</p>
+                    <div className="border-b-2 border-[var(--ck-role-highlight)]/70 pb-3 mb-5">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)] dark:text-[var(--ck-role-highlight)]">Your Offers</p>
                       <p className="text-xs text-stone-400 mt-1">Items you offered directly against someone&apos;s request.</p>
                     </div>
                     <DonorOfferSection
@@ -1892,14 +1892,14 @@ export default function DashboardPage() {
 
                   {/* Your inventory — private, matched quietly */}
                   <section>
-                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#b04a15]/70 pb-3">
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/70 pb-3">
                       <div>
-                        <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#b04a15]">
+                        <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">
                           <EyeOff className="w-3.5 h-3.5" /> Your Private Inventory
                         </p>
                         <p className="text-xs text-stone-400 mt-1">Only our matching engine sees these — never other users.</p>
                       </div>
-                      <Link href="/items/new" className="text-xs font-bold text-[#b04a15] hover:underline flex items-center gap-1 shrink-0 mb-0.5">
+                      <Link href="/items/new" className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline flex items-center gap-1 shrink-0 mb-0.5">
                         <Plus className="w-3.5 h-3.5" /> Add an item
                       </Link>
                     </div>
@@ -1908,7 +1908,7 @@ export default function DashboardPage() {
                         <div className="py-12 text-center">
                           <p className="text-sm text-stone-400">You haven&apos;t listed any items to donate yet.</p>
                           <Link href="/items/new" className="inline-block mt-3">
-                            <Button size="sm" className="bg-[#b04a15] text-white">List your first item</Button>
+                            <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">List your first item</Button>
                           </Link>
                         </div>
                       ) : (
@@ -1954,7 +1954,7 @@ export default function DashboardPage() {
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   {isDraft && (
                                     <Link href="/items/new">
-                                      <span className="text-xs text-[#b04a15] font-bold hover:underline">Continue →</span>
+                                      <span className="text-xs text-[var(--ck-role-accent)] font-bold hover:underline">Continue →</span>
                                     </Link>
                                   )}
                                   {needsInfo && (
@@ -2076,7 +2076,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
                                   <div><p className="text-stone-500">Recipient Donee</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.doneeName}</p></div>
-                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[#b04a15]">{m.matchScore}%</p></div>)}
+                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[var(--ck-role-accent)]">{m.matchScore}%</p></div>)}
                                 </div>
                                 {isDonorReview && (
                                   <div className="space-y-2 pt-1">
@@ -2131,12 +2131,12 @@ export default function DashboardPage() {
                                 )}
                                 {HANDOVER_HUB_STATUSES.has(m.status) && (
                                   <div className="flex gap-2 pt-1">
-                                    <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[#b04a15] hover:bg-[#c45520] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                    <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
                                       <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
                                     </Link>
                                     <button
                                       onClick={() => setChatMatch(m)}
-                                      className="flex items-center justify-center gap-1.5 border border-[#b04a15]/40 text-[#b04a15] hover:bg-[#b04a15]/5 dark:text-[#e07b3a] dark:border-[#e07b3a]/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
+                                      className="flex items-center justify-center gap-1.5 border border-[var(--ck-role-accent)]/40 text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 dark:text-[var(--ck-role-secondary)] dark:border-[var(--ck-role-secondary)]/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
                                     >
                                       <MessageCircle className="w-3.5 h-3.5" /> Chat
                                     </button>
@@ -2165,9 +2165,9 @@ export default function DashboardPage() {
                 {/* Stats Row */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#b04a15]" />
+                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
                     <CardContent className="flex items-center gap-4 p-5">
-                      <div className="h-11 w-11 rounded-xl bg-orange-100 text-[#b04a15] dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                      <div className="h-11 w-11 rounded-xl bg-orange-100 text-[var(--ck-role-accent)] dark:bg-zinc-800 flex items-center justify-center shrink-0">
                         <ShieldCheck className="w-5 h-5" />
                       </div>
                       <div>
@@ -2196,12 +2196,12 @@ export default function DashboardPage() {
                   
                   {/* Requests list */}
                   <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute left-0 top-0 w-full h-[3px] bg-[#b04a15]" />
+                    <div className="absolute left-0 top-0 w-full h-[3px] bg-[var(--ck-role-accent)]" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">01</div>
                     <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-4 relative z-10">
                       <CardTitle className="text-base font-bold">My Needs & Requests</CardTitle>
                       <Link href="/requests/new">
-                        <Button variant="ghost" size="sm" className="text-xs font-bold text-[#b04a15]">
+                        <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">
                           <Plus className="w-3.5 h-3.5 mr-1" /> New Need
                         </Button>
                       </Link>
@@ -2211,7 +2211,7 @@ export default function DashboardPage() {
                         <div className="py-12 text-center">
                           <p className="text-sm text-stone-400">You haven&apos;t posted any needs yet.</p>
                           <Link href="/requests/new" className="inline-block mt-3">
-                            <Button size="sm" className="bg-[#b04a15] text-white">Post your first need</Button>
+                            <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">Post your first need</Button>
                           </Link>
                         </div>
                       ) : (
@@ -2221,7 +2221,7 @@ export default function DashboardPage() {
                             return (
                               <div key={r.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
                                 <div>
-                                  <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] transition-colors"><TranslatedText text={r.title} /></p>
+                                  <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors"><TranslatedText text={r.title} /></p>
                                   <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
                                     <span><TranslatedText text={r.category} /></span>
                                     <span>•</span>
@@ -2240,7 +2240,7 @@ export default function DashboardPage() {
                                   {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
                                   {r.status === "DRAFT" && (
                                     <Link href={`/requests/new?draftId=${r.id}`}
-                                      className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#b04a15]/30 text-[11px] font-bold text-[#b04a15] hover:bg-[#b04a15]/5 transition-colors">
+                                      className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-[11px] font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
                                       <Pencil className="w-3 h-3" /> Continue editing
                                     </Link>
                                   )}
@@ -2283,7 +2283,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
                                   <div><p className="text-stone-500">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
-                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[#b04a15]">{m.matchScore}%</p></div>)}
+                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[var(--ck-role-accent)]">{m.matchScore}%</p></div>)}
                                 </div>
                                 {HANDOVER_HUB_STATUSES.has(m.status) && (
                                   <div className="flex gap-2 pt-1">
