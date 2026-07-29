@@ -9,7 +9,7 @@ import MatchChatWindow from "@/components/MatchChatWindow";
 // springy popup. Bottom sheet with a backdrop on mobile.
 
 const ACCENTS = {
-  copper: { bar: "bg-[var(--ck-role-accent)]", dot: "bg-orange-200" },
+  copper: { bar: "bg-[var(--ck-role-accent)]", dot: "bg-[var(--ck-role-highlight)]" },
   navy:   { bar: "bg-[#1e3a60]", dot: "bg-blue-200" },
 } as const;
 

@@ -224,7 +224,7 @@ export function FloatingSupportButton() {
             href={mailHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors group"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--ck-role-soft)] dark:hover:bg-zinc-800 transition-colors group"
           >
             <span className="w-8 h-8 rounded-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center shrink-0">
               <Mail className="w-4 h-4 text-[var(--ck-role-accent)]" />
@@ -236,7 +236,7 @@ export function FloatingSupportButton() {
           </a>
           <a
             href="/faq"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors group"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--ck-role-soft)] dark:hover:bg-zinc-800 transition-colors group"
           >
             <span className="w-8 h-8 rounded-full bg-[#1e3a60]/10 flex items-center justify-center shrink-0">
               <Phone className="w-4 h-4 text-[#1e3a60]" />

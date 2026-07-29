@@ -2451,6 +2451,8 @@ div:has(.searchable-select-open) {
    component using them never renders colourless for admins or logged-out users. */
 :root {
   --ck-role-accent: var(--brand-terra);
+  /* A darker shade of the accent, for 3D button shadows and pressed edges. */
+  --ck-role-deep: #7a3410;
   --ck-role-hover: #c45520;
   --ck-role-secondary: var(--brand-copper);
   --ck-role-highlight: #f0b97a;
@@ -2464,6 +2466,7 @@ div:has(.searchable-select-open) {
 
 [data-ck-role-theme="donor"] {
   --ck-role-accent: #b04a15;
+  --ck-role-deep: #7a3410;
   --ck-role-hover: #c45520;
   --ck-role-secondary: #e07b3a;
   --ck-role-highlight: #f0b97a;
@@ -2477,6 +2480,7 @@ div:has(.searchable-select-open) {
 
 [data-ck-role-theme="donee"] {
   --ck-role-accent: #1e3a60;
+  --ck-role-deep: #12253f;
   --ck-role-hover: #2d5a96;
   --ck-role-secondary: #4a7fc1;
   --ck-role-highlight: #7fb0e8;
@@ -2494,6 +2498,7 @@ div:has(.searchable-select-open) {
 .dark [data-ck-role-theme="donor"],
 .dark[data-ck-role-theme="donor"] {
   --ck-role-accent: #e07b3a;
+  --ck-role-deep: #8a4715;
   --ck-role-hover: #f0955a;
   --ck-role-on-accent: #1a1207;
   --ck-role-soft: oklch(0.26 0.05 50);
@@ -2507,6 +2512,7 @@ div:has(.searchable-select-open) {
 .dark [data-ck-role-theme="donee"] {
   /* Navy is unreadable on a dark surface; lift to a clear sky blue. */
   --ck-role-accent: #7fb0e8;
+  --ck-role-deep: #3f6c9e;
   --ck-role-hover: #a3c8f2;
   --ck-role-on-accent: #0b1929;
   --ck-role-soft: oklch(0.26 0.05 250);

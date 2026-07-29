@@ -50,18 +50,20 @@ export type RolePalette = {
   secondary: string;
   highlight: string;
   onAccent: string;
+  /** Darker than `accent` — 3D button shadows, pressed edges. Mirrors --ck-role-deep. */
+  deep: string;
 };
 
 const LIGHT: Record<RoleTheme, RolePalette> = {
-  donor: { accent: "#b04a15", hover: "#c45520", secondary: "#e07b3a", highlight: "#f0b97a", onAccent: "#ffffff" },
-  donee: { accent: "#1e3a60", hover: "#2d5a96", secondary: "#4a7fc1", highlight: "#7fb0e8", onAccent: "#ffffff" },
+  donor: { accent: "#b04a15", hover: "#c45520", secondary: "#e07b3a", highlight: "#f0b97a", onAccent: "#ffffff", deep: "#7a3410" },
+  donee: { accent: "#1e3a60", hover: "#2d5a96", secondary: "#4a7fc1", highlight: "#7fb0e8", onAccent: "#ffffff", deep: "#12253f" },
 };
 
 const DARK: Record<RoleTheme, RolePalette> = {
-  donor: { accent: "#e07b3a", hover: "#f0955a", secondary: "#e07b3a", highlight: "#f0b97a", onAccent: "#1a1207" },
+  donor: { accent: "#e07b3a", hover: "#f0955a", secondary: "#e07b3a", highlight: "#f0b97a", onAccent: "#1a1207", deep: "#8a4715" },
   // Navy on a dark surface is unreadable, so dark mode lifts to a clear sky blue.
   // Same role signal, inverted for the surface it sits on.
-  donee: { accent: "#7fb0e8", hover: "#a3c8f2", secondary: "#4a7fc1", highlight: "#a3c8f2", onAccent: "#0b1929" },
+  donee: { accent: "#7fb0e8", hover: "#a3c8f2", secondary: "#4a7fc1", highlight: "#a3c8f2", onAccent: "#0b1929", deep: "#3f6c9e" },
 };
 
 /** Public/neutral palette — what an admin, or a logged-out visitor, sees. */

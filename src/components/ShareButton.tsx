@@ -38,7 +38,7 @@ export function ShareButton({
       onClick={handleShare}
       aria-label="Share this"
       title="Share on WhatsApp"
-      className={`group flex items-center gap-1 text-stone-400 hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-colors ${className}`}
+      className={`group flex items-center gap-1 text-stone-400 hover:text-[var(--ck-role-accent)] transition-colors ${className}`}
     >
       <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
     </button>

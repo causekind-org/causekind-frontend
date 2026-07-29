@@ -9,6 +9,7 @@ import {
   submitHandoverFeedback,
   type HandoverFeedbackContextType,
 } from "@/lib/api";
+import { handoverScope, type HandoverRole } from "@/features/handover/model";
 
 declare global {
   interface Window {
@@ -35,6 +36,17 @@ type Props = {
   contextId: number;
   open: boolean;
   onClose: () => void;
+  /**
+   * Which side of THIS transaction the viewer is on.
+   *
+   * <p>Deliberately not the account role: a donor viewing a handover where they
+   * happen to be the recipient must see the recipient's colour here. That is why
+   * this screen uses `--handover-*` and never `--ck-role-*`.
+   *
+   * <p>Optional so the celebration still renders (in the donor palette, the
+   * historical default) if a caller has no view model to hand.
+   */
+  role?: HandoverRole;
 };
 
 const TIP_PRESETS = [20, 50, 100];
@@ -71,16 +83,16 @@ function RatingFace({
       <div
         className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-colors duration-300 ${
           selected
-            ? "border-[#b04a15] bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-900/40 dark:to-amber-900/20"
+            ? "border-[var(--handover-accent)] bg-[var(--handover-soft)] dark:bg-[var(--handover-accent)]/15"
             : "border-gray-200 bg-white/70 dark:border-gray-700 dark:bg-white/5"
         }`}
       >
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <circle cx="12" cy={12 + face.brow * 0.3} r="1.6" className={selected ? "fill-[#b04a15]" : "fill-gray-400 dark:fill-gray-500"} />
-          <circle cx="20" cy={12 + face.brow * 0.3} r="1.6" className={selected ? "fill-[#b04a15]" : "fill-gray-400 dark:fill-gray-500"} />
+          <circle cx="12" cy={12 + face.brow * 0.3} r="1.6" className={selected ? "fill-[var(--handover-accent)]" : "fill-gray-400 dark:fill-gray-500"} />
+          <circle cx="20" cy={12 + face.brow * 0.3} r="1.6" className={selected ? "fill-[var(--handover-accent)]" : "fill-gray-400 dark:fill-gray-500"} />
           <path
             d={face.mouth}
-            stroke={selected ? "#b04a15" : "currentColor"}
+            stroke={selected ? "var(--handover-accent)" : "currentColor"}
             className={selected ? "" : "text-gray-400 dark:text-gray-500"}
             strokeWidth="2"
             strokeLinecap="round"
@@ -88,7 +100,7 @@ function RatingFace({
           />
         </svg>
       </div>
-      <span className={`text-[11px] font-medium ${selected ? "text-[#b04a15]" : "text-gray-400"}`}>
+      <span className={`text-[11px] font-medium ${selected ? "text-[var(--handover-accent)]" : "text-gray-400"}`}>
         {face.label}
       </span>
     </motion.button>
@@ -103,7 +115,7 @@ function WarmthMotif() {
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
-          className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-300/40 via-amber-200/30 to-transparent dark:from-orange-500/20 dark:via-amber-400/10"
+          className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--handover-accent)]/35 via-amber-200/25 to-transparent dark:from-[var(--handover-accent)]/25 dark:via-amber-400/10"
           initial={{ scale: 0.6, opacity: 0.6 }}
           animate={{ scale: [0.6, 1.4, 0.6], opacity: [0.6, 0, 0.6] }}
           transition={{ duration: 3.2, repeat: Infinity, delay: i * 0.9, ease: "easeInOut" }}
@@ -125,8 +137,8 @@ function WarmthMotif() {
           />
           <defs>
             <linearGradient id="warmGrad" x1="8" y1="8" x2="48" y2="46" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#e07b3a" />
-              <stop offset="1" stopColor="#b04a15" />
+              <stop stopColor="var(--handover-secondary, var(--handover-accent))" />
+              <stop offset="1" stopColor="var(--handover-accent)" />
             </linearGradient>
           </defs>
         </svg>
@@ -146,7 +158,7 @@ function WarmthMotif() {
   );
 }
 
-export default function HandoverCelebration({ contextType, contextId, open, onClose }: Props) {
+export default function HandoverCelebration({ contextType, contextId, open, onClose, role }: Props) {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>("celebrate");
   const [rating, setRating] = useState<number | null>(null);
@@ -231,7 +243,11 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+        /* handoverScope on the overlay ROOT: this is a fixed-position layer
+           rendered outside the hub's own scoped element, so without the class
+           every var(--handover-*) below resolves to nothing. Defaults to the
+           donor palette when no role is supplied. */
+        className={`${handoverScope(role ?? "DONOR")} fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -265,7 +281,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                 </p>
                 <button
                   onClick={() => setStep("feedback")}
-                  className="mt-6 w-full rounded-xl bg-[#b04a15] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#943c10]"
+                  className="mt-6 w-full rounded-xl bg-[var(--handover-accent)] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#943c10]"
                 >
                   Continue
                 </button>
@@ -292,7 +308,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Anything you'd like to share? (optional)"
                   rows={3}
-                  className="mt-5 w-full resize-none rounded-xl border border-gray-200 bg-white/70 p-3 text-sm text-gray-800 outline-none focus:border-[#b04a15]/60 dark:border-gray-700 dark:bg-white/5 dark:text-gray-100"
+                  className="mt-5 w-full resize-none rounded-xl border border-gray-200 bg-white/70 p-3 text-sm text-gray-800 outline-none focus:border-[var(--handover-accent)]/60 dark:border-gray-700 dark:bg-white/5 dark:text-gray-100"
                 />
                 <div className="mt-5 flex gap-2">
                   <button
@@ -304,7 +320,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                   <button
                     onClick={handleFeedbackSubmit}
                     disabled={submittingFeedback}
-                    className="flex-[2] rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#943c10] disabled:opacity-60"
+                    className="flex-[2] rounded-xl bg-[var(--handover-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#943c10] disabled:opacity-60"
                   >
                     {submittingFeedback ? "Saving…" : "Submit"}
                   </button>
@@ -327,7 +343,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                       onClick={() => { setTipAmount(amt); setCustomTip(""); }}
                       className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors ${
                         tipAmount === amt && !customTip
-                          ? "border-[#b04a15] bg-orange-50 text-[#b04a15] dark:bg-orange-950/30"
+                          ? "border-[var(--handover-accent)] bg-[var(--handover-soft)] text-[var(--handover-on-soft)] dark:bg-[var(--handover-accent)]/15 dark:text-[var(--handover-on-soft)]"
                           : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"
                       }`}
                     >
@@ -338,7 +354,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                     value={customTip}
                     onChange={(e) => setCustomTip(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder="Other"
-                    className="rounded-xl border-2 border-gray-200 py-2.5 text-center text-sm font-semibold text-gray-700 outline-none focus:border-[#b04a15]/60 dark:border-gray-700 dark:text-gray-200"
+                    className="rounded-xl border-2 border-gray-200 py-2.5 text-center text-sm font-semibold text-gray-700 outline-none focus:border-[var(--handover-accent)]/60 dark:border-gray-700 dark:text-gray-200"
                   />
                 </div>
                 <div className="mt-5 flex gap-2">
@@ -351,7 +367,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                   <button
                     onClick={handleTip}
                     disabled={tipLoading || !effectiveTipAmount}
-                    className="flex-[2] rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#943c10] disabled:opacity-60"
+                    className="flex-[2] rounded-xl bg-[var(--handover-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#943c10] disabled:opacity-60"
                   >
                     {tipLoading ? "Opening checkout…" : `Tip ₹${effectiveTipAmount ?? ""}`}
                   </button>
@@ -365,12 +381,12 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                  className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-orange-300/50 to-amber-200/40 dark:from-orange-500/25 dark:to-amber-400/15"
+                  className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[var(--handover-accent)]/40 to-amber-200/35 dark:from-[var(--handover-accent)]/25 dark:to-amber-400/15"
                 >
                   <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
                     <motion.path
                       d="M6 15 L12 21 L24 8"
-                      stroke="#b04a15"
+                      stroke="var(--handover-accent)"
                       strokeWidth="3"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -391,7 +407,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                 </p>
                 <button
                   onClick={onClose}
-                  className="mt-6 w-full rounded-xl bg-[#b04a15] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#943c10]"
+                  className="mt-6 w-full rounded-xl bg-[var(--handover-accent)] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#943c10]"
                 >
                   Done
                 </button>

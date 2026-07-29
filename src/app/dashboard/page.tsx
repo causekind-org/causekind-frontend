@@ -2167,7 +2167,7 @@ export default function DashboardPage() {
                   <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
                     <CardContent className="flex items-center gap-4 p-5">
-                      <div className="h-11 w-11 rounded-xl bg-orange-100 text-[var(--ck-role-accent)] dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                      <div className="h-11 w-11 rounded-xl bg-[var(--ck-role-soft)] text-[var(--ck-role-accent)] dark:bg-zinc-800 flex items-center justify-center shrink-0">
                         <ShieldCheck className="w-5 h-5" />
                       </div>
                       <div>

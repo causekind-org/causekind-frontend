@@ -85,7 +85,7 @@ function NotifItem({ n }: { n: AppNotification }) {
 
   if (n.type === "fulfilled") {
     return (
-      <Link href={n.link} className="block mx-2 mb-1.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200/70 dark:border-amber-900/50 px-3.5 py-3 hover:border-amber-300 dark:hover:border-amber-800 transition-colors">
+      <Link href={n.link} className="block mx-2 mb-1.5 rounded-xl bg-gradient-to-r from-amber-50 to-[var(--ck-role-soft)] dark:from-amber-950/30 dark:to-[var(--ck-role-accent)]/10 border border-amber-200/70 dark:border-amber-900/50 px-3.5 py-3 hover:border-amber-300 dark:hover:border-amber-800 transition-colors">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-full bg-[var(--ck-role-accent)]/10 dark:bg-[var(--ck-role-secondary)]/15 flex items-center justify-center shrink-0">
             <PartyPopper className="w-4 h-4 text-[var(--ck-role-accent)] dark:text-[var(--ck-role-secondary)]" />

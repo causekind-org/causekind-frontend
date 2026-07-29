@@ -122,6 +122,8 @@ export default function MatchHandoverHubPage() {
         }}
       />
       <HandoverCelebration
+        // Participation role, not account role — see HandoverCelebration.Props
+        role={vm.role}
         contextType="MATCH"
         contextId={matchId}
         open={celebrate}

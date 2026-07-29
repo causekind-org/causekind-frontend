@@ -135,7 +135,7 @@ function Donate3DButton() {
         {hearts.map(({ id, x }) => (
           <span
             key={id}
-            className="absolute z-50 text-[11px] text-orange-300 pointer-events-none select-none"
+            className="absolute z-50 text-[11px] text-[var(--ck-role-highlight)] pointer-events-none select-none"
             style={{
               left: `${x}%`,
               bottom: "110%",
@@ -309,7 +309,7 @@ function Sidebar3DItem({
         transition: hovered ? "transform 0.08s ease-out" : "transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1)",
         transformStyle: "preserve-3d",
       }}
-      className={`relative group rounded-2xl border border-stone-200 dark:border-zinc-800/80 p-4 transition-all duration-200 cursor-pointer bg-white dark:bg-zinc-900/60 hover:bg-[var(--ck-role-accent)]/5 dark:hover:bg-orange-950/10 hover:border-[var(--ck-role-accent)]/30 dark:hover:border-orange-500/20 shadow-xs ${className}`}
+      className={`relative group rounded-2xl border border-stone-200 dark:border-zinc-800/80 p-4 transition-all duration-200 cursor-pointer bg-white dark:bg-zinc-900/60 hover:bg-[var(--ck-role-accent)]/5 dark:hover:bg-[var(--ck-role-accent)]/10 hover:border-[var(--ck-role-accent)]/30 dark:hover:border-[var(--ck-role-accent)]/25 shadow-xs ${className}`}
     >
       <div className="relative z-10 flex items-center gap-3">
         {children}
@@ -600,8 +600,8 @@ export function SiteHeader() {
                     <DropdownMenuTrigger asChild>
                       <button
                         className={`group relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none ${groupActive
-                            ? "text-[var(--ck-role-accent)] dark:text-orange-400"
-                            : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-orange-400"
+                            ? "text-[var(--ck-role-accent)]"
+                            : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                           }`}
                       >
                         {groupActive && (
@@ -621,7 +621,7 @@ export function SiteHeader() {
                         <DropdownMenuItem key={item.href} asChild>
                           <Link
                             href={item.href}
-                            className={isActive(item.href) ? "text-[var(--ck-role-accent)] dark:text-orange-400" : ""}
+                            className={isActive(item.href) ? "text-[var(--ck-role-accent)]" : ""}
                           >
                             {item.label}
                           </Link>
@@ -639,8 +639,8 @@ export function SiteHeader() {
                   href={link.href}
                   data-tour={link.href === "/requests" ? "nav-requests" : undefined}
                   className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
-                      ? "text-[var(--ck-role-accent)] dark:text-orange-400"
-                      : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-orange-400"
+                      ? "text-[var(--ck-role-accent)]"
+                      : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                     }`}
                 >
                   {active && (
@@ -699,7 +699,7 @@ export function SiteHeader() {
                 tintOpacity={1}
                 textColor="#ffffff"
                 lineColor={roleColors.highlight}
-                baseColor="#7a3410"
+                baseColor={roleColors.deep}
                 intensity={1}
                 shineSize={14}
                 shineFade={35}
@@ -754,7 +754,7 @@ export function SiteHeader() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] dark:text-orange-400 uppercase">
+                  <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
                     {user.email[0]}
                   </div>
                 )}

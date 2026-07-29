@@ -40,7 +40,7 @@ export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) 
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 h-8 rounded-full px-2.5 text-xs font-bold border border-stone-200 dark:border-stone-700 hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors text-stone-700 dark:text-stone-300"
+        className="flex items-center gap-1 h-8 rounded-full px-2.5 text-xs font-bold border border-stone-200 dark:border-stone-700 hover:bg-[var(--ck-role-soft)] dark:hover:bg-zinc-800 transition-colors text-stone-700 dark:text-stone-300"
         title="Select language"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -68,7 +68,7 @@ export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) 
                 onClick={() => select(code)}
                 className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                   locale === code
-                    ? "bg-orange-50 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] font-semibold"
+                    ? "bg-[var(--ck-role-soft)] dark:bg-zinc-800 text-[var(--ck-role-accent)] font-semibold"
                     : "text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800"
                 }`}
               >

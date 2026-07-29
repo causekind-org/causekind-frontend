@@ -112,7 +112,7 @@ export default function LocationPinPicker({ lat, lng, onChange }: LocationPinPic
           type="button"
           onClick={useMyLocation}
           disabled={locating}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#b04a15]/30 bg-[#b04a15]/5 px-3 py-1.5 text-xs font-semibold text-[#b04a15] transition-colors hover:bg-[#b04a15]/10 disabled:opacity-70 dark:border-orange-300/30 dark:bg-orange-300/10 dark:text-orange-300 dark:hover:bg-orange-300/20"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--handover-accent)]/30 bg-[var(--handover-accent)]/5 px-3 py-1.5 text-xs font-semibold text-[var(--handover-accent)] transition-colors hover:bg-[var(--handover-accent)]/10 disabled:opacity-70"
         >
           {locating ? (
             <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Locating…</>
