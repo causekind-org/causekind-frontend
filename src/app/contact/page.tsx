@@ -11,17 +11,17 @@ export default function ContactPage() {
     "@type": "ContactPage",
     "name": "Contact — CauseKind",
     "description": "Reach the CauseKind team directly by email, phone, or WhatsApp — no bots, no middlemen.",
-    "url": "https://causekind.com/contact",
+    "url": "https://www.causekind.com/contact",
     "mainEntity": {
       "@type": "Organization",
       "name": "CauseKind",
-      "url": "https://causekind.com",
-      "logo": "https://causekind.com/logo-filled.webp",
+      "url": "https://www.causekind.com",
+      "logo": "https://www.causekind.com/logo-filled.webp",
       "contactPoint": {
         "@type": "ContactPoint",
         "contactType": "customer support",
         "email": "support@causekind.com",
-        "url": "https://causekind.com/contact"
+        "url": "https://www.causekind.com/contact"
       }
     }
   };

@@ -23,24 +23,24 @@ export default async function HomePage() {
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://causekind.com/#organization",
+        "@id": "https://www.causekind.com/#organization",
         "name": "CauseKind",
-        "url": "https://causekind.com",
-        "logo": "https://causekind.com/logo-filled.webp",
-        "image": "https://causekind.com/logo-filled.webp",
+        "url": "https://www.causekind.com",
+        "logo": "https://www.causekind.com/logo-filled.webp",
+        "image": "https://www.causekind.com/logo-filled.webp",
         "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs."
       },
       {
         "@type": "WebSite",
-        "@id": "https://causekind.com/#website",
-        "url": "https://causekind.com",
+        "@id": "https://www.causekind.com/#website",
+        "url": "https://www.causekind.com",
         "name": "CauseKind",
         "publisher": {
-          "@id": "https://causekind.com/#organization"
+          "@id": "https://www.causekind.com/#organization"
         },
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://causekind.com/blog?q={search_term_string}",
+          "target": "https://www.causekind.com/blog?q={search_term_string}",
           "query-input": "required name=search_term_string"
         }
       }
