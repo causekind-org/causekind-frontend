@@ -20,12 +20,12 @@ export default async function AboutPage() {
     "@type": "AboutPage",
     "name": "About Us — CauseKind",
     "description": "Learn about CauseKind's mission, story, and how we facilitate verified in-kind donations.",
-    "url": "https://causekind.com/about",
+    "url": "https://www.causekind.com/about",
     "mainEntity": {
       "@type": "Organization",
       "name": "CauseKind",
-      "url": "https://causekind.com",
-      "logo": "https://causekind.com/logo-filled.webp",
+      "url": "https://www.causekind.com",
+      "logo": "https://www.causekind.com/logo-filled.webp",
       "description": "Connecting kind hearts directly with verified needs."
     }
   };

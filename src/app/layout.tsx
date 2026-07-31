@@ -58,6 +58,7 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.causekind.com"),
   title: "CauseKind — Give With Purpose",
   description: "Discover and support verified charity campaigns.",
   icons: { icon: "/logo-filled.webp" },
