@@ -1,14 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useNearFooter } from "@/hooks/useNearFooter";
 // @ts-expect-error — GradualBlur is the JS/CSS React Bits variant (no types shipped)
 import GradualBlur from "@/components/GradualBlur";
-
-// How close (px) to the page bottom before the blur fades out. Roughly the
-// blur's own max height plus a little, so the fade finishes right as the footer
-// content clears the blurred band.
-const FADE_THRESHOLD = 95;
 
 /**
  * Band heights, per screen class.
@@ -19,61 +14,41 @@ const FADE_THRESHOLD = 95;
  * while the bar is showing. `dvh` tracks the live visible viewport, so the band
  * re-sizes itself as the browser chrome collapses and expands.
  *
- * <p><b>Plus the safe-area inset.</b> Without it the band stops short of the
- * physical bottom edge on notched phones and the home-indicator strip is left
- * unblurred — the band looks detached from the end of the screen. Adding the
- * inset to the HEIGHT (the element is already pinned to `bottom: 0`) extends it
- * down into that strip so it always finishes flush.
+ * <p><b>Plus `--ck-bottom-chrome`.</b> That token (styles.css) is everything the
+ * floating navbar occupies measured from the physical screen edge upward — its
+ * float gap, the safe-area inset and its own height. Adding it means the fade
+ * can only ever BEGIN above the navbar. Sized as a bare band instead, the blur
+ * ended in mid-air just above the bar and the strip of page scrolling below the
+ * bar stayed sharp, which is what made the nav look like it floated mid-page.
+ *
+ * <p>The element stays pinned to `bottom: 0`, so the extra height also carries
+ * it down through the home-indicator strip and it always finishes flush.
  */
 const band = (min: string, dvh: string, max: string) =>
-  `calc(clamp(${min}, ${dvh}, ${max}) + env(safe-area-inset-bottom, 0px))`;
+  `calc(var(--ck-bottom-chrome) + clamp(${min}, ${dvh}, ${max}))`;
 
-const BAND_MOBILE = band("1rem", "5dvh", "2.5rem");     // <= 480px
-const BAND_TABLET = band("1.25rem", "5.5dvh", "3rem");  // <= 768px
+const BAND_MOBILE = band("0.75rem", "3dvh", "2rem");    // <= 480px
+const BAND_TABLET = band("1rem", "3.5dvh", "2.25rem");  // <= 768px
 const BAND_DESKTOP = band("1.5rem", "6dvh", "3.5rem");  // <= 1024px
 const BAND_WIDE = band("1.5rem", "6dvh", "3.5rem");     // > 1024px
 
-/* Site-wide bottom fade — but suppressed on the admin / super-admin panels
-   (their own dark dashboard chrome), and faded out once the user reaches the
-   very bottom of the page so it stops covering the real footer content. */
+/* Site-wide bottom fade — suppressed on the admin / super-admin panels (their
+   own dark dashboard chrome), and slid out of the way as the footer arrives so
+   it never blurs the real footer content. */
 export function SiteBottomBlur() {
   const pathname = usePathname();
-  const [atBottom, setAtBottom] = useState(false);
 
-  useEffect(() => {
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      // `visualViewport.height` is the area actually on screen. `innerHeight`
-      // does not shrink while the mobile URL bar is showing, so the old test was
-      // off by the height of that bar and the fade triggered at the wrong point.
-      const viewportH = window.visualViewport?.height ?? window.innerHeight;
-      const scrollBottom = viewportH + window.scrollY;
-      const distanceFromBottom = document.documentElement.scrollHeight - scrollBottom;
-      setAtBottom(distanceFromBottom <= FADE_THRESHOLD);
-    };
-    const onScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(update);
-    };
-
-    update(); // set initial state (e.g. short pages already at the bottom)
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    // Showing/hiding the mobile URL bar resizes the visual viewport WITHOUT
-    // always firing a window `resize`, notably on iOS Safari. Without these the
-    // band keeps the measurements it took under the old chrome height.
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", onScroll);
-    vv?.addEventListener("scroll", onScroll);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      vv?.removeEventListener("resize", onScroll);
-      vv?.removeEventListener("scroll", onScroll);
-    };
-  }, [pathname]);
+  /**
+   * The SAME signal the mobile navbar uses, so the two bottom-anchored elements
+   * agree about when the footer is near and leave/return together.
+   *
+   * <p>This replaces a hardcoded 95px scroll threshold plus `scroll`, `resize`
+   * and two `visualViewport` listeners that existed only to keep that guess
+   * honest across screen sizes and a collapsing mobile URL bar. An
+   * IntersectionObserver needs none of that: it measures nothing and has no
+   * threshold to re-tune, so it is correct at any screen or browser size.
+   */
+  const nearFooter = useNearFooter();
 
   const isAdminSurface =
     pathname?.startsWith("/admin") || pathname?.startsWith("/super-admin");
@@ -98,8 +73,11 @@ export function SiteBottomBlur() {
       opacity={1}
       style={{
         zIndex: 40,
-        opacity: atBottom ? 0 : 1,
-        transition: "opacity 0.35s ease",
+        // Slides as well as fades, on the same 300ms ease-in-out as the navbar
+        // so the two never visibly separate on the way out or back.
+        opacity: nearFooter ? 0 : 1,
+        transform: nearFooter ? "translateY(100%)" : "translateY(0)",
+        transition: "opacity 300ms ease-in-out, transform 300ms ease-in-out",
       }}
     />
   );

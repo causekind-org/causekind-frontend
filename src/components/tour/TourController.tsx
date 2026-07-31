@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import GuidedTour from "./GuidedTour";
-import { DASHBOARD_TOUR, HOME_TOUR, PROFILE_TOUR, type TourRole, type TourStep } from "./tourSteps";
+import { DASHBOARD_TOUR, GUEST_HOME_TOUR, HOME_TOUR, PROFILE_TOUR, type TourRole, type TourStep } from "./tourSteps";
 
 // Orchestrates WHEN the first-time tour shows. Show-once state follows the
 // LocationGate pattern: a per-user localStorage flag, set on finish OR skip.
@@ -14,12 +14,18 @@ import { DASHBOARD_TOUR, HOME_TOUR, PROFILE_TOUR, type TourRole, type TourStep }
 const homeKey = (email: string) => `ck_tour_home_${email}`;
 const dashKey = (email: string) => `ck_tour_dash_${email}`;
 const profileKey = (email: string) => `ck_tour_profile_${email}`;
+/** No email to key on for a visitor with no account. */
+const GUEST_HOME_KEY = "ck_tour_guest_home";
+
+/** The guest tour's anchors only exist in the mobile tree (`lg:hidden`). */
+const isMobileViewport = () => window.matchMedia("(max-width: 1023px)").matches;
 
 // Which route each tour part belongs to — leaving the route closes the tour.
 const KEY_ROUTE: [prefix: string, route: string][] = [
   ["ck_tour_home_", "/"],
   ["ck_tour_dash_", "/dashboard"],
   ["ck_tour_profile_", "/profile"],
+  [GUEST_HOME_KEY, "/"],
 ];
 
 // True when no other load-time overlay (welcome, donor category picker) is on
@@ -27,7 +33,12 @@ const KEY_ROUTE: [prefix: string, route: string][] = [
 function gatesClear(): boolean {
   return (
     !document.querySelector(".ck-cat-backdrop-el") &&
-    sessionStorage.getItem("ck_welcome_pending") !== "1"
+    sessionStorage.getItem("ck_welcome_pending") !== "1" &&
+    // The guest-facing load-time overlay. WelcomeOverlay bails out entirely when
+    // there is no user, so for a visitor the cookie banner is the one thing that
+    // can still be on screen. It exposes no stable DOM marker, so its stored
+    // answer is the signal that it has been dealt with.
+    localStorage.getItem("ck_cookie_consent") !== null
   );
 }
 
@@ -115,10 +126,43 @@ export default function TourController() {
     return () => clearInterval(poll);
   }, [isLoading, user, role, pathname]);
 
+  // ── Auto-trigger: logged-out landing page, mobile only ────────────────────
+  useEffect(() => {
+    if (isLoading || user || pathname !== "/") return;
+    if (!isMobileViewport()) return;
+    if (localStorage.getItem(GUEST_HOME_KEY)) return;
+
+    // Poll for the anchors rather than guessing a delay: the landing page's
+    // sections mount progressively, and the cookie banner has to be answered
+    // first. Same shape as the dashboard branch below.
+    let tries = 0;
+    const poll = setInterval(() => {
+      tries += 1;
+      if (document.querySelector('[data-tour="guest-hero"]') && gatesClear()) {
+        clearInterval(poll);
+        setTimeout(() => {
+          if (!localStorage.getItem(GUEST_HOME_KEY) && gatesClear()) {
+            setActive({ steps: GUEST_HOME_TOUR, key: GUEST_HOME_KEY });
+          }
+        }, 600);
+      } else if (tries > 60) {
+        clearInterval(poll);   // never got a clear stage — try next visit
+      }
+    }, 250);
+    return () => clearInterval(poll);
+  }, [isLoading, user, pathname]);
+
   // ── Manual replay ("Take the tour again" in the workspace drawer) ─────────
   useEffect(() => {
     function onReplay() {
-      if (!user || !role) return;
+      if (!user || !role) {
+        // Guest: only the landing tour exists, and only on mobile.
+        if (!user && pathname === "/" && isMobileViewport()) {
+          localStorage.removeItem(GUEST_HOME_KEY);
+          setActive({ steps: GUEST_HOME_TOUR, key: GUEST_HOME_KEY });
+        }
+        return;
+      }
       localStorage.removeItem(homeKey(user.email));
       localStorage.removeItem(dashKey(user.email));
       localStorage.removeItem(profileKey(user.email));
@@ -145,7 +189,7 @@ export default function TourController() {
     });
   }, [pathname]);
 
-  if (!active || !role) return null;
+  if (!active) return null;
 
   return (
     <GuidedTour

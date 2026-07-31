@@ -9,6 +9,7 @@ import { searchBlogPosts } from "@/lib/blogSearch";
 import { AnimatedWrapper } from "../../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
 import { Search, X } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { blogPosts } from "../../../data/blogData";
 
 
@@ -418,7 +419,7 @@ export default function BlogReadingPage({ params }: PageProps) {
   };
 
   return (
-    <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-24`}>
+    <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-4 md:pt-16 lg:pt-24`}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(postSchemaData) }}
@@ -427,7 +428,7 @@ export default function BlogReadingPage({ params }: PageProps) {
       <main className="pb-24">
         <article>
           {/* Back button */}
-          <div className="max-w-[1280px] mx-auto px-6 mb-6">
+          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 mb-4 md:mb-6">
             <Link
               href="/blog"
               className="inline-flex items-center gap-1.5 text-sm font-bold text-stone-600 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-orange-400 transition-colors group"
@@ -436,18 +437,18 @@ export default function BlogReadingPage({ params }: PageProps) {
             </Link>
           </div>
           {/* Hero Section — contained card */}
-          <div className="max-w-[1280px] mx-auto px-gutter pt-10 pb-10">
+          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 pt-6 pb-6 md:pt-10 md:pb-10">
             {/* Image card */}
             <AnimatedWrapper delay={0} duration={0.6} direction="up">
-              <div className="relative w-full h-[420px] rounded-2xl overflow-hidden shadow-xl mb-10">
+              <div className="relative w-full aspect-[16/10] md:aspect-auto md:h-[420px] rounded-2xl overflow-hidden shadow-xl mb-6 md:mb-10">
                 <div
-                  className="absolute inset-0 bg-cover bg-center w-full h-full scale-105 transform origin-center"
+                  className="absolute inset-0 bg-cover bg-center w-full h-full scale-100 md:scale-105 transform origin-center"
                   style={{ backgroundImage: `url('${post.image}')` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                 {/* Category badge overlaid bottom-left — links back to the
                     listing page pre-filtered to this category */}
-                <div className="absolute top-5 left-5">
+                <div className="absolute top-3 left-3 md:top-5 md:left-5">
                   <Link
                     href={`/blog?category=${encodeURIComponent(post.category)}`}
                     className="inline-block px-3 py-1 bg-orange-300 hover:bg-orange-200 text-orange-900 font-label-sm text-xs rounded-full uppercase tracking-wider font-semibold transition-colors"
@@ -461,7 +462,7 @@ export default function BlogReadingPage({ params }: PageProps) {
             {/* Article meta below the image */}
             <div className="max-w-3xl">
               <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
-                <h1 className="font-display-lg text-[#b04a15] dark:text-[#e07b3a] mb-4 leading-tight text-4xl md:text-5xl font-bold">
+                <h1 className="font-display-lg text-[#b04a15] dark:text-[#e07b3a] mb-4 leading-tight text-[26px] sm:text-4xl md:text-5xl font-bold break-words">
                   {displayTitle}
                 </h1>
               </AnimatedWrapper>
@@ -470,11 +471,18 @@ export default function BlogReadingPage({ params }: PageProps) {
                   {displayDescription}
                 </p>
               </AnimatedWrapper>
+
+              {/* Reading controls are otherwise `hidden md:block` in the left
+                  sidebar, so a phone reader had no way to switch language on a
+                  post at all. Surfaced here on every post, mobile only. */}
+              <div className="md:hidden mb-6 flex">
+                <LanguageSwitcher />
+              </div>
             </div>
           </div>
 
           {/* Content Grid Layout */}
-          <div className="max-w-[1280px] mx-auto px-gutter grid grid-cols-1 md:grid-cols-12 gap-12 relative">
+          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-12 relative">
             {/* Left Sidebar: Reading Tools & Social */}
             <motion.aside
               className="hidden md:block md:col-span-3 lg:col-span-2 relative"

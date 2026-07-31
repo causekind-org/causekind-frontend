@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
 import { FEATURES } from "@/lib/features";
 import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
+import { useNearFooter } from "@/hooks/useNearFooter";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
 export function MobileBottomNav() {
@@ -15,6 +16,9 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
+  // Shared with SiteBottomBlur, so the two bottom-anchored elements agree about
+  // when the footer is near and leave/return together instead of drifting.
+  const nearFooter = useNearFooter();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,13 +71,24 @@ export function MobileBottomNav() {
 
   return (
     <nav
+      // `inert` while parked: the links leave the tab order too, so keyboard
+      // focus cannot land on a bar that is off-screen.
+      inert={nearFooter}
       className={`fixed z-50 lg:hidden transition-all duration-300 ease-in-out
         ${scrolled
           ? "left-4 right-4 rounded-[2rem] border border-stone-200/70 dark:border-zinc-700/60 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl backdrop-saturate-150 shadow-xl py-2"
           : "left-0 right-0 border-t border-[#e5e2d5]/60 dark:border-zinc-800/60 bg-[#faf8f3]/50 dark:bg-zinc-950/50 backdrop-blur-xl backdrop-saturate-150 pb-safe-bottom pt-2 pb-3 shadow-md"
         }`}
       style={{
-        bottom: scrolled ? "calc(1rem + env(safe-area-inset-bottom, 0px))" : "0px",
+        // Shared with the bottom blur via --ck-bottom-chrome, so the blur always
+        // knows how far up the bar reaches and can start its fade above it.
+        bottom: scrolled ? "calc(var(--ck-nav-float) + var(--ck-bottom-inset))" : "0px",
+        // Travel derived from --ck-bottom-chrome (float + safe-area inset + bar
+        // height) rather than a guessed pixel value, so the bar clears itself
+        // exactly on a notched phone and on a plain one alike.
+        transform: nearFooter
+          ? "translateY(calc(var(--ck-bottom-chrome) + 1.5rem))"
+          : "translateY(0)",
       }}
       aria-label={t("mobileNavAriaLabel")}
     >

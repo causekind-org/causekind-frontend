@@ -41,8 +41,8 @@ function PosterFace({ gradient, title, Illustration }: { gradient: string; title
     <div style={{
       position: "relative", width: "100%", height: "100%", background: gradient,
       borderRadius: "inherit", display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center", gap: "8px",
-      padding: "24px 16px 20px", overflow: "hidden",
+      alignItems: "center", justifyContent: "center", gap: "var(--ck-poster-gap, 8px)",
+      padding: "var(--ck-poster-pad, 24px 16px 20px)", overflow: "hidden",
     }}>
       <div aria-hidden="true" style={{
         position: "absolute", inset: 0,
@@ -52,18 +52,19 @@ function PosterFace({ gradient, title, Illustration }: { gradient: string; title
       <Stamp />
       {/* Same bespoke line-art scene shown inside the modal — a real illustration
           rather than a stock heart glyph floating in a colored square. */}
-      <div style={{ width: "104px", height: "78px", opacity: 0.95 }}>
+      <div style={{ width: "var(--ck-illo-w, 104px)", height: "var(--ck-illo-h, 78px)", opacity: 0.95 }}>
         <Illustration />
       </div>
       <p style={{
         margin: 0, color: CREAM, fontWeight: 800,
-        fontSize: "clamp(15px, 4vw, 18px)", textAlign: "center" as const,
+        fontSize: "var(--ck-poster-title, clamp(15px, 4vw, 18px))", textAlign: "center" as const,
         lineHeight: 1.25, letterSpacing: "-0.01em",
         textShadow: "0 1px 4px rgba(0,0,0,0.35)", zIndex: 1,
       }}>{title}</p>
       <p style={{
         margin: 0, color: GOLD, fontWeight: 700, fontSize: "9px",
         letterSpacing: "0.2em", textTransform: "uppercase" as const, zIndex: 1,
+        display: "var(--ck-poster-brand, block)",
       }}>CauseKind</p>
     </div>
   );
@@ -180,13 +181,15 @@ interface CardDef {
   gradient: string;
   tapeColor: string;
   baseRotation: number;
+  /** How far down this card hangs, in multiples of `--ck-stagger`. */
+  stagger: number;
   floatDelay: string;
 }
 
 const CARDS: CardDef[] = [
-  { title: "Fundraising Campaigns", gradient: `linear-gradient(145deg, ${TERRACOTTA} 0%, ${COPPER} 100%)`,          tapeColor: CREAM, baseRotation: -3,   floatDelay: "0s"   },
-  { title: "Online Donations",      gradient: `linear-gradient(145deg, ${INK} 0%, ${TERRACOTTA} 100%)`,             tapeColor: GOLD,  baseRotation:  2,   floatDelay: "1.4s" },
-  { title: "CSR Partnerships",      gradient: `linear-gradient(145deg, #14532d 0%, #166534 45%, #15803d 100%)`,     tapeColor: GOLD,  baseRotation: -1.5, floatDelay: "2.6s" },
+  { title: "Fundraising Campaigns", gradient: `linear-gradient(145deg, ${TERRACOTTA} 0%, ${COPPER} 100%)`,          tapeColor: CREAM, baseRotation: -5,   stagger: 0,   floatDelay: "0s"   },
+  { title: "Online Donations",      gradient: `linear-gradient(145deg, ${INK} 0%, ${TERRACOTTA} 100%)`,             tapeColor: GOLD,  baseRotation:  4,   stagger: 1.5, floatDelay: "1.4s" },
+  { title: "CSR Partnerships",      gradient: `linear-gradient(145deg, #14532d 0%, #166534 45%, #15803d 100%)`,     tapeColor: GOLD,  baseRotation: -2.5, stagger: 0.6, floatDelay: "2.6s" },
 ];
 
 /* ─── Modal ──────────────────────────────────────────────────────────────── */
@@ -485,7 +488,11 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       style={{
-        position: "relative", width: "220px", height: "280px", flexShrink: 0, marginTop: "20px",
+        position: "relative", width: "var(--ck-card-w, 220px)", height: "var(--ck-card-h, 280px)", flexShrink: 0,
+        marginTop: `calc(var(--ck-card-mt, 20px) + ${card.stagger} * var(--ck-stagger, 26px))`,
+        // Real overlap, which a flex `gap` cannot express — the smallest a gap
+        // can be is 0, so only a negative margin puts one card ON another.
+        marginLeft: idx === 0 ? 0 : "calc(-1 * var(--ck-magnet-overlap, 36px))",
         cursor: isDragging ? "grabbing" : "grab",
         userSelect: "none", touchAction: "none",
         zIndex: isDragging ? 20 : 1,
@@ -498,20 +505,6 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
       <div style={{ width: "100%", height: "100%", borderRadius: "14px", overflow: "hidden", border: "2px solid rgba(255,255,255,0.18)" }}>
         <PosterFace gradient={card.gradient} title={card.title} Illustration={CARD_DETAILS[idx].Illustration} />
       </div>
-      {/* Ripple rings — two staggered rings per card for a continuous, smooth pulse */}
-      {!reducedMotion && [0, 1].map((n) => (
-        <div
-          key={n}
-          aria-hidden
-          style={{
-            position: "absolute", inset: "-5px", borderRadius: "19px",
-            border: `2px solid ${CARD_DETAILS[idx].accent}`,
-            animation: `ck-ripple 2.8s cubic-bezier(0.25,0.55,0.4,1) ${0.6 + idx * 0.45 + n * 1.4}s infinite`,
-            pointerEvents: "none", zIndex: 5, opacity: 0,
-            willChange: "transform, opacity",
-          }}
-        />
-      ))}
     </div>
   );
 }
@@ -533,8 +526,8 @@ export function ComingSoonMagnets() {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 overflow-hidden"
-      style={{ padding: "80px 24px 96px" }}
+      className="ck-magnets relative w-full bg-[#faf8f5] dark:bg-zinc-950 overflow-hidden"
+      style={{ padding: "var(--ck-magnets-pad, 80px 24px 96px)" }}
     >
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ck-float {
@@ -560,15 +553,43 @@ export function ComingSoonMagnets() {
           from { opacity: 1; transform: translate(-50%, -50%) perspective(1100px) rotateY(0deg) scale(1); }
           to   { opacity: 0; transform: translate(-50%, -50%) perspective(1100px) rotateY(-80deg) scale(0.75); }
         }
+        /* Every hardcoded px size in this section is expressed as a var so the
+           mobile step is defined ONCE here instead of being threaded through a
+           dozen inline styles. Three cards cannot go two-up without orphaning
+           the third, so they shrink to fit three across rather than stacking
+           into three screens of scrolling. */
+        @media (max-width: 640px) {
+          .ck-magnets {
+            --ck-magnets-pad: 40px 16px 48px;
+            --ck-card-w: 132px;  --ck-card-h: 168px;  --ck-card-mt: 12px;
+            --ck-stagger: 14px;
+            /* 3x132 - 2x26 = 344px, inside a 390px phone's 358px content box. */
+            --ck-magnet-overlap: 26px;
+            --ck-poster-pad: 14px 8px 12px;  --ck-poster-gap: 5px;
+            --ck-illo-w: 62px;   --ck-illo-h: 47px;
+            --ck-poster-title: 11px;
+          }
+        }
+        /* 3x132 + 2x10 = 416px, wider than a 390px phone's content box — so the
+           smallest tier shrinks again rather than overflowing. */
+        /* 380, not 400: a 390px phone now clears the tier above, so it gets the
+           larger 132px cards instead of the cramped ones. The overlap is what
+           buys that room back. */
+        @media (max-width: 380px) {
+          .ck-magnets {
+            --ck-card-w: 108px;  --ck-card-h: 138px;
+            --ck-stagger: 9px;
+            /* 3x108 - 2x22 = 280px, inside a 320px phone's 288px content box. */
+            --ck-magnet-overlap: 22px;
+            --ck-illo-w: 50px;   --ck-illo-h: 38px;
+            --ck-poster-title: 10px;
+            --ck-poster-brand: none;
+          }
+        }
         @media (max-width: 580px) {
           .ck-modal-split { flex-direction: column !important; }
           .ck-modal-left  { width: 100% !important; min-height: 200px !important; flex: none !important; }
           .ck-modal-right { padding: 24px 20px 28px !important; }
-        }
-        @keyframes ck-ripple {
-          0%   { opacity: 0;    transform: scale(0.98); }
-          18%  { opacity: 0.55; }
-          100% { opacity: 0;    transform: scale(1.22); }
         }
         @keyframes ck-blob-a {
           0%, 100% { transform: translate(0, 0) scale(1); }
@@ -659,7 +680,7 @@ export function ComingSoonMagnets() {
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center" style={{ gap: "clamp(48px, 7vw, 110px)" }}>
+      <div className="flex flex-row items-start justify-center">
         {CARDS.map((card, i) => (
           <MagnetCard
             key={card.title}

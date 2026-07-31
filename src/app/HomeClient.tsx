@@ -101,7 +101,7 @@ function MobileHeroSlider() {
   // (1.6 / 1.4545 = 1.1), so the Hero grows downward without touching its
   // left/right alignment with the Be the Change panel beneath it.
   return (
-    <section className="relative w-full aspect-[16/11] min-h-[231px] rounded-[2rem] overflow-hidden shadow-[0_14px_30px_-16px_rgba(0,0,0,0.45)] mt-1">
+    <section data-tour="guest-hero" className="relative w-full aspect-[16/11] min-h-[231px] rounded-[2rem] overflow-hidden shadow-[0_14px_30px_-16px_rgba(0,0,0,0.45)] mt-1">
       <div className="absolute inset-0 w-full h-full">
         <Image
           key={idx}
@@ -446,7 +446,7 @@ export default function HomeClient({
             <MobileHeroSlider />
           </div>
           {heroTouchesBeTheChange && (
-            <BeTheChangeSection initialStats={stats} overlapHero />
+            <BeTheChangeSection initialStats={stats} overlapHero tourAnchors />
           )}
         </div>
 
@@ -502,7 +502,15 @@ export default function HomeClient({
 
         {/* Be the Change — only here when the Campaigns rail separates it from
             the Hero; otherwise it is rendered above, inside the layered wrapper. */}
-        {!heroTouchesBeTheChange && <BeTheChangeSection initialStats={stats} />}
+        {!heroTouchesBeTheChange && <BeTheChangeSection initialStats={stats} tourAnchors />}
+
+        {/* Coming soon magnets — previously desktop-only. The section sizes
+            itself down through its own CSS vars, so the same component serves
+            both branches rather than a mobile-specific copy. The negative
+            margins cancel this column's px-4 so it can use its own padding. */}
+        <div className="-mx-4">
+          <ComingSoonMagnets />
+        </div>
       </div>
     </div>
   );
