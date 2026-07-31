@@ -272,6 +272,7 @@
       "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
     },
     "register": {
+      "spamFolderHint": "Vous ne trouvez pas le code dans votre boîte de réception ? Vérifiez votre dossier Spam ou Courrier indésirable. Les e-mails de vérification y arrivent parfois.",
       "title": "Créez votre compte",
       "subtitle": "Rejoignez CauseKind et commencez à faire une différence.",
       "joinTitle": "Rejoignez CauseKind",

@@ -1,156 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone } from "lucide-react";
+import { MessageCircle, X, Mail, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
-import { FEATURES } from "@/lib/features";
 import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
+import { MOBILE_NAV_CLEARANCE } from "./MobileBottomNav";
 
-/* ─── Mobile bottom nav ─────────────────────────────────────────── */
-export function MobileBottomNav() {
-  const t = useTranslations("mobileNav");
-  const pathname = usePathname();
-  const { user } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
-
-  // Centre + button — smart routing based on feature flag + role
-  const centerHref = FEATURES.money
-    ? "/donate"
-    : user?.role === "DONOR"
-      ? "/items/new"
-      : user?.role === "DONEE"
-        ? "/requests/new"
-        : "/register";
-  const centerLabel = FEATURES.money
-    ? t("donateNow")
-    : user?.role === "DONOR"
-      ? "List Item"
-      : user?.role === "DONEE"
-        ? "Post Need"
-        : "Join";
-
-  const tabs = [
-    { href: "/",          icon: Home,          label: t("home") },
-    { href: "/campaigns", icon: Megaphone,     label: t("campaigns") },
-    { href: "/requests",  icon: ClipboardList, label: t("requests") },
-    { href: user ? "/profile" : "/login", icon: User, label: t("profile") },
-  ];
-
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
-    if (href === "/profile" || href === "/dashboard" || href === "/admin/dashboard") {
-      return pathname.startsWith("/profile") || pathname.startsWith("/dashboard") || pathname.startsWith("/admin/dashboard");
-    }
-    return pathname.startsWith(href);
-  };
-
-  // Hidden inside the super-admin command center and admin dashboard (by path or role).
-  if (
-    pathname?.startsWith("/super-admin") ||
-    pathname?.startsWith("/admin/dashboard") ||
-    user?.role === "SUPER_ADMIN"
-  ) return null;
-
-  return (
-    <nav
-      className={`fixed z-50 lg:hidden transition-all duration-300 ease-in-out
-        ${scrolled
-          ? "left-4 right-4 rounded-[2rem] border border-stone-200/70 dark:border-zinc-700/60 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg backdrop-saturate-150 shadow-xl py-2"
-          : "left-0 right-0 border-t border-[#e5e2d5] dark:border-zinc-800 bg-[#faf8f3] dark:bg-zinc-950 pb-safe-bottom pt-2 pb-3 shadow-md"
-        }`}
-      style={{
-        bottom: scrolled ? "calc(1rem + env(safe-area-inset-bottom, 0px))" : "0px",
-      }}
-      aria-label={t("mobileNavAriaLabel")}
-    >
-      <div className="flex items-center justify-around px-2">
-
-        {/* Home */}
-        <Link href={tabs[0].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-          <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[0].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-            <Home className="w-5.5 h-5.5" />
-          </span>
-          <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[0].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-            Home
-          </span>
-        </Link>
-
-        {FEATURES.money && (
-          /* Campaigns tab — only shown when money feature is enabled */
-          <Link href={tabs[1].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-            <span className={`flex items-center justify-center transition-all duration-200
-              ${isActive(tabs[1].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-              <Megaphone className="w-5.5 h-5.5" />
-            </span>
-            <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-              ${isActive(tabs[1].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-              Campaigns
-            </span>
-          </Link>
-        )}
-
-        {/* Centre + button — always visible, smart route based on role */}
-        <Link
-          href={centerHref}
-          aria-label={centerLabel}
-          className={`relative -mt-4 flex items-center justify-center w-12 h-12 rounded-full
-                     bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)]
-                     shadow-[0_6px_20px_-3px_rgba(176,74,21,0.55)]
-                     border-2 active:scale-95 transition-all duration-150 shrink-0
-                     ${scrolled ? "border-[#faf8f3]/50 dark:border-zinc-950/50" : "border-[#faf8f3] dark:border-zinc-950"}`}
-        >
-          <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-white" strokeWidth={3}>
-            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeLinecap="round" />
-          </svg>
-        </Link>
-
-        {user && (
-          /* Requests tab — hidden for logged-out visitors (the page itself
-             redirects to login anyway; no point showing the entry point). */
-          <Link href={tabs[2].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-            <span className={`flex items-center justify-center transition-all duration-200
-              ${isActive(tabs[2].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-              <ClipboardList className="w-5.5 h-5.5" />
-            </span>
-            <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-              ${isActive(tabs[2].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-              Requests
-            </span>
-          </Link>
-        )}
-
-        {/* Profile */}
-        <Link href={tabs[3].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-          <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[3].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-            <User className="w-5.5 h-5.5" />
-          </span>
-          <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[3].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-            Profile
-          </span>
-        </Link>
-
-      </div>
-    </nav>
-  );
-}
+/* ─── Mobile bottom nav ─────────────────────────────────────────────
+   Moved to ./MobileBottomNav so the moving-cradle geometry, the ordered
+   destination array and the route matcher live in one focused file. Re-exported
+   here so existing import sites keep working. ── */
+export { MobileBottomNav, MOBILE_NAV_CLEARANCE } from "./MobileBottomNav";
 
 /* ─── Floating support / chat button (mobile + desktop) ─────────── */
 export function FloatingSupportButton() {
@@ -198,6 +60,17 @@ export function FloatingSupportButton() {
     user?.role === "SUPER_ADMIN"
   ) return null;
 
+  /**
+   * Sit above whatever bottom bar this route actually has.
+   *
+   * <p>Derived from MOBILE_NAV_CLEARANCE rather than a hardcoded rem value, so
+   * changing the nav's height moves this button with it instead of silently
+   * overlapping. Handover routes hide the global nav and show their own shorter
+   * action bar, so the button drops closer to the edge there.
+   */
+  const onHandover = /\/handover(\/|$)/.test(pathname ?? "");
+  const supportOffset = (onHandover ? 64 : MOBILE_NAV_CLEARANCE) + 20;
+
   return (
     <>
       {/* Backdrop */}
@@ -211,7 +84,8 @@ export function FloatingSupportButton() {
 
       {/* Popover panel */}
       <div
-        className={`floating-support-item fixed bottom-[9.5rem] right-5 lg:bottom-24 z-50 w-60
+        style={{ bottom: `calc(${supportOffset}px + 3.75rem)` }}
+        className={`floating-support-item fixed right-5 lg:!bottom-24 z-50 w-60
           bg-white/75 dark:bg-zinc-900/70 backdrop-blur-md
           rounded-2xl shadow-2xl border border-white/50 dark:border-white/10
           transition-all duration-300 origin-bottom-right
@@ -253,7 +127,8 @@ export function FloatingSupportButton() {
       <button
         onClick={() => setOpen(v => !v)}
         aria-label={open ? t("closeSupport") : t("openSupport")}
-        className={`floating-support-item fixed bottom-[7.25rem] right-5 lg:bottom-8 z-50
+        style={{ bottom: `${supportOffset}px` }}
+        className={`floating-support-item fixed right-5 lg:!bottom-8 z-50
                    w-13 h-13 rounded-full
                    bg-[#1e3a60]/65 backdrop-blur-md
                    shadow-[0_8px_32px_-4px_rgba(30,58,96,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]

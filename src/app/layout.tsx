@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
 import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
-import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
+import { MobileBottomNav, FloatingSupportButton, MOBILE_NAV_CLEARANCE } from "@/components/MobileUI";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
 import { LocationGate } from "@/components/LocationGate";
@@ -107,34 +107,46 @@ export default async function RootLayout({
                   sparkCount={8}
                   duration={400}
                 >
-                <ScrollProgress />
-                <SiteHeader />
-                <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
-                <SiteFooter />
-                <MobileBottomNav />
-                <FloatingSupportButton />
-                {/* Site-wide bottom fade — hidden on /admin & /super-admin. */}
-                <SiteBottomBlur />
-                {/* top-center: bottom-left sat on the admin sidebar's Sign Out and the
+                  <ScrollProgress />
+                  <SiteHeader />
+                  {/* Bottom padding clears the mobile nav AND the iOS home bar.
+                      The nav's own clearance constant feeds this so the two
+                      cannot drift apart — the old flat pb-[72px] predated the
+                      raised indicator. */}
+                  {/* Fed through a custom property rather than an inline
+                      paddingBottom: an inline style would outrank `lg:pb-0` and
+                      leave desktop with a dead gap. */}
+                  <main
+                    className="min-h-[calc(100svh-3.5rem)] pb-[var(--ck-nav-pb)] lg:pb-0"
+                    style={{ "--ck-nav-pb": `calc(${MOBILE_NAV_CLEARANCE}px + env(safe-area-inset-bottom, 0px))` } as React.CSSProperties}
+                  >
+                    {children}
+                  </main>
+                  <SiteFooter />
+                  <MobileBottomNav />
+                  <FloatingSupportButton />
+                  {/* Site-wide bottom fade — hidden on /admin & /super-admin. */}
+                  <SiteBottomBlur />
+                  {/* top-center: bottom-left sat on the admin sidebar's Sign Out and the
                     mobile bottom nav; top corners hold the navbar's icons. The offset
                     clears the 3.5rem sticky header. */}
-                <Toaster
-                  richColors
-                  position="top-center"
-                  offset={72}
-                  mobileOffset={64}
-                  visibleToasts={3}
-                  duration={4500}
-                  style={{ zIndex: 2147483647 }}
-                />
-                <LocationGate />
-                <CookieConsent />
-                <WelcomeOverlay />
-                <TourController />
-                <DonorCategoryModal />
-                <DoneeListingPrompt />
-                <DonorListingPrompt />
-                <DoneeRequestPrompt />
+                  <Toaster
+                    richColors
+                    position="top-center"
+                    offset={72}
+                    mobileOffset={64}
+                    visibleToasts={3}
+                    duration={4500}
+                    style={{ zIndex: 2147483647 }}
+                  />
+                  <LocationGate />
+                  <CookieConsent />
+                  <WelcomeOverlay />
+                  <TourController />
+                  <DonorCategoryModal />
+                  <DoneeListingPrompt />
+                  <DonorListingPrompt />
+                  <DoneeRequestPrompt />
                 </RoleClickSpark>
               </NotificationsProvider>
             </AuthProvider>

@@ -272,6 +272,7 @@
       "sessionExpired": "Tu sesión ha caducado. Por favor inicie sesión nuevamente."
     },
     "register": {
+      "spamFolderHint": "¿No encuentras el código en tu bandeja de entrada? Revisa tu carpeta de Spam o Correo no deseado. Los correos de verificación a veces llegan ahí.",
       "title": "Crea tu cuenta",
       "subtitle": "Únase a CauseKind y comience a marcar la diferencia.",
       "joinTitle": "Únete a CauseKind",

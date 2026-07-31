@@ -36,7 +36,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, Package, ArrowRight, BookOpen, Shirt } from "lucide-react";
+import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, ArrowRight } from "lucide-react";
 import { FEATURES } from "@/lib/features";
 import type { Campaign, ItemRequest, PlatformStats, RecentActivity } from "@/lib/api";
 import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
@@ -97,8 +97,11 @@ function MobileHeroSlider() {
     return () => clearInterval(id);
   }, []);
 
+  // 16/11 rather than 16/10 is exactly 10% taller for the same width
+  // (1.6 / 1.4545 = 1.1), so the Hero grows downward without touching its
+  // left/right alignment with the Be the Change panel beneath it.
   return (
-    <section className="relative w-full aspect-[4/3] min-h-[280px] rounded-[2rem] overflow-hidden shadow-xs mt-2">
+    <section className="relative w-full aspect-[16/11] min-h-[231px] rounded-[2rem] overflow-hidden shadow-[0_14px_30px_-16px_rgba(0,0,0,0.45)] mt-1">
       <div className="absolute inset-0 w-full h-full">
         <Image
           key={idx}
@@ -205,6 +208,16 @@ export default function HomeClient({
     window.addEventListener("filter-home-requests", handleFilter);
     return () => window.removeEventListener("filter-home-requests", handleFilter);
   }, []);
+
+  /**
+   * Are the Hero and "Be the Change" direct visual neighbours on mobile?
+   *
+   * <p>Only then may the white panel tuck under the Hero. With FEATURES.money
+   * on, the Campaigns rail sits between them, and an overlap would cut into it.
+   * Derived from the flag explicitly rather than from render order, so moving
+   * sections around later cannot silently re-enable it in the wrong place.
+   */
+  const heroTouchesBeTheChange = !FEATURES.money;
 
   const displayedRequests = useMemo(() => {
     let out = itemRequests;
@@ -400,7 +413,7 @@ export default function HomeClient({
           Still inline here — can be extracted to MobileView.tsx
           in a future session if it grows.
       ════════════════════════════════════════════════════════════ */}
-      <div className="lg:hidden min-h-screen pb-24 bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-8">
+      <div className="lg:hidden min-h-screen bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-5">
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white */}
         {FEATURES.money && (
@@ -422,8 +435,20 @@ export default function HomeClient({
           </div>
         )}
 
-        {/* Mobile Hero — cycling images every 6s */}
-        <MobileHeroSlider />
+        {/* Mobile Hero + "Be the Change" — one layered composition.
+            They share a `relative isolate` wrapper (so they are a SINGLE flex
+            child and the parent's gap-5 no longer separates them), and the white
+            panel is pulled up under the Hero's rounded lower edge.
+            Gated on FEATURES.money, not on sibling order: with money enabled the
+            Campaigns rail sits between them and must not be overlapped. */}
+        <div className={heroTouchesBeTheChange ? "relative isolate ck-hero-overlap-wrap" : undefined}>
+          <div className={heroTouchesBeTheChange ? "relative z-20" : undefined}>
+            <MobileHeroSlider />
+          </div>
+          {heroTouchesBeTheChange && (
+            <BeTheChangeSection initialStats={stats} overlapHero />
+          )}
+        </div>
 
         {/* Mobile Campaigns horizontal scroll */}
         {FEATURES.money && (
@@ -475,51 +500,9 @@ export default function HomeClient({
           </section>
         )}
 
-        {/* Mobile In-Kind Requests */}
-        <section id="inkind-requests-section-mobile" className="space-y-4">
-          <div className="flex items-end justify-between">
-            <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
-              <TranslatedText text="In-Kind Requests" />
-            </h2>
-            <Link href="/requests" className="text-[10px] font-extrabold text-[#b04a15] uppercase tracking-wider hover:underline">
-              <TranslatedText text="Browse All" /> →
-            </Link>
-          </div>
-          <p className="text-[11px] text-stone-400 dark:text-stone-500 font-bold leading-relaxed -mt-2">
-            <TranslatedText text="Donees request physical items they need..." />
-          </p>
-          <div className="flex gap-4 overflow-x-auto pb-4 px-1 -mx-5 scrollbar-none snap-x snap-mandatory">
-            {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15]" /></div>}
-            {!loading && displayedRequests.slice(0, 5).map(req => {
-              const title  = req.title.toLowerCase();
-              let ReqIcon  = Package;
-              if (title.includes("book") || title.includes("school")) ReqIcon = BookOpen;
-              else if (title.includes("cloth") || title.includes("shirt") || title.includes("jacket")) ReqIcon = Shirt;
-              return (
-                <div key={req.id} className="bg-white dark:bg-zinc-900 rounded-[1.75rem] p-4 border border-[#e8e2d5]/60 dark:border-zinc-800 flex flex-col justify-between w-[240px] snap-start shrink-0 shadow-xs">
-                  <div className="flex gap-3">
-                    <div className="bg-[#faf1e1] dark:bg-zinc-850 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-[#e8e2d5]/20">
-                      <ReqIcon className="w-5 h-5 text-[#b04a15]" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-black text-stone-850 dark:text-stone-100 leading-snug line-clamp-1"><TranslatedText text={req.title} /></h4>
-                      <p className="text-[9px] text-stone-400 font-semibold truncate mt-0.5">By {req.doneeName}, <TranslatedText text={req.city} /></p>
-                    </div>
-                  </div>
-                  <div className="mt-3.5 flex items-center justify-between">
-                    <span className="text-[10px] text-stone-550 dark:text-stone-400 font-black">Qty: <span className="font-extrabold text-stone-800 dark:text-stone-100">{req.quantity}</span></span>
-                    <Link href="/requests">
-                      <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-4 py-1.5 rounded-lg text-[10px] tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Give" /></button>
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Be the Change */}
-        <BeTheChangeSection initialStats={stats} />
+        {/* Be the Change — only here when the Campaigns rail separates it from
+            the Hero; otherwise it is rendered above, inside the layered wrapper. */}
+        {!heroTouchesBeTheChange && <BeTheChangeSection initialStats={stats} />}
       </div>
     </div>
   );

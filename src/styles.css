@@ -1085,10 +1085,10 @@ section:focus-within {
   animation: faq-open 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ── Mobile bottom nav safe-bottom for iOS home bar ── */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
+/* The mobile bottom nav now floats clear of the screen edge and handles the iOS
+   home-bar inset in its own `bottom` calc, so no utility class is needed here.
+   (The old nav referenced `.pb-safe-bottom`, which never existed — only
+   `.safe-bottom` did — so it had no inset handling at all and nothing failed.) */
 
 /* ── Mobile donate pill: gentle continuous pulse glow ── */
 @keyframes donate-pulse {
@@ -1669,6 +1669,43 @@ body.mobile-menu-open {
   50%       { transform: translateY(-8px) rotate(0.5deg); }
 }
 .need-board-float { animation: need-board-float 5s ease-in-out infinite; }
+
+/* ── Mobile: "Be the Change" UNDERLAPS the Hero ───────────────────────
+   The two surfaces intersect geometrically, but the Hero is always the
+   foreground: the white panel emerges only from beneath the Hero's bottom edge
+   and through its rounded corner cut-outs.
+
+   ONE custom property, declared on the shared wrapper, drives both the pull-up
+   and the panel's top clearance, so overlap depth and content position cannot
+   drift apart. Content therefore begins ~22px below the Hero's visible edge:
+     panel top      = hero bottom - overlap
+     content top    = panel top + (overlap + 22px)  =  hero bottom + 22px
+
+   The negative margin sits on the SECTION rather than the white panel: the
+   section is `overflow-hidden`, so a panel reaching above its own box would be
+   clipped instead of underlapping.
+
+   Stacking lives in the JSX (wrapper `isolate`, Hero `z-20`, section
+   `isolate z-10`) — see BeTheChangeSection for why the section must isolate.
+
+   All of it collapses at lg, where Hero and Be the Change are independent.
+   The `, 0px` fallbacks matter: with FEATURES.money on there is no wrapper.
+
+   Written as real CSS, not Tailwind arbitrary values — an unemitted arbitrary
+   class fails silently, with no build error and no visible overlap. */
+.ck-hero-overlap-wrap {
+  --ck-hero-overlap: clamp(28px, 8vw, 40px);
+}
+.ck-hero-overlap {
+  margin-top: calc(-1 * var(--ck-hero-overlap, 0px));
+}
+.ck-hero-overlap-panel {
+  padding-top: calc(var(--ck-hero-overlap, 0px) + 22px);
+}
+@media (min-width: 1024px) {
+  .ck-hero-overlap-wrap { --ck-hero-overlap: 0px; }
+  .ck-hero-overlap-panel { padding-top: 0; }
+}
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

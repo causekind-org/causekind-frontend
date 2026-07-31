@@ -22,12 +22,12 @@ const PANEL_CONTENT: Record<"login" | "register", {
   image: string; quote: string; author: string;
 }> = {
   login: {
-    image: "/login-illustration.png",
+    image: "/login-illustration.webp",
     quote: "The smallest act of kindness is worth more than the grandest intention.",
     author: "Oscar Wilde",
   },
   register: {
-    image: "/signup-illustration.jpg",
+    image: "/signup-illustration.webp",
     quote: "No one has ever become poor by giving.",
     author: "Anne Frank",
   },
