@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion, useMotionValue, useAnimationFrame, useScroll, useSpring } from "framer-motion";
+import { motion, useReducedMotion, useMotionValue, useMotionTemplate, useAnimationFrame, useScroll, useSpring } from "framer-motion";
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
 import { useAuth } from "@/hooks/useAuth";
@@ -341,8 +341,54 @@ function TrustJourney({ items }: { items: JourneyItem[] }) {
   );
 }
 
-/* ─── Trust signal station ──────────────────────────────────────────── */
-function TrustSignalStation({
+/* ─── Trust signal matrix ────────────────────────────────────────────────
+   The four signals are ONE instrument panel, not four tiles.
+
+   Separation comes from dividers drawn ACROSS the grid — one vertical, one
+   horizontal on mobile; three verticals on the desktop rail — never from
+   per-item borders. That distinction is the whole design: four bordered cells
+   read as four disconnected objects, while shared rules read as one system
+   subdivided. Each metric therefore has no border, background, radius or
+   shadow of its own.
+
+   The dividers sit at fixed fractions, which is only true while the rows are
+   equal height — hence `auto-rows-fr` on the mobile grid. */
+function SignalMatrixDividers() {
+  const reduceMotion = useReducedMotion();
+  const line = "absolute bg-stone-200 dark:bg-stone-800";
+  const grow = {
+    viewport: { once: true, amount: 0.2 },
+    transition: { duration: reduceMotion ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] as const },
+  };
+  return (
+    <>
+      {/* Column split: centre on mobile, plus quarter lines on the desktop rail */}
+      <motion.span
+        aria-hidden="true"
+        className={`${line} inset-y-0 left-1/2 w-px origin-top`}
+        initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} {...grow}
+      />
+      <motion.span
+        aria-hidden="true"
+        className={`${line} inset-y-0 left-1/4 hidden w-px origin-top xl:block`}
+        initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} {...grow}
+      />
+      <motion.span
+        aria-hidden="true"
+        className={`${line} inset-y-0 left-3/4 hidden w-px origin-top xl:block`}
+        initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} {...grow}
+      />
+      {/* Row split: mobile only — the desktop rail is a single row */}
+      <motion.span
+        aria-hidden="true"
+        className={`${line} inset-x-0 top-1/2 h-px origin-left xl:hidden`}
+        initial={{ scaleX: 0 }} whileInView={{ scaleX: 1 }} {...grow}
+      />
+    </>
+  );
+}
+
+function TrustSignalMetric({
   icon: Icon,
   value,
   suffix,
@@ -369,105 +415,76 @@ function TrustSignalStation({
   const reduceMotion = useReducedMotion();
   const station = String(index + 1).padStart(2, "0");
 
+  /* The dial sweeps to its reading rather than appearing at it. CSS cannot
+     interpolate a conic-gradient stop, so the angle is a motion value fed
+     through a template — the same technique the mobile nav uses for its mask. */
+  const sweep = useSpring(0, { stiffness: 55, damping: 18 });
+  useEffect(() => {
+    if (!start) return;
+    const target = progress * 3.6;
+    if (reduceMotion) sweep.jump(target);
+    else sweep.set(target);
+  }, [start, progress, reduceMotion, sweep]);
+  const dial = useMotionTemplate`conic-gradient(${color} ${sweep}deg, ${color}1f 0deg)`;
+
   return (
     <motion.div
-      className="group relative min-h-[128px] rounded-2xl border border-stone-200/70 bg-white/70 p-3
-                 dark:border-stone-800 dark:bg-zinc-900/40
-                 xl:min-h-[105px] xl:rounded-none xl:border-0 xl:bg-transparent xl:px-1 xl:pb-1 xl:pl-1 xl:pr-5"
-      initial={
-        reduceMotion
-          ? { opacity: 0 }
-          : { opacity: 0, y: 20 }
-      }
-      animate={
-        start
-          ? reduceMotion
-            ? { opacity: 1 }
-            : { opacity: 1, y: 0 }
-          : undefined
-      }
-      transition={{ type: "spring", stiffness: 110, damping: 20, delay: delay / 1000 }}
-      whileHover={reduceMotion ? undefined : { y: -3 }}
+      // Padding, not gap: the dividers run at exact fractions, so the clear
+      // space around them has to come from inside each cell.
+      className="min-w-0 px-3.5 py-3.5 xl:px-5 xl:py-2"
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+      animate={start ? (reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }) : undefined}
+      transition={{ type: "spring", stiffness: 120, damping: 22, delay: delay / 1000 }}
     >
-      {index < 3 && (
-        <div
-          aria-hidden="true"
-          className="absolute right-2 top-8 hidden h-24 w-px rotate-6 bg-gradient-to-b from-transparent via-stone-300/80 to-transparent xl:block dark:via-stone-700/80"
-        />
-      )}
-
-      <div className="relative flex items-center gap-2 xl:gap-3">
-        <div
-          className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full xl:h-12 xl:w-12"
-          style={{
-            background: `conic-gradient(${color} ${progress * 3.6}deg, ${color}1f 0deg)`,
-          }}
+      <dt className="flex items-center gap-2.5">
+        <motion.span
+          className="relative grid size-9 shrink-0 place-items-center rounded-full xl:size-11"
+          style={{ background: dial }}
         >
-          <span className="absolute inset-1 rounded-full bg-white dark:bg-zinc-950" />
-          <span
-            className="absolute inset-2 rounded-full xl:inset-2.5"
-            style={{ background: `${color}12` }}
-          />
-          <Icon className="relative h-4 w-4 xl:h-5 xl:w-5" style={{ color }} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[9px] font-black uppercase tracking-[0.16em] text-stone-400 xl:tracking-[0.28em] dark:text-stone-500">
+          <span className="absolute inset-[3px] rounded-full bg-white dark:bg-zinc-950" />
+          <span className="absolute inset-[6px] rounded-full" style={{ background: `${color}12` }} />
+          <Icon className="relative size-4 xl:size-[18px]" style={{ color }} aria-hidden />
+        </motion.span>
+        <span className="min-w-0">
+          <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-stone-500">
             Signal {station}
-          </p>
-          <p
-            className="mt-0.5 line-clamp-2 text-[10px] font-black uppercase leading-tight tracking-[0.06em] xl:line-clamp-none xl:text-[11px] xl:tracking-[0.14em]"
+          </span>
+          <span
+            className="mt-0.5 block text-[11px] font-black uppercase leading-tight tracking-[0.08em]"
             style={{ color }}
           >
             {label}
-          </p>
-        </div>
-      </div>
+          </span>
+        </span>
+      </dt>
 
-      <div className="mt-2 xl:mt-3">
+      <dd className="mt-2.5">
         <span
-          className="block whitespace-nowrap font-black tabular-nums leading-none text-[20px] xl:text-3xl"
+          className="block whitespace-nowrap font-black tabular-nums leading-none text-[22px] xl:text-[28px]"
           style={{ color, fontFamily: "var(--font-roboto-mono)" }}
         >
           {count.toLocaleString("en-IN")}
           {suffix}
         </span>
-      </div>
 
-      <p className="mt-1.5 line-clamp-3 text-[10.5px] font-semibold leading-[1.3] text-stone-500 xl:mt-3 xl:line-clamp-none xl:max-w-[17rem] xl:text-xs xl:leading-relaxed dark:text-stone-400">
-        {caption}
-      </p>
+        <p className="mt-1.5 text-xs font-semibold leading-[1.45] text-stone-500 dark:text-stone-400">
+          {caption}
+        </p>
 
-      <div className="mt-2.5 flex items-center gap-2 xl:mt-4 xl:gap-2.5">
-        <span
-          aria-hidden="true"
-          className="h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: color }}
-        />
-        <div className="h-px flex-1 bg-stone-200 dark:bg-stone-800">
-          <motion.div
-            className="h-px origin-left"
-            style={{ background: color }}
-            initial={{ scaleX: 0 }}
-            animate={start ? { scaleX: progress / 100 } : undefined}
-            transition={{ duration: reduceMotion ? 0 : 0.9, delay: (delay + 220) / 1000, ease: [0.16, 1, 0.3, 1] }}
-          />
-        </div>
-        <motion.div
-          aria-hidden="true"
-          className="hidden grid-cols-4 gap-1 xl:grid"
-          initial={{ opacity: 0 }}
-          animate={start ? { opacity: 1 } : undefined}
-          transition={{ delay: (delay + 420) / 1000 }}
-        >
-          {[0, 1, 2, 3].map((tick) => (
-            <span
-              key={tick}
-              className="block h-2.5 w-px"
-              style={{ background: tick < Math.ceil(progress / 25) ? color : `${color}33` }}
+        {/* Measurement track */}
+        <div className="mt-3 flex items-center gap-2">
+          <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full" style={{ background: color }} />
+          <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800">
+            <motion.span
+              className="block h-px origin-left"
+              style={{ background: color }}
+              initial={{ scaleX: 0 }}
+              animate={start ? { scaleX: progress / 100 } : undefined}
+              transition={{ duration: reduceMotion ? 0 : 0.9, delay: (delay + 220) / 1000, ease: [0.16, 1, 0.3, 1] }}
             />
-          ))}
-        </motion.div>
-      </div>
+          </span>
+        </div>
+      </dd>
     </motion.div>
   );
 }
@@ -757,13 +774,14 @@ export function BeTheChangeSection({
             </p>
             <div className="h-px min-w-24 flex-1 bg-gradient-to-r from-stone-200 via-stone-200 to-transparent dark:from-stone-800 dark:via-stone-800" />
           </div>
-          <div
-            aria-hidden="true"
-            className="absolute left-4 right-4 top-[6rem] hidden h-px bg-gradient-to-r from-transparent via-stone-300 to-transparent xl:block dark:via-stone-700"
-          />
-          <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4 xl:gap-x-3.5 xl:gap-y-5">
+          {/* Open signal matrix: 2x2 on mobile, a four-station rail at xl.
+              `minmax(0,1fr)` (not plain `1fr`) so a long label can never push a
+              column past its share and overflow the row. */}
+          <div className="relative">
+            <SignalMatrixDividers />
+            <dl className="grid auto-rows-fr grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:auto-rows-auto xl:grid-cols-[repeat(4,minmax(0,1fr))]">
             {STATS.map((s, i) => (
-              <TrustSignalStation
+              <TrustSignalMetric
                 key={s.label}
                 icon={s.icon}
                 value={s.value}
@@ -777,6 +795,7 @@ export function BeTheChangeSection({
                 start={statsInView}
               />
             ))}
+            </dl>
           </div>
         </div>
 

@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
 import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
-import { MobileBottomNav, FloatingSupportButton, MOBILE_NAV_CLEARANCE } from "@/components/MobileUI";
+import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
 import { LocationGate } from "@/components/LocationGate";
@@ -110,19 +110,7 @@ export default async function RootLayout({
                 >
                   <ScrollProgress />
                   <SiteHeader />
-                  {/* Bottom padding clears the mobile nav AND the iOS home bar.
-                      The nav's own clearance constant feeds this so the two
-                      cannot drift apart — the old flat pb-[72px] predated the
-                      raised indicator. */}
-                  {/* Fed through a custom property rather than an inline
-                      paddingBottom: an inline style would outrank `lg:pb-0` and
-                      leave desktop with a dead gap. */}
-                  <main
-                    className="min-h-[calc(100svh-3.5rem)] pb-[var(--ck-nav-pb)] lg:pb-0"
-                    style={{ "--ck-nav-pb": `calc(${MOBILE_NAV_CLEARANCE}px + env(safe-area-inset-bottom, 0px))` } as React.CSSProperties}
-                  >
-                    {children}
-                  </main>
+                  <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
                   <SiteFooter />
                   <MobileBottomNav />
                   <FloatingSupportButton />

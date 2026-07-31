@@ -1085,10 +1085,10 @@ section:focus-within {
   animation: faq-open 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* The mobile bottom nav now floats clear of the screen edge and handles the iOS
-   home-bar inset in its own `bottom` calc, so no utility class is needed here.
-   (The old nav referenced `.pb-safe-bottom`, which never existed — only
-   `.safe-bottom` did — so it had no inset handling at all and nothing failed.) */
+/* ── Mobile bottom nav safe-bottom for iOS home bar ── */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
 /* ── Mobile donate pill: gentle continuous pulse glow ── */
 @keyframes donate-pulse {
