@@ -11,19 +11,53 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
-const CAPABILITIES = [
-  "CAMPAIGNS", "DONATIONS", "ITEMS_REQUESTS", "MATCHES",
-  "OFFERS", "WHATSAPP", "USERS", "AUTOPILOT",
-] as const;
+/** Mirrors the backend AdminCapability enum, grouped for readability. Order here
+ *  is the display order; the backend is the authority on which exist. */
+const CAPABILITY_GROUPS: { label: string; capabilities: string[] }[] = [
+  {
+    label: "Review queues",
+    capabilities: ["REQUEST_REVIEW", "LISTING_REVIEW", "OFFER_REVIEW", "MATCH_INTERVENE", "CAMPAIGNS"],
+  },
+  {
+    label: "People",
+    capabilities: ["USER_READ", "USER_RESTRICT", "USER_SUSPEND", "SUPPORT_CASE_MANAGE"],
+  },
+  {
+    label: "Communications",
+    capabilities: ["WHATSAPP", "COMMUNICATION_MODERATE"],
+  },
+  {
+    label: "Money",
+    capabilities: ["PAYMENT_REVIEW"],
+  },
+  {
+    label: "Sensitive",
+    capabilities: [
+      "IDENTITY_DOCUMENT_VIEW", "SENSITIVE_DATA_REVEAL", "FRAUD_REVIEW",
+      "AUDIT_READ", "ADMIN_MANAGE", "PLATFORM_CONFIGURE", "AUTOPILOT",
+    ],
+  },
+];
 
 const CAPABILITY_LABELS: Record<string, string> = {
   CAMPAIGNS: "Campaigns",
-  DONATIONS: "Donations",
-  ITEMS_REQUESTS: "Items & Requests",
-  MATCHES: "Matches",
-  OFFERS: "Offers",
+  PAYMENT_REVIEW: "Donations & tips",
+  REQUEST_REVIEW: "Requests",
+  LISTING_REVIEW: "Listings",
+  OFFER_REVIEW: "Offers & disputes",
+  MATCH_INTERVENE: "Matches",
   WHATSAPP: "WhatsApp",
-  USERS: "Users",
+  USER_READ: "View users",
+  USER_RESTRICT: "Restrict users",
+  USER_SUSPEND: "Suspend users",
+  SUPPORT_CASE_MANAGE: "Support cases",
+  COMMUNICATION_MODERATE: "Moderate chat & calls",
+  IDENTITY_DOCUMENT_VIEW: "View identity documents",
+  SENSITIVE_DATA_REVEAL: "Reveal personal data",
+  FRAUD_REVIEW: "Fraud review",
+  ADMIN_MANAGE: "Manage admins",
+  AUDIT_READ: "Read audit log",
+  PLATFORM_CONFIGURE: "Platform configuration",
   AUTOPILOT: "Autopilot",
 };
 
@@ -92,16 +126,31 @@ export function AdminPermissionsPanel() {
                 {!admin.active && <Badge variant="destructive">Inactive</Badge>}
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {CAPABILITIES.map(cap => (
-                <label key={cap} className="flex items-center gap-2 text-sm">
-                  <Switch
-                    checked={admin.permissions[cap] !== false}
-                    disabled={admin.role === "SUPER_ADMIN" || savingKey === `${admin.id}:${cap}`}
-                    onCheckedChange={(checked) => toggle(admin, cap, checked)}
-                  />
-                  {CAPABILITY_LABELS[cap]}
-                </label>
+            <div className="space-y-3">
+              {CAPABILITY_GROUPS.map(group => (
+                <div key={group.label}>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                    {group.label}
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {group.capabilities.map(cap => (
+                      <label key={cap} className="flex items-center gap-2 text-sm">
+                        <Switch
+                          // Explicitly true, not "not false": capabilities now carry
+                          // their own default and the sensitive ones default OFF, so
+                          // a value the backend didn't send must render as off rather
+                          // than being shown as granted. Super admins bypass the
+                          // filter entirely, so show them as fully granted regardless
+                          // of what their (unused) permission rows happen to say.
+                          checked={admin.role === "SUPER_ADMIN" || admin.permissions[cap] === true}
+                          disabled={admin.role === "SUPER_ADMIN" || savingKey === `${admin.id}:${cap}`}
+                          onCheckedChange={(checked) => toggle(admin, cap, checked)}
+                        />
+                        {CAPABILITY_LABELS[cap] ?? cap}
+                      </label>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </CardContent>

@@ -34,14 +34,14 @@ type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "ma
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
 const TAB_CAPABILITY: Record<TabKey, string> = {
   campaigns: "CAMPAIGNS",
-  requests: "ITEMS_REQUESTS",
-  listings: "ITEMS_REQUESTS",
-  matches: "MATCHES",
-  offers: "OFFERS",
-  "match-history": "MATCHES",
-  "ai-logs": "ITEMS_REQUESTS",
-  "user-journey": "USERS",
-  analytics: "DONATIONS",
+  requests: "REQUEST_REVIEW",
+  listings: "LISTING_REVIEW",
+  matches: "MATCH_INTERVENE",
+  offers: "OFFER_REVIEW",
+  "match-history": "MATCH_INTERVENE",
+  "ai-logs": "LISTING_REVIEW",
+  "user-journey": "USER_READ",
+  analytics: "PAYMENT_REVIEW",
   whatsapp: "WHATSAPP",
 };
 type RejectType = "campaign" | "listing" | "match";
