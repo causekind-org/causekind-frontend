@@ -28,12 +28,19 @@ const KEY_ROUTE: [prefix: string, route: string][] = [
   [GUEST_HOME_KEY, "/"],
 ];
 
-// True when no other load-time overlay (welcome, donor category picker) is on
-// screen — the tour must never spotlight through another modal.
+// True when no other load-time overlay (welcome, donor category picker,
+// location gate) is on screen — the tour must never spotlight through another
+// modal. GuidedTour sits at z-[9995], above all of them, so a missed check here
+// is visible as the tour painting straight over the other modal.
 function gatesClear(): boolean {
   return (
     !document.querySelector(".ck-cat-backdrop-el") &&
     sessionStorage.getItem("ck_welcome_pending") !== "1" &&
+    // LocationGate. Two signals, because it reveals on a 1200ms timer while this
+    // polls every 250ms: the flag is set the moment it commits to showing (so we
+    // don't slip into the gap before it paints), the DOM marker covers the rest.
+    sessionStorage.getItem("ck_location_pending") !== "1" &&
+    !document.querySelector(".ck-location-backdrop-el") &&
     // The guest-facing load-time overlay. WelcomeOverlay bails out entirely when
     // there is no user, so for a visitor the cookie banner is the one thing that
     // can still be on screen. It exposes no stable DOM marker, so its stored
@@ -41,6 +48,13 @@ function gatesClear(): boolean {
     localStorage.getItem("ck_cookie_consent") !== null
   );
 }
+
+// Anchor polling gives up after ~15s (the page never rendered them). Waiting on
+// a gate is different — a visitor answering a cookie banner and a location
+// prompt can easily take longer than that, and burning the anchor budget while
+// they read would silently skip the tour. Gate waits get their own, longer cap.
+const ANCHOR_TRIES = 60;    // 60 × 250ms  = 15s
+const GATE_TRIES = 480;     // 480 × 250ms = 120s
 
 export default function TourController() {
   const { user, isLoading } = useAuth();
@@ -57,8 +71,9 @@ export default function TourController() {
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
-    // If another gate modal (donor category picker, location gate) is still on
-    // screen, wait for it to close rather than spotlighting behind/over it.
+    // If another gate modal (donor category picker, location gate, cookie
+    // banner) is still on screen, wait for it to close rather than spotlighting
+    // over it. No cap here — this branch retries until the stage is clear.
     const start = () => {
       if (cancelled || localStorage.getItem(homeKey(user.email))) return;
       if (!gatesClear()) { timer = setTimeout(start, 800); return; }
@@ -87,18 +102,25 @@ export default function TourController() {
     if (localStorage.getItem(dashKey(user.email))) return;
 
     // Wait for the dashboard's data to render (anchors only exist then).
-    let tries = 0;
+    let anchorTries = 0;
+    let gateTries = 0;
     const poll = setInterval(() => {
-      tries += 1;
-      if (document.querySelector('[data-tour="primary-cta"]') && gatesClear()) {
+      const anchor = document.querySelector('[data-tour="primary-cta"]');
+      if (anchor && gatesClear()) {
         clearInterval(poll);
         setTimeout(() => {
           if (!localStorage.getItem(dashKey(user.email)) && gatesClear()) {
             setActive({ steps: DASHBOARD_TOUR[role], key: dashKey(user.email) });
           }
         }, 600);
-      } else if (tries > 60) {
-        clearInterval(poll); // never rendered (error state etc.) — try next visit
+        return;
+      }
+      // Whichever half is missing spends its own budget — a slow gate must not
+      // exhaust the anchor allowance.
+      if (!anchor) {
+        if (++anchorTries > ANCHOR_TRIES) clearInterval(poll); // never rendered — try next visit
+      } else if (++gateTries > GATE_TRIES) {
+        clearInterval(poll); // modal left open — try next visit
       }
     }, 250);
     return () => clearInterval(poll);
@@ -109,17 +131,22 @@ export default function TourController() {
     if (isLoading || !user || !role || pathname !== "/profile") return;
     if (localStorage.getItem(profileKey(user.email))) return;
 
-    let tries = 0;
+    let anchorTries = 0;
+    let gateTries = 0;
     const poll = setInterval(() => {
-      tries += 1;
-      if (document.querySelector('[data-tour="member-pass"]') && gatesClear()) {
+      const anchor = document.querySelector('[data-tour="member-pass"]');
+      if (anchor && gatesClear()) {
         clearInterval(poll);
         setTimeout(() => {
           if (!localStorage.getItem(profileKey(user.email)) && gatesClear()) {
             setActive({ steps: PROFILE_TOUR[role], key: profileKey(user.email) });
           }
         }, 600);
-      } else if (tries > 60) {
+        return;
+      }
+      if (!anchor) {
+        if (++anchorTries > ANCHOR_TRIES) clearInterval(poll);
+      } else if (++gateTries > GATE_TRIES) {
         clearInterval(poll);
       }
     }, 250);
@@ -133,20 +160,25 @@ export default function TourController() {
     if (localStorage.getItem(GUEST_HOME_KEY)) return;
 
     // Poll for the anchors rather than guessing a delay: the landing page's
-    // sections mount progressively, and the cookie banner has to be answered
-    // first. Same shape as the dashboard branch below.
-    let tries = 0;
+    // sections mount progressively, and the cookie banner and location gate both
+    // have to be dealt with first. Same shape as the dashboard branch above.
+    let anchorTries = 0;
+    let gateTries = 0;
     const poll = setInterval(() => {
-      tries += 1;
-      if (document.querySelector('[data-tour="guest-hero"]') && gatesClear()) {
+      const anchor = document.querySelector('[data-tour="guest-hero"]');
+      if (anchor && gatesClear()) {
         clearInterval(poll);
         setTimeout(() => {
           if (!localStorage.getItem(GUEST_HOME_KEY) && gatesClear()) {
             setActive({ steps: GUEST_HOME_TOUR, key: GUEST_HOME_KEY });
           }
         }, 600);
-      } else if (tries > 60) {
-        clearInterval(poll);   // never got a clear stage — try next visit
+        return;
+      }
+      if (!anchor) {
+        if (++anchorTries > ANCHOR_TRIES) clearInterval(poll); // never rendered — try next visit
+      } else if (++gateTries > GATE_TRIES) {
+        clearInterval(poll);   // gates never cleared — try next visit
       }
     }, 250);
     return () => clearInterval(poll);

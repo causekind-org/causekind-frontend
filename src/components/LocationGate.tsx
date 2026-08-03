@@ -10,6 +10,26 @@ import { detectLocationFromServer } from "@/app/actions/locations";
 
 type ModalState = "hidden" | "visible" | "loading";
 
+// Signals to TourController that this gate is on screen — or is about to be.
+// The flag is set the moment we commit to showing, BEFORE the 1200ms reveal
+// timer, because the tour polls every 250ms and would otherwise pass its gate
+// check in the gap and start underneath us. Mirrors `ck_welcome_pending`.
+const PENDING_KEY = "ck_location_pending";
+
+const markPending = () => {
+  try { sessionStorage.setItem(PENDING_KEY, "1"); } catch {}
+};
+
+/** Safe to call when no flag was ever set — every bail-out path uses it. */
+const clearPending = () => {
+  let had = false;
+  try {
+    had = sessionStorage.getItem(PENDING_KEY) !== null;
+    sessionStorage.removeItem(PENDING_KEY);
+  } catch {}
+  if (had) window.dispatchEvent(new Event("ck-location-dismissed"));
+};
+
 export function LocationGate() {
   const { user } = useAuth();
   const pathname = usePathname();
@@ -26,6 +46,7 @@ export function LocationGate() {
     if (isAdminPath) return;
     if (typeof window === "undefined") return;
     let cancelled = false;
+    let revealed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const promptedKey = user ? `ck_location_prompted_${user.email}` : "ck_location_prompted";
@@ -67,8 +88,13 @@ export function LocationGate() {
       }
 
       if (localStorage.getItem(promptedKey)) return;
+
+      // Claim the gate now, not when the modal paints — the tour polls faster
+      // than this timer and would otherwise start underneath it.
+      markPending();
       timer = setTimeout(() => {
         if (cancelled) return;
+        revealed = true;
         setShown(true);
         setState("visible");
       }, 1200);
@@ -78,6 +104,9 @@ export function LocationGate() {
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      // Bailed out before the modal ever appeared — release the gate, or the
+      // tour stays blocked for the rest of the session.
+      if (!revealed) clearPending();
     };
   }, [isAdminPath, user]);
 
@@ -100,8 +129,12 @@ export function LocationGate() {
     }
   }, [user, isAdminPath]);
 
+  // The one choke point every close path funnels through — "Allow" (success and
+  // error), "Maybe later", the X, and the no-geolocation bail-out. Releasing the
+  // tour gate here covers all of them.
   const dismiss = useCallback(() => {
     localStorage.setItem(user ? `ck_location_prompted_${user.email}` : "ck_location_prompted", "1");
+    clearPending();
     setState("hidden");
   }, [user]);
 
@@ -209,7 +242,8 @@ export function LocationGate() {
 
       {/* ── Backdrop ── */}
       <div
-        className="ck-backdrop-anim fixed inset-0 z-[9990] flex items-center justify-center p-4
+        className="ck-location-backdrop-el ck-backdrop-anim fixed inset-0 z-[9990]
+                   flex items-center justify-center p-4
                    bg-black/50 backdrop-blur-sm"
         aria-modal="true"
         role="dialog"
