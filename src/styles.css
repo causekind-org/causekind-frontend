@@ -1577,6 +1577,22 @@ body.mobile-menu-open {
   pointer-events: none !important;
 }
 
+/* Handover Hub Messages FAB — the only route to the other party on mobile, on a
+   page users sit on for a while, so it breathes rather than sitting inert.
+
+   A separate halo layer behind the button, not an animated box-shadow on the
+   button itself: shadow animation repaints the button (and its icon) every
+   frame, whereas transform/opacity on a sibling stays on the compositor. The
+   halo is aria-hidden and pointer-events-none — it must never eat the tap. */
+@keyframes ck-handover-fab-halo {
+  0%, 100% { transform: scale(1);    opacity: 0.45; }
+  50%      { transform: scale(1.35); opacity: 0;    }
+}
+
+.ck-handover-fab-halo {
+  animation: ck-handover-fab-halo 2.8s ease-in-out infinite;
+}
+
 /* ── Reduced motion: disable all custom animations ── */
 @media (prefers-reduced-motion: reduce) {
 
@@ -1595,6 +1611,7 @@ body.mobile-menu-open {
   .faq-answer-enter,
   .mobile-donate-pulse,
   .support-btn-ripple,
+  .ck-handover-fab-halo,
   .stats-ticker-track,
   .animate-stats-ticker,
   .ticker-track,

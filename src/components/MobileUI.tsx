@@ -278,6 +278,13 @@ export function FloatingSupportButton() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mailHref, setMailHref] = useState(DEFAULT_SUPPORT_GMAIL_URL);
 
+  // The Handover Hub puts its own Messages button in this exact spot. Two
+  // near-identical chat bubbles stacked on one edge reads as a bug, and the hub's
+  // chat is the more relevant of the two there, so this one stands down. Both
+  // routes that render the hub end in /handover (app/matches/[id]/handover,
+  // app/offers/[id]/handover).
+  const onHandover = !!pathname?.endsWith("/handover");
+
   useEffect(() => {
     // Client-only, post-mount — window.location isn't available during
     // server render, so computing this at render time (instead of here)
@@ -308,10 +315,12 @@ export function FloatingSupportButton() {
     };
   }, []);
 
-  // Hidden inside the super-admin command center and admin dashboard (by path or role).
+  // Hidden inside the super-admin command center and admin dashboard (by path or
+  // role), and on the Handover Hub, which has its own Messages button here.
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
+    onHandover ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 

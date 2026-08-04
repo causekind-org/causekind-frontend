@@ -326,10 +326,21 @@ function RequestsHero({
 
               {/* Sticky hint — pops in beside the button after 10s, dismissible */}
               {showHint && (
-                <div className="ck-cta-hint absolute left-0 top-full mt-3 sm:left-full sm:top-1/2 sm:mt-0 sm:ml-4 sm:-translate-y-1/2 z-20 w-60">
+                /* Mobile places this ABOVE the button, not below it. The hero root
+                   is `overflow-hidden` (for the decorative w-96 blobs, which would
+                   otherwise cause horizontal scroll), so a hint hanging off the
+                   bottom edge on `top-full` was clipped mid-sentence and the
+                   sticky CategoryBar covered what was left. Above the button it
+                   stays inside the hero, so nothing can clip it. Desktop is
+                   unchanged — it sits beside the button, already well inside. */
+                <div className="ck-cta-hint absolute left-0 bottom-full mb-3 sm:bottom-auto sm:left-full sm:top-1/2 sm:mb-0 sm:ml-4 sm:-translate-y-1/2 z-20 w-60">
                   <div className="relative rounded-xl sm:rounded-2xl border border-[var(--ck-role-highlight)]/40 bg-[#1c0905]/95 backdrop-blur-md px-4 py-3 shadow-xl shadow-black/40">
-                    {/* Arrow — points up on mobile, left on desktop */}
-                    <span className="absolute -top-1 left-8 h-2.5 w-2.5 rotate-45 border-l border-t border-[var(--ck-role-highlight)]/40 bg-[#1c0905] sm:top-1/2 sm:-left-1.5 sm:-mt-1.5 sm:border-b sm:border-t-0" />
+                    {/* Arrow — points down at the button on mobile, left on desktop */}
+                    {/* Rotated square: the outlined corner is the one that points.
+                        Mobile shows bottom+right → the bottom corner points down at
+                        the button. Desktop drops the right edge for the left one →
+                        bottom+left, the corner that protrudes toward the button. */}
+                    <span className="absolute -bottom-1 left-8 h-2.5 w-2.5 rotate-45 border-b border-r border-[var(--ck-role-highlight)]/40 bg-[#1c0905] sm:bottom-auto sm:top-1/2 sm:-left-1.5 sm:-mt-1.5 sm:border-r-0 sm:border-l" />
                     <button
                       onClick={() => setShowHint(false)}
                       aria-label="Dismiss hint"
