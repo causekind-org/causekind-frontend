@@ -440,10 +440,10 @@ export default function NewItemPage() {
 
   // ── Step 1 ────────────────────────────────────────────────────────────────
   const step1 = (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Photos come first — Claude vision analyzes them right after upload and
           suggests the fields below, which stay fully editable either way. */}
-      <div className="rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-4">
+      <div className="rounded-xl sm:rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-3 sm:p-4">
         <p className="text-xs font-black text-[#1e3a60] uppercase tracking-widest mb-2">Photos — Minimum 2 Required</p>
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-stone-500">
           {["Front view of the item", "Full or side view", "Visible defects or damage", "No faces, documents, phone numbers"].map((g) => (
@@ -459,7 +459,7 @@ export default function NewItemPage() {
 
       <div className="grid grid-cols-3 gap-3">
         {photos.map((p, i) => (
-          <div key={i} className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-stone-200 bg-stone-100 dark:bg-zinc-800 shadow-sm">
+          <div key={i} className="relative group aspect-square rounded-xl sm:rounded-2xl overflow-hidden border-2 border-stone-200 bg-stone-100 dark:bg-zinc-800 shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={photoBlobs[i] ?? p} alt={`Photo ${i + 1}`} className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
@@ -474,7 +474,7 @@ export default function NewItemPage() {
         ))}
         {photos.length < 5 && (
           <button type="button" onClick={() => photoInputRef.current?.click()} disabled={imageUploading}
-            className="aspect-square rounded-2xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400
+            className="aspect-square rounded-xl sm:rounded-2xl border-2 border-dashed border-stone-300 dark:border-zinc-600 flex flex-col items-center justify-center gap-2 text-stone-400
               hover:border-[#b04a15] hover:text-[#b04a15] transition-all hover:bg-[#b04a15]/4 group">
             {imageUploading ? <Loader2 className="w-7 h-7 animate-spin" /> : <ImagePlus className="w-7 h-7 group-hover:scale-110 transition-transform" />}
             <span className="text-xs font-bold">{imageUploading ? "Uploading…" : photos.length === 0 ? "Add Photos" : "Add More"}</span>
@@ -493,13 +493,13 @@ export default function NewItemPage() {
 
       {/* AI analysis status */}
       {analyzing && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-[#b04a15]/8 border border-[#b04a15]/20 px-4 py-3 text-sm font-bold text-[#b04a15]">
+        <div className="flex items-center gap-2.5 rounded-xl sm:rounded-2xl bg-[#b04a15]/8 border border-[#b04a15]/20 px-4 py-3 text-sm font-bold text-[#b04a15]">
           <Sparkles className="w-4 h-4 animate-pulse shrink-0" />
           Analyzing your photos with AI — filling in the details below…
         </div>
       )}
       {!analyzing && aiRan && !aiUnavailableNote && (
-        <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 space-y-1.5">
+        <div className="rounded-xl sm:rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 space-y-1.5">
           <div className="flex items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-400">
               <Sparkles className="w-4 h-4 shrink-0" /> Filled in from your photos — please review before continuing
@@ -517,7 +517,7 @@ export default function NewItemPage() {
         </div>
       )}
       {!analyzing && aiUnavailableNote && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-stone-100 dark:bg-zinc-800 px-4 py-3 text-sm font-semibold text-stone-500 dark:text-stone-400">
+        <div className="flex items-center gap-2.5 rounded-xl sm:rounded-2xl bg-stone-100 dark:bg-zinc-800 px-4 py-3 text-sm font-semibold text-stone-500 dark:text-stone-400">
           <Info className="w-4 h-4 shrink-0" /> {aiUnavailableNote}
         </div>
       )}
@@ -533,8 +533,8 @@ export default function NewItemPage() {
               <Info className="w-3.5 h-3.5" /> Listing Guidelines
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-[90vw] sm:w-[520px] p-5">
-            <div className="grid sm:grid-cols-2 gap-4">
+          <PopoverContent align="end" className="w-[90vw] sm:w-[520px] p-3.5 sm:p-5">
+            <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
               {LISTING_GUIDELINES.map(({ icon: Icon, title, body }) => (
                 <div key={title} className="space-y-1.5">
                   <div className="flex items-center gap-1.5 text-[#b04a15]">
@@ -550,7 +550,7 @@ export default function NewItemPage() {
       </div>
 
       {/* Category + Subcategory */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-2 gap-4 sm:gap-5">
         <Field label="Category" required error={fieldErrors.category}>
           <Select value={category} onValueChange={(v) => { setCategory(v); setSubcategory(""); }}>
             <SelectTrigger className={`h-11 ${ie("category")} focus:ring-[#b04a15]/25 focus:border-[#b04a15]`}><SelectValue placeholder="Select category" /></SelectTrigger>
@@ -580,7 +580,7 @@ export default function NewItemPage() {
           className={`h-11 ${ie("title")} focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20`} />
       </Field>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-2 gap-4 sm:gap-5">
         <Field label="Brand" hint="Recommended for electronics">
           <Input placeholder="e.g. Samsung, IKEA" value={brand} onChange={(e) => setBrand(e.target.value)} className="h-11 focus-visible:border-[#b04a15] focus-visible:ring-[#b04a15]/20" />
         </Field>
@@ -589,7 +589,7 @@ export default function NewItemPage() {
         </Field>
       </div>
 
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-3 gap-4 sm:gap-5">
         <Field label="Quantity" required error={fieldErrors.quantity}>
           <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={`h-11 ${ie("quantity")}`} />
         </Field>
@@ -649,7 +649,7 @@ export default function NewItemPage() {
       </Field>
 
       {NEEDS_DIMENSIONS.includes(category) && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <Field label="Dimensions / Size" hint="e.g. 180×90×75 cm or XL">
             <Input placeholder="e.g. 120×60×75 cm" value={dimensions} onChange={(e) => setDimensions(e.target.value)} className="h-11" />
           </Field>
@@ -671,8 +671,8 @@ export default function NewItemPage() {
   // Compact location confirmation — lives on the final step now. Prefilled from
   // the donor's profile; pickup scheduling moved to the post-match Handover Hub.
   const locationCard = (
-    <div className="rounded-2xl border border-stone-200 dark:border-zinc-700 p-5">
-      <div className="space-y-4">
+    <div className="rounded-xl sm:rounded-2xl border border-stone-200 dark:border-zinc-700 p-3.5 sm:p-5">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-[#b04a15]" /> Item Location
@@ -716,14 +716,14 @@ export default function NewItemPage() {
 
   // ── Step 4 ────────────────────────────────────────────────────────────────
   const step4 = (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {locationCard}
       <p className="text-xs text-stone-400 -mt-3">
         Pickup timing, packaging and delivery details are arranged directly with your matched
         recipient later, in the Handover Hub — no need to decide them now.
       </p>
 
-      <div className="rounded-2xl bg-[#f0b97a]/15 border border-[#f0b97a]/40 p-4">
+      <div className="rounded-xl sm:rounded-2xl bg-[#f0b97a]/15 border border-[#f0b97a]/40 p-3 sm:p-4">
         <p className="text-sm font-black text-[#b04a15] mb-1">Mandatory Donor Declarations</p>
         <p className="text-xs text-stone-600 dark:text-stone-400">All 8 declarations must be accepted before your listing can be submitted.</p>
       </div>
@@ -731,7 +731,7 @@ export default function NewItemPage() {
       <div className="space-y-2.5">
         {DECLARATIONS.map((d, i) => (
           <label key={i} onClick={() => setDeclarations((prev) => prev.map((v, idx) => idx === i ? !v : v))}
-            className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200
+            className={`flex items-start gap-3 p-3.5 rounded-xl sm:rounded-2xl border-2 cursor-pointer transition-all duration-200
               ${declarations[i]
                 ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700 shadow-[0_0_0_1px_rgba(74,222,128,0.2)]"
                 : "border-stone-200 dark:border-zinc-700 hover:border-stone-300 hover:bg-white/50"}`}>
@@ -752,7 +752,7 @@ export default function NewItemPage() {
 
       {fieldErrors.declarations && <p className="text-sm text-[#b04a15] font-bold">{fieldErrors.declarations}</p>}
 
-      <div className="rounded-2xl bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 p-4 space-y-2">
+      <div className="rounded-xl sm:rounded-2xl bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 p-3 sm:p-4 space-y-2">
         <p className="text-xs font-black text-stone-600 dark:text-stone-300 uppercase tracking-widest">What happens next</p>
         {[
           "Our team reviews your listing (usually 24–48 hours)",
@@ -811,7 +811,7 @@ export default function NewItemPage() {
         <div className="ck-orb-a absolute top-1/2 left-1/3 w-32 h-32 rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(240,185,122,0.10) 0%, transparent 70%)", filter: "blur(28px)", animationDelay: "3s" }} />
 
-        <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
+        <div className="relative z-10 flex flex-col h-full p-5 sm:p-8 xl:p-10">
           {/* Badge */}
           <div className="mb-8">
             <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3.5 py-1.5">
@@ -821,7 +821,7 @@ export default function NewItemPage() {
 
           {/* Title */}
           <div className="mb-10">
-            <h1 className="text-white text-4xl xl:text-5xl font-black leading-none tracking-tight mb-3"
+            <h1 className="text-white text-2xl sm:text-4xl xl:text-5xl font-black leading-none tracking-tight mb-3"
               style={{ fontFamily: "serif" }}>
               List an<br />
               <span style={{ background: "linear-gradient(90deg, #e07b3a, #f0b97a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Item</span>
@@ -904,7 +904,7 @@ export default function NewItemPage() {
           {step}
         </div>
 
-        <div className="relative z-10 max-w-[860px] mx-auto px-6 sm:px-10 lg:px-16 py-10 lg:py-14">
+        <div className="relative z-10 max-w-[860px] mx-auto px-4 sm:px-10 lg:px-16 py-6 sm:py-10 lg:py-14">
 
           {/* ── Mobile step indicator ── */}
           <div className="lg:hidden mb-6">
@@ -930,7 +930,7 @@ export default function NewItemPage() {
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#b04a15] mb-1">
                 Step {step} of {STEPS.length}
               </p>
-              <h2 className="text-3xl xl:text-4xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-none">
+              <h2 className="text-xl sm:text-3xl xl:text-4xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-none">
                 {STEPS[step - 1].label}
               </h2>
               <p className="text-stone-400 text-sm mt-1">{STEPS[step - 1].sub}</p>
@@ -954,7 +954,7 @@ export default function NewItemPage() {
 
           {/* ── Step content panel ── */}
           <div
-            className={`rounded-3xl p-8 sm:p-10 mb-6 ${isAnimating ? "ck-step-exit" : animDir === "forward" ? "ck-step-enter-fwd" : "ck-step-enter-back"}`}
+            className={`rounded-2xl sm:rounded-3xl p-5 sm:p-10 mb-6 ${isAnimating ? "ck-step-exit" : animDir === "forward" ? "ck-step-enter-fwd" : "ck-step-enter-back"}`}
             style={{
               background: "rgba(255,255,255,0.75)",
               backdropFilter: "blur(20px)",
@@ -969,7 +969,7 @@ export default function NewItemPage() {
           <div className="flex items-center gap-3 pb-6">
             {step > 1 && (
               <button type="button" onClick={handleBack}
-                className="flex items-center gap-1.5 px-5 py-3 rounded-2xl border-2 border-stone-200 dark:border-zinc-700 font-bold text-sm text-stone-600 dark:text-stone-300
+                className="flex items-center gap-1.5 px-3.5 sm:px-5 py-3 rounded-xl sm:rounded-2xl border-2 border-stone-200 dark:border-zinc-700 font-bold text-sm text-stone-600 dark:text-stone-300
                   hover:border-stone-400 hover:bg-white/80 transition-all active:scale-[0.97]">
                 <ChevronLeft className="w-4 h-4" /> Back
               </button>
@@ -979,21 +979,21 @@ export default function NewItemPage() {
 
             {step < 2 ? (
               <button type="button" onClick={handleNext} disabled={saving}
-                className="flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-60 shadow-[0_6px_24px_rgba(176,74,21,0.35)] hover:shadow-[0_8px_32px_rgba(176,74,21,0.50)] hover:-translate-y-0.5"
+                className="flex items-center gap-2 px-4 sm:px-7 py-3 rounded-xl sm:rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-60 shadow-[0_6px_24px_rgba(176,74,21,0.35)] hover:shadow-[0_8px_32px_rgba(176,74,21,0.50)] hover:-translate-y-0.5"
                 style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}>
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                 Next: {STEPS[step].label} <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button type="button" onClick={handleSubmit} disabled={submitting || !declarations.every(Boolean)}
-                className="flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-50 shadow-[0_6px_24px_rgba(22,163,74,0.35)] hover:shadow-[0_8px_32px_rgba(22,163,74,0.50)] hover:-translate-y-0.5"
+                className="flex items-center gap-2 px-4 sm:px-7 py-3 rounded-xl sm:rounded-2xl font-black text-sm text-white transition-all active:scale-[0.97] disabled:opacity-50 shadow-[0_6px_24px_rgba(22,163,74,0.35)] hover:shadow-[0_8px_32px_rgba(22,163,74,0.50)] hover:-translate-y-0.5"
                 style={{ background: submitting || !declarations.every(Boolean) ? undefined : "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)" }}>
                 {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <>Submit for Review <ChevronRight className="w-4 h-4" /></>}
               </button>
             )}
           </div>
 
-          <div className="text-center pb-8">
+          <div className="text-center pb-5 sm:pb-8">
             <Link href="/dashboard" className="text-xs text-stone-400 hover:text-[#b04a15] transition-colors font-semibold underline underline-offset-2">
               Save & exit — continue later from Dashboard
             </Link>

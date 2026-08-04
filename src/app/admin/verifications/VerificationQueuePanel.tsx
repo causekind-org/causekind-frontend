@@ -270,7 +270,7 @@ export function VerificationQueuePanel() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap gap-2">
@@ -298,8 +298,8 @@ export function VerificationQueuePanel() {
             const isExpanded = expanded === r.id;
             const state = expandedData[r.id];
             return (
-              <div key={r.id} className={`rounded-2xl border overflow-hidden ${r.isEmergency ? "border-red-300 dark:border-red-800" : "border-stone-200 dark:border-zinc-700"} bg-white dark:bg-zinc-900`}>
-                <div className="flex items-start justify-between gap-3 p-4 cursor-pointer hover:bg-stone-50 dark:hover:bg-zinc-800/50" onClick={() => toggleExpand(r.id)}>
+              <div key={r.id} className={`rounded-xl sm:rounded-2xl border overflow-hidden ${r.isEmergency ? "border-red-300 dark:border-red-800" : "border-stone-200 dark:border-zinc-700"} bg-white dark:bg-zinc-900`}>
+                <div className="flex items-start justify-between gap-3 p-3 sm:p-4 cursor-pointer hover:bg-stone-50 dark:hover:bg-zinc-800/50" onClick={() => toggleExpand(r.id)}>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       {r.isEmergency && (
@@ -325,14 +325,14 @@ export function VerificationQueuePanel() {
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t dark:border-zinc-700 p-4 space-y-4 bg-stone-50 dark:bg-zinc-900/50">
+                  <div className="border-t dark:border-zinc-700 p-3 sm:p-4 space-y-3 sm:space-y-4 bg-stone-50 dark:bg-zinc-900/50">
                     <AiReviewPanel
                       entity="request"
                       id={r.id}
                       onUseReason={(reason) => { setRejectId(r.id); setRejectReason(reason); }}
                     />
                     {!state || state.loading ? (
-                      <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-stone-400" /></div>
+                      <div className="flex justify-center py-5 sm:py-8"><Loader2 className="w-5 h-5 animate-spin text-stone-400" /></div>
                     ) : (
                       <VerificationDetail
                         request={r}
@@ -431,8 +431,8 @@ export function VerificationQueuePanel() {
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-3.5 sm:p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <p className="font-bold text-sm mb-3">{title}</p>
         {children}
       </div>
@@ -657,7 +657,7 @@ function Metric({ label, value, invert }: { label: string; value: number; invert
   const color = bad ? "text-red-600" : good ? "text-green-600" : "text-amber-600";
   return (
     <div className="text-center">
-      <p className={`text-lg font-black ${color}`}>{value.toFixed(0)}</p>
+      <p className={`text-base sm:text-lg font-black ${color}`}>{value.toFixed(0)}</p>
       <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
     </div>
   );

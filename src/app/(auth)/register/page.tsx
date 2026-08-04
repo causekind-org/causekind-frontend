@@ -92,7 +92,7 @@ function Field({
   readOnly?: boolean; hint?: string; autoComplete?: string; error?: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1 sm:space-y-1.5">
       <label htmlFor={id} className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
         {label}
       </label>
@@ -105,7 +105,7 @@ function Field({
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className={`w-full rounded-xl border px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900
+        className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900
           ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}
           ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
       />
@@ -451,36 +451,37 @@ function RegisterContent() {
   }
 
   return (
-    <div className="w-full max-w-[460px] mx-auto space-y-6 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-3xl px-8 py-10 shadow-xl">
+    <div className="w-full max-w-[460px] mx-auto space-y-4 sm:space-y-6 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-2xl sm:rounded-3xl px-5 py-6 sm:px-8 sm:py-10 shadow-xl">
           {/* Heading */}
           <Reveal>
-            <div className="space-y-1.5">
+            <div className="space-y-1 sm:space-y-1.5">
               <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Create account</span>
-              <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
                 {isSocialFlow ? `${t("almostThereTitle")} 🎉` : `${t("joinTitle")} 🌱`}
               </h1>
-              <p className="text-sm text-stone-505 dark:text-stone-400">
+              {/* was stone-505 — not a real Tailwind shade, so no colour was emitted. */}
+              <p className="text-sm text-stone-500 dark:text-stone-400">
                 {isSocialFlow ? t("googleLinkedSubtitle") : t("createSubtitle")}
               </p>
             </div>
           </Reveal>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" noValidate>
             <Reveal delay={60}>
               {/* Role Selection Option */}
-              <div className="space-y-1.5">
+              <div className="space-y-1 sm:space-y-1.5">
                 <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
                   Register as
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => set("role", "DONOR")}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                    className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
                       form.role === "DONOR"
                         ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
-                        : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
                     }`}
                   >
                     <span className="text-sm font-bold">Donor 🎁</span>
@@ -489,10 +490,10 @@ function RegisterContent() {
                   <button
                     type="button"
                     onClick={() => set("role", "DONEE")}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                    className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
                       form.role === "DONEE"
                         ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
-                        : "border-stone-250 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
                     }`}
                   >
                     <span className="text-sm font-bold">Donee 🤝</span>
@@ -529,12 +530,17 @@ function RegisterContent() {
 
             <Reveal delay={180}>
               {/* Phone with dial-code */}
-              <div className="space-y-1.5">
+              <div className="space-y-1 sm:space-y-1.5">
                 <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
                   <Phone className="w-3.5 h-3.5" /> {t("phone")}
                 </label>
+                {/* min-w-0 on the input is what stops this row overflowing the
+                    card: a flex item defaults to min-width:auto, and an <input>
+                    has an implicit size=20, so flex-1 could grow it but never
+                    shrink it below ~210px — which overran the 318px content box
+                    sitting next to the dial select. */}
                 <div className="flex gap-2">
-                  <div className="w-[120px] shrink-0">
+                  <div className="w-[96px] sm:w-[120px] shrink-0">
                     <SearchableSelect
                       options={dialCodeOptions}
                       value={dialCountry}
@@ -553,7 +559,7 @@ function RegisterContent() {
                     maxLength={maxPhoneLength}
                     onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength))}
                     autoComplete="tel"
-                    className={`flex-1 rounded-xl border px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
+                    className={`flex-1 min-w-0 rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
                   />
                 </div>
                 {errors.phone && <p className="text-xs text-red-500 font-medium">{errors.phone}</p>}
@@ -596,7 +602,7 @@ function RegisterContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs text-stone-505 dark:text-stone-400">{t("country")}</label>
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("country")}</label>
                     <SearchableSelect
                       options={countryOptions}
                       value={countryIso}
@@ -607,7 +613,7 @@ function RegisterContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-stone-505 dark:text-stone-400">{t("state")}</label>
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("state")}</label>
                     {noStateOptions ? (
                       <p className="text-xs text-stone-400 italic py-1.5">{t("noStatesListed")}</p>
                     ) : (
@@ -624,7 +630,7 @@ function RegisterContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-stone-505 dark:text-stone-400">{t("city")}</label>
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("city")}</label>
                     {showCityFreeText ? (
                       <input
                         id="city"
@@ -633,7 +639,7 @@ function RegisterContent() {
                         value={cityFreeText}
                         onChange={e => setCityFreeText(e.target.value)}
                         autoComplete="address-level2"
-                        className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                        className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
                       />
                     ) : (
                       <SearchableSelect
@@ -654,7 +660,7 @@ function RegisterContent() {
             {/* Password — only on non-social flow */}
             {!isSocialFlow && (
               <Reveal delay={260}>
-                <div className="space-y-1.5">
+                <div className="space-y-1 sm:space-y-1.5">
                   <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
                     {t("password")}
                   </label>
@@ -667,7 +673,7 @@ function RegisterContent() {
                        placeholder="••••••••"
                        value={form.password}
                        onChange={e => set("password", e.target.value)}
-                       className={`w-full rounded-xl border px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
+                       className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
                      />
                     <button
                       type="button"
@@ -705,7 +711,7 @@ function RegisterContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 mt-2 animate-heartbeat"
+                className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 mt-2 animate-heartbeat"
               >
                 {loading
                   ? t("creating")
@@ -730,7 +736,7 @@ function RegisterContent() {
                     }
                     triggerGoogle();
                   }}
-                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
                 >
                   <GoogleIcon />
                   {googleLoading ? t("creating") : t("google")}
@@ -741,7 +747,7 @@ function RegisterContent() {
                   <button
                     type="button"
                     disabled
-                    className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-4 py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
+                    className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
                   >
                     <FacebookIcon />
                     {t("facebook")}
@@ -756,7 +762,7 @@ function RegisterContent() {
 
           {/* Cross-link */}
           <Reveal delay={420}>
-            <p className="text-center text-sm text-stone-550 dark:text-stone-400">
+            <p className="text-center text-sm text-stone-500 dark:text-stone-400">
               {t("haveAccount")}{" "}
               <a
                 href="/login"

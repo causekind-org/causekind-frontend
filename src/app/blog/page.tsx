@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CategoryDropdown } from "@/components/blog/CategoryDropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { blogPosts, insiderTips } from "../../data/blogData";
@@ -126,6 +127,40 @@ function BlogListingContent() {
   const [tipIndex, setTipIndex] = useState(0);
   const [tipDirection, setTipDirection] = useState(1); // 1 = forward, -1 = backward
 
+  /**
+   * One definition of the tip card, shared by the mobile carousel and the
+   * desktop grid.
+   *
+   * <p>A plain function returning JSX, deliberately NOT a nested component: a
+   * component declared inside a render body gets a fresh identity every render,
+   * so React would unmount and remount the card — losing its animation state —
+   * whenever anything else on this page changes. It closes over `translateTip`,
+   * so it also cannot move to module scope.
+   */
+  const renderTipCard = (tip: (typeof insiderTips)[number]) => {
+    const trTip = translateTip(tip);
+    return (
+      <div className="h-full bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 p-4 md:p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-stone-50 dark:hover:bg-stone-900/50 hover:shadow-[0_15px_35px_rgba(30,58,96,0.03)] hover:-translate-y-1 transition-all duration-500">
+        <div className="relative z-10 flex flex-col h-full justify-between">
+          <div>
+            <h3 className="font-bold text-base md:text-lg text-stone-900 dark:text-stone-100 mb-1.5 md:mb-2">
+              {trTip.title}
+            </h3>
+            <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm leading-relaxed mb-3 md:mb-4">
+              {trTip.description}
+            </p>
+          </div>
+          <Link
+            className="font-bold text-xs md:text-sm text-[#b04a15] dark:text-orange-400 flex items-center gap-1 hover:underline mt-auto group/link"
+            href="/requests"
+          >
+            {t("viewInKindNeeds")}
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
   const goToTip = (next: number) => {
     setTipDirection(next > tipIndex ? 1 : -1);
     setTipIndex(next);
@@ -223,8 +258,11 @@ function BlogListingContent() {
     })),
   };
 
+  // pt-24 sat on top of the 3.5rem sticky header, so on a phone the badge
+  // started ~150px down an otherwise empty screen. Scaled by breakpoint;
+  // desktop keeps its original lead-in.
   return (
-    <div className="pt-24 pb-16 bg-[#faf8f5] dark:bg-[#0c0a09]">
+    <div className="pt-10 md:pt-16 lg:pt-24 pb-16 bg-[#faf8f5] dark:bg-[#0c0a09]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
@@ -351,7 +389,20 @@ function BlogListingContent() {
                 only that small element repaints, not the list, so this
                 stays cheap no matter how many categories exist. */}
             <AnimatedWrapper delay={0.35} duration={0.5} direction="up" className="w-full lg:w-56 flex-shrink-0">
-              <nav className="lg:sticky lg:top-28 border-t border-stone-200 dark:border-stone-800">
+              {/* Below lg the eight categories were a full-width stack that ate
+                  most of a phone screen before a single post appeared. The
+                  sticky sidebar is still the better desktop pattern, so it is
+                  kept there rather than replaced everywhere. */}
+              <div className="lg:hidden">
+                <CategoryDropdown
+                  categories={categories}
+                  selected={selectedCategory}
+                  onSelect={handleCategorySelect}
+                  renderLabel={translateCategoryLabel}
+                  label={t("categories")}
+                />
+              </div>
+              <nav className="hidden lg:block lg:sticky lg:top-28 border-t border-stone-200 dark:border-stone-800">
                 <p className="pt-4 pb-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
                   {t("categories")}
                 </p>
@@ -387,10 +438,13 @@ function BlogListingContent() {
             </AnimatedWrapper>
 
             <div className="flex-1 min-w-0">
-          {/* Featured Story Bento */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+          {/* Featured Story Bento.
+              Two columns on a phone: stacked full-width these two filled about
+              two screens before a single post appeared. `gap-8` is a third of a
+              phone's width once split in two, hence the smaller mobile gap. */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-12 md:gap-8">
             {/* Large Featured Card */}
-            <AnimatedWrapper inView delay={0} duration={0.6} direction="up" className="md:col-span-8">
+            <AnimatedWrapper inView delay={0} duration={0.6} direction="up" className="min-w-0 md:col-span-8">
               {filteredPosts.length > 0 ? (
                 (() => {
                   const featured = filteredPosts[0];
@@ -406,34 +460,34 @@ function BlogListingContent() {
                           alt={tr.title}
                           fill
                           priority
-                          sizes="(min-width: 768px) 66vw, 100vw"
+                          sizes="(min-width: 768px) 66vw, 50vw"
                           className="object-cover group-hover:scale-[1.02] transition-transform duration-700"
                           src={featured.image}
                         />
-                        <div className="absolute top-4 left-4 z-20">
-                          <span className="bg-[#b04a15] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm">
+                        <div className="absolute top-2 left-2 z-20 md:top-4 md:left-4">
+                          <span className="bg-[#b04a15] text-white px-2 py-0.5 text-[9px] rounded-lg font-bold uppercase tracking-wider shadow-sm md:px-3 md:py-1 md:text-xs">
                             {tr.category}
                           </span>
                         </div>
                       </div>
-                      <div className="p-6 md:p-8">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">
+                      <div className="p-3 md:p-8">
+                        <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5 md:mb-3">
                           {tr.category} · {featured.publishedDate}
                         </p>
-                        <h2 className="font-extrabold text-2xl md:text-3xl text-stone-900 dark:text-stone-100 mb-3 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
+                        <h2 className="font-extrabold text-[15px] md:text-3xl text-stone-900 dark:text-stone-100 mb-1.5 md:mb-3 line-clamp-3 md:line-clamp-none group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
                           {tr.title}
                         </h2>
-                        <p className="text-stone-600 dark:text-stone-400 text-sm md:text-base line-clamp-2 mb-5 leading-relaxed">
+                        <p className="text-stone-600 dark:text-stone-400 text-xs md:text-base line-clamp-2 mb-3 md:mb-5 leading-relaxed">
                           {tr.description}
                         </p>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col items-start gap-1.5 md:flex-row md:items-center md:justify-between">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-orange-500 animate-pulse text-sm">🔥</span>
-                            <span className="text-xs text-orange-500 font-bold uppercase tracking-wider">
+                            <span className="text-orange-500 animate-pulse text-xs md:text-sm">🔥</span>
+                            <span className="text-[10px] md:text-xs text-orange-500 font-bold uppercase tracking-wider">
                               {t("featuredStory")}
                             </span>
                           </div>
-                          <span className="text-[#b04a15] dark:text-orange-400 font-bold flex items-center gap-1 text-sm group-hover:translate-x-1 transition-transform">
+                          <span className="text-[#b04a15] dark:text-orange-400 font-bold flex items-center gap-1 text-xs md:text-sm group-hover:translate-x-1 transition-transform">
                             {t("readStory")}
                           </span>
                         </div>
@@ -464,43 +518,43 @@ function BlogListingContent() {
             </AnimatedWrapper>
 
             {/* Live Impact Feed Sidebar */}
-            <AnimatedWrapper inView delay={0.15} duration={0.6} direction="right" className="md:col-span-4 flex flex-col gap-8">
-              <div className="bg-gradient-to-br from-stone-50 to-stone-100/50 dark:from-stone-900/30 dark:to-stone-950/20 border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 p-6 rounded-2xl flex-1 relative overflow-hidden shadow-xs">
+            <AnimatedWrapper inView delay={0.15} duration={0.6} direction="right" className="min-w-0 md:col-span-4 flex flex-col gap-3 md:gap-8">
+              <div className="bg-gradient-to-br from-stone-50 to-stone-100/50 dark:from-stone-900/30 dark:to-stone-950/20 border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 p-3 md:p-6 rounded-2xl flex-1 relative overflow-hidden shadow-xs">
                 <div className="relative z-10 h-full flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2 mb-5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <h3 className="text-xs uppercase tracking-widest text-[#b04a15] dark:text-orange-400 font-bold">
+                    <div className="flex items-center gap-2 mb-3 md:mb-5">
+                      <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <h3 className="text-[10px] md:text-xs uppercase tracking-widest text-[#b04a15] dark:text-orange-400 font-bold">
                         {t("liveFeedTitle")}
       </h3>
                     </div>
                     {positiveUpdate && (
-                      <div className="flex items-start gap-2 mb-4 p-3 rounded-xl bg-[#b04a15]/8 dark:bg-orange-400/10 border border-[#b04a15]/15 dark:border-orange-400/20">
-                        <Sparkles className="w-3.5 h-3.5 text-[#b04a15] dark:text-orange-400 shrink-0 mt-0.5" />
-                        <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300 font-medium">
+                      <div className="flex items-start gap-2 mb-2.5 p-2 md:mb-4 md:p-3 rounded-xl bg-[#b04a15]/8 dark:bg-orange-400/10 border border-[#b04a15]/15 dark:border-orange-400/20">
+                        <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#b04a15] dark:text-orange-400 shrink-0 mt-0.5" />
+                        <p className="text-[10.5px] md:text-xs leading-[1.4] md:leading-relaxed text-stone-700 dark:text-stone-300 font-medium line-clamp-4 md:line-clamp-none">
                           {positiveUpdate}
                         </p>
                       </div>
                     )}
-                    <div className="space-y-4">
+                    <div className="space-y-2 md:space-y-4">
                       {liveFeed.map((item, idx) => (
                         <div
                           key={item.id}
-                          className={`pl-4 py-2 transition-all duration-500 border-l-2 ${
+                          className={`pl-2.5 py-1.5 md:pl-4 md:py-2 transition-all duration-500 border-l-2 ${
                             idx === 0 ? "border-[#b04a15] dark:border-orange-500 bg-white dark:bg-stone-900/50 rounded-r-lg" : "border-stone-200 dark:border-stone-800"
                           }`}
                         >
-                          <p className="text-[10px] text-orange-600 dark:text-orange-400 font-bold opacity-80 uppercase tracking-wider">
+                          <p className="text-[9px] md:text-[10px] text-orange-600 dark:text-orange-400 font-bold opacity-80 uppercase tracking-wide md:tracking-wider">
                             {item.time}
                           </p>
-                          <p className="text-xs leading-normal mt-0.5 text-stone-600 dark:text-stone-400">
+                          <p className="text-[10.5px] md:text-xs leading-[1.35] md:leading-normal mt-0.5 text-stone-600 dark:text-stone-400">
                             <strong className="text-stone-800 dark:text-stone-200">{item.user}</strong> {item.text}
                           </p>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <Link href="/requests" className="mt-6 block text-center w-full py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
+                  <Link href="/requests" className="mt-3 md:mt-6 block text-center w-full py-2 md:py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-[11px] md:text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
                     {t("startYourImpact")}
                   </Link>
                 </div>
@@ -606,7 +660,9 @@ function BlogListingContent() {
                   {t("insiderTipsSubtitle")}
                 </p>
               </div>
-              <div className="flex gap-2">
+              {/* Mobile-only: at sm+ every tip is on screen, so paging controls
+                  would step through content the reader can already see. */}
+              <div className="flex gap-2 sm:hidden">
                 <button
                   id="tips-prev"
                   onClick={() => goToTip((tipIndex - 1 + insiderTips.length) % insiderTips.length)}
@@ -625,8 +681,11 @@ function BlogListingContent() {
             </div>
           </AnimatedWrapper>
 
-          {/* Carousel track */}
-          <div className="relative">
+          {/* MOBILE — a real carousel: one tip at a time, so the four dots below
+              finally map 1:1 to the four tips. Previously three of the four were
+              rendered at once and a step swapped a single card, which is why the
+              controls looked like they did nothing. */}
+          <div className="relative sm:hidden">
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.div
                 key={tipIndex}
@@ -634,41 +693,36 @@ function BlogListingContent() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: tipDirection === 1 ? -80 : 80 }}
                 transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8"
+                // `drag="x"` claims horizontal gestures only, so vertical page
+                // scrolling over the card is unaffected.
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.15}
+                onDragEnd={(_, info) => {
+                  const far = Math.abs(info.offset.x) > 60;
+                  const fast = Math.abs(info.velocity.x) > 350;
+                  if (!far && !fast) return;
+                  const dir = info.offset.x < 0 ? 1 : -1;
+                  goToTip((tipIndex + dir + insiderTips.length) % insiderTips.length);
+                }}
               >
-                {[0, 1, 2].map((offset) => {
-                  const tip = insiderTips[(tipIndex + offset) % insiderTips.length];
-                  const trTip = translateTip(tip);
-                  return (
-                    <div
-                      key={tip.slug}
-                      className="bg-white dark:bg-stone-900/40 border border-stone-200 dark:border-stone-800 p-6 rounded-2xl flex flex-col relative overflow-hidden h-[300px] group hover:bg-stone-50 dark:hover:bg-stone-900/50 hover:shadow-[0_15px_35px_rgba(30,58,96,0.03)] hover:-translate-y-1 transition-all duration-500"
-                    >
-                      <div className="relative z-10 flex flex-col h-full justify-between">
-                        <div>
-                          <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 mb-2">
-                            {trTip.title}
-                          </h3>
-                          <p className="text-stone-600 dark:text-stone-400 text-xs md:text-sm leading-relaxed mb-4">
-                            {trTip.description}
-                          </p>
-                        </div>
-                        <Link
-                          className="font-bold text-xs md:text-sm text-[#b04a15] dark:text-orange-400 flex items-center gap-1 hover:underline mt-auto group/link"
-                          href="/requests"
-                        >
-                          {t("viewInKindNeeds")}
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
+                {renderTipCard(insiderTips[tipIndex])}
               </motion.div>
             </AnimatePresence>
           </div>
 
+          {/* DESKTOP — all four tips, no paging. There are only four, and at sm+
+              they all fit, so arrows and dots had nothing left to reveal.
+              `xl:grid-cols-4` rather than `md:grid-cols-3`: three columns leave
+              the fourth tip orphaned alone on a second row. */}
+          <div className="hidden sm:grid sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-8">
+            {insiderTips.map((tip) => (
+              <div key={tip.slug}>{renderTipCard(tip)}</div>
+            ))}
+          </div>
+
           {/* Dot indicators */}
-          <div className="flex gap-1.5 mt-6 justify-center">
+          <div className="flex gap-1.5 mt-6 justify-center sm:hidden">
             {insiderTips.map((_, i) => (
               <button
                 key={i}

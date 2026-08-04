@@ -51,13 +51,13 @@ function RowForm({
   const set = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose} style={{ animation: "fadeIn 0.15s ease forwards" }}>
-      <div className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-[#0e1320] border border-[#f0b97a]/20 rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 sticky top-0 bg-[#0e1320]">
-          <h3 className="text-sm font-bold text-white">{title}</h3>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm" onClick={onClose} style={{ animation: "fadeIn 0.15s ease forwards" }}>
+      <div className="w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-y-auto bg-[#0e1320] border border-[#f0b97a]/20 rounded-xl sm:rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4 border-b border-white/10 sticky top-0 bg-[#0e1320]">
+          <h3 className="text-[13px] sm:text-sm font-bold text-white">{title}</h3>
           <button onClick={onClose} className="text-stone-400 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
           {editable.map(c => (
             <div key={c.key} className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-wider text-stone-400">{c.label}</label>
@@ -97,11 +97,11 @@ function RowForm({
             </div>
           ))}
         </div>
-        <div className="flex gap-2 px-5 py-4 border-t border-white/10 sticky bottom-0 bg-[#0e1320]">
+        <div className="flex gap-2 px-4 py-3 sm:px-5 sm:py-4 border-t border-white/10 sticky bottom-0 bg-[#0e1320]">
           <button onClick={() => onSave(form)} disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-[#f0b97a] hover:bg-[#e0a96a] disabled:opacity-50 text-stone-950 font-bold py-2.5 rounded-lg text-sm transition-colors">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save changes"}
           </button>
-          <button onClick={onClose} className="px-5 py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
         </div>
       </div>
     </div>
@@ -121,8 +121,8 @@ function DeleteConfirm({
 }) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onCancel} style={{ animation: "fadeIn 0.15s ease forwards" }}>
-      <div className="w-full max-w-sm bg-[#1a0e0e] border border-red-500/30 rounded-2xl shadow-2xl p-6 text-center" onClick={e => e.stopPropagation()}>
-        <div className="w-14 h-14 rounded-2xl bg-red-500/15 flex items-center justify-center mx-auto mb-4">
+      <div className="w-full max-w-sm bg-[#1a0e0e] border border-red-500/30 rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 text-center" onClick={e => e.stopPropagation()}>
+        <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-red-500/15 flex items-center justify-center mx-auto mb-3 sm:mb-4">
           <AlertTriangle className="w-7 h-7 text-red-400" />
         </div>
         {blockers ? (
@@ -147,7 +147,7 @@ function DeleteConfirm({
               <button onClick={onCascade} disabled={deleting} className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg text-sm transition-colors">
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete everything"}
               </button>
-              <button onClick={onCancel} className="px-5 py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
+              <button onClick={onCancel} className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
             </div>
           </>
         ) : (
@@ -158,7 +158,7 @@ function DeleteConfirm({
               <button onClick={onConfirm} disabled={deleting} className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg text-sm transition-colors">
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete permanently"}
               </button>
-              <button onClick={onCancel} className="px-5 py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
+              <button onClick={onCancel} className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
             </div>
           </>
         )}
@@ -314,7 +314,7 @@ export function EntityTable({
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h2 className={`text-lg font-black tracking-tight ${t.title}`}>{title}</h2>
+          <h2 className={`text-base sm:text-lg font-black tracking-tight ${t.title}`}>{title}</h2>
           <p className={`text-xs ${t.subtitle}`}>{rows.length} row{rows.length !== 1 ? "s" : ""}</p>
         </div>
         <div className="flex items-center gap-2 ml-auto">
@@ -346,23 +346,23 @@ export function EntityTable({
       </div>
 
       {/* Table */}
-      <div className={`rounded-2xl border overflow-hidden ${t.table}`}>
+      <div className={`rounded-xl sm:rounded-2xl border overflow-hidden ${t.table}`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className={t.thead}>
               <tr>
-                <th className={`px-4 py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                   #
                 </th>
-                <th className={`px-4 py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                   Code
                 </th>
                 {tableCols.map(c => (
-                  <th key={c.key} className={`px-4 py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                  <th key={c.key} className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                     {c.label}
                   </th>
                 ))}
-                <th className={`px-4 py-3 text-right font-bold text-[11px] uppercase tracking-wider ${t.theadTh}`}>
+                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-right font-bold text-[11px] uppercase tracking-wider ${t.theadTh}`}>
                   Actions
                 </th>
               </tr>
@@ -372,18 +372,18 @@ export function EntityTable({
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
                     {Array.from({ length: tableCols.length + 2 }).map((_, c) => (
-                      <td key={c} className="px-4 py-3">
+                      <td key={c} className="px-2.5 py-2 sm:px-4 sm:py-3">
                         <div className={`h-3.5 rounded animate-pulse ${t.skeleton}`} />
                       </td>
                     ))}
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2 sm:px-4 sm:py-3">
                       <div className={`h-3.5 w-16 rounded animate-pulse ml-auto ${t.skeleton}`} />
                     </td>
                   </tr>
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={tableCols.length + 3} className={`px-4 py-16 text-center text-sm ${t.empty}`}>
+                  <td colSpan={tableCols.length + 3} className={`px-4 py-10 sm:py-16 text-center text-sm ${t.empty}`}>
                     No rows found.
                   </td>
                 </tr>
@@ -394,16 +394,16 @@ export function EntityTable({
                     className={`sa-row-cascade transition-colors ${t.rowHover}`}
                     style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
                   >
-                    <td className={`px-4 py-3 whitespace-nowrap tabular-nums ${t.cellId}`}>{i + 1}</td>
-                    <td className={`px-4 py-3 whitespace-nowrap font-mono text-xs ${t.cellId}`}>{rowCode(entity, row.id)}</td>
+                    <td className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap tabular-nums ${t.cellId}`}>{i + 1}</td>
+                    <td className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap font-mono text-xs ${t.cellId}`}>{rowCode(entity, row.id)}</td>
                     {tableCols.map(c => (
-                      <td key={c.key} className={`px-4 py-3 whitespace-nowrap ${t.cell}`}>
+                      <td key={c.key} className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap ${t.cell}`}>
                         {c.type === "boolean"
                           ? <span className={`text-xs font-bold ${row[c.key] ? "text-emerald-500" : t.iconMuted}`}>{fmt(row[c.key])}</span>
                           : fmt(row[c.key])}
                       </td>
                     ))}
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2 sm:px-4 sm:py-3">
                       <div className="flex items-center justify-end gap-1">
                         {onView && (
                           <button

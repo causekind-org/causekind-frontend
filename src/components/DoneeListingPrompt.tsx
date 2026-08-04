@@ -99,7 +99,11 @@ export function DoneeListingPrompt() {
   if (!visible || userRole !== "DONEE") return null;
 
   return (
-    <div className="fixed bottom-[5.5rem] left-0 z-[9980] pointer-events-none sm:bottom-8">
+    /* Top-left, below the sticky header and the top-center toast lane (see
+       DonorListingPrompt for the offset reasoning). Stays flush to the left edge
+       — it is a left-anchored toast (rounded-r-xl, border-l-0) — so its slide-in
+       from the left is unchanged. */
+    <div className="fixed top-[8.5rem] lg:top-[10rem] left-0 z-[9980] pointer-events-none">
       <div
         aria-live="polite"
         aria-label="List an item prompt"

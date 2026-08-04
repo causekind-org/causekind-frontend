@@ -335,6 +335,15 @@ export function SiteHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Closing the menu makes it inert, which pushes focus out to <body>. Without
+  // this a keyboard user loses their place entirely, so send focus back to the
+  // control they opened it with.
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const wasSidebarOpen = useRef(false);
+  useEffect(() => {
+    if (wasSidebarOpen.current && !isSidebarOpen) menuTriggerRef.current?.focus();
+    wasSidebarOpen.current = isSidebarOpen;
+  }, [isSidebarOpen]);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
@@ -554,8 +563,11 @@ export function SiteHeader() {
         {/* Mobile Header (lg:hidden) */}
         <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-transparent">
           <button
+            ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
+            aria-expanded={isSidebarOpen}
+            aria-controls="staggered-menu-panel"
             className="flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
@@ -817,8 +829,10 @@ export function SiteFooter() {
   ];
   return (
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
-      <div className={`mx-auto grid max-w-7xl gap-x-4 gap-y-6 px-6 py-8 text-[13px] grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
-        <div className="col-span-2 space-y-2.5 md:col-span-1">
+      {/* items-start stops the short columns stretching; the row-span on Get
+          support (below) is what actually compacts this on mobile. */}
+      <div className={`mx-auto grid max-w-7xl items-start gap-x-4 gap-y-5 sm:gap-y-6 px-4 py-6 sm:px-6 sm:py-8 text-[13px] grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
+        <div className="col-span-2 space-y-2 sm:space-y-2.5 md:col-span-1">
           <div className="inline-block bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl shadow-sm border border-stone-200/10 dark:border-zinc-800">
             <CareNestLogo size="md" />
           </div>
@@ -826,28 +840,33 @@ export function SiteFooter() {
           <div className="text-stone-400 font-medium text-xs">
             <span className="text-white font-semibold">{t("contact")}:</span> +91 7719938619
           </div>
-          <div className="flex gap-2 pt-1 flex-wrap">
-            <span className="flex items-center gap-1.5 text-[11px] bg-stone-900 border border-stone-800 px-2.5 py-1 rounded-full text-white">
-              <Shield className="h-3.5 w-3.5 text-[var(--ck-role-accent)]" /> {t("adminVerified")}
+          <div className="flex gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
+            <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
+              <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ck-role-accent)]" /> {t("adminVerified")}
             </span>
-            <span className="flex items-center gap-1.5 text-[11px] bg-stone-900 border border-stone-800 px-2.5 py-1 rounded-full text-white">
-              <Shield className="h-3.5 w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
+            <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
+              <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
             </span>
           </div>
         </div>
         {giveBackLinks.length > 0 && (
-          <div className="space-y-2.5">
+          <div className="space-y-2 sm:space-y-2.5">
             <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
-            <ul className="space-y-1.5 text-stone-400 font-medium">
+            <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
               {giveBackLinks.map(({ href, l }) => (
                 <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
               ))}
             </ul>
           </div>
         )}
-        <div className="space-y-2.5">
+        {/* Get support carries 4-5 links while Give back carries 1, so on the
+            2-column mobile grid it spans two rows and Trust promise tucks into
+            the cell under Give back instead of starting a third row with an
+            empty cell beside it. Reverts to a normal cell from md: up, where
+            all four columns sit side by side. */}
+        <div className="row-span-2 md:row-span-1 space-y-2 sm:space-y-2.5">
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
-          <ul className="space-y-1.5 text-stone-400 font-medium">
+          <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
             {[
               { href: "/register", l: t("createAccount") },
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
@@ -859,17 +878,19 @@ export function SiteFooter() {
             ))}
           </ul>
         </div>
-        <div className="space-y-2.5">
+        <div className="space-y-2 sm:space-y-2.5">
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("trust")}</p>
-          <ul className="space-y-1.5 text-stone-400 font-medium">
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[var(--ck-role-accent)]" /> {t("adminVerifiedFull")}</li>
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[var(--ck-role-accent)]" /> {t("zeroFees")}</li>
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
+          {/* items-start, not items-center: these labels wrap to two lines on a
+              narrow column and a centred dot then floats beside the gap. */}
+          <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("adminVerifiedFull")}</li>
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("zeroFees")}</li>
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
           </ul>
         </div>
       </div>
-      <div className="border-t border-stone-900 py-3 text-center text-xs text-stone-500 font-medium px-4">
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
+      <div className="border-t border-stone-900 py-2.5 sm:py-3 text-center text-[11px] sm:text-xs text-stone-500 font-medium px-3 sm:px-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3 gap-y-1 sm:gap-y-1.5">
           <span className="w-full sm:w-auto">
             © {new Date().getFullYear()} <span className="font-bold text-[var(--ck-role-accent)]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
           </span>

@@ -107,7 +107,10 @@ export function DoneeRequestPrompt() {
   const visual = CATEGORY_VISUALS[request.category] ?? CATEGORY_VISUALS["Medical aid"];
 
   return (
-    <div className="fixed bottom-7 left-7 z-[9980] pointer-events-none">
+    /* Top-left, below the sticky header and the top-center toast lane (see
+       DonorListingPrompt for the offset reasoning). The slide-in from the left
+       edge reads the same here, so the animation is unchanged. */
+    <div className="fixed top-[8.5rem] lg:top-[10rem] left-7 z-[9980] pointer-events-none">
       <div
         className="pointer-events-auto"
         style={{
@@ -118,7 +121,7 @@ export function DoneeRequestPrompt() {
             : `transform ${EXIT_MS}ms ease-in, opacity ${EXIT_MS}ms ease`,
         }}
       >
-        <div className="relative flex items-center gap-3 bg-white border border-stone-200 rounded-2xl pl-2.5 pr-2 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(30,58,96,0.15)] overflow-hidden w-[320px] sm:w-[360px]">
+        <div className="relative flex items-center gap-3 bg-white border border-stone-200 rounded-2xl pl-2.5 pr-2 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(30,58,96,0.15)] overflow-hidden w-[320px] max-w-[calc(100vw-3.5rem)] sm:w-[360px]">
 
           {/* Progress bar — pure CSS animation, no JS interval */}
           <div

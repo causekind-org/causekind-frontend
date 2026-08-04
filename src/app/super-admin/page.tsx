@@ -193,25 +193,25 @@ function StatTile({
   const v = useCountUp(value);
   return (
     <div
-      className={`sa-count-glow relative rounded-2xl border p-5 overflow-hidden ${th.card}`}
+      className={`sa-count-glow relative rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 overflow-hidden ${th.card}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div
         className="absolute -bottom-8 -right-8 w-28 h-28 rounded-full blur-2xl pointer-events-none"
         style={{ background: `${accent}22` }}
       />
-      <div className="flex items-center justify-between mb-3 relative z-10">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 relative z-10">
         <span
-          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center"
           style={{ background: `${accent}1a`, color: accent }}
         >
-          <Icon className="w-5 h-5" />
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </span>
       </div>
-      <p className={`text-3xl font-black tabular-nums leading-none relative z-10 ${th.textPrimary}`}>
+      <p className={`text-xl sm:text-3xl font-black tabular-nums leading-none relative z-10 ${th.textPrimary}`}>
         {v.toLocaleString("en-IN")}
       </p>
-      <p className={`text-[11px] font-bold uppercase tracking-wider mt-1.5 relative z-10 ${th.textDim}`}>
+      <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider mt-1 sm:mt-1.5 relative z-10 ${th.textDim}`}>
         {label}
       </p>
     </div>
@@ -235,13 +235,13 @@ function OverviewSection({ th }: { th: Th }) {
 
   const c = data.counts;
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <div>
-        <h2 className={`text-lg font-black tracking-tight ${th.textPrimary}`}>Database Overview</h2>
-        <p className={`text-xs ${th.textDim}`}>Live snapshot of every table.</p>
+        <h2 className={`text-base sm:text-lg font-black tracking-tight ${th.textPrimary}`}>Database Overview</h2>
+        <p className={`text-[11px] sm:text-xs ${th.textDim}`}>Live snapshot of every table.</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
         <StatTile label="Users"     value={c["users"] ?? 0}         icon={Users}        delay={0}   accent="#f0b97a" th={th} />
         <StatTile label="Campaigns" value={c["campaigns"] ?? 0}     icon={Megaphone}    delay={60}  accent="#e07b3a" th={th} />
         <StatTile label="Donations" value={c["donations"] ?? 0}     icon={CreditCard}   delay={120} accent="#4ade80" th={th} />
@@ -250,14 +250,14 @@ function OverviewSection({ th }: { th: Th }) {
         <StatTile label="Matches"   value={c["matches"] ?? 0}       icon={Handshake}    delay={300} accent="#f472b6" th={th} />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-2 gap-3 sm:gap-4">
         {/* Role breakdown */}
-        <div className={`rounded-2xl border p-5 ${th.card}`}>
-          <div className="flex items-center gap-2 mb-4">
+        <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 ${th.card}`}>
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <Database className="w-4 h-4" style={{ color: th.accent }} />
-            <h3 className={`text-sm font-bold ${th.textPrimary}`}>Users by role</h3>
+            <h3 className={`text-[13px] sm:text-sm font-bold ${th.textPrimary}`}>Users by role</h3>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2.5 sm:space-y-3">
             {Object.entries(data.roleBreakdown).map(([role, count]) => {
               const total = Object.values(data.roleBreakdown).reduce((a, b) => a + b, 0) || 1;
               const pct = Math.round((count / total) * 100);
@@ -280,15 +280,17 @@ function OverviewSection({ th }: { th: Th }) {
         </div>
 
         {/* Total raised */}
-        <div className={`rounded-2xl border p-5 flex flex-col justify-center ${th.card}`}>
+        <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 flex flex-col justify-center ${th.card}`}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <h3 className={`text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
+            <h3 className={`text-[13px] sm:text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
           </div>
-          <p className="text-4xl font-black text-emerald-400 tabular-nums">
+          {/* Currency values run long (₹1,23,45,678) — text-4xl overflowed the
+              card on a phone before this stepped down. */}
+          <p className="text-2xl sm:text-4xl font-black text-emerald-400 tabular-nums break-words">
             ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
           </p>
-          <p className={`text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
+          <p className={`text-[11px] sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
         </div>
       </div>
     </div>
@@ -425,7 +427,7 @@ export default function SuperAdminPage() {
         {/* ── Main column ── */}
         <div className="flex-1 min-w-0 h-screen flex flex-col">
           {/* Topbar */}
-          <header className={`shrink-0 flex items-center justify-between gap-3 px-5 py-3.5 border-b ${th.divider} ${th.topbar}`}>
+          <header className={`shrink-0 flex items-center justify-between gap-3 px-3.5 py-2.5 sm:px-5 sm:py-3.5 border-b ${th.divider} ${th.topbar}`}>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className={`text-xs font-mono ${th.textMuted}`}>root@causekind</span>
@@ -442,12 +444,12 @@ export default function SuperAdminPage() {
           </header>
 
           {/* Mobile nav strip */}
-          <div className={`shrink-0 lg:hidden flex gap-1.5 overflow-x-auto scrollbar-hide px-4 py-3 border-b ${th.divider}`}>
+          <div className={`shrink-0 lg:hidden flex gap-1.5 overflow-x-auto scrollbar-hide px-3 py-2 border-b ${th.divider}`}>
             {NAV.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => handleNavClick(key)}
-                className={`flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
+                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
                   section === key
                     ? isDark ? "bg-[#f0b97a]/10 text-[#f0b97a]" : "bg-[#b04a15]/10 text-[#b04a15]"
                     : th.textMuted + " hover:text-white"
@@ -459,7 +461,7 @@ export default function SuperAdminPage() {
           </div>
 
           {/* Content */}
-          <main className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-7 max-w-6xl w-full">
+          <main className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-7 max-w-6xl w-full">
             {content}
           </main>
         </div>

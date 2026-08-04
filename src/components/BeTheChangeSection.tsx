@@ -18,9 +18,11 @@ import {
   Home,
   ArrowRight,
   Languages,
+  Play,
+  Plus,
 } from "lucide-react";
 import { getPlatformStats, type PlatformStats } from "@/lib/api";
-import { ALL_REQUEST_CATEGORIES } from "@/lib/categoryVisuals";
+import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { locales } from "@/i18n/config";
 import { MATCH_RADIUS_KM } from "@/lib/constants";
 
@@ -41,9 +43,11 @@ const RAIL_ICON = 32;      // px — the h-8 w-8 icon circle
  *  here would be a second copy of the same number, free to drift. */
 const RAIL_GAP = 24;       // px
 /** Auto-advance cadence, and how long a user's own swipe suppresses it. */
-const RAIL_AUTOSCROLL_MS = 5000;
-const RAIL_RESUME_MS = 9000;
+const RAIL_AUTOSCROLL_MS = 2500;
+const RAIL_RESUME_MS = 4000;
 /** Gradient shared with the desktop SVG path, so both tell the same story. */
+/** How many category pills to show before collapsing the rest into "+N more". */
+const PILL_LIMIT = 6;
 const RAIL_GRADIENT = `linear-gradient(90deg, ${TERRACOTTA}, ${INK}, ${TERRACOTTA})`;
 
 /* ─── Counter animation hook ─────────────────────────────────────────── */
@@ -171,6 +175,31 @@ function TrustJourney({ items }: { items: JourneyItem[] }) {
   // rail out from under someone mid-read.
   const [autoPaused, setAutoPaused] = useState(false);
   const resumeTimer = useRef<number | null>(null);
+  /** True while the auto-advance's own smooth scroll is still in flight. */
+  const programmatic = useRef(false);
+
+  /**
+   * The current leg of the journey — the ONE number the rail's scroll target and
+   * the travelling dot both read.
+   *
+   * <p>The dot used to run its own 4.2s loop with nothing tying it to the 2.5s
+   * auto-advance, so it arrived and restarted at arbitrary moments relative to
+   * the rail stepping forward. Driving both from `step` makes the dot a genuine
+   * countdown for the next advance, and makes drift impossible rather than
+   * merely tuned away.
+   *
+   * <p>Deriving the scroll target from `step` rather than from `scrollLeft` also
+   * fixes a latent problem: near the end the rail clamps at `maxLeft` and stops
+   * moving, so `scrollLeft` can no longer say which card is current.
+   */
+  const LEGS = Math.max(1, items.length - 1);        // 6 stations -> 5 legs
+  const [step, setStep] = useState(0);               // 0 .. LEGS-1
+  /** Mirrors `step` for the interval, which must not depend on it: listing
+   *  `step` in the effect's deps would tear down and rebuild the interval every
+   *  advance, restarting the 2.5s countdown from zero each time. */
+  const stepRef = useRef(0);
+  /** Station `i` along the connector, which spans first icon centre -> last. */
+  const stationPct = (i: number) => (i / LEGS) * 100;
   const yieldToUser = useCallback(() => {
     setAutoPaused(true);
     if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
@@ -195,21 +224,44 @@ function TrustJourney({ items }: { items: JourneyItem[] }) {
   useEffect(() => {
     // An auto-playing carousel is precisely what this setting asks us not to do.
     if (reduceMotion || autoPaused || !railInView) return;
+    let settle: number | undefined;
     const id = window.setInterval(() => {
       const el = railRef.current;
       if (!el) return;
       const maxLeft = el.scrollWidth - el.clientWidth;
       if (maxLeft <= 1) return;   // content no longer overflows — nothing to do
-      const atEnd = el.scrollLeft >= maxLeft - 1;
+
+      // The dot has just finished its 2.5s run to the next station, so move on.
+      // The scroll happens OUT here, not inside a setState updater: React
+      // double-invokes updaters in StrictMode, which would fire two scrolls per
+      // tick in development.
+      const next = (stepRef.current + 1) % LEGS;
+      stepRef.current = next;
+      setStep(next);
+
+      // Claim the scroll events this is about to emit, so the rail's own
+      // `onScroll` does not read them as the user taking over.
+      programmatic.current = true;
+      if (settle !== undefined) window.clearTimeout(settle);
+      settle = window.setTimeout(() => { programmatic.current = false; }, 700);
       el.scrollTo({
-        // Smooth rewind rather than an instant jump: the connector's fill is
-        // bound to scroll position, so a hard jump would snap it too.
-        left: atEnd ? 0 : Math.min(el.scrollLeft + RAIL_ITEM_W + RAIL_GAP, maxLeft),
+        // Smooth rewind on the wrap rather than an instant jump: the connector's
+        // fill is bound to scroll position, so a hard jump would snap it too.
+        left: Math.min(next * (RAIL_ITEM_W + RAIL_GAP), maxLeft),
         behavior: "smooth",
       });
     }, RAIL_AUTOSCROLL_MS);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      // Must be cleared too — a settle firing after unmount would touch a ref
+      // belonging to a dead component.
+      if (settle !== undefined) window.clearTimeout(settle);
+    };
   }, [reduceMotion, autoPaused, railInView]);
+
+  // The dot holds position whenever the advance itself is not running, so the
+  // countdown never keeps ticking against a rail that is standing still.
+  const dotPaused = autoPaused || !railInView;
 
   // Drives the traveling dot exactly along the curve (getPointAtLength), not a straight-line
   // interpolation between node coordinates — otherwise it visibly cuts corners off the wave.
@@ -275,10 +327,25 @@ function TrustJourney({ items }: { items: JourneyItem[] }) {
         <div
           ref={railRef}
           className="snap-x snap-mandatory overflow-x-auto pb-2 scrollbar-hide"
-          // Pointer covers touch and mouse; `onFocusCapture` catches a keyboard
-          // user tabbing into a card. Deliberately NOT onScroll — the
-          // auto-advance scrolls too, and would pause itself forever.
-          onPointerDown={yieldToUser}
+          // `scroll`, not `pointerdown`. Pointer-down fired for ANY touch landing
+          // on the rail — including a finger merely starting a vertical page
+          // scroll — so ordinary browsing kept suppressing the auto-advance.
+          // Scroll is the only event that means the rail itself actually moved;
+          // the `programmatic` guard is what stops the auto-advance's own scroll
+          // from pausing itself forever, which is why this was avoided before.
+          onScroll={() => {
+            if (programmatic.current) return;
+            // Resync, or the next tick would scroll back to a stale `step` and
+            // yank the rail out from under the swipe that just happened.
+            const el = railRef.current;
+            if (el) {
+              const at = Math.max(0, Math.min(LEGS - 1,
+                Math.round(el.scrollLeft / (RAIL_ITEM_W + RAIL_GAP))));
+              stepRef.current = at;
+              setStep(at);
+            }
+            yieldToUser();
+          }}
           onFocusCapture={yieldToUser}
         >
           {/* Scroll CONTENT. The connector lives here, not on the container:
@@ -318,15 +385,27 @@ function TrustJourney({ items }: { items: JourneyItem[] }) {
                 style={{ background: RAIL_GRADIENT, scaleX: fill }}
               />
 
-              {/* 4 — the travelling dot. `left`, not `x`: a percentage on `x`
-                  resolves against the element's OWN width, which would move a
-                  7px dot by 7px. */}
+              {/* 4 — the travelling dot, which IS the countdown to the next
+                  advance: it covers exactly one leg in RAIL_AUTOSCROLL_MS, and
+                  the rail steps forward as it lands.
+
+                  `left`, not `x`: a percentage on `x` resolves against the
+                  element's OWN width, which would move a 7px dot by 7px.
+
+                  `key={step}` remounts it each leg, so the wrap back to the
+                  first station jumps rather than sweeping backwards across the
+                  whole line.
+
+                  `linear`, not `easeInOut`: this is elapsed time now, and a
+                  timer that slows at both ends does not read as elapsed time. */}
               {!reduceMotion && (
                 <motion.span
+                  key={step}
                   className="absolute top-1/2 h-[7px] w-[7px] rounded-full"
                   style={{ background: TERRACOTTA, translateX: "-50%", translateY: "-50%" }}
-                  animate={{ left: ["0%", "100%"] }}
-                  transition={{ duration: 4.2, ease: "easeInOut", repeat: Infinity, repeatDelay: 0.6, delay: 1.2 }}
+                  initial={{ left: `${stationPct(step)}%` }}
+                  animate={{ left: `${dotPaused ? stationPct(step) : stationPct(step + 1)}%` }}
+                  transition={{ duration: dotPaused ? 0 : RAIL_AUTOSCROLL_MS / 1000, ease: "linear" }}
                 />
               )}
             </div>
@@ -494,15 +573,27 @@ function CategoryPill({
   icon: Icon,
   label,
   delay,
+  href,
 }: {
   icon: React.ElementType;
   label: string;
   delay: number;
+  /** When set the pill becomes a link — used by the "+N more" variant. */
+  href?: string;
 }) {
+  const body = (
+    <>
+      <Icon className="w-3.5 h-3.5 text-[#b04a15]" />
+      <span className="text-[13px] font-bold text-stone-700 dark:text-stone-300">{label}</span>
+    </>
+  );
+
   return (
     <motion.div
-      className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white dark:bg-zinc-900
-                 border border-[#e5e2d5]/60 dark:border-stone-800 shadow-sm cursor-default"
+      className={`flex items-center gap-1.5 px-3 py-2 rounded-full bg-white dark:bg-zinc-900
+                 border border-[#e5e2d5]/60 dark:border-stone-800 shadow-sm ${
+                   href ? "cursor-pointer hover:border-[#b04a15]/40" : "cursor-default"
+                 }`}
       initial={{ opacity: 0, x: -20 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, amount: 0.1 }}
@@ -514,8 +605,13 @@ function CategoryPill({
       }}
       whileHover={{ y: -2, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", transition: { duration: 0.15 } }}
     >
-      <Icon className="w-3.5 h-3.5 text-[#b04a15]" />
-      <span className="text-[13px] font-bold text-stone-700 dark:text-stone-300">{label}</span>
+      {href ? (
+        <Link href={href} className="flex items-center gap-1.5">
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
     </motion.div>
   );
 }
@@ -530,7 +626,18 @@ export function BeTheChangeSection({
    * the Campaigns rail between them) cannot silently produce a bad overlap.
    */
   overlapHero = false,
-}: { initialStats?: PlatformStats | null; overlapHero?: boolean } = {}) {
+  /**
+   * Emit the guest tour's `data-tour` anchors.
+   *
+   * <p>This component is mounted TWICE by HomeClient — once in the desktop
+   * branch, once in the mobile one. Emitting anchors unconditionally would put
+   * each `data-tour` in the DOM twice, and `document.querySelector` returns the
+   * FIRST match: the desktop copy, which is `hidden lg:block`. A `display: none`
+   * element reports a zero rect, so the tour's spotlight would collapse to
+   * nothing. Only the mobile instance may pass this.
+   */
+  tourAnchors = false,
+}: { initialStats?: PlatformStats | null; overlapHero?: boolean; tourAnchors?: boolean } = {}) {
   const { ref: statsRef, inView: statsInView } = useInView(0.3);
   const { user } = useAuth();
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(initialStats ?? null);
@@ -679,14 +786,20 @@ export function BeTheChangeSection({
     },
   ];
 
-  const categories = [
-    { icon: GraduationCap, label: "Education" },
-    { icon: Stethoscope,   label: "Medical"   },
-    { icon: Home,          label: "Livelihood" },
-    { icon: Heart,         label: "Community"  },
-    { icon: Package,       label: "In-Kind"   },
-    { icon: Users,         label: "Family"    },
-  ];
+  /**
+   * Derived from the real category list, never hand-written.
+   *
+   * <p>These pills used to be six invented labels — "Community", "In-Kind" and
+   * "Family" are not categories at all, while six real ones were missing. The
+   * same page renders a "Cause Categories" metric from
+   * `ALL_REQUEST_CATEGORIES.length`, so it was contradicting itself.
+   *
+   * <p>`CATEGORY_VISUALS` already calls itself the single source of truth for
+   * category icons, so nothing needs mapping by hand: adding a category updates
+   * the pills, the overflow count and the metric together.
+   */
+  const shownCategories = ALL_REQUEST_CATEGORIES.slice(0, PILL_LIMIT);
+  const remainingCategories = ALL_REQUEST_CATEGORIES.length - shownCategories.length;
 
   return (
     <section
@@ -746,19 +859,31 @@ export function BeTheChangeSection({
           </div>
 
           {/* ── Category pills (slide-in from left) ── */}
-          <div className="flex flex-wrap gap-2 mb-10">
-            {categories.map((c, i) => (
+          <div className="flex flex-wrap gap-2 mb-10" data-tour={tourAnchors ? "guest-categories" : undefined}>
+            {shownCategories.map((name, i) => (
               <CategoryPill
-                key={c.label}
-                icon={c.icon}
-                label={c.label}
+                key={name}
+                icon={CATEGORY_VISUALS[name].Icon}
+                label={name}
                 delay={i * 80}
               />
             ))}
+            {/* Only when there genuinely are more — if the list ever shrinks to
+                the limit this disappears rather than claiming "+0 more". */}
+            {remainingCategories > 0 && (
+              <CategoryPill
+                icon={Plus}
+                label={`${remainingCategories} more`}
+                delay={shownCategories.length * 80}
+                href="/requests"
+              />
+            )}
           </div>
 
           {/* ── Trust journey — an animated connecting path, no card containers ── */}
-          <TrustJourney items={cards} />
+          <div data-tour={tourAnchors ? "guest-journey" : undefined}>
+            <TrustJourney items={cards} />
+          </div>
 
         </div>{/* ── end elevated surface ── */}
 
@@ -777,7 +902,7 @@ export function BeTheChangeSection({
           {/* Open signal matrix: 2x2 on mobile, a four-station rail at xl.
               `minmax(0,1fr)` (not plain `1fr`) so a long label can never push a
               column past its share and overflow the row. */}
-          <div className="relative">
+          <div className="relative" data-tour={tourAnchors ? "guest-signals" : undefined}>
             <SignalMatrixDividers />
             <dl className="grid auto-rows-fr grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:auto-rows-auto xl:grid-cols-[repeat(4,minmax(0,1fr))]">
             {STATS.map((s, i) => (
@@ -804,6 +929,7 @@ export function BeTheChangeSection({
           <div className="flex flex-wrap items-center gap-2.5 mt-5">
             <Link
               href="/register"
+              data-tour={tourAnchors ? "guest-join" : undefined}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-[13px] text-white
                          shadow-md hover:opacity-90 active:scale-95 transition-all duration-200"
               style={{ background: TERRACOTTA }}

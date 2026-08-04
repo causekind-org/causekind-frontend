@@ -153,9 +153,12 @@ export function AnimatedEmailOtp<T>({
   const locked = phase === "verifying" || phase === "success";
 
   return (
-    <div className="w-full max-w-[460px] mx-auto space-y-6 relative z-10 rounded-3xl border border-white/60 bg-white/85 px-8 py-10 shadow-xl backdrop-blur-sm dark:border-zinc-700/30 dark:bg-zinc-900/75">
+    <div className="w-full max-w-[460px] mx-auto space-y-4 sm:space-y-6 relative z-10 rounded-2xl sm:rounded-3xl border border-white/60 bg-white/85 px-5 py-6 sm:px-8 sm:py-10 shadow-xl backdrop-blur-sm dark:border-zinc-700/30 dark:bg-zinc-900/75">
       {/* ── Heading: crossfades to the verified state ─────────────────────── */}
-      <div className="min-h-[104px] space-y-1.5">
+      {/* min-height reserves room for the two-line heading so the card doesn't
+          jump when it crossfades to the verified state — smaller here because
+          the heading itself steps down on mobile. */}
+      <div className="min-h-[76px] sm:min-h-[104px] space-y-1 sm:space-y-1.5">
         <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] dark:text-[#e07b3a]">
           {labels.eyebrow}
         </span>
@@ -168,7 +171,7 @@ export function AnimatedEmailOtp<T>({
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
               transition={{ duration: 0.24, ease: "easeOut" }}
             >
-              <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50 sm:text-4xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50 sm:text-4xl">
                 {phase === "success" ? labels.verified : labels.title}
               </h1>
               {phase !== "success" && (
@@ -373,7 +376,9 @@ const Cell = ({ ref, index, slot, phase, converge, reduceMotion }: {
           : { duration: 0.2 }
       }
       className={[
-        "relative flex h-14 items-center justify-center rounded-xl border bg-stone-50 font-mono text-xl font-bold",
+        // h-12/text-lg on mobile: six boxes plus gaps have to fit a 320px-wide card
+    // without shrinking the digits below comfortable reading size.
+    "relative flex h-12 sm:h-14 items-center justify-center rounded-xl border bg-stone-50 font-mono text-lg sm:text-xl font-bold",
         "text-stone-900 transition-[border-color,box-shadow,background-color] duration-200",
         "dark:bg-zinc-900 dark:text-stone-100",
         phase === "error"

@@ -1090,6 +1090,35 @@ section:focus-within {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ── Bottom chrome geometry — ONE source of truth, site-wide ──────────────
+   The floating nav and the bottom blur are two independent fixed elements that
+   have to agree about where the bottom of the screen is. They did not: the nav
+   floats `--ck-nav-float + inset` up from the edge and is `--ck-nav-h` tall, so
+   its TOP edge sat well above the blur band's top. The blur therefore ended
+   mid-air just above the bar (a visible hard cut) while the strip of page
+   scrolling below the bar stayed sharp, making the nav look like it was
+   floating in the middle of the page.
+
+   `--ck-bottom-chrome` is everything the bottom chrome occupies measured from
+   the physical screen edge upward. The blur adds its own fade on top of it, so
+   the fade can only ever BEGIN above the navbar, never across it.
+
+   Zeroed at lg, where the mobile bar is `lg:hidden` and the blur should be a
+   plain band again. */
+:root {
+  --ck-bottom-inset: env(safe-area-inset-bottom, 0px);
+  --ck-nav-float: 0.75rem;   /* island's gap from the screen edge */
+  --ck-nav-h: 4.25rem;       /* the bar itself, incl. its own padding */
+  --ck-bottom-chrome: calc(var(--ck-nav-float) + var(--ck-bottom-inset) + var(--ck-nav-h));
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --ck-nav-float: 0px;
+    --ck-nav-h: 0px;
+  }
+}
+
 /* ── Mobile donate pill: gentle continuous pulse glow ── */
 @keyframes donate-pulse {
 
@@ -1799,6 +1828,23 @@ div:has(.searchable-select-open) {
 }
 
 /* Base typography overrides for readability */
+/* The article body is `dangerouslySetInnerHTML` from blogData.ts — authored
+   HTML the layout cannot inspect at build time. Several posts embed full
+   https://www.causekind.com/... URLs inline, which are unbreakable words that
+   would push past the page gutter on a phone. These guards are cheap insurance
+   for content nobody re-checks when the layout changes. */
+.article-content {
+  overflow-wrap: anywhere;
+}
+.article-content img,
+.article-content table,
+.article-content pre {
+  max-width: 100%;
+}
+.article-content pre {
+  overflow-x: auto;
+}
+
 .article-content p {
   font-family: var(--font-source-serif-4), serif;
   font-size: 1.125rem;

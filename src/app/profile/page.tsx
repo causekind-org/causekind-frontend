@@ -158,6 +158,7 @@ export default function ProfilePage() {
 
   // Settings panel toggle
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [storyExpanded, setStoryExpanded] = useState(false);
 
   // GPS location
   const [locStatus, setLocStatus] = useState<"idle" | "requesting" | "saved" | "error">("idle");
@@ -536,6 +537,10 @@ export default function ProfilePage() {
       : []),
   ].sort((a, b) => b.at - a.at).slice(0, 12);
 
+  // The chronicle is capped at 12 above, but 12 rows is still a long scroll on a
+  // phone. Collapse to the newest few on mobile only; desktop always shows all.
+  const STORY_COLLAPSED_COUNT = 5;
+
   const fmtDate = (at: number) =>
     new Date(at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
@@ -553,7 +558,7 @@ export default function ProfilePage() {
           ? "radial-gradient(ellipse at 75% 20%, rgba(96,165,250,0.14) 0%, transparent 55%)"
           : "radial-gradient(ellipse at 75% 20%, rgba(193,122,58,0.14) 0%, transparent 55%)" }} />
 
-        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 pt-14 pb-2 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-10 lg:gap-16 items-center">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-14 pb-2 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-10 lg:gap-16 items-center">
           <div data-tour="member-pass">
             <MemberPass
               name={fullName || profile?.fullName || user.email}
@@ -566,11 +571,11 @@ export default function ProfilePage() {
 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }} className="min-w-0">
             <p className={`text-[10px] font-black uppercase tracking-[0.28em] ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`}>CauseKind member</p>
-            <h1 className="mt-2 text-4xl sm:text-5xl leading-[1.05] break-words"
+            <h1 className="mt-1.5 sm:mt-2 text-2xl sm:text-4xl md:text-5xl leading-[1.05] break-words"
               style={{ fontFamily: "var(--font-lora), serif", fontStyle: "italic", fontWeight: 600 }}>
               {fullName || profile?.fullName}
             </h1>
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-white/55">
+            <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 text-[11px] sm:text-xs text-white/55">
               <span className="flex items-center gap-1.5"><Mail className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile?.email}</span>
               {profile?.phone && <span className="flex items-center gap-1.5"><Phone className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.phone}</span>}
               {profile?.city && <span className="flex items-center gap-1.5"><MapPin className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.city}</span>}
@@ -578,7 +583,7 @@ export default function ProfilePage() {
             <button
               onClick={() => setSettingsOpen((v) => !v)}
               data-tour="account-settings"
-              className={`mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl hover:-translate-y-0.5 ${
+              className={`mt-4 sm:mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br px-4 py-2.5 sm:px-5 sm:py-3 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl hover:-translate-y-0.5 ${
                 isDonee
                   ? "from-[#3a6aa8] to-[#1e3a60] hover:from-[#4678b8] hover:to-[#26497a] shadow-[#0d1e36]/50 hover:shadow-[#0d1e36]/60"
                   : "from-[var(--ck-role-secondary)] to-[var(--ck-role-accent)] hover:from-[#e8894c] hover:to-[#c25620] shadow-[var(--ck-role-accent)]/40 hover:shadow-[var(--ck-role-accent)]/50"
@@ -592,30 +597,30 @@ export default function ProfilePage() {
 
         {/* Live ledger: hairline strip inside the band */}
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
-          <div data-tour="profile-ledger" className="mt-10 grid grid-cols-3 border-t border-white/10">
+          <div data-tour="profile-ledger" className="mt-6 sm:mt-10 grid grid-cols-3 border-t border-white/10">
             {ledger.map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
-                className={`py-6 ${i > 0 ? "border-l border-white/10 pl-5 sm:pl-8" : ""}`}>
-                <p className="text-4xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
-                <p className="text-[10px] uppercase tracking-[0.22em] text-white/40 mt-2">{stat.label}</p>
+                className={`py-4 sm:py-6 ${i > 0 ? "border-l border-white/10 pl-3 sm:pl-8" : ""}`}>
+                <p className="text-2xl sm:text-4xl md:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.22em] text-white/40 mt-1 sm:mt-2 leading-tight">{stat.label}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-12 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12 items-start">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-12 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 sm:gap-12 items-start">
 
         {/* Your story: a chronicle of real events */}
         <section data-tour="story">
-          <div className={`border-b-2 ${acc.rule} pb-3`}>
+          <div className={`border-b-2 ${acc.rule} pb-2.5 sm:pb-3`}>
             <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>Your story</p>
             <p className="text-xs text-stone-400 mt-1">Everything that has happened on your CauseKind journey, newest first.</p>
           </div>
 
           {story.length === 0 ? (
-            <div className="py-14 text-center space-y-3">
-              <div className={`w-14 h-14 ${acc.softBg} rounded-2xl flex items-center justify-center mx-auto`}>
+            <div className="py-10 sm:py-14 text-center space-y-3">
+              <div className={`w-11 h-11 sm:w-14 sm:h-14 ${acc.softBg} rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto`}>
                 <BookOpen className={`w-6 h-6 ${acc.icon}`} />
               </div>
               <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Your story starts here</p>
@@ -629,48 +634,65 @@ export default function ProfilePage() {
               </Link>
             </div>
           ) : (
-            <ol className={`relative mt-2 border-l-2 ${acc.timeline} ml-2`}>
-              {story.map((ev, i) => (
-                <motion.li key={`${ev.title}-${ev.at}`}
-                  initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.08 * i }}
-                  className="relative pl-8 py-4 group">
-                  <span className={`absolute -left-[9px] top-5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    ev.broken ? "bg-red-500 border-red-500" : ev.done ? "bg-emerald-500 border-emerald-500" : `bg-[#F7F0E8] dark:bg-zinc-950 ${acc.dotBorder}`}`}>
-                    {(ev.done || ev.broken) && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                  </span>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <p className={`text-[15px] font-bold text-stone-900 dark:text-stone-100 leading-snug ${acc.hoverText} transition-colors`}
-                      style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
-                      {ev.title}
-                    </p>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 shrink-0">{fmtDate(ev.at)}</span>
-                  </div>
-                  <p className={`text-xs mt-0.5 capitalize ${ev.broken ? "text-red-500" : ev.done ? "text-emerald-600" : "text-stone-400"}`}>{ev.detail}</p>
-                </motion.li>
-              ))}
-            </ol>
+            <>
+              <ol className={`relative mt-2 border-l-2 ${acc.timeline} ml-2`}>
+                {story.map((ev, i) => (
+                  <motion.li key={`${ev.title}-${ev.at}`}
+                    initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: Math.min(i, STORY_COLLAPSED_COUNT) * 0.08 }}
+                    className={`relative pl-6 py-2.5 sm:pl-8 sm:py-4 group ${
+                      !storyExpanded && i >= STORY_COLLAPSED_COUNT ? "hidden sm:block" : ""}`}>
+                    <span className={`absolute -left-[8px] sm:-left-[9px] top-3.5 sm:top-5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center ${
+                      ev.broken ? "bg-red-500 border-red-500" : ev.done ? "bg-emerald-500 border-emerald-500" : `bg-[#F7F0E8] dark:bg-zinc-950 ${acc.dotBorder}`}`}>
+                      {(ev.done || ev.broken) && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </span>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 sm:gap-x-4 gap-y-1">
+                      <p className={`text-[13px] sm:text-[15px] font-bold text-stone-900 dark:text-stone-100 leading-snug ${acc.hoverText} transition-colors`}
+                        style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+                        {ev.title}
+                      </p>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 shrink-0">{fmtDate(ev.at)}</span>
+                    </div>
+                    <p className={`text-[11px] sm:text-xs mt-0.5 capitalize ${ev.broken ? "text-red-500" : ev.done ? "text-emerald-600" : "text-stone-400"}`}>{ev.detail}</p>
+                  </motion.li>
+                ))}
+              </ol>
+
+              {story.length > STORY_COLLAPSED_COUNT && (
+                <button
+                  type="button"
+                  onClick={() => setStoryExpanded((v) => !v)}
+                  className={`sm:hidden mt-3 ml-2 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider ${acc.softBg} ${acc.eyebrow}`}
+                >
+                  {storyExpanded
+                    ? "Show less"
+                    : `Show ${story.length - STORY_COLLAPSED_COUNT} more`}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${storyExpanded ? "rotate-180" : ""}`} />
+                </button>
+              )}
+            </>
           )}
         </section>
 
         {/* Milestone stamps */}
         <aside data-tour="milestones">
-          <div className={`border-b-2 ${acc.rule} pb-3`}>
+          <div className={`border-b-2 ${acc.rule} pb-2.5 sm:pb-3`}>
             <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>Milestones</p>
             <p className="text-xs text-stone-400 mt-1">Earned by doing, never bought.</p>
           </div>
-          <div className="mt-6 space-y-5">
+          <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-5">
             {milestones.map(({ label, desc, icon: Icon, earned }, i) => (
               <motion.div key={label}
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.15 + i * 0.12 }}
-                className="flex items-center gap-4">
-                <div className={`relative w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
+                className="flex items-center gap-3 sm:gap-4">
+                <div className={`relative w-9 h-9 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 ${
                   earned ? acc.badge : "border-2 border-dashed border-stone-300 dark:border-zinc-700 text-stone-300 dark:text-zinc-600"}`}>
                   {earned && <span className={`absolute inset-[-4px] rounded-full border ${acc.badgeRing}`} />}
-                  <Icon className="w-6 h-6" />
+                  <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className={`text-sm font-bold ${earned ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-zinc-600"}`}>{label}</p>
-                  <p className="text-[11px] text-stone-400 dark:text-zinc-600 mt-0.5">{earned ? desc : `Locked - ${desc.toLowerCase()}`}</p>
+                  <p className={`text-[13px] sm:text-sm font-bold ${earned ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-zinc-600"}`}>{label}</p>
+                  <p className="text-[10px] sm:text-[11px] text-stone-400 dark:text-zinc-600 mt-0.5">{earned ? desc : `Locked - ${desc.toLowerCase()}`}</p>
                 </div>
               </motion.div>
             ))}
@@ -680,11 +702,11 @@ export default function ProfilePage() {
 
       {/* Account settings: same working form, new shell */}
       {settingsOpen && (
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-12">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-12">
           <Reveal>
-            <div className={`border-t-2 ${acc.rule} pt-6`}>
-              <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow} mb-6`}>Account settings</p>
-              <form onSubmit={handleSave} className="space-y-5">
+            <div className={`border-t-2 ${acc.rule} pt-5 sm:pt-6`}>
+              <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow} mb-4 sm:mb-6`}>Account settings</p>
+              <form onSubmit={handleSave} className="space-y-4 sm:space-y-5">
                     {/* Avatar Upload */}
                     <div className="flex justify-center">
                       <AvatarUpload
@@ -695,7 +717,7 @@ export default function ProfilePage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                       {/* Full Name */}
                       <div className="space-y-1.5">
                         <Label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-stone-400">
@@ -705,7 +727,7 @@ export default function ProfilePage() {
                           <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                           <Input
                             id="fullName"
-                            className={`pl-10 rounded-xl border-stone-200 py-5 font-medium ${acc.focusRing}`}
+                            className={`pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium ${acc.focusRing}`}
                             placeholder={t("fullNamePlaceholder")}
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
@@ -722,7 +744,7 @@ export default function ProfilePage() {
                           <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                           <Input
                             id="email"
-                            className="pl-10 rounded-xl border-stone-200 py-5 font-medium bg-stone-50 dark:bg-zinc-800 text-stone-400 cursor-not-allowed"
+                            className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium bg-stone-50 dark:bg-zinc-800 text-stone-400 cursor-not-allowed"
                             value={profile?.email || ""}
                             disabled
                           />
@@ -736,7 +758,7 @@ export default function ProfilePage() {
                         <Phone className="w-3.5 h-3.5" /> {t("phoneNumber")}
                       </Label>
                       <div className="flex gap-2">
-                        <div className="w-[120px] shrink-0">
+                        <div className="w-[96px] sm:w-[120px] shrink-0">
                           <SearchableSelect
                             options={dialCodeOptions}
                             value={dialCountry}
@@ -750,7 +772,7 @@ export default function ProfilePage() {
                           id="phone"
                           type="tel"
                           inputMode="numeric"
-                          className={`flex-1 rounded-xl border-stone-200 py-5 font-medium ${acc.focusRing}`}
+                          className={`flex-1 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium ${acc.focusRing}`}
                           placeholder={t("phonePlaceholder")}
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
@@ -759,7 +781,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Location Selection */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                       <div className="space-y-1">
                         <Label htmlFor="country" className="text-xs text-stone-500">{t("country")}</Label>
                         <SearchableSelect
@@ -799,7 +821,7 @@ export default function ProfilePage() {
                             <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                             <Input
                               id="city"
-                              className={`pl-10 rounded-xl border-stone-200 py-5 font-medium ${acc.focusRing}`}
+                              className={`pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium ${acc.focusRing}`}
                               placeholder={t("enterCity")}
                               value={cityFreeText}
                               onChange={(e) => setCityFreeText(e.target.value)}
@@ -869,7 +891,7 @@ export default function ProfilePage() {
                     <div className="pt-2">
                       <Button
                         type="submit"
-                        className={`w-full ${acc.solidBtn} text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors`}
+                        className={`w-full ${acc.solidBtn} text-white rounded-xl py-4 sm:py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors`}
                         disabled={saving}
                       >
                         {saving ? (
@@ -906,7 +928,7 @@ function MemberPass({ name, role, city, avatarDataUrl, initials }: {
       animate={{ opacity: 1, y: 0, rotate: 0 }}
       transition={{ duration: 0.6 }}
       style={{ perspective: "900px" }}
-      className="mx-auto lg:mx-0 w-full max-w-[360px]"
+      className="mx-auto lg:mx-0 w-full max-w-[300px] sm:max-w-[360px]"
     >
       <div
         ref={ref}
@@ -918,7 +940,7 @@ function MemberPass({ name, role, city, avatarDataUrl, initials }: {
           setTilt({ rx: (0.5 - py) * 10, ry: (px - 0.5) * 12, gx: px * 100, gy: py * 100 });
         }}
         onMouseLeave={() => setTilt({ rx: 0, ry: 0, gx: 50, gy: 50 })}
-        className="relative rounded-2xl p-6 overflow-hidden select-none transition-transform duration-150 ease-out motion-reduce:transition-none"
+        className="relative rounded-2xl p-4 sm:p-6 overflow-hidden select-none transition-transform duration-150 ease-out motion-reduce:transition-none"
         style={{
           transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
           transformStyle: "preserve-3d",
@@ -935,11 +957,11 @@ function MemberPass({ name, role, city, avatarDataUrl, initials }: {
         <div className="pointer-events-none absolute inset-2 rounded-xl border border-white/15" />
 
         <div className="relative flex items-start justify-between">
-          <div className="w-14 h-14 rounded-full overflow-hidden bg-white/15 border border-white/25 flex items-center justify-center">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-white/15 border border-white/25 flex items-center justify-center">
             {avatarDataUrl ? (
               <Image src={avatarDataUrl} alt={initials} width={56} height={56} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-white font-black text-xl">{initials}</span>
+              <span className="text-white font-black text-lg sm:text-xl">{initials}</span>
             )}
           </div>
           <div className="text-right">
@@ -948,12 +970,12 @@ function MemberPass({ name, role, city, avatarDataUrl, initials }: {
           </div>
         </div>
 
-        <p className="relative mt-7 text-2xl text-white leading-tight break-words"
+        <p className="relative mt-5 sm:mt-7 text-xl sm:text-2xl text-white leading-tight break-words"
           style={{ fontFamily: "var(--font-lora), serif", fontStyle: "italic", fontWeight: 600 }}>
           {name}
         </p>
 
-        <div className="relative mt-6 flex items-end justify-between">
+        <div className="relative mt-4 sm:mt-6 flex items-end justify-between">
           <div>
             <p className="text-[8px] font-black uppercase tracking-[0.25em] text-white/45">Role</p>
             <p className="text-xs font-black uppercase tracking-wider text-white mt-0.5">{role}</p>

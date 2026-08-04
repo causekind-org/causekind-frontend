@@ -246,7 +246,7 @@ function RequestsHero({
         <HandCoins className="h-40 w-40 text-white" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-6 py-14 lg:py-20">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-14 lg:py-20">
         <div className="max-w-2xl">
 
           {/* ── Left: headline ── */}
@@ -263,7 +263,7 @@ function RequestsHero({
 
             {/* Headline */}
             <div className="anim-up anim-d2">
-              <h1 className="text-white text-4xl sm:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.04] tracking-tight">
+              <h1 className="text-white text-2xl sm:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.04] tracking-tight">
                 Give items.{" "}
                 <span className="text-gradient-terra">Change lives.</span>
               </h1>
@@ -275,23 +275,23 @@ function RequestsHero({
             </p>
 
             {/* Live stats */}
-            <div className="flex flex-wrap items-center gap-8 anim-up anim-d4">
+            <div className="flex flex-wrap items-center gap-5 sm:gap-8 anim-up anim-d4">
               <div>
-                <p className="text-3xl font-black text-white tabular-nums">{total}</p>
+                <p className="text-xl sm:text-3xl font-black text-white tabular-nums">{total}</p>
                 <p className="text-[10px] font-bold text-white/35 uppercase tracking-wider mt-0.5">Active Needs</p>
               </div>
               {critical > 0 && (
                 <>
                   <div className="w-px h-10 bg-white/10" />
                   <div>
-                    <p className="text-3xl font-black text-red-400 tabular-nums">{critical}</p>
+                    <p className="text-xl sm:text-3xl font-black text-red-400 tabular-nums">{critical}</p>
                     <p className="text-[10px] font-bold text-white/35 uppercase tracking-wider mt-0.5">Urgent</p>
                   </div>
                 </>
               )}
               <div className="hidden sm:block w-px h-10 bg-white/10" />
               <div className="hidden sm:block">
-                <p className="text-3xl font-black text-[var(--ck-role-highlight)]">0%</p>
+                <p className="text-xl sm:text-3xl font-black text-[var(--ck-role-highlight)]">0%</p>
                 <p className="text-[10px] font-bold text-white/35 uppercase tracking-wider mt-0.5">Platform Fees</p>
               </div>
             </div>
@@ -317,7 +317,7 @@ function RequestsHero({
 
               <Link
                 href="/items/new"
-                className="ck-cta-list inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-extrabold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.97]"
+                className="ck-cta-list inline-flex items-center gap-2 rounded-xl sm:rounded-2xl px-4 sm:px-7 py-3.5 text-sm font-extrabold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.97]"
                 style={{ background: "linear-gradient(135deg, var(--ck-role-accent) 0%, var(--ck-role-secondary) 100%)" }}
               >
                 <Plus className="w-4 h-4" strokeWidth={3} />
@@ -327,7 +327,7 @@ function RequestsHero({
               {/* Sticky hint — pops in beside the button after 10s, dismissible */}
               {showHint && (
                 <div className="ck-cta-hint absolute left-0 top-full mt-3 sm:left-full sm:top-1/2 sm:mt-0 sm:ml-4 sm:-translate-y-1/2 z-20 w-60">
-                  <div className="relative rounded-2xl border border-[var(--ck-role-highlight)]/40 bg-[#1c0905]/95 backdrop-blur-md px-4 py-3 shadow-xl shadow-black/40">
+                  <div className="relative rounded-xl sm:rounded-2xl border border-[var(--ck-role-highlight)]/40 bg-[#1c0905]/95 backdrop-blur-md px-4 py-3 shadow-xl shadow-black/40">
                     {/* Arrow — points up on mobile, left on desktop */}
                     <span className="absolute -top-1 left-8 h-2.5 w-2.5 rotate-45 border-l border-t border-[var(--ck-role-highlight)]/40 bg-[#1c0905] sm:top-1/2 sm:-left-1.5 sm:-mt-1.5 sm:border-b sm:border-t-0" />
                     <button
@@ -808,13 +808,13 @@ export default function RequestsPage() {
 
   if (gpsBlocked) {
     return (
-      <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-6 bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-250 dark:border-zinc-800 shadow-xl">
-          <div className="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center text-red-500">
+      <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 flex items-center justify-center p-3 sm:p-4">
+        <div className="max-w-md w-full text-center space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-stone-250 dark:border-zinc-800 shadow-xl">
+          <div className="mx-auto w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center text-red-500">
             <MapPin className="w-8 h-8 animate-bounce" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Location Access Required</h1>
+            <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Location Access Required</h1>
             <p className="text-sm text-stone-500 dark:text-stone-400">
               Causekind requires your GPS location to display the closest in-kind needs from your community. Please enable location permissions in your browser to proceed.
             </p>
@@ -866,13 +866,13 @@ export default function RequestsPage() {
       />
 
       {/* ── Main content ── */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-5 sm:py-8">
 
         {/* Mobile: advanced filter toggle + search */}
         <div className="flex items-center gap-3 mb-5 lg:hidden">
           <button
             onClick={() => setShowFilters(v => !v)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-bold text-stone-700 dark:text-stone-300 hover:border-[var(--ck-role-accent)]/50 hover:text-[var(--ck-role-accent)] transition-all shrink-0 shadow-xs"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl sm:rounded-2xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-bold text-stone-700 dark:text-stone-300 hover:border-[var(--ck-role-accent)]/50 hover:text-[var(--ck-role-accent)] transition-all shrink-0 shadow-xs"
           >
             <SlidersHorizontal className="h-4 w-4" />
             Filters
@@ -895,7 +895,7 @@ export default function RequestsPage() {
 
         {/* Mobile: collapsible filter panel */}
         {showFilters && (
-          <div className="lg:hidden mb-6 rounded-2xl bg-white dark:bg-zinc-900 p-5 border border-stone-100 dark:border-zinc-800 shadow-sm">
+          <div className="lg:hidden mb-6 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-3.5 sm:p-5 border border-stone-100 dark:border-zinc-800 shadow-sm">
             <RequestFilterPanel
               selectedUrgencies={selectedUrgencies}
               toggleUrgency={toggleUrgency}
@@ -907,10 +907,10 @@ export default function RequestsPage() {
         )}
 
         {/* Main asymmetric grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5 sm:gap-8 items-start">
 
           {/* Desktop sidebar */}
-          <aside className="hidden lg:block sticky top-[146px] bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-stone-100 dark:border-zinc-800 shrink-0">
+          <aside className="hidden lg:block sticky top-[146px] bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-sm border border-stone-100 dark:border-zinc-800 shrink-0">
             <h3 className="text-sm font-black text-stone-800 dark:text-stone-200 mb-5 flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-stone-400" />
               Filters
@@ -925,13 +925,13 @@ export default function RequestsPage() {
           </aside>
 
           {/* Right pane */}
-          <div className="min-w-0 space-y-5">
+          <div className="min-w-0 space-y-4 sm:space-y-5">
 
             {/* Header row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <Reveal>
                 <div className="flex items-baseline gap-3">
-                  <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+                  <h2 className="text-base sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">
                     Community Needs
                   </h2>
                   {!loading && (
@@ -997,23 +997,23 @@ export default function RequestsPage() {
             {loading ? (
               <RequestsMosaicSkeleton count={6} />
             ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 px-8 bg-white dark:bg-zinc-900 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm">
+              <div className="flex flex-col items-center justify-center py-24 px-5 sm:px-8 bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm">
                 {requests.length === 0 ? (
                   <>
-                    <div className="mb-5 w-20 h-20 rounded-3xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
+                    <div className="mb-5 w-14 sm:w-20 h-14 sm:h-20 rounded-2xl sm:rounded-3xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
                       <PackageOpen className="w-9 h-9 text-[var(--ck-role-accent)]/35" />
                     </div>
-                    <p className="font-extrabold text-stone-700 dark:text-stone-300 text-lg">No needs posted yet</p>
+                    <p className="font-extrabold text-stone-700 dark:text-stone-300 text-base sm:text-lg">No needs posted yet</p>
                     <p className="mt-2 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">
                       Community members haven&apos;t posted any needs yet. Check back soon.
                     </p>
                   </>
                 ) : (
                   <>
-                    <div className="mb-5 w-20 h-20 rounded-3xl bg-stone-50 dark:bg-zinc-800 flex items-center justify-center">
+                    <div className="mb-5 w-14 sm:w-20 h-14 sm:h-20 rounded-2xl sm:rounded-3xl bg-stone-50 dark:bg-zinc-800 flex items-center justify-center">
                       <SearchX className="w-9 h-9 text-stone-300 dark:text-zinc-600" />
                     </div>
-                    <p className="font-extrabold text-stone-700 dark:text-stone-300 text-lg">No matches found</p>
+                    <p className="font-extrabold text-stone-700 dark:text-stone-300 text-base sm:text-lg">No matches found</p>
                     <p className="mt-2 text-sm text-stone-400 font-medium text-center max-w-xs">
                       Try a different category, urgency, or search term.
                     </p>
@@ -1089,19 +1089,19 @@ export default function RequestsPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="give-item-title"
-            className="fixed left-1/2 top-1/2 flex max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl bg-white shadow-2xl shadow-black/35 dark:bg-zinc-900 md:max-h-[calc(100dvh-96px)] md:w-[calc(100vw-48px)] md:max-w-[860px] md:flex-row"
+            className="fixed left-1/2 top-1/2 flex max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl shadow-black/35 dark:bg-zinc-900 md:max-h-[calc(100dvh-96px)] md:w-[calc(100vw-48px)] md:max-w-[860px] md:flex-row"
             onClick={e => e.stopPropagation()}
           >
             <div
-              className="relative hidden select-none flex-col justify-between overflow-hidden p-8 text-white md:flex md:min-h-[560px] md:w-[40%]"
+              className="relative hidden select-none flex-col justify-between overflow-hidden p-5 sm:p-8 text-white md:flex md:min-h-[560px] md:w-[40%]"
               style={{ backgroundImage: "url('/images/kindness_banner.webp')", backgroundSize: "cover", backgroundPosition: "center" }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30 pointer-events-none" />
-              <div className="relative z-10 space-y-4">
+              <div className="relative z-10 space-y-3 sm:space-y-4">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-[var(--ck-role-highlight)] bg-white/10 backdrop-blur-md border border-white/20 py-1.5 px-3.5 rounded-full uppercase tracking-wider">
                   <Heart className="w-3 h-3 fill-[var(--ck-role-highlight)]" /> Give Back
                 </span>
-                <h2 className="text-2xl font-extrabold leading-snug tracking-tight">
+                <h2 className="text-lg sm:text-2xl font-extrabold leading-snug tracking-tight">
                   You&apos;re giving<br />
                   <span className="text-[var(--ck-role-highlight)]">{modalTitle ?? donateTarget.title}</span>
                 </h2>
@@ -1109,7 +1109,7 @@ export default function RequestsPage() {
                   Upload photos of your item and a short description. Our admin will verify and connect you with the recipient.
                 </p>
               </div>
-              <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 mt-8 space-y-2">
+              <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl sm:rounded-2xl p-3 sm:p-4 mt-8 space-y-2">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span className="text-[11px] text-white/80 font-semibold">Admin-verified before contact is shared</span>
@@ -1121,18 +1121,18 @@ export default function RequestsPage() {
               </div>
             </div>
 
-            <div className="relative flex max-h-[calc(100dvh-32px)] min-h-0 w-full flex-col overflow-y-auto p-5 sm:p-7 md:max-h-[calc(100dvh-96px)] md:w-[60%] md:p-8">
+            <div className="relative flex max-h-[calc(100dvh-32px)] min-h-0 w-full flex-col overflow-y-auto p-3.5 sm:p-7 md:max-h-[calc(100dvh-96px)] md:w-[60%] md:p-8">
               <button onClick={closeDonateModal} className="absolute right-4 top-4 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-800 hover:text-stone-600 transition z-10">
                 <X className="h-4 w-4" />
               </button>
-              <div className="mx-auto flex min-h-full w-full max-w-[380px] flex-col justify-center space-y-5 py-2">
+              <div className="mx-auto flex min-h-full w-full max-w-[380px] flex-col justify-center space-y-4 sm:space-y-5 py-2">
                 <div>
-                  <h3 id="give-item-title" className="text-2xl font-extrabold text-stone-900 dark:text-white">Give your item</h3>
+                  <h3 id="give-item-title" className="text-lg sm:text-2xl font-extrabold text-stone-900 dark:text-white">Give your item</h3>
                   <p className="text-xs text-stone-400 mt-1">Show us what you&apos;re giving so we can find it a perfect home.</p>
                 </div>
                 <div>
                   <Label className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 block">Photos of item</Label>
-                  <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-orange-200 dark:border-zinc-700 hover:border-[var(--ck-role-accent)] rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all bg-orange-50/20 dark:bg-zinc-800/20 hover:bg-orange-50/40">
+                  <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-orange-200 dark:border-zinc-700 hover:border-[var(--ck-role-accent)] rounded-xl sm:rounded-2xl p-3.5 sm:p-5 flex flex-col items-center justify-center cursor-pointer transition-all bg-orange-50/20 dark:bg-zinc-800/20 hover:bg-orange-50/40">
                     {imagePreviews.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2 w-full mb-1" onClick={e => e.stopPropagation()}>
                         {imagePreviews.map((src, i) => (
@@ -1156,7 +1156,7 @@ export default function RequestsPage() {
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
                 </div>
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-stone-50 dark:bg-zinc-800/40 border border-stone-150 dark:border-zinc-800">
+                <div className="flex items-center justify-between p-3.5 rounded-xl sm:rounded-2xl bg-stone-50 dark:bg-zinc-800/40 border border-stone-150 dark:border-zinc-800">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center shrink-0">
                       <Sparkles className="h-4 w-4" />
@@ -1184,7 +1184,7 @@ export default function RequestsPage() {
                     <span>{description.length}/1000</span>
                   </div>
                 </div>
-                <button onClick={handleSubmitDonate} disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20} className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine">
+                <button onClick={handleSubmitDonate} disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20} className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine">
                   {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : <><Heart className="h-4 w-4" /> Complete Donation <ArrowRight className="h-4 w-4" /></>}
                 </button>
                 <div className="flex justify-between text-[10px] text-stone-400 font-bold border-t border-stone-100 dark:border-zinc-800 pt-4">

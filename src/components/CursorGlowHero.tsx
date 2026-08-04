@@ -56,9 +56,14 @@ export function CursorGlowHero({ children }: { children: React.ReactNode }) {
         .ck-glow-static-2 { animation: ck-glow-pulse-slow2 9s ease-in-out 1.5s infinite; }
       `}</style>
 
+      {/* min-h, not h: a fixed height plus overflow-hidden clipped the hero's own
+          content on phones, where a wrapping h1 and the intro paragraph together
+          exceed 280px — the back-link lost its top gap and the last line of copy
+          was cut off. The padding guarantees breathing room now that the content
+          is what sets the height. */}
       <div
         ref={containerRef}
-        className="relative overflow-hidden bg-[#120c04] border-b border-stone-850 h-[280px] sm:h-[340px] flex items-center justify-center"
+        className="relative overflow-hidden bg-[#120c04] border-b border-stone-850 min-h-[280px] sm:min-h-[340px] py-14 sm:py-16 flex items-center justify-center"
         style={{ cursor: "none" }}
       >
         {/* Static ambient glows */}

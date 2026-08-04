@@ -69,11 +69,20 @@ export function DonorListingPrompt() {
   if (!visible || userRole !== "DONOR") return null;
 
   return (
-    <div className="fixed bottom-7 left-1/2 -translate-x-1/2 z-[9980] pointer-events-none">
+    /* max-w is what stops this bleeding off both edges: the pill is centred with
+       -translate-x-1/2, and its children were all nowrap/shrink-0, so its
+       intrinsic width (~500px) simply overflowed a 390px screen symmetrically. */
+    /* Pinned to the top, below BOTH blockers up there: the sticky header
+       (~57px mobile / ~85px desktop) and the sonner toast lane, which is
+       top-center with offset 64 mobile / 72 desktop (layout.tsx). 8.5rem clears
+       a toast on a phone; lg bumps to 10rem because both blockers are taller.
+       Moved off the bottom edge entirely so it can no longer meet the dock. */
+    <div className="fixed top-[8.5rem] lg:top-[10rem] left-1/2 -translate-x-1/2 z-[9980] pointer-events-none w-max max-w-[calc(100vw-1.5rem)]">
       <div
         className="pointer-events-auto"
         style={{
-          transform: entered ? "translateY(0) scale(1)" : "translateY(18px) scale(0.94)",
+          // Negative: it now descends from above rather than rising from below.
+          transform: entered ? "translateY(0) scale(1)" : "translateY(-18px) scale(0.94)",
           opacity: entered ? 1 : 0,
           transition: entered
             ? "transform 0.48s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s ease"
@@ -81,7 +90,7 @@ export function DonorListingPrompt() {
         }}
       >
         {/* Pill */}
-        <div className="relative flex items-center gap-3 bg-white border border-stone-200 rounded-full pl-2.5 pr-2 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(176,74,21,0.15)] overflow-hidden">
+        <div className="relative flex min-w-0 items-center gap-2 sm:gap-3 bg-white border border-stone-200 rounded-full pl-2 pr-1.5 py-1.5 sm:pl-2.5 sm:pr-2 sm:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(176,74,21,0.15)] overflow-hidden">
 
           {/* Progress bar — pure CSS animation, no JS interval */}
           <div
@@ -92,8 +101,8 @@ export function DonorListingPrompt() {
 
           {/* Icon + pulsing dot */}
           <div className="relative shrink-0">
-            <div className="w-9 h-9 rounded-full bg-[#b04a15]/10 border border-[#b04a15]/20 flex items-center justify-center">
-              <PackagePlus className="w-4 h-4 text-[#b04a15]" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#b04a15]/10 border border-[#b04a15]/20 flex items-center justify-center">
+              <PackagePlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#b04a15]" />
             </div>
             <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#b04a15] opacity-40" />
@@ -102,9 +111,13 @@ export function DonorListingPrompt() {
           </div>
 
           {/* Text */}
-          <div className="flex flex-col gap-0 min-w-0">
-            <span className="text-[13px] font-bold text-stone-900 whitespace-nowrap leading-tight">Got spare items?</span>
-            <span className="text-[11px] text-stone-500 whitespace-nowrap leading-tight">Books, clothes, electronics — someone needs them</span>
+          {/* truncate, not whitespace-nowrap: nowrap gave this block an intrinsic
+              width no flex shrink could reduce, which is what pushed the pill
+              past the screen. Truncating lets it absorb whatever space the
+              fixed-size icon and CTA leave. */}
+          <div className="flex flex-col gap-0 min-w-0 flex-1">
+            <span className="text-[13px] font-bold text-stone-900 truncate leading-tight">Got spare items?</span>
+            <span className="text-[10px] sm:text-[11px] text-stone-500 truncate leading-tight">Books, clothes, electronics — someone needs them</span>
           </div>
 
           {/* Divider */}
@@ -117,7 +130,7 @@ export function DonorListingPrompt() {
               [t1, t2, t3].forEach(r => { if (r.current) clearTimeout(r.current); });
               setVisible(false);
             }}
-            className="flex items-center gap-1.5 bg-[#b04a15] hover:bg-[#963c0d] active:scale-95 text-white text-xs font-black uppercase tracking-wide px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap shrink-0"
+            className="flex items-center gap-1.5 bg-[#b04a15] hover:bg-[#963c0d] active:scale-95 text-white text-[11px] sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 sm:px-3.5 rounded-full transition-all whitespace-nowrap shrink-0"
           >
             List an Item →
           </Link>
