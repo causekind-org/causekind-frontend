@@ -1090,6 +1090,35 @@ section:focus-within {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ── Bottom chrome geometry — ONE source of truth, site-wide ──────────────
+   The floating nav and the bottom blur are two independent fixed elements that
+   have to agree about where the bottom of the screen is. They did not: the nav
+   floats `--ck-nav-float + inset` up from the edge and is `--ck-nav-h` tall, so
+   its TOP edge sat well above the blur band's top. The blur therefore ended
+   mid-air just above the bar (a visible hard cut) while the strip of page
+   scrolling below the bar stayed sharp, making the nav look like it was
+   floating in the middle of the page.
+
+   `--ck-bottom-chrome` is everything the bottom chrome occupies measured from
+   the physical screen edge upward. The blur adds its own fade on top of it, so
+   the fade can only ever BEGIN above the navbar, never across it.
+
+   Zeroed at lg, where the mobile bar is `lg:hidden` and the blur should be a
+   plain band again. */
+:root {
+  --ck-bottom-inset: env(safe-area-inset-bottom, 0px);
+  --ck-nav-float: 0.75rem;   /* island's gap from the screen edge */
+  --ck-nav-h: 4.25rem;       /* the bar itself, incl. its own padding */
+  --ck-bottom-chrome: calc(var(--ck-nav-float) + var(--ck-bottom-inset) + var(--ck-nav-h));
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --ck-nav-float: 0px;
+    --ck-nav-h: 0px;
+  }
+}
+
 /* ── Mobile donate pill: gentle continuous pulse glow ── */
 @keyframes donate-pulse {
 
@@ -1670,6 +1699,43 @@ body.mobile-menu-open {
 }
 .need-board-float { animation: need-board-float 5s ease-in-out infinite; }
 
+/* ── Mobile: "Be the Change" UNDERLAPS the Hero ───────────────────────
+   The two surfaces intersect geometrically, but the Hero is always the
+   foreground: the white panel emerges only from beneath the Hero's bottom edge
+   and through its rounded corner cut-outs.
+
+   ONE custom property, declared on the shared wrapper, drives both the pull-up
+   and the panel's top clearance, so overlap depth and content position cannot
+   drift apart. Content therefore begins ~22px below the Hero's visible edge:
+     panel top      = hero bottom - overlap
+     content top    = panel top + (overlap + 22px)  =  hero bottom + 22px
+
+   The negative margin sits on the SECTION rather than the white panel: the
+   section is `overflow-hidden`, so a panel reaching above its own box would be
+   clipped instead of underlapping.
+
+   Stacking lives in the JSX (wrapper `isolate`, Hero `z-20`, section
+   `isolate z-10`) — see BeTheChangeSection for why the section must isolate.
+
+   All of it collapses at lg, where Hero and Be the Change are independent.
+   The `, 0px` fallbacks matter: with FEATURES.money on there is no wrapper.
+
+   Written as real CSS, not Tailwind arbitrary values — an unemitted arbitrary
+   class fails silently, with no build error and no visible overlap. */
+.ck-hero-overlap-wrap {
+  --ck-hero-overlap: clamp(28px, 8vw, 40px);
+}
+.ck-hero-overlap {
+  margin-top: calc(-1 * var(--ck-hero-overlap, 0px));
+}
+.ck-hero-overlap-panel {
+  padding-top: calc(var(--ck-hero-overlap, 0px) + 22px);
+}
+@media (min-width: 1024px) {
+  .ck-hero-overlap-wrap { --ck-hero-overlap: 0px; }
+  .ck-hero-overlap-panel { padding-top: 0; }
+}
+
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -1762,6 +1828,23 @@ div:has(.searchable-select-open) {
 }
 
 /* Base typography overrides for readability */
+/* The article body is `dangerouslySetInnerHTML` from blogData.ts — authored
+   HTML the layout cannot inspect at build time. Several posts embed full
+   https://www.causekind.com/... URLs inline, which are unbreakable words that
+   would push past the page gutter on a phone. These guards are cheap insurance
+   for content nobody re-checks when the layout changes. */
+.article-content {
+  overflow-wrap: anywhere;
+}
+.article-content img,
+.article-content table,
+.article-content pre {
+  max-width: 100%;
+}
+.article-content pre {
+  overflow-x: auto;
+}
+
 .article-content p {
   font-family: var(--font-source-serif-4), serif;
   font-size: 1.125rem;
@@ -2424,4 +2507,115 @@ div:has(.searchable-select-open) {
   .handover-rail-fill {
     transition: none;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Role-aware theme — donor terracotta, recipient blue
+
+   Set by `data-ck-role-theme` on <html> (RoleThemeBridge + the pre-paint boot
+   script in lib/roleTheme.ts). On <html> deliberately: Radix dialogs/selects/
+   popovers, vaul drawers and toasts all portal to <body>, so any scope deeper in
+   the tree would leave them unthemed — the failure already documented for
+   `--handover-*` in Decisions and Gotchas.
+
+   WHAT IS NOT ROLE-THEMED, and why:
+   - success green, warning amber, destructive red — these mean the same thing to
+     everyone; recolouring them by role would destroy the signal.
+   - category colours, the gold heart logo — brand/taxonomy, not role.
+   - shadcn's `--accent` — that is a near-white hover TINT consumed by ui/button,
+     ui/select and ui/badge. Redefining it here would recolour hover states across
+     the whole app. Never touch it.
+   - `--handover-*` — chosen from transaction participation, not account role.
+     A donor viewing a handover where they are the recipient still sees the
+     recipient colour there. Separate systems on purpose.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Neutral/public default: every token resolves even with no role attribute, so a
+   component using them never renders colourless for admins or logged-out users. */
+:root {
+  --ck-role-accent: var(--brand-terra);
+  /* A darker shade of the accent, for 3D button shadows and pressed edges. */
+  --ck-role-deep: #7a3410;
+  --ck-role-hover: #c45520;
+  --ck-role-secondary: var(--brand-copper);
+  --ck-role-highlight: #f0b97a;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: oklch(0.96 0.035 55);
+  --ck-role-on-soft: oklch(0.28 0.10 45);
+  --ck-role-ring: var(--brand-terra);
+  --ck-role-gradient: linear-gradient(135deg, #b04a15 0%, #e07b3a 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #e07b3a 0%, #f0b97a 100%);
+}
+
+[data-ck-role-theme="donor"] {
+  --ck-role-accent: #b04a15;
+  --ck-role-deep: #7a3410;
+  --ck-role-hover: #c45520;
+  --ck-role-secondary: #e07b3a;
+  --ck-role-highlight: #f0b97a;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: oklch(0.96 0.035 55);
+  --ck-role-on-soft: oklch(0.28 0.10 45);
+  --ck-role-ring: #b04a15;
+  --ck-role-gradient: linear-gradient(135deg, #b04a15 0%, #e07b3a 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #e07b3a 0%, #f0b97a 100%);
+}
+
+[data-ck-role-theme="donee"] {
+  --ck-role-accent: #1e3a60;
+  --ck-role-deep: #12253f;
+  --ck-role-hover: #2d5a96;
+  --ck-role-secondary: #4a7fc1;
+  --ck-role-highlight: #7fb0e8;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: oklch(0.95 0.03 250);
+  /* Readable text ON --ck-role-soft. Dark navy on the pale blue: ~13:1. */
+  --ck-role-on-soft: oklch(0.26 0.08 255);
+  /* Ring is the HOVER blue, not the accent: #1e3a60 against a white page is a
+     dark ring that reads as a border, and focus must be unmistakable. */
+  --ck-role-ring: #2d5a96;
+  --ck-role-gradient: linear-gradient(135deg, #1e3a60 0%, #4a7fc1 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #7fb0e8 100%);
+}
+
+.dark [data-ck-role-theme="donor"],
+.dark[data-ck-role-theme="donor"] {
+  --ck-role-accent: #e07b3a;
+  --ck-role-deep: #8a4715;
+  --ck-role-hover: #f0955a;
+  --ck-role-on-accent: #1a1207;
+  --ck-role-soft: oklch(0.26 0.05 50);
+  --ck-role-on-soft: oklch(0.94 0.03 60);
+  --ck-role-ring: #e07b3a;
+}
+
+/* `.dark` and the role attribute both land on <html>, so this is one element —
+   hence the compound selector, not a descendant one. */
+.dark[data-ck-role-theme="donee"],
+.dark [data-ck-role-theme="donee"] {
+  /* Navy is unreadable on a dark surface; lift to a clear sky blue. */
+  --ck-role-accent: #7fb0e8;
+  --ck-role-deep: #3f6c9e;
+  --ck-role-hover: #a3c8f2;
+  --ck-role-on-accent: #0b1929;
+  --ck-role-soft: oklch(0.26 0.05 250);
+  --ck-role-on-soft: oklch(0.93 0.02 250);
+  --ck-role-ring: #7fb0e8;
+  --ck-role-gradient: linear-gradient(135deg, #2d5a96 0%, #7fb0e8 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #a3c8f2 100%);
+}
+
+/* shadcn's primary + focus ring follow the role, so every `ui/button`,
+   `ui/input` focus state and `bg-primary` surface tracks it without each
+   component being edited. `--accent` is pointedly NOT included — see above. */
+[data-ck-role-theme="donee"] {
+  --primary: #1e3a60;
+  --primary-foreground: #ffffff;
+  --ring: #2d5a96;
+}
+.dark[data-ck-role-theme="donee"],
+.dark [data-ck-role-theme="donee"] {
+  --primary: #7fb0e8;
+  --primary-foreground: #0b1929;
+  --ring: #7fb0e8;
 }

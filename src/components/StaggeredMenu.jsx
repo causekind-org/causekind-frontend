@@ -205,7 +205,13 @@ export const StaggeredMenu = ({
       style={accentColor ? { ['--sm-accent']: accentColor } : undefined}
       data-position={position}
       data-open={open || undefined}
-      aria-hidden={!open}
+      /* inert, not aria-hidden: aria-hidden hides from assistive tech but leaves
+         the subtree in the tab order, so a closed menu was still Tab-reachable —
+         and the browser refuses to apply it at all when a descendant holds focus
+         (tapping a link closes the menu while that <a> is still focused). inert
+         does both, and moves focus out itself. Safe on the wrapper because this
+         component is controlled: the trigger lives in the navbar, outside it. */
+      inert={!open}
     >
       {/* Backdrop — click away to close */}
       <button
@@ -222,7 +228,7 @@ export const StaggeredMenu = ({
         ))}
       </div>
 
-      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
+      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" inert={!open}>
         <div className="sm-panel-inner">
           {header && <div className="sm-panel-header">{header}</div>}
 

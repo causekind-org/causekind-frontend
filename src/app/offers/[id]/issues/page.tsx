@@ -47,12 +47,12 @@ export default function ReportIssuePage() {
 
   if (submitted) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
-        <div className="max-w-sm w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950 text-2xl">!</div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Issue Reported</h2>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950 p-3 sm:p-4">
+        <div className="max-w-sm w-full rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950 text-lg sm:text-2xl">!</div>
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Issue Reported</h2>
           <p className="mt-2 text-sm text-gray-500">Our team will review your report and reach out within 24 hours.</p>
-          <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-6 py-2.5 text-sm font-semibold text-white">
+          <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-4 sm:px-6 py-2.5 text-sm font-semibold text-white">
             Back to Offers
           </button>
         </div>
@@ -62,14 +62,14 @@ export default function ReportIssuePage() {
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
-      <div className="mx-auto max-w-lg px-4 pt-8 space-y-5">
+      <div className="mx-auto max-w-lg px-4 pt-5 sm:pt-8 space-y-4 sm:space-y-5">
         <div>
           <button onClick={() => router.back()} className="mb-2 text-sm text-gray-400 hover:text-gray-600">← Back</button>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Report an Issue</h1>
+          <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-gray-100">Report an Issue</h1>
           {offer && <p className="text-sm text-gray-500">{offer.requestTitle}</p>}
         </div>
 
-        <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+        <div className="rounded-xl sm:rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
           This is not a return process. You can only report: wrong item, undisclosed damage, missing accessories, unsafe item, money demanded, or inappropriate behaviour.
         </div>
 
@@ -77,7 +77,7 @@ export default function ReportIssuePage() {
           <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">{error}</div>
         )}
 
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
+        <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Issue Type *</label>
             <div className="space-y-2">

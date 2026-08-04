@@ -122,28 +122,33 @@ function LoginContent() {
   }
 
   return (
-    <div className="w-full max-w-[420px] mx-auto space-y-7 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-3xl px-8 py-10 shadow-xl">
+    <div className="w-full max-w-[420px] mx-auto space-y-5 sm:space-y-7 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-2xl sm:rounded-3xl px-5 py-6 sm:px-8 sm:py-10 shadow-xl">
           {/* Heading */}
           <Reveal>
-            <div className="space-y-1.5">
+            <div className="space-y-1 sm:space-y-1.5">
               <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Welcome back</span>
-              <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
                 {t("title")} 👋
               </h1>
-              <p className="text-sm text-stone-505 dark:text-stone-400">
+              {/* was text-stone-505 — not a real Tailwind shade, so no colour was
+                  emitted at all and this inherited instead. */}
+              <p className="text-sm text-stone-500 dark:text-stone-400">
                 {t("subtitle")}
               </p>
             </div>
           </Reveal>
 
           {/* Email / Password form */}
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
             <Reveal delay={80}>
               {/* Email */}
-              <div className="space-y-1.5">
+              <div className="space-y-1 sm:space-y-1.5">
                 <label htmlFor="email" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
                   {t("email")}
                 </label>
+                {/* text-base on both inputs is load-bearing: iOS Safari zooms the
+                    viewport on focus for anything under 16px and never zooms back
+                    out. Shrink the padding on mobile, never the font-size. */}
                 <input
                   id="email"
                   type="email"
@@ -152,7 +157,7 @@ function LoginContent() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={e => { setEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: "" })); }}
-                  className={`w-full rounded-xl border px-4 py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
+                  className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
                 />
                 {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email}</p>}
               </div>
@@ -160,7 +165,7 @@ function LoginContent() {
 
             <Reveal delay={120}>
               {/* Password */}
-              <div className="space-y-1.5">
+              <div className="space-y-1 sm:space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
                     {t("password")}
@@ -181,7 +186,7 @@ function LoginContent() {
                     placeholder="••••••••"
                     value={password}
                     onChange={e => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: "" })); }}
-                    className={`w-full rounded-xl border px-4 py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
+                    className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
                   />
                   <button
                     type="button"
@@ -198,7 +203,7 @@ function LoginContent() {
 
             <Reveal delay={160}>
               {/* Remember me */}
-              <label className="flex items-center gap-2.5 cursor-pointer select-none group mb-4">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none group mb-3 sm:mb-4">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -219,7 +224,7 @@ function LoginContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 animate-heartbeat"
+                className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 animate-heartbeat"
               >
                 {loading ? t("signingIn") : t("signIn")}
               </button>
@@ -227,7 +232,7 @@ function LoginContent() {
           </form>
 
           {/* Social buttons */}
-          <div className="space-y-3">
+          <div className="space-y-2.5 sm:space-y-3">
             <Reveal delay={240}>
               <button
                 type="button"
@@ -239,7 +244,7 @@ function LoginContent() {
                   }
                   triggerGoogle();
                 }}
-                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
               >
                 <GoogleIcon />
                 {googleLoading ? t("signingIn") : t("google")}
@@ -250,7 +255,7 @@ function LoginContent() {
                 <button
                   type="button"
                   disabled
-                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-4 py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
+                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
                 >
                   <FacebookIcon />
                   {t("facebook")}

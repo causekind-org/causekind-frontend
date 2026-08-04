@@ -1,16 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Globe } from "lucide-react";
 import { LANGUAGE_OPTIONS } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
+
+/** Must match the panel's `w-44`; the flip maths depends on it. */
+const PANEL_W = 176;
+const EDGE_GAP = 8;
 
 export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) {
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>("en");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  /**
+   * The panel is right-aligned to the trigger, so it grows LEFTWARD. Wherever
+   * the trigger sits near the left edge — as it does on the blog toolbar at
+   * phone widths — that pushed 176px of menu straight off the screen with no
+   * way to scroll to it. Measured before paint and flipped to left-aligned when
+   * right-aligning would not fit.
+   */
+  const [alignLeft, setAlignLeft] = useState(false);
+  useLayoutEffect(() => {
+    if (!open || !ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    setAlignLeft(r.right - PANEL_W < EDGE_GAP);
+  }, [open]);
 
   useEffect(() => {
     const match = document.cookie.match(/(?:^|;\s*)ck_locale=([^;]+)/);
@@ -40,7 +58,7 @@ export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) 
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 h-8 rounded-full px-2.5 text-xs font-bold border border-stone-200 dark:border-stone-700 hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors text-stone-700 dark:text-stone-300"
+        className="flex items-center gap-1 h-8 rounded-full px-2.5 text-xs font-bold border border-stone-200 dark:border-stone-700 hover:bg-[var(--ck-role-soft)] dark:hover:bg-zinc-800 transition-colors text-stone-700 dark:text-stone-300"
         title="Select language"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -55,9 +73,9 @@ export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) 
       {open && (
         <div
           role="listbox"
-          className={`absolute right-0 z-[9999] w-44 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden ${
-            dropUp ? "bottom-full mb-2" : "top-full mt-2"
-          }`}
+          className={`absolute z-[9999] w-44 max-w-[calc(100vw-1.5rem)] rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden ${
+            alignLeft ? "left-0" : "right-0"
+          } ${dropUp ? "bottom-full mb-2" : "top-full mt-2"}`}
         >
           <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
             {LANGUAGE_OPTIONS.map(({ code, nativeName }) => (
@@ -68,7 +86,7 @@ export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) 
                 onClick={() => select(code)}
                 className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                   locale === code
-                    ? "bg-orange-50 dark:bg-zinc-800 text-[#b04a15] dark:text-[#e07b3a] font-semibold"
+                    ? "bg-[var(--ck-role-soft)] dark:bg-zinc-800 text-[var(--ck-role-accent)] font-semibold"
                     : "text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800"
                 }`}
               >

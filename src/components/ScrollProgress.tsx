@@ -38,8 +38,15 @@ export function ScrollProgress() {
         height:          "3px",
         width:           "100%",
         zIndex:          9999,
-        background:      "linear-gradient(90deg, #b04a15 0%, #e07b3a 38%, #f59e0b 62%, #1e3a60 100%)",
-        boxShadow:       "0 0 10px rgba(176, 74, 21,0.45), 0 0 4px rgba(176, 74, 21,0.25)",
+        /* Role-aware via tokens, not literals — an inline `style` resolves
+           var() against this element, which inherits from <html> where the
+           theme attribute lives. The amber midpoint is deliberately kept: it is
+           the one stop that reads as "progress" rather than as brand colour,
+           and it works against both the terracotta and the navy ramp. */
+        background:      "linear-gradient(90deg, var(--ck-role-accent) 0%, var(--ck-role-secondary) 38%, #f59e0b 62%, var(--ck-role-deep) 100%)",
+        /* color-mix keeps the glow tied to the accent without needing a
+           separate rgba token per role. */
+        boxShadow:       "0 0 10px color-mix(in srgb, var(--ck-role-accent) 45%, transparent), 0 0 4px color-mix(in srgb, var(--ck-role-accent) 25%, transparent)",
         transition:      "transform 80ms linear",
         borderRadius:    "0 2px 2px 0",
         pointerEvents:   "none",

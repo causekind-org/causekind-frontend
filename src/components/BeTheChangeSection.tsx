@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion, useMotionValue, useAnimationFrame } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion, useMotionValue, useMotionTemplate, useAnimationFrame, useScroll, useSpring } from "framer-motion";
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,15 +18,37 @@ import {
   Home,
   ArrowRight,
   Languages,
+  Play,
+  Plus,
 } from "lucide-react";
 import { getPlatformStats, type PlatformStats } from "@/lib/api";
-import { ALL_REQUEST_CATEGORIES } from "@/lib/categoryVisuals";
+import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { locales } from "@/i18n/config";
 import { MATCH_RADIUS_KM } from "@/lib/constants";
 
 /* ─── Brand tokens ─────────────────────────────────────────────────── */
 const TERRACOTTA = "#b04a15";
 const INK = "#1e3a60";
+
+/* ─── Mobile rail geometry ───────────────────────────────────────────────
+   The connector line must begin and end exactly at the FIRST and LAST icon
+   centres, so its width is derived from these — never re-typed. With `w-max`
+   on the rail, 100% is the full content width; the last item starts at
+   (content − RAIL_ITEM_W) and its icon centre is +RAIL_ICON/2 from there, so
+   first-centre → last-centre is precisely 100% − RAIL_ITEM_W. */
+const RAIL_ITEM_W = 236;   // px — mobile rail item width
+const RAIL_ICON = 32;      // px — the h-8 w-8 icon circle
+/** Flex gap, applied inline rather than as `gap-6` so the auto-scroll step
+ *  (RAIL_ITEM_W + RAIL_GAP) provably lands on a snap point. A Tailwind class
+ *  here would be a second copy of the same number, free to drift. */
+const RAIL_GAP = 24;       // px
+/** Auto-advance cadence, and how long a user's own swipe suppresses it. */
+const RAIL_AUTOSCROLL_MS = 2500;
+const RAIL_RESUME_MS = 4000;
+/** Gradient shared with the desktop SVG path, so both tell the same story. */
+/** How many category pills to show before collapsing the rest into "+N more". */
+const PILL_LIMIT = 6;
+const RAIL_GRADIENT = `linear-gradient(90deg, ${TERRACOTTA}, ${INK}, ${TERRACOTTA})`;
 
 /* ─── Counter animation hook ─────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1600, start = false) {
@@ -100,7 +122,7 @@ function JourneyNode({
       {/* Text hangs off the marker and always grows toward the container's vertical center,
           so it can never push past the top/bottom edge of the journey block */}
       <div
-        className={`absolute w-48 -translate-x-1/2 rounded-xl bg-[#faf8f5]/95 dark:bg-zinc-950/95 backdrop-blur-[2px] px-3 py-2 text-center ${
+        className={`absolute w-48 -translate-x-1/2 rounded-xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-[2px] px-3 py-2 text-center ${
           label === "below" ? "top-9" : "bottom-9"
         }`}
       >
@@ -113,22 +135,133 @@ function JourneyNode({
 
 function JourneyNodeMobile({ icon: Icon, title, desc, accent, index }: JourneyItem & { index: number }) {
   return (
-    <Reveal delay={index * 90} className="relative pl-9">
-      <span
-        className="absolute left-0 top-0 grid h-8 w-8 place-items-center rounded-full border-2 bg-white dark:bg-zinc-900"
-        style={{ borderColor: accent, color: accent }}
-      >
-        <Icon className="h-4 w-4" />
-      </span>
-      <h3 className="text-sm font-extrabold text-stone-900 dark:text-white leading-snug">{title}</h3>
-      <p className="mt-1 text-xs text-stone-500 dark:text-stone-400 leading-relaxed">{desc}</p>
-    </Reveal>
+    <div className="shrink-0 snap-start" style={{ width: RAIL_ITEM_W }}>
+      {/* `direction="none"` keeps the fade but drops Reveal's 28px vertical
+          travel: the connector is static, so a rising icon would visibly cross
+          empty space before landing on the line. */}
+      <Reveal delay={index * 60} className="relative pl-9" direction="none">
+        <span
+          className="absolute left-0 top-0 grid h-8 w-8 place-items-center rounded-full border-2 bg-white dark:bg-zinc-900"
+          style={{ borderColor: accent, color: accent }}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <h3 className="text-sm font-extrabold text-stone-900 dark:text-white leading-snug">{title}</h3>
+        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400 leading-relaxed">{desc}</p>
+      </Reveal>
+    </div>
   );
 }
 
 function TrustJourney({ items }: { items: JourneyItem[] }) {
   const pathRef = useRef<SVGPathElement>(null);
   const reduceMotion = useReducedMotion();
+
+  // Mobile rail: the connector's bright layer tracks how far through the rail
+  // the user has swiped. Sits at 0 until they move, and degrades harmlessly to
+  // a permanent 0 if the content ever stops overflowing.
+  const railRef = useRef<HTMLDivElement>(null);
+  const { scrollXProgress } = useScroll({ container: railRef, axis: "x" });
+  const fill = useSpring(scrollXProgress, { stiffness: 220, damping: 34 });
+
+  /* ── Auto-advance the mobile rail ──────────────────────────────────────
+     Driven by scrolling the real container, NOT by converting the rail into
+     an index-based carousel. Everything else here depends on it staying a
+     genuine scroll container: the connector's bright layer is bound to
+     `scrollXProgress`, and scroll-snap is what makes a swipe feel right. */
+
+  // A user's own swipe wins. Their scroll suppresses auto-advance, and the
+  // timer restarts only after they have been idle — so it can never yank the
+  // rail out from under someone mid-read.
+  const [autoPaused, setAutoPaused] = useState(false);
+  const resumeTimer = useRef<number | null>(null);
+  /** True while the auto-advance's own smooth scroll is still in flight. */
+  const programmatic = useRef(false);
+
+  /**
+   * The current leg of the journey — the ONE number the rail's scroll target and
+   * the travelling dot both read.
+   *
+   * <p>The dot used to run its own 4.2s loop with nothing tying it to the 2.5s
+   * auto-advance, so it arrived and restarted at arbitrary moments relative to
+   * the rail stepping forward. Driving both from `step` makes the dot a genuine
+   * countdown for the next advance, and makes drift impossible rather than
+   * merely tuned away.
+   *
+   * <p>Deriving the scroll target from `step` rather than from `scrollLeft` also
+   * fixes a latent problem: near the end the rail clamps at `maxLeft` and stops
+   * moving, so `scrollLeft` can no longer say which card is current.
+   */
+  const LEGS = Math.max(1, items.length - 1);        // 6 stations -> 5 legs
+  const [step, setStep] = useState(0);               // 0 .. LEGS-1
+  /** Mirrors `step` for the interval, which must not depend on it: listing
+   *  `step` in the effect's deps would tear down and rebuild the interval every
+   *  advance, restarting the 2.5s countdown from zero each time. */
+  const stepRef = useRef(0);
+  /** Station `i` along the connector, which spans first icon centre -> last. */
+  const stationPct = (i: number) => (i / LEGS) * 100;
+  const yieldToUser = useCallback(() => {
+    setAutoPaused(true);
+    if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
+    resumeTimer.current = window.setTimeout(() => setAutoPaused(false), RAIL_RESUME_MS);
+  }, []);
+  useEffect(() => () => {
+    if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
+  }, []);
+
+  // Off-screen it must not run at all: otherwise the rail quietly scrolls to
+  // its end while nobody is looking, and the user arrives at a carousel that
+  // has already played.
+  const [railInView, setRailInView] = useState(false);
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setRailInView(e.isIntersecting), { threshold: 0.25 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    // An auto-playing carousel is precisely what this setting asks us not to do.
+    if (reduceMotion || autoPaused || !railInView) return;
+    let settle: number | undefined;
+    const id = window.setInterval(() => {
+      const el = railRef.current;
+      if (!el) return;
+      const maxLeft = el.scrollWidth - el.clientWidth;
+      if (maxLeft <= 1) return;   // content no longer overflows — nothing to do
+
+      // The dot has just finished its 2.5s run to the next station, so move on.
+      // The scroll happens OUT here, not inside a setState updater: React
+      // double-invokes updaters in StrictMode, which would fire two scrolls per
+      // tick in development.
+      const next = (stepRef.current + 1) % LEGS;
+      stepRef.current = next;
+      setStep(next);
+
+      // Claim the scroll events this is about to emit, so the rail's own
+      // `onScroll` does not read them as the user taking over.
+      programmatic.current = true;
+      if (settle !== undefined) window.clearTimeout(settle);
+      settle = window.setTimeout(() => { programmatic.current = false; }, 700);
+      el.scrollTo({
+        // Smooth rewind on the wrap rather than an instant jump: the connector's
+        // fill is bound to scroll position, so a hard jump would snap it too.
+        left: Math.min(next * (RAIL_ITEM_W + RAIL_GAP), maxLeft),
+        behavior: "smooth",
+      });
+    }, RAIL_AUTOSCROLL_MS);
+    return () => {
+      window.clearInterval(id);
+      // Must be cleared too — a settle firing after unmount would touch a ref
+      // belonging to a dead component.
+      if (settle !== undefined) window.clearTimeout(settle);
+    };
+  }, [reduceMotion, autoPaused, railInView]);
+
+  // The dot holds position whenever the advance itself is not running, so the
+  // countdown never keeps ticking against a rail that is standing still.
+  const dotPaused = autoPaused || !railInView;
 
   // Drives the traveling dot exactly along the curve (getPointAtLength), not a straight-line
   // interpolation between node coordinates — otherwise it visibly cuts corners off the wave.
@@ -148,9 +281,9 @@ function TrustJourney({ items }: { items: JourneyItem[] }) {
   });
 
   return (
-    <div className="relative mb-16">
+    <div className="relative mb-0 lg:mb-8">
       {/* Desktop — same width as the header/pills above, so it lines up exactly */}
-      <div className="relative hidden h-[420px] w-full lg:block">
+      <div className="relative hidden h-[255px] w-full lg:block">
         <svg viewBox="0 0 1200 420" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
           <defs>
             <linearGradient id="journey-gradient" x1="0" y1="0" x2="1" y2="0">
@@ -180,21 +313,161 @@ function TrustJourney({ items }: { items: JourneyItem[] }) {
         ))}
       </div>
 
-      {/* Mobile — vertical stack, same idea without the horizontal path */}
-      <div className="relative lg:hidden">
-        <div aria-hidden="true" className="absolute left-4 top-2 bottom-2 w-px bg-gradient-to-b from-stone-200 via-stone-300 to-transparent dark:from-stone-800 dark:via-stone-700" />
-        <div className="space-y-8">
-          {items.map((item, i) => (
-            <JourneyNodeMobile key={item.title} {...item} index={i} />
-          ))}
+      {/* Mobile — ONE horizontal rail instead of six stacked rows.
+           Six full-width rows ran to roughly 700px of scroll; as a swipeable
+           rail the same content costs one row's height. The negative margins
+           cancel the section's px-6 / sm:px-10 so the rail bleeds to the screen
+           edge and reads as scrollable, while the matching padding keeps the
+           first card aligned with the heading above it.
+           The vertical connector line is gone with the stack — a rule down the
+           left of a horizontal rail would point at nothing. */}
+      <div className="lg:hidden -mx-6 px-6 sm:-mx-10 sm:px-10">
+        {/* Scroll CONTAINER. Snap properties belong here, on the element that
+            actually scrolls — moving them inward silently disables snapping. */}
+        <div
+          ref={railRef}
+          className="snap-x snap-mandatory overflow-x-auto pb-2 scrollbar-hide"
+          // `scroll`, not `pointerdown`. Pointer-down fired for ANY touch landing
+          // on the rail — including a finger merely starting a vertical page
+          // scroll — so ordinary browsing kept suppressing the auto-advance.
+          // Scroll is the only event that means the rail itself actually moved;
+          // the `programmatic` guard is what stops the auto-advance's own scroll
+          // from pausing itself forever, which is why this was avoided before.
+          onScroll={() => {
+            if (programmatic.current) return;
+            // Resync, or the next tick would scroll back to a stale `step` and
+            // yank the rail out from under the swipe that just happened.
+            const el = railRef.current;
+            if (el) {
+              const at = Math.max(0, Math.min(LEGS - 1,
+                Math.round(el.scrollLeft / (RAIL_ITEM_W + RAIL_GAP))));
+              stepRef.current = at;
+              setStep(at);
+            }
+            yieldToUser();
+          }}
+          onFocusCapture={yieldToUser}
+        >
+          {/* Scroll CONTENT. The connector lives here, not on the container:
+              absolute positioning inside an `overflow` element anchors to its
+              padding box, so the line would hang still while the items slid
+              underneath it. `w-max` makes 100% mean the full content width. */}
+          <div className="relative flex w-max items-start" style={{ gap: RAIL_GAP }}>
+            {/* Connector — first child, so each item's bg-white icon circle
+                paints OVER it and the points read as stations on a line. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute h-px"
+              style={{
+                left: RAIL_ICON / 2,
+                top: RAIL_ICON / 2,
+                width: `calc(100% - ${RAIL_ITEM_W}px)`,
+              }}
+            >
+              {/* 1 — the track always exists */}
+              <span className="absolute inset-0 bg-stone-200 dark:bg-stone-800" />
+
+              {/* 2 — "here is the path": draws in once when scrolled into view */}
+              <motion.span
+                className="absolute inset-0 origin-left opacity-35"
+                style={{ background: RAIL_GRADIENT }}
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true, amount: 0.05 }}
+                transition={{ duration: reduceMotion ? 0 : 1.4, ease: "easeInOut" }}
+              />
+
+              {/* 3 — "how far you've come": bound to the rail's own scroll.
+                  This is a response to user input, not an animation played at
+                  the user, so it survives prefers-reduced-motion. */}
+              <motion.span
+                className="absolute inset-0 origin-left"
+                style={{ background: RAIL_GRADIENT, scaleX: fill }}
+              />
+
+              {/* 4 — the travelling dot, which IS the countdown to the next
+                  advance: it covers exactly one leg in RAIL_AUTOSCROLL_MS, and
+                  the rail steps forward as it lands.
+
+                  `left`, not `x`: a percentage on `x` resolves against the
+                  element's OWN width, which would move a 7px dot by 7px.
+
+                  `key={step}` remounts it each leg, so the wrap back to the
+                  first station jumps rather than sweeping backwards across the
+                  whole line.
+
+                  `linear`, not `easeInOut`: this is elapsed time now, and a
+                  timer that slows at both ends does not read as elapsed time. */}
+              {!reduceMotion && (
+                <motion.span
+                  key={step}
+                  className="absolute top-1/2 h-[7px] w-[7px] rounded-full"
+                  style={{ background: TERRACOTTA, translateX: "-50%", translateY: "-50%" }}
+                  initial={{ left: `${stationPct(step)}%` }}
+                  animate={{ left: `${dotPaused ? stationPct(step) : stationPct(step + 1)}%` }}
+                  transition={{ duration: dotPaused ? 0 : RAIL_AUTOSCROLL_MS / 1000, ease: "linear" }}
+                />
+              )}
+            </div>
+
+            {items.map((item, i) => (
+              <JourneyNodeMobile key={item.title} {...item} index={i} />
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Trust signal station ──────────────────────────────────────────── */
-function TrustSignalStation({
+/* ─── Trust signal matrix ────────────────────────────────────────────────
+   The four signals are ONE instrument panel, not four tiles.
+
+   Separation comes from dividers drawn ACROSS the grid — one vertical, one
+   horizontal on mobile; three verticals on the desktop rail — never from
+   per-item borders. That distinction is the whole design: four bordered cells
+   read as four disconnected objects, while shared rules read as one system
+   subdivided. Each metric therefore has no border, background, radius or
+   shadow of its own.
+
+   The dividers sit at fixed fractions, which is only true while the rows are
+   equal height — hence `auto-rows-fr` on the mobile grid. */
+function SignalMatrixDividers() {
+  const reduceMotion = useReducedMotion();
+  const line = "absolute bg-stone-200 dark:bg-stone-800";
+  const grow = {
+    viewport: { once: true, amount: 0.2 },
+    transition: { duration: reduceMotion ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] as const },
+  };
+  return (
+    <>
+      {/* Column split: centre on mobile, plus quarter lines on the desktop rail */}
+      <motion.span
+        aria-hidden="true"
+        className={`${line} inset-y-0 left-1/2 w-px origin-top`}
+        initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} {...grow}
+      />
+      <motion.span
+        aria-hidden="true"
+        className={`${line} inset-y-0 left-1/4 hidden w-px origin-top xl:block`}
+        initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} {...grow}
+      />
+      <motion.span
+        aria-hidden="true"
+        className={`${line} inset-y-0 left-3/4 hidden w-px origin-top xl:block`}
+        initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} {...grow}
+      />
+      {/* Row split: mobile only — the desktop rail is a single row */}
+      <motion.span
+        aria-hidden="true"
+        className={`${line} inset-x-0 top-1/2 h-px origin-left xl:hidden`}
+        initial={{ scaleX: 0 }} whileInView={{ scaleX: 1 }} {...grow}
+      />
+    </>
+  );
+}
+
+function TrustSignalMetric({
   icon: Icon,
   value,
   suffix,
@@ -221,107 +494,76 @@ function TrustSignalStation({
   const reduceMotion = useReducedMotion();
   const station = String(index + 1).padStart(2, "0");
 
+  /* The dial sweeps to its reading rather than appearing at it. CSS cannot
+     interpolate a conic-gradient stop, so the angle is a motion value fed
+     through a template — the same technique the mobile nav uses for its mask. */
+  const sweep = useSpring(0, { stiffness: 55, damping: 18 });
+  useEffect(() => {
+    if (!start) return;
+    const target = progress * 3.6;
+    if (reduceMotion) sweep.jump(target);
+    else sweep.set(target);
+  }, [start, progress, reduceMotion, sweep]);
+  const dial = useMotionTemplate`conic-gradient(${color} ${sweep}deg, ${color}1f 0deg)`;
+
   return (
     <motion.div
-      className="group relative min-h-[168px] px-1 pb-1 pl-7 sm:pl-1 xl:pr-5"
-      initial={
-        reduceMotion
-          ? { opacity: 0 }
-          : { opacity: 0, y: 20 }
-      }
-      animate={
-        start
-          ? reduceMotion
-            ? { opacity: 1 }
-            : { opacity: 1, y: 0 }
-          : undefined
-      }
-      transition={{ type: "spring", stiffness: 110, damping: 20, delay: delay / 1000 }}
-      whileHover={reduceMotion ? undefined : { y: -3 }}
+      // Padding, not gap: the dividers run at exact fractions, so the clear
+      // space around them has to come from inside each cell.
+      className="min-w-0 px-3.5 py-3.5 xl:px-5 xl:py-2"
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+      animate={start ? (reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }) : undefined}
+      transition={{ type: "spring", stiffness: 120, damping: 22, delay: delay / 1000 }}
     >
-      <div
-        aria-hidden="true"
-        className="absolute bottom-1 left-3 top-6 w-px bg-gradient-to-b from-transparent via-stone-300 to-transparent sm:hidden dark:via-stone-700"
-      />
-      {index < 3 && (
-        <div
-          aria-hidden="true"
-          className="absolute right-2 top-8 hidden h-24 w-px rotate-6 bg-gradient-to-b from-transparent via-stone-300/80 to-transparent xl:block dark:via-stone-700/80"
-        />
-      )}
-
-      <div className="relative flex items-center gap-3">
-        <div
-          className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full"
-          style={{
-            background: `conic-gradient(${color} ${progress * 3.6}deg, ${color}1f 0deg)`,
-          }}
+      <dt className="flex items-center gap-2.5">
+        <motion.span
+          className="relative grid size-9 shrink-0 place-items-center rounded-full xl:size-11"
+          style={{ background: dial }}
         >
-          <span className="absolute inset-1 rounded-full bg-[#faf8f5] dark:bg-zinc-950" />
-          <span
-            className="absolute inset-2.5 rounded-full"
-            style={{ background: `${color}12` }}
-          />
-          <Icon className="relative h-5 w-5" style={{ color }} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[9px] font-black uppercase tracking-[0.28em] text-stone-400 dark:text-stone-500">
+          <span className="absolute inset-[3px] rounded-full bg-white dark:bg-zinc-950" />
+          <span className="absolute inset-[6px] rounded-full" style={{ background: `${color}12` }} />
+          <Icon className="relative size-4 xl:size-[18px]" style={{ color }} aria-hidden />
+        </motion.span>
+        <span className="min-w-0">
+          <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-stone-500">
             Signal {station}
-          </p>
-          <p
-            className="mt-0.5 text-[11px] font-black uppercase tracking-[0.14em]"
+          </span>
+          <span
+            className="mt-0.5 block text-[11px] font-black uppercase leading-tight tracking-[0.08em]"
             style={{ color }}
           >
             {label}
-          </p>
-        </div>
-      </div>
+          </span>
+        </span>
+      </dt>
 
-      <div className="mt-5">
+      <dd className="mt-2.5">
         <span
-          className="font-black tabular-nums leading-none text-4xl lg:text-5xl"
+          className="block whitespace-nowrap font-black tabular-nums leading-none text-[22px] xl:text-[28px]"
           style={{ color, fontFamily: "var(--font-roboto-mono)" }}
         >
           {count.toLocaleString("en-IN")}
           {suffix}
         </span>
-      </div>
 
-      <p className="mt-3 max-w-[17rem] text-xs font-semibold leading-relaxed text-stone-500 dark:text-stone-400">
-        {caption}
-      </p>
+        <p className="mt-1.5 text-xs font-semibold leading-[1.45] text-stone-500 dark:text-stone-400">
+          {caption}
+        </p>
 
-      <div className="mt-4 flex items-center gap-2.5">
-        <span
-          aria-hidden="true"
-          className="h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: color }}
-        />
-        <div className="h-px flex-1 bg-stone-200 dark:bg-stone-800">
-          <motion.div
-            className="h-px origin-left"
-            style={{ background: color }}
-            initial={{ scaleX: 0 }}
-            animate={start ? { scaleX: progress / 100 } : undefined}
-            transition={{ duration: reduceMotion ? 0 : 0.9, delay: (delay + 220) / 1000, ease: [0.16, 1, 0.3, 1] }}
-          />
-        </div>
-        <motion.div
-          aria-hidden="true"
-          className="grid grid-cols-4 gap-1"
-          initial={{ opacity: 0 }}
-          animate={start ? { opacity: 1 } : undefined}
-          transition={{ delay: (delay + 420) / 1000 }}
-        >
-          {[0, 1, 2, 3].map((tick) => (
-            <span
-              key={tick}
-              className="block h-2.5 w-px"
-              style={{ background: tick < Math.ceil(progress / 25) ? color : `${color}33` }}
+        {/* Measurement track */}
+        <div className="mt-3 flex items-center gap-2">
+          <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full" style={{ background: color }} />
+          <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800">
+            <motion.span
+              className="block h-px origin-left"
+              style={{ background: color }}
+              initial={{ scaleX: 0 }}
+              animate={start ? { scaleX: progress / 100 } : undefined}
+              transition={{ duration: reduceMotion ? 0 : 0.9, delay: (delay + 220) / 1000, ease: [0.16, 1, 0.3, 1] }}
             />
-          ))}
-        </motion.div>
-      </div>
+          </span>
+        </div>
+      </dd>
     </motion.div>
   );
 }
@@ -331,15 +573,27 @@ function CategoryPill({
   icon: Icon,
   label,
   delay,
+  href,
 }: {
   icon: React.ElementType;
   label: string;
   delay: number;
+  /** When set the pill becomes a link — used by the "+N more" variant. */
+  href?: string;
 }) {
+  const body = (
+    <>
+      <Icon className="w-3.5 h-3.5 text-[#b04a15]" />
+      <span className="text-[13px] font-bold text-stone-700 dark:text-stone-300">{label}</span>
+    </>
+  );
+
   return (
     <motion.div
-      className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-zinc-900
-                 border border-[#e5e2d5]/60 dark:border-stone-800 shadow-sm cursor-default"
+      className={`flex items-center gap-1.5 px-3 py-2 rounded-full bg-white dark:bg-zinc-900
+                 border border-[#e5e2d5]/60 dark:border-stone-800 shadow-sm ${
+                   href ? "cursor-pointer hover:border-[#b04a15]/40" : "cursor-default"
+                 }`}
       initial={{ opacity: 0, x: -20 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, amount: 0.1 }}
@@ -351,14 +605,39 @@ function CategoryPill({
       }}
       whileHover={{ y: -2, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", transition: { duration: 0.15 } }}
     >
-      <Icon className="w-4 h-4 text-[#b04a15]" />
-      <span className="text-sm font-bold text-stone-700 dark:text-stone-300">{label}</span>
+      {href ? (
+        <Link href={href} className="flex items-center gap-1.5">
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
     </motion.div>
   );
 }
 
 /* ─── Main exported section ─────────────────────────────────────────── */
-export function BeTheChangeSection({ initialStats }: { initialStats?: PlatformStats | null } = {}) {
+export function BeTheChangeSection({
+  initialStats,
+  /**
+   * Mobile only: tuck the white panel under the Hero's rounded lower edge.
+   * Passed by the caller ONLY when the two are direct visual neighbours — it is
+   * never inferred from sibling order, so enabling FEATURES.money (which puts
+   * the Campaigns rail between them) cannot silently produce a bad overlap.
+   */
+  overlapHero = false,
+  /**
+   * Emit the guest tour's `data-tour` anchors.
+   *
+   * <p>This component is mounted TWICE by HomeClient — once in the desktop
+   * branch, once in the mobile one. Emitting anchors unconditionally would put
+   * each `data-tour` in the DOM twice, and `document.querySelector` returns the
+   * FIRST match: the desktop copy, which is `hidden lg:block`. A `display: none`
+   * element reports a zero rect, so the tour's spotlight would collapse to
+   * nothing. Only the mobile instance may pass this.
+   */
+  tourAnchors = false,
+}: { initialStats?: PlatformStats | null; overlapHero?: boolean; tourAnchors?: boolean } = {}) {
   const { ref: statsRef, inView: statsInView } = useInView(0.3);
   const { user } = useAuth();
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(initialStats ?? null);
@@ -507,77 +786,127 @@ export function BeTheChangeSection({ initialStats }: { initialStats?: PlatformSt
     },
   ];
 
-  const categories = [
-    { icon: GraduationCap, label: "Education" },
-    { icon: Stethoscope,   label: "Medical"   },
-    { icon: Home,          label: "Livelihood" },
-    { icon: Heart,         label: "Community"  },
-    { icon: Package,       label: "In-Kind"   },
-    { icon: Users,         label: "Family"    },
-  ];
+  /**
+   * Derived from the real category list, never hand-written.
+   *
+   * <p>These pills used to be six invented labels — "Community", "In-Kind" and
+   * "Family" are not categories at all, while six real ones were missing. The
+   * same page renders a "Cause Categories" metric from
+   * `ALL_REQUEST_CATEGORIES.length`, so it was contradicting itself.
+   *
+   * <p>`CATEGORY_VISUALS` already calls itself the single source of truth for
+   * category icons, so nothing needs mapping by hand: adding a category updates
+   * the pills, the overflow count and the metric together.
+   */
+  const shownCategories = ALL_REQUEST_CATEGORIES.slice(0, PILL_LIMIT);
+  const remainingCategories = ALL_REQUEST_CATEGORIES.length - shownCategories.length;
 
   return (
     <section
-      className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 overflow-hidden py-24"
+      // `isolate` is load-bearing, not decoration. This section's inner
+      // container carries `relative z-10`; without a stacking context here that
+      // inner value escapes into the composition wrapper, ties with the Hero,
+      // and — being later in the DOM — paints the white panel OVER the image.
+      // Isolating traps every inner z-index below the Hero's z-20.
+      className={`relative w-full overflow-hidden pb-6 lg:bg-white lg:py-9 dark:lg:bg-zinc-950 ${
+        overlapHero ? "ck-hero-overlap isolate z-10" : "pt-6"
+      }`}
     >
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#faf8f5]/75 via-transparent to-[#faf8f5]/85 dark:from-zinc-950/80 dark:via-transparent dark:to-zinc-950/90" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden lg:block bg-gradient-to-b from-white/75 via-transparent to-white/85 dark:from-zinc-950/80 dark:via-transparent dark:to-zinc-950/90" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 sm:px-10">
 
-        {/* ── Section header — LEFT flush, asymmetric ── */}
-        <div className="grid lg:grid-cols-[1fr_auto] gap-8 items-end mb-14">
-          <div>
-            <span
-              className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4"
-              style={{ background: `${TERRACOTTA}18`, color: TERRACOTTA }}
-            >
-              Be the change
-            </span>
-            <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-[1.05]">
-              Making giving{" "}
-              <span style={{ color: TERRACOTTA }}>safe, local</span>
-              {" "}and{" "}
-              <span style={{ color: INK }}>verified</span>
-            </h2>
+        {/* ── Elevated content surface (MOBILE ONLY).
+             Holds the heading, pills and Trust Journey, and ends deliberately
+             right after them. Trust Signals and the CTA fall outside it and sit
+             on the homepage background from HomeClient.
+             Full-bleed via -mx/px rather than an inset card: TrustJourney's rail
+             cancels `px-6` to reach the screen edge, so an extra layer of
+             horizontal padding here would leave it short of the edge.
+             Every property is reset at `lg`, where the section itself is the
+             white surface again. ── */}
+        <div
+          className={`-mx-6 rounded-b-[1.75rem] bg-white px-6 pb-6 sm:-mx-10 sm:px-10
+                     dark:bg-zinc-900
+                     lg:mx-0 lg:rounded-none lg:bg-transparent lg:px-0 lg:pb-0 dark:lg:bg-transparent ${
+                       // Square top on purpose. A rounded cap reads as a panel
+                       // sitting ON the image; underlapping, the top edge is
+                       // hidden behind the Hero and must never draw a curve
+                       // across it.
+                       overlapHero ? "ck-hero-overlap-panel" : ""
+                     }`}
+        >
+
+          {/* ── Section header — LEFT flush, asymmetric ── */}
+          <div className="grid lg:grid-cols-[1fr_auto] gap-5 items-end mb-6">
+            <div>
+              <span
+                className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest mb-2.5"
+                style={{ background: `${TERRACOTTA}18`, color: TERRACOTTA }}
+              >
+                Be the change
+              </span>
+              <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-[1.05]">
+                Making giving{" "}
+                <span style={{ color: TERRACOTTA }}>safe, local</span>
+                {" "}and{" "}
+                <span style={{ color: INK }}>verified</span>
+              </h2>
+            </div>
+            <p className="text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed max-w-xs lg:text-right lg:pb-1">
+              CauseKind connects donors with verified local donees across India — every handover is traceable and meaningful.
+            </p>
           </div>
-          <p className="text-base text-stone-500 dark:text-stone-400 font-medium leading-relaxed max-w-xs lg:text-right lg:pb-1">
-            CauseKind connects donors with verified local donees across India — every handover is traceable and meaningful.
-          </p>
-        </div>
 
-        {/* ── Category pills (slide-in from left) ── */}
-        <div className="flex flex-wrap gap-3 mb-16">
-          {categories.map((c, i) => (
-            <CategoryPill
-              key={c.label}
-              icon={c.icon}
-              label={c.label}
-              delay={i * 80}
-            />
-          ))}
-        </div>
+          {/* ── Category pills (slide-in from left) ── */}
+          <div className="flex flex-wrap gap-2 mb-10" data-tour={tourAnchors ? "guest-categories" : undefined}>
+            {shownCategories.map((name, i) => (
+              <CategoryPill
+                key={name}
+                icon={CATEGORY_VISUALS[name].Icon}
+                label={name}
+                delay={i * 80}
+              />
+            ))}
+            {/* Only when there genuinely are more — if the list ever shrinks to
+                the limit this disappears rather than claiming "+0 more". */}
+            {remainingCategories > 0 && (
+              <CategoryPill
+                icon={Plus}
+                label={`${remainingCategories} more`}
+                delay={shownCategories.length * 80}
+                href="/requests"
+              />
+            )}
+          </div>
 
-        {/* ── Trust journey — an animated connecting path, no card containers ── */}
-        <TrustJourney items={cards} />
+          {/* ── Trust journey — an animated connecting path, no card containers ── */}
+          <div data-tour={tourAnchors ? "guest-journey" : undefined}>
+            <TrustJourney items={cards} />
+          </div>
 
-        {/* ── Trust signal rail ── */}
+        </div>{/* ── end elevated surface ── */}
+
+        {/* ── Trust signal rail — outside the surface on mobile, on the page bg.
+             `mt-5` is the controlled 20px gap below the white surface. ── */}
         <div
           ref={statsRef}
-          className="relative border-y border-stone-200/80 py-6 dark:border-stone-800"
+          className="relative mt-5 py-0 lg:mt-0 lg:border-y lg:border-stone-200/80 lg:py-4 dark:lg:border-stone-800"
         >
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500">
               CauseKind trust signals
             </p>
             <div className="h-px min-w-24 flex-1 bg-gradient-to-r from-stone-200 via-stone-200 to-transparent dark:from-stone-800 dark:via-stone-800" />
           </div>
-          <div
-            aria-hidden="true"
-            className="absolute left-4 right-4 top-[6rem] hidden h-px bg-gradient-to-r from-transparent via-stone-300 to-transparent xl:block dark:via-stone-700"
-          />
-          <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-4">
+          {/* Open signal matrix: 2x2 on mobile, a four-station rail at xl.
+              `minmax(0,1fr)` (not plain `1fr`) so a long label can never push a
+              column past its share and overflow the row. */}
+          <div className="relative" data-tour={tourAnchors ? "guest-signals" : undefined}>
+            <SignalMatrixDividers />
+            <dl className="grid auto-rows-fr grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:auto-rows-auto xl:grid-cols-[repeat(4,minmax(0,1fr))]">
             {STATS.map((s, i) => (
-              <TrustSignalStation
+              <TrustSignalMetric
                 key={s.label}
                 icon={s.icon}
                 value={s.value}
@@ -591,29 +920,31 @@ export function BeTheChangeSection({ initialStats }: { initialStats?: PlatformSt
                 start={statsInView}
               />
             ))}
+            </dl>
           </div>
         </div>
 
         {/* ── CTA row — only shown when NOT logged in ── */}
         {!user && (
-          <div className="flex flex-wrap items-center gap-4 mt-12">
+          <div className="flex flex-wrap items-center gap-2.5 mt-5">
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-extrabold text-sm text-white
+              data-tour={tourAnchors ? "guest-join" : undefined}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-[13px] text-white
                          shadow-md hover:opacity-90 active:scale-95 transition-all duration-200"
               style={{ background: TERRACOTTA }}
             >
-              Join as Donor <ArrowRight className="w-4 h-4" />
+              Join as Donor <ArrowRight className="w-3.5 h-3.5" />
             </Link>
             <Link
               href="/requests"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-extrabold text-sm
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-[13px]
                          border border-[#e5e2d5] dark:border-stone-700
                          text-stone-700 dark:text-stone-300
                          hover:border-[#b04a15]/40 hover:text-[#b04a15]
                          transition-all duration-200"
             >
-              Browse Requests <ArrowRight className="w-4 h-4" />
+              Browse Requests <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         )}

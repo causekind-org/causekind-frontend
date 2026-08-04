@@ -99,7 +99,11 @@ export function DoneeListingPrompt() {
   if (!visible || userRole !== "DONEE") return null;
 
   return (
-    <div className="fixed bottom-[5.5rem] left-0 z-[9980] pointer-events-none sm:bottom-8">
+    /* Top-left, below the sticky header and the top-center toast lane (see
+       DonorListingPrompt for the offset reasoning). Stays flush to the left edge
+       — it is a left-anchored toast (rounded-r-xl, border-l-0) — so its slide-in
+       from the left is unchanged. */
+    <div className="fixed top-[8.5rem] lg:top-[10rem] left-0 z-[9980] pointer-events-none">
       <div
         aria-live="polite"
         aria-label="List an item prompt"
@@ -115,10 +119,10 @@ export function DoneeListingPrompt() {
         }}
       >
         <div className="ck-donee-listing-toast relative overflow-hidden rounded-r-xl border border-l-0 border-emerald-100 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.16),0_0_0_1px_rgba(16,185,129,0.12)]">
-          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-400 via-[#1e3a60] to-[#b04a15]" />
+          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-400 via-[var(--ck-role-secondary)] to-[var(--ck-role-accent)]" />
           <div
             key={barKey}
-            className="absolute bottom-0 left-0 right-0 h-[2px] origin-left bg-gradient-to-r from-emerald-500 via-[#1e3a60] to-[#b04a15]"
+            className="absolute bottom-0 left-0 right-0 h-[2px] origin-left bg-gradient-to-r from-emerald-500 via-[var(--ck-role-secondary)] to-[var(--ck-role-accent)]"
             style={{ animation: `ck-donee-listing-drain ${VISIBLE_MS}ms linear forwards` }}
           />
           <div className="ck-donee-listing-sheen pointer-events-none absolute inset-y-0 -left-16 w-12 rotate-12 bg-gradient-to-r from-transparent via-white/75 to-transparent" />
@@ -128,7 +132,7 @@ export function DoneeListingPrompt() {
               <div className="ck-donee-listing-icon grid h-9 w-9 place-items-center rounded-xl border border-emerald-200 bg-emerald-50">
                 <ClipboardList className="h-4 w-4 text-emerald-700" />
               </div>
-              <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-white bg-[#b04a15] shadow-sm">
+              <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-white bg-[var(--ck-role-accent)] shadow-sm">
                 <Sparkles className="h-2.5 w-2.5 text-white" />
               </span>
             </div>

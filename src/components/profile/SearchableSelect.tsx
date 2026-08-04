@@ -118,11 +118,11 @@ export function SearchableSelect({
         className={[
           "w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition-colors",
           "bg-white dark:bg-zinc-900 text-stone-800 dark:text-stone-100",
-          "border-orange-200 dark:border-stone-800",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/30",
+          "border-[var(--ck-role-accent)]/25 dark:border-stone-800",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring)]/30",
           disabled
             ? "cursor-not-allowed opacity-50"
-            : "cursor-pointer hover:border-[#b04a15]/60",
+            : "cursor-pointer hover:border-[var(--ck-role-accent)]/60",
         ].join(" ")}
       >
         <span className="flex items-center gap-2 truncate min-w-0">
@@ -151,12 +151,12 @@ export function SearchableSelect({
         <div
           className={[
             "absolute z-[100] mt-1 w-full min-w-[200px]",
-            "rounded-xl border border-orange-100 dark:border-stone-700",
+            "rounded-xl border border-[var(--ck-role-accent)]/15 dark:border-stone-700",
             "bg-white dark:bg-zinc-900 shadow-lg",
           ].join(" ")}
         >
           {/* Search */}
-          <div className="p-2 border-b border-orange-50 dark:border-stone-800">
+          <div className="p-2 border-b border-[var(--ck-role-accent)]/10 dark:border-stone-800">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
               <input
@@ -169,7 +169,7 @@ export function SearchableSelect({
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder={searchPlaceholder}
-                className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-stone-700 focus:outline-none focus:ring-1 focus:ring-[#b04a15]/40 text-stone-800 dark:text-stone-100 placeholder:text-stone-400"
+                className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-stone-700 focus:outline-none focus:ring-1 focus:ring-[var(--ck-role-ring)]/40 text-stone-800 dark:text-stone-100 placeholder:text-stone-400"
               />
             </div>
           </div>
@@ -197,8 +197,8 @@ export function SearchableSelect({
                     "flex items-center gap-2 px-3 cursor-pointer select-none text-sm",
                     "min-h-[44px]", // mobile-friendly touch target
                     i === highlighted
-                      ? "bg-orange-50 dark:bg-zinc-800 text-[#b04a15] dark:text-amber-400"
-                      : "hover:bg-orange-50 dark:hover:bg-zinc-800 text-stone-700 dark:text-stone-200",
+                      ? "bg-[var(--ck-role-soft)] dark:bg-zinc-800 text-[var(--ck-role-accent)] dark:text-[var(--ck-role-accent)]"
+                      : "hover:bg-[var(--ck-role-soft)] dark:hover:bg-zinc-800 text-stone-700 dark:text-stone-200",
                     opt.value === value ? "font-semibold" : "",
                   ].join(" ")}
                   onMouseEnter={() => setHighlighted(i)}

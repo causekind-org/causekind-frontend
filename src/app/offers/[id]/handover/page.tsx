@@ -151,6 +151,8 @@ export default function OfferHandoverHubPage() {
         }}
       />
       <HandoverCelebration
+        // Participation role, not account role — see HandoverCelebration.Props
+        role={vm.role}
         contextType="OFFER"
         contextId={offerId}
         open={celebrate}

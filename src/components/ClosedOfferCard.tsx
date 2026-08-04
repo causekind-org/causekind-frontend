@@ -162,7 +162,7 @@ export function ClosedOfferCard({ offer, onChanged }: {
                     blurb: "Address the reason above and submit a fresh offer for the same request.",
                   }].map(step => (
                     <Link key={step.href} href={step.href}
-                      className="flex items-start gap-2 rounded-lg border border-stone-200 px-3 py-2 transition-colors hover:border-[#b04a15] dark:border-zinc-700">
+                      className="flex items-start gap-2 rounded-lg border border-stone-200 px-3 py-2 transition-colors hover:border-[var(--ck-role-accent)] dark:border-zinc-700">
                       <span className="text-sm">{step.icon}</span>
                       <div>
                         <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">{step.title}</p>

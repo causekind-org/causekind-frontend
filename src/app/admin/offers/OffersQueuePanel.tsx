@@ -261,7 +261,7 @@ export function OffersQueuePanel() {
       : "No open offers";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header strip */}
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-stone-500">{headline}</p>
@@ -297,7 +297,7 @@ export function OffersQueuePanel() {
       )}
 
       {!loading && visible.length === 0 && (
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 p-12 text-center shadow-sm">
+        <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 p-6 sm:p-12 text-center shadow-sm">
           <Check className="w-10 h-10 text-green-500 mx-auto mb-3" />
           <h3 className="font-bold text-stone-700 dark:text-stone-300">All clear</h3>
           <p className="text-sm text-stone-400 mt-1">No offers in this category.</p>
@@ -306,9 +306,9 @@ export function OffersQueuePanel() {
 
       {/* Reject modal */}
       {rejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
-            <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100">Reject Offer</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4">
+            <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100">Reject Offer</h3>
             <p className="text-sm text-stone-500">The donor and donee will both receive a notification with this reason.</p>
             <ReasonField value={rejectReason} onChange={setRejectReason}
               placeholder="Enter the reason for rejection..." disabled={acting !== null} />
@@ -328,9 +328,9 @@ export function OffersQueuePanel() {
 
       {/* Cancel Donation modal (dispute — sides with donee) */}
       {cancelId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
-            <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100">Cancel Donation</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4">
+            <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100">Cancel Donation</h3>
             <p className="text-sm text-stone-500">This sides with the donee — the item was not received. Both parties will be notified and the reservation will be released.</p>
             <ReasonField value={cancelReason} onChange={setCancelReason}
               placeholder="Reason for cancellation (shared with both parties)..." disabled={disputeActing !== null} />
@@ -350,9 +350,9 @@ export function OffersQueuePanel() {
 
       {/* Request Info modal */}
       {requestInfoId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
-            <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100">Request More Information</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4">
+            <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100">Request More Information</h3>
             <p className="text-sm text-stone-500">The donor will receive a notification and be asked to update their offer.</p>
             <textarea value={requestInfoNote} onChange={e => setRequestInfoNote(e.target.value)} rows={3}
               placeholder="What information is needed from the donor?"
@@ -381,19 +381,19 @@ export function OffersQueuePanel() {
 
         return (
           <div key={offer.id}
-            className={`rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm overflow-hidden transition-shadow ${needsAction ? "border-amber-300 dark:border-amber-700 shadow-amber-100 dark:shadow-none" : "border-stone-100 dark:border-zinc-800"}`}>
+            className={`rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm overflow-hidden transition-shadow ${needsAction ? "border-amber-300 dark:border-amber-700 shadow-amber-100 dark:shadow-none" : "border-stone-100 dark:border-zinc-800"}`}>
 
             {/* Summary row */}
             <button onClick={() => toggleExpand(offer.id)}
-              className="w-full text-left p-5 flex items-start gap-4 hover:bg-stone-50 dark:hover:bg-zinc-800/50 transition-colors">
+              className="w-full text-left p-3.5 sm:p-5 flex items-start gap-3 sm:gap-4 hover:bg-stone-50 dark:hover:bg-zinc-800/50 transition-colors">
 
               {/* Thumbnail */}
               {offer.media?.[0] ? (
-                <div className="h-14 w-14 flex-shrink-0 rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-800">
+                <div className="h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-800">
                   <img src={offer.media[0].mediaUrl} alt="" className="h-full w-full object-cover" />
                 </div>
               ) : (
-                <div className="h-14 w-14 flex-shrink-0 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center">
+                <div className="h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center">
                   <Package className="w-6 h-6 text-stone-400" />
                 </div>
               )}
@@ -460,11 +460,11 @@ export function OffersQueuePanel() {
             {isExpanded && (
               <div className="border-t border-stone-100 dark:border-zinc-800">
                 {expandLoading && (
-                  <div className="flex justify-center py-8"><Loader2 className="animate-spin w-6 h-6 text-[#b04a15]" /></div>
+                  <div className="flex justify-center py-5 sm:py-8"><Loader2 className="animate-spin w-6 h-6 text-[#b04a15]" /></div>
                 )}
 
                 {expandedData && expandedData.offer.id === offer.id && (
-                  <div className="p-5 space-y-6">
+                  <div className="p-3.5 sm:p-5 space-y-4 sm:space-y-6">
                     {/* Full stage progress */}
                     <div className="space-y-2">
                       <h4 className="text-xs font-black uppercase tracking-widest text-stone-400">Flow Progress</h4>
@@ -503,7 +503,7 @@ export function OffersQueuePanel() {
                         {expandedData.offer.itemDetails && (() => {
                           const item = expandedData.offer.itemDetails!;
                           return (
-                            <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-4 space-y-2 text-sm">
+                            <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-2 text-sm">
                               {[
                                 ["Quantity", item.quantity],
                                 ["Condition", item.condition],
@@ -543,7 +543,7 @@ export function OffersQueuePanel() {
                         <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5 pt-2">
                           <ShieldCheck className="w-3 h-3" /> AI Assessment
                         </h4>
-                        <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-4 space-y-2 text-sm">
+                        <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-2 text-sm">
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <p className="text-[10px] text-stone-400 uppercase font-bold">Compatibility</p>
@@ -580,7 +580,7 @@ export function OffersQueuePanel() {
                             Previously these offers were invisible: no assessment record exists yet,
                             so there was nothing here to show and no way to know it was stuck. */}
                         {isScreening && (
-                          <div className="rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 p-4 space-y-2">
+                          <div className="rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 p-3 sm:p-4 space-y-2">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-sky-700 dark:text-sky-400">
                               <Bot className="w-3.5 h-3.5" />
                               AI screening {offer.status === "SUBMITTED" ? "has not started yet" : "is in progress"}
@@ -599,7 +599,7 @@ export function OffersQueuePanel() {
 
                         {/* Full AI evidence — only present once screening has actually run at least once */}
                         {expandedData.offer.assessment && (
-                          <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-4 space-y-2 text-sm">
+                          <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-2 text-sm">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
                                 <p className="text-[10px] text-stone-400 uppercase font-bold">Eligibility</p>
@@ -659,7 +659,7 @@ export function OffersQueuePanel() {
                         <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5">
                           <User className="w-3 h-3" /> Parties
                         </h4>
-                        <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-4 space-y-3 text-sm">
+                        <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-3 text-sm">
                           {/* Donor */}
                           <div>
                             <p className="text-[10px] text-stone-400 uppercase font-bold mb-1">Donor</p>
@@ -778,7 +778,7 @@ export function OffersQueuePanel() {
 
                         {/* Highlight HANDOVER PROBLEM messages with dispute action buttons */}
                         {expandedData.messages.filter(m => m.content.includes("[HANDOVER PROBLEM]")).map(m => (
-                          <div key={m.id} className="rounded-xl bg-red-50 dark:bg-red-950/30 border-2 border-red-400 dark:border-red-700 p-4 space-y-3">
+                          <div key={m.id} className="rounded-xl bg-red-50 dark:bg-red-950/30 border-2 border-red-400 dark:border-red-700 p-3 sm:p-4 space-y-3">
                             <div className="flex items-center gap-2">
                               <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
                               <span className="text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-wide">

@@ -74,14 +74,14 @@ export function AdminPermissionsPanel() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <p className="text-sm text-muted-foreground">
         Toggle what each admin can access. Revoking a capability blocks the matching
         API endpoints (403) and hides that tab in their dashboard.
       </p>
       {admins.map(admin => (
         <Card key={admin.id}>
-          <CardContent className="py-4 space-y-3">
+          <CardContent className="py-3 sm:py-4 space-y-2.5 sm:space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <p className="font-medium">{admin.fullName}</p>

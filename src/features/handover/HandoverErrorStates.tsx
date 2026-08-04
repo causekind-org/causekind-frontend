@@ -17,7 +17,7 @@ export function HandoverLoadError({ message, onRetry }: { message: string; onRet
   return (
     <Centered>
       <CircleAlert className="h-8 w-8 text-amber-500" aria-hidden />
-      <h1 className="text-lg font-bold text-stone-900 dark:text-stone-100">
+      <h1 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100">
         We couldn&apos;t load this handover
       </h1>
       <p role="alert" className="max-w-sm text-sm text-stone-500 dark:text-stone-400">
@@ -34,7 +34,7 @@ export function HandoverNotAParticipant() {
   return (
     <Centered>
       <Lock className="h-8 w-8 text-stone-400" aria-hidden />
-      <h1 className="text-lg font-bold text-stone-900 dark:text-stone-100">
+      <h1 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100">
         This handover isn&apos;t yours
       </h1>
       <p className="max-w-sm text-sm text-stone-500 dark:text-stone-400">

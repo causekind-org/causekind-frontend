@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
+import { useRoleColors } from "@/hooks/useRoleColors";
 import { useTilt } from "@/hooks/useTilt";
 import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
@@ -134,7 +135,7 @@ function Donate3DButton() {
         {hearts.map(({ id, x }) => (
           <span
             key={id}
-            className="absolute z-50 text-[11px] text-orange-300 pointer-events-none select-none"
+            className="absolute z-50 text-[11px] text-[var(--ck-role-highlight)] pointer-events-none select-none"
             style={{
               left: `${x}%`,
               bottom: "110%",
@@ -161,7 +162,7 @@ function Donate3DButton() {
               ? "0 0 0 2px rgba(240,185,122,0.5), 0 10px 36px rgba(176,74,21,0.65), 0 4px 14px rgba(0,0,0,0.18)"
               : undefined,
           }}
-          className="donate-navbar-3d relative bg-[#b04a15] text-white font-bold px-[18px] py-[6px] rounded-full text-xs sm:text-sm"
+          className="donate-navbar-3d relative bg-[var(--ck-role-accent)] text-white font-bold px-[18px] py-[6px] rounded-full text-xs sm:text-sm"
           aria-label="Donate"
         >
           <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
@@ -308,7 +309,7 @@ function Sidebar3DItem({
         transition: hovered ? "transform 0.08s ease-out" : "transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1)",
         transformStyle: "preserve-3d",
       }}
-      className={`relative group rounded-2xl border border-stone-200 dark:border-zinc-800/80 p-4 transition-all duration-200 cursor-pointer bg-white dark:bg-zinc-900/60 hover:bg-[#b04a15]/5 dark:hover:bg-orange-950/10 hover:border-[#b04a15]/30 dark:hover:border-orange-500/20 shadow-xs ${className}`}
+      className={`relative group rounded-2xl border border-stone-200 dark:border-zinc-800/80 p-4 transition-all duration-200 cursor-pointer bg-white dark:bg-zinc-900/60 hover:bg-[var(--ck-role-accent)]/5 dark:hover:bg-[var(--ck-role-accent)]/10 hover:border-[var(--ck-role-accent)]/30 dark:hover:border-[var(--ck-role-accent)]/25 shadow-xs ${className}`}
     >
       <div className="relative z-10 flex items-center gap-3">
         {children}
@@ -329,9 +330,20 @@ function Sidebar3DItem({
 
 export function SiteHeader() {
   const { user, logout } = useAuth();
+  // Resolved literals for GSAP/canvas colour props — see useRoleColors.
+  const roleColors = useRoleColors();
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Closing the menu makes it inert, which pushes focus out to <body>. Without
+  // this a keyboard user loses their place entirely, so send focus back to the
+  // control they opened it with.
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const wasSidebarOpen = useRef(false);
+  useEffect(() => {
+    if (wasSidebarOpen.current && !isSidebarOpen) menuTriggerRef.current?.focus();
+    wasSidebarOpen.current = isSidebarOpen;
+  }, [isSidebarOpen]);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
@@ -535,7 +547,7 @@ export function SiteHeader() {
             <AlertDialogCancel>{t("logout.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmLogout}
-              className="bg-[#b04a15] hover:bg-[#963c0d] text-white border-0"
+              className="bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white border-0"
             >
               {t("logout.confirm")}
             </AlertDialogAction>
@@ -551,8 +563,11 @@ export function SiteHeader() {
         {/* Mobile Header (lg:hidden) */}
         <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-transparent">
           <button
+            ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
+            aria-expanded={isSidebarOpen}
+            aria-controls="staggered-menu-panel"
             className="flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
@@ -564,7 +579,7 @@ export function SiteHeader() {
             <NotificationBell />
             <Link
               href={user ? "/profile" : "/login"}
-              className="flex items-center justify-center w-8 h-8 rounded-full border border-[#b04a15]/30 text-[#b04a15] active:scale-95 hover:bg-[#b04a15]/5 transition-all"
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-[var(--ck-role-accent)]/30 text-[var(--ck-role-accent)] active:scale-95 hover:bg-[var(--ck-role-accent)]/5 transition-all"
               aria-label="Profile"
             >
               <User className="w-4.5 h-4.5" />
@@ -597,8 +612,8 @@ export function SiteHeader() {
                     <DropdownMenuTrigger asChild>
                       <button
                         className={`group relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none ${groupActive
-                            ? "text-[#b04a15] dark:text-orange-400"
-                            : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
+                            ? "text-[var(--ck-role-accent)]"
+                            : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                           }`}
                       >
                         {groupActive && (
@@ -608,7 +623,7 @@ export function SiteHeader() {
                             className="glass-pill absolute inset-0 rounded-full"
                           />
                         )}
-                        {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
+                        {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                         <span className="relative z-10">{triggerLabel}</span>
                         <ChevronDown className="relative z-10 w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </button>
@@ -618,7 +633,7 @@ export function SiteHeader() {
                         <DropdownMenuItem key={item.href} asChild>
                           <Link
                             href={item.href}
-                            className={isActive(item.href) ? "text-[#b04a15] dark:text-orange-400" : ""}
+                            className={isActive(item.href) ? "text-[var(--ck-role-accent)]" : ""}
                           >
                             {item.label}
                           </Link>
@@ -636,8 +651,8 @@ export function SiteHeader() {
                   href={link.href}
                   data-tour={link.href === "/requests" ? "nav-requests" : undefined}
                   className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
-                      ? "text-[#b04a15] dark:text-orange-400"
-                      : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-orange-400"
+                      ? "text-[var(--ck-role-accent)]"
+                      : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                     }`}
                 >
                   {active && (
@@ -647,7 +662,7 @@ export function SiteHeader() {
                       className="glass-pill absolute inset-0 rounded-full"
                     />
                   )}
-                  {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[#f0b97a] shrink-0" />}
+                  {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                   <span className="relative z-10">{link.label}</span>
                 </Link>
               );
@@ -692,11 +707,11 @@ export function SiteHeader() {
               <SpecularButton
                 size="sm"
                 radius={999}
-                tint="#b04a15"
+                tint={roleColors.accent}
                 tintOpacity={1}
                 textColor="#ffffff"
-                lineColor="#f0b97a"
-                baseColor="#7a3410"
+                lineColor={roleColors.highlight}
+                baseColor={roleColors.deep}
                 intensity={1}
                 shineSize={14}
                 shineFade={35}
@@ -727,8 +742,8 @@ export function SiteHeader() {
         open={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
-        accentColor="#b04a15"
-        colors={["#f0b97a", "#b04a15"]}
+        accentColor={roleColors.accent}
+        colors={[roleColors.highlight, roleColors.accent]}
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
         items={[
@@ -751,7 +766,7 @@ export function SiteHeader() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-[#b04a15]/10 flex items-center justify-center text-lg font-black text-[#b04a15] dark:text-orange-400 uppercase">
+                  <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
                     {user.email[0]}
                   </div>
                 )}
@@ -814,37 +829,44 @@ export function SiteFooter() {
   ];
   return (
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
-      <div className={`mx-auto grid max-w-7xl gap-12 px-6 py-16 text-sm sm:grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
-        <div className="space-y-4">
-          <div className="inline-block bg-white dark:bg-zinc-900 px-4 py-2.5 rounded-2xl shadow-sm border border-stone-200/10 dark:border-zinc-800">
-            <CareNestLogo size="lg" />
+      {/* items-start stops the short columns stretching; the row-span on Get
+          support (below) is what actually compacts this on mobile. */}
+      <div className={`mx-auto grid max-w-7xl items-start gap-x-4 gap-y-5 sm:gap-y-6 px-4 py-6 sm:px-6 sm:py-8 text-[13px] grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
+        <div className="col-span-2 space-y-2 sm:space-y-2.5 md:col-span-1">
+          <div className="inline-block bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl shadow-sm border border-stone-200/10 dark:border-zinc-800">
+            <CareNestLogo size="md" />
           </div>
           <p className="text-stone-400 leading-relaxed font-medium">{t("tagline")}</p>
           <div className="text-stone-400 font-medium text-xs">
             <span className="text-white font-semibold">{t("contact")}:</span> +91 7719938619
           </div>
-          <div className="flex gap-3 pt-2 flex-wrap">
-            <span className="flex items-center gap-1.5 text-xs bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-full text-white">
-              <Shield className="h-3.5 w-3.5 text-[#b04a15]" /> {t("adminVerified")}
+          <div className="flex gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
+            <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
+              <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ck-role-accent)]" /> {t("adminVerified")}
             </span>
-            <span className="flex items-center gap-1.5 text-xs bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-full text-white">
-              <Shield className="h-3.5 w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
+            <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
+              <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
             </span>
           </div>
         </div>
         {giveBackLinks.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-2 sm:space-y-2.5">
             <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("giveBack")}</p>
-            <ul className="space-y-3 text-stone-400 font-medium">
+            <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
               {giveBackLinks.map(({ href, l }) => (
                 <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
               ))}
             </ul>
           </div>
         )}
-        <div className="space-y-4">
+        {/* Get support carries 4-5 links while Give back carries 1, so on the
+            2-column mobile grid it spans two rows and Trust promise tucks into
+            the cell under Give back instead of starting a third row with an
+            empty cell beside it. Reverts to a normal cell from md: up, where
+            all four columns sit side by side. */}
+        <div className="row-span-2 md:row-span-1 space-y-2 sm:space-y-2.5">
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
-          <ul className="space-y-3 text-stone-400 font-medium">
+          <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
             {[
               { href: "/register", l: t("createAccount") },
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
@@ -856,19 +878,21 @@ export function SiteFooter() {
             ))}
           </ul>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-2 sm:space-y-2.5">
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("trust")}</p>
-          <ul className="space-y-3 text-stone-400 font-medium">
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b04a15]" /> {t("adminVerifiedFull")}</li>
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#b04a15]" /> {t("zeroFees")}</li>
-            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
+          {/* items-start, not items-center: these labels wrap to two lines on a
+              narrow column and a centred dot then floats beside the gap. */}
+          <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("adminVerifiedFull")}</li>
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("zeroFees")}</li>
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
           </ul>
         </div>
       </div>
-      <div className="border-t border-stone-900 py-6 text-center text-xs text-stone-500 font-medium px-4">
-        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-3">
-          <span className="w-full sm:w-auto mb-2 sm:mb-0">
-            © {new Date().getFullYear()} <span className="font-bold text-[#b04a15]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
+      <div className="border-t border-stone-900 py-2.5 sm:py-3 text-center text-[11px] sm:text-xs text-stone-500 font-medium px-3 sm:px-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3 gap-y-1 sm:gap-y-1.5">
+          <span className="w-full sm:w-auto">
+            © {new Date().getFullYear()} <span className="font-bold text-[var(--ck-role-accent)]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
           </span>
           <Link href="/privacy" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
             Privacy Policy

@@ -159,7 +159,7 @@ export function AnalyticsPanel() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-stone-500">{t("subtitle")}</p>
         <Badge variant="secondary" className="w-fit h-fit text-xs">
@@ -168,58 +168,58 @@ export function AnalyticsPanel() {
       </div>
 
       {stats && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardContent className="flex items-center gap-4 p-5">
+            <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#b04a15]/10 text-[#b04a15]">
                 <HandCoins className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t("totalRaised")}</p>
-                <p className="text-xl font-bold">{formatINR(Number(stats.totalCollected))}</p>
+                <p className="text-base sm:text-xl font-bold">{formatINR(Number(stats.totalCollected))}</p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="flex items-center gap-4 p-5">
+            <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
                 <Users className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t("uniqueDonors")}</p>
-                <p className="text-xl font-bold">{stats.uniqueDonors}</p>
+                <p className="text-base sm:text-xl font-bold">{stats.uniqueDonors}</p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="flex items-center gap-4 p-5">
+            <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
                 <TrendingUp className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t("avgDonation")}</p>
-                <p className="text-xl font-bold">{formatINR(Math.round(avgDonation))}</p>
+                <p className="text-base sm:text-xl font-bold">{formatINR(Math.round(avgDonation))}</p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="flex items-center gap-4 p-5">
+            <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-100 text-green-600">
                 <CheckCircle className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t("paymentSuccess")}</p>
-                <p className="text-xl font-bold">{successRate}%</p>
+                <p className="text-base sm:text-xl font-bold">{successRate}%</p>
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>{t("monthlyDonationVolume")}</CardTitle>
@@ -305,7 +305,7 @@ export function AnalyticsPanel() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>{t("topCampaigns")}</CardTitle>
@@ -356,33 +356,33 @@ export function AnalyticsPanel() {
             <CardTitle>{t("campaignPipeline")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-2">
-            <div className="flex items-center justify-between rounded-xl border border-green-100 bg-green-50/50 p-4">
+            <div className="flex items-center justify-between rounded-xl border border-green-100 bg-green-50/50 p-3 sm:p-4">
               <div className="flex items-center gap-2.5">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <span className="text-sm font-medium">{t("approved")}</span>
               </div>
-              <span className="text-2xl font-bold text-green-700">{approvedCount}</span>
+              <span className="text-lg sm:text-2xl font-bold text-green-700">{approvedCount}</span>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/50 p-4">
+            <div className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/50 p-3 sm:p-4">
               <div className="flex items-center gap-2.5">
                 <Clock className="h-4 w-4 text-amber-600" />
                 <span className="text-sm font-medium">{t("pendingReview")}</span>
               </div>
-              <span className="text-2xl font-bold text-amber-700">{pendingCount}</span>
+              <span className="text-lg sm:text-2xl font-bold text-amber-700">{pendingCount}</span>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50/50 p-4">
+            <div className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50/50 p-3 sm:p-4">
               <div className="flex items-center gap-2.5">
                 <XCircle className="h-4 w-4 text-red-500" />
                 <span className="text-sm font-medium">{t("rejected")}</span>
               </div>
-              <span className="text-2xl font-bold text-red-600">{rejectedCount}</span>
+              <span className="text-lg sm:text-2xl font-bold text-red-600">{rejectedCount}</span>
             </div>
 
-            <div className="rounded-xl border p-4 text-center">
+            <div className="rounded-xl border p-3 sm:p-4 text-center">
               <p className="text-xs text-muted-foreground">{t("approvalRate")}</p>
-              <p className="mt-0.5 text-3xl font-extrabold text-[#b04a15]">{approvalRate}%</p>
+              <p className="mt-0.5 text-xl sm:text-3xl font-extrabold text-[#b04a15]">{approvalRate}%</p>
               <p className="text-xs text-muted-foreground">{t("ofReviewedCampaigns")}</p>
             </div>
           </CardContent>
@@ -395,7 +395,7 @@ export function AnalyticsPanel() {
         </CardHeader>
         <CardContent>
           {donations.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">{t("noTransactions")}</p>
+            <p className="py-6 sm:py-10 text-center text-sm text-muted-foreground">{t("noTransactions")}</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full text-sm">

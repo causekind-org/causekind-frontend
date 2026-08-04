@@ -110,7 +110,12 @@ export function DonorCategoryModal() {
 
       {/* ── Backdrop ── */}
       <div
-        className="fixed inset-0 z-[9990] flex items-end sm:items-center justify-center p-4 sm:p-6 ck-cat-backdrop-el"
+        /* overflow-x-hidden is required, not belt-and-braces: overflow-y-auto
+           alone makes overflow-x compute from visible to auto (the two axes
+           cannot disagree about being visible), and the ambient glows below
+           bleed ~167px past the right edge — which turned into a horizontal
+           scrollbar. Clipping x is also what those decorations always wanted. */
+        className="fixed inset-0 z-[9990] flex justify-center overflow-y-auto overflow-x-hidden p-4 sm:p-6 ck-cat-backdrop-el"
         style={{
           background: "linear-gradient(135deg, rgba(176,74,21,0.14) 0%, rgba(8,5,2,0.82) 55%, rgba(30,58,96,0.14) 100%)",
           backdropFilter: "blur(22px) saturate(1.3)",
@@ -145,7 +150,7 @@ export function DonorCategoryModal() {
 
         {/* ── Glass card ── */}
         <div
-          className="ck-cat-card-el relative w-full max-w-md flex flex-col gap-5 rounded-[2rem] p-6"
+          className="ck-cat-card-el relative my-auto w-full max-w-md flex flex-col gap-3.5 sm:gap-5 rounded-3xl sm:rounded-[2rem] p-4 sm:p-6"
           style={{
             background: "rgba(255,255,255,0.05)",
             backdropFilter: "blur(36px) saturate(1.6)",
@@ -161,31 +166,31 @@ export function DonorCategoryModal() {
           {/* Close button */}
           <button
             onClick={() => setShow(false)}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-white/35 hover:text-white/80 hover:bg-white/10 transition-all duration-200"
+            className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white/35 hover:text-white/80 hover:bg-white/10 transition-all duration-200"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
 
           {/* ── Header ── */}
           <div className="text-center">
-            <div className="flex justify-center mb-3">
+            <div className="flex justify-center mb-2 sm:mb-3">
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center"
                 style={{
                   background: "linear-gradient(135deg, #b04a15, #e07b3a)",
                   boxShadow: "0 10px 28px rgba(176,74,21,0.5), inset 0 1px 0 rgba(255,255,255,0.22)",
                 }}
               >
-                <Sparkles className="w-6 h-6 text-white" />
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.26em] text-[#f0b97a] mb-1.5">
+            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.26em] text-[#f0b97a] mb-1 sm:mb-1.5">
               Where will you make an impact?
             </p>
-            <h2 className="text-xl font-extrabold text-white leading-snug tracking-tight">
+            <h2 className="text-base sm:text-xl font-extrabold text-white leading-snug tracking-tight">
               Choose your focus areas
             </h2>
-            <p className="text-stone-400 text-xs mt-1.5 leading-relaxed">
+            <p className="text-stone-400 text-[11px] sm:text-xs mt-1 sm:mt-1.5 leading-snug sm:leading-relaxed">
               We&apos;ll show you the most urgent local needs in your area.
             </p>
           </div>
@@ -193,7 +198,7 @@ export function DonorCategoryModal() {
           <div className="h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
 
           {/* ── Category grid ── */}
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
             {CATEGORIES.map(({ name, Icon, col, iconBg, border, ring, badge, blurb }, idx) => {
               const isSelected = tempSelected.includes(name);
               const isAction = name === "List Item";
@@ -212,8 +217,8 @@ export function DonorCategoryModal() {
                   }}
                   className={`ck-cat-item-el relative border transition-all duration-200 active:scale-95 group
                     ${isAction
-                      ? "col-span-3 flex flex-row items-center justify-center gap-2.5 py-3 px-2 rounded-2xl"
-                      : "flex flex-col items-center gap-2 py-4 px-2 rounded-2xl"}
+                      ? "col-span-3 flex flex-row items-center justify-center gap-2.5 py-2.5 px-2 sm:py-3 rounded-xl sm:rounded-2xl"
+                      : "flex flex-col items-center gap-1.5 py-3 px-1.5 sm:gap-2 sm:py-4 sm:px-2 rounded-xl sm:rounded-2xl"}
                     ${isSelected
                       ? `${border} ring-2 ${ring} ${iconBg} scale-[1.03]`
                       : "border-white/[0.08] hover:border-white/20"}`}
@@ -249,12 +254,12 @@ export function DonorCategoryModal() {
                   </span>
 
                   {/* Icon */}
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${iconBg} transition-transform duration-200 ${isSelected ? "scale-110" : "group-hover:scale-105"}`}>
-                    <Icon className={`w-5 h-5 ${col}`} />
+                  <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center ${iconBg} transition-transform duration-200 ${isSelected ? "scale-110" : "group-hover:scale-105"}`}>
+                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${col}`} />
                   </div>
 
                   {/* Label */}
-                  <span className={`text-[11px] font-bold text-center leading-tight transition-colors duration-200 ${isSelected ? col : "text-stone-400 group-hover:text-stone-200"}`}>
+                  <span className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight transition-colors duration-200 ${isSelected ? col : "text-stone-400 group-hover:text-stone-200"}`}>
                     {name}
                   </span>
                 </button>
@@ -268,7 +273,7 @@ export function DonorCategoryModal() {
           <div className="flex flex-col gap-2">
             <button
               onClick={() => apply(tempSelected)}
-              className="ck-shimmer-btn group relative w-full py-3.5 rounded-2xl text-sm font-extrabold text-white overflow-hidden transition-all duration-200 active:scale-[0.98]"
+              className="ck-shimmer-btn group relative w-full py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-[13px] sm:text-sm font-extrabold text-white overflow-hidden transition-all duration-200 active:scale-[0.98]"
               style={{
                 background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)",
                 boxShadow: "0 10px 32px rgba(176,74,21,0.45), inset 0 1px 0 rgba(255,255,255,0.2)",
@@ -284,7 +289,7 @@ export function DonorCategoryModal() {
 
             <button
               onClick={() => apply([])}
-              className="text-stone-500 hover:text-stone-300 text-xs font-semibold text-center transition-colors py-1.5"
+              className="text-stone-500 hover:text-stone-300 text-[11px] sm:text-xs font-semibold text-center transition-colors py-1 sm:py-1.5"
             >
               Show all needs instead
             </button>

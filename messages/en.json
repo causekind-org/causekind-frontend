@@ -272,6 +272,7 @@
       "sessionExpired": "Your session has expired. Please log in again."
     },
     "register": {
+      "spamFolderHint": "Can't find the code in your inbox? Check your Spam or Junk folder. Verification emails sometimes land there.",
       "title": "Create your account",
       "subtitle": "Join CauseKind and start making a difference.",
       "joinTitle": "Join CauseKind",

@@ -38,12 +38,12 @@ export function HandoverNextAction({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
       aria-labelledby="next-step-heading"
-      className="rounded-lg border border-[var(--handover-accent)]/25 bg-[var(--handover-soft)] p-5"
+      className="rounded-lg border border-[var(--handover-accent)]/25 bg-[var(--handover-soft)] p-3.5 sm:p-5"
     >
       <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--handover-accent)]">
         Your next step
       </p>
-      <h1 id="next-step-heading" className="mt-1 text-xl font-bold text-stone-900 dark:text-stone-100 sm:text-2xl">
+      <h1 id="next-step-heading" className="mt-1 text-base font-bold text-stone-900 dark:text-stone-100 sm:text-2xl">
         {copy.title}
       </h1>
       <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-stone-600 dark:text-stone-300">

@@ -36,7 +36,7 @@ function PhotoLightbox({ urls, index, onClose, onNavigate }: {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <button
@@ -70,7 +70,7 @@ function PhotoLightbox({ urls, index, onClose, onNavigate }: {
         src={urls[index]}
         alt={`Item photo ${index + 1} of ${urls.length}`}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[82vh] max-w-full rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-200"
+        className="max-h-[82vh] max-w-full rounded-xl sm:rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-200"
       />
 
       {urls.length > 1 && (
@@ -151,9 +151,9 @@ function DoneeOffersView() {
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
-      <div className="mx-auto max-w-2xl px-4 pt-8">
+      <div className="mx-auto max-w-2xl px-4 pt-5 sm:pt-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
             {focused ? "Offer Details" : "Donation Offers"}
           </h1>
           <p className="text-sm text-gray-500">
@@ -184,18 +184,18 @@ function DoneeOffersView() {
           </div>
         )}
 
-        {loading && <p className="text-center text-gray-400 py-8 animate-pulse">Loading offers...</p>}
+        {loading && <p className="text-center text-gray-400 py-5 sm:py-8 animate-pulse">Loading offers...</p>}
 
         {!loading && offers.length === 0 && (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-8 text-center shadow-sm">
-            <div className="text-4xl mb-3">🎁</div>
+          <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-8 text-center shadow-sm">
+            <div className="text-2xl sm:text-4xl mb-3">🎁</div>
             <p className="text-sm text-gray-500">No donation offers yet. When donors offer to fulfil your requests, they will appear here.</p>
           </div>
         )}
 
-        <div className="space-y-5">
+        <div className="space-y-4 sm:space-y-5">
           {visible.map((offer) => (
-            <div key={offer.id} className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
+            <div key={offer.id} className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100">{offer.requestTitle}</h3>
@@ -266,7 +266,7 @@ function DoneeOffersView() {
                   <button
                     onClick={() => handleAction(offer.id, "ACCEPT")}
                     disabled={acting === offer.id}
-                    className="flex-1 rounded-xl bg-[#b04a15] py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                    className="flex-1 rounded-xl bg-[var(--ck-role-accent)] py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                   >
                     {acting === offer.id ? "..." : "Accept Offer"}
                   </button>

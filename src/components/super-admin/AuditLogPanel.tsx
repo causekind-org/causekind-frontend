@@ -29,7 +29,7 @@ export function AuditLogPanel() {
   useEffect(load, [page]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="flex gap-2 items-center">
         <Input
           placeholder="Filter by actor email…"

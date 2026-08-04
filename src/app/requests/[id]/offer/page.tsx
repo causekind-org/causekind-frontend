@@ -143,13 +143,13 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
   return (
     <section className="mb-8">
       <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">About This Need</p>
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div className="overflow-hidden rounded-xl sm:rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div className="flex flex-col sm:flex-row">
           {showPortrait ? (
             /* Portrait takes ~30% on desktop and sits above the facts on mobile.
                Not wrapped in its own card — it shares this container's surface,
                so the section stays one object rather than a card inside a card. */
-            <div className="donee-portrait flex-shrink-0 p-5 sm:w-[30%] sm:max-w-[260px] sm:pr-0">
+            <div className="donee-portrait flex-shrink-0 p-3.5 sm:p-5 sm:w-[30%] sm:max-w-[260px] sm:pr-0">
               <div className="donee-portrait__frame relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-gray-700 dark:bg-gray-800">
                 {/* Fixed 4:5 box reserves the space before the image loads, so a
                     slow photo can't shift the facts beside it. */}
@@ -173,7 +173,7 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
               <img src={request.imageUrl} alt={request.title} className="h-48 w-full object-cover sm:h-full" />
             </div>
           ) : null}
-          <div className="flex-1 p-5">
+          <div className="flex-1 p-3.5 sm:p-5">
             {hasBadges && (
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 {request.verificationTier && (
@@ -212,7 +212,7 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
           </div>
         </div>
         {request.reasonCannotBuy && (
-          <div className="border-t border-gray-100 bg-amber-50/60 px-5 py-4 dark:border-gray-800 dark:bg-amber-950/20">
+          <div className="border-t border-gray-100 bg-amber-50/60 px-3.5 sm:px-5 py-4 dark:border-gray-800 dark:bg-amber-950/20">
             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">
               Why they can&rsquo;t purchase this themselves
             </p>
@@ -670,11 +670,11 @@ export default function OfferWizardPage() {
 
   if (requestLoadFailed) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 sm:gap-4 px-4 text-center">
         <p className="text-gray-600 dark:text-gray-400">This request couldn't be loaded — it may have been withdrawn or is no longer accepting offers.</p>
         <button
           onClick={() => router.push("/requests")}
-          className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
+          className="rounded-xl bg-[#b04a15] px-3.5 sm:px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
         >
           Back to Requests
         </button>
@@ -710,7 +710,7 @@ export default function OfferWizardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className={`mx-auto px-4 pt-8 ${step === 1 ? "max-w-5xl" : step === 2 ? "max-w-4xl" : "max-w-2xl"}`}>
+      <div className={`mx-auto px-4 pt-5 sm:pt-8 ${step === 1 ? "max-w-5xl" : step === 2 ? "max-w-4xl" : "max-w-2xl"}`}>
         {/* Top bar: back button (left) + progress (centered) */}
         <div className="relative mb-6">
           <button
@@ -772,7 +772,7 @@ export default function OfferWizardPage() {
               return (
                 <div className={`mb-6 border-l-4 py-1 pl-4 ${c.accent}`}>
                   <div className="flex items-start gap-3">
-                    <div className="text-xl leading-none">
+                    <div className="text-base sm:text-xl leading-none">
                       {guidance.color === "green" ? "✓" : guidance.color === "amber" ? "⚠" : guidance.color === "red" ? "✕" : "ℹ"}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -828,7 +828,7 @@ export default function OfferWizardPage() {
                   </span>
                 )}
               </div>
-              <h1 className="mb-3 text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="mb-3 text-xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {request.title}
               </h1>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
@@ -851,7 +851,7 @@ export default function OfferWizardPage() {
                   <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">
                     Step 1 of 3
                   </p>
-                  <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <h2 className="mb-2 text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                     How would you like to help?
                   </h2>
                   <p className="mx-auto max-w-md text-sm text-gray-500 dark:text-gray-400">
@@ -859,7 +859,7 @@ export default function OfferWizardPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
                   {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags, comingSoon }, i) => {
                     const isSelecting = loading && form.flowType === type;
 
@@ -869,14 +869,14 @@ export default function OfferWizardPage() {
                           key={type}
                           onClick={() => handleComingSoon(type)}
                           style={{ animationDelay: `${i * 100}ms`, animationFillMode: "backwards" }}
-                          className={`cs-flow-card group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center overflow-hidden rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg dark:border-gray-600 dark:bg-gray-900 ${nudged === type ? "cs-card-nudge" : ""}`}
+                          className={`cs-flow-card group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center overflow-hidden rounded-xl sm:rounded-2xl border border-dashed border-gray-300 bg-white p-4 sm:p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg dark:border-gray-600 dark:bg-gray-900 ${nudged === type ? "cs-card-nudge" : ""}`}
                         >
                           <span aria-hidden className="cs-card-sheen" />
                           <span style={{ transform: "translateZ(30px)" }} className="absolute right-4 top-4 inline-flex items-center gap-1">
                             <Sparkles className="cs-badge-spark h-3 w-3 text-amber-500" />
                             <span className="cs-badge-shimmer text-[10px] font-bold uppercase tracking-widest">Coming soon</span>
                           </span>
-                          <div style={{ transform: "translateZ(36px)" }} className={`cs-icon-drift mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${iconBg} opacity-70 saturate-50 transition-all duration-300 group-hover:opacity-100 group-hover:saturate-100`}>
+                          <div style={{ transform: "translateZ(36px)" }} className={`cs-icon-drift mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl ${iconBg} opacity-70 saturate-50 transition-all duration-300 group-hover:opacity-100 group-hover:saturate-100`}>
                             <Icon className={`h-6 w-6 ${iconText}`} />
                           </div>
                           <div style={{ transform: "translateZ(20px)" }} className="font-semibold text-gray-500 transition-colors duration-300 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200">
@@ -904,14 +904,14 @@ export default function OfferWizardPage() {
                         onClick={() => handleFlowSelect(type)}
                         disabled={loading || blockedByOther}
                         style={{ animationDelay: `${i * 100}ms`, animationFillMode: "backwards" }}
-                        className="group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900"
+                        className="group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900"
                       >
                         {badge && (
                           <span style={{ transform: "translateZ(30px)" }} className="absolute right-5 top-5 text-[11px] font-bold uppercase tracking-wide text-green-600 dark:text-green-400">
                             {badge}
                           </span>
                         )}
-                        <div style={{ transform: "translateZ(36px)" }} className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${iconBg}`}>
+                        <div style={{ transform: "translateZ(36px)" }} className={`mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl transition-transform duration-300 group-hover:scale-110 ${iconBg}`}>
                           {isSelecting ? (
                             <Loader2 className={`h-6 w-6 animate-spin ${iconText}`} />
                           ) : (
@@ -938,7 +938,7 @@ export default function OfferWizardPage() {
             {request.description && (
               <section className="mb-8">
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Request Description</p>
-                <div className="rounded-xl border-l-4 border-indigo-300 bg-indigo-50 px-5 py-4 dark:border-indigo-600 dark:bg-indigo-950/30">
+                <div className="rounded-xl border-l-4 border-indigo-300 bg-indigo-50 px-3.5 sm:px-5 py-4 dark:border-indigo-600 dark:bg-indigo-950/30">
                   <p className="text-sm italic leading-relaxed text-gray-700 dark:text-gray-300">&ldquo;{request.description}&rdquo;</p>
                 </div>
               </section>
@@ -949,21 +949,21 @@ export default function OfferWizardPage() {
 
             {/* Verified & Audited — card with stat blocks + review checklist */}
             {qty && (
-              <section className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                <div className="flex flex-wrap items-start justify-between gap-6">
+              <section className="mb-8 rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div className="flex flex-wrap items-start justify-between gap-4 sm:gap-6">
                   <div className="max-w-sm">
                     <h3 className="font-bold text-gray-900 dark:text-gray-100">Verified &amp; Audited</h3>
                     <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
                       Our team manually verifies every request with supporting documentation before it goes live.
                     </p>
                   </div>
-                  <div className="flex gap-8 text-right">
+                  <div className="flex gap-5 sm:gap-8 text-right">
                     <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityDelivered} / {qty.quantityRequired}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityDelivered} / {qty.quantityRequired}</p>
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Provided</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityReserved}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityReserved}</p>
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Reserved</p>
                     </div>
                   </div>
@@ -1013,9 +1013,9 @@ export default function OfferWizardPage() {
 
         {/* ── Step 2: Item details form ─────────────────────────────────────── */}
         {step === 2 && offer && (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Item Details</h2>
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Item Details</h2>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {form.flowType === "ALREADY_OWN" && "Tell us about the item you already have."}
                 {form.flowType === "WILL_PURCHASE" && "Describe the item you plan to purchase."}
@@ -1032,7 +1032,7 @@ export default function OfferWizardPage() {
             )}
 
             {/* Photos — first, so AI can screen + auto-fill before the rest of the form */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm">
               <div className="mb-1 flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
                   <Camera className="h-4.5 w-4.5" />
@@ -1092,9 +1092,9 @@ export default function OfferWizardPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <SelectField
                   label="Condition *"
                   value={form.condition}
@@ -1130,7 +1130,7 @@ export default function OfferWizardPage() {
             </div>
 
             {/* Logistics */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
@@ -1148,14 +1148,14 @@ export default function OfferWizardPage() {
                   Use my location
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Field label="City *" value={form.pickupCity} onChange={(v) => set("pickupCity", v)} placeholder="e.g. Mumbai" />
                 <Field label="Pincode" value={form.pickupPincode} onChange={(v) => set("pickupPincode", v)} />
               </div>
               <Field label="Locality" value={form.pickupLocality} onChange={(v) => set("pickupLocality", v)} placeholder="e.g. Andheri West" />
               <label
                 htmlFor="dropoff"
-                className="flex cursor-pointer items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/20"
+                className="flex cursor-pointer items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4 dark:border-indigo-900 dark:bg-indigo-950/20"
               >
                 <input type="checkbox" id="dropoff" checked={form.donorDropOffAvailable}
                   onChange={(e) => set("donorDropOffAvailable", e.target.checked)}
@@ -1177,7 +1177,7 @@ export default function OfferWizardPage() {
             </div>
 
             {/* Declarations */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm">
               <div className="mb-3 flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
                   <ShieldCheck className="h-4.5 w-4.5" />
@@ -1228,7 +1228,7 @@ export default function OfferWizardPage() {
               <button
                 onClick={handleItemDetailsSubmit}
                 disabled={loading}
-                className="rounded-xl bg-[#1e3a60] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#254876] disabled:opacity-50"
+                className="rounded-xl bg-[#1e3a60] px-4 sm:px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#254876] disabled:opacity-50"
               >
                 {loading ? "Submitting..." : "Submit Donation Offer"}
               </button>
@@ -1236,14 +1236,14 @@ export default function OfferWizardPage() {
 
             {/* Info tiles */}
             <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="rounded-xl bg-indigo-50/70 p-4 dark:bg-indigo-950/20">
+              <div className="rounded-xl bg-indigo-50/70 p-3 sm:p-4 dark:bg-indigo-950/20">
                 <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
                   <ShieldCheck className="h-4.5 w-4.5" />
                 </div>
                 <p className="font-semibold text-gray-900 dark:text-gray-100">Quality Assurance</p>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Your detailed info helps our team assess condition and ensure quality standards are met.</p>
               </div>
-              <div className="rounded-xl bg-indigo-50/70 p-4 dark:bg-indigo-950/20">
+              <div className="rounded-xl bg-indigo-50/70 p-3 sm:p-4 dark:bg-indigo-950/20">
                 <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
                   <Eye className="h-4.5 w-4.5" />
                 </div>
@@ -1256,36 +1256,36 @@ export default function OfferWizardPage() {
 
         {/* ── Step 3: Submitted / AI screening ──────────────────────────────── */}
         {step === 3 && (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-8 text-center shadow-sm">
+          <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-8 text-center shadow-sm">
             {loading ? (
               <>
                 <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#b04a15] border-t-transparent" />
-                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">AI Screening in Progress</h2>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">AI Screening in Progress</h2>
                 <p className="mt-2 text-sm text-gray-500">We are checking your item details and photos. This usually takes a few minutes.</p>
               </>
             ) : offer?.status === "PENDING_DONEE_REVIEW" || offer?.status === "SOFT_RESERVED_PRIMARY" ? (
               <>
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-950 text-2xl">✓</div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Offer Submitted!</h2>
+                <div className="mx-auto mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-950 text-lg sm:text-2xl">✓</div>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Offer Submitted!</h2>
                 <p className="mt-2 text-sm text-gray-500">Your offer looks suitable and has been sent to the recipient for review.</p>
-                <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-6 py-2.5 text-sm font-semibold text-white">
+                <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-4 sm:px-6 py-2.5 text-sm font-semibold text-white">
                   View My Offers
                 </button>
               </>
             ) : offer?.status === "NEEDS_INFORMATION" ? (
               <>
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950 text-2xl">!</div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">More Information Needed</h2>
+                <div className="mx-auto mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950 text-lg sm:text-2xl">!</div>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">More Information Needed</h2>
                 <p className="mt-2 text-sm text-gray-500">Please provide additional details before your offer can proceed.</p>
-                <button onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mt-6 rounded-xl bg-[#b04a15] px-6 py-2.5 text-sm font-semibold text-white">
+                <button onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mt-6 rounded-xl bg-[#b04a15] px-4 sm:px-6 py-2.5 text-sm font-semibold text-white">
                   Update Details
                 </button>
               </>
             ) : (
               <>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Offer Submitted</h2>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Offer Submitted</h2>
                 <p className="mt-2 text-sm text-gray-500">Status: {offer?.status ?? "Processing..."}</p>
-                <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-6 py-2.5 text-sm font-semibold text-white">
+                <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-4 sm:px-6 py-2.5 text-sm font-semibold text-white">
                   View My Offers
                 </button>
               </>

@@ -274,7 +274,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                   <p className="text-xs text-stone-400">{visibleUsers.length}</p>
                 </div>
                 {visibleUsers.length === 0 ? (
-                  <p className="py-10 text-center text-sm text-stone-400">No users match this filter.</p>
+                  <p className="py-6 sm:py-10 text-center text-sm text-stone-400">No users match this filter.</p>
                 ) : (
                   visibleUsers.map((u) => {
                     const rs = roleStyle(u.role);
@@ -312,14 +312,14 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
           </button>
           {/* User summary card */}
           <Card className="journey-event mb-6 overflow-hidden border-stone-200/70 bg-white/90 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/80" style={{ animationDelay: "0ms" }}>
-            <CardContent className="p-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#b04a15] to-[#d97a3d] text-xl font-black text-white shadow">
+            <CardContent className="p-3.5 sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <span className="flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#b04a15] to-[#d97a3d] text-base sm:text-xl font-black text-white shadow">
                     {journey.user.fullName?.charAt(0)?.toUpperCase() ?? "?"}
                   </span>
                   <div>
-                    <h2 className="text-xl font-black text-stone-900 dark:text-stone-100">{journey.user.fullName}</h2>
+                    <h2 className="text-base sm:text-xl font-black text-stone-900 dark:text-stone-100">{journey.user.fullName}</h2>
                     <p className="text-sm text-stone-500">{journey.user.email}{journey.user.phone ? ` · ${journey.user.phone}` : ""}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <Badge variant="secondary">{journey.user.role ?? "USER"}</Badge>
@@ -420,7 +420,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
               />
             ))}
             {visibleEvents.length === 0 && (
-              <p className="py-10 text-sm text-stone-400">No events in the selected categories.</p>
+              <p className="py-6 sm:py-10 text-sm text-stone-400">No events in the selected categories.</p>
             )}
             <div ref={timelineEndRef} />
           </div>

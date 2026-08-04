@@ -80,7 +80,7 @@ export function CookieConsent() {
       {/* Fixed bottom bar — clears mobile bottom nav on small screens */}
       <div
         className={`
-          fixed bottom-[84px] lg:bottom-5 inset-x-0 z-[9998]
+          fixed bottom-[calc(var(--ck-bottom-chrome)+0.75rem)] lg:bottom-5 inset-x-0 z-[9998]
           flex justify-center px-4 pointer-events-none
           ${exiting ? "ck-cookie-exit" : "ck-cookie-enter"}
         `}
@@ -99,8 +99,8 @@ export function CookieConsent() {
           `}
         >
           {/* Icon */}
-          <span className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-[#b04a15]/10 dark:bg-[#b04a15]/20">
-            <Cookie className="w-5 h-5 text-[#b04a15] dark:text-orange-400" aria-hidden="true" />
+          <span className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-[var(--ck-role-accent)]/10 dark:bg-[var(--ck-role-accent)]/20">
+            <Cookie className="w-5 h-5 text-[var(--ck-role-accent)]" aria-hidden="true" />
           </span>
 
           {/* Text */}
@@ -109,7 +109,7 @@ export function CookieConsent() {
             preferences.{" "}
             <Link
               href="/privacy"
-              className="font-semibold text-[#b04a15] dark:text-orange-400 underline underline-offset-2 hover:opacity-80 transition-opacity"
+              className="font-semibold text-[var(--ck-role-accent)] underline underline-offset-2 hover:opacity-80 transition-opacity"
             >
               Learn more
             </Link>
@@ -121,11 +121,11 @@ export function CookieConsent() {
               onClick={() => dismiss("accepted")}
               className="
                 flex-1 sm:flex-none
-                bg-[#b04a15] hover:bg-[#963c0d] active:scale-95
+                bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] active:scale-95
                 text-white text-sm font-semibold
                 px-5 py-2 rounded-full
                 transition-all duration-200
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/60
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring)]/60
               "
             >
               Accept

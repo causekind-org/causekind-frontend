@@ -408,8 +408,8 @@ export default function EditItemPage() {
 
   // ── Step 1 ─────────────────────────────────────────────────────────────────
   const step1 = (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-4 sm:space-y-5">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Field label="Category" required error={fieldErrors.category}>
           <Select value={category} onValueChange={(v) => { setCategory(v); setSubcategory(""); }}>
             <SelectTrigger className={ie("category")}><SelectValue placeholder="Select category" /></SelectTrigger>
@@ -428,7 +428,7 @@ export default function EditItemPage() {
         <Input placeholder="e.g. School Textbooks Grade 5–7, Set of 6" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className={ie("title")} />
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Field label="Brand" hint="Recommended for electronics & appliances">
           <Input placeholder="e.g. Samsung, IKEA" value={brand} onChange={(e) => setBrand(e.target.value)} />
         </Field>
@@ -437,7 +437,7 @@ export default function EditItemPage() {
         </Field>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         <Field label="Quantity" required error={fieldErrors.quantity}>
           <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={ie("quantity")} />
         </Field>
@@ -485,7 +485,7 @@ export default function EditItemPage() {
       </Field>
 
       {NEEDS_DIMENSIONS.includes(category) && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <Field label="Dimensions / Size" hint="e.g. 180×90×75 cm or XL">
             <Input placeholder="e.g. 120×60×75 cm" value={dimensions} onChange={(e) => setDimensions(e.target.value)} />
           </Field>
@@ -503,8 +503,8 @@ export default function EditItemPage() {
 
   // ── Step 2 ─────────────────────────────────────────────────────────────────
   const step2 = (
-    <div className="space-y-5">
-      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300 space-y-1">
+    <div className="space-y-4 sm:space-y-5">
+      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-3 sm:p-4 text-sm text-blue-700 dark:text-blue-300 space-y-1">
         <p className="font-bold">Photo guidelines (minimum 2 required):</p>
         <ul className="list-disc ml-4 space-y-0.5 text-xs">
           <li>Front view of the item</li>
@@ -548,7 +548,7 @@ export default function EditItemPage() {
 
   // ── Step 3 ─────────────────────────────────────────────────────────────────
   const step3 = (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
@@ -600,8 +600,8 @@ export default function EditItemPage() {
 
   // ── Step 4 ─────────────────────────────────────────────────────────────────
   const step4 = (
-    <div className="space-y-5">
-      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+    <div className="space-y-4 sm:space-y-5">
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 sm:p-4">
         <p className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-1">Mandatory Donor Declarations</p>
         <p className="text-xs text-amber-700 dark:text-amber-400">All declarations must be accepted before your listing can be resubmitted for review.</p>
       </div>
@@ -632,21 +632,21 @@ export default function EditItemPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
       {/* Left stripe */}
-      <div className="hidden lg:flex lg:w-[30%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-800 shrink-0">
+      <div className="hidden lg:flex lg:w-[30%] relative p-5 sm:p-8 flex-col justify-between overflow-hidden bg-[#120c04] border-r border-stone-800 shrink-0">
         <div className="absolute -top-24 left-1/4 h-[300px] w-[300px] rounded-full bg-[#1e3a60]/15 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 right-1/4 h-[300px] w-[300px] rounded-full bg-[#b04a15]/15 blur-3xl pointer-events-none" />
-        <div className="relative z-10 space-y-6">
+        <div className="relative z-10 space-y-4 sm:space-y-6">
           <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/20 border border-amber-500/40 rounded-full px-3 py-1 self-start inline-block">
             Update Required
           </span>
-          <h2 className="text-white text-3xl font-extrabold leading-tight tracking-tight font-serif mt-4">
+          <h2 className="text-white text-xl sm:text-3xl font-extrabold leading-tight tracking-tight font-serif mt-4">
             Update Your Listing
           </h2>
           <p className="text-stone-300 text-sm leading-relaxed">
             The admin has reviewed your listing and requested additional details. Update the relevant sections and resubmit.
           </p>
           {adminNote && (
-            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 space-y-1">
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 sm:p-4 space-y-1">
               <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">Admin note</p>
               <p className="text-sm text-amber-200 leading-relaxed">{adminNote}</p>
             </div>
@@ -656,12 +656,12 @@ export default function EditItemPage() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 px-5 py-10 lg:px-12 overflow-y-auto">
-        <div className="max-w-[620px] mx-auto space-y-6">
+      <div className="flex-1 px-3.5 sm:px-5 py-6 sm:py-10 lg:px-12 overflow-y-auto">
+        <div className="max-w-[620px] mx-auto space-y-4 sm:space-y-6">
 
           {/* Mobile admin note */}
           {adminNote && (
-            <div className="lg:hidden rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-4">
+            <div className="lg:hidden rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-3 sm:p-4">
               <p className="text-xs font-black uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1">Admin note</p>
               <p className="text-sm text-amber-800 dark:text-amber-200">{adminNote}</p>
             </div>
@@ -670,7 +670,7 @@ export default function EditItemPage() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[11px] font-black uppercase tracking-widest text-amber-600">Step {step} of {STEPS.length}</p>
-              <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">{STEPS[step - 1].label}</h1>
+              <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">{STEPS[step - 1].label}</h1>
             </div>
             {saving && <span className="text-xs text-stone-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Saving…</span>}
           </div>
@@ -682,19 +682,19 @@ export default function EditItemPage() {
           {step === 3 && step3}
           {step === 4 && step4}
 
-          <div className="flex gap-3 pt-2 pb-8">
+          <div className="flex gap-3 pt-2 pb-5 sm:pb-8">
             {step > 1 && (
-              <Button type="button" variant="outline" onClick={handleBack} className="rounded-xl px-5 font-semibold">
+              <Button type="button" variant="outline" onClick={handleBack} className="rounded-xl px-3.5 sm:px-5 font-semibold">
                 <ChevronLeft className="w-4 h-4 mr-1" /> Back
               </Button>
             )}
             {step < 4 ? (
-              <Button type="button" onClick={handleNext} disabled={saving} className="bg-[#1e3a60] hover:bg-[#162d4a] text-white rounded-xl px-6 font-bold ml-auto">
+              <Button type="button" onClick={handleNext} disabled={saving} className="bg-[#1e3a60] hover:bg-[#162d4a] text-white rounded-xl px-4 sm:px-6 font-bold ml-auto">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Next: {STEPS[step].label} <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button type="button" onClick={handleSubmit} disabled={submitting || !declarations.every(Boolean)} className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-8 font-bold ml-auto disabled:opacity-50">
+              <Button type="button" onClick={handleSubmit} disabled={submitting || !declarations.every(Boolean)} className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 sm:px-8 font-bold ml-auto disabled:opacity-50">
                 {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Resubmitting…</> : "Resubmit for Review"}
               </Button>
             )}

@@ -18,7 +18,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-[#f0b97a]/40 dark:bg-[#b04a15]/30 text-inherit rounded px-0.5">
+      <mark className="bg-[var(--ck-role-highlight)]/40 dark:bg-[var(--ck-role-accent)]/30 text-inherit rounded px-0.5">
         {text.slice(idx, idx + query.length)}
       </mark>
       {text.slice(idx + query.length)}
@@ -43,11 +43,11 @@ function ResultRow({
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors rounded-xl ${
         active
-          ? "bg-[#b04a15]/8 dark:bg-[#b04a15]/15"
+          ? "bg-[var(--ck-role-accent)]/8 dark:bg-[var(--ck-role-accent)]/15"
           : "hover:bg-stone-50 dark:hover:bg-zinc-800/60"
       }`}
     >
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[#b04a15]/10 text-[#b04a15]">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[var(--ck-role-accent)]/10 text-[var(--ck-role-accent)]">
         <ClipboardList className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
@@ -58,7 +58,7 @@ function ResultRow({
           Request · {item.city} · Qty: {item.quantity}
         </p>
       </div>
-      <ArrowRight className={`w-3.5 h-3.5 shrink-0 transition-opacity ${active ? "opacity-100 text-[#b04a15]" : "opacity-0"}`} />
+      <ArrowRight className={`w-3.5 h-3.5 shrink-0 transition-opacity ${active ? "opacity-100 text-[var(--ck-role-accent)]" : "opacity-0"}`} />
     </button>
   );
 }
@@ -188,7 +188,7 @@ export function GlobalSearch() {
                 <p className="text-sm text-stone-400 font-medium">Live requests are visible to members only.</p>
                 <button
                   onClick={() => { setOpen(false); router.push("/login"); }}
-                  className="text-sm font-bold text-[#b04a15] hover:underline"
+                  className="text-sm font-bold text-[var(--ck-role-accent)] hover:underline"
                 >
                   Log in to search requests →
                 </button>

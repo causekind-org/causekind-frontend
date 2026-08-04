@@ -9,7 +9,7 @@ import MatchChatWindow from "@/components/MatchChatWindow";
 // springy popup. Bottom sheet with a backdrop on mobile.
 
 const ACCENTS = {
-  copper: { bar: "bg-[#b04a15]", dot: "bg-orange-200" },
+  copper: { bar: "bg-[var(--ck-role-accent)]", dot: "bg-[var(--ck-role-highlight)]" },
   navy:   { bar: "bg-[#1e3a60]", dot: "bg-blue-200" },
 } as const;
 
@@ -50,7 +50,7 @@ export default function MatchChatPopup({
         role="dialog"
         aria-label={`Chat with ${partnerName}`}
         onAnimationEnd={() => { if (closing) onClose(); }}
-        className={`fixed z-[70] inset-x-2 bottom-2 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[380px] ${closing ? "animate-chat-pop-out" : "animate-chat-pop-in"}`}
+        className={`fixed z-[70] inset-x-2 bottom-[calc(var(--ck-bottom-chrome)+0.5rem)] sm:inset-x-auto sm:bottom-[calc(var(--ck-bottom-chrome)+1.25rem)] sm:right-5 sm:w-[380px] ${closing ? "animate-chat-pop-out" : "animate-chat-pop-in"}`}
       >
         <div className="overflow-hidden rounded-2xl shadow-2xl shadow-black/25 ring-1 ring-black/10 dark:ring-white/10">
           {/* Header */}

@@ -14,6 +14,52 @@ export type TourStep = {
 
 export type TourRole = "DONOR" | "DONEE";
 
+/**
+ * The logged-out landing tour (mobile).
+ *
+ * <p>A plain array, not `Record<TourRole, …>` — a visitor with no account has no
+ * role to key on. Its anchors are the landing page's own content, not the
+ * signed-in navbar chrome the role tours use: `search` and `bell` do not even
+ * render for a guest.
+ *
+ * <p>Copy assumes the reader has never heard of CauseKind. The role tours all
+ * assume an account already exists.
+ */
+export const GUEST_HOME_TOUR: TourStep[] = [
+  {
+    anchor: "guest-hero",
+    title: "Welcome to CauseKind",
+    body: "We connect people who want to give with families near them who need specific things — not cash, real items that get used.",
+    placement: "bottom",
+  },
+  {
+    anchor: "guest-categories",
+    title: "What people ask for",
+    body: "Medical equipment, school supplies, things that help someone earn a living. Every request names exactly what is needed.",
+    placement: "bottom",
+  },
+  {
+    anchor: "guest-journey",
+    title: "How a handover works",
+    body: "Swipe through the six checks every donation passes — from verifying the request to the certificate you get at the end.",
+    placement: "top",
+  },
+  {
+    anchor: "guest-signals",
+    title: "Why you can trust it",
+    body: "Every listing is reviewed by our team before it goes live, and we match you with people within 10 km so you can hand things over yourself.",
+    placement: "top",
+  },
+  {
+    anchor: "guest-join",
+    title: "Ready to give?",
+    body: "Creating an account is free and takes a minute. You can browse everything first if you would rather look around.",
+    placement: "top",
+    ctaLabel: "Create a free account →",
+    ctaHref: "/register",
+  },
+];
+
 export const HOME_TOUR: Record<TourRole, TourStep[]> = {
   DONOR: [
     {

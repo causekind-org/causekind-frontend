@@ -21,7 +21,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus:bg-orange-50 dark:focus:bg-zinc-800 data-[state=open]:bg-orange-50 dark:data-[state=open]:bg-zinc-800 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      "flex cursor-default select-none items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus:bg-[var(--ck-role-soft)] dark:focus:bg-zinc-800 data-[state=open]:bg-[var(--ck-role-soft)] dark:data-[state=open]:bg-zinc-800 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
       inset && "pl-8",
       className
     )}
@@ -75,7 +75,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold outline-none transition-colors focus:bg-orange-50 dark:focus:bg-zinc-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold outline-none transition-colors focus:bg-[var(--ck-role-soft)] dark:focus:bg-zinc-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
       inset && "pl-8",
       className
     )}
@@ -91,7 +91,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-sm font-semibold outline-none transition-colors focus:bg-orange-50 dark:focus:bg-zinc-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-sm font-semibold outline-none transition-colors focus:bg-[var(--ck-role-soft)] dark:focus:bg-zinc-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     checked={checked}
@@ -114,7 +114,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-sm font-semibold outline-none transition-colors focus:bg-orange-50 dark:focus:bg-zinc-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-3 text-sm font-semibold outline-none transition-colors focus:bg-[var(--ck-role-soft)] dark:focus:bg-zinc-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}

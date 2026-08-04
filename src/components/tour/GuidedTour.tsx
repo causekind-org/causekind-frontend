@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -8,8 +8,14 @@ import { X } from "lucide-react";
 import type { TourStep } from "./tourSteps";
 
 const SPOT_PADDING = 8;
-const CARD_W = 320;
-const CARD_GAP = 14;
+const CARD_MAX_W = 300;
+const CARD_GAP = 12;
+const VIEWPORT_MARGIN = 12;
+/** Used for the first frame only, until the card has been measured. */
+const CARD_H_ESTIMATE = 210;
+
+/** Never wider than the screen allows — a fixed 320 overflowed small phones. */
+const cardWidth = () => Math.min(CARD_MAX_W, window.innerWidth - VIEWPORT_MARGIN * 2);
 
 type Rect = { top: number; left: number; width: number; height: number };
 
@@ -21,33 +27,64 @@ function measure(anchor: string): Rect | null {
   return { top: r.top, left: r.left, width: r.width, height: r.height };
 }
 
-// Tooltip position relative to the spotlight, clamped to the viewport.
-function cardPosition(rect: Rect, placement: TourStep["placement"]) {
+/**
+ * Where the tooltip goes, given the spotlight AND the card's real height.
+ *
+ * <p>The previous version never knew how tall the card was. It positioned an
+ * anchor point, clamped THAT to the viewport, then shifted the card by
+ * `translateY: -100%` afterwards — so the clamp applied to a point the card no
+ * longer occupied, and nothing checked whether the result landed on top of the
+ * very element being spotlighted. On a phone, tall anchors (the journey rail,
+ * the signal matrix) left no room on either side and the card covered them.
+ *
+ * <p>Now it measures the free space above and below the spotlight, uses the
+ * requested side only if the card actually fits there, flips to the other side
+ * if it does not, and when neither side fits pins the card to whichever edge has
+ * more room — so it covers as little of the anchor as possible.
+ */
+function cardPosition(rect: Rect, placement: TourStep["placement"], cardH: number, cardW: number) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  let top: number;
-  let left: number;
-  const p = placement ?? (rect.top > vh / 2 ? "top" : "bottom");
-  switch (p) {
-    case "top":
-      top = rect.top - SPOT_PADDING - CARD_GAP;
-      left = rect.left + rect.width / 2 - CARD_W / 2;
-      break;
-    case "left":
-      top = rect.top;
-      left = rect.left - SPOT_PADDING - CARD_GAP - CARD_W;
-      break;
-    case "right":
-      top = rect.top;
-      left = rect.left + rect.width + SPOT_PADDING + CARD_GAP;
-      break;
-    default: // bottom
-      top = rect.top + rect.height + SPOT_PADDING + CARD_GAP;
-      left = rect.left + rect.width / 2 - CARD_W / 2;
+  const M = VIEWPORT_MARGIN;
+
+  const spotTop = rect.top - SPOT_PADDING;
+  const spotBottom = rect.top + rect.height + SPOT_PADDING;
+  const roomAbove = spotTop - CARD_GAP - M;
+  const roomBelow = vh - spotBottom - CARD_GAP - M;
+
+  const centredLeft = () =>
+    Math.max(M, Math.min(rect.left + rect.width / 2 - cardW / 2, vw - cardW - M));
+
+  // Side placements are honoured only when they genuinely fit; on a phone they
+  // almost never do, so they fall through to the vertical chooser below.
+  if (placement === "left" || placement === "right") {
+    const spotLeft = rect.left - SPOT_PADDING;
+    const spotRight = rect.left + rect.width + SPOT_PADDING;
+    const fits = placement === "left"
+      ? spotLeft - CARD_GAP - cardW >= M
+      : spotRight + CARD_GAP + cardW <= vw - M;
+    if (fits) {
+      return {
+        top: Math.max(M, Math.min(rect.top, vh - cardH - M)),
+        left: placement === "left" ? spotLeft - CARD_GAP - cardW : spotRight + CARD_GAP,
+      };
+    }
   }
-  left = Math.max(12, Math.min(left, vw - CARD_W - 12));
-  top = Math.max(12, Math.min(top, vh - 12));
-  return { top, left, translateY: p === "top" ? "-100%" : "0%" };
+
+  const prefersTop = placement === "top" || (!placement && rect.top > vh / 2);
+  const above = spotTop - CARD_GAP - cardH;
+  const below = spotBottom + CARD_GAP;
+
+  let top: number;
+  if (prefersTop && roomAbove >= cardH) top = above;
+  else if (!prefersTop && roomBelow >= cardH) top = below;
+  else if (roomAbove >= cardH) top = above;
+  else if (roomBelow >= cardH) top = below;
+  // Neither side fits: the anchor is taller than the space left over. Sit
+  // against the roomier edge rather than centring on top of it.
+  else top = roomAbove >= roomBelow ? M : vh - cardH - M;
+
+  return { top: Math.max(M, Math.min(top, vh - cardH - M)), left: centredLeft() };
 }
 
 export default function GuidedTour({ steps, onFinish }: {
@@ -64,6 +101,8 @@ export default function GuidedTour({ steps, onFinish }: {
   const [idx, setIdx] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const finishedRef = useRef(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [cardH, setCardH] = useState(CARD_H_ESTIMATE);
 
   const step = validSteps[idx];
 
@@ -106,6 +145,18 @@ export default function GuidedTour({ steps, onFinish }: {
     };
   }, [step, finish]);
 
+  // Measured BEFORE paint, so the card never renders once at the estimated
+  // height and then visibly jumps to its real position.
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const sync = () => setCardH(el.getBoundingClientRect().height);
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [idx, rect]);
+
   // Keyboard navigation
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -119,7 +170,8 @@ export default function GuidedTour({ steps, onFinish }: {
 
   if (!step || !rect) return null;
 
-  const card = cardPosition(rect, step.placement);
+  const cardW = cardWidth();
+  const card = cardPosition(rect, step.placement, cardH, cardW);
   const isLast = idx === validSteps.length - 1;
 
   return createPortal(
@@ -135,7 +187,7 @@ export default function GuidedTour({ steps, onFinish }: {
           height: rect.height + SPOT_PADDING * 2,
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="absolute rounded-2xl ring-2 ring-[#e07b3a]/90"
+        className="absolute rounded-2xl ring-2 ring-[var(--ck-role-secondary)]/90"
         style={{ boxShadow: "0 0 0 9999px rgba(15, 12, 8, 0.62), 0 0 24px 4px rgba(224, 123, 58, 0.35)" }}
       />
 
@@ -149,32 +201,35 @@ export default function GuidedTour({ steps, onFinish }: {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -6, scale: 0.98 }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="absolute rounded-2xl border border-[#e8ddcf] bg-[#faf6ef] p-5 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
-          style={{ top: card.top, left: card.left, width: CARD_W, transform: `translateY(${card.translateY})` }}
+          ref={cardRef}
+          className="absolute rounded-2xl border border-[#e8ddcf] bg-[#faf6ef] p-3.5 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
+          // `top` is now the card's real top edge — the old translateY shifted it
+          // AFTER clamping, which is what let it drift over the spotlight.
+          style={{ top: card.top, left: card.left, width: cardW }}
         >
           <button
             onClick={finish}
             aria-label="Skip tour"
-            className="absolute right-3 top-3 text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300"
+            className="absolute right-2.5 top-2.5 text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
 
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#b04a15]">
+          <p className="mb-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ck-role-accent)]">
             Step {idx + 1} of {validSteps.length}
           </p>
-          <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-100" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+          <h3 className="font-serif text-[15px] font-bold leading-snug text-stone-900 dark:text-stone-100" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
             {step.title}
           </h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-stone-600 dark:text-stone-400">
+          <p className="mt-1 text-[12.5px] leading-[1.45] text-stone-600 dark:text-stone-400">
             {step.body}
           </p>
 
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2">
             {/* Progress dots */}
             <div className="flex items-center gap-1.5">
               {validSteps.map((_, i) => (
-                <span key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? "w-4 bg-[#b04a15]" : "w-1.5 bg-stone-300 dark:bg-zinc-600"}`} />
+                <span key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? "w-4 bg-[var(--ck-role-accent)]" : "w-1.5 bg-stone-300 dark:bg-zinc-600"}`} />
               ))}
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -186,14 +241,14 @@ export default function GuidedTour({ steps, onFinish }: {
               {isLast && step.ctaHref ? (
                 <button
                   onClick={() => { finish(); router.push(step.ctaHref!); }}
-                  className="rounded-xl bg-[#b04a15] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#c45520]"
+                  className="rounded-xl bg-[var(--ck-role-accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--ck-role-hover)]"
                 >
                   {step.ctaLabel ?? "Finish"}
                 </button>
               ) : (
                 <button
                   onClick={next}
-                  className="rounded-xl bg-[#b04a15] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#c45520]"
+                  className="rounded-xl bg-[var(--ck-role-accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--ck-role-hover)]"
                 >
                   {isLast ? "Done" : "Next"}
                 </button>
@@ -202,7 +257,7 @@ export default function GuidedTour({ steps, onFinish }: {
           </div>
 
           {!isLast && (
-            <button onClick={finish} className="mt-2 text-[11px] text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300">
+            <button onClick={finish} className="mt-1.5 text-[10.5px] text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300">
               Skip tour
             </button>
           )}

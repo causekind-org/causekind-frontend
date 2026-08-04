@@ -10,6 +10,26 @@ import { detectLocationFromServer } from "@/app/actions/locations";
 
 type ModalState = "hidden" | "visible" | "loading";
 
+// Signals to TourController that this gate is on screen — or is about to be.
+// The flag is set the moment we commit to showing, BEFORE the 1200ms reveal
+// timer, because the tour polls every 250ms and would otherwise pass its gate
+// check in the gap and start underneath us. Mirrors `ck_welcome_pending`.
+const PENDING_KEY = "ck_location_pending";
+
+const markPending = () => {
+  try { sessionStorage.setItem(PENDING_KEY, "1"); } catch {}
+};
+
+/** Safe to call when no flag was ever set — every bail-out path uses it. */
+const clearPending = () => {
+  let had = false;
+  try {
+    had = sessionStorage.getItem(PENDING_KEY) !== null;
+    sessionStorage.removeItem(PENDING_KEY);
+  } catch {}
+  if (had) window.dispatchEvent(new Event("ck-location-dismissed"));
+};
+
 export function LocationGate() {
   const { user } = useAuth();
   const pathname = usePathname();
@@ -26,6 +46,7 @@ export function LocationGate() {
     if (isAdminPath) return;
     if (typeof window === "undefined") return;
     let cancelled = false;
+    let revealed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const promptedKey = user ? `ck_location_prompted_${user.email}` : "ck_location_prompted";
@@ -67,8 +88,13 @@ export function LocationGate() {
       }
 
       if (localStorage.getItem(promptedKey)) return;
+
+      // Claim the gate now, not when the modal paints — the tour polls faster
+      // than this timer and would otherwise start underneath it.
+      markPending();
       timer = setTimeout(() => {
         if (cancelled) return;
+        revealed = true;
         setShown(true);
         setState("visible");
       }, 1200);
@@ -78,6 +104,9 @@ export function LocationGate() {
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      // Bailed out before the modal ever appeared — release the gate, or the
+      // tour stays blocked for the rest of the session.
+      if (!revealed) clearPending();
     };
   }, [isAdminPath, user]);
 
@@ -100,8 +129,12 @@ export function LocationGate() {
     }
   }, [user, isAdminPath]);
 
+  // The one choke point every close path funnels through — "Allow" (success and
+  // error), "Maybe later", the X, and the no-geolocation bail-out. Releasing the
+  // tour gate here covers all of them.
   const dismiss = useCallback(() => {
     localStorage.setItem(user ? `ck_location_prompted_${user.email}` : "ck_location_prompted", "1");
+    clearPending();
     setState("hidden");
   }, [user]);
 
@@ -209,7 +242,8 @@ export function LocationGate() {
 
       {/* ── Backdrop ── */}
       <div
-        className="ck-backdrop-anim fixed inset-0 z-[9990] flex items-center justify-center p-4
+        className="ck-location-backdrop-el ck-backdrop-anim fixed inset-0 z-[9990]
+                   flex items-center justify-center p-4
                    bg-black/50 backdrop-blur-sm"
         aria-modal="true"
         role="dialog"
@@ -219,7 +253,7 @@ export function LocationGate() {
         <div
           className="ck-modal-anim relative w-full max-w-sm rounded-2xl shadow-2xl
                      bg-[#faf8f5] dark:bg-zinc-900
-                     border border-[#e07b3a]/20 dark:border-zinc-700
+                     border border-[var(--ck-role-secondary)]/20 dark:border-zinc-700
                      p-6 text-center"
         >
           {/* Close button */}
@@ -239,19 +273,19 @@ export function LocationGate() {
             {/* Ring 1 */}
             <span
               className="ck-ring-1 absolute inset-0 rounded-full
-                         border-2 border-[#b04a15]/50"
+                         border-2 border-[var(--ck-role-accent)]/50"
             />
             {/* Ring 2 */}
             <span
               className="ck-ring-2 absolute inset-0 rounded-full
-                         border border-[#e07b3a]/35"
+                         border border-[var(--ck-role-secondary)]/35"
             />
             {/* Icon container */}
             <span
               className="ck-pin-float relative z-10 flex items-center justify-center
                          w-16 h-16 rounded-full
-                         bg-gradient-to-br from-[#b04a15] to-[#e07b3a]
-                         shadow-lg shadow-[#b04a15]/30"
+                         bg-gradient-to-br from-[var(--ck-role-accent)] to-[var(--ck-role-secondary)]
+                         shadow-lg shadow-[var(--ck-role-accent)]/30"
             >
               <MapPin size={28} className="text-[#faf8f5]" fill="rgba(250,248,245,0.18)" />
             </span>
@@ -260,7 +294,7 @@ export function LocationGate() {
           {/* ── Headline ── */}
           <h2
             className="text-lg font-bold mb-1
-                       text-[#1e3a60] dark:text-[#f0b97a]"
+                       text-[#1e3a60] dark:text-[var(--ck-role-highlight)]"
           >
             Help closer to home
           </h2>
@@ -271,7 +305,7 @@ export function LocationGate() {
                        text-zinc-600 dark:text-zinc-300"
           >
             CauseKind connects you with needs and donations{" "}
-            <span className="font-semibold text-[#b04a15] dark:text-[#e07b3a]">
+            <span className="font-semibold text-[var(--ck-role-accent)] dark:text-[var(--ck-role-secondary)]">
               within ~10 km
             </span>{" "}
             of where you are. Sharing your location means local families in need
@@ -285,13 +319,13 @@ export function LocationGate() {
               onClick={handleAllow}
               disabled={state === "loading"}
               className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm
-                         bg-[#b04a15] hover:bg-[#9a3e10] active:bg-[#7d320d]
+                         bg-[var(--ck-role-accent)] hover:bg-[#9a3e10] active:bg-[#7d320d]
                          disabled:opacity-60 disabled:cursor-not-allowed
                          text-[#faf8f5]
                          transition-all duration-150
-                         shadow-md shadow-[#b04a15]/25
+                         shadow-md shadow-[var(--ck-role-accent)]/25
                          focus-visible:outline-none focus-visible:ring-2
-                         focus-visible:ring-[#b04a15] focus-visible:ring-offset-2"
+                         focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2"
             >
               {state === "loading" ? (
                 <span className="flex items-center justify-center gap-2">
@@ -328,12 +362,12 @@ export function LocationGate() {
               disabled={state === "loading"}
               className="w-full py-2 px-4 rounded-xl font-medium text-sm
                          text-zinc-500 dark:text-zinc-400
-                         hover:text-[#b04a15] dark:hover:text-[#e07b3a]
-                         hover:bg-[#b04a15]/8 dark:hover:bg-[#e07b3a]/10
+                         hover:text-[var(--ck-role-accent)] dark:hover:text-[var(--ck-role-secondary)]
+                         hover:bg-[var(--ck-role-accent)]/8 dark:hover:bg-[var(--ck-role-secondary)]/10
                          disabled:opacity-40 disabled:cursor-not-allowed
                          transition-colors duration-150
                          focus-visible:outline-none focus-visible:ring-2
-                         focus-visible:ring-[#b04a15]/50 focus-visible:ring-offset-2"
+                         focus-visible:ring-[var(--ck-role-accent)]/50 focus-visible:ring-offset-2"
             >
               Maybe later
             </button>

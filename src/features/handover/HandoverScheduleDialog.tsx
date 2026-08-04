@@ -126,7 +126,7 @@ export function HandoverScheduleDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="space-y-4">
+        <DialogBody className="space-y-3 sm:space-y-4">
           <Field label="How will it happen?" htmlFor="ho-method">
             <Select value={method} onValueChange={setMethod} disabled={busy}>
               <SelectTrigger id="ho-method" className={handoverSelectTrigger}>
