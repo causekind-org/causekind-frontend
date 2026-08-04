@@ -1102,7 +1102,10 @@
     "helpFaq": "सहायता एवं अक्सर पूछे जाने वाले प्रश्न",
     "helpFaqSub": "सामान्य प्रश्नों के उत्तर दिए गए",
     "openSupport": "खुला समर्थन",
-    "closeSupport": "समर्थन बंद करें"
+    "closeSupport": "समर्थन बंद करें",
+    "nudgeDonor": "देखें किसे मदद चाहिए",
+    "nudgeDonee": "बताएं आपको क्या चाहिए",
+    "nudgeDismiss": "बंद करें"
   },
   "requestNew": {
     "cardTitle": "किसी आइटम का अनुरोध करें",

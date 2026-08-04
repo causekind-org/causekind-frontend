@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { overlayGatesClear } from "@/lib/overlayGates";
 import GuidedTour from "./GuidedTour";
 import { DASHBOARD_TOUR, GUEST_HOME_TOUR, HOME_TOUR, PROFILE_TOUR, type TourRole, type TourStep } from "./tourSteps";
 
@@ -32,22 +33,8 @@ const KEY_ROUTE: [prefix: string, route: string][] = [
 // location gate) is on screen — the tour must never spotlight through another
 // modal. GuidedTour sits at z-[9995], above all of them, so a missed check here
 // is visible as the tour painting straight over the other modal.
-function gatesClear(): boolean {
-  return (
-    !document.querySelector(".ck-cat-backdrop-el") &&
-    sessionStorage.getItem("ck_welcome_pending") !== "1" &&
-    // LocationGate. Two signals, because it reveals on a 1200ms timer while this
-    // polls every 250ms: the flag is set the moment it commits to showing (so we
-    // don't slip into the gap before it paints), the DOM marker covers the rest.
-    sessionStorage.getItem("ck_location_pending") !== "1" &&
-    !document.querySelector(".ck-location-backdrop-el") &&
-    // The guest-facing load-time overlay. WelcomeOverlay bails out entirely when
-    // there is no user, so for a visitor the cookie banner is the one thing that
-    // can still be on screen. It exposes no stable DOM marker, so its stored
-    // answer is the signal that it has been dealt with.
-    localStorage.getItem("ck_cookie_consent") !== null
-  );
-}
+// Shared with the dock's request nudge — see src/lib/overlayGates.ts.
+const gatesClear = overlayGatesClear;
 
 // Anchor polling gives up after ~15s (the page never rendered them). Waiting on
 // a gate is different — a visitor answering a cookie banner and a location

@@ -175,7 +175,10 @@ export default function GuidedTour({ steps, onFinish }: {
   const isLast = idx === validSteps.length - 1;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9995]" role="dialog" aria-label="Site tour">
+    // ck-tour-root is a stable marker other load-time UI polls for, matching the
+    // .ck-location-backdrop-el / .ck-cat-backdrop-el convention. See
+    // src/lib/overlayGates.ts — it carries no styling, do not remove it.
+    <div className="ck-tour-root fixed inset-0 z-[9995]" role="dialog" aria-label="Site tour">
       {/* Spotlight: transparent rounded window + giant shadow dims everything else.
           pointer-events stay on the overlay so clicks can't wander mid-tour. */}
       <motion.div
