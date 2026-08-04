@@ -1102,7 +1102,10 @@
     "helpFaq": "সাহায্য এবং FAQ",
     "helpFaqSub": "সাধারণ প্রশ্নের উত্তর",
     "openSupport": "খোলা সমর্থন",
-    "closeSupport": "বন্ধ সমর্থন"
+    "closeSupport": "বন্ধ সমর্থন",
+    "nudgeDonor": "দেখুন কার সাহায্য দরকার",
+    "nudgeDonee": "আপনার যা দরকার জানান",
+    "nudgeDismiss": "বন্ধ করুন"
   },
   "requestNew": {
     "cardTitle": "একটি আইটেম অনুরোধ",

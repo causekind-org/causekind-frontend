@@ -5,11 +5,9 @@ import { MessageCircle } from "lucide-react";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerTitle,
 } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
 import ChatWindow from "@/components/ChatWindow";
 import MatchChatWindow from "@/components/MatchChatWindow";
 import { handoverScope, type HandoverViewModel } from "./model";
-import { handoverSecondary } from "./handoverStyles";
 import { Panel } from "./HandoverScheduleSummary";
 
 /**
@@ -42,9 +40,18 @@ export function HandoverChatPanel({ vm, currentUserEmail, className = "" }: {
 }
 
 /**
- * Mobile chat launcher + Drawer. HeroUI's Drawer handles focus trapping, Escape
+ * Mobile chat launcher + Drawer. vaul's Drawer handles focus trapping, Escape
  * and focus restoration; doing that by hand is where accessible dialogs usually
  * go wrong.
+ *
+ * <p>The launcher is a floating button rather than the full-width sticky bar it
+ * replaced. That bar spent ~160px of a phone screen on one control, and its
+ * second button ("Schedule handover") was already the primary action inside
+ * "Your next step" — see HandoverNextAction.
+ *
+ * <p>It floats above the dock using `--ck-bottom-chrome` (the dock's own height)
+ * rather than a literal, and borrows `floating-support-item` so it slides away
+ * with the mobile menu exactly like the global support bubble does.
  */
 export function HandoverChatDrawer({ vm, currentUserEmail, open, onOpenChange }: {
   vm: HandoverViewModel;
@@ -71,23 +78,28 @@ export function HandoverChatDrawer({ vm, currentUserEmail, open, onOpenChange }:
 
   return (
     <>
-      {/* One interactive element per action — a plain Button driving a
+      {/* One interactive element per action — a plain button driving a
           controlled Drawer, rather than a trigger wrapping a button. */}
-      <Button
-        variant="outline"
-        className={`relative ${handoverSecondary}`}
+      <button
+        type="button"
         aria-label={unread ? "Open messages, new message waiting" : "Open messages"}
         onClick={() => { onOpenChange(true); setUnread(false); }}
+        className="floating-support-item fixed right-5 bottom-[calc(var(--ck-bottom-chrome)+0.75rem)] z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-[var(--handover-accent)] text-[var(--handover-on-accent)] shadow-[0_10px_30px_-8px_rgba(28,25,23,0.55)] transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)] lg:hidden"
       >
-        <MessageCircle aria-hidden />
-        Messages
+        {/* Breathing halo. Behind the button, never over it — pointer-events-none
+            so it cannot swallow the tap, and aria-hidden so it is not announced. */}
+        <span
+          aria-hidden
+          className="ck-handover-fab-halo pointer-events-none absolute inset-0 -z-10 rounded-full bg-[var(--handover-accent)]"
+        />
+        <MessageCircle className="h-6 w-6" aria-hidden />
         {unread && (
           <span
-            className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-destructive ring-2 ring-card"
+            className="absolute right-0.5 top-0.5 size-3 rounded-full bg-destructive ring-2 ring-[var(--background)]"
             aria-hidden
           />
         )}
-      </Button>
+      </button>
 
       <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (o) setUnread(false); }}>
         {/* Role scope repeated on the content: vaul portals to <body>, outside

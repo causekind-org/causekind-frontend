@@ -1102,7 +1102,10 @@
     "helpFaq": "Aide et FAQ",
     "helpFaqSub": "Réponses aux questions courantes",
     "openSupport": "Prise en charge ouverte",
-    "closeSupport": "Un soutien étroit"
+    "closeSupport": "Un soutien étroit",
+    "nudgeDonor": "Voyez qui a besoin d'aide",
+    "nudgeDonee": "Publiez ce qu'il vous faut",
+    "nudgeDismiss": "Fermer"
   },
   "requestNew": {
     "cardTitle": "Demander un article",

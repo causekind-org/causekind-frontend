@@ -1102,7 +1102,10 @@
     "helpFaq": "Ayuda y preguntas frecuentes",
     "helpFaqSub": "Preguntas comunes respondidas",
     "openSupport": "Soporte abierto",
-    "closeSupport": "Soporte cercano"
+    "closeSupport": "Soporte cercano",
+    "nudgeDonor": "Mira quién necesita ayuda",
+    "nudgeDonee": "Publica lo que necesitas",
+    "nudgeDismiss": "Cerrar"
   },
   "requestNew": {
     "cardTitle": "Solicitar un artículo",

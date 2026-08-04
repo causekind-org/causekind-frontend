@@ -1102,7 +1102,10 @@
     "helpFaq": "ಸಹಾಯ ಮತ್ತು FAQ",
     "helpFaqSub": "ಸಾಮಾನ್ಯ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಲಾಗಿದೆ",
     "openSupport": "ಬೆಂಬಲವನ್ನು ತೆರೆಯಿರಿ",
-    "closeSupport": "ನಿಕಟ ಬೆಂಬಲ"
+    "closeSupport": "ನಿಕಟ ಬೆಂಬಲ",
+    "nudgeDonor": "ಯಾರಿಗೆ ಸಹಾಯ ಬೇಕು ಎಂದು ನೋಡಿ",
+    "nudgeDonee": "ನಿಮಗೆ ಬೇಕಾದುದನ್ನು ಪೋಸ್ಟ್ ಮಾಡಿ",
+    "nudgeDismiss": "ಮುಚ್ಚಿ"
   },
   "requestNew": {
     "cardTitle": "ಐಟಂ ಅನ್ನು ವಿನಂತಿಸಿ",
