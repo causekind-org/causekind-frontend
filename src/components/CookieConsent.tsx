@@ -80,7 +80,7 @@ export function CookieConsent() {
       {/* Fixed bottom bar — clears mobile bottom nav on small screens */}
       <div
         className={`
-          fixed bottom-[84px] lg:bottom-5 inset-x-0 z-[9998]
+          fixed bottom-[calc(var(--ck-bottom-chrome)+0.75rem)] lg:bottom-5 inset-x-0 z-[9998]
           flex justify-center px-4 pointer-events-none
           ${exiting ? "ck-cookie-exit" : "ck-cookie-enter"}
         `}

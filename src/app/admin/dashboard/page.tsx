@@ -450,7 +450,7 @@ export default function AdminDashboardPage() {
         style={{ background: "linear-gradient(180deg, #17141f 0%, #12101a 100%)" }}>
 
         {/* Brand strip */}
-        <div className="px-7 pt-8 pb-6 border-b border-white/[0.07]">
+        <div className="px-4 sm:px-7 pt-8 pb-6 border-b border-white/[0.07]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}>
@@ -464,7 +464,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Admin identity card */}
-        <div className="px-5 pt-5 pb-2">
+        <div className="px-3.5 sm:px-5 pt-5 pb-2">
           <div className="rounded-xl px-4 py-3.5 border border-white/[0.07]"
             style={{ background: "rgba(176,74,21,0.08)" }}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#b04a15]/70 mb-1">Signed in as</p>
@@ -477,7 +477,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Queue count pills */}
-        <div className="px-5 pt-5 space-y-2 flex-1">
+        <div className="px-3.5 sm:px-5 pt-5 space-y-2 flex-1">
           <p className="text-[10px] font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Pending Review</p>
           {TABS.map(({ key, label, count, icon: Icon, color }) => (
             <button
@@ -496,14 +496,14 @@ export default function AdminDashboardPage() {
               </div>
               <div className="flex items-center gap-2">
                 {count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
-                <span className="text-lg font-black tabular-nums leading-none" style={{ color: count > 0 ? color : "#3d3d52" }}>{count}</span>
+                <span className="text-base sm:text-lg font-black tabular-nums leading-none" style={{ color: count > 0 ? color : "#3d3d52" }}>{count}</span>
               </div>
             </button>
           ))}
         </div>
 
         {/* Reports */}
-        <div className="px-5 pb-3 pt-2 space-y-1">
+        <div className="px-3.5 sm:px-5 pb-3 pt-2 space-y-1">
           <p className="text-[10px] font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Reports</p>
           {canSeeTab("match-history") && (
             <button
@@ -578,7 +578,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Sign out */}
-        <div className="px-5 pb-7 pt-5 border-t border-white/[0.07] mt-auto">
+        <div className="px-3.5 sm:px-5 pb-7 pt-5 border-t border-white/[0.07] mt-auto">
           <button
             onClick={() => { logout(); router.push("/login"); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-stone-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
@@ -593,7 +593,7 @@ export default function AdminDashboardPage() {
       <main className="flex-1 lg:pl-[296px] min-w-0 flex flex-col bg-[#faf7f2]">
 
         {/* Mobile top bar */}
-        <div className={`lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 border-b border-white/[0.07] transition-shadow duration-300 ${
+        <div className={`lg:hidden sticky top-0 z-20 flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.07] transition-shadow duration-300 ${
             scrolled ? "shadow-[0_10px_28px_-10px_rgba(0,0,0,0.55)]" : "shadow-none"
           }`}
           style={{ background: "#17141f" }}>
@@ -619,7 +619,7 @@ export default function AdminDashboardPage() {
         <div className={`sticky top-0 lg:top-0 z-10 border-b border-stone-200 bg-[#faf7f2]/96 backdrop-blur-sm transition-shadow duration-300 ease-out ${
             scrolled ? "shadow-[0_12px_32px_-14px_rgba(28,25,23,0.28)]" : "shadow-none"
           }`}>
-          <div className="px-7 lg:px-10 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="px-4 sm:px-7 lg:px-10 py-3.5 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
               <h1 className="text-[22px] font-black text-stone-900 tracking-tight leading-none">{headerTitle}</h1>
               <p className="text-sm text-stone-500 mt-1.5">{headerSubtitle}</p>
@@ -666,7 +666,7 @@ export default function AdminDashboardPage() {
 
           {/* Mobile tab strip — approval queue only */}
           {!isReportTab && (
-            <div className="sm:hidden flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
+            <div className="sm:hidden flex gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide">
               {TABS.map(({ key, label, count }) => (
                 <button
                   key={key}
@@ -686,7 +686,7 @@ export default function AdminDashboardPage() {
 
           {/* Mobile report links */}
           {isReportTab && (
-            <div className="sm:hidden flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
+            <div className="sm:hidden flex gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide">
               {canSeeTab("match-history") && (
                 <button
                   onClick={() => setTab("match-history")}
@@ -724,7 +724,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ── Cards feed ── */}
-        <div className="flex-1 px-7 lg:px-10 py-8 max-w-4xl space-y-4">
+        <div className="flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 max-w-4xl space-y-3 sm:space-y-4">
 
           {/* ── DONATION OFFERS TAB — reuses the same panel as the standalone /admin/offers page ── */}
           {tab === "offers" && <OffersQueuePanel />}
@@ -837,7 +837,7 @@ export default function AdminDashboardPage() {
 
           {/* ── MATCH HISTORY TAB ── */}
           {tab === "match-history" && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Status filter */}
               <div className="flex flex-wrap gap-2">
                 {ALL_MATCH_STATUSES.map(s => (
@@ -873,7 +873,7 @@ export default function AdminDashboardPage() {
 
           {/* ── AI LOGS TAB ── */}
           {tab === "ai-logs" && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
@@ -974,8 +974,8 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
   historyLoading: boolean;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
-      <div className="flex items-start justify-between gap-3 p-4 cursor-pointer hover:bg-stone-50 transition" onClick={onToggle}>
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+      <div className="flex items-start justify-between gap-3 p-3 sm:p-4 cursor-pointer hover:bg-stone-50 transition" onClick={onToggle}>
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[m.status] ?? "bg-stone-100 text-stone-700"}`}>
@@ -996,7 +996,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
       </div>
 
       {expanded && (
-        <div className="border-t p-4 space-y-4 bg-stone-50">
+        <div className="border-t p-3 sm:p-4 space-y-3 sm:space-y-4 bg-stone-50">
           {/* Contacts */}
           <div className="grid grid-cols-2 gap-3">
             {[
@@ -1039,7 +1039,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
           <div>
             <p className="text-xs font-bold mb-2 flex items-center gap-1"><Clock className="w-3 h-3" /> Status History</p>
             {historyLoading ? (
-              <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-stone-400" /></div>
+              <div className="flex justify-center py-3 sm:py-4"><Loader2 className="w-4 h-4 animate-spin text-stone-400" /></div>
             ) : !history || history.length === 0 ? (
               <p className="text-xs text-stone-400">No history recorded yet.</p>
             ) : (
@@ -1075,8 +1075,8 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
   const fraudBadge = a.fraudRisk ? (FRAUD_BADGE[a.fraudRisk] ?? "") : "";
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
-      <button className="w-full text-left p-4 hover:bg-stone-50 transition" onClick={onToggle}>
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+      <button className="w-full text-left p-3 sm:p-4 hover:bg-stone-50 transition" onClick={onToggle}>
         <div className="flex flex-wrap items-center gap-2 justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <Bot className="h-4 w-4 text-violet-400 shrink-0" />
@@ -1230,7 +1230,7 @@ function AiStatCard({ label, value, color }: { label: string; value: number; col
   };
   return (
     <div className={`rounded-xl border px-4 py-3 ${styles[color] ?? ""}`}>
-      <p className="text-2xl font-bold tabular-nums">{value}</p>
+      <p className="text-lg sm:text-2xl font-bold tabular-nums">{value}</p>
       <p className="text-xs font-medium mt-0.5 opacity-80">{label}</p>
     </div>
   );
@@ -1266,7 +1266,7 @@ function ApprovalCard({
 
   return (
     <div
-      className={`group bg-white rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
+      className={`group bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
         clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 focus-visible:ring-offset-2" : ""
       }`}
       role={clickable ? "button" : undefined}
@@ -1281,7 +1281,7 @@ function ApprovalCard({
     >
       <div className="flex">
         <div className="w-1 shrink-0" style={{ background: "linear-gradient(180deg, #b04a15 0%, #e07b3a 60%, #f0b97a 100%)" }} />
-        <div className="flex-1 min-w-0 p-5 space-y-3">
+        <div className="flex-1 min-w-0 p-3.5 sm:p-5 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-bold text-stone-900 leading-snug">{title}</p>
@@ -1323,12 +1323,12 @@ function ApprovalCard({
           ) : (
             <div className="flex gap-2 pt-1" onClick={event => event.stopPropagation()}>
               <button onClick={onApprove} disabled={processing !== null}
-                className="flex items-center gap-1.5 px-5 py-2 text-sm font-bold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm text-white"
+                className="flex items-center gap-1.5 px-3.5 sm:px-5 py-2 text-sm font-bold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm text-white"
                 style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
                 {processing === id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Approve</>}
               </button>
               <button onClick={onOpenReject} disabled={processing !== null}
-                className="flex items-center gap-1.5 px-5 py-2 bg-red-50 text-red-700 border border-red-200 text-sm font-bold rounded-xl hover:bg-red-100 disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1.5 px-3.5 sm:px-5 py-2 bg-red-50 text-red-700 border border-red-200 text-sm font-bold rounded-xl hover:bg-red-100 disabled:opacity-50 transition-colors">
                 <X className="w-4 h-4" /> Reject
               </button>
             </div>
@@ -1374,7 +1374,7 @@ function ListingApprovalCard({
 
   return (
     <div
-      className={`group bg-white rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
+      className={`group bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
         clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 focus-visible:ring-offset-2" : ""
       }`}
       role={clickable ? "button" : undefined}
@@ -1389,7 +1389,7 @@ function ListingApprovalCard({
     >
       <div className="flex">
         <div className="w-1 shrink-0" style={{ background: "linear-gradient(180deg, #b04a15 0%, #e07b3a 60%, #f0b97a 100%)" }} />
-        <div className="flex-1 min-w-0 p-5 space-y-3">
+        <div className="flex-1 min-w-0 p-3.5 sm:p-5 space-y-3">
 
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -1512,16 +1512,16 @@ function ListingApprovalCard({
           ) : (
             <div className="flex flex-wrap gap-2 pt-1" onClick={event => event.stopPropagation()}>
               <button onClick={onApprove} disabled={processing !== null}
-                className="flex items-center gap-1.5 px-5 py-2 text-sm font-bold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm text-white"
+                className="flex items-center gap-1.5 px-3.5 sm:px-5 py-2 text-sm font-bold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm text-white"
                 style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
                 {processing === l.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Approve</>}
               </button>
               <button onClick={onOpenNeedsInfo} disabled={processing !== null}
-                className="flex items-center gap-1.5 px-5 py-2 bg-amber-50 text-amber-700 border border-amber-200 text-sm font-bold rounded-xl hover:bg-amber-100 disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1.5 px-3.5 sm:px-5 py-2 bg-amber-50 text-amber-700 border border-amber-200 text-sm font-bold rounded-xl hover:bg-amber-100 disabled:opacity-50 transition-colors">
                 <MessageSquare className="w-4 h-4" /> Needs Info
               </button>
               <button onClick={onOpenReject} disabled={processing !== null}
-                className="flex items-center gap-1.5 px-5 py-2 bg-red-50 text-red-700 border border-red-200 text-sm font-bold rounded-xl hover:bg-red-100 disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1.5 px-3.5 sm:px-5 py-2 bg-red-50 text-red-700 border border-red-200 text-sm font-bold rounded-xl hover:bg-red-100 disabled:opacity-50 transition-colors">
                 <X className="w-4 h-4" /> Reject
               </button>
             </div>
@@ -1581,10 +1581,10 @@ function ApprovalDetailDrawer({
         role="dialog"
         aria-labelledby="approval-detail-title"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-stone-100 px-5 py-4">
+        <div className="flex items-start justify-between gap-3 sm:gap-4 border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-widest text-[#b04a15]">{kindLabel}</p>
-            <h2 id="approval-detail-title" className="mt-1 truncate text-lg font-black leading-tight text-stone-900">
+            <h2 id="approval-detail-title" className="mt-1 truncate text-base sm:text-lg font-black leading-tight text-stone-900">
               {title}
             </h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1925,7 +1925,7 @@ function PersonInfoCard({
   coordinates?: string | null;
 }) {
   return (
-    <div className="rounded-2xl border border-stone-100 bg-stone-50 p-3">
+    <div className="rounded-xl sm:rounded-2xl border border-stone-100 bg-stone-50 p-3">
       <p className="text-[10px] font-black uppercase tracking-widest text-[#b04a15]">{label}</p>
       <p className="mt-1 text-sm font-black text-stone-900">{name ?? "Unknown"}</p>
       <div className="mt-2 space-y-1 text-xs text-stone-500">
@@ -1946,7 +1946,7 @@ function SectionPhotoStrip({ photos, title = "Photos" }: { photos: string[]; tit
   if (photos.length === 0) return null;
 
   return (
-    <div className="border-b border-stone-100 px-5 py-4">
+    <div className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
         <ImageIcon className="h-4 w-4 text-[#b04a15]" />
         <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{title}</p>
@@ -1966,7 +1966,7 @@ function DetailSection({
   children: ReactNode;
 }) {
   return (
-    <section className="border-b border-stone-100 px-5 py-4">
+    <section className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
         <Icon className="h-4 w-4 text-[#b04a15]" />
         <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400">{title}</h3>
@@ -2049,7 +2049,7 @@ function StatusPill({ value }: { value?: string | null }) {
 function AllClearState({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 shadow-sm"
+      <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 shadow-sm"
         style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)" }}>
         <Check className="w-8 h-8 text-emerald-600" />
       </div>

@@ -50,16 +50,16 @@ export function AvatarUpload({ imageDataUrl, initials, onImageChange, tone = "co
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Circle avatar */}
-      <div className="relative w-24 h-24 shrink-0">
+      <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
         {imageDataUrl ? (
           <img
             src={imageDataUrl}
             alt="Profile"
-            className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-zinc-900 shadow-md"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white dark:border-zinc-900 shadow-md"
           />
         ) : (
-          <div className={`w-24 h-24 rounded-full bg-gradient-to-tr ${navy ? "from-[#0d1e36] to-[#3a6aa8]" : "from-[#b04a15] to-[#e07b3a]"} border-4 border-white dark:border-zinc-900 shadow-md flex items-center justify-center`}>
-            <span className="text-white text-3xl font-bold uppercase select-none">
+          <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr ${navy ? "from-[#0d1e36] to-[#3a6aa8]" : "from-[#b04a15] to-[#e07b3a]"} border-4 border-white dark:border-zinc-900 shadow-md flex items-center justify-center`}>
+            <span className="text-white text-2xl sm:text-3xl font-bold uppercase select-none">
               {initials}
             </span>
           </div>

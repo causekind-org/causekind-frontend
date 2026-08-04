@@ -110,7 +110,7 @@ export function Panel({ title, children, className = "" }: {
   title?: string; children: React.ReactNode; className?: string;
 }) {
   return (
-    <section className={`rounded-lg border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 ${className}`}>
+    <section className={`rounded-lg border border-stone-200 bg-white p-3 sm:p-4 dark:border-zinc-800 dark:bg-zinc-900 ${className}`}>
       {title && (
         <h2 className="mb-3 text-[11px] font-bold uppercase tracking-wider text-stone-400">{title}</h2>
       )}

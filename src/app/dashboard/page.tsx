@@ -386,7 +386,7 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors"
+          <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors"
             style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
             <TranslatedText text={r.title} />
           </p>
@@ -522,7 +522,7 @@ function OfferStageCard({
     meta.action === "browse"      ? `/requests` : null;
 
   return (
-    <div className={`rounded-2xl border ${style.badge} p-4 space-y-3`}>
+    <div className={`rounded-xl sm:rounded-2xl border ${style.badge} p-3 sm:p-4 space-y-3`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -858,7 +858,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
   if (offers.length === 0) return null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-black text-stone-800 dark:text-stone-100">Donation Offers</h2>
@@ -1104,17 +1104,17 @@ function DoneeDashboard({
     <div className="min-h-screen bg-[#eef3f9] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-16">
 
       {/* ── Hero header — ink/blue theme ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#0d1e36] via-[#1e3a60] to-[#0a2040] text-white py-12 px-4 shadow-lg">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0d1e36] via-[#1e3a60] to-[#0a2040] text-white py-7 sm:py-12 px-4 shadow-lg">
         <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[var(--ck-role-highlight)]/6 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--ck-role-highlight)]/25 to-transparent" />
 
         <div className="mx-auto max-w-5xl relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="space-y-3 min-w-0">
               <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/30 rounded-full px-3 py-1 text-xs text-[var(--ck-role-highlight)] font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified Donee
               </div>
-              <h1 className="text-4xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+              <h1 className="text-2xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
                 Namaste, {myProfile.fullName?.split(" ")[0] || user.email.split("@")[0]}.
               </h1>
               <p className="text-white/55 text-sm max-w-md">
@@ -1124,7 +1124,7 @@ function DoneeDashboard({
               </p>
             </motion.div>
             <Link href="/requests/new" data-tour="primary-cta">
-              <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-2xl px-6 py-3 h-auto text-sm flex items-center gap-2 shadow-xl shadow-[var(--ck-role-highlight)]/20 shrink-0">
+              <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 h-auto text-sm flex items-center gap-2 shadow-xl shadow-[var(--ck-role-highlight)]/20 shrink-0">
                 <Plus className="w-4 h-4" /> Post a Need
               </Button>
             </Link>
@@ -1139,7 +1139,7 @@ function DoneeDashboard({
             ].map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
                 className={`py-5 ${i > 0 ? "border-l border-white/10 pl-5 sm:pl-8" : ""}`}>
-                <p className="text-4xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
+                <p className="text-2xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
                 <p className="text-[10px] uppercase tracking-[0.22em] text-white/45 mt-2">{stat.label}</p>
               </motion.div>
             ))}
@@ -1147,7 +1147,7 @@ function DoneeDashboard({
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+      <div className="mx-auto max-w-5xl px-4 py-5 sm:py-8 space-y-4 sm:space-y-6">
 
         {/* ── Identity line ── */}
         <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-4">
@@ -1178,7 +1178,7 @@ function DoneeDashboard({
                 <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
               </Link>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4">
+            <CardContent className="space-y-3 sm:space-y-4 pt-4">
               {incomingOffers.filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status)).length === 0 && (
                 <p className="py-2 text-center text-xs text-stone-400">
                   No active offers right now — your requests stay visible to donors.
@@ -1219,7 +1219,7 @@ function DoneeDashboard({
                     "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400";
 
                   return (
-                    <div key={offer.id} className="rounded-2xl border border-stone-100 dark:border-zinc-800 p-4 space-y-3">
+                    <div key={offer.id} className="rounded-xl sm:rounded-2xl border border-stone-100 dark:border-zinc-800 p-3 sm:p-4 space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -1245,7 +1245,7 @@ function DoneeDashboard({
                           )}
                         </div>
                         {offer.media?.[0] && (
-                          <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
+                          <div className="h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
                             <img src={offer.media[0].mediaUrl} alt="" className="h-full w-full object-cover" />
                           </div>
                         )}
@@ -1438,8 +1438,8 @@ function DoneeDashboard({
             </div>
 
             {itemRequests.length === 0 ? (
-              <div className="py-14 text-center space-y-3">
-                <div className="w-14 h-14 bg-[#1e3a60]/10 rounded-2xl flex items-center justify-center mx-auto">
+              <div className="py-8 sm:py-14 text-center space-y-3">
+                <div className="w-11 sm:w-14 h-11 sm:h-14 bg-[#1e3a60]/10 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
                   <Heart className="w-6 h-6 text-[#1e3a60]" />
                 </div>
                 <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing posted yet</p>
@@ -1473,7 +1473,7 @@ function DoneeDashboard({
                 /* Truthful empty state: the sweep only spins when the matching engine
                    is actually working (a request is verified and in the matching
                    phase). Drafts/pending requests get honest guidance instead. */
-                <div className="py-12 text-center space-y-4">
+                <div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
                   <div className="relative w-24 h-24 mx-auto rounded-full border border-[var(--ck-role-accent)]/20">
                     <div className="absolute inset-3 rounded-full border border-[var(--ck-role-accent)]/15" />
                     <div className="absolute inset-6 rounded-full border border-[var(--ck-role-accent)]/10" />
@@ -1780,12 +1780,12 @@ export default function DashboardPage() {
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--ck-role-highlight)]/25 to-transparent" />
 
         <div className="mx-auto max-w-7xl relative z-10">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 sm:gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="min-w-0 space-y-3">
               <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/30 rounded-full px-3 py-1 text-xs text-[var(--ck-role-highlight)] font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified Donor
               </div>
-              <h1 className="text-4xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+              <h1 className="text-2xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
                 Namaste, {myProfile?.fullName?.split(" ")[0] || user.email.split("@")[0]}.
               </h1>
               <p className="text-white/55 text-sm max-w-md">
@@ -1810,14 +1810,14 @@ export default function DashboardPage() {
               )}
               {(myProfile?.role === "DONOR" || myProfile?.role === "ADMIN") && (
                 <Link href="/items/new" data-tour="primary-cta">
-                  <Button className="bg-[var(--ck-role-accent)] hover:bg-[#943e11] text-white font-bold rounded-xl px-5 py-2.5 h-auto btn-shine flex items-center gap-1.5 text-sm">
+                  <Button className="bg-[var(--ck-role-accent)] hover:bg-[#943e11] text-white font-bold rounded-xl px-3.5 sm:px-5 py-2.5 h-auto btn-shine flex items-center gap-1.5 text-sm">
                     <Plus className="w-4 h-4" /> List Item Privately
                   </Button>
                 </Link>
               )}
               {(myProfile?.role === "DONEE" || myProfile?.role === "ADMIN") && (
                 <Link href="/requests/new">
-                  <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl px-5 py-2.5 h-auto flex items-center gap-1.5 text-sm">
+                  <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl px-3.5 sm:px-5 py-2.5 h-auto flex items-center gap-1.5 text-sm">
                     <Plus className="w-4 h-4" /> Post a Need
                   </Button>
                 </Link>
@@ -1834,7 +1834,7 @@ export default function DashboardPage() {
             ].map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
                 className={`py-5 ${i > 0 ? "border-l border-white/10 pl-5 sm:pl-8" : ""}`}>
-                <p className="text-4xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
+                <p className="text-2xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
                 <p className="text-[10px] uppercase tracking-[0.22em] text-white/45 mt-2">{stat.label}</p>
               </motion.div>
             ))}
@@ -1843,8 +1843,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Container */}
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="space-y-8">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:py-8">
+        <div className="space-y-5 sm:space-y-8">
 
           {/* ── Identity line ── */}
           <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-4">
@@ -1864,12 +1864,12 @@ export default function DashboardPage() {
           </div>
 
           {/* RIGHT: Main Dashboard Content */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             
             {/* Tab Content */}
             {activeTab === "donor" ? (
               /* DONOR DASHBOARD VIEW */
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 
                 {/* Donor Flow 2 — Offer Tracker */}
                 {donationOffers.length > 0 && (
@@ -1903,9 +1903,9 @@ export default function DashboardPage() {
                         <Plus className="w-3.5 h-3.5" /> Add an item
                       </Link>
                     </div>
-                    <div className="pt-4 space-y-4">
+                    <div className="pt-4 space-y-3 sm:space-y-4">
                       {itemListings.length === 0 ? (
-                        <div className="py-12 text-center">
+                        <div className="py-7 sm:py-12 text-center">
                           <p className="text-sm text-stone-400">You haven&apos;t listed any items to donate yet.</p>
                           <Link href="/items/new" className="inline-block mt-3">
                             <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">List your first item</Button>
@@ -1926,7 +1926,7 @@ export default function DashboardPage() {
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
-                                      <p className="text-lg font-bold text-stone-900 dark:text-stone-100 truncate leading-snug" style={{ fontFamily: "var(--font-source-serif-4), serif" }}><TranslatedText text={l.title} /></p>
+                                      <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 truncate leading-snug" style={{ fontFamily: "var(--font-source-serif-4), serif" }}><TranslatedText text={l.title} /></p>
                                       <div className="flex flex-wrap gap-1.5 items-center text-xs text-stone-400 mt-0.5">
                                         {l.category && <span><TranslatedText text={l.category} /></span>}
                                         {l.city && <><span>·</span><span><TranslatedText text={l.city} /></span></>}
@@ -2015,11 +2015,11 @@ export default function DashboardPage() {
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-400">Match Opportunities</p>
                       <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
                     </div>
-                    <div className="pt-5 space-y-4">
+                    <div className="pt-5 space-y-3 sm:space-y-4">
                       {donorMatches.length === 0 ? (
                         /* Truthful empty state: the sweep only spins while a listing is
                            live and the engine is actually checking incoming needs. */
-                        <div className="py-12 text-center space-y-4">
+                        <div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
                           <div className="relative w-24 h-24 mx-auto rounded-full border border-emerald-500/25">
                             <div className="absolute inset-3 rounded-full border border-emerald-500/20" />
                             <div className="absolute inset-6 rounded-full border border-emerald-500/15" />
@@ -2052,7 +2052,7 @@ export default function DashboardPage() {
                           )}
                         </div>
                       ) : (
-                        <div className="divide-y space-y-4">
+                        <div className="divide-y space-y-3 sm:space-y-4">
                           {donorMatches.map((m) => {
                             const badge = getFulfilmentStatusBadge(m.status);
                             const isDonorReview = m.status === "DONOR_REVIEW";
@@ -2160,39 +2160,39 @@ export default function DashboardPage() {
               </div>
             ) : (
               /* DONEE DASHBOARD VIEW */
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 
                 {/* Stats Row */}
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                   <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
-                    <CardContent className="flex items-center gap-4 p-5">
+                    <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
                       <div className="h-11 w-11 rounded-xl bg-[var(--ck-role-soft)] text-[var(--ck-role-accent)] dark:bg-zinc-800 flex items-center justify-center shrink-0">
                         <ShieldCheck className="w-5 h-5" />
                       </div>
                       <div>
                         <p className="text-xs text-stone-500">Total Needs Posted</p>
-                        <p className="text-xl font-bold">{itemRequests.length}</p>
+                        <p className="text-base sm:text-xl font-bold">{itemRequests.length}</p>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-emerald-500" />
-                    <CardContent className="flex items-center gap-4 p-5">
+                    <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
                       <div className="h-11 w-11 rounded-xl bg-green-100 text-green-600 dark:bg-zinc-800 flex items-center justify-center shrink-0">
                         <Package className="w-5 h-5" />
                       </div>
                       <div>
                         <p className="text-xs text-stone-500">Fulfilled Needs</p>
-                        <p className="text-xl font-bold">{itemRequests.filter(r => r.status === "FULFILLED").length}</p>
+                        <p className="text-base sm:text-xl font-bold">{itemRequests.filter(r => r.status === "FULFILLED").length}</p>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
                 {/* Donee Requests & Donee Matches Grid */}
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                   
                   {/* Requests list */}
                   <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
@@ -2206,9 +2206,9 @@ export default function DashboardPage() {
                         </Button>
                       </Link>
                     </CardHeader>
-                    <CardContent className="space-y-4 relative z-10">
+                    <CardContent className="space-y-3 sm:space-y-4 relative z-10">
                       {itemRequests.length === 0 ? (
-                        <div className="py-12 text-center">
+                        <div className="py-7 sm:py-12 text-center">
                           <p className="text-sm text-stone-400">You haven&apos;t posted any needs yet.</p>
                           <Link href="/requests/new" className="inline-block mt-3">
                             <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">Post your first need</Button>
@@ -2260,14 +2260,14 @@ export default function DashboardPage() {
                     <CardHeader className="border-b pb-4 mb-4 relative z-10">
                       <CardTitle className="text-base font-bold">Matches &amp; Handover Status</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 relative z-10">
+                    <CardContent className="space-y-3 sm:space-y-4 relative z-10">
                       {doneeMatches.length === 0 ? (
-                        <div className="py-12 text-center">
+                        <div className="py-7 sm:py-12 text-center">
                           <p className="text-sm text-stone-400">No active matches found for your requests yet.</p>
                           <p className="text-xs text-stone-400/80 mt-1">We are actively checking private inventory to find matching items.</p>
                         </div>
                       ) : (
-                        <div className="divide-y space-y-4">
+                        <div className="divide-y space-y-3 sm:space-y-4">
                           {doneeMatches.map((m) => {
                             const badge = getFulfilmentStatusBadge(m.status);
                             return (

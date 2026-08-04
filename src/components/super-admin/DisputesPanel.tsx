@@ -99,9 +99,9 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       <div>
-        <h2 className={`text-lg font-black tracking-tight ${t.heading}`}>Disputes</h2>
+        <h2 className={`text-base sm:text-lg font-black tracking-tight ${t.heading}`}>Disputes</h2>
         <p className={`text-xs ${t.dim}`}>Post-delivery issue reports from donors and recipients.</p>
       </div>
 
@@ -148,7 +148,7 @@ function DisputeCard({
 }) {
   const resolved = !!d.resolvedAt;
   return (
-    <div className={`rounded-2xl border p-4 space-y-3 ${t.card}`}>
+    <div className={`rounded-xl sm:rounded-2xl border p-3 sm:p-4 space-y-2.5 sm:space-y-3 ${t.card}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

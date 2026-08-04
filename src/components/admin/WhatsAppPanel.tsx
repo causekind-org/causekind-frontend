@@ -107,8 +107,8 @@ function SendMessageTab() {
 
   return (
     <Card className="mt-4">
-      <CardContent className="space-y-4">
-        <div className="grid sm:grid-cols-2 gap-4">
+      <CardContent className="space-y-3 sm:space-y-4">
+        <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <Label htmlFor="wa-to">Recipient phone (e.g. 919812345678)</Label>
             <Input id="wa-to" value={to} onChange={(e) => setTo(e.target.value)} />
@@ -238,11 +238,11 @@ function TemplatesTab() {
   }
 
   return (
-    <div className="mt-4 space-y-6">
+    <div className="mt-4 space-y-4 sm:space-y-6">
       <Card>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           <h2 className="font-semibold">New Template</h2>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <Label htmlFor="tpl-name">Name</Label>
               <Input id="tpl-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="order_confirmation" />
@@ -391,9 +391,9 @@ function FlowsTab() {
   }
 
   return (
-    <div className="mt-4 space-y-6">
+    <div className="mt-4 space-y-4 sm:space-y-6">
       <Card>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           <h2 className="font-semibold">New Flow</h2>
           <div>
             <Label htmlFor="flow-name">Name</Label>

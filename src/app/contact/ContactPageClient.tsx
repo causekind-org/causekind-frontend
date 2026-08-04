@@ -42,11 +42,14 @@ function CopyableChannel({
 
   return (
     <Reveal delay={delay}>
-      <div className="group py-8 sm:py-10 border-b border-[#e5e2d5]/60 dark:border-zinc-800 first:border-t">
-        <div className="flex items-center justify-between gap-6">
+      <div className="group py-6 sm:py-10 border-b border-[#e5e2d5]/60 dark:border-zinc-800 first:border-t">
+        <div className="flex items-center justify-between gap-3 sm:gap-6">
           <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className="flex-1 min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-widest text-stone-400 mb-2">{label}</p>
-            <span className="relative inline-block text-2xl sm:text-4xl font-extrabold text-stone-900 dark:text-white group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors duration-300 break-all">
+            <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-stone-400 mb-1.5 sm:mb-2">{label}</p>
+            {/* break-words, not break-all: break-all split "causekind.com" mid-word
+                across two lines. At text-lg the longest value (the support address)
+                fits one line on a 360px phone, so it rarely wraps at all now. */}
+            <span className="relative inline-block text-lg sm:text-4xl font-extrabold text-stone-900 dark:text-white group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors duration-300 break-words [overflow-wrap:anywhere]">
               {display}
               <span
                 className="absolute left-0 -bottom-1 h-[2px] w-0 group-hover:w-full transition-all duration-300 ease-out"
@@ -59,7 +62,7 @@ function CopyableChannel({
             <button
               onClick={handleCopy}
               aria-label={`Copy ${label.toLowerCase()}`}
-              className="shrink-0 relative w-11 h-11 rounded-full border border-[#e5e2d5] dark:border-zinc-700 flex items-center justify-center hover:border-[#b04a15]/40 transition-colors"
+              className="shrink-0 relative w-9 h-9 sm:w-11 sm:h-11 rounded-full border border-[#e5e2d5] dark:border-zinc-700 flex items-center justify-center hover:border-[#b04a15]/40 transition-colors"
             >
               <AnimatePresence mode="wait" initial={false}>
                 {copied ? (
@@ -79,7 +82,7 @@ function CopyableChannel({
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Open ${label.toLowerCase()}`}
-              className="shrink-0 w-11 h-11 rounded-full border border-[#e5e2d5] dark:border-zinc-700 flex items-center justify-center hover:border-[#b04a15]/40 transition-colors"
+              className="shrink-0 w-9 h-9 sm:w-11 sm:h-11 rounded-full border border-[#e5e2d5] dark:border-zinc-700 flex items-center justify-center hover:border-[#b04a15]/40 transition-colors"
             >
               <ExternalLink className="w-4 h-4 text-stone-400" />
             </a>
@@ -177,12 +180,12 @@ export function ContactPageClient() {
 
       {/* ── Where to find us + grievance officer — asymmetric, no cards ── */}
       <div className="border-t border-[#e5e2d5]/60 dark:border-zinc-800">
-        <div className="mx-auto max-w-4xl px-6 sm:px-10 py-16 sm:py-20 grid sm:grid-cols-2 gap-12 sm:gap-16">
+        <div className="mx-auto max-w-4xl px-6 sm:px-10 py-12 sm:py-20 grid sm:grid-cols-2 gap-10 sm:gap-16">
           <Reveal>
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-4 block">Registered office</span>
-            <div className="flex items-start gap-3">
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-3 sm:mb-4 block">Registered office</span>
+            <div className="flex items-start gap-2.5 sm:gap-3">
               <PulseDot />
-              <address className="not-italic text-lg text-stone-800 dark:text-stone-100 font-semibold leading-relaxed">
+              <address className="not-italic text-sm sm:text-lg text-stone-800 dark:text-stone-100 font-semibold leading-normal sm:leading-relaxed">
                 {ADDRESS_LINES.map((line) => (
                   <span key={line} className="block">{line}</span>
                 ))}
@@ -191,21 +194,23 @@ export function ContactPageClient() {
           </Reveal>
 
           <Reveal delay={100}>
-            <span className="text-[11px] font-black uppercase tracking-widest mb-4 block" style={{ color: INK }}>
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest mb-3 sm:mb-4 block" style={{ color: INK }}>
               Grievance officer
             </span>
-            <dl className="space-y-4">
+            <dl className="space-y-3 sm:space-y-4">
               <div>
-                <dt className="text-xs text-stone-400 font-semibold">Name</dt>
-                <dd className="text-lg font-bold text-stone-800 dark:text-stone-100">Atharva Raorane</dd>
+                <dt className="text-[11px] sm:text-xs text-stone-400 font-semibold">Name</dt>
+                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100">Atharva Raorane</dd>
               </div>
               <div>
-                <dt className="text-xs text-stone-400 font-semibold">Email</dt>
-                <dd className="text-lg font-bold text-stone-800 dark:text-stone-100 break-all">Atharvaraorane147@gmail.com</dd>
+                <dt className="text-[11px] sm:text-xs text-stone-400 font-semibold">Email</dt>
+                {/* break-words over break-all — same reason as the channel rows:
+                    break-all chops the domain mid-word. */}
+                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100 break-words [overflow-wrap:anywhere]">Atharvaraorane147@gmail.com</dd>
               </div>
               <div>
-                <dt className="text-xs text-stone-400 font-semibold">Response time</dt>
-                <dd className="text-lg font-bold text-stone-800 dark:text-stone-100">Within 48 hours</dd>
+                <dt className="text-[11px] sm:text-xs text-stone-400 font-semibold">Response time</dt>
+                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100">Within 48 hours</dd>
               </div>
             </dl>
           </Reveal>
@@ -214,28 +219,28 @@ export function ContactPageClient() {
 
       {/* ── Closing CTA ── */}
       <Reveal className="border-t border-[#e5e2d5]/60 dark:border-zinc-800">
-        <div className="mx-auto max-w-4xl px-6 sm:px-10 py-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="mx-auto max-w-4xl px-6 sm:px-10 py-10 sm:py-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6">
           <div>
-            <h2 className="text-2xl font-extrabold text-stone-900 dark:text-white">
+            <h2 className="text-lg sm:text-2xl font-extrabold text-stone-900 dark:text-white">
               Prefer to just start giving?
             </h2>
-            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+            <p className="text-[13px] sm:text-sm text-stone-500 dark:text-stone-400 mt-1 leading-snug sm:leading-normal">
               Skip the message — see what&apos;s needed near you right now.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3 shrink-0">
+          <div className="flex flex-wrap gap-2.5 sm:gap-3 shrink-0">
             <Link
               href="/requests"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-extrabold text-sm border border-[#e5e2d5] dark:border-zinc-700 text-stone-700 dark:text-stone-300 hover:border-[#b04a15]/40 hover:text-[#b04a15] transition-all duration-200"
+              className="inline-flex items-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-full font-extrabold text-[13px] sm:text-sm border border-[#e5e2d5] dark:border-zinc-700 text-stone-700 dark:text-stone-300 hover:border-[#b04a15]/40 hover:text-[#b04a15] transition-all duration-200"
             >
               Browse requests
             </Link>
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-extrabold text-sm text-white shadow-md hover:opacity-90 active:scale-95 transition-all duration-200"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-full font-extrabold text-[13px] sm:text-sm text-white shadow-md hover:opacity-90 active:scale-95 transition-all duration-200"
               style={{ background: TERRACOTTA }}
             >
-              Become a donor <ArrowRight className="w-4 h-4" />
+              Become a donor <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Link>
           </div>
         </div>

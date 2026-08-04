@@ -81,10 +81,10 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center gap-2">
         <Terminal className={`w-5 h-5 ${t.icon}`} />
-        <h2 className={`text-lg font-black tracking-tight ${t.heading}`}>SQL Console</h2>
+        <h2 className={`text-base sm:text-lg font-black tracking-tight ${t.heading}`}>SQL Console</h2>
       </div>
 
       {/* Danger banner — always red regardless of theme */}
@@ -96,7 +96,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
       </div>
 
       {/* Editor */}
-      <div className={`rounded-2xl border overflow-hidden ${t.editor}`}>
+      <div className={`rounded-xl sm:rounded-2xl border overflow-hidden ${t.editor}`}>
         <div className={`flex items-center justify-between px-4 py-2 ${t.editorHeader}`}>
           <span className={`text-[11px] font-mono ${t.filenameText}`}>query.sql</span>
           <span className={`text-[10px] font-mono ${t.shortcutText}`}>⌘/Ctrl + Enter to run</span>
@@ -135,14 +135,14 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
 
       {/* Result */}
       {result && (
-        <div className={`rounded-2xl border overflow-hidden ${t.resultBox}`}>
+        <div className={`rounded-xl sm:rounded-2xl border overflow-hidden ${t.resultBox}`}>
           {result.error ? (
-            <div className="flex items-start gap-2.5 px-4 py-4">
+            <div className="flex items-start gap-2.5 px-3 py-3 sm:px-4 sm:py-4">
               <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
               <pre className="text-xs text-red-400 font-mono whitespace-pre-wrap leading-relaxed">{result.error}</pre>
             </div>
           ) : result.type === "write" ? (
-            <div className={`flex items-center gap-2.5 px-4 py-4 ${t.writeRow}`}>
+            <div className={`flex items-center gap-2.5 px-3 py-3 sm:px-4 sm:py-4 ${t.writeRow}`}>
               <Database className="w-4 h-4" />
               <span className="text-sm font-mono">{result.affectedRows} row(s) affected.</span>
             </div>

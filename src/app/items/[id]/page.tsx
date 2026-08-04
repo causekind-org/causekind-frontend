@@ -61,7 +61,7 @@ export default function ItemDetailPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
         <Package className="mx-auto mb-4 h-12 w-12 text-orange-300 dark:text-zinc-600" />
-        <p className="mb-2 text-lg font-semibold text-stone-700 dark:text-stone-300">{t("listingNotFound")}</p>
+        <p className="mb-2 text-base sm:text-lg font-semibold text-stone-700 dark:text-stone-300">{t("listingNotFound")}</p>
         <p className="mb-6 text-sm text-stone-400 dark:text-stone-500">
           {t("listingNotFoundSubtext")}
         </p>
@@ -80,7 +80,7 @@ export default function ItemDetailPage() {
       <div className="absolute top-1/4 left-10 w-[400px] h-[400px] rounded-full bg-[#b04a15]/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-10 w-[450px] h-[450px] rounded-full bg-[#1e3a60]/5 blur-[120px] pointer-events-none" />
 
-      <div className="mx-auto max-w-6xl px-4 py-8 relative z-10">
+      <div className="mx-auto max-w-6xl px-4 py-5 sm:py-8 relative z-10">
         {/* Back link */}
         <Link
           href="/dashboard"
@@ -90,11 +90,11 @@ export default function ItemDetailPage() {
         </Link>
 
         {/* Asymmetric layout grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5 sm:gap-8 items-start">
           {/* LEFT: Item Image and Info */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Image Container with premium border/glow */}
-            <div className="relative overflow-hidden rounded-3xl border-2 border-orange-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-md">
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-orange-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-md">
               <div className="relative h-72 w-full bg-gradient-to-br from-orange-50 to-orange-100 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden md:h-[400px] group">
                 {item.imageUrl ? (
                   <Image
@@ -107,7 +107,7 @@ export default function ItemDetailPage() {
                   />
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center gap-3">
-                    <Package className="h-20 w-20 text-orange-200 dark:text-zinc-700" />
+                    <Package className="h-14 sm:h-20 w-14 sm:w-20 text-orange-200 dark:text-zinc-700" />
                     <span className="text-xs font-black text-orange-300 dark:text-zinc-600 uppercase tracking-widest">
                       {t("noPhoto")}
                     </span>
@@ -134,11 +134,11 @@ export default function ItemDetailPage() {
             </div>
 
             {/* Title & Description Container */}
-            <div className="rounded-3xl border border-stone-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 shadow-sm space-y-6 relative overflow-hidden">
+            <div className="rounded-2xl sm:rounded-3xl border border-stone-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 sm:p-8 shadow-sm space-y-4 sm:space-y-6 relative overflow-hidden">
               {/* Left accent stripe */}
               <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#b04a15]" />
 
-              <h1 className="text-3xl font-black tracking-tight text-stone-900 dark:text-white leading-tight">
+              <h1 className="text-xl sm:text-3xl font-black tracking-tight text-stone-900 dark:text-white leading-tight">
                 {translatedTitle ?? item.title}
               </h1>
 
@@ -156,24 +156,24 @@ export default function ItemDetailPage() {
           </div>
 
           {/* RIGHT: Listing details & owner actions (Sticky) */}
-          <div className="lg:sticky lg:top-24 space-y-6">
-            <div className="rounded-3xl border border-orange-200/80 dark:border-zinc-805/80 bg-white dark:bg-zinc-900 p-6 shadow-md relative overflow-hidden">
+          <div className="lg:sticky lg:top-24 space-y-4 sm:space-y-6">
+            <div className="rounded-2xl sm:rounded-3xl border border-orange-200/80 dark:border-zinc-805/80 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-md relative overflow-hidden">
               {/* Warm decorative background blur inside card */}
               <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-[#b04a15]/5 rounded-full pointer-events-none" />
 
-              <div className="space-y-5">
+              <div className="space-y-4 sm:space-y-5">
                 {/* Quantity */}
                 <div className="border-b border-stone-100 dark:border-zinc-850 pb-4">
                   <p className="text-[10px] font-black text-stone-400 dark:text-zinc-500 uppercase tracking-widest">
                     Quantity Listed
                   </p>
-                  <p className="text-4xl font-black text-stone-900 dark:text-white tracking-tight mt-1">
-                    {item.quantity} <span className="text-lg font-bold text-stone-400">units</span>
+                  <p className="text-2xl sm:text-4xl font-black text-stone-900 dark:text-white tracking-tight mt-1">
+                    {item.quantity} <span className="text-base sm:text-lg font-bold text-stone-400">units</span>
                   </p>
                 </div>
 
                 {/* Location & delivery details list */}
-                <div className="space-y-4 text-sm">
+                <div className="space-y-3 sm:space-y-4 text-sm">
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-[#b04a15] dark:text-[#ff8a65] shrink-0 mt-0.5" />
                     <div>
@@ -214,7 +214,7 @@ export default function ItemDetailPage() {
                 <Button
                   size="lg"
                   asChild
-                  className="w-full btn-3d btn-shine bg-[#120c04] hover:bg-[#251b0d] dark:bg-[#b04a15] dark:hover:bg-[#a03d0d] text-white rounded-2xl py-6 font-bold text-sm tracking-wide shadow-md transition-all"
+                  className="w-full btn-3d btn-shine bg-[#120c04] hover:bg-[#251b0d] dark:bg-[#b04a15] dark:hover:bg-[#a03d0d] text-white rounded-xl sm:rounded-2xl py-4 sm:py-6 font-bold text-sm tracking-wide shadow-md transition-all"
                 >
                   <Link href={`/items/${item.id}/edit`}>
                     <Pencil className="mr-2 h-4 w-4" /> Edit Listing
@@ -224,7 +224,7 @@ export default function ItemDetailPage() {
             </div>
 
             {/* Privacy banner */}
-            <div className="rounded-3xl border border-stone-200/50 dark:border-zinc-800/80 bg-stone-50/50 dark:bg-zinc-950/20 p-5 text-xs text-stone-500 dark:text-stone-400 leading-relaxed space-y-2">
+            <div className="rounded-2xl sm:rounded-3xl border border-stone-200/50 dark:border-zinc-800/80 bg-stone-50/50 dark:bg-zinc-950/20 p-3.5 sm:p-5 text-xs text-stone-500 dark:text-stone-400 leading-relaxed space-y-2">
               <p className="font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
                 <Lock className="h-3.5 w-3.5" /> Private inventory
               </p>

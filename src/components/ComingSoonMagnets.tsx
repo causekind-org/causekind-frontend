@@ -293,8 +293,11 @@ function CardModal({ cardIdx, startRect, onClose }: {
             letterSpacing: "0.22em", textTransform: "uppercase" as const,
           }}>Coming Soon</div>
 
-          {/* Illustration */}
-          <div style={{ flex: 1, display: "flex", alignItems: "center", zIndex: 1, padding: "12px 0" }}>
+          {/* Illustration. The SVG is width/height 100% on a 240x180 viewBox, so
+              once the panel goes full-width on a phone it self-sizes to ~240px
+              tall and dominates the sheet — the mobile rules cap this wrapper,
+              and the viewBox's default "meet" keeps it centred inside the cap. */}
+          <div className="ck-modal-illo" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, padding: "12px 0" }}>
             <Illustration />
           </div>
 
@@ -318,30 +321,19 @@ function CardModal({ cardIdx, startRect, onClose }: {
             position: "relative",
           }}
         >
-          {/* Close button */}
-          <button
-            onClick={close}
-            aria-label="Close"
-            style={{
-              position: "absolute", top: "16px", right: "16px",
-              width: "30px", height: "30px", borderRadius: "50%",
-              background: "rgba(0,0,0,0.07)", border: "none",
-              cursor: "pointer", color: "#78716c", fontSize: "18px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "background 0.15s ease",
-            }}
-          >×</button>
-
-          {/* Tag */}
+          {/* Tag. Right padding keeps a long tagline clear of the close button,
+              which overlays this corner on desktop. */}
           <p style={{
-            margin: "0 0 6px", fontSize: "10px", fontWeight: 900,
+            margin: "0 0 6px", paddingRight: "40px",
+            fontSize: "10px", fontWeight: 900,
             letterSpacing: "0.16em", textTransform: "uppercase" as const,
             color: detail.accent,
           }}>{detail.tagline}</p>
 
           {/* Heading */}
           <h3 style={{
-            margin: "0 0 10px", fontSize: "23px", fontWeight: 800,
+            margin: "0 0 10px", paddingRight: "40px",
+            fontSize: "23px", fontWeight: 800,
             color: "#1c1917", letterSpacing: "-0.025em", lineHeight: 1.2,
           }}>{card.title}</h3>
 
@@ -385,6 +377,29 @@ function CardModal({ cardIdx, startRect, onClose }: {
             </p>
           </div>
         </div>
+
+        {/* Close button — pinned to the CARD's corner, not the content panel.
+            It used to live inside .ck-modal-right, which is overflow-y:auto, so
+            it scrolled away with the text and collided with a long tagline. As a
+            child of the split it stays put; once stacked on mobile that corner is
+            the green panel, clear of any copy. Styled to read on both surfaces. */}
+        <button
+          onClick={close}
+          aria-label="Close"
+          className="ck-modal-close"
+          style={{
+            position: "absolute", top: "12px", right: "12px", zIndex: 5,
+            width: "32px", height: "32px", borderRadius: "50%",
+            background: "rgba(255,255,255,0.92)",
+            border: "1px solid rgba(0,0,0,0.06)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+            backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+            cursor: "pointer", color: "#57534e",
+            fontSize: "19px", lineHeight: 1,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "background 0.15s ease, transform 0.15s ease",
+          }}
+        >×</button>
       </div>
     </>,
     document.body
@@ -586,10 +601,27 @@ export function ComingSoonMagnets() {
             --ck-poster-brand: none;
           }
         }
+        /* Stacked on phones. The base 95vw/88vh leaves ~10px of backdrop either
+           side and eats almost the whole viewport, so the sheet reads as glued
+           to the screen rather than floating above it — pull both in and shrink
+           the illustration panel, which is the tallest fixed cost once stacked. */
         @media (max-width: 580px) {
-          .ck-modal-split { flex-direction: column !important; }
-          .ck-modal-left  { width: 100% !important; min-height: 200px !important; flex: none !important; }
-          .ck-modal-right { padding: 24px 20px 28px !important; }
+          .ck-modal-split {
+            flex-direction: column !important;
+            width: 88vw !important;
+            max-width: 400px !important;
+            max-height: 76vh !important;
+            border-radius: 18px !important;
+          }
+          .ck-modal-left  { width: 100% !important; min-height: 0 !important; flex: none !important; padding: 16px 18px 14px !important; }
+          .ck-modal-illo  { height: 84px !important; flex: none !important; padding: 8px 0 !important; }
+          .ck-modal-right { padding: 22px 18px 24px !important; }
+        }
+        @media (max-width: 380px) {
+          .ck-modal-split { width: 90vw !important; max-height: 72vh !important; }
+          .ck-modal-left  { padding: 13px 14px 11px !important; }
+          .ck-modal-illo  { height: 68px !important; }
+          .ck-modal-right { padding: 18px 15px 20px !important; }
         }
         @keyframes ck-blob-a {
           0%, 100% { transform: translate(0, 0) scale(1); }

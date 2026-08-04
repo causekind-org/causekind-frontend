@@ -105,7 +105,7 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
 
   return (
     <Panel title="Confirm the handover">
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div>
           <p className="mb-2 text-sm text-stone-600 dark:text-stone-400">
             Give the recipient this code when you hand the item over. It proves you were both there.
@@ -120,7 +120,7 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
                 className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-950/30"
               >
                 <div>
-                  <p className="font-mono text-2xl font-bold tracking-[0.3em] text-green-700 dark:text-green-400">
+                  <p className="font-mono text-lg sm:text-2xl font-bold tracking-[0.3em] text-green-700 dark:text-green-400">
                     {otp}
                   </p>
                   {/* Session-only: never written to localStorage and gone on refresh,
@@ -233,7 +233,7 @@ function DoneeConfirm({ vm, onConfirm }: {
 
   return (
     <Panel title="Confirm what you received">
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="space-y-1.5">
           <label className={handoverLabel}>
             Code from the donor

@@ -81,7 +81,7 @@ export function HandoverHubShell({
           <div className="flex items-start gap-3">
             <ItemImage url={vm.imageUrl} alt="" />
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-lg font-bold text-stone-900 dark:text-stone-100 sm:text-xl">
+              <h1 className="truncate text-base font-bold text-stone-900 dark:text-stone-100 sm:text-xl">
                 {vm.title}
               </h1>
               <p className="mt-0.5 truncate text-sm text-stone-500 dark:text-stone-400">
@@ -104,8 +104,8 @@ export function HandoverHubShell({
         </div>
 
         {/* ── Workspace ──────────────────────────────────────────────────── */}
-        <div className="grid gap-5 lg:grid-cols-12">
-          <div className="space-y-5 lg:col-span-7 xl:col-span-8">
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-12">
+          <div className="space-y-4 sm:space-y-5 lg:col-span-7 xl:col-span-8">
             <HandoverNextAction
               vm={vm}
               otp={otp}
@@ -129,7 +129,7 @@ export function HandoverHubShell({
             <HelpSection vm={vm} />
           </div>
 
-          <aside className="space-y-4 lg:col-span-5 lg:sticky lg:top-4 lg:self-start xl:col-span-4">
+          <aside className="space-y-3 sm:space-y-4 lg:col-span-5 lg:sticky lg:top-4 lg:self-start xl:col-span-4">
             <div className="hidden lg:block">
               <HandoverScheduleSummary vm={vm} onReschedule={() => setScheduleOpen(true)} />
             </div>
@@ -188,13 +188,13 @@ export function HandoverHubShell({
 function ItemImage({ url, alt }: { url: string | null; alt: string }) {
   if (!url) {
     return (
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-400 dark:bg-zinc-800">
+      <div className="flex h-12 sm:h-16 w-12 sm:w-16 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-400 dark:bg-zinc-800">
         <Package className="h-6 w-6" aria-hidden />
       </div>
     );
   }
   return (
-    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-stone-100 dark:bg-zinc-800">
+    <div className="relative h-12 sm:h-16 w-12 sm:w-16 shrink-0 overflow-hidden rounded-lg bg-stone-100 dark:bg-zinc-800">
       <Image src={url} alt={alt} fill sizes="64px" className="object-cover" unoptimized />
     </div>
   );

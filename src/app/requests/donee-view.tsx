@@ -161,7 +161,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
       <div className="absolute bottom-[24%] right-[34%] w-1.5 h-1.5 rounded-full bg-emerald-400/22 animate-float-shape-4 pointer-events-none" />
       <div className="absolute top-[28%] right-[26%] w-1 h-1 rounded-full bg-white/18 animate-float-shape-5 pointer-events-none" />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-6 py-16 lg:py-22">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-9 sm:py-16 lg:py-22">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-14 items-center">
 
           {/* ── LEFT: Copy ── */}
@@ -177,7 +177,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
 
             {/* Headline */}
             <h1
-              className="text-white text-4xl sm:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.04] tracking-tight anim-up anim-d2"
+              className="text-white text-2xl sm:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.04] tracking-tight anim-up anim-d2"
             >
               Tell us what<br />
               <span style={{
@@ -191,20 +191,20 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
             </h1>
 
             {/* Subtitle */}
-            <p className="text-white/58 text-sm sm:text-base leading-relaxed max-w-lg anim-up anim-d3">
+            <p className="text-white/58 text-[13px] sm:text-base leading-relaxed max-w-lg anim-up anim-d3">
               Post a request for any physical item — books, clothes, wheelchair, medical equipment. We match you with a verified local donor within 10 km. No fees, no delays.
             </p>
 
             {/* CTA row */}
-            <div className="flex flex-wrap items-center gap-4 anim-up anim-d4">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 anim-up anim-d4">
               <Link href="/requests/new">
-                <button className="flex items-center gap-2.5 bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] active:scale-[0.97] text-stone-950 font-extrabold px-7 py-3.5 rounded-2xl text-sm transition-all shadow-xl shadow-[var(--ck-role-highlight)]/20 btn-shine">
+                <button className="flex items-center gap-2.5 bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] active:scale-[0.97] text-stone-950 font-extrabold px-4 sm:px-7 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-[13px] sm:text-sm transition-all shadow-xl shadow-[var(--ck-role-highlight)]/20 btn-shine">
                   <Plus className="w-4 h-4" />
                   Post a Need
                 </button>
               </Link>
               {myRequestCount > 0 && (
-                <a href="#my-requests" className="flex items-center gap-2 text-white/55 hover:text-white text-sm font-bold transition-colors">
+                <a href="#my-requests" className="flex items-center gap-2 text-white/55 hover:text-white text-[13px] sm:text-sm font-bold transition-colors">
                   My {myRequestCount} request{myRequestCount !== 1 ? "s" : ""}
                   <ChevronDown className="w-4 h-4" />
                 </a>
@@ -212,13 +212,13 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
             </div>
 
             {/* Trust pills */}
-            <div className="flex flex-wrap gap-3 anim-up anim-d5">
+            <div className="flex flex-wrap gap-2.5 sm:gap-3 anim-up anim-d5">
               {[
                 { icon: ShieldCheck, text: "Admin verified", c: "text-emerald-400" },
                 { icon: MapPin,      text: "10 km radius",   c: "text-[var(--ck-role-highlight)]"  },
                 { icon: Heart,       text: "Zero fees",       c: "text-rose-400"   },
               ].map(({ icon: Icon, text, c }) => (
-                <div key={text} className="flex items-center gap-1.5 bg-white/6 border border-white/10 rounded-full px-3 py-1.5 text-[11px] font-bold text-white/65">
+                <div key={text} className="flex items-center gap-1.5 bg-white/6 border border-white/10 rounded-full px-2.5 sm:px-3 py-1.5 text-[11px] font-bold text-white/65">
                   <Icon className={`w-3.5 h-3.5 ${c}`} />
                   {text}
                 </div>
@@ -227,13 +227,13 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
           </div>
 
           {/* ── RIGHT: Floating request cards (live data) ── */}
-          <div className="hidden lg:flex flex-col gap-3 items-end">
+          <div className="hidden lg:flex flex-col gap-2.5 sm:gap-3 items-end">
 
             {/* Primary card — the donee's latest active request (or a recent community one) */}
             {primary && primaryTint && primaryPill ? (
               <div className="float-card w-[296px] relative">
-                <div className="bg-white/8 backdrop-blur-md border border-white/15 rounded-3xl p-5 shadow-2xl">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="bg-white/8 backdrop-blur-md border border-white/15 rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 shadow-2xl">
+                  <div className="flex items-center gap-2.5 sm:gap-3 mb-3">
                     <div className={`w-9 h-9 rounded-xl ${primaryTint.bg} flex items-center justify-center shrink-0`}>
                       <PrimaryIcon className={`w-4.5 h-4.5 ${primaryTint.ic}`} />
                     </div>
@@ -242,10 +242,10 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                       <p className="text-white/35 text-[10px] truncate">{primary.city} · {primary.quantity} needed</p>
                     </div>
                   </div>
-                  <p className="text-white font-extrabold text-sm leading-snug mb-3 line-clamp-2">
+                  <p className="text-white font-extrabold text-[13px] sm:text-sm leading-snug mb-3 line-clamp-2">
                     {primary.title}
                   </p>
-                  <div className={`inline-flex items-center gap-2 border rounded-full px-3 py-1.5 ${primaryPill.cls}`}>
+                  <div className={`inline-flex items-center gap-2 border rounded-full px-2.5 sm:px-3 py-1.5 ${primaryPill.cls}`}>
                     <span className="relative flex h-2 w-2 shrink-0">
                       {primaryPill.pulse && (
                         <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${primaryPill.dot} opacity-70`} />
@@ -256,13 +256,13 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                   </div>
                 </div>
                 {/* Shadow card behind */}
-                <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-3xl -z-10 rotate-2" />
+                <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-2xl sm:rounded-3xl -z-10 rotate-2" />
               </div>
             ) : (
               /* Static example — only when there is no request data at all */
               <div className="float-card w-[296px] relative">
-                <div className="bg-white/8 backdrop-blur-md border border-white/15 rounded-3xl p-5 shadow-2xl">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="bg-white/8 backdrop-blur-md border border-white/15 rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 shadow-2xl">
+                  <div className="flex items-center gap-2.5 sm:gap-3 mb-3">
                     <div className="w-9 h-9 rounded-xl bg-sky-500/20 flex items-center justify-center shrink-0">
                       <Stethoscope className="w-4.5 h-4.5 text-sky-400" />
                     </div>
@@ -271,10 +271,10 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                       <p className="text-white/35 text-[10px]">Example request</p>
                     </div>
                   </div>
-                  <p className="text-white font-extrabold text-sm leading-snug mb-3">
+                  <p className="text-white font-extrabold text-[13px] sm:text-sm leading-snug mb-3">
                     Wheelchair for elderly mother
                   </p>
-                  <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-400/25 rounded-full px-3 py-1.5">
+                  <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-400/25 rounded-full px-2.5 sm:px-3 py-1.5">
                     <span className="relative flex h-2 w-2 shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -282,14 +282,14 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                     <span className="text-emerald-400 text-[10px] font-black">Matching in progress…</span>
                   </div>
                 </div>
-                <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-3xl -z-10 rotate-2" />
+                <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-2xl sm:rounded-3xl -z-10 rotate-2" />
               </div>
             )}
 
             {/* Secondary mini card — prefers a fulfilled request as social proof */}
             {secondary && secondaryTint && (
               <div
-                className="w-[256px] bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4"
+                className="w-[256px] bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl sm:rounded-2xl p-2.5 sm:p-4"
                 style={{ animation: "need-board-float 6s ease-in-out 1.4s infinite" }}
               >
                 <div className="flex items-center gap-2.5">
@@ -351,31 +351,31 @@ function HowItWorksSection() {
 
   return (
     <div className="bg-white dark:bg-zinc-900 border-b border-stone-100 dark:border-zinc-800">
-      <div className="mx-auto max-w-6xl px-6 py-14">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-14">
         <Reveal>
           <div className="text-center mb-12">
             <span className="text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Simple Process</span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+            <h2 className="text-lg sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
               How receiving works
             </h2>
           </div>
         </Reveal>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 relative">
           {/* Desktop connector line */}
           <div className="hidden lg:block absolute top-7 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-[#1e3a60]/20 via-violet-300/30 to-emerald-300/30 pointer-events-none" />
 
           {steps.map(({ icon: Icon, title, desc, bg, ic, dot }, i) => (
             <Reveal key={title} delay={i * 90}>
-              <div className="relative flex lg:flex-col items-start lg:items-center gap-4 text-left lg:text-center">
-                <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${bg}`}>
+              <div className="relative flex lg:flex-col items-start lg:items-center gap-2.5 sm:gap-4 text-left lg:text-center">
+                <div className={`relative w-11 sm:w-14 h-11 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${bg}`}>
                   <Icon className={`w-6 h-6 ${ic}`} />
                   <div className={`absolute -top-2 -right-2 w-5 h-5 rounded-full ${dot} flex items-center justify-center text-[9px] font-black text-white shadow-sm`}>
                     {i + 1}
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-stone-900 dark:text-white text-sm mb-1.5">{title}</h3>
+                  <h3 className="font-extrabold text-stone-900 dark:text-white text-[13px] sm:text-sm mb-1.5">{title}</h3>
                   <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed font-medium">{desc}</p>
                 </div>
               </div>
@@ -391,20 +391,20 @@ function HowItWorksSection() {
 
 function CategoryStarterSection({ catCounts }: { catCounts: Record<string, number> }) {
   return (
-    <div className="mx-auto max-w-6xl px-6 py-14">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-14">
       <Reveal>
-        <div className="mb-10">
+        <div className="mb-5 sm:mb-10">
           <span className="text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Quick Start</span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+          <h2 className="text-lg sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
             What do you need?
           </h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-2 font-medium max-w-md">
+          <p className="text-[13px] sm:text-sm text-stone-500 dark:text-stone-400 mt-2 font-medium max-w-md">
             Pick a category and we&apos;ll pre-fill your request form — takes under 2 minutes.
           </p>
         </div>
       </Reveal>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {CATEGORIES.map((cat, i) => {
           const Icon     = CAT_ICON[cat] ?? Package;
           const gradient = CAT_GRADIENT[cat];
@@ -414,8 +414,8 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
           return (
             <Reveal key={cat} delay={i * 75}>
               <Link href={`/requests/new?category=${encodeURIComponent(cat)}`}>
-                <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${gradient}
-                                h-44 flex flex-col justify-between p-5 cursor-pointer
+                <div className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${gradient}
+                                h-[102px] sm:h-44 flex flex-col justify-between p-2 sm:p-5 cursor-pointer
                                 hover:-translate-y-2 hover:shadow-xl ${shadow}
                                 transition-all duration-300`}
                 >
@@ -431,21 +431,21 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
                   {/* Request count */}
                   <div className="relative z-10 self-end">
                     {count > 0 && (
-                      <span className="bg-white/15 backdrop-blur text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20">
+                      <span className="bg-white/15 backdrop-blur text-white text-[9px] sm:text-[10px] font-black px-1.5 py-0 sm:px-2.5 sm:py-1 rounded-full border border-white/20">
                         {count} active
                       </span>
                     )}
                   </div>
 
                   {/* Icon + name + arrow */}
-                  <div className="relative z-10 space-y-2.5">
-                    <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      <Icon className="w-5 h-5 text-white" />
+                  <div className="relative z-10 space-y-1 sm:space-y-2.5">
+                    <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/15 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                      <Icon className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-extrabold text-sm leading-tight">{cat}</p>
-                      <div className="flex items-center gap-1 mt-1 text-white/55 text-[10px] font-bold group-hover:text-white/90 transition-colors">
-                        Request this <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      <p className="text-white font-extrabold text-[13px] sm:text-sm leading-tight">{cat}</p>
+                      <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-white/55 text-[9px] sm:text-[10px] font-bold group-hover:text-white/90 transition-colors">
+                        Request this <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
                   </div>
@@ -466,25 +466,25 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
 
   return (
     <div id="my-requests" className="bg-white dark:bg-zinc-900 border-y border-stone-100 dark:border-zinc-800">
-      <div className="mx-auto max-w-6xl px-6 py-14">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-14">
         <Reveal>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-8">
             <div>
-              <span className="text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-1 block">Tracking</span>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white">
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-0.5 sm:mb-1 block">Tracking</span>
+              <h2 className="text-base sm:text-2xl font-extrabold text-stone-900 dark:text-white">
                 Your Requests
-                <span className="ml-3 text-base font-semibold text-stone-400">({requests.length})</span>
+                <span className="ml-2 sm:ml-3 text-[13px] sm:text-base font-semibold text-stone-400">({requests.length})</span>
               </h2>
             </div>
             <Link href="/requests/new">
-              <button className="flex items-center gap-2 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-sm">
-                <Plus className="w-3.5 h-3.5" /> New Need
+              <button className="flex items-center gap-1.5 sm:gap-2 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-bold px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all shadow-sm">
+                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> New Need
               </button>
             </Link>
           </div>
         </Reveal>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {requests.map((r, i) => {
             const sb   = getStatusBadge(r.status);
             const Icon = CAT_ICON[r.category] ?? Package;
@@ -492,15 +492,15 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
 
             return (
               <Reveal key={r.id} delay={i * 50}>
-                <div className="group flex items-center gap-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl p-4 transition-all border border-stone-100 dark:border-zinc-700/50">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shrink-0`}>
-                    <Icon className="w-5 h-5 text-white" />
+                <div className="group flex items-center gap-2.5 sm:gap-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 transition-all border border-stone-100 dark:border-zinc-700/50">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shrink-0`}>
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-stone-900 dark:text-stone-100 truncate group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors">
+                    <p className="font-bold text-[13px] sm:text-sm text-stone-900 dark:text-stone-100 truncate group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors">
                       <TranslatedText text={r.title} />
                     </p>
-                    <div className="flex items-center gap-2 text-[11px] text-stone-400 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-stone-400 mt-0.5 flex-wrap">
                       <span>{r.category}</span>
                       <span>·</span>
                       <span>Qty: {r.quantity}</span>
@@ -511,7 +511,7 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
                       </span>
                     </div>
                   </div>
-                  <Badge variant={sb.variant} className="text-[10px] shrink-0 whitespace-nowrap">
+                  <Badge variant={sb.variant} className="text-[9px] sm:text-[10px] px-1.5 sm:px-2.5 shrink-0 whitespace-nowrap">
                     {sb.label}
                   </Badge>
                 </div>
@@ -531,32 +531,32 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
   if (preview.length === 0) return null;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-14">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-14">
       <Reveal>
-        <div className="mb-10">
-          <span className="text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Community</span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white">
+        <div className="mb-5 sm:mb-10">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-1 sm:mb-2 block">Community</span>
+          <h2 className="text-base sm:text-3xl font-extrabold text-stone-900 dark:text-white">
             Others are requesting too
           </h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-2 font-medium">
+          <p className="text-[13px] sm:text-sm text-stone-500 dark:text-stone-400 mt-1 sm:mt-2 font-medium leading-snug">
             Browse what your community needs — and add yours.
           </p>
         </div>
       </Reveal>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {preview.map((r, i) => {
           const Icon = CAT_ICON[r.category] ?? Package;
           const grad = CAT_GRADIENT[r.category] ?? CAT_GRADIENT["Medical aid"];
 
           return (
             <Reveal key={r.id} delay={i * 65}>
-              <div className="group flex items-start gap-4 bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-stone-100 dark:border-zinc-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shrink-0`}>
-                  <Icon className="w-5 h-5 text-white" />
+              <div className="group flex items-start gap-2.5 sm:gap-4 bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-stone-100 dark:border-zinc-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shrink-0`}>
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-extrabold text-sm text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 mb-1.5">
+                  <p className="font-extrabold text-[13px] sm:text-sm text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 mb-1">
                     <TranslatedText text={r.title} />
                   </p>
                   <div className="flex flex-wrap items-center gap-2 text-[10px] text-stone-400">
@@ -581,13 +581,13 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
       </div>
 
       <Reveal delay={420}>
-        <div className="mt-12 text-center">
-          <p className="text-stone-500 dark:text-stone-400 text-sm mb-5">Don&apos;t see what you need? Post your own.</p>
+        <div className="mt-7 sm:mt-12 text-center">
+          <p className="text-stone-500 dark:text-stone-400 text-[13px] sm:text-sm mb-3 sm:mb-5">Don&apos;t see what you need? Post your own.</p>
           <Link href="/requests/new">
-            <button className="inline-flex items-center gap-2.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-extrabold px-8 py-3.5 rounded-2xl text-sm transition-all shadow-lg shadow-blue-900/20 btn-shine">
-              <Plus className="w-4 h-4" />
+            <button className="inline-flex items-center gap-2 sm:gap-2.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-extrabold px-4 py-2.5 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl text-[13px] sm:text-sm transition-all shadow-lg shadow-blue-900/20 btn-shine">
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Post What You Need
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </Link>
         </div>

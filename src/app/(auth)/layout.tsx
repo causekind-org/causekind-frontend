@@ -40,7 +40,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const reduceMotion = useReducedMotion();
 
   return (
-    <div className="min-h-[calc(100svh-4rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
+    /* pb reserves room for the floating mobile dock, which every other page that
+       coexists with it already does (profile pb-28, HandoverHubShell pb-28).
+       Without it this page ended just above the fold, so the footer was already
+       on screen — and useNearFooter's 72px lookahead parked the dock (and made it
+       inert) before the user had scrolled at all. --ck-bottom-chrome is the single
+       source of truth for that height and is already 0 at lg:, where the dock is
+       lg:hidden, so desktop needs no override. */
+    <div className="min-h-[calc(100svh-4rem)] pb-[var(--ck-bottom-chrome)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
       {/* ── Illustration panel — one persistent element, reorders across the row ── */}
       <motion.div
         layout
@@ -106,12 +113,22 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
       </motion.div>
 
-      {/* ── Form panel — the page's own content, 3D tilt-and-rise on every entry ── */}
+      {/* ── Form panel — the page's own content, 3D tilt-and-rise on every entry ──
+          layout="position", NOT layout: this panel's height changes between routes
+          (the register card is taller than login's), and a full layout projection
+          animates height by writing inline sizing. Navigating login → register →
+          login fast enough to interrupt that animation left the stale height
+          behind — the panel stayed register-tall, so justify-between stopped
+          reaching the bottom and a block of empty dot-grid appeared under the
+          footer. Position-only never projects size, so there is nothing to
+          strand. The panel still reorders; only the size animation is dropped,
+          and on mobile the illustration panel is hidden so nothing reorders at
+          all there. */}
       <motion.div
-        layout
+        layout="position"
         transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 140, damping: 22 }}
         style={{ order: variant === "register" ? 1 : 2 }}
-        className="flex flex-1 flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 px-6 py-8 lg:px-12 overflow-y-auto relative overflow-hidden"
+        className="flex flex-1 min-w-0 flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 px-4 py-5 sm:px-6 sm:py-8 lg:px-12 overflow-y-auto relative overflow-hidden"
       >
         {/* Interactive dot-grid — subtle texture behind the form card */}
         <AuthDotGrid />
@@ -141,7 +158,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </AnimatePresence>
         </div>
 
-        <p className="mt-8 text-center text-xs text-stone-400 dark:text-zinc-600">
+        <p className="mt-5 sm:mt-8 text-center text-xs text-stone-400 dark:text-zinc-600">
           &copy; 2026 CauseKind
         </p>
       </motion.div>
