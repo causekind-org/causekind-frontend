@@ -1102,7 +1102,10 @@
     "helpFaq": "المساعدة والأسئلة الشائعة",
     "helpFaqSub": "تمت الإجابة على الأسئلة الشائعة",
     "openSupport": "دعم مفتوح",
-    "closeSupport": "دعم وثيق"
+    "closeSupport": "دعم وثيق",
+    "nudgeDonor": "شاهد من يحتاج مساعدتك",
+    "nudgeDonee": "انشر ما تحتاجه",
+    "nudgeDismiss": "إغلاق"
   },
   "requestNew": {
     "cardTitle": "طلب عنصر",

@@ -8,17 +8,24 @@ import { X, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getItemRequests, type ItemRequest } from "@/lib/api";
 import { CATEGORY_VISUALS, readSelectedDonorCategories } from "@/lib/categoryVisuals";
+import { claimPromptLane, releasePromptLane } from "@/lib/promptLane";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 
-// Staggered well clear of DonorListingPrompt's own 800ms/10s/60s rhythm so the
-// two don't compete for attention at the same moment (they also sit at
-// different screen corners, so even an overlap wouldn't visually collide).
-const FIRST_DELAY_MS  = 15_000;
+const LANE_ID = "donee-request";
+
+// Staggered clear of DonorListingPrompt's 800ms/10s/45s rhythm so the two rarely
+// want the screen at the same moment. The guarantee that they never *do* is the
+// shared lane in @/lib/promptLane — see the reasoning there for why the offsets
+// alone cannot be trusted.
+const FIRST_DELAY_MS  = 22_000;
 const VISIBLE_MS      = 12_000;
 const REPEAT_DELAY_MS = 90_000;
+const RETRY_DELAY_MS  = 6_000; // lane busy — the other prompt is on screen
 const EXIT_MS         = 380;
 
 export function DoneeRequestPrompt() {
   const { user, isLoading } = useAuth();
+  const isDesktop = useIsDesktop();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
@@ -38,6 +45,9 @@ export function DoneeRequestPrompt() {
   const userRole  = user?.role;
 
   useEffect(() => {
+    // Desktop only — gating the effect and not just the render is what stops the
+    // getItemRequests() poll below from running for a pill no phone will show.
+    if (!isDesktop) return;
     if (isLoading || !userEmail || userRole !== "DONOR") return;
     if (dismissed) return;
 
@@ -69,6 +79,9 @@ export function DoneeRequestPrompt() {
         const picked = await pickRandomRequest();
         if (cancelled) return;
         if (!picked) { show(REPEAT_DELAY_MS); return; }
+        // Claimed after the fetch, not before, so a slow or empty request never
+        // holds the lane shut while DonorListingPrompt is waiting on it.
+        if (!claimPromptLane(LANE_ID)) { show(RETRY_DELAY_MS); return; }
 
         setRequest(picked);
         setVisible(true);
@@ -82,6 +95,7 @@ export function DoneeRequestPrompt() {
           setEntered(false);
           t3.current = setTimeout(() => {
             setVisible(false);
+            releasePromptLane(LANE_ID);
             show(REPEAT_DELAY_MS);
           }, EXIT_MS);
         }, VISIBLE_MS);
@@ -92,17 +106,19 @@ export function DoneeRequestPrompt() {
     return () => {
       cancelled = true;
       [t1, t2, t3, t4].forEach(r => { if (r.current) clearTimeout(r.current); });
+      releasePromptLane(LANE_ID);
     };
-  }, [isLoading, userEmail, userRole, dismissed]);
+  }, [isDesktop, isLoading, userEmail, userRole, dismissed]);
 
   function dismiss() {
     setDismissed(true);
     [t1, t2, t3, t4].forEach(r => { if (r.current) clearTimeout(r.current); });
     setEntered(false);
+    releasePromptLane(LANE_ID);
     t4.current = setTimeout(() => setVisible(false), EXIT_MS);
   }
 
-  if (!visible || userRole !== "DONOR" || !request) return null;
+  if (!isDesktop || !visible || userRole !== "DONOR" || !request) return null;
 
   const visual = CATEGORY_VISUALS[request.category] ?? CATEGORY_VISUALS["Medical aid"];
 
@@ -159,6 +175,7 @@ export function DoneeRequestPrompt() {
             href="/requests"
             onClick={() => {
               [t1, t2, t3].forEach(r => { if (r.current) clearTimeout(r.current); });
+              releasePromptLane(LANE_ID);
               setVisible(false);
             }}
             className="flex items-center gap-1 bg-[#1e3a60] hover:bg-[#16304d] active:scale-95 text-white text-[11px] font-black uppercase tracking-wide px-3 py-1.5 rounded-full transition-all whitespace-nowrap shrink-0"

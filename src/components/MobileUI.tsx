@@ -1,35 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone } from "lucide-react";
-import { useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { FEATURES } from "@/lib/features";
 import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 import { useNearFooter } from "@/hooks/useNearFooter";
+import { RequestNudge } from "@/components/RequestNudge";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
+type MobileNavItem = {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+};
+
 export function MobileBottomNav() {
   const t = useTranslations("mobileNav");
+  const navT = useTranslations("nav");
+  const dashboardT = useTranslations("dashboard");
+  const locale = useLocale();
+  const isRtl = locale === "ar" || locale === "ur";
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragPointerId = useRef<number | null>(null);
+  const [pendingIndex, setPendingIndex] = useState<number | null>(null);
+  const [dragPosition, setDragPosition] = useState<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   // Shared with SiteBottomBlur, so the two bottom-anchored elements agree about
   // when the footer is near and leave/return together instead of drifting.
   const nearFooter = useNearFooter();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const dashHref = user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
 
   // Centre + button — smart routing based on feature flag + role
   const centerHref = FEATURES.money
@@ -42,15 +48,27 @@ export function MobileBottomNav() {
   const centerLabel = FEATURES.money
     ? t("donateNow")
     : user?.role === "DONOR"
-      ? "List Item"
+      ? dashboardT("listItem")
       : user?.role === "DONEE"
-        ? "Post Need"
-        : "Join";
+        ? dashboardT("requestItem")
+        : navT("signUp");
 
-  const tabs = [
-    { href: "/",          icon: Home,          label: t("home") },
-    { href: "/campaigns", icon: Megaphone,     label: t("campaigns") },
-    { href: "/requests",  icon: ClipboardList, label: t("requests") },
+  const items: MobileNavItem[] = [
+    { href: "/", icon: Home, label: t("home") },
+    ...(FEATURES.money
+      ? [{ href: "/campaigns", icon: Megaphone, label: t("campaigns") }]
+      : []),
+    // Signed-in donors and donees don't get the centre "+". For a donee it pointed
+    // at /requests/new, which the Requests tab already covers (isActive() treats
+    // /requests/* as Requests, so both entries lit the same tab). Removed for
+    // donors too on request, leaving Home / Requests / Profile for both roles.
+    // Logged-out visitors keep it — there it is the sign-up call to action.
+    ...(user?.role === "DONEE" || user?.role === "DONOR"
+      ? []
+      : [{ href: centerHref, icon: Plus, label: centerLabel }]),
+    ...(user
+      ? [{ href: "/requests", icon: ClipboardList, label: t("requests") }]
+      : []),
     { href: user ? "/profile" : "/login", icon: User, label: t("profile") },
   ];
 
@@ -59,8 +77,47 @@ export function MobileBottomNav() {
     if (href === "/profile" || href === "/dashboard" || href === "/admin/dashboard") {
       return pathname.startsWith("/profile") || pathname.startsWith("/dashboard") || pathname.startsWith("/admin/dashboard");
     }
-    return pathname.startsWith(href);
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
+
+  const routeActiveIndex = items.findIndex((item) => isActive(item.href));
+  const activeIndex = dragIndex ?? pendingIndex ?? routeActiveIndex;
+  const activeItem = activeIndex >= 0 ? items[activeIndex] : null;
+  const visualActiveIndex = isRtl ? items.length - 1 - Math.max(activeIndex, 0) : Math.max(activeIndex, 0);
+  // Requests tab is only ever in `items` for a signed-in user, so >= 0 doubles
+  // as the auth check for the nudge below.
+  const requestsIndex = items.findIndex((item) => item.href === "/requests");
+  const visualRequestsIndex = isRtl ? items.length - 1 - requestsIndex : requestsIndex;
+  const indicatorLeft = dragPosition === null
+    ? `${((visualActiveIndex + 0.5) / items.length) * 100}%`
+    : `${dragPosition}px`;
+
+  useEffect(() => {
+    setPendingIndex(null);
+    setDragPosition(null);
+    setDragIndex(null);
+    setIsDragging(false);
+    dragPointerId.current = null;
+  }, [pathname, user?.role]);
+
+  function pointOnTrack(clientX: number) {
+    const track = trackRef.current;
+    if (!track || items.length === 0) return null;
+
+    const rect = track.getBoundingClientRect();
+    const slotWidth = rect.width / items.length;
+    const x = Math.min(
+      rect.width - slotWidth / 2,
+      Math.max(slotWidth / 2, clientX - rect.left),
+    );
+    const visualIndex = Math.min(
+      items.length - 1,
+      Math.max(0, Math.round(x / slotWidth - 0.5)),
+    );
+    const index = isRtl ? items.length - 1 - visualIndex : visualIndex;
+
+    return { x, index };
+  }
 
   // Hidden inside the super-admin command center and admin dashboard (by path or role).
   if (
@@ -74,94 +131,139 @@ export function MobileBottomNav() {
       // `inert` while parked: the links leave the tab order too, so keyboard
       // focus cannot land on a bar that is off-screen.
       inert={nearFooter}
-      className={`fixed z-50 lg:hidden transition-all duration-300 ease-in-out
-        ${scrolled
-          ? "left-4 right-4 rounded-[2rem] border border-stone-200/70 dark:border-zinc-700/60 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl backdrop-saturate-150 shadow-xl py-2"
-          : "left-0 right-0 border-t border-[#e5e2d5]/60 dark:border-zinc-800/60 bg-[#faf8f3]/50 dark:bg-zinc-950/50 backdrop-blur-xl backdrop-saturate-150 pb-safe-bottom pt-2 pb-3 shadow-md"
-        }`}
+      className="ck-mobile-dock fixed left-1/2 z-50 h-[3.75rem] w-[calc(100%-2rem)] max-w-[27rem] lg:hidden"
       style={{
-        // Shared with the bottom blur via --ck-bottom-chrome, so the blur always
-        // knows how far up the bar reaches and can start its fade above it.
-        bottom: scrolled ? "calc(var(--ck-nav-float) + var(--ck-bottom-inset))" : "0px",
+        bottom: "calc(var(--ck-nav-float) + var(--ck-bottom-inset))",
         // Travel derived from --ck-bottom-chrome (float + safe-area inset + bar
         // height) rather than a guessed pixel value, so the bar clears itself
         // exactly on a notched phone and on a plain one alike.
         transform: nearFooter
-          ? "translateY(calc(var(--ck-bottom-chrome) + 1.5rem))"
-          : "translateY(0)",
+          ? "translate(-50%, calc(var(--ck-bottom-chrome) + 1.5rem))"
+          : "translate(-50%, 0)",
+        opacity: nearFooter ? 0 : 1,
+        pointerEvents: nearFooter ? "none" : "auto",
       }}
       aria-label={t("mobileNavAriaLabel")}
+      dir={isRtl ? "rtl" : "ltr"}
     >
-      <div className="flex items-center justify-around px-2">
+      <div
+        ref={trackRef}
+        className="relative mx-2 grid h-full"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
+        <span
+          aria-hidden
+          className={`ck-mobile-dock-socket ${activeIndex < 0 ? "opacity-0" : "opacity-100"} ${isDragging ? "is-dragging" : ""}`}
+          style={{ left: indicatorLeft }}
+        />
+        <span
+          aria-hidden
+          className={`ck-mobile-dock-glow ${activeIndex < 0 ? "opacity-0" : "opacity-100"} ${isDragging ? "is-dragging" : ""}`}
+          style={{ left: indicatorLeft }}
+        />
 
-        {/* Home */}
-        <Link href={tabs[0].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-          <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[0].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-            <Home className="w-5.5 h-5.5" />
-          </span>
-          <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[0].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-            Home
-          </span>
-        </Link>
+        {items.map((item, index) => {
+          const Icon = item.icon;
+          const selected = index === activeIndex;
 
-        {FEATURES.money && (
-          /* Campaigns tab — only shown when money feature is enabled */
-          <Link href={tabs[1].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-            <span className={`flex items-center justify-center transition-all duration-200
-              ${isActive(tabs[1].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-              <Megaphone className="w-5.5 h-5.5" />
-            </span>
-            <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-              ${isActive(tabs[1].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-              Campaigns
-            </span>
-          </Link>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={index === routeActiveIndex ? "page" : undefined}
+              aria-label={item.label}
+              onClick={(event) => {
+                if (
+                  event.defaultPrevented ||
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                ) return;
+                setPendingIndex(index);
+              }}
+              className="group relative z-10 flex min-w-0 items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#faf8f5] dark:focus-visible:ring-offset-zinc-950"
+            >
+              <Icon
+                aria-hidden
+                className={`h-[1.15rem] w-[1.15rem] transition-all duration-300 ${selected
+                  ? "-translate-y-1 scale-75 opacity-0"
+                  : "translate-y-0 scale-100 text-stone-500 opacity-100 dark:text-stone-300 group-active:scale-90"
+                }`}
+                strokeWidth={2.1}
+              />
+              <span
+                className={`pointer-events-none absolute inset-x-1 bottom-1.5 truncate text-center text-[9px] font-black tracking-[0.025em] text-[var(--ck-role-accent)] transition-all duration-300 ${selected
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-1 opacity-0"
+                }`}
+              >
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+
+        {activeItem && (
+          <span
+            aria-hidden
+            className={`ck-mobile-dock-bead ${isDragging ? "is-dragging" : ""}`}
+            style={{ left: indicatorLeft }}
+            onPointerDown={(event) => {
+              const point = pointOnTrack(event.clientX);
+              if (!point) return;
+              dragPointerId.current = event.pointerId;
+              setIsDragging(true);
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragPosition(point.x);
+              setDragIndex(point.index);
+            }}
+            onPointerMove={(event) => {
+              if (dragPointerId.current !== event.pointerId) return;
+              const point = pointOnTrack(event.clientX);
+              if (!point) return;
+              setDragPosition(point.x);
+              setDragIndex(point.index);
+            }}
+            onPointerUp={(event) => {
+              if (dragPointerId.current !== event.pointerId) return;
+              const point = pointOnTrack(event.clientX);
+              dragPointerId.current = null;
+              setIsDragging(false);
+              setDragPosition(null);
+              setDragIndex(null);
+              if (!point) return;
+              setPendingIndex(point.index);
+              router.push(items[point.index].href);
+            }}
+            onPointerCancel={() => {
+              dragPointerId.current = null;
+              setIsDragging(false);
+              setDragPosition(null);
+              setDragIndex(null);
+            }}
+            onLostPointerCapture={() => {
+              if (dragPointerId.current === null) return;
+              dragPointerId.current = null;
+              setIsDragging(false);
+              setDragPosition(null);
+              setDragIndex(null);
+            }}
+          >
+            {(() => {
+              const ActiveIcon = activeItem.icon;
+              return <ActiveIcon className="relative z-10 h-5 w-5" strokeWidth={2.25} />;
+            })()}
+          </span>
         )}
 
-        {/* Centre + button — always visible, smart route based on role */}
-        <Link
-          href={centerHref}
-          aria-label={centerLabel}
-          className={`relative -mt-4 flex items-center justify-center w-12 h-12 rounded-full
-                     bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)]
-                     shadow-[0_6px_20px_-3px_rgba(176,74,21,0.55)]
-                     border-2 active:scale-95 transition-all duration-150 shrink-0
-                     ${scrolled ? "border-white/50 dark:border-zinc-950/50" : "border-[#faf8f3]/50 dark:border-zinc-950/50"}`}
-        >
-          <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-white" strokeWidth={3}>
-            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeLinecap="round" />
-          </svg>
-        </Link>
-
-        {user && (
-          /* Requests tab — hidden for logged-out visitors (the page itself
-             redirects to login anyway; no point showing the entry point). */
-          <Link href={tabs[2].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-            <span className={`flex items-center justify-center transition-all duration-200
-              ${isActive(tabs[2].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-              <ClipboardList className="w-5.5 h-5.5" />
-            </span>
-            <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-              ${isActive(tabs[2].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-              Requests
-            </span>
-          </Link>
+        {requestsIndex >= 0 && (
+          <RequestNudge
+            leftPercent={((visualRequestsIndex + 0.5) / items.length) * 100}
+            role={user?.role}
+          />
         )}
-
-        {/* Profile */}
-        <Link href={tabs[3].href} className="flex flex-col items-center gap-1 min-w-[3.5rem] group">
-          <span className={`flex items-center justify-center transition-all duration-200
-            ${isActive(tabs[3].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-            <User className="w-5.5 h-5.5" />
-          </span>
-          <span className={`text-[10px] font-black tracking-wide transition-colors duration-200
-            ${isActive(tabs[3].href) ? "text-[var(--ck-role-accent)]" : "text-stone-500 dark:text-stone-300"}`}>
-            Profile
-          </span>
-        </Link>
-
       </div>
     </nav>
   );

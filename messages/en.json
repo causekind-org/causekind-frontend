@@ -1113,7 +1113,10 @@
     "helpFaq": "Help & FAQ",
     "helpFaqSub": "Common questions answered",
     "openSupport": "Open support",
-    "closeSupport": "Close support"
+    "closeSupport": "Close support",
+    "nudgeDonor": "See who needs your help",
+    "nudgeDonee": "Post what you need",
+    "nudgeDismiss": "Dismiss"
   },
   "requestNew": {
     "cardTitle": "Request an item",
