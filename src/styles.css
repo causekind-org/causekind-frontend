@@ -1121,37 +1121,41 @@ section:focus-within {
 
 /* Mobile dock — raised draggable active bead inspired by the supplied motion
    reference, expressed with CauseKind's role-aware palette and warm glass. */
+/* The dock keeps its geometry and behaviour; the glass LAYER inside it now owns
+   the surface (background, border, backdrop-filter, shadow). Keeping both would
+   be "double glass": two stacked backdrop-filters, where the inner one samples
+   the outer one's already-blurred output — a second full-surface filter pass
+   that also washes the refraction out.
+
+   Retained here deliberately: overflow:visible (the socket, glow and bead all
+   extend past this box), border-radius, the near-footer transform/opacity
+   transition, and the role-theme context the children read from. */
 .ck-mobile-dock {
   overflow: visible;
-  border: 1px solid color-mix(in srgb, var(--ck-role-accent) 18%, #d6d3d1 82%);
   border-radius: 1.35rem;
-  background:
-    radial-gradient(120% 180% at 50% -80%, rgba(255, 255, 255, 0.9) 0%, transparent 54%),
-    rgba(250, 248, 245, 0.88);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(120, 113, 108, 0.08),
-    0 18px 44px -22px color-mix(in srgb, var(--ck-role-accent) 45%, transparent),
-    0 10px 28px -20px rgba(28, 25, 23, 0.55);
-  -webkit-backdrop-filter: blur(18px) saturate(165%);
-  backdrop-filter: blur(18px) saturate(165%);
+  /* Its own stacking context, so the decorative layer at z-index 0 can never
+     land above page content that happens to sit near the dock. */
+  isolation: isolate;
   transition:
     transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.3s ease,
-    border-color 0.25s ease,
-    background-color 0.25s ease;
+    opacity 0.3s ease;
 }
 
-.dark .ck-mobile-dock {
-  border-color: color-mix(in srgb, var(--ck-role-accent) 28%, #3f3f46 72%);
-  background:
-    radial-gradient(120% 180% at 50% -80%, rgba(255, 255, 255, 0.16) 0%, transparent 54%),
-    rgba(9, 9, 11, 0.88);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-    0 18px 48px -20px color-mix(in srgb, var(--ck-role-accent) 55%, transparent),
-    0 12px 34px -18px rgba(0, 0, 0, 0.9);
+/* Decorative glass layer. Clipped to the capsule internally by .ck-glass; the
+   interactive track is a SIBLING, so nothing that overflows the dock is inside
+   this box. Never interactive, never in the a11y tree. */
+.ck-mobile-dock-glass-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Above the glass. The socket (11) and bead (20) sit higher still. */
+.ck-mobile-dock-track {
+  position: relative;
+  z-index: 1;
 }
 
 /* Public/logged-out dark mode has no role attribute, so lift the default
@@ -1173,15 +1177,39 @@ section:focus-within {
   border: 1px solid color-mix(in srgb, var(--ck-role-accent) 18%, #d6d3d1 82%);
   border-top: 0;
   border-radius: 0 0 999px 999px;
-  background: rgba(250, 248, 245, 0.96);
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.78);
+  /* Retuned for the glass capsule: at 0.96 opaque this read as a cream chip
+     pasted on top of the glass. Now translucent with its own blur, so it
+     belongs to the same surface. Dimensions and position are unchanged. */
+  background: rgba(250, 248, 245, 0.62);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.65);
   transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
 }
 
 .dark .ck-mobile-dock-socket {
   border-color: color-mix(in srgb, var(--ck-role-accent) 28%, #3f3f46 72%);
-  background: rgba(9, 9, 11, 0.97);
+  background: rgba(9, 9, 11, 0.66);
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Without backdrop-filter the translucent socket would show the page through
+   it; go back to near-opaque so the notch still reads as a solid cut-out. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ck-mobile-dock-socket {
+    background: rgba(250, 248, 245, 0.96);
+  }
+  .dark .ck-mobile-dock-socket {
+    background: rgba(9, 9, 11, 0.97);
+  }
+}
+
+@media (forced-colors: active) {
+  .ck-mobile-dock-socket {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 .ck-mobile-dock-glow {

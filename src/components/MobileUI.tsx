@@ -10,6 +10,7 @@ import { FEATURES } from "@/lib/features";
 import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 import { useNearFooter } from "@/hooks/useNearFooter";
 import { RequestNudge } from "@/components/RequestNudge";
+import GlassSurface from "@/components/GlassSurface";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
 type MobileNavItem = {
@@ -146,9 +147,37 @@ export function MobileBottomNav() {
       aria-label={t("mobileNavAriaLabel")}
       dir={isRtl ? "rtl" : "ltr"}
     >
+      {/* Decorative liquid-glass shell. A LAYER behind the track, never a
+          wrapper around it: GlassSurface clips to its own box, which would cut
+          off the raised bead, the socket, the glow and the RequestNudge bubble —
+          all of which deliberately extend past the dock. pointer-events are off
+          so it can never intercept a tap, drag or focus. */}
+      <div aria-hidden="true" className="ck-mobile-dock-glass-layer">
+        <GlassSurface
+          width="100%"
+          height="100%"
+          borderRadius={22}
+          mixBlendMode="screen"
+          borderWidth={0.05}
+          brightness={60}
+          opacity={0.84}
+          blur={10}
+          displace={0.5}
+          // Frost tint (--ck-glass-frost). Started at 0.22, where page content
+          // read straight through the capsule and competed with the icons.
+          // The dark rule adds a further +0.28 on top of this.
+          backgroundOpacity={0.75}
+          saturation={1.28}
+          distortionScale={-75}
+          redOffset={0}
+          greenOffset={4}
+          blueOffset={9}
+        />
+      </div>
+
       <div
         ref={trackRef}
-        className="relative mx-2 grid h-full"
+        className="ck-mobile-dock-track mx-2 grid h-full"
         style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         <span

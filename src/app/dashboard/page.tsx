@@ -1835,7 +1835,10 @@ export default function DashboardPage() {
                                 {/* Listing action buttons per spec §7.4 */}
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   {isDraft && (
-                                    <Link href="/items/new">
+                                    // Must carry the draft id: a bare /items/new
+                                    // started a brand new wizard and orphaned
+                                    // the draft this button belongs to.
+                                    <Link href={`/items/new?draft=${l.id}`}>
                                       <span className="text-xs text-[var(--ck-role-accent)] font-bold hover:underline">Continue →</span>
                                     </Link>
                                   )}

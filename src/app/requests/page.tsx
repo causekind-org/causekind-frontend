@@ -388,23 +388,25 @@ function CategoryBar({
     <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-b border-stone-100 dark:border-zinc-800 sticky top-14 lg:top-[88px] z-40 shadow-sm">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center gap-2">
 
-        {/* Scrollable pill row */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-3 flex-1 min-w-0">
+        {/* Scrollable pill row. Mobile-first sizing: the base values are the
+            phone ones and every sm: restores the previous desktop value, so
+            nothing at >=640px moves. */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-2 sm:py-3 flex-1 min-w-0">
 
           {/* All */}
           <button
             onClick={onClearAll}
-            className={`flex items-center gap-1.5 shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+            className={`flex items-center gap-1 sm:gap-1.5 shrink-0 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold transition-all duration-200 ${
               selected.length === 0
                 ? "bg-[var(--ck-role-accent)] text-white shadow-sm shadow-orange-900/25"
                 : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-700"
             }`}
           >
             All
-            <span className={`tabular-nums text-[10px] font-black ${selected.length === 0 ? "text-white/60" : "text-stone-400"}`}>{total}</span>
+            <span className={`tabular-nums text-[9px] sm:text-[10px] font-black ${selected.length === 0 ? "text-white/60" : "text-stone-400"}`}>{total}</span>
           </button>
 
-          <div className="w-px h-5 bg-stone-200 dark:bg-zinc-700 shrink-0 mx-0.5" />
+          <div className="w-px h-4 sm:h-5 bg-stone-200 dark:bg-zinc-700 shrink-0 mx-0.5" />
 
           {ITEM_REQ_CATEGORIES.map(cat => {
             const Icon  = CAT_ICON[cat] ?? Package;
@@ -417,16 +419,16 @@ function CategoryBar({
                 key={cat}
                 onClick={() => onToggle(cat)}
                 disabled={count === 0}
-                className={`flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-xs font-bold border transition-all duration-200
+                className={`flex items-center gap-1.5 sm:gap-2 shrink-0 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold border transition-all duration-200
                             disabled:opacity-35 disabled:cursor-not-allowed
                             ${act
                               ? "bg-[var(--ck-role-accent)] text-white border-transparent shadow-sm shadow-orange-900/20"
                               : `${col.pill} hover:opacity-80`
                             }`}
               >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                 <span>{cat}</span>
-                <span className={`tabular-nums text-[10px] font-black ${act ? "text-white/60" : ""}`}>{count}</span>
+                <span className={`tabular-nums text-[9px] sm:text-[10px] font-black ${act ? "text-white/60" : ""}`}>{count}</span>
               </button>
             );
           })}

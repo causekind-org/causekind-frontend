@@ -19,6 +19,13 @@ type CameraCaptureDialogProps = {
   onOpenChange: (open: boolean) => void;
   onCapture: (file: File) => void;
   onChoosePhoto: () => void;
+  /**
+   * Which camera to prefer. Defaults to "user" so every existing caller keeps
+   * the selfie-facing behaviour it was written against; the item-listing wizard
+   * passes "environment" because you photograph an object with the rear camera.
+   * Only ever `ideal`, never `exact` — a device with one camera must still work.
+   */
+  facingMode?: "user" | "environment";
 };
 
 function cameraErrorMessage(error: unknown): string {
@@ -48,6 +55,7 @@ export function CameraCaptureDialog({
   onOpenChange,
   onCapture,
   onChoosePhoto,
+  facingMode = "user",
 }: CameraCaptureDialogProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -89,7 +97,7 @@ export function CameraCaptureDialog({
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          facingMode: { ideal: "user" },
+          facingMode: { ideal: facingMode },
           width: { ideal: 1280 },
           height: { ideal: 960 },
         },
@@ -116,7 +124,7 @@ export function CameraCaptureDialog({
       setErrorMessage(cameraErrorMessage(error));
       setStatus("error");
     }
-  }, [stopCamera]);
+  }, [stopCamera, facingMode]);
 
   const close = useCallback(() => {
     cameraAttemptRef.current += 1;
