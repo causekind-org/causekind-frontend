@@ -14,6 +14,20 @@ function handleUnauthorized() {
   }
 }
 
+/**
+ * A 403 the user cannot resolve by having different permissions: the account
+ * behind an otherwise-valid session can no longer use it. Mirrors the codes in
+ * the backend's JwtAuthFilter.
+ */
+function isSessionEndedCode(code: string | undefined): boolean {
+  return (
+    code === "ACCOUNT_SUSPENDED" ||
+    code === "ACCOUNT_INACTIVE" ||
+    code === "ACCOUNT_MISSING" ||
+    code === "SESSION_REVOKED"
+  );
+}
+
 type RequestOptions = RequestInit & {
   /** If true, a 401 response throws but does NOT redirect to login.
    *  Use for background/optional fetches where one 401 shouldn't kill the whole session. */
@@ -103,7 +117,19 @@ async function request<T>(
         if (!silent401) handleUnauthorized();
         throw new Error(msg401 ?? "Invalid email or password. Please try again.");
       }
-      if (res.status === 403) throw new Error("You don't have permission to do that.");
+      if (res.status === 403) {
+        // Most 403s are ordinary permission errors, but the backend also uses 403
+        // to say the account behind an otherwise-valid session can no longer use
+        // it (suspended, deactivated, sessions revoked). Those carry a code and
+        // have to end the local session — otherwise the user sits in a signed-in
+        // UI where every single request fails.
+        const body403 = (await res.json().catch(() => ({}))) as {
+          code?: string;
+          message?: string;
+        };
+        if (isSessionEndedCode(body403.code)) handleUnauthorized();
+        throw new Error(body403.message ?? "You don't have permission to do that.");
+      }
       if (res.status === 404) throw new Error("The requested item was not found.");
       if (res.status === 409) {
         const body = await res.json().catch(() => ({}));
@@ -1249,7 +1275,13 @@ export function donateToRequest(requestId: number, images: File[], description: 
   }).then(async (res) => {
     if (!res.ok) {
       if (res.status === 401) { handleUnauthorized(); throw new Error("Session expired. Please log in again."); }
-      if (res.status === 403) throw new Error("You don't have permission to do that.");
+      if (res.status === 403) {
+        // Same account-level codes as request() — this path builds its own fetch
+        // for the multipart upload, so it needs the check too.
+        const body = (await res.json().catch(() => ({}))) as { code?: string; message?: string };
+        if (isSessionEndedCode(body.code)) handleUnauthorized();
+        throw new Error(body.message ?? "You don't have permission to do that.");
+      }
       if (res.status === 409) throw new Error("You have already offered to donate for this request.");
       if (res.status === 400) {
         const body = await res.json().catch(() => ({}));
