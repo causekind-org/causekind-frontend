@@ -65,7 +65,9 @@ export function HandoverHubShell({
   }
 
   return (
-    <main className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-28 lg:pb-10`}>
+    // Only has to clear the dock now — the chat launcher floats, so it needs no
+    // page gutter of its own.
+    <main className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-[calc(var(--ck-bottom-chrome)+1.5rem)] lg:pb-10`}>
       <div className="mx-auto max-w-6xl px-4 pt-5">
         {/* ── Context header ─────────────────────────────────────────────── */}
         <header className="mb-5">
@@ -141,30 +143,20 @@ export function HandoverHubShell({
         </div>
       </div>
 
-      {/* ── Mobile sticky bar ──────────────────────────────────────────────
-          env(safe-area-inset-bottom) keeps it clear of the iOS home indicator. */}
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-stone-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-900/95"
-        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
-      >
-        <div className="flex flex-1 gap-2">
-          <HandoverChatDrawer
-            vm={vm}
-            currentUserEmail={userEmail}
-            open={chatOpen}
-            onOpenChange={setChatOpen}
-          />
-          {vm.role === "DONOR" && vm.state === "awaiting_schedule" && (
-            <button
-              type="button"
-              onClick={() => setScheduleOpen(true)}
-              className="min-h-[44px] flex-1 rounded-lg bg-[var(--handover-accent)] px-4 text-sm font-semibold text-[var(--handover-on-accent)]"
-            >
-              Schedule handover
-            </button>
-          )}
-        </div>
-      </div>
+      {/* ── Mobile chat launcher ───────────────────────────────────────────
+          A floating button, not the full-width sticky bar this replaced: that bar
+          spent ~160px of a phone screen on one control and still had to be
+          stacked on top of the dock to stay visible at all.
+
+          Its other button, "Schedule handover", is NOT lost — HandoverNextAction
+          already renders it as the primary action of "Your next step", full width
+          on mobile, so the bar's copy was a duplicate. */}
+      <HandoverChatDrawer
+        vm={vm}
+        currentUserEmail={userEmail}
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+      />
 
       {vm.role === "DONOR" && (
         <HandoverScheduleDialog

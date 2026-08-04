@@ -5,14 +5,20 @@ import Link from "next/link";
 import { X, PackagePlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
+import { claimPromptLane, releasePromptLane } from "@/lib/promptLane";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
+
+const LANE_ID = "donor-listing";
 
 const FIRST_DELAY_MS  = 800;
 const VISIBLE_MS      = 10_000;
-const REPEAT_DELAY_MS = 15_000;
+const REPEAT_DELAY_MS = 45_000;
+const RETRY_DELAY_MS  = 6_000; // lane busy — the other prompt is on screen
 const EXIT_MS         = 380;
 
 export function DonorListingPrompt() {
   const { user, isLoading } = useAuth();
+  const isDesktop = useIsDesktop();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
 
@@ -32,12 +38,17 @@ export function DonorListingPrompt() {
   const userRole  = user?.role;
 
   useEffect(() => {
+    // Desktop only — on a phone there is no vertical band clear of the header,
+    // the toast lane and the dock at once, so the prompt is dropped entirely.
+    if (!isDesktop) return;
     if (isLoading || !userEmail || userRole !== "DONOR") return;
     if (dismissed) return;
 
     function show(delay: number) {
       t1.current = setTimeout(() => {
         if (pathnameRef.current === "/items/new") { show(delay); return; }
+        // Never open on top of DoneeRequestPrompt — wait for the lane instead.
+        if (!claimPromptLane(LANE_ID)) { show(RETRY_DELAY_MS); return; }
         setVisible(true);
         requestAnimationFrame(() =>
           requestAnimationFrame(() => {
@@ -49,6 +60,7 @@ export function DonorListingPrompt() {
           setEntered(false);
           t3.current = setTimeout(() => {
             setVisible(false);
+            releasePromptLane(LANE_ID);
             show(REPEAT_DELAY_MS);
           }, EXIT_MS);
         }, VISIBLE_MS);
@@ -56,33 +68,37 @@ export function DonorListingPrompt() {
     }
 
     show(FIRST_DELAY_MS);
-    return () => { [t1, t2, t3, t4].forEach(r => { if (r.current) clearTimeout(r.current); }); };
-  }, [isLoading, userEmail, userRole, dismissed]);
+    return () => {
+      [t1, t2, t3, t4].forEach(r => { if (r.current) clearTimeout(r.current); });
+      releasePromptLane(LANE_ID);
+    };
+  }, [isDesktop, isLoading, userEmail, userRole, dismissed]);
 
   function dismiss() {
     setDismissed(true);
     [t1, t2, t3, t4].forEach(r => { if (r.current) clearTimeout(r.current); });
     setEntered(false);
+    releasePromptLane(LANE_ID);
     t4.current = setTimeout(() => setVisible(false), EXIT_MS);
   }
 
-  if (!visible || userRole !== "DONOR") return null;
+  if (!isDesktop || !visible || userRole !== "DONOR") return null;
 
   return (
     /* max-w is what stops this bleeding off both edges: the pill is centred with
        -translate-x-1/2, and its children were all nowrap/shrink-0, so its
        intrinsic width (~500px) simply overflowed a 390px screen symmetrically. */
-    /* Pinned to the top, below BOTH blockers up there: the sticky header
-       (~57px mobile / ~85px desktop) and the sonner toast lane, which is
-       top-center with offset 64 mobile / 72 desktop (layout.tsx). 8.5rem clears
-       a toast on a phone; lg bumps to 10rem because both blockers are taller.
-       Moved off the bottom edge entirely so it can no longer meet the dock. */
-    <div className="fixed top-[8.5rem] lg:top-[10rem] left-1/2 -translate-x-1/2 z-[9980] pointer-events-none w-max max-w-[calc(100vw-1.5rem)]">
+    /* Sits just above the bottom dock. --ck-bottom-chrome (styles.css) is the
+       single source of truth for the dock's total height — nav float + safe-area
+       inset + nav height — and computes to 0 at lg:, where there is no dock, so
+       the pill simply rests near the bottom edge on desktop. The extra 1.75rem
+       is the visual gap between pill and dock. */
+    <div className="fixed bottom-[calc(var(--ck-bottom-chrome)+1.75rem)] left-1/2 -translate-x-1/2 z-[9980] pointer-events-none w-max max-w-[calc(100vw-1.5rem)]">
       <div
         className="pointer-events-auto"
         style={{
-          // Negative: it now descends from above rather than rising from below.
-          transform: entered ? "translateY(0) scale(1)" : "translateY(-18px) scale(0.94)",
+          // Positive: it rises into place from below, matching where it lives.
+          transform: entered ? "translateY(0) scale(1)" : "translateY(18px) scale(0.94)",
           opacity: entered ? 1 : 0,
           transition: entered
             ? "transform 0.48s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s ease"
@@ -128,6 +144,7 @@ export function DonorListingPrompt() {
             href="/items/new"
             onClick={() => {
               [t1, t2, t3].forEach(r => { if (r.current) clearTimeout(r.current); });
+              releasePromptLane(LANE_ID);
               setVisible(false);
             }}
             className="flex items-center gap-1.5 bg-[#b04a15] hover:bg-[#963c0d] active:scale-95 text-white text-[11px] sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 sm:px-3.5 rounded-full transition-all whitespace-nowrap shrink-0"

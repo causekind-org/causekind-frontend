@@ -190,11 +190,41 @@
   .card-grid--mosaic {
     grid-template-columns: 1fr;
     grid-auto-rows: auto;
+    gap: 0.6rem;
   }
   .card-grid--mosaic > .magic-bento-card {
     grid-column: auto !important;
     grid-row: auto !important;
     min-height: 0;
+  }
+
+  /* Compact scale for the phone list. With the description hidden these cards
+     carry three short lines, so the desktop padding and type were most of their
+     height — the list read as three big slabs rather than something scannable.
+     Scoped to the mosaic and to this breakpoint: the plain .card-grid other
+     callers use, and every width above 599px, are untouched. */
+  .card-grid--mosaic > .magic-bento-card {
+    padding: 0.85em;
+    border-radius: 14px;
+  }
+  .card-grid--mosaic > .magic-bento-card .magic-bento-card__label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+  .card-grid--mosaic > .magic-bento-card .magic-bento-card__title {
+    font-size: 15px;
+    margin-bottom: 0;
+  }
+  .card-grid--mosaic > .magic-bento-card .magic-bento-card__badge {
+    font-size: 9px;
+  }
+  .card-grid--mosaic > .magic-bento-card .magic-bento-card__header {
+    gap: 0.5em;
+  }
+  .card-grid--mosaic > .magic-bento-card .magic-bento-card__meta {
+    margin-top: 0.5em;
+    padding-top: 0.5em;
+    font-size: 10px;
   }
 }
 
@@ -240,6 +270,21 @@
 .card-grid--mosaic > .bento--tall     .magic-bento-card__description { -webkit-line-clamp: 6; }
 .card-grid--mosaic > .bento--wide     .magic-bento-card__description { -webkit-line-clamp: 2; }
 .card-grid--mosaic > .bento--standard .magic-bento-card__description { -webkit-line-clamp: 2; }
+
+/* Below the mosaic breakpoint every card collapses to one auto-height column
+   (see the max-width: 599px block above), where a 4-6 line excerpt is most of
+   the card and the list stops being scannable. Title + category + urgency +
+   location + quantity is enough to decide whether to tap.
+
+   Deliberately NOT applied at >=1024px: grid-auto-rows is a fixed 172px there
+   and featured/tall span two of them, so a card with no description would just
+   render half empty. Done in CSS rather than by withholding the prop in React so
+   there is no hydration flash and no layout shift on desktop. */
+@media (max-width: 1023px) {
+  .card-grid--mosaic > .magic-bento-card .magic-bento-card__description {
+    display: none;
+  }
+}
 
 /* Media only appears on the two variants with room for it. Aspect ratio varies
    by footprint so the image is framed for the shape it sits in; object-position

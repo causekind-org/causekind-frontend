@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useNearFooter } from "@/hooks/useNearFooter";
+import { FEATURES } from "@/lib/features";
 // @ts-expect-error — GradualBlur is the JS/CSS React Bits variant (no types shipped)
 import GradualBlur from "@/components/GradualBlur";
 
@@ -52,6 +53,11 @@ export function SiteBottomBlur() {
 
   const isAdminSurface =
     pathname?.startsWith("/admin") || pathname?.startsWith("/super-admin");
+
+  // Temporarily hidden. Deliberately below the hooks above, not at the top of
+  // the component: an early return before them would change hook order the
+  // moment the flag is flipped back on.
+  if (!FEATURES.bottomBlur) return null;
 
   if (isAdminSurface) return null;
 

@@ -1102,7 +1102,10 @@
     "helpFaq": "મદદ અને FAQ",
     "helpFaqSub": "સામાન્ય પ્રશ્નોના જવાબો",
     "openSupport": "ઓપન સપોર્ટ",
-    "closeSupport": "બંધ આધાર"
+    "closeSupport": "બંધ આધાર",
+    "nudgeDonor": "કોને મદદ જોઈએ છે તે જુઓ",
+    "nudgeDonee": "તમને શું જોઈએ છે તે જણાવો",
+    "nudgeDismiss": "બંધ કરો"
   },
   "requestNew": {
     "cardTitle": "આઇટમની વિનંતી કરો",

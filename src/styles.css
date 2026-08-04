@@ -1108,7 +1108,7 @@ section:focus-within {
 :root {
   --ck-bottom-inset: env(safe-area-inset-bottom, 0px);
   --ck-nav-float: 0.75rem;   /* island's gap from the screen edge */
-  --ck-nav-h: 4.25rem;       /* the bar itself, incl. its own padding */
+  --ck-nav-h: 5rem;          /* compact bar plus the raised active-tab bead */
   --ck-bottom-chrome: calc(var(--ck-nav-float) + var(--ck-bottom-inset) + var(--ck-nav-h));
 }
 
@@ -1116,6 +1116,178 @@ section:focus-within {
   :root {
     --ck-nav-float: 0px;
     --ck-nav-h: 0px;
+  }
+}
+
+/* Mobile dock — raised draggable active bead inspired by the supplied motion
+   reference, expressed with CauseKind's role-aware palette and warm glass. */
+/* The dock keeps its geometry and behaviour; the glass LAYER inside it now owns
+   the surface (background, border, backdrop-filter, shadow). Keeping both would
+   be "double glass": two stacked backdrop-filters, where the inner one samples
+   the outer one's already-blurred output — a second full-surface filter pass
+   that also washes the refraction out.
+
+   Retained here deliberately: overflow:visible (the socket, glow and bead all
+   extend past this box), border-radius, the near-footer transform/opacity
+   transition, and the role-theme context the children read from. */
+.ck-mobile-dock {
+  overflow: visible;
+  border-radius: 1.35rem;
+  /* Its own stacking context, so the decorative layer at z-index 0 can never
+     land above page content that happens to sit near the dock. */
+  isolation: isolate;
+  transition:
+    transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease;
+}
+
+/* Decorative glass layer. Clipped to the capsule internally by .ck-glass; the
+   interactive track is a SIBLING, so nothing that overflows the dock is inside
+   this box. Never interactive, never in the a11y tree. */
+.ck-mobile-dock-glass-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Above the glass. The socket (11) and bead (20) sit higher still. */
+.ck-mobile-dock-track {
+  position: relative;
+  z-index: 1;
+}
+
+/* Public/logged-out dark mode has no role attribute, so lift the default
+   terracotta just as the donor dark theme does for small-label contrast. */
+.dark:not([data-ck-role-theme]) .ck-mobile-dock {
+  --ck-role-accent: #e07b3a;
+  --ck-role-highlight: #f0b97a;
+  --ck-role-on-accent: #1a1207;
+}
+
+.ck-mobile-dock-socket {
+  position: absolute;
+  top: -1px;
+  z-index: 11;
+  width: 3.85rem;
+  height: 1.5rem;
+  pointer-events: none;
+  transform: translateX(-50%);
+  border: 1px solid color-mix(in srgb, var(--ck-role-accent) 18%, #d6d3d1 82%);
+  border-top: 0;
+  border-radius: 0 0 999px 999px;
+  /* Retuned for the glass capsule: at 0.96 opaque this read as a cream chip
+     pasted on top of the glass. Now translucent with its own blur, so it
+     belongs to the same surface. Dimensions and position are unchanged. */
+  background: rgba(250, 248, 245, 0.62);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.65);
+  transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+}
+
+.dark .ck-mobile-dock-socket {
+  border-color: color-mix(in srgb, var(--ck-role-accent) 28%, #3f3f46 72%);
+  background: rgba(9, 9, 11, 0.66);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Without backdrop-filter the translucent socket would show the page through
+   it; go back to near-opaque so the notch still reads as a solid cut-out. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ck-mobile-dock-socket {
+    background: rgba(250, 248, 245, 0.96);
+  }
+  .dark .ck-mobile-dock-socket {
+    background: rgba(9, 9, 11, 0.97);
+  }
+}
+
+@media (forced-colors: active) {
+  .ck-mobile-dock-socket {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.ck-mobile-dock-glow {
+  position: absolute;
+  top: -0.65rem;
+  width: clamp(4.25rem, 24%, 6rem);
+  height: 5rem;
+  pointer-events: none;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--ck-role-accent) 38%, transparent) 0%,
+    color-mix(in srgb, var(--ck-role-accent) 14%, transparent) 38%,
+    transparent 72%
+  );
+  filter: blur(9px);
+  transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.ck-mobile-dock-bead {
+  position: absolute;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid color-mix(in srgb, var(--ck-role-highlight) 78%, white 22%);
+  border-radius: 999px;
+  color: var(--ck-role-on-accent);
+  background:
+    radial-gradient(circle at 35% 22%, rgba(255, 255, 255, 0.4), transparent 34%),
+    linear-gradient(145deg, var(--ck-role-highlight), var(--ck-role-accent) 68%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    0 0 0 3px color-mix(in srgb, var(--ck-role-accent) 10%, transparent),
+    0 9px 23px -7px color-mix(in srgb, var(--ck-role-accent) 78%, transparent);
+  cursor: grab;
+  touch-action: none;
+  transform: translate(-50%, -42%);
+  transition:
+    left 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ck-mobile-dock-bead::after {
+  content: "";
+  position: absolute;
+  inset: 0.18rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.ck-mobile-dock-bead:active,
+.ck-mobile-dock-bead.is-dragging {
+  cursor: grabbing;
+  transform: translate(-50%, -42%) scale(1.07);
+  transition: transform 0.16s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ck-mobile-dock-socket.is-dragging,
+.ck-mobile-dock-glow.is-dragging {
+  transition: opacity 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-mobile-dock,
+  .ck-mobile-dock-socket,
+  .ck-mobile-dock-glow,
+  .ck-mobile-dock-bead {
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -1433,6 +1605,22 @@ body.mobile-menu-open {
   pointer-events: none !important;
 }
 
+/* Handover Hub Messages FAB — the only route to the other party on mobile, on a
+   page users sit on for a while, so it breathes rather than sitting inert.
+
+   A separate halo layer behind the button, not an animated box-shadow on the
+   button itself: shadow animation repaints the button (and its icon) every
+   frame, whereas transform/opacity on a sibling stays on the compositor. The
+   halo is aria-hidden and pointer-events-none — it must never eat the tap. */
+@keyframes ck-handover-fab-halo {
+  0%, 100% { transform: scale(1);    opacity: 0.45; }
+  50%      { transform: scale(1.35); opacity: 0;    }
+}
+
+.ck-handover-fab-halo {
+  animation: ck-handover-fab-halo 2.8s ease-in-out infinite;
+}
+
 /* ── Reduced motion: disable all custom animations ── */
 @media (prefers-reduced-motion: reduce) {
 
@@ -1451,6 +1639,7 @@ body.mobile-menu-open {
   .faq-answer-enter,
   .mobile-donate-pulse,
   .support-btn-ripple,
+  .ck-handover-fab-halo,
   .stats-ticker-track,
   .animate-stats-ticker,
   .ticker-track,

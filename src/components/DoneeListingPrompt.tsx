@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, ClipboardList, Sparkles, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 const FIRST_DELAY_MS = 30_000;
 const VISIBLE_MS = 10_000;
@@ -13,6 +14,7 @@ const EXIT_MS = 500;
 
 export function DoneeListingPrompt() {
   const { user, isLoading } = useAuth();
+  const isDesktop = useIsDesktop();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
 
@@ -41,6 +43,8 @@ export function DoneeListingPrompt() {
   }
 
   useEffect(() => {
+    // Desktop only — same reasoning as the two donor prompts.
+    if (!isDesktop) return;
     if (isLoading || !userEmail || userRole !== "DONEE" || dismissed) return;
 
     let cancelled = false;
@@ -79,7 +83,7 @@ export function DoneeListingPrompt() {
       cancelled = true;
       clearTimers();
     };
-  }, [dismissed, isLoading, userEmail, userRole]);
+  }, [isDesktop, dismissed, isLoading, userEmail, userRole]);
 
   function dismiss() {
     clearTimers();
@@ -96,7 +100,7 @@ export function DoneeListingPrompt() {
     setVisible(false);
   }
 
-  if (!visible || userRole !== "DONEE") return null;
+  if (!isDesktop || !visible || userRole !== "DONEE") return null;
 
   return (
     /* Top-left, below the sticky header and the top-center toast lane (see
