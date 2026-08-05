@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useGlobalSearch } from "@/components/super-admin/GlobalSearchPanel";
+import { saTheme } from "@/components/super-admin/saTheme";
 import type { SaSearchHit } from "@/lib/api";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, Search } from "lucide-react";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -26,7 +26,14 @@ const TYPE_LABEL: Record<string, string> = {
  * on a plain input, and the dialog primitive's focus trap fights the arrow-key
  * navigation below for no benefit at this size.
  */
-export function CommandPalette({ onOpenUser }: { onOpenUser: (id: number) => void }) {
+export function CommandPalette({
+  onOpenUser,
+  isDark,
+}: {
+  onOpenUser: (id: number) => void;
+  isDark: boolean;
+}) {
+  const t = saTheme(isDark);
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(0);
   const { query, setQuery, results, loading } = useGlobalSearch(2, 5);
@@ -80,33 +87,33 @@ export function CommandPalette({ onOpenUser }: { onOpenUser: (id: number) => voi
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center bg-black/50 p-4 pt-[12vh] backdrop-blur-sm"
+      className={`fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[12vh] backdrop-blur-sm ${t.overlay}`}
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-xl overflow-hidden rounded-xl border bg-background shadow-2xl"
+        className={`w-full max-w-xl overflow-hidden rounded-2xl border shadow-2xl ${t.surface}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 border-b px-3">
-          <Search className="size-4 shrink-0 text-muted-foreground" />
+        <div className={`flex items-center gap-2 border-b px-3 ${t.cardFlat}`}>
+          <Search className={`size-4 shrink-0 ${t.dim}`} />
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onInputKey}
             placeholder="Search everything…"
-            className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+            className={`w-full bg-transparent py-3 text-sm outline-none ${t.heading} ${t.placeholder}`}
           />
-          {loading && <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />}
+          {loading && <Loader2 className={`size-4 shrink-0 animate-spin ${t.dim}`} />}
         </div>
 
         <div className="max-h-[50vh] overflow-y-auto">
           {query.trim().length < 2 ? (
-            <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+            <p className={`px-3 py-6 text-center text-xs ${t.muted}`}>
               Type at least two characters, or paste an id.
             </p>
           ) : flat.length === 0 && !loading ? (
-            <p className="px-3 py-6 text-center text-xs text-muted-foreground">No matches.</p>
+            <p className={`px-3 py-6 text-center text-xs ${t.muted}`}>No matches.</p>
           ) : (
             <ul className="py-1">
               {flat.map((hit, i) => (
@@ -114,19 +121,21 @@ export function CommandPalette({ onOpenUser }: { onOpenUser: (id: number) => voi
                   <button
                     onMouseEnter={() => setCursor(i)}
                     onClick={() => choose(hit)}
-                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left ${
-                      i === cursor ? "bg-muted" : ""
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors ${
+                      i === cursor ? t.surfaceAlt : ""
                     } ${hit.type === "USER" ? "" : "cursor-default"}`}
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm">{hit.title}</p>
+                      <p className={`truncate text-sm ${t.heading}`}>{hit.title}</p>
                       {hit.subtitle && (
-                        <p className="truncate text-xs text-muted-foreground">{hit.subtitle}</p>
+                        <p className={`truncate text-xs ${t.muted}`}>{hit.subtitle}</p>
                       )}
                     </div>
-                    <Badge variant="secondary" className="shrink-0 text-[10px]">
+                    <span
+                      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${t.badge}`}
+                    >
                       {TYPE_LABEL[hit.type] ?? hit.type}
-                    </Badge>
+                    </span>
                   </button>
                 </li>
               ))}
@@ -134,7 +143,9 @@ export function CommandPalette({ onOpenUser }: { onOpenUser: (id: number) => voi
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t px-3 py-1.5 text-[11px] text-muted-foreground">
+        <div
+          className={`flex items-center justify-between border-t px-3 py-1.5 text-[11px] ${t.cardFlat} ${t.dim}`}
+        >
           <span>↑↓ to move · ↵ to open · esc to close</span>
           <span>Users open directly; other types are lookup only for now</span>
         </div>

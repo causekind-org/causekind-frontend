@@ -364,8 +364,8 @@ export default function SuperAdminPage() {
   const content = useMemo(() => {
     switch (section) {
       case "overview":      return <OverviewSection th={th} />;
-      case "search":        return <GlobalSearchPanel onOpenUser={openUser} />;
-      case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} />;
+      case "search":        return <GlobalSearchPanel onOpenUser={openUser} isDark={isDark} />;
+      case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} isDark={isDark} />;
       case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
                               onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
@@ -524,7 +524,7 @@ export default function SuperAdminPage() {
 
       {/* ⌘K from anywhere in the console. Mounted once, outside the section
           switch, so it survives navigation and does not remount on every tab. */}
-      <CommandPalette onOpenUser={openUser} />
+      <CommandPalette onOpenUser={openUser} isDark={isDark} />
 
       {/* ── SQL Warning Modal ─────────────────────────────────────────────── */}
       {sqlModalOpen && (
