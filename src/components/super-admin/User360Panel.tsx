@@ -158,18 +158,13 @@ function IdentityTab({ profile, t }: { profile: SaUserProfile; t: SaTheme }) {
     <div className="grid gap-4 md:grid-cols-2">
       <section className={`rounded-xl border p-4 ${t.card}`}>
         <h3 className={`mb-3 text-sm font-bold ${t.heading}`}>Contact</h3>
-        <Field label="Email" value={profile.maskedEmail} t={t} />
-        <Field label="Phone" value={profile.maskedPhone} t={t} />
+        <Field label="Email" value={profile.email} t={t} />
+        <Field label="Phone" value={profile.phone} t={t} />
         <Field
           label="Registered"
           value={profile.registeredAt ? new Date(profile.registeredAt).toLocaleString() : null}
           t={t}
         />
-        {/* Says why it is masked rather than looking like missing data. */}
-        <p className={`mt-3 text-[11px] ${t.dim}`}>
-          Contact details are masked. Revealing them is a separately audited action
-          and arrives with the governance phase.
-        </p>
       </section>
 
       <section className={`rounded-xl border p-4 ${t.card}`}>

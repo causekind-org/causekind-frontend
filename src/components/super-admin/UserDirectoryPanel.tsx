@@ -20,8 +20,8 @@ const ROLES = ["DONOR", "DONEE", "REPRESENTATIVE", "NGO_PARTNER", "ADMIN", "SUPE
  *
  * <p>Distinct from the generic "Users (raw)" entity table in the same console:
  * that one edits raw database rows and is retired at the end of this rebuild.
- * This one is the supported read path — masked, paged in the database, and the
- * entry point to a user's full history.
+ * This one is the supported read path — paged in the database, and the entry
+ * point to a user's full history.
  *
  * <p>Selection is held here rather than routed so that going back to the list
  * keeps the filters and page the agent had — losing those mid-investigation is
@@ -145,8 +145,8 @@ export function UserDirectoryPanel({
                 >
                   <td className={`px-3 py-2 text-xs tabular-nums ${t.dim}`}>{u.id}</td>
                   <td className={`px-3 py-2 text-xs font-semibold ${t.heading}`}>{u.fullName}</td>
-                  <td className={`px-3 py-2 text-xs ${t.muted}`}>{u.maskedEmail ?? "—"}</td>
-                  <td className={`px-3 py-2 text-xs tabular-nums ${t.muted}`}>{u.maskedPhone ?? "—"}</td>
+                  <td className={`px-3 py-2 text-xs ${t.muted}`}>{u.email ?? "—"}</td>
+                  <td className={`px-3 py-2 text-xs tabular-nums ${t.muted}`}>{u.phone ?? "—"}</td>
                   <td className="px-3 py-2">
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${t.badge}`}>
                       {u.role ?? "—"}
