@@ -943,6 +943,14 @@ export async function uploadVerificationDocument(
     credentials: "include",
   });
   if (!res.ok) {
+    // A 413 is refused by the servlet container (or an upstream proxy) before
+    // the handler runs, so there is no JSON body to pull a message out of —
+    // without this the user just gets the generic "Document upload failed".
+    if (res.status === 413) {
+      const err: DocUploadError = new Error("That file is too large — please use an image or PDF under 10MB.");
+      err.code = "FILE_TOO_LARGE";
+      throw err;
+    }
     const body = await res.json().catch(() => ({}));
     const err: DocUploadError = new Error(body?.message ?? "Document upload failed");
     if (body?.code) err.code = body.code;
@@ -2512,4 +2520,155 @@ export function superAdminAuditLog(page = 0, size = 25, filters?: { actorEmail?:
   if (filters?.entityType) params.set("entityType", filters.entityType);
   if (filters?.action) params.set("action", filters.action);
   return request<AuditLogPage>(`/api/v1/super-admin/audit-log?${params.toString()}`);
+}
+
+// ── Super Admin console — Phase 2 read surface ────────────────────────────────
+// Directory, global search and User 360. All of it is read-only and masked at
+// source; there is no unmasked variant to request. Actions on an account arrive
+// in Phases 4–5.
+
+/** The envelope every Phase 2 list endpoint returns (backend `PageResponse<T>`). */
+export type SaPage<T> = {
+  items: T[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+  hasNext: boolean;
+};
+
+export type SaSearchType = "USER" | "REQUEST" | "LISTING" | "OFFER" | "MATCH" | "CERTIFICATE";
+
+export type SaSearchHit = {
+  type: SaSearchType;
+  id: number;
+  title: string;
+  subtitle: string | null;
+  status: string | null;
+  at: string | null;
+};
+
+export type SaSearchGroup = {
+  type: SaSearchType;
+  totalMatches: number;
+  hits: SaSearchHit[];
+};
+
+export type SaSearchResponse = { query: string; groups: SaSearchGroup[] };
+
+export function superAdminSearch(q: string, types?: SaSearchType[], limit = 5) {
+  const params = new URLSearchParams({ q, limit: String(limit) });
+  // Repeated `types` params rather than a comma list — Spring binds a Set<String>
+  // from repeats, and a comma list would arrive as one bogus member.
+  types?.forEach((t) => params.append("types", t));
+  return request<SaSearchResponse>(`/api/v1/super-admin/search?${params.toString()}`);
+}
+
+export type SaUserSummary = {
+  id: number;
+  fullName: string;
+  maskedEmail: string | null;
+  maskedPhone: string | null;
+  role: string | null;
+  city: string | null;
+  active: boolean;
+  suspended: boolean;
+  registeredAt: string | null;
+};
+
+export type SaAccountState = {
+  active: boolean;
+  suspended: boolean;
+  suspensionReason: string | null;
+  suspendedUntil: string | null;
+  suspendedAt: string | null;
+  suspendedByEmail: string | null;
+  failedLoginAttempts: number;
+  lockoutUntil: string | null;
+  tokenVersion: number;
+};
+
+export type SaUserProfile = {
+  id: number;
+  fullName: string;
+  maskedEmail: string | null;
+  maskedPhone: string | null;
+  role: string | null;
+  city: string | null;
+  registeredAt: string | null;
+  accountState: SaAccountState;
+  counts: Record<string, number>;
+};
+
+export type SaRecordType = "REQUEST" | "LISTING" | "OFFER" | "OFFER_RECEIVED" | "MATCH";
+
+export type SaRecordSummary = {
+  type: string;
+  id: number;
+  title: string;
+  status: string | null;
+  detail: string | null;
+  at: string | null;
+};
+
+/** Same shape as the admin journey event — deliberately generic. */
+export type SaTimelineEvent = {
+  at: string;
+  category: string;
+  type: string;
+  title: string;
+  detail: string | null;
+  entityType: string | null;
+  entityId: number | null;
+  actor: string | null;
+};
+
+export type SaTimelinePage = {
+  events: SaPage<SaTimelineEvent>;
+  /** Every category this user's history contains, not just the filtered ones. */
+  availableCategories: string[];
+};
+
+export type SaDirectoryFilters = {
+  q?: string;
+  role?: string;
+  suspended?: boolean;
+  active?: boolean;
+};
+
+/**
+ * NOTE the path: `/directory`, not `/users`. The generic entity console owns
+ * `GET /super-admin/{entity}` and a literal `/users` would win that mapping —
+ * see SuperAdminUserController for the full reasoning. Do not "tidy" this.
+ */
+export function superAdminDirectory(filters: SaDirectoryFilters = {}, page = 0, size = 25) {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (filters.q) params.set("q", filters.q);
+  if (filters.role) params.set("role", filters.role);
+  if (filters.suspended !== undefined) params.set("suspended", String(filters.suspended));
+  if (filters.active !== undefined) params.set("active", String(filters.active));
+  return request<SaPage<SaUserSummary>>(`/api/v1/super-admin/directory?${params.toString()}`);
+}
+
+export function superAdminUserProfile(id: number) {
+  return request<SaUserProfile>(`/api/v1/super-admin/users/${id}/profile`);
+}
+
+export function superAdminUserRecords(id: number, type: SaRecordType, page = 0, size = 25) {
+  const params = new URLSearchParams({ type, page: String(page), size: String(size) });
+  return request<SaPage<SaRecordSummary>>(`/api/v1/super-admin/users/${id}/records?${params.toString()}`);
+}
+
+export function superAdminUserTimeline(
+  id: number,
+  opts: { categories?: string[]; from?: string; to?: string; page?: number; size?: number } = {}
+) {
+  const params = new URLSearchParams({
+    page: String(opts.page ?? 0),
+    size: String(opts.size ?? 50),
+  });
+  opts.categories?.forEach((c) => params.append("categories", c));
+  if (opts.from) params.set("from", opts.from);
+  if (opts.to) params.set("to", opts.to);
+  return request<SaTimelinePage>(`/api/v1/super-admin/users/${id}/timeline?${params.toString()}`);
 }

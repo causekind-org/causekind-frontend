@@ -39,6 +39,7 @@ import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
+import { compressImageIfNeeded } from "@/lib/imageCompression";
 import { ALL_REQUEST_CATEGORIES as CATEGORIES } from "@/lib/categoryVisuals";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -684,7 +685,10 @@ function NewRequestForm() {
       setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, documentTypeGuess: null }));
     }
     try {
-      const doc = await uploadVerificationDocument(draftId, docType, file);
+      // Gallery photos off a phone routinely exceed the server's 10MB per-file
+      // limit. Shrink first so screening sees the same bytes that get stored.
+      const toUpload = await compressImageIfNeeded(file);
+      const doc = await uploadVerificationDocument(draftId, docType, toUpload);
       setUploadedDocs((prev) => new Map(prev).set(docType, doc));
       if (uploadScreened) {
         // A stored photo has already passed screening server-side — the backend
@@ -696,8 +700,15 @@ function NewRequestForm() {
         if (AI_SCREENED_DOC_TYPES.includes(docType)) screenDocument(docType, doc.url, doc.id);
       }
     } catch (e) {
-      if (uploadScreened) {
-        const err = e as DocUploadError;
+      const err = e as DocUploadError;
+      if (err.code === "FILE_TOO_LARGE") {
+        // Too big is not a screening verdict, so drop the "checking" state
+        // instead of leaving a spinner up or implying the photo was rejected.
+        if (uploadScreened) {
+          setDocScreening((prev) => { const next = new Map(prev); next.delete(docType); return next; });
+        }
+        toast.error(err.message);
+      } else if (uploadScreened) {
         // An outage must never read as "your photo is bad". Note the existing
         // uploadedDocs entry is deliberately left alone: a failed replacement
         // keeps whatever previously accepted photo the donee already had.
