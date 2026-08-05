@@ -2567,8 +2567,8 @@ export function superAdminSearch(q: string, types?: SaSearchType[], limit = 5) {
 export type SaUserSummary = {
   id: number;
   fullName: string;
-  maskedEmail: string | null;
-  maskedPhone: string | null;
+  email: string | null;
+  phone: string | null;
   role: string | null;
   city: string | null;
   active: boolean;
@@ -2591,8 +2591,8 @@ export type SaAccountState = {
 export type SaUserProfile = {
   id: number;
   fullName: string;
-  maskedEmail: string | null;
-  maskedPhone: string | null;
+  email: string | null;
+  phone: string | null;
   role: string | null;
   city: string | null;
   registeredAt: string | null;
