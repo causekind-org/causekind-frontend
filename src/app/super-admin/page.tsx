@@ -10,10 +10,14 @@ import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import { AdminPermissionsPanel } from "@/components/super-admin/AdminPermissionsPanel";
 import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
 import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
+import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
+import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
+import { CommandPalette } from "@/components/super-admin/CommandPalette";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
   Sun, Moon, AlertTriangle, MessageCircle, KeyRound, History, Scale,
+  Search, UserSearch, LifeBuoy, Send, ShieldCheck, SlidersHorizontal, Activity, Lock,
 } from "lucide-react";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -153,7 +157,9 @@ const MATCH_COLS: Column[] = [
 
 const NAV = [
   { key: "overview",      label: "Overview",    icon: LayoutDashboard },
-  { key: "users",         label: "Users",       icon: Users },
+  { key: "search",        label: "Search",      icon: Search },
+  { key: "directory",     label: "User 360",    icon: UserSearch },
+  { key: "users",         label: "Users (raw)", icon: Users },
   { key: "campaigns",     label: "Campaigns",   icon: Megaphone },
   { key: "donations",     label: "Donations",   icon: CreditCard },
   { key: "item-requests", label: "Requests",    icon: ClipboardList },
@@ -164,6 +170,24 @@ const NAV = [
   { key: "admin-permissions", label: "Admin Access", icon: KeyRound },
   { key: "audit-log",     label: "Audit Log",   icon: History },
   { key: "sql",           label: "SQL Console", icon: Terminal },
+] as const;
+
+/**
+ * Areas of the target information architecture that are not built yet. Shown as
+ * disabled rows rather than left out: the shape of the finished console should
+ * be visible, so nobody goes hunting for a screen that simply does not exist
+ * and no one rebuilds one of these by accident.
+ *
+ * Kept separate from NAV on purpose — SectionKey derives from NAV, so listing
+ * these there would force the content switch to handle sections that render
+ * nothing.
+ */
+const PLANNED_NAV = [
+  { label: "Support cases",     icon: LifeBuoy,          phase: "Phase 3" },
+  { label: "Restrictions",      icon: ShieldCheck,       phase: "Phase 4" },
+  { label: "Interventions",     icon: SlidersHorizontal, phase: "Phase 5" },
+  { label: "Communications",    icon: Send,              phase: "Phase 6" },
+  { label: "Operational health", icon: Activity,         phase: "Phase 8" },
 ] as const;
 
 type SectionKey = (typeof NAV)[number]["key"];
@@ -302,6 +326,9 @@ export default function SuperAdminPage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const [section, setSection] = useState<SectionKey>("overview");
+  // Set when a user is chosen from search or ⌘K, so the directory opens straight
+  // into their 360 instead of making the agent find them a second time.
+  const [focusUserId, setFocusUserId] = useState<number | undefined>(undefined);
 
   // Theme
   const [isDark, setIsDark] = useState(true);
@@ -316,7 +343,16 @@ export default function SuperAdminPage() {
       setSqlModalOpen(true);
       return;
     }
+    // Leaving the directory by the nav should not silently reopen the last user
+    // the next time it's entered.
+    if (key !== "directory") setFocusUserId(undefined);
     setSection(key);
+  }
+
+  /** Search and ⌘K both land on the same User 360 workspace. */
+  function openUser(id: number) {
+    setFocusUserId(id);
+    setSection("directory");
   }
 
   useEffect(() => {
@@ -328,6 +364,8 @@ export default function SuperAdminPage() {
   const content = useMemo(() => {
     switch (section) {
       case "overview":      return <OverviewSection th={th} />;
+      case "search":        return <GlobalSearchPanel onOpenUser={openUser} />;
+      case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} />;
       case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
                               onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
@@ -342,7 +380,7 @@ export default function SuperAdminPage() {
       case "sql":           return <SqlConsole isDark={isDark} />;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, isDark]);
+  }, [section, isDark, focusUserId]);
 
   // Theme toggle button (reused in sidebar + topbar)
   const ThemeToggle = (
@@ -408,6 +446,23 @@ export default function SuperAdminPage() {
                 )}
               </button>
             ))}
+
+            <div className={`mt-4 pt-3 border-t ${th.divider}`}>
+              <p className={`px-3 pb-1.5 text-[9px] font-black uppercase tracking-wider ${th.textDimmer}`}>
+                Not built yet
+              </p>
+              {PLANNED_NAV.map(({ label, icon: Icon, phase }) => (
+                <div
+                  key={label}
+                  title={`Arrives with ${phase} of the console rebuild`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold border border-transparent cursor-not-allowed opacity-40 ${th.textMuted}`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {label}
+                  <Lock className="w-3 h-3 ml-auto shrink-0" />
+                </div>
+              ))}
+            </div>
           </nav>
 
           <div className={`shrink-0 p-3 border-t ${th.divider}`}>
@@ -466,6 +521,10 @@ export default function SuperAdminPage() {
           </main>
         </div>
       </div>
+
+      {/* ⌘K from anywhere in the console. Mounted once, outside the section
+          switch, so it survives navigation and does not remount on every tab. */}
+      <CommandPalette onOpenUser={openUser} />
 
       {/* ── SQL Warning Modal ─────────────────────────────────────────────── */}
       {sqlModalOpen && (
