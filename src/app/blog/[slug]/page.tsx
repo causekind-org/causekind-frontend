@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef, use } from "react";
+import React, { useState, useEffect, useMemo, useRef, use } from "react";
+// Imported statically, not via a dynamic import inside an effect. A dynamic
+// import resolves a tick after first render, which left the raw article HTML
+// as the only thing available to paint — and the `||` fallback below happily
+// painted it. Importing here sanitizes during render instead, so the server-
+// rendered document carries clean HTML and there is never an unsanitized
+// frame. Next splits by route, so the cost lands on the blog page alone.
+import DOMPurify from "isomorphic-dompurify";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -116,7 +123,6 @@ export default function BlogReadingPage({ params }: PageProps) {
   const [boldMode, setBoldMode] = useState(false);
   const [fontMode, setFontMode] = useState("font-serif-mode");
   const [copied, setCopied] = useState(false);
-  const [sanitizedContent, setSanitizedContent] = useState("");
 
   // Statically pre-translated content (see scripts/generate-blog-translations.mjs),
   // fetched on demand from public/blog-translations/<locale>.json — not a
@@ -154,13 +160,12 @@ export default function BlogReadingPage({ params }: PageProps) {
   const displayCategory = translation?.category || post?.category || "";
   const rawContentForLocale = translation?.content || post?.content || "";
 
-  useEffect(() => {
-    if (rawContentForLocale) {
-      import("isomorphic-dompurify").then((DOMPurify) => {
-        setSanitizedContent(DOMPurify.default.sanitize(rawContentForLocale));
-      });
-    }
-  }, [rawContentForLocale]);
+  // Derived during render rather than set from an effect, so there is no window
+  // in which the component has content to show but has not yet sanitized it.
+  const sanitizedContent = useMemo(
+    () => (rawContentForLocale ? DOMPurify.sanitize(rawContentForLocale) : ""),
+    [rawContentForLocale]
+  );
 
   // Voice narration — English and Hindi stories only, using a Web Speech API
   // voice (a Google Hindi female voice, per design) rather than a
@@ -226,7 +231,7 @@ export default function BlogReadingPage({ params }: PageProps) {
   const getNarrationChunks = () => {
     if (narrationChunksRef.current.length) return narrationChunksRef.current;
     const container = document.createElement("div");
-    container.innerHTML = sanitizedContent || post?.content || "";
+    container.innerHTML = sanitizedContent;
     const text = (container.textContent || "").replace(/\s+/g, " ").trim();
     // Split into sentence-sized chunks — most browsers silently cut off very
     // long single utterances partway through, and chunking also lets Pause
@@ -592,7 +597,12 @@ export default function BlogReadingPage({ params }: PageProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
               // Fix #3: sanitize HTML before injection — strips <script>, onerror, etc.
-              dangerouslySetInnerHTML={{ __html: sanitizedContent || post.content || "" }}
+              // No fallback to post.content: that is the raw article HTML, and
+              // falling back to it is exactly how unsanitized markup used to reach
+              // the DOM while the sanitizer was still loading. sanitizedContent is
+              // now computed during render, so it is never empty when there is
+              // content to show.
+              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
             />
 
             {/* Right Sidebar: Next For You */}
