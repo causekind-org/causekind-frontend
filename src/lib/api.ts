@@ -943,6 +943,14 @@ export async function uploadVerificationDocument(
     credentials: "include",
   });
   if (!res.ok) {
+    // A 413 is refused by the servlet container (or an upstream proxy) before
+    // the handler runs, so there is no JSON body to pull a message out of —
+    // without this the user just gets the generic "Document upload failed".
+    if (res.status === 413) {
+      const err: DocUploadError = new Error("That file is too large — please use an image or PDF under 10MB.");
+      err.code = "FILE_TOO_LARGE";
+      throw err;
+    }
     const body = await res.json().catch(() => ({}));
     const err: DocUploadError = new Error(body?.message ?? "Document upload failed");
     if (body?.code) err.code = body.code;
