@@ -208,12 +208,12 @@ export function HeroCampaignSlider({
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span
-                        className="text-[9px] sm:text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md border border-[#e07b3a]/20"
+                        className="text-4xs sm:text-3xs font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md border border-[#e07b3a]/20"
                         style={{ background: "rgba(255,87,34,0.08)", color: "#e07b3a" }}
                       >
                         {c.category}
                       </span>
-                      <span className="text-[10px] text-stone-500 font-bold flex items-center gap-0.5">
+                      <span className="text-3xs text-stone-500 font-bold flex items-center gap-0.5">
                         <MapPin className="h-3 w-3 text-[#e07b3a]" />
                         {c.city}
                       </span>
@@ -239,7 +239,7 @@ export function HeroCampaignSlider({
                   <div className="space-y-3">
                     {/* Progress bar */}
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] sm:text-[11px] font-bold text-stone-600">
+                      <div className="flex justify-between text-3xs sm:text-2xs font-bold text-stone-600">
                         <span>₹{new Intl.NumberFormat("en-IN").format(c.amountRaised)} raised</span>
                         <span>Target: ₹{new Intl.NumberFormat("en-IN").format(c.targetAmount)}</span>
                         <span className="text-[#e07b3a]">{pct}%</span>

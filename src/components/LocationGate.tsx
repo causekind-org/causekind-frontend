@@ -158,8 +158,10 @@ export function LocationGate() {
 
         // Best-effort reverse geocode — ignore failures
         try {
+          // Result is now a discriminated union; this stays best-effort and
+          // silent, exactly as before — only the shape of the check changed.
           const geo = await detectLocationFromServer(latitude, longitude);
-          if (geo?.address) {
+          if (geo.ok) {
             const addr = geo.address;
             cityLabel = addr.city ?? addr.town ?? addr.village ?? addr.county ?? "";
           }
@@ -374,7 +376,7 @@ export function LocationGate() {
           </div>
 
           {/* ── Subtle footnote ── */}
-          <p className="mt-4 text-[11px] text-zinc-400 dark:text-zinc-500 leading-snug">
+          <p className="mt-4 text-2xs text-zinc-400 dark:text-zinc-500 leading-snug">
             Your exact coordinates are never shared publicly.
           </p>
         </div>

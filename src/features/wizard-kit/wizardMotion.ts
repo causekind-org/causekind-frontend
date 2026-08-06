@@ -66,8 +66,13 @@ export function cardVariants(reduced: boolean): Variants {
 export const STACK_OFFSET_PX = 10;
 export const STACK_SCALE_STEP = 0.03;
 export const STACK_OPACITY_STEP = 0.2;
-/** Past three, another 10px peek is noise rather than information. */
-export const MAX_GHOSTS = 3;
+/**
+ * One ghost per completed step, all the way to Review — where four steps are
+ * done, so four cards sit behind the active one. Originally capped at three on
+ * the theory that a fourth peek was noise; in practice the pile reads as "how
+ * far you've come", and truncating it makes the last step look like the fourth.
+ */
+export const MAX_GHOSTS = 4;
 
 /** `depth` is 1 for the card immediately behind the active one. */
 export function ghostVariants(reduced: boolean): Variants {

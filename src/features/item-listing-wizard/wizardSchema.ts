@@ -87,8 +87,8 @@ export const wizardSchema = z.object({
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["approximateAge"], message: "Choose an age from the list" });
     }
 
-    // ── Working status: required only for the categories that have one ──────
-    if (needsWorkingStatus(v.category)) {
+    // ── Working status: required only where the manifest asks for it ────────
+    if (needsWorkingStatus(v.category, v.subcategory)) {
       if (!v.workingStatus) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["workingStatus"], message: "Tell us whether it works" });
       } else if (!WORKING_STATUSES.includes(v.workingStatus)) {

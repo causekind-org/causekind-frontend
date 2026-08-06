@@ -40,7 +40,7 @@ export function HandoverNextAction({
       aria-labelledby="next-step-heading"
       className="rounded-lg border border-[var(--handover-accent)]/25 bg-[var(--handover-soft)] p-3.5 sm:p-5"
     >
-      <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--handover-accent)]">
+      <p className="text-2xs font-bold uppercase tracking-wider text-[var(--handover-accent)]">
         Your next step
       </p>
       <h1 id="next-step-heading" className="mt-1 text-base font-bold text-stone-900 dark:text-stone-100 sm:text-2xl">

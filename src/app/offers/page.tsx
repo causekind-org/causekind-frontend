@@ -149,7 +149,7 @@ export default function MyOffersPage() {
                     </span>
                     <span className="text-xs text-gray-400">{offer.flowType?.replace(/_/g, " ")}</span>
                     {offer.hiddenByDonor && (
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-3xs font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                         Archived
                       </span>
                     )}

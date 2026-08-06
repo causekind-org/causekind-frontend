@@ -1,10 +1,8 @@
 "use client";
 
-import { ConditionalField, WizardField, controlClass } from "../components/WizardField";
-import {
-  AGE_RANGES, CONDITIONS, WORKING_STATUSES,
-  needsDimensions, needsWorkingStatus, type WizardModel,
-} from "../wizardModel";
+import { ConditionalField, WizardField, controlClass } from "@/features/wizard-kit/WizardField";
+import { AGE_RANGES, CONDITIONS, WORKING_STATUSES, type WizardModel } from "../wizardModel";
+import { fieldsFor } from "../wizardFields";
 
 /**
  * Step 3 — condition and details.
@@ -23,11 +21,15 @@ export function ConditionDetailsStep({
   uncertain: Set<string>;
   onChange: <K extends keyof WizardModel>(key: K, value: WizardModel[K]) => void;
 }) {
-  const showWorking = needsWorkingStatus(model.category);
-  const showDims = needsDimensions(model.category);
+  // Every optional field on this step comes from the per-category manifest.
+  const fields = fieldsFor(model.category, model.subcategory);
+  const showWorking = fields.visible("workingStatus");
+  const showDims = fields.visible("dimensions");
+  const showWeight = fields.visible("approximateWeight");
+  const showAccessories = fields.visible("accessoriesIncluded");
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <WizardField label="Approximate age" required error={errors.approximateAge} aiFilled={aiFilled.has("approximateAge")} uncertain={uncertain.has("approximateAge")}>
         {({ id, describedBy, invalid }) => (
           <select
@@ -76,7 +78,7 @@ export function ConditionDetailsStep({
 
       {/* Defects — checkbox OR description, enforced by the schema. */}
       <fieldset className="space-y-2">
-        <legend className="text-[13px] font-bold text-stone-700 dark:text-stone-200">
+        <legend className="text-sm font-bold text-stone-700 dark:text-stone-200">
           Known defects <span className="text-[var(--ck-role-accent)]" aria-hidden>*</span>
           <span className="sr-only"> (required)</span>
         </legend>
@@ -88,7 +90,7 @@ export function ConditionDetailsStep({
             onChange={e => onChange("noDefects", e.target.checked)}
             className="h-5 w-5 shrink-0 accent-[var(--ck-role-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
           />
-          <span className="text-[13px] font-semibold text-stone-700 dark:text-stone-200">No known defects</span>
+          <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">No known defects</span>
         </label>
 
         <ConditionalField show={!model.noDefects}>
@@ -107,7 +109,8 @@ export function ConditionDetailsStep({
         </ConditionalField>
       </fieldset>
 
-      <WizardField label="Accessories included" hint="Optional — cables, remote, manual…" error={errors.accessoriesIncluded}>
+      <ConditionalField show={showAccessories}>
+      <WizardField label={fields.label("accessoriesIncluded")} hint={fields.hint("accessoriesIncluded")} error={errors.accessoriesIncluded}>
         {({ id, describedBy, invalid }) => (
           <input
             id={id} name="accessoriesIncluded" type="text"
@@ -117,30 +120,35 @@ export function ConditionDetailsStep({
           />
         )}
       </WizardField>
+      </ConditionalField>
 
-      <ConditionalField show={showDims}>
+      <ConditionalField show={showDims || showWeight}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <WizardField label="Dimensions" hint="Optional — helps with transport" error={errors.dimensions} aiFilled={aiFilled.has("dimensions")} uncertain={uncertain.has("dimensions")}>
+          {showDims && (
+          <WizardField label={fields.label("dimensions")} hint={fields.hint("dimensions")} error={errors.dimensions} aiFilled={aiFilled.has("dimensions")} uncertain={uncertain.has("dimensions")}>
             {({ id, describedBy, invalid }) => (
               <input
-                id={id} name="dimensions" type="text" placeholder="e.g. 120×60×75 cm"
+                id={id} name="dimensions" type="text" placeholder={fields.placeholder("dimensions")}
                 aria-describedby={describedBy} aria-invalid={invalid}
                 className={controlClass} value={model.dimensions}
                 onChange={e => onChange("dimensions", e.target.value)}
               />
             )}
           </WizardField>
+          )}
 
-          <WizardField label="Approximate weight" hint="Optional" error={errors.approximateWeight} aiFilled={aiFilled.has("approximateWeight")} uncertain={uncertain.has("approximateWeight")}>
+          {showWeight && (
+          <WizardField label={fields.label("approximateWeight")} hint={fields.hint("approximateWeight")} error={errors.approximateWeight} aiFilled={aiFilled.has("approximateWeight")} uncertain={uncertain.has("approximateWeight")}>
             {({ id, describedBy, invalid }) => (
               <input
-                id={id} name="approximateWeight" type="text" placeholder="e.g. 12 kg"
+                id={id} name="approximateWeight" type="text" placeholder={fields.placeholder("approximateWeight")}
                 aria-describedby={describedBy} aria-invalid={invalid}
                 className={controlClass} value={model.approximateWeight}
                 onChange={e => onChange("approximateWeight", e.target.value)}
               />
             )}
           </WizardField>
+          )}
         </div>
       </ConditionalField>
 

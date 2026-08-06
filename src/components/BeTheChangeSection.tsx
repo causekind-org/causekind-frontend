@@ -525,11 +525,11 @@ function TrustSignalMetric({
           <Icon className="relative size-4 xl:size-[18px]" style={{ color }} aria-hidden />
         </motion.span>
         <span className="min-w-0">
-          <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-stone-500">
+          <span className="block text-4xs font-black uppercase tracking-[0.18em] text-stone-400 dark:text-stone-500">
             Signal {station}
           </span>
           <span
-            className="mt-0.5 block text-[11px] font-black uppercase leading-tight tracking-[0.08em]"
+            className="mt-0.5 block text-2xs font-black uppercase leading-tight tracking-[0.08em]"
             style={{ color }}
           >
             {label}
@@ -539,7 +539,7 @@ function TrustSignalMetric({
 
       <dd className="mt-2.5">
         <span
-          className="block whitespace-nowrap font-black tabular-nums leading-none text-[22px] xl:text-[28px]"
+          className="block whitespace-nowrap font-black tabular-nums leading-none text-xl xl:text-2xl"
           style={{ color, fontFamily: "var(--font-roboto-mono)" }}
         >
           {count.toLocaleString("en-IN")}
@@ -584,7 +584,7 @@ function CategoryPill({
   const body = (
     <>
       <Icon className="w-3.5 h-3.5 text-[#b04a15]" />
-      <span className="text-[13px] font-bold text-stone-700 dark:text-stone-300">{label}</span>
+      <span className="text-sm font-bold text-stone-700 dark:text-stone-300">{label}</span>
     </>
   );
 
@@ -841,7 +841,7 @@ export function BeTheChangeSection({
           <div className="grid lg:grid-cols-[1fr_auto] gap-5 items-end mb-6">
             <div>
               <span
-                className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest mb-2.5"
+                className="inline-block px-3 py-1 rounded-full text-2xs font-bold uppercase tracking-widest mb-2.5"
                 style={{ background: `${TERRACOTTA}18`, color: TERRACOTTA }}
               >
                 Be the change
@@ -930,7 +930,7 @@ export function BeTheChangeSection({
             <Link
               href="/register"
               data-tour={tourAnchors ? "guest-join" : undefined}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-[13px] text-white
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-sm text-white
                          shadow-md hover:opacity-90 active:scale-95 transition-all duration-200"
               style={{ background: TERRACOTTA }}
             >
@@ -938,7 +938,7 @@ export function BeTheChangeSection({
             </Link>
             <Link
               href="/requests"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-[13px]
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-sm
                          border border-[#e5e2d5] dark:border-stone-700
                          text-stone-700 dark:text-stone-300
                          hover:border-[#b04a15]/40 hover:text-[#b04a15]

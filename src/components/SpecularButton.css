@@ -47,17 +47,17 @@
 }
 
 .specular-button--sm {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   padding: 10px 22px;
 }
 
 .specular-button--md {
-  font-size: 1rem;
+  font-size: var(--text-base);
   padding: 14px 30px;
 }
 
 .specular-button--lg {
-  font-size: 1.15rem;
+  font-size: var(--text-lg);
   padding: 18px 40px;
 }
 

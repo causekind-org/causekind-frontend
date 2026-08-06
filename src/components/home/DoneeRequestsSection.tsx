@@ -61,7 +61,7 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
             <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-[#f0b97a]/20">
               <Bell className="h-3 w-3 text-[#b04a15] dark:text-[#e07b3a]" />
             </span>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-stone-500 dark:text-stone-400">Watching for you</p>
+            <p className="text-3xs font-black uppercase tracking-[0.24em] text-stone-500 dark:text-stone-400">Watching for you</p>
           </div>
 
           <motion.div

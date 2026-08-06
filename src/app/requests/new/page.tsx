@@ -274,7 +274,7 @@ function DocSlot({
           {label}
           {required
             ? <span className="text-[var(--ck-role-accent)] ml-0.5">*</span>
-            : <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">(optional)</span>}
+            : <span className="ml-1.5 text-3xs font-bold uppercase tracking-wide text-stone-400">(optional)</span>}
         </span>
         {checking ? (
           <p className="text-xs text-stone-400 mt-0.5">
@@ -1198,7 +1198,7 @@ function NewRequestForm() {
         </div>
         <div className="select-none">
           <span className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Show my photo to donors <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">(optional)</span>
+            Show my photo to donors <span className="ml-1.5 text-3xs font-bold uppercase tracking-wide text-stone-400">(optional)</span>
           </span>
           <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
             Signed-in donors viewing your approved request will see the profile photo you uploaded. Your residence and
@@ -1236,7 +1236,7 @@ function NewRequestForm() {
 
         <div className="relative z-10 flex flex-col h-full p-5 sm:p-8 xl:p-10">
           <div className="mb-8">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--ck-role-highlight)] bg-[var(--ck-role-accent)]/25 border border-[var(--ck-role-accent)]/40 rounded-full px-3.5 py-1.5">
+            <span className="inline-flex items-center gap-1.5 text-3xs font-black uppercase tracking-widest text-[var(--ck-role-highlight)] bg-[var(--ck-role-accent)]/25 border border-[var(--ck-role-accent)]/40 rounded-full px-3.5 py-1.5">
               <Shield className="w-3 h-3" /> Verified Support
             </span>
           </div>
@@ -1264,7 +1264,7 @@ function NewRequestForm() {
                     </div>
                     <div className={`transition-all duration-300 ${active ? "opacity-100" : done ? "opacity-60" : "opacity-30"}`}>
                       <p className="text-white text-sm font-bold leading-tight">{s.label}</p>
-                      <p className="text-white/40 text-[11px]">{s.sub}</p>
+                      <p className="text-white/40 text-2xs">{s.sub}</p>
                     </div>
                   </button>
                   {i < STEPS.length - 1 && <div className="ml-7.5 pl-3.5 h-4 flex items-center"><div className={`w-px h-full ${done ? "bg-green-500/40" : "bg-white/8"}`} /></div>}
@@ -1287,7 +1287,7 @@ function NewRequestForm() {
                   </div>
                   <div>
                     <p className="text-white text-xs font-bold leading-tight">{b.title}</p>
-                    <p className="text-white/35 text-[10px]">{b.desc}</p>
+                    <p className="text-white/35 text-3xs">{b.desc}</p>
                   </div>
                 </div>
               );
@@ -1305,7 +1305,7 @@ function NewRequestForm() {
             <div className="flex items-center gap-0">
               {STEPS.map((s, i) => (
                 <div key={s.id} className="flex items-center flex-1 last:flex-none">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black shrink-0 ${step > s.id ? "bg-green-500 text-white" : step === s.id ? "text-white" : "bg-stone-200 text-stone-400"}`}
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-2xs font-black shrink-0 ${step > s.id ? "bg-green-500 text-white" : step === s.id ? "text-white" : "bg-stone-200 text-stone-400"}`}
                     style={step === s.id ? { background: "linear-gradient(135deg,var(--ck-role-accent),var(--ck-role-secondary))" } : {}}>
                     {step > s.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : s.id}
                   </div>
@@ -1317,7 +1317,7 @@ function NewRequestForm() {
 
           <div className="flex items-start justify-between mb-8">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--ck-role-accent)] mb-1">Step {step} of {STEPS.length}</p>
+              <p className="text-2xs font-black uppercase tracking-[0.2em] text-[var(--ck-role-accent)] mb-1">Step {step} of {STEPS.length}</p>
               <h2 className="text-xl sm:text-3xl xl:text-4xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-none">{STEPS[step - 1].label}</h2>
               <p className="text-stone-400 text-sm mt-1">{STEPS[step - 1].sub}</p>
             </div>
@@ -1330,7 +1330,7 @@ function NewRequestForm() {
               <div className="min-w-0">
                 <p className="text-sm font-bold text-amber-800 dark:text-amber-300">You&apos;re fixing a rejected request</p>
                 <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed whitespace-pre-line">{rejectionNote}</p>
-                <p className="text-[11px] text-stone-400 mt-1.5">We&apos;ve brought you to the step that needs attention — everything else is already filled. Use Back to review other steps, then resubmit.</p>
+                <p className="text-2xs text-stone-400 mt-1.5">We&apos;ve brought you to the step that needs attention — everything else is already filled. Use Back to review other steps, then resubmit.</p>
               </div>
             </div>
           )}

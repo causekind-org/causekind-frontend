@@ -12,11 +12,12 @@ import {
 } from "@/lib/api";
 import { resolveLocationFromGPS, detectLocationFromServer } from "@/app/actions/locations";
 
-import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "./components/WizardProgress";
-import { WizardNavigation } from "./components/WizardNavigation";
-import { DraftSaveStatus } from "./components/DraftSaveStatus";
-import { StepErrorSummary } from "./components/StepErrorSummary";
-import { StepCardStack } from "./components/StepCardStack";
+import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
+import { WizardNavigation } from "@/features/wizard-kit/WizardNavigation";
+import { DraftSaveStatus } from "@/features/wizard-kit/DraftSaveStatus";
+import { StepErrorSummary } from "@/features/wizard-kit/StepErrorSummary";
+import { StepCardStack } from "@/features/wizard-kit/StepCardStack";
+import { WizardBorderGlow } from "@/features/wizard-kit/WizardBorderGlow";
 import { PhotosStep } from "./steps/PhotosStep";
 import { BasicsStep } from "./steps/BasicsStep";
 import { ConditionDetailsStep } from "./steps/ConditionDetailsStep";
@@ -26,11 +27,12 @@ import { useListingDraft } from "./useListingDraft";
 import { useListingPhotos } from "./useListingPhotos";
 import { materialDigest } from "./wizardSerializer";
 import { parseCity } from "./wizardLocation";
-import { cardVariants } from "./wizardMotion";
+import { fieldsFor } from "./wizardFields";
+import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import { validateAll, validateStep, stepForField } from "./wizardSchema";
 import {
   WIZARD_STEPS, emptyModel, isSubcategoryValid, modelFromListing,
-  needsDimensions, needsWorkingStatus, stepIndex, uploadedUrls,
+  needsDimensions, needsWorkingStatus, normalizeWorkingStatus, stepIndex, uploadedUrls,
   type WizardMode, type WizardModel, type WizardPhoto, type WizardStep,
 } from "./wizardModel";
 
@@ -102,7 +104,20 @@ export function ItemListingWizard({
   const dirtyRef = useRef<Set<string>>(new Set());
   const headingRef = useRef<HTMLHeadingElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const aiRanRef = useRef(mode !== "create");
+  /**
+   * The photo set the current AI note describes, or null if none.
+   *
+   * <p>This replaced a plain `hasRun` boolean, which was wrong in two ways. It
+   * latched true forever, so adding or removing a photo never re-ran the
+   * analysis — and because a ref survives React Fast Refresh and draft resume,
+   * the note from an old run stayed on screen describing photos that were no
+   * longer there. A donor could swap in completely different photos and still be
+   * told "Nothing could be read from these photos with confidence".
+   *
+   * <p>Keying on the actual URL list means the note is either about the photos
+   * currently on screen or it is not shown at all.
+   */
+  const analysedKeyRef = useRef<string | null>(mode === "create" ? null : "__existing__");
 
   const draft = useListingDraft({
     initialId: initialDraftId ?? listing?.id ?? null,
@@ -132,11 +147,18 @@ export function ItemListingWizard({
       // Category drives three conditional fields. Clearing them here (rather
       // than only hiding them) is what stops a stale value reappearing in
       // review or being kept by the PATCH.
-      if (key === "category") {
-        const cat = value as string;
-        if (!isSubcategoryValid(cat, next.subcategory)) next.subcategory = "";
-        if (!needsWorkingStatus(cat)) next.workingStatus = "";
-        if (!needsDimensions(cat)) { next.dimensions = ""; next.approximateWeight = ""; }
+      // Category (and now subcategory, since it can carry overrides) decides
+      // which optional fields exist. Anything the new pair hides is CLEARED, not
+      // merely hidden — otherwise a donor who fills a model under Electronics
+      // then switches to Furniture carries an invisible model into review and
+      // into the PATCH.
+      if (key === "category" || key === "subcategory") {
+        if (key === "category" && !isSubcategoryValid(value as string, next.subcategory)) {
+          next.subcategory = "";
+        }
+        for (const hidden of fieldsFor(next.category, next.subcategory).hiddenKeys()) {
+          next[hidden] = "";
+        }
       }
       if (key === "noDefects" && value === true) next.knownDefects = "";
       if (key === "countryIso") { next.stateIso = ""; next.city = ""; }
@@ -229,8 +251,12 @@ export function ItemListingWizard({
         }
       }
 
-      if (r.workingStatus && canSet("workingStatus") && !next.workingStatus && needsWorkingStatus(next.category)) {
-        next.workingStatus = r.workingStatus;
+      // Normalised, never assigned raw: the service returns WORKING /
+      // PARTIALLY_WORKING / NOT_WORKING, which no <option> here matches. An
+      // unrecognised value resolves to "" and is dropped rather than written.
+      const normalizedWorking = normalizeWorkingStatus(r.workingStatus);
+      if (normalizedWorking && canSet("workingStatus") && !next.workingStatus && needsWorkingStatus(next.category)) {
+        next.workingStatus = normalizedWorking;
         filled.add("workingStatus");
       }
       if (needsDimensions(next.category)) {
@@ -248,30 +274,81 @@ export function ItemListingWizard({
 
     setAiFilled(filled);
     setUncertain(new Set(r.uncertainFields ?? []));
-    setAiNote(filled.size ? "Filled in from your photos — please check each one." : "Nothing new to suggest from these photos.");
+
+    if (filled.size > 0) {
+      toast.success(
+        `AI filled in ${filled.size} field${filled.size === 1 ? "" : "s"} from your photos — please review before submitting.`
+      );
+    }
+
+    // Say what was filled AND why the rest is blank. A bare "filled in from your
+    // photos" reads as a failure when three of eight fields populate, when in
+    // fact age is never inferred (a photo cannot tell you how old something is)
+    // and brand/model are only taken from a legible label — both deliberate
+    // accuracy rules, not gaps.
+    setAiNote(
+      filled.size
+        ? `Filled ${filled.size} field${filled.size === 1 ? "" : "s"} from your photos — please check each one. Age, and brand or model where there's no visible label, are for you to add.`
+        : "Nothing could be read from these photos with confidence — please fill the details in yourself.",
+    );
   }, [queueSave]);
 
-  const runAnalysis = useCallback(async () => {
-    const urls = uploadedUrls(model.photos);
-    if (urls.length < 2) return;
+  // Read through a ref so runAnalysis keeps a stable identity. It is a dependency
+  // of the debounced auto-run effect below, and an identity that changed on every
+  // photo-state tick would clear the pending timer before it could ever fire.
+  const photosRef = useRef(model.photos);
+  useEffect(() => { photosRef.current = model.photos; }, [model.photos]);
+
+  const runAnalysis = useCallback(async (customUrls?: string[]) => {
+    const urls = customUrls && customUrls.length > 0 ? customUrls : uploadedUrls(photosRef.current);
+    if (urls.length < 1) return;
+    analysedKeyRef.current = urls.join("|");
     setAiRunning(true);
     setAiNote(null);
     try {
-      applyAnalysis(await analyzeListingImages(urls));
-    } catch {
+      const res = await analyzeListingImages(urls);
+      applyAnalysis(res);
+    } catch (err) {
+      console.error("AI photo analysis failed", err);
       setAiNote("Photo analysis failed — you can retry, or just fill in the details yourself.");
+      toast.error("Photo analysis failed. You can fill in the details manually or retry.");
     } finally {
       setAiRunning(false);
     }
-  }, [model.photos, applyAnalysis]);
+  }, [applyAnalysis]);
 
-  // Auto-run exactly once for a new listing, never for a resumed one.
-  const uploadedCount = uploadedUrls(model.photos).length;
+  const isUploading = model.photos.some(p => p.status === "uploading" || p.status === "pending");
+  const uploadedList = uploadedUrls(model.photos);
+  const uploadedCount = uploadedList.length;
+  // The identity of the photo set, not its size: swapping one photo for another
+  // leaves the count unchanged but must still invalidate the previous analysis.
+  const uploadedKey = uploadedList.join("|");
+
   useEffect(() => {
-    if (aiRanRef.current || mode !== "create" || uploadedCount < 2) return;
-    aiRanRef.current = true;
-    void runAnalysis();
-  }, [uploadedCount, mode, runAnalysis]);
+    if (mode !== "create") return;
+
+    // All photos removed — drop the note with them rather than leaving it to
+    // describe an empty picker.
+    if (uploadedCount < 1) {
+      analysedKeyRef.current = null;
+      setAiNote(null);
+      setAiFilled(new Set());
+      setUncertain(new Set());
+      setProhibited(null);
+      return;
+    }
+
+    if (isUploading) return;                              // wait for the set to settle
+    if (analysedKeyRef.current === uploadedKey) return;   // already analysed these
+
+    // Coalesce: a donor adding three photos one at a time would otherwise spend
+    // three analysis calls, each superseded by the next. One call once they stop.
+    const timer = setTimeout(() => {
+      analysedKeyRef.current = uploadedKey;
+      void runAnalysis(uploadedKey.split("|"));
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [uploadedKey, uploadedCount, isUploading, mode, runAnalysis]);
 
   // ── Profile prefill — never over a value the donor already set ─────────────
   const prefilledRef = useRef(false);
@@ -308,9 +385,20 @@ export function ItemListingWizard({
     navigator.geolocation.getCurrentPosition(
       async pos => {
         try {
-          const data = await detectLocationFromServer(pos.coords.latitude, pos.coords.longitude);
-          if (!data?.address) throw new Error("no address");
-          const a = data.address as Record<string, string>;
+          const geo = await detectLocationFromServer(pos.coords.latitude, pos.coords.longitude);
+          if (!geo.ok) {
+            // Distinguish "nothing is mapped there" from "the lookup service is
+            // unavailable" — they call for different things from the donor, and
+            // the old code showed one message for both.
+            setGps({
+              running: false,
+              error: geo.reason === "no-address"
+                ? "There's no street address at that spot."
+                : "The address lookup is unavailable right now.",
+            });
+            return;
+          }
+          const a = geo.address;
           const countryIso = (a.country_code ?? "").toUpperCase() || model.countryIso;
           const cityName = a.city ?? a.town ?? a.village ?? a.state_district ?? "";
           const { stateIso, cityValue } = await resolveLocationFromGPS(countryIso, a.state ?? "", cityName);
@@ -456,46 +544,46 @@ export function ItemListingWizard({
           column had no height context, `flex-1` collapsed to content height and
           the footer sat directly under the form — leaving the rest of the
           100dvh as dead space beneath it. */}
-      <div className="flex min-h-[100dvh] flex-col bg-[#faf8f5] dark:bg-zinc-950 lg:flex-row">
+      <div className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] -mb-[72px] lg:mb-0 dark:bg-zinc-950 lg:min-h-[100dvh] lg:flex-row">
         {/* Desktop sidebar — preserved concept, now carrying the journey rail. */}
         <aside className="hidden w-[300px] shrink-0 flex-col justify-between bg-gradient-to-b from-[#1c0905] via-[#3a1d0e] to-[#241206] p-7 text-white lg:flex">
           <div>
             <button
               type="button"
               onClick={() => router.back()}
-              className="mb-8 flex min-h-[44px] items-center gap-1.5 text-[13px] font-medium text-white/60 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-highlight)]"
+              className="mb-8 flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-white/60 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-highlight)]"
             >
               <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Back
             </button>
             <h2 className="mb-1 text-2xl font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
               {mode === "needs-info" ? "Update your listing" : "List an item"}
             </h2>
-            <p className="mb-8 text-[13px] text-white/50">Five short steps. We save as you go.</p>
-            <WizardProgressRail current={step} labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
+            <p className="mb-8 text-sm text-white/50">Five short steps. We save as you go.</p>
+            <WizardProgressRail current={step} steps={WIZARD_STEPS} navLabel="Listing progress" labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
-          <p className="text-[11px] text-white/35">Your name and address stay private until a match is approved.</p>
+          <p className="text-2xs text-white/35">Your name and address stay private until a match is approved.</p>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col justify-between">
           {/* Mobile sticky progress — never rendered alongside the desktop rail. */}
           <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5]/95 backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-950/95">
             <div className="flex items-center justify-between px-4 pt-2">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex min-h-[44px] items-center gap-1 text-[13px] font-medium text-stone-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
+                className="flex min-h-[44px] items-center gap-1 text-sm font-medium text-stone-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
               >
                 <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Back
               </button>
               <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
             </div>
-            <WizardProgressBar current={step} labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
+            <WizardProgressBar current={step} steps={WIZARD_STEPS} navLabel="Listing progress" labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
 
           <div ref={scrollRef} className="flex-1 px-4 py-5">
             <div className="mx-auto w-full max-w-[680px]">
               <div className="mb-4 hidden items-center justify-between lg:flex">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
                   Step {stepIndex(step) + 1} of {WIZARD_STEPS.length}
                 </p>
                 <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
@@ -503,10 +591,10 @@ export function ItemListingWizard({
 
               {mode === "needs-info" && adminNote && (
                 <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
-                  <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                  <p className="flex items-center gap-1.5 text-2xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
                     <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> Our team asked for more information
                   </p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">{adminNote}</p>
+                  <p className="mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">{adminNote}</p>
                 </div>
               )}
 
@@ -520,19 +608,26 @@ export function ItemListingWizard({
                   custom={isRtl ? -direction : direction}
                   variants={cardVariants(reduced)}
                   initial="enter" animate="center" exit="exit"
-                  className="rounded-2xl border border-stone-200 bg-white p-3 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-16px_rgba(28,25,23,0.25)] sm:p-4 dark:border-zinc-800 dark:bg-zinc-900"
+                  className="ck-wizard-step-card rounded-2xl border border-stone-200 bg-white p-2.5 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-16px_rgba(28,25,23,0.25)] sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-900"
                 >
+                  {/* Decorative only. Inside the keyed section on purpose, so it
+                      enters, moves and exits with the card — a wrapper outside
+                      AnimatePresence would sit still while the card animated,
+                      and would disturb mode="wait" exit sequencing. */}
+                  <WizardBorderGlow />
+
+                  <div className="ck-wizard-step-card-content">
                   <h1
                     ref={headingRef}
                     tabIndex={-1}
-                    className="text-lg font-bold text-stone-900 outline-none sm:text-xl dark:text-stone-100"
+                    className="text-base font-bold text-stone-900 outline-none sm:text-lg dark:text-stone-100"
                     style={{ fontFamily: "var(--font-source-serif-4), serif" }}
                   >
                     {STEP_LABELS[step]}
                   </h1>
-                  <p className="mb-3 mt-0.5 text-[13px] text-stone-500 dark:text-stone-400">{STEP_INTROS[step]}</p>
+                  <p className="mb-2 mt-0.5 text-xs text-stone-500 dark:text-stone-400">{STEP_INTROS[step]}</p>
 
-                  <div className="mb-3">
+                  <div className="mb-2 empty:hidden">
                     <StepErrorSummary errors={Object.fromEntries(Object.entries(errors).filter(([, v]) => v))} onFocusField={focusField} />
                   </div>
 
@@ -540,7 +635,7 @@ export function ItemListingWizard({
                     <PhotosStep
                       photos={model.photos}
                       error={errors.photos}
-                      aiState={{ running: aiRunning, note: aiNote, canReanalyze: uploadedCount >= 2 }}
+                      aiState={{ running: aiRunning, note: aiNote, canReanalyze: uploadedCount >= 1 }}
                       prohibited={prohibited}
                       onAddFiles={addFiles}
                       onRetryPhoto={photoApi.retryPhoto}
@@ -569,6 +664,7 @@ export function ItemListingWizard({
                       resubmit={mode === "needs-info"}
                     />
                   )}
+                  </div>
                 </motion.section>
               </AnimatePresence>
               </StepCardStack>

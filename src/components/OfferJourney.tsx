@@ -123,10 +123,10 @@ export function OfferJourney({ status }: { status: string }) {
     <div className="space-y-2.5 pt-1">
       {/* Step count + normalized milestone name */}
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+        <span className="text-3xs font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
           Step {idx + 1} of {stages.length}
         </span>
-        <span className={`truncate text-[11px] font-bold ${accent}`}>{current.label}</span>
+        <span className={`truncate text-2xs font-bold ${accent}`}>{current.label}</span>
       </div>
 
       <JourneyRail stages={stages} idx={idx} atRisk={atRisk} reduce={!!reduce} />
@@ -134,7 +134,7 @@ export function OfferJourney({ status }: { status: string }) {
       {/* Current stage — the richer per-status text, so the card does not print a
           generic explanation and this one back to back. */}
       <div className="rounded-xl border border-stone-100 bg-stone-50 p-2.5 dark:border-zinc-700 dark:bg-zinc-800">
-        <p className={`text-[10px] font-black uppercase tracking-wider ${accent}`}>
+        <p className={`text-3xs font-black uppercase tracking-wider ${accent}`}>
           Now · {current.label}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
@@ -143,7 +143,7 @@ export function OfferJourney({ status }: { status: string }) {
       </div>
 
       {next && (
-        <p className="truncate text-[11px] text-stone-400 dark:text-stone-500">
+        <p className="truncate text-2xs text-stone-400 dark:text-stone-500">
           <span className="font-semibold">Next:</span> {next.label} — {next.sublabel}
         </p>
       )}

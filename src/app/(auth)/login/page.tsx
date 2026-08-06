@@ -7,9 +7,14 @@ import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { login, googleAuth } from "@/lib/api";
-import { Eye, EyeOff } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { Reveal } from "@/components/Reveal";
+import { useReducedMotion } from "framer-motion";
+import { isGenericCredentialFailure, validateEmail, validateLoginPassword } from "@/features/auth-validation/authValidation";
+import { useTimedFieldValidation } from "@/features/auth-validation/useTimedFieldValidation";
+import { ValidatedFieldFeedback, fieldStateClass } from "@/features/auth-validation/ValidatedFieldFeedback";
+import { AuthFormAlert } from "@/features/auth-validation/AuthFormAlert";
 
 // ── Inline brand SVGs ──────────────────────────────────────────────────────────
 function GoogleIcon() {
@@ -50,7 +55,21 @@ function LoginContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [formError, setFormError] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  const reduced = !!useReducedMotion();
+
+  const tv = useTranslations("auth.validation");
+  const v = useTimedFieldValidation();
+  const emailField = v.get("email");
+  const passwordField = v.get("password");
+
+  // Rebuilt on each render from current values — the hook holds timing state,
+  // never a copy of the form values.
+  const validators = {
+    email: () => validateEmail(email),
+    password: () => validateLoginPassword(password),
+  };
 
   const triggerGoogle = useGoogleLogin({
     scope: "openid email profile",
@@ -91,27 +110,38 @@ function LoginContent() {
 
   if (user) return null;
 
-  function validateLogin(): boolean {
-    const e = { email: "", password: "" };
-    if (!email.trim()) e.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email address";
-    if (!password) e.password = "Password is required";
-    setErrors(e);
-    return !e.email && !e.password;
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validateLogin()) return;
+    if (loading || signedIn) return; // no duplicate submissions
+
+    // Safety net for fields never touched. No request leaves until this passes.
+    const firstInvalid = v.validateAll(validators);
+    if (firstInvalid) {
+      const el = document.getElementById(firstInvalid);
+      el?.focus();
+      el?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+      return;
+    }
+
+    setFormError(null);
     setLoading(true);
     try {
-      const res = await login(email, password, rememberMe);
-      setUser({ email: res.email, role: res.role });
-      toast.success("Welcome back!");
-      router.push(homeForRole(res.role));
+      const res = await login(email.trim(), password, rememberMe);
+
+      // Brief visual confirmation before routing. Reduced-motion users skip it
+      // entirely rather than being held back for an animation they disabled.
+      setSignedIn(true);
+      const settle = () => {
+        setUser({ email: res.email, role: res.role });
+        router.push(homeForRole(res.role));
+      };
+      if (reduced) settle();
+      else setTimeout(settle, 380);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Invalid credentials");
-    } finally {
+      const raw = err instanceof Error ? err.message : "";
+      // A 401 must not say which half was wrong, nor whether the account exists.
+      // Operational states (locked, suspended, rate-limited) stay verbatim.
+      setFormError(isGenericCredentialFailure(raw) ? tv("invalidCredentials") : raw);
       setLoading(false);
     }
   }
@@ -126,7 +156,7 @@ function LoginContent() {
           {/* Heading */}
           <Reveal>
             <div className="space-y-1 sm:space-y-1.5">
-              <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Welcome back</span>
+              <span className="text-2xs font-black uppercase tracking-widest text-[#b04a15]">Welcome back</span>
               <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
                 {t("title")} 👋
               </h1>
@@ -140,6 +170,10 @@ function LoginContent() {
 
           {/* Email / Password form */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
+            {/* Form-level, not per-field: a credential failure belongs to
+                neither input, and pinning it to one would leak which was wrong. */}
+            <AuthFormAlert message={formError} />
+
             <Reveal delay={80}>
               {/* Email */}
               <div className="space-y-1 sm:space-y-1.5">
@@ -156,10 +190,26 @@ function LoginContent() {
                   required
                   placeholder="you@example.com"
                   value={email}
-                  onChange={e => { setEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: "" })); }}
-                  className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
+                  aria-invalid={emailField.status === "invalid" || undefined}
+                  aria-describedby={emailField.status === "invalid" || emailField.status === "valid" ? "email-feedback" : undefined}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    setFormError(null);
+                    v.onChange("email", () => validateEmail(e.target.value));
+                  }}
+                  onBlur={() => v.onBlur("email", validators.email)}
+                  onCompositionStart={() => v.onCompositionStart("email")}
+                  onCompositionEnd={() => v.onCompositionEnd("email", validators.email)}
+                  className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(emailField.status)}`}
                 />
-                {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email}</p>}
+                <ValidatedFieldFeedback
+                  id="email-feedback"
+                  status={emailField.status}
+                  errorKey={emailField.errorKey}
+                  successKey={emailField.successKey}
+                  params={emailField.params}
+                  serverText={emailField.serverErrorText}
+                />
               </div>
             </Reveal>
 
@@ -185,8 +235,15 @@ function LoginContent() {
                     required
                     placeholder="••••••••"
                     value={password}
-                    onChange={e => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: "" })); }}
-                    className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
+                    aria-invalid={passwordField.status === "invalid" || undefined}
+                    aria-describedby={passwordField.status === "invalid" ? "password-feedback" : undefined}
+                    onChange={e => {
+                      setPassword(e.target.value);
+                      setFormError(null);
+                      v.onChange("password", () => validateLoginPassword(e.target.value));
+                    }}
+                    onBlur={() => v.onBlur("password", validators.password)}
+                    className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(passwordField.status)}`}
                   />
                   <button
                     type="button"
@@ -197,7 +254,17 @@ function LoginContent() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.password && <p className="text-xs text-red-500 font-medium">{errors.password}</p>}
+                {/* No success state here: a non-empty password is not a correct
+                    one, and only the server can say. It stays neutral until
+                    authentication actually succeeds. */}
+                <ValidatedFieldFeedback
+                  id="password-feedback"
+                  status={passwordField.status}
+                  errorKey={passwordField.errorKey}
+                  successKey={null}
+                  params={passwordField.params}
+                  serverText={passwordField.serverErrorText}
+                />
               </div>
             </Reveal>
 
@@ -221,12 +288,24 @@ function LoginContent() {
 
             <Reveal delay={200}>
               {/* Submit */}
+              {/* Disabled only while a request is in flight or after success —
+                  never merely because untouched fields are empty, which would
+                  remove submit as the safety net that reveals what is missing. */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 animate-heartbeat"
+                disabled={loading || signedIn}
+                className={`w-full rounded-xl disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                  signedIn
+                    ? "bg-emerald-600 focus-visible:ring-emerald-600"
+                    : "bg-[#b04a15] hover:bg-[#963c0d] focus-visible:ring-[#b04a15] animate-heartbeat"
+                }`}
               >
-                {loading ? t("signingIn") : t("signIn")}
+                {signedIn ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
+                    {tv("signedIn")}
+                  </span>
+                ) : loading ? t("signingIn") : t("signIn")}
               </button>
             </Reveal>
           </form>
@@ -261,7 +340,7 @@ function LoginContent() {
                   {t("facebook")}
                 </button>
                 {/* Coming Soon badge */}
-                <span className="absolute -top-2 -right-2 text-[9px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[#b04a15] border border-[#e07b3a]/40 shadow-sm pointer-events-none select-none">
+                <span className="absolute -top-2 -right-2 text-4xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[#b04a15] border border-[#e07b3a]/40 shadow-sm pointer-events-none select-none">
                   Coming Soon
                 </span>
               </div>

@@ -245,7 +245,7 @@ export function AnalyticsPanel() {
                       background: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "8px",
-                      fontSize: "13px",
+                      fontSize: "var(--text-sm)",
                       color: "hsl(var(--foreground))",
                     }}
                   />
@@ -293,11 +293,11 @@ export function AnalyticsPanel() {
                       background: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "8px",
-                      fontSize: "13px",
+                      fontSize: "var(--text-sm)",
                       color: "hsl(var(--foreground))",
                     }}
                   />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "var(--text-xs)", paddingTop: "12px" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -336,7 +336,7 @@ export function AnalyticsPanel() {
                       background: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "8px",
-                      fontSize: "13px",
+                      fontSize: "var(--text-sm)",
                       color: "hsl(var(--foreground))",
                     }}
                   />

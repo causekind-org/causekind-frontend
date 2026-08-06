@@ -142,13 +142,13 @@ export function DoneeListingPrompt() {
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-emerald-700">
+              <p className="text-4xs font-black uppercase tracking-[0.16em] text-emerald-700">
                 Donee Portal
               </p>
-              <p className="mt-0.5 truncate text-[13px] font-black leading-tight text-stone-950">
+              <p className="mt-0.5 truncate text-sm font-black leading-tight text-stone-950">
                 Need to list an item?
               </p>
-              <p className="mt-0.5 truncate text-[11px] font-semibold leading-snug text-stone-600">
+              <p className="mt-0.5 truncate text-2xs font-semibold leading-snug text-stone-600">
                 Tell donors what you need.
               </p>
             </div>
@@ -156,7 +156,7 @@ export function DoneeListingPrompt() {
             <Link
               href="/requests/new"
               onClick={handleAction}
-              className="group flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#1e3a60] px-2.5 text-[11px] font-black uppercase text-white shadow-[0_7px_14px_rgba(30,58,96,0.23)] transition-all hover:bg-[#16304d] active:scale-95"
+              className="group flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#1e3a60] px-2.5 text-2xs font-black uppercase text-white shadow-[0_7px_14px_rgba(30,58,96,0.23)] transition-all hover:bg-[#16304d] active:scale-95"
             >
               List
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />

@@ -120,10 +120,12 @@ export function MobileBottomNav() {
     return { x, index };
   }
 
-  // Hidden inside the super-admin command center and admin dashboard (by path or role).
+  // Hidden inside super-admin, admin dashboard, and the item listing wizard (which has its own navigation).
+  const isItemListingWizard = pathname === "/items/new" || (pathname?.startsWith("/items/") && pathname?.endsWith("/edit"));
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
+    isItemListingWizard ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 
@@ -223,7 +225,7 @@ export function MobileBottomNav() {
                 strokeWidth={2.1}
               />
               <span
-                className={`pointer-events-none absolute inset-x-1 bottom-1.5 truncate text-center text-[9px] font-black tracking-[0.025em] text-[var(--ck-role-accent)] transition-all duration-300 ${selected
+                className={`pointer-events-none absolute inset-x-1 bottom-1.5 truncate text-center text-4xs font-black tracking-[0.025em] text-[var(--ck-role-accent)] transition-all duration-300 ${selected
                   ? "translate-y-0 opacity-100"
                   : "translate-y-1 opacity-0"
                 }`}
@@ -344,12 +346,16 @@ export function FloatingSupportButton() {
     };
   }, []);
 
-  // Hidden inside the super-admin command center and admin dashboard (by path or
-  // role), and on the Handover Hub, which has its own Messages button here.
+  // Hidden inside super-admin, admin dashboard, Handover Hub, and focused form wizards.
+  // The support bubble otherwise lands directly on top of the wizard's sticky CTA.
+  const isItemListingWizard = pathname === "/items/new" || (pathname?.startsWith("/items/") && pathname?.endsWith("/edit"));
+  const isDonationOfferWizard = /^\/requests\/[^/]+\/offer\/?$/.test(pathname ?? "");
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
     onHandover ||
+    isItemListingWizard ||
+    isDonationOfferWizard ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 
@@ -386,7 +392,7 @@ export function FloatingSupportButton() {
             </span>
             <div>
               <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("emailUs")}</p>
-              <p className="text-[10px] text-stone-400 font-medium">support@causekind.com</p>
+              <p className="text-3xs text-stone-400 font-medium">support@causekind.com</p>
             </div>
           </a>
           <a
@@ -398,7 +404,7 @@ export function FloatingSupportButton() {
             </span>
             <div>
               <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("helpFaq")}</p>
-              <p className="text-[10px] text-stone-400 font-medium">{t("helpFaqSub")}</p>
+              <p className="text-3xs text-stone-400 font-medium">{t("helpFaqSub")}</p>
             </div>
           </a>
         </div>

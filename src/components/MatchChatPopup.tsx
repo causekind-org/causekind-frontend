@@ -62,7 +62,7 @@ export default function MatchChatPopup({
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold leading-tight">{partnerName}</p>
-                <p className="truncate text-[11px] text-white/70">
+                <p className="truncate text-2xs text-white/70">
                   {itemTitle ? itemTitle : "Live chat — synced with the Handover Hub"}
                 </p>
               </div>

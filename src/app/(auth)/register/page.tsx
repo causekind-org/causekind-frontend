@@ -16,6 +16,15 @@ import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 import { Reveal } from "@/components/Reveal";
+import {
+  mapServerErrorToField, validateCity, validateCountry, validateEmail, validateFullName,
+  validatePhone, validateRegisterPassword, validateRole, validateState,
+  type FieldStatus,
+} from "@/features/auth-validation/authValidation";
+import { useTimedFieldValidation } from "@/features/auth-validation/useTimedFieldValidation";
+import { ValidatedFieldFeedback, fieldStateClass } from "@/features/auth-validation/ValidatedFieldFeedback";
+import { AuthFormAlert } from "@/features/auth-validation/AuthFormAlert";
+import { useReducedMotion } from "framer-motion";
 
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
@@ -83,14 +92,28 @@ async function detectCountryFromIP(): Promise<string> {
 }
 
 // ── Input component ──────────────────────────────────────────────────────────────
+/**
+ * Text field with timed validation feedback.
+ *
+ * <p>`status` drives border, `aria-invalid` and the message slot together, so
+ * colour is never the only signal. The input is never remounted when status
+ * changes — that would drop focus and the caret mid-correction.
+ */
 function Field({
   id, label, type = "text", placeholder, value, onChange, required = true,
-  readOnly = false, hint, autoComplete, error,
+  readOnly = false, hint, autoComplete, field, onBlur, onCompositionStart, onCompositionEnd,
 }: {
   id: string; label: string; type?: string; placeholder?: string;
   value: string; onChange: (v: string) => void; required?: boolean;
-  readOnly?: boolean; hint?: string; autoComplete?: string; error?: string;
+  readOnly?: boolean; hint?: string; autoComplete?: string;
+  field?: { status: FieldStatus; errorKey: string | null; successKey: string | null; params?: Record<string, string | number>; serverErrorText: string | null };
+  onBlur?: () => void;
+  onCompositionStart?: () => void;
+  onCompositionEnd?: () => void;
 }) {
+  const status: FieldStatus = field?.status ?? "pristine";
+  const described = field && (status === "invalid" || status === "valid") ? `${id}-feedback` : undefined;
+
   return (
     <div className="space-y-1 sm:space-y-1.5">
       <label htmlFor={id} className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
@@ -104,14 +127,29 @@ function Field({
         readOnly={readOnly}
         placeholder={placeholder}
         value={value}
+        aria-invalid={status === "invalid" || undefined}
+        aria-describedby={described}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
+        onCompositionStart={onCompositionStart}
+        onCompositionEnd={onCompositionEnd}
         className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900
-          ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}
+          ${fieldStateClass(status)}
           ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
       />
-      {error
-        ? <p className="text-xs text-red-500 font-medium mt-0.5">{error}</p>
-        : hint && <p className="text-xs text-stone-400">{hint}</p>}
+      {field ? (
+        <ValidatedFieldFeedback
+          id={`${id}-feedback`}
+          status={status}
+          errorKey={field.errorKey}
+          successKey={field.successKey}
+          params={field.params}
+          serverText={field.serverErrorText}
+        />
+      ) : null}
+      {status !== "invalid" && status !== "valid" && hint && (
+        <p className="text-xs text-stone-400">{hint}</p>
+      )}
     </div>
   );
 }
@@ -119,6 +157,7 @@ function Field({
 // ── Main content ───────────────────────────────────────────────────────────────
 function RegisterContent() {
   const t = useTranslations("auth.register");
+  const tv = useTranslations("auth.validation");
   const { setUser, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -147,6 +186,9 @@ function RegisterContent() {
   const [cityFreeText, setCityFreeText] = useState("");
   const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const reducedMotion = !!useReducedMotion();
+  const v = useTimedFieldValidation();
 
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
 
@@ -243,6 +285,12 @@ function RegisterContent() {
     setCityValue("");
     setCityFreeText("");
     setForceFreeTextCity(false);
+    // The dependents were just emptied, so their old verdicts are stale — a
+    // green tick left on a now-blank city is worse than no feedback at all.
+    v.onChange("country", () => validateCountry(iso));
+    v.onChange("state", () => validateState("", false));
+    v.onChange("city", () => validateCity("", "", false));
+    setFormError(null);
   }
 
   function handleStateChange(iso: string) {
@@ -250,6 +298,9 @@ function RegisterContent() {
     setCityValue("");
     setCityFreeText("");
     setForceFreeTextCity(false);
+    v.onChange("state", () => validateState(iso, stateOptions.length > 0));
+    v.onChange("city", () => validateCity("", "", false));
+    setFormError(null);
   }
 
   function buildCityString(): string {
@@ -345,25 +396,55 @@ function RegisterContent() {
     if (errors[field]) setErrors(e => ({ ...e, [field]: "" }));
   }
 
-  function validate(): boolean {
-    const e: Record<string, string> = {};
-    if (!form.fullName.trim() || form.fullName.trim().length < 2)
-      e.fullName = "Full name must be at least 2 characters";
-    if (!phoneNumber || phoneNumber.length < 4)
-      e.phone = "Enter a valid phone number";
-    else if (PHONE_LENGTHS[dialCountry] && phoneNumber.length !== PHONE_LENGTHS[dialCountry])
-      e.phone = `Phone number must be exactly ${PHONE_LENGTHS[dialCountry]} digits`;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      e.email = "Enter a valid email address";
-    if (!isSocialFlow && form.password.length < 8)
-      e.password = "Password must be at least 8 characters";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+  /**
+   * Every rule the form enforces, rebuilt each render from current values.
+   * Google completion drops password entirely — that account has none, and
+   * validating a field the user cannot fill would deadlock the form.
+   */
+  const validators = {
+    role: () => validateRole(form.role),
+    fullName: () => validateFullName(form.fullName),
+    email: () => validateEmail(form.email),
+    phone: () => validatePhone(phoneNumber, dialCountry, getDialCode(dialCountry, dialCodeOptions)),
+    country: () => validateCountry(countryIso),
+    state: () => validateState(stateIso, stateOptions.length > 0),
+    city: () => validateCity(cityValue, cityFreeText, showCityFreeText),
+    ...(isSocialFlow ? {} : { password: () => validateRegisterPassword(form.password) }),
+  };
+
+  // Country/state/city are validated individually but reported as one group.
+  const countryF = v.get("country");
+  const stateF = v.get("state");
+  const cityF = v.get("city");
+  const locationParts = [countryF, stateF, cityF];
+  const locationStatus: FieldStatus =
+    locationParts.some(f => f.status === "invalid") ? "invalid"
+    : locationParts.every(f => f.status === "valid") ? "valid"
+    : locationParts.some(f => f.status !== "pristine") ? "neutral"
+    : "pristine";
+  const locationErrorKey = countryF.errorKey ?? stateF.errorKey ?? cityF.errorKey;
+
+  /** Re-runs the group, but only once it has already produced an error. */
+  function revalidateLocation() {
+    setFormError(null);
+    v.onChange("country", validators.country);
+    v.onChange("state", validators.state);
+    v.onChange("city", validators.city);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+    if (loading) return;
+
+    const firstInvalid = v.validateAll(validators);
+    if (firstInvalid) {
+      const el = document.getElementById(firstInvalid);
+      el?.focus();
+      el?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+      return;
+    }
+    setFormError(null);
+
     const dialCode = getDialCode(dialCountry, dialCodeOptions);
     const fullPhone = dialCode && phoneNumber ? `${dialCode}${phoneNumber}` : phoneNumber;
     const cityStr = buildCityString();
@@ -388,7 +469,19 @@ function RegisterContent() {
         toast.success("We've emailed you a verification code.");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Registration failed");
+      const raw = err instanceof Error ? err.message : "Registration failed";
+      // Known identifiers get pinned to their field so the fix is obvious;
+      // anything unrecognised goes to the form-level alert rather than being
+      // attached to a guessed field. Entered values are never discarded.
+      const mapped = mapServerErrorToField(raw);
+      if (mapped) {
+        v.setServerError(mapped.field, mapped.errorKey, raw);
+        const el = document.getElementById(mapped.field);
+        el?.focus();
+        el?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+      } else {
+        setFormError(raw);
+      }
     } finally {
       setLoading(false);
     }
@@ -455,7 +548,7 @@ function RegisterContent() {
           {/* Heading */}
           <Reveal>
             <div className="space-y-1 sm:space-y-1.5">
-              <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">Create account</span>
+              <span className="text-2xs font-black uppercase tracking-widest text-[#b04a15]">Create account</span>
               <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
                 {isSocialFlow ? `${t("almostThereTitle")} 🎉` : `${t("joinTitle")} 🌱`}
               </h1>
@@ -468,6 +561,8 @@ function RegisterContent() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" noValidate>
+            {/* Server errors that belong to no single field. Values are kept. */}
+            <AuthFormAlert message={formError} />
             <Reveal delay={60}>
               {/* Role Selection Option */}
               <div className="space-y-1 sm:space-y-1.5">
@@ -485,7 +580,7 @@ function RegisterContent() {
                     }`}
                   >
                     <span className="text-sm font-bold">Donor 🎁</span>
-                    <span className="text-[10px] opacity-85 mt-0.5 font-normal">I want to donate items</span>
+                    <span className="text-3xs opacity-85 mt-0.5 font-normal">I want to donate items</span>
                   </button>
                   <button
                     type="button"
@@ -497,7 +592,7 @@ function RegisterContent() {
                     }`}
                   >
                     <span className="text-sm font-bold">Donee 🤝</span>
-                    <span className="text-[10px] opacity-85 mt-0.5 font-normal">I need to request support</span>
+                    <span className="text-3xs opacity-85 mt-0.5 font-normal">I need to request support</span>
                   </button>
                 </div>
               </div>
@@ -507,23 +602,31 @@ function RegisterContent() {
               <div className="space-y-1">
                 <Field
                   id="fullName" label={t("fullName")} placeholder="Jane Doe"
-                  value={form.fullName} onChange={v => set("fullName", v)}
+                  value={form.fullName}
+                  onChange={val => { set("fullName", val); setFormError(null); v.onChange("fullName", () => validateFullName(val)); }}
+                  onBlur={() => v.onBlur("fullName", validators.fullName)}
+                  onCompositionStart={() => v.onCompositionStart("fullName")}
+                  onCompositionEnd={() => v.onCompositionEnd("fullName", validators.fullName)}
                   readOnly={isSocialFlow && !!form.fullName}
                   autoComplete="name"
-                  error={errors.fullName}
+                  field={isSocialFlow && form.fullName ? undefined : v.get("fullName")}
                 />
               </div>
             </Reveal>
 
             <Reveal delay={140}>
               <div className="space-y-1">
+                {/* Google-linked email is read-only and shows the neutral linked
+                    hint rather than a green tick — it was never validated here. */}
                 <Field
                   id="email" label={t("email")} type="email" placeholder="you@example.com"
-                  value={form.email} onChange={v => set("email", v)}
+                  value={form.email}
+                  onChange={val => { set("email", val); setFormError(null); v.onChange("email", () => validateEmail(val)); }}
+                  onBlur={() => v.onBlur("email", validators.email)}
                   readOnly={isSocialFlow}
                   hint={isSocialFlow ? t("googleLinkedHint") : undefined}
                   autoComplete="email"
-                  error={errors.email}
+                  field={isSocialFlow ? undefined : v.get("email")}
                 />
               </div>
             </Reveal>
@@ -544,7 +647,12 @@ function RegisterContent() {
                     <SearchableSelect
                       options={dialCodeOptions}
                       value={dialCountry}
-                      onChange={setDialCountry}
+                      // Changing dial country changes the expected digit count,
+                      // so any existing phone verdict must be recomputed.
+                      onChange={(iso) => {
+                        setDialCountry(iso);
+                        v.onChange("phone", () => validatePhone(phoneNumber, iso, getDialCode(iso, dialCodeOptions)));
+                      }}
                       placeholder="+–"
                       searchPlaceholder={t("searchCountry")}
                       renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
@@ -557,12 +665,27 @@ function RegisterContent() {
                     placeholder={t("phone")}
                     value={phoneNumber}
                     maxLength={maxPhoneLength}
-                    onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength))}
+                    aria-invalid={v.get("phone").status === "invalid" || undefined}
+                    aria-describedby={v.get("phone").status !== "pristine" && v.get("phone").status !== "neutral" ? "phone-feedback" : undefined}
+                    onChange={e => {
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength);
+                      setPhoneNumber(digits);
+                      setFormError(null);
+                      v.onChange("phone", () => validatePhone(digits, dialCountry, getDialCode(dialCountry, dialCodeOptions)));
+                    }}
+                    onBlur={() => v.onBlur("phone", validators.phone)}
                     autoComplete="tel"
-                    className={`flex-1 min-w-0 rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
+                    className={`flex-1 min-w-0 rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(v.get("phone").status)}`}
                   />
                 </div>
-                {errors.phone && <p className="text-xs text-red-500 font-medium">{errors.phone}</p>}
+                <ValidatedFieldFeedback
+                  id="phone-feedback"
+                  status={v.get("phone").status}
+                  errorKey={v.get("phone").errorKey}
+                  successKey={v.get("phone").successKey}
+                  params={v.get("phone").params}
+                  serverText={v.get("phone").serverErrorText}
+                />
               </div>
             </Reveal>
 
@@ -637,7 +760,12 @@ function RegisterContent() {
                         type="text"
                         placeholder={t("enterCity")}
                         value={cityFreeText}
-                        onChange={e => setCityFreeText(e.target.value)}
+                        onChange={e => {
+                          setCityFreeText(e.target.value);
+                          v.onChange("city", () => validateCity("", e.target.value, true));
+                          setFormError(null);
+                        }}
+                        onBlur={() => v.onBlur("city", validators.city)}
                         autoComplete="address-level2"
                         className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
                       />
@@ -645,7 +773,7 @@ function RegisterContent() {
                       <SearchableSelect
                         options={cityOptions}
                         value={cityValue}
-                        onChange={setCityValue}
+                        onChange={(val) => { setCityValue(val); v.onChange("city", () => validateCity(val, "", false)); setFormError(null); }}
                         placeholder={t("selectCity")}
                         disabledPlaceholder={t("selectStateFirst")}
                         disabled={!stateIso && !noStateOptions}
@@ -654,6 +782,20 @@ function RegisterContent() {
                     )}
                   </div>
                 </div>
+
+                {/* One shared verdict for the location group, so the user sees a
+                    single "what's missing" rather than three competing messages.
+                    Suppressed while city options are still loading, and while GPS
+                    is running, so neither can produce a premature error. */}
+                {!gpsLoading && (
+                  <ValidatedFieldFeedback
+                    id="location-feedback"
+                    status={locationStatus}
+                    errorKey={locationErrorKey}
+                    successKey={locationStatus === "valid" ? "locationValid" : null}
+                    serverText={null}
+                  />
+                )}
               </div>
             </Reveal>
 
@@ -672,19 +814,42 @@ function RegisterContent() {
                        required
                        placeholder="••••••••"
                        value={form.password}
-                       onChange={e => set("password", e.target.value)}
-                       className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-stone-200 dark:border-zinc-800 focus:border-[#b04a15] focus:ring-[#b04a15]/20"}`}
+                       aria-invalid={v.get("password").status === "invalid" || undefined}
+                       aria-describedby="password-feedback"
+                       onChange={e => {
+                         set("password", e.target.value);
+                         setFormError(null);
+                         // Stays neutral through characters 1-7 on the first pass;
+                         // only goes live once it has already errored once.
+                         v.onChange("password", () => validateRegisterPassword(e.target.value));
+                       }}
+                       onBlur={() => v.onBlur("password", () => validateRegisterPassword(form.password))}
+                       className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(v.get("password").status)}`}
                      />
                     <button
                       type="button"
                       aria-label={showPassword ? "Hide password" : "Show password"}
-                      onClick={() => setShowPassword(v => !v)}
+                      // `prev`, not `v` — `v` is the validation controller in this
+                      // scope and shadowing it here is a trap for the next edit.
+                      onClick={() => setShowPassword(prev => !prev)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {errors.password && <p className="text-xs text-red-500 font-medium">{errors.password}</p>}
+                  {/* Feedback sits BELOW the input, never inside it — an icon in
+                      the field would collide with the show/hide button. */}
+                  <ValidatedFieldFeedback
+                    id="password-feedback"
+                    status={v.get("password").status}
+                    errorKey={v.get("password").errorKey}
+                    successKey={v.get("password").successKey}
+                    params={v.get("password").params}
+                    serverText={v.get("password").serverErrorText}
+                  />
+                  {v.get("password").status !== "invalid" && v.get("password").status !== "valid" && (
+                    <p className="text-xs text-stone-400">{tv("passwordHint")}</p>
+                  )}
                 </div>
               </Reveal>
             )}
@@ -752,7 +917,7 @@ function RegisterContent() {
                     <FacebookIcon />
                     {t("facebook")}
                   </button>
-                  <span className="absolute -top-2 -right-2 text-[9px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[#b04a15] border border-[#e07b3a]/40 shadow-sm pointer-events-none select-none">
+                  <span className="absolute -top-2 -right-2 text-4xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[#b04a15] border border-[#e07b3a]/40 shadow-sm pointer-events-none select-none">
                     Coming Soon
                   </span>
                 </div>

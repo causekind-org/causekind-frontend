@@ -24,7 +24,7 @@ function timeAgo(ts: number): string {
 // rejected = red alert card, fulfilled = celebration gradient, info = compact row.
 function NotifItem({ n }: { n: AppNotification }) {
   const when = (
-    <span className="text-[10px] text-stone-400 dark:text-stone-500 font-medium shrink-0 whitespace-nowrap">
+    <span className="text-3xs text-stone-400 dark:text-stone-500 font-medium shrink-0 whitespace-nowrap">
       {timeAgo(n.receivedAt)}
     </span>
   );
@@ -42,7 +42,7 @@ function NotifItem({ n }: { n: AppNotification }) {
               {when}
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
-            <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/50 rounded-full px-2.5 py-1 group-hover:gap-1.5 transition-all">
+            <span className="inline-flex items-center gap-1 mt-2 text-2xs font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/50 rounded-full px-2.5 py-1 group-hover:gap-1.5 transition-all">
               Take action <ArrowRight className="w-3 h-3" />
             </span>
           </div>
@@ -108,10 +108,10 @@ function NotifItem({ n }: { n: AppNotification }) {
       <Info className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-2">
-          <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-200 leading-tight">{n.title}</p>
+          <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 leading-tight">{n.title}</p>
           {when}
         </div>
-        <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
+        <p className="text-2xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
       </div>
     </Link>
   );
@@ -152,7 +152,7 @@ export function NotificationBell() {
       >
         <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 rounded-full bg-[var(--ck-role-accent)] text-white text-[9px] font-black px-1 shadow-sm animate-pulse">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 rounded-full bg-[var(--ck-role-accent)] text-white text-4xs font-black px-1 shadow-sm animate-pulse">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -180,7 +180,7 @@ export function NotificationBell() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b border-stone-100 dark:border-zinc-800">
-          <p className="text-[13px] sm:text-sm font-extrabold text-stone-900 dark:text-stone-100">Notifications</p>
+          <p className="text-sm sm:text-sm font-extrabold text-stone-900 dark:text-stone-100">Notifications</p>
           <button onClick={() => setOpen(false)} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors">
             <X className="w-4 h-4" />
           </button>

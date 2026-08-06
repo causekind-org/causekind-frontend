@@ -1,7 +1,8 @@
 "use client";
 
-import { WizardField, controlClass } from "../components/WizardField";
+import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
 import { CATEGORIES, subcategoriesFor, type WizardModel } from "../wizardModel";
+import { fieldsFor } from "../wizardFields";
 
 /** Step 2 — what the item is. */
 export function BasicsStep({
@@ -14,9 +15,10 @@ export function BasicsStep({
   onChange: <K extends keyof WizardModel>(key: K, value: WizardModel[K]) => void;
 }) {
   const subs = subcategoriesFor(model.category);
+  const fields = fieldsFor(model.category, model.subcategory);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <WizardField label="Category" required error={errors.category} aiFilled={aiFilled.has("category")} uncertain={uncertain.has("category")}>
         {({ id, describedBy, invalid }) => (
           <select
@@ -54,7 +56,7 @@ export function BasicsStep({
       <WizardField
         label="Title" required
         error={errors.title}
-        hint={`${model.title.length}/120`}
+        hint={model.title.length > 100 ? `${model.title.length}/120` : undefined}
         aiFilled={aiFilled.has("title")} uncertain={uncertain.has("title")}
       >
         {({ id, describedBy, invalid }) => (
@@ -81,27 +83,38 @@ export function BasicsStep({
         )}
       </WizardField>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <WizardField label="Brand" hint="Optional" error={errors.brand} aiFilled={aiFilled.has("brand")} uncertain={uncertain.has("brand")}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id} name="brand" type="text" aria-describedby={describedBy} aria-invalid={invalid}
-              className={controlClass} value={model.brand}
-              onChange={e => onChange("brand", e.target.value)}
-            />
+      {/* Brand and model only where they help a recipient decide. A first-aid
+          kit has no meaningful brand and a sofa has no model number; asking
+          anyway is what made this form feel generic. */}
+      {(fields.visible("brand") || fields.visible("model")) && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {fields.visible("brand") && (
+            <WizardField label={fields.label("brand")} hint={fields.hint("brand")} error={errors.brand} aiFilled={aiFilled.has("brand")} uncertain={uncertain.has("brand")}>
+              {({ id, describedBy, invalid }) => (
+                <input
+                  id={id} name="brand" type="text" aria-describedby={describedBy} aria-invalid={invalid}
+                  placeholder={fields.placeholder("brand")}
+                  className={controlClass} value={model.brand}
+                  onChange={e => onChange("brand", e.target.value)}
+                />
+              )}
+            </WizardField>
           )}
-        </WizardField>
 
-        <WizardField label="Model" hint="Optional" error={errors.model} aiFilled={aiFilled.has("model")} uncertain={uncertain.has("model")}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id} name="model" type="text" aria-describedby={describedBy} aria-invalid={invalid}
-              className={controlClass} value={model.model}
-              onChange={e => onChange("model", e.target.value)}
-            />
+          {fields.visible("model") && (
+            <WizardField label={fields.label("model")} hint={fields.hint("model")} error={errors.model} aiFilled={aiFilled.has("model")} uncertain={uncertain.has("model")}>
+              {({ id, describedBy, invalid }) => (
+                <input
+                  id={id} name="model" type="text" aria-describedby={describedBy} aria-invalid={invalid}
+                  placeholder={fields.placeholder("model")}
+                  className={controlClass} value={model.model}
+                  onChange={e => onChange("model", e.target.value)}
+                />
+              )}
+            </WizardField>
           )}
-        </WizardField>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

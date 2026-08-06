@@ -184,13 +184,13 @@ export function DonorCategoryModal() {
                 <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
             </div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.26em] text-[#f0b97a] mb-1 sm:mb-1.5">
+            <p className="text-4xs sm:text-3xs font-black uppercase tracking-[0.2em] sm:tracking-[0.26em] text-[#f0b97a] mb-1 sm:mb-1.5">
               Where will you make an impact?
             </p>
             <h2 className="text-base sm:text-xl font-extrabold text-white leading-snug tracking-tight">
               Choose your focus areas
             </h2>
-            <p className="text-stone-400 text-[11px] sm:text-xs mt-1 sm:mt-1.5 leading-snug sm:leading-relaxed">
+            <p className="text-stone-400 text-2xs sm:text-xs mt-1 sm:mt-1.5 leading-snug sm:leading-relaxed">
               We&apos;ll show you the most urgent local needs in your area.
             </p>
           </div>
@@ -244,8 +244,8 @@ export function DonorCategoryModal() {
                     <span className={`mb-1 flex h-6 w-6 items-center justify-center rounded-lg ${iconBg}`}>
                       <Icon className="h-3.5 w-3.5" />
                     </span>
-                    <span className="text-[11px] font-extrabold leading-tight">{name}</span>
-                    <span className="mt-1 text-[10px] font-medium leading-snug text-stone-300">{blurb}</span>
+                    <span className="text-2xs font-extrabold leading-tight">{name}</span>
+                    <span className="mt-1 text-3xs font-medium leading-snug text-stone-300">{blurb}</span>
                     {/* Arrow */}
                     <span
                       className={`absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r ${border}`}
@@ -259,7 +259,7 @@ export function DonorCategoryModal() {
                   </div>
 
                   {/* Label */}
-                  <span className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight transition-colors duration-200 ${isSelected ? col : "text-stone-400 group-hover:text-stone-200"}`}>
+                  <span className={`text-3xs sm:text-2xs font-bold text-center leading-tight transition-colors duration-200 ${isSelected ? col : "text-stone-400 group-hover:text-stone-200"}`}>
                     {name}
                   </span>
                 </button>
@@ -273,7 +273,7 @@ export function DonorCategoryModal() {
           <div className="flex flex-col gap-2">
             <button
               onClick={() => apply(tempSelected)}
-              className="ck-shimmer-btn group relative w-full py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-[13px] sm:text-sm font-extrabold text-white overflow-hidden transition-all duration-200 active:scale-[0.98]"
+              className="ck-shimmer-btn group relative w-full py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-sm font-extrabold text-white overflow-hidden transition-all duration-200 active:scale-[0.98]"
               style={{
                 background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)",
                 boxShadow: "0 10px 32px rgba(176,74,21,0.45), inset 0 1px 0 rgba(255,255,255,0.2)",
@@ -289,7 +289,7 @@ export function DonorCategoryModal() {
 
             <button
               onClick={() => apply([])}
-              className="text-stone-500 hover:text-stone-300 text-[11px] sm:text-xs font-semibold text-center transition-colors py-1 sm:py-1.5"
+              className="text-stone-500 hover:text-stone-300 text-2xs sm:text-xs font-semibold text-center transition-colors py-1 sm:py-1.5"
             >
               Show all needs instead
             </button>

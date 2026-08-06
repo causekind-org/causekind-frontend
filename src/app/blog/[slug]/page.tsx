@@ -67,7 +67,7 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="material-symbols-outlined text-[#b04a15] dark:text-[#e07b3a] text-[18px] leading-none shrink-0"
+          className="material-symbols-outlined text-[#b04a15] dark:text-[#e07b3a] text-lg leading-none shrink-0"
         >
           expand_more
         </motion.span>
@@ -104,7 +104,7 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
                 >
                   <span className="truncate">{opt.label}</span>
                   {opt.value === value && (
-                    <span className="material-symbols-outlined text-[14px] leading-none shrink-0">check</span>
+                    <span className="material-symbols-outlined text-sm leading-none shrink-0">check</span>
                   )}
                 </button>
               </motion.li>
@@ -467,7 +467,7 @@ export default function BlogReadingPage({ params }: PageProps) {
             {/* Article meta below the image */}
             <div className="max-w-3xl">
               <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
-                <h1 className="font-display-lg text-[#b04a15] dark:text-[#e07b3a] mb-4 leading-tight text-[26px] sm:text-4xl md:text-5xl font-bold break-words">
+                <h1 className="font-display-lg text-[#b04a15] dark:text-[#e07b3a] mb-4 leading-tight text-2xl sm:text-4xl md:text-5xl font-bold break-words">
                   {displayTitle}
                 </h1>
               </AnimatedWrapper>
@@ -505,7 +505,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                   {/* Bold Mode Toggle */}
                   <div className="flex items-center justify-between mb-8">
                     <span className="font-label-sm text-xs text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-1.5 font-medium whitespace-nowrap">
-                      <span className="material-symbols-outlined text-[18px] leading-none text-[#b04a15] dark:text-[#e07b3a]">format_bold</span>
+                      <span className="material-symbols-outlined text-lg leading-none text-[#b04a15] dark:text-[#e07b3a]">format_bold</span>
                       Bold Text
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -540,7 +540,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                           title={narrationState === "playing" ? "Pause" : "Play"}
                           className="w-10 h-10 rounded-full bg-[#b04a15] dark:bg-[#e07b3a] text-white flex items-center justify-center hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-[20px] leading-none">
+                          <span className="material-symbols-outlined text-xl leading-none">
                             {narrationState === "playing" ? "pause" : "play_arrow"}
                           </span>
                         </button>
@@ -551,9 +551,9 @@ export default function BlogReadingPage({ params }: PageProps) {
                           title="Restart"
                           className="w-10 h-10 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 transition-colors cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-[18px] leading-none">replay</span>
+                          <span className="material-symbols-outlined text-lg leading-none">replay</span>
                         </button>
-                        <span className="font-label-sm text-[11px] text-[#78716c] dark:text-[#a8a29e]">
+                        <span className="font-label-sm text-2xs text-[#78716c] dark:text-[#a8a29e]">
                           {narrationState === "playing" ? "Playing…" : narrationState === "paused" ? "Paused" : "Read aloud"}
                         </span>
                       </div>
@@ -562,7 +562,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                 </div>
                 {/* Social Share */}
                 <div className="flex flex-col gap-3 relative">
-                  <span className="font-label-sm text-[10px] text-[#78716c] dark:text-[#a8a29e] uppercase tracking-wider mb-1 font-bold">
+                  <span className="font-label-sm text-3xs text-[#78716c] dark:text-[#a8a29e] uppercase tracking-wider mb-1 font-bold">
                     Share Story
                   </span>
                   <div className="flex items-center gap-3">
@@ -572,7 +572,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                       title="Share via Email"
                       className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[20px] leading-none">mail</span>
+                      <span className="material-symbols-outlined text-xl leading-none">mail</span>
                     </button>
                     <button
                       onClick={handleCopyLink}
@@ -580,7 +580,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                       title="Copy Link"
                       className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[20px] leading-none">link</span>
+                      <span className="material-symbols-outlined text-xl leading-none">link</span>
                     </button>
                     {copied && (
                       <span className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-semibold animate-pulse absolute left-28 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 px-2.5 py-1.5 rounded-lg shadow-sm">Copied!</span>
@@ -665,7 +665,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                                       className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                                     />
                                     <div className="min-w-0">
-                                      <p className="text-[10px] font-bold text-[#b04a15] dark:text-orange-400 uppercase tracking-wide truncate">
+                                      <p className="text-3xs font-bold text-[#b04a15] dark:text-orange-400 uppercase tracking-wide truncate">
                                         {tr.category}
                                       </p>
                                       <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 truncate">
@@ -703,7 +703,7 @@ export default function BlogReadingPage({ params }: PageProps) {
                           <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
                             {tr.category}
                           </span>
-                          <h4 className="font-headline-md text-[16px] text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
+                          <h4 className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
                             {tr.title}
                           </h4>
                         </Link>

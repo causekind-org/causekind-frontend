@@ -27,7 +27,7 @@ export function CTASection() {
           <div className="relative bg-[#120c04] px-10 py-14 flex flex-col justify-between z-10">
             <div className="pointer-events-none absolute -top-20 -left-20 w-[320px] h-[320px] rounded-full bg-[#b04a15]/10 blur-3xl" />
             <div className="relative">
-              <span className="text-[11px] font-black uppercase tracking-widest text-[#f0b97a] mb-4 block">Get started</span>
+              <span className="text-2xs font-black uppercase tracking-widest text-[#f0b97a] mb-4 block">Get started</span>
               <h2 className="text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-4">{t("ctaSection.headline")}</h2>
               <p className="text-stone-400 text-sm leading-relaxed font-medium max-w-sm">{t("ctaSection.subtext")}</p>
             </div>

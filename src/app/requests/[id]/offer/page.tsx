@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { OfferResult } from "@/features/donation-offer-wizard/OfferResult";
 import {
   getAnonymizedRequest,
   doneePhotoSrc,
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/lib/toast";
+import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOfferWizard";
 import Link from "next/link";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
@@ -142,7 +144,7 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
 
   return (
     <section className="mb-8">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">About This Need</p>
+      <p className="mb-2 text-2xs font-bold uppercase tracking-wide text-gray-400">About This Need</p>
       <div className="overflow-hidden rounded-xl sm:rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div className="flex flex-col sm:flex-row">
           {showPortrait ? (
@@ -163,7 +165,7 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
                   />
                 </div>
               </div>
-              <span className="donee-portrait__badge mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+              <span className="donee-portrait__badge mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-2xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Photo checked
               </span>
@@ -177,13 +179,13 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
             {hasBadges && (
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 {request.verificationTier && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-2xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
                     <BadgeCheck className="h-3.5 w-3.5" />
                     {TIER_LABEL[request.verificationTier] ?? "Verified"}
                   </span>
                 )}
                 {request.emergency && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-2xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
                     <Siren className="h-3.5 w-3.5" />
                     Emergency need
                   </span>
@@ -198,7 +200,7 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
                       <FactIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+                      <p className="text-3xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
                       <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{value}</p>
                     </div>
                   </div>
@@ -213,7 +215,7 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
         </div>
         {request.reasonCannotBuy && (
           <div className="border-t border-gray-100 bg-amber-50/60 px-3.5 sm:px-5 py-4 dark:border-gray-800 dark:bg-amber-950/20">
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">
+            <p className="mb-1.5 text-3xs font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">
               Why they can&rsquo;t purchase this themselves
             </p>
             <p className="text-sm italic leading-relaxed text-gray-700 dark:text-gray-300">
@@ -439,19 +441,6 @@ export default function OfferWizardPage() {
       })
       .catch(() => {});
   }, [requestId]);
-
-  // Debounced compatibility check
-  useEffect(() => {
-    if (!offer || step !== 2) return;
-    if (compatTimer.current) clearTimeout(compatTimer.current);
-    compatTimer.current = setTimeout(async () => {
-      try {
-        const result = await checkOfferCompatibility(offer.id);
-        setCompat(result);
-      } catch {}
-    }, 600);
-    return () => { if (compatTimer.current) clearTimeout(compatTimer.current); };
-  }, [form.condition, form.quantity, offer, step]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     dispatch({ type: "SET", key, value: value as string | boolean | DonorFlowType });
@@ -690,6 +679,35 @@ export default function OfferWizardPage() {
     );
   }
 
+  // The request/flow picker creates the server draft. Once it exists, the
+  // editable item form owns the viewport so its desktop rail, stacked card and
+  // mobile sticky controls are not constrained by the legacy page wrapper.
+  if (step === 2 && offer) {
+    return (
+      <main data-donation-offer-wizard className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950">
+        <DonationOfferWizard
+          offerId={offer.id}
+          offer={offer}
+          requestTitle={request.title}
+          requestedQuantity={request.quantity}
+          adminNote={offer.status === "NEEDS_INFORMATION" ? offer.displayRejectionReason : null}
+          onExit={() => {
+            setExistingOffer(offer);
+            setStep(1);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          onSaveExit={() => router.push("/offers")}
+          onSubmitted={(submitted) => {
+            setOffer(submitted);
+            setExistingOffer(submitted);
+            setStep(3);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <AlertDialog open={blockedByOther} onOpenChange={setBlockedByOther}>
@@ -711,8 +729,8 @@ export default function OfferWizardPage() {
       </AlertDialog>
 
       <div className={`mx-auto px-4 pt-5 sm:pt-8 ${step === 1 ? "max-w-5xl" : step === 2 ? "max-w-4xl" : "max-w-2xl"}`}>
-        {/* Top bar: back button (left) + progress (centered) */}
-        <div className="relative mb-6">
+        {/* Prelude/result navigation. The editor owns its five-step progress. */}
+        <div className="relative mb-6 h-10">
           <button
             onClick={() => {
               // Step 3 is post-submission — "back" can't reopen the form, so it
@@ -727,27 +745,6 @@ export default function OfferWizardPage() {
             <span className="hidden sm:inline">{step === 1 ? "Back" : step === 2 ? "Back to Step 1" : "Back to Requests"}</span>
             <span className="sm:hidden">Back</span>
           </button>
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2">
-              {([1, 2, 3] as Step[]).map((s) => (
-                <div key={s} className="flex items-center gap-2">
-                  <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                      s < step ? "bg-green-500 text-white"
-                      : s === step ? "bg-[#1e3a60] text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-500"
-                    }`}
-                  >
-                    {s < step ? "✓" : s}
-                  </div>
-                  {s < 3 && <div className={`h-0.5 w-8 ${s < step ? "bg-green-400" : "bg-gray-200 dark:bg-gray-700"}`} />}
-                </div>
-              ))}
-            </div>
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-              {["View & Choose", "Item Details", "Submitted"][step - 1]}
-            </span>
-          </div>
         </div>
 
         {error && (
@@ -806,7 +803,7 @@ export default function OfferWizardPage() {
             })()}
 
             {/* Breadcrumb */}
-            <div className="mb-4 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            <div className="mb-4 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">
               <Link href="/requests" className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">Requests</Link>
               <span>/</span>
               <Link href={`/requests?category=${encodeURIComponent(request.category)}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">
@@ -848,8 +845,8 @@ export default function OfferWizardPage() {
             ) : (
               <section className="mb-10">
                 <div className="mb-8 text-center">
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                    Step 1 of 3
+                  <p className="mb-2 text-2xs font-bold uppercase tracking-wide text-gray-400">
+                    Donation offer
                   </p>
                   <h2 className="mb-2 text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                     How would you like to help?
@@ -874,7 +871,7 @@ export default function OfferWizardPage() {
                           <span aria-hidden className="cs-card-sheen" />
                           <span style={{ transform: "translateZ(30px)" }} className="absolute right-4 top-4 inline-flex items-center gap-1">
                             <Sparkles className="cs-badge-spark h-3 w-3 text-amber-500" />
-                            <span className="cs-badge-shimmer text-[10px] font-bold uppercase tracking-widest">Coming soon</span>
+                            <span className="cs-badge-shimmer text-3xs font-bold uppercase tracking-widest">Coming soon</span>
                           </span>
                           <div style={{ transform: "translateZ(36px)" }} className={`cs-icon-drift mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl ${iconBg} opacity-70 saturate-50 transition-all duration-300 group-hover:opacity-100 group-hover:saturate-100`}>
                             <Icon className={`h-6 w-6 ${iconText}`} />
@@ -885,10 +882,10 @@ export default function OfferWizardPage() {
                           <div style={{ transform: "translateZ(12px)" }} className="mt-1.5 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
                             {desc}
                           </div>
-                          <div className="mt-3 max-w-[15rem] text-[10px] font-medium leading-relaxed text-gray-300 dark:text-gray-600">
+                          <div className="mt-3 max-w-[15rem] text-3xs font-medium leading-relaxed text-gray-300 dark:text-gray-600">
                             {tags.join(" · ")}
                           </div>
-                          <div style={{ transform: "translateZ(16px)" }} className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                          <div style={{ transform: "translateZ(16px)" }} className="mt-3 inline-flex items-center gap-1.5 text-3xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                             In the works
                             <span className="cs-dot" />
                             <span className="cs-dot" style={{ animationDelay: "0.2s" }} />
@@ -907,7 +904,7 @@ export default function OfferWizardPage() {
                         className="group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900"
                       >
                         {badge && (
-                          <span style={{ transform: "translateZ(30px)" }} className="absolute right-5 top-5 text-[11px] font-bold uppercase tracking-wide text-green-600 dark:text-green-400">
+                          <span style={{ transform: "translateZ(30px)" }} className="absolute right-5 top-5 text-2xs font-bold uppercase tracking-wide text-green-600 dark:text-green-400">
                             {badge}
                           </span>
                         )}
@@ -924,7 +921,7 @@ export default function OfferWizardPage() {
                         <div style={{ transform: "translateZ(12px)" }} className="mt-1.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                           {desc}
                         </div>
-                        <div className="mt-3 max-w-[15rem] text-[10px] font-medium leading-relaxed text-gray-400 dark:text-gray-500">
+                        <div className="mt-3 max-w-[15rem] text-3xs font-medium leading-relaxed text-gray-400 dark:text-gray-500">
                           {tags.join(" · ")}
                         </div>
                       </Tilt3DCard>
@@ -937,7 +934,7 @@ export default function OfferWizardPage() {
             {/* Request description — quoted, in the donee's own words */}
             {request.description && (
               <section className="mb-8">
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Request Description</p>
+                <p className="mb-2 text-2xs font-bold uppercase tracking-wide text-gray-400">Request Description</p>
                 <div className="rounded-xl border-l-4 border-indigo-300 bg-indigo-50 px-3.5 sm:px-5 py-4 dark:border-indigo-600 dark:bg-indigo-950/30">
                   <p className="text-sm italic leading-relaxed text-gray-700 dark:text-gray-300">&ldquo;{request.description}&rdquo;</p>
                 </div>
@@ -960,11 +957,11 @@ export default function OfferWizardPage() {
                   <div className="flex gap-5 sm:gap-8 text-right">
                     <div>
                       <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityDelivered} / {qty.quantityRequired}</p>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Provided</p>
+                      <p className="text-2xs font-semibold uppercase tracking-wide text-gray-400">Provided</p>
                     </div>
                     <div>
                       <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityReserved}</p>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Reserved</p>
+                      <p className="text-2xs font-semibold uppercase tracking-wide text-gray-400">Reserved</p>
                     </div>
                   </div>
                 </div>
@@ -1048,7 +1045,7 @@ export default function OfferWizardPage() {
                     className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-[#1e3a60] hover:text-[#1e3a60] dark:border-gray-700 dark:text-gray-500"
                   >
                     {uploadingPhoto ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
-                    <span className="text-[11px] font-medium">{uploadingPhoto ? "Uploading…" : "Add Photo"}</span>
+                    <span className="text-2xs font-medium">{uploadingPhoto ? "Uploading…" : "Add Photo"}</span>
                   </label>
                 )}
                 <input
@@ -1254,43 +1251,14 @@ export default function OfferWizardPage() {
           </div>
         )}
 
-        {/* ── Step 3: Submitted / AI screening ──────────────────────────────── */}
+        {/* ── Result phase: submitted / screening / outcome ─────────────── */}
         {step === 3 && (
-          <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-8 text-center shadow-sm">
-            {loading ? (
-              <>
-                <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#b04a15] border-t-transparent" />
-                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">AI Screening in Progress</h2>
-                <p className="mt-2 text-sm text-gray-500">We are checking your item details and photos. This usually takes a few minutes.</p>
-              </>
-            ) : offer?.status === "PENDING_DONEE_REVIEW" || offer?.status === "SOFT_RESERVED_PRIMARY" ? (
-              <>
-                <div className="mx-auto mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-950 text-lg sm:text-2xl">✓</div>
-                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Offer Submitted!</h2>
-                <p className="mt-2 text-sm text-gray-500">Your offer looks suitable and has been sent to the recipient for review.</p>
-                <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-4 sm:px-6 py-2.5 text-sm font-semibold text-white">
-                  View My Offers
-                </button>
-              </>
-            ) : offer?.status === "NEEDS_INFORMATION" ? (
-              <>
-                <div className="mx-auto mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950 text-lg sm:text-2xl">!</div>
-                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">More Information Needed</h2>
-                <p className="mt-2 text-sm text-gray-500">Please provide additional details before your offer can proceed.</p>
-                <button onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mt-6 rounded-xl bg-[#b04a15] px-4 sm:px-6 py-2.5 text-sm font-semibold text-white">
-                  Update Details
-                </button>
-              </>
-            ) : (
-              <>
-                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Offer Submitted</h2>
-                <p className="mt-2 text-sm text-gray-500">Status: {offer?.status ?? "Processing..."}</p>
-                <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-4 sm:px-6 py-2.5 text-sm font-semibold text-white">
-                  View My Offers
-                </button>
-              </>
-            )}
-          </div>
+          <OfferResult
+            offer={offer}
+            requestTitle={request?.title ?? null}
+            onViewOffers={() => router.push("/offers")}
+            onEdit={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+          />
         )}
       </div>
     </main>

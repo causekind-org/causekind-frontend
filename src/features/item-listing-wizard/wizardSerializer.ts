@@ -1,6 +1,7 @@
 import type { CreateListingPayload } from "@/lib/api";
 import { encodeCity } from "./wizardLocation";
-import { needsWorkingStatus, needsDimensions, uploadedUrls, type WizardModel } from "./wizardModel";
+import { fieldsFor } from "./wizardFields";
+import { uploadedUrls, type WizardModel } from "./wizardModel";
 
 /**
  * The one and only model -> API mapper.
@@ -21,8 +22,12 @@ import { needsWorkingStatus, needsDimensions, uploadedUrls, type WizardModel } f
  */
 export function serialize(model: WizardModel): Partial<CreateListingPayload> {
   const urls = uploadedUrls(model.photos);
-  const wantsWorking = needsWorkingStatus(model.category);
-  const wantsDims = needsDimensions(model.category);
+  // The manifest decides what this category asks for; anything it hides is sent
+  // blank rather than omitted, so a value the donor can no longer see cannot
+  // survive on the server. See the PATCH note above for why "" and not undefined.
+  const fields = fieldsFor(model.category, model.subcategory);
+  const keep = (key: Parameters<typeof fields.visible>[0], value: string) =>
+    fields.visible(key) ? value.trim() : "";
 
   return {
     title: model.title.trim(),
@@ -30,17 +35,18 @@ export function serialize(model: WizardModel): Partial<CreateListingPayload> {
     subcategory: model.subcategory,
     quantity: model.quantity,
     condition: model.condition,
-    brand: model.brand.trim(),
-    model: model.model.trim(),
     approximateAge: model.approximateAge,
 
-    // Blanked, not omitted, when the category no longer asks for them.
-    workingStatus: wantsWorking ? model.workingStatus : "",
-    dimensions: wantsDims ? model.dimensions.trim() : "",
-    approximateWeight: wantsDims ? model.approximateWeight.trim() : "",
+    // Every optional field goes through the manifest — blanked, not omitted,
+    // when this category does not ask for it.
+    brand: keep("brand", model.brand),
+    model: keep("model", model.model),
+    workingStatus: keep("workingStatus", model.workingStatus),
+    dimensions: keep("dimensions", model.dimensions),
+    approximateWeight: keep("approximateWeight", model.approximateWeight),
+    accessoriesIncluded: keep("accessoriesIncluded", model.accessoriesIncluded),
 
     knownDefects: model.noDefects ? "NONE" : model.knownDefects.trim(),
-    accessoriesIncluded: model.accessoriesIncluded.trim(),
     description: model.description.trim(),
 
     // First uploaded photo is the main image; the rest ride in a `|`-joined tail.

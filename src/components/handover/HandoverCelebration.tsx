@@ -51,14 +51,26 @@ type Props = {
 
 const TIP_PRESETS = [20, 50, 100];
 
-// Five soft, hand-drawn-feeling faces instead of clip-art icons — built from
-// simple SVG arcs so the "face" reads as bespoke rather than a stock glyph.
-const RATING_FACES: { value: number; label: string; mouth: string; brow: number }[] = [
-  { value: 1, label: "Not great", mouth: "M9 17 Q16 12 23 17", brow: 4 },
-  { value: 2, label: "Okay", mouth: "M9 16 Q16 14 23 16", brow: 2 },
-  { value: 3, label: "Good", mouth: "M9 15 L23 15", brow: 0 },
-  { value: 4, label: "Great", mouth: "M9 14 Q16 18 23 14", brow: -1 },
-  { value: 5, label: "Amazing", mouth: "M8 13 Q16 21 24 13", brow: -3 },
+/**
+ * The five-point mood scale.
+ *
+ * <p>Emoji rather than the hand-drawn SVG arcs this used to carry. They read
+ * instantly and need no styling, at the cost of looking slightly different on
+ * every platform — Apple, Google and Microsoft each draw these differently.
+ * That is acceptable here because the emoji is decorative: the visible text
+ * label underneath is what actually names the choice, so nothing depends on a
+ * user reading the glyph correctly.
+ *
+ * <p>Deliberately restrained faces. 😍 or 🤩 at the top of a scale about giving
+ * away a possession would strike the wrong note; this is quiet satisfaction,
+ * not excitement.
+ */
+const RATING_FACES: { value: number; label: string; emoji: string }[] = [
+  { value: 1, label: "Not great", emoji: "😕" },
+  { value: 2, label: "Okay", emoji: "🙂" },
+  { value: 3, label: "Good", emoji: "😊" },
+  { value: 4, label: "Great", emoji: "😄" },
+  { value: 5, label: "Amazing", emoji: "🥰" },
 ];
 
 function RatingFace({
@@ -87,20 +99,24 @@ function RatingFace({
             : "border-gray-200 bg-white/70 dark:border-gray-700 dark:bg-white/5"
         }`}
       >
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <circle cx="12" cy={12 + face.brow * 0.3} r="1.6" className={selected ? "fill-[var(--handover-accent)]" : "fill-gray-400 dark:fill-gray-500"} />
-          <circle cx="20" cy={12 + face.brow * 0.3} r="1.6" className={selected ? "fill-[var(--handover-accent)]" : "fill-gray-400 dark:fill-gray-500"} />
-          <path
-            d={face.mouth}
-            stroke={selected ? "var(--handover-accent)" : "currentColor"}
-            className={selected ? "" : "text-gray-400 dark:text-gray-500"}
-            strokeWidth="2"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
+        {/* aria-hidden: the <span> below already names the choice, and the
+            button carries aria-label. Without this a screen reader would
+            announce the emoji's own name too — "slightly smiling face,
+            Okay" — saying the same thing twice in two vocabularies.
+
+            Grayscale until chosen, so the row reads as one calm scale rather
+            than five competing colours, and picking one is a visible commitment
+            rather than a subtle border change. */}
+        <span
+          aria-hidden
+          className={`text-2xl leading-none transition-all duration-300 ${
+            selected ? "grayscale-0 opacity-100" : "grayscale opacity-60"
+          }`}
+        >
+          {face.emoji}
+        </span>
       </div>
-      <span className={`text-[11px] font-medium ${selected ? "text-[var(--handover-accent)]" : "text-gray-400"}`}>
+      <span className={`text-2xs font-medium ${selected ? "text-[var(--handover-accent)]" : "text-gray-400"}`}>
         {face.label}
       </span>
     </motion.button>

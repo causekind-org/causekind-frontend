@@ -127,7 +127,7 @@ function CampaignDropdown({
           {activeCampaign ? (
             <>
               <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate"><TranslatedText text={activeCampaign.title} /></p>
-              <p className="text-[10px] text-stone-400 font-medium"><TranslatedText text={activeCampaign.city} /> · <TranslatedText text={activeCampaign.category} /></p>
+              <p className="text-3xs text-stone-400 font-medium"><TranslatedText text={activeCampaign.city} /> · <TranslatedText text={activeCampaign.category} /></p>
             </>
           ) : (
             <p className="text-sm font-medium text-stone-400 dark:text-zinc-500">{placeholder}</p>
@@ -168,10 +168,10 @@ function CampaignDropdown({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate"><TranslatedText text={c.title} /></p>
-                    <p className="text-[10px] text-stone-400 font-medium"><TranslatedText text={c.city} /> · <TranslatedText text={c.category} /></p>
+                    <p className="text-3xs text-stone-400 font-medium"><TranslatedText text={c.city} /> · <TranslatedText text={c.category} /></p>
                   </div>
                   {c.urgency === "CRITICAL" && (
-                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-500 shrink-0">
+                    <span className="text-4xs font-black uppercase px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-500 shrink-0">
                       {urgentText}
                     </span>
                   )}
@@ -437,12 +437,12 @@ function DonatePageInner() {
                 {recurring && (
                   <div className="flex items-center gap-2 rounded-lg bg-[#1e3a60]/8 dark:bg-[#1e3a60]/20 border border-[#1e3a60]/20 dark:border-[#1e3a60]/30 px-3 py-2 mt-1">
                     <RefreshCw className="w-3.5 h-3.5 text-[#1e3a60] dark:text-blue-400 shrink-0" />
-                    <p className="text-[10px] font-bold text-[#1e3a60] dark:text-blue-400">{t("monthlyAutopay")}</p>
+                    <p className="text-3xs font-bold text-[#1e3a60] dark:text-blue-400">{t("monthlyAutopay")}</p>
                   </div>
                 )}
 
                 <div className="border-t border-orange-100 dark:border-zinc-700 pt-3">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">To</p>
+                  <p className="text-3xs font-bold text-stone-400 uppercase tracking-wider mb-1">To</p>
                   <p className="text-sm font-bold text-stone-800 dark:text-stone-100"><TranslatedText text={activeCampaign?.title} /></p>
                   <p className="text-xs text-stone-400 font-medium"><TranslatedText text={activeCampaign?.city} /> · <TranslatedText text={activeCampaign?.category} /></p>
                 </div>
