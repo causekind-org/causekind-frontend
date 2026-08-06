@@ -15,6 +15,7 @@ import {
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { MyTasksCard } from "@/components/MyTasksCard";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1727,6 +1728,12 @@ export default function DashboardPage() {
       {/* Main Container */}
       <div className="mx-auto max-w-7xl px-4 py-5 sm:py-8">
         <div className="space-y-5 sm:space-y-8">
+
+          {/* Anything support has asked this user for. Renders nothing at all
+              when there is nothing outstanding, so it costs the common case
+              no space. Placed above the fold because an unanswered request can
+              be holding up their own verification. */}
+          <MyTasksCard />
 
           {/* ── Identity line ── */}
           <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-3 sm:pb-4">
