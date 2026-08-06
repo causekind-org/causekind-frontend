@@ -463,7 +463,7 @@ function VerificationDetail({
         <div className="flex flex-wrap gap-1.5 pt-1">
           {TIERS.filter((t) => t.key !== "ALL" && t.key !== detail.tier).map((t) => (
             <button key={t.key} onClick={() => onOverrideTier(t.key)}
-              className="text-[10px] font-semibold px-2 py-1 rounded-lg border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-[#b04a15] hover:text-[#b04a15]">
+              className="text-3xs font-semibold px-2 py-1 rounded-lg border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-[#b04a15] hover:text-[#b04a15]">
               → {t.label}
             </button>
           ))}
@@ -472,7 +472,7 @@ function VerificationDetail({
 
       {/* Submitted by */}
       <div className="rounded-xl border border-stone-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
+        <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
@@ -480,10 +480,10 @@ function VerificationDetail({
             </span>
             <span className="min-w-0">
               <span className="block truncate text-xs font-semibold text-stone-700 dark:text-stone-200">{request.doneeName ?? "Unknown donee"}</span>
-              <span className="block truncate text-[11px] text-stone-500 dark:text-stone-400">{detail.doneeEmail ?? "—"}</span>
+              <span className="block truncate text-2xs text-stone-500 dark:text-stone-400">{detail.doneeEmail ?? "—"}</span>
             </span>
           </div>
-          <div className="text-right text-[11px] text-stone-500 dark:text-stone-400">
+          <div className="text-right text-2xs text-stone-500 dark:text-stone-400">
             <span className="block">{request.city || "Location not given"}</span>
             {request.pincode && <span className="block">PIN {request.pincode}</span>}
           </div>
@@ -491,7 +491,7 @@ function VerificationDetail({
         {detail.doneeId && (
           <a
             href={`/admin/dashboard?journeyUser=${detail.doneeId}`}
-            className="mt-2 inline-block text-[11px] font-semibold text-[#b04a15] hover:underline"
+            className="mt-2 inline-block text-2xs font-semibold text-[#b04a15] hover:underline"
           >
             View donee&apos;s full journey →
           </a>
@@ -521,7 +521,7 @@ function VerificationDetail({
         <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700 space-y-2">
           <p className="font-bold flex items-center gap-1">
             <ShieldCheck className="w-3 h-3" /> Need Assessment ({detail.needAssessment.modelVersion})
-            <span className="ml-1 rounded-full bg-stone-100 dark:bg-zinc-700 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-stone-500">
+            <span className="ml-1 rounded-full bg-stone-100 dark:bg-zinc-700 px-1.5 py-0.5 text-4xs font-bold uppercase tracking-wide text-stone-500">
               decision of record
             </span>
           </p>
@@ -569,7 +569,7 @@ function VerificationDetail({
               <div className="flex flex-wrap gap-2">
                 {otherDocs.map((d) => (
                   <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-300 hover:bg-[#b04a15]/10 hover:text-[#b04a15] transition-colors">
+                    className="flex items-center gap-1 text-3xs font-bold px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-300 hover:bg-[#b04a15]/10 hover:text-[#b04a15] transition-colors">
                     <ExternalLink className="w-3 h-3" /> {d.docType.replace(/_/g, " ")}
                   </a>
                 ))}
@@ -612,7 +612,7 @@ function VerificationDetail({
                   with no trigger, is not outstanding work. */}
               {item.automated || item.status === "NOT_APPLICABLE" ? (
                 <div className="flex flex-col items-end gap-0.5 shrink-0">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-3xs font-bold ${
                     item.status === "PASS" ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400"
                     : item.status === "FAIL" ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
                     : item.status === "ESCALATED" ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
@@ -626,7 +626,7 @@ function VerificationDetail({
                       : "Checking"}
                   </span>
                   {item.checkedAt && (
-                    <span className="text-[9px] text-stone-400">
+                    <span className="text-4xs text-stone-400">
                       {new Date(item.checkedAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
                     </span>
                   )}
@@ -634,11 +634,11 @@ function VerificationDetail({
               ) : (
                 <div className="flex gap-1 shrink-0">
                   <button onClick={() => onChecklistUpdate(item.id, "PASS")}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "PASS" ? "bg-green-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-green-500 hover:text-green-600"}`}>
+                    className={`px-2 py-1 rounded-lg text-3xs font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "PASS" ? "bg-green-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-green-500 hover:text-green-600"}`}>
                     PASS
                   </button>
                   <button onClick={() => onChecklistUpdate(item.id, "FAIL")}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "FAIL" ? "bg-red-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-red-500 hover:text-red-600"}`}>
+                    className={`px-2 py-1 rounded-lg text-3xs font-bold cursor-pointer transition-all duration-150 active:scale-90 ${item.status === "FAIL" ? "bg-red-600 text-white scale-105 shadow-sm" : "border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-red-500 hover:text-red-600"}`}>
                     FAIL
                   </button>
                 </div>
@@ -658,7 +658,7 @@ function Metric({ label, value, invert }: { label: string; value: number; invert
   return (
     <div className="text-center">
       <p className={`text-base sm:text-lg font-black ${color}`}>{value.toFixed(0)}</p>
-      <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
+      <p className="text-3xs text-stone-400 uppercase tracking-wide">{label}</p>
     </div>
   );
 }

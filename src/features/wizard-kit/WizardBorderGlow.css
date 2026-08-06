@@ -1,0 +1,188 @@
+/*
+ * WizardBorderGlow — adapted from React Bits `BorderGlow`.
+ *
+ * Namespaced `ck-wizard-glow` so it cannot collide with the existing
+ * `.card-glow` (components/CardGlow.css), which stays hover-driven for the
+ * campaign cards and is deliberately untouched.
+ *
+ * The colour is always the OPPOSITE of the active role theme: a donor sees the
+ * cool recipient palette, a recipient sees the warm donor palette. Mapping is
+ * explicit rather than a computed complementary hue — the two CauseKind
+ * palettes are designed colours, and a hue rotation would land somewhere that
+ * belongs to neither.
+ */
+
+/* Default / public / admin — treated as donor terracotta, so the glow is cool. */
+:root {
+  --ck-wizard-glow-core: #1e3a60;
+  --ck-wizard-glow-mid: #4a7fc1;
+  --ck-wizard-glow-highlight: #7fb0e8;
+  --ck-wizard-glow-shadow: rgba(74, 127, 193, 0.42);
+}
+
+[data-ck-role-theme="donor"] {
+  --ck-wizard-glow-core: #1e3a60;
+  --ck-wizard-glow-mid: #4a7fc1;
+  --ck-wizard-glow-highlight: #7fb0e8;
+  --ck-wizard-glow-shadow: rgba(74, 127, 193, 0.42);
+}
+
+/* Recipient blue theme → warm donor palette. */
+[data-ck-role-theme="donee"] {
+  --ck-wizard-glow-core: #b04a15;
+  --ck-wizard-glow-mid: #e07b3a;
+  --ck-wizard-glow-highlight: #f0b97a;
+  --ck-wizard-glow-shadow: rgba(224, 123, 58, 0.42);
+}
+
+/* Dark mode leans on the brighter end of each palette — the darker stops
+   disappear against a zinc-900 card. */
+.dark,
+.dark:not([data-ck-role-theme]),
+.dark[data-ck-role-theme="donor"],
+.dark [data-ck-role-theme="donor"] {
+  --ck-wizard-glow-core: #4a7fc1;
+  --ck-wizard-glow-mid: #7fb0e8;
+  --ck-wizard-glow-highlight: #a9cdf5;
+  --ck-wizard-glow-shadow: rgba(127, 176, 232, 0.5);
+}
+
+.dark[data-ck-role-theme="donee"],
+.dark [data-ck-role-theme="donee"] {
+  --ck-wizard-glow-core: #b04a15;
+  --ck-wizard-glow-mid: #e07b3a;
+  --ck-wizard-glow-highlight: #f0b97a;
+  --ck-wizard-glow-shadow: rgba(240, 185, 122, 0.5);
+}
+
+/* ── Card shell ─────────────────────────────────────────────────────────── */
+
+.ck-wizard-step-card {
+  position: relative;
+  /* Contains the decorative layer's z-index without becoming a containing block
+     for fixed descendants — isolation does not do that, transforms do, and the
+     section already has one from framer-motion. */
+  isolation: isolate;
+  /* Never `hidden`: dropdowns, focus rings and validation messages must be free
+     to leave the card. The upstream `.border-glow-inner { overflow: auto }` is
+     specifically not copied — it would add a nested scroll container. */
+  overflow: visible;
+}
+
+.ck-wizard-step-card-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── The glow layer ─────────────────────────────────────────────────────── */
+
+.ck-wizard-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+
+  /* Baseline that works everywhere, including without masks or blend modes:
+     a real complementary border plus the halo. The card can never end up
+     borderless. 1px, not 1.25 — a crisp thick line reads as a solid stroke and
+     visually beats the bloom, which is what made the first pass look like a
+     plain coloured border rather than a glow. */
+  border: 1px solid var(--ck-wizard-glow-mid);
+
+  /* THREE layered shadows, not one. A single 10px shadow at low alpha is
+     invisible next to a crisp border; what reads as "glow" is a tight bright
+     ring falling off into a wide soft bloom, so this is near + mid + far.
+     Still box-shadow rather than a negative inset: shadows never contribute to
+     scrollable overflow, so this cannot cause a horizontal scrollbar at 320px. */
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ck-wizard-glow-mid) 24%, transparent),
+    0 0 12px -2px var(--ck-wizard-glow-shadow),
+    0 0 26px -6px var(--ck-wizard-glow-shadow);
+
+  /* No background: zero interior fill, so the white card never reads blue and
+     the zinc card never reads orange. */
+  background: none;
+}
+
+@media (min-width: 640px) {
+  .ck-wizard-glow {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--ck-wizard-glow-mid) 24%, transparent),
+      0 0 18px -2px var(--ck-wizard-glow-shadow),
+      0 0 40px -8px var(--ck-wizard-glow-shadow);
+  }
+}
+
+/* ── Enhanced: gradient perimeter instead of a flat border ──────────────── */
+
+@supports ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+  .ck-wizard-glow {
+    /* width: 0, not colour: transparent. An abspos child's `inset` resolves
+       against the PADDING box, so a 1px transparent border would push the
+       gradient ring 1px inward and leave it misaligned with the halo that
+       traces the border box. */
+    border-width: 0;
+  }
+
+  /* Padding + mask-exclude leaves only the 1px ring painted, so the gradient is
+     a border rather than a wash across the card. */
+  .ck-wizard-glow::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      var(--ck-wizard-glow-core) 0%,
+      var(--ck-wizard-glow-mid) 50%,
+      var(--ck-wizard-glow-highlight) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+/* ── Accessibility and user preferences ────────────────────────────────── */
+
+/* Static by design, so there is nothing to disable — but guard against any
+   transition being added here later. */
+@media (prefers-reduced-motion: reduce) {
+  .ck-wizard-glow,
+  .ck-wizard-glow::before {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Keep the border, drop the halo. Card opacity is untouched. */
+@media (prefers-reduced-transparency: reduce) {
+  .ck-wizard-glow {
+    box-shadow: none;
+    /* Re-assert the width too — the @supports tier above zeroed it. */
+    border: 1.25px solid var(--ck-wizard-glow-core);
+  }
+  .ck-wizard-glow::before {
+    display: none;
+  }
+}
+
+/* Forced colours: no gradients, masks or coloured shadows survive here anyway,
+   so fall back to a system border and let focus outlines through untouched. */
+@media (forced-colors: active) {
+  .ck-wizard-glow {
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
+  .ck-wizard-glow::before {
+    display: none;
+  }
+}

@@ -79,7 +79,7 @@ export function HandoverSafetyActions({ vm, onChanged }: {
 
   return (
     <section className="border-t border-stone-200 pt-5 dark:border-zinc-800">
-      <h2 className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+      <h2 className="text-2xs font-bold uppercase tracking-wider text-stone-400">
         If something goes wrong
       </h2>
       <p className="mt-1.5 max-w-prose text-sm text-stone-500 dark:text-stone-400">

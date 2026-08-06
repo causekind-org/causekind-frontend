@@ -172,7 +172,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-highlight)] opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--ck-role-highlight)]" />
               </span>
-              <span className="text-[var(--ck-role-highlight)] text-[10px] font-black uppercase tracking-widest">Donee Portal</span>
+              <span className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest">Donee Portal</span>
             </div>
 
             {/* Headline */}
@@ -191,20 +191,20 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
             </h1>
 
             {/* Subtitle */}
-            <p className="text-white/58 text-[13px] sm:text-base leading-relaxed max-w-lg anim-up anim-d3">
+            <p className="text-white/58 text-sm sm:text-base leading-relaxed max-w-lg anim-up anim-d3">
               Post a request for any physical item — books, clothes, wheelchair, medical equipment. We match you with a verified local donor within 10 km. No fees, no delays.
             </p>
 
             {/* CTA row */}
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 anim-up anim-d4">
               <Link href="/requests/new">
-                <button className="flex items-center gap-2.5 bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] active:scale-[0.97] text-stone-950 font-extrabold px-4 sm:px-7 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-[13px] sm:text-sm transition-all shadow-xl shadow-[var(--ck-role-highlight)]/20 btn-shine">
+                <button className="flex items-center gap-2.5 bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] active:scale-[0.97] text-stone-950 font-extrabold px-4 sm:px-7 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-sm transition-all shadow-xl shadow-[var(--ck-role-highlight)]/20 btn-shine">
                   <Plus className="w-4 h-4" />
                   Post a Need
                 </button>
               </Link>
               {myRequestCount > 0 && (
-                <a href="#my-requests" className="flex items-center gap-2 text-white/55 hover:text-white text-[13px] sm:text-sm font-bold transition-colors">
+                <a href="#my-requests" className="flex items-center gap-2 text-white/55 hover:text-white text-sm sm:text-sm font-bold transition-colors">
                   My {myRequestCount} request{myRequestCount !== 1 ? "s" : ""}
                   <ChevronDown className="w-4 h-4" />
                 </a>
@@ -218,7 +218,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                 { icon: MapPin,      text: "10 km radius",   c: "text-[var(--ck-role-highlight)]"  },
                 { icon: Heart,       text: "Zero fees",       c: "text-rose-400"   },
               ].map(({ icon: Icon, text, c }) => (
-                <div key={text} className="flex items-center gap-1.5 bg-white/6 border border-white/10 rounded-full px-2.5 sm:px-3 py-1.5 text-[11px] font-bold text-white/65">
+                <div key={text} className="flex items-center gap-1.5 bg-white/6 border border-white/10 rounded-full px-2.5 sm:px-3 py-1.5 text-2xs font-bold text-white/65">
                   <Icon className={`w-3.5 h-3.5 ${c}`} />
                   {text}
                 </div>
@@ -238,11 +238,11 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                       <PrimaryIcon className={`w-4.5 h-4.5 ${primaryTint.ic}`} />
                     </div>
                     <div className="min-w-0">
-                      <p className={`${primaryTint.ic} text-[10px] font-black uppercase tracking-wider truncate`}>{primary.category}</p>
-                      <p className="text-white/35 text-[10px] truncate">{primary.city} · {primary.quantity} needed</p>
+                      <p className={`${primaryTint.ic} text-3xs font-black uppercase tracking-wider truncate`}>{primary.category}</p>
+                      <p className="text-white/35 text-3xs truncate">{primary.city} · {primary.quantity} needed</p>
                     </div>
                   </div>
-                  <p className="text-white font-extrabold text-[13px] sm:text-sm leading-snug mb-3 line-clamp-2">
+                  <p className="text-white font-extrabold text-sm sm:text-sm leading-snug mb-3 line-clamp-2">
                     {primary.title}
                   </p>
                   <div className={`inline-flex items-center gap-2 border rounded-full px-2.5 sm:px-3 py-1.5 ${primaryPill.cls}`}>
@@ -252,7 +252,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                       )}
                       <span className={`relative inline-flex h-2 w-2 rounded-full ${primaryPill.dot}`} />
                     </span>
-                    <span className="text-[10px] font-black">{primaryPill.label}</span>
+                    <span className="text-3xs font-black">{primaryPill.label}</span>
                   </div>
                 </div>
                 {/* Shadow card behind */}
@@ -267,11 +267,11 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                       <Stethoscope className="w-4.5 h-4.5 text-sky-400" />
                     </div>
                     <div>
-                      <p className="text-sky-400 text-[10px] font-black uppercase tracking-wider">Medical Aid</p>
-                      <p className="text-white/35 text-[10px]">Example request</p>
+                      <p className="text-sky-400 text-3xs font-black uppercase tracking-wider">Medical Aid</p>
+                      <p className="text-white/35 text-3xs">Example request</p>
                     </div>
                   </div>
-                  <p className="text-white font-extrabold text-[13px] sm:text-sm leading-snug mb-3">
+                  <p className="text-white font-extrabold text-sm sm:text-sm leading-snug mb-3">
                     Wheelchair for elderly mother
                   </p>
                   <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-400/25 rounded-full px-2.5 sm:px-3 py-1.5">
@@ -279,7 +279,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                     </span>
-                    <span className="text-emerald-400 text-[10px] font-black">Matching in progress…</span>
+                    <span className="text-emerald-400 text-3xs font-black">Matching in progress…</span>
                   </div>
                 </div>
                 <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-2xl sm:rounded-3xl -z-10 rotate-2" />
@@ -298,7 +298,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                   </div>
                   <div className="min-w-0">
                     <p className="text-white/80 text-xs font-extrabold leading-tight truncate">{secondary.title}</p>
-                    <p className="text-white/30 text-[10px] truncate">{secondary.city} · {getStatusBadge(secondary.status).label}</p>
+                    <p className="text-white/30 text-3xs truncate">{secondary.city} · {getStatusBadge(secondary.status).label}</p>
                   </div>
                 </div>
               </div>
@@ -354,7 +354,7 @@ function HowItWorksSection() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-14">
         <Reveal>
           <div className="text-center mb-12">
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Simple Process</span>
+            <span className="text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Simple Process</span>
             <h2 className="text-lg sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
               How receiving works
             </h2>
@@ -370,12 +370,12 @@ function HowItWorksSection() {
               <div className="relative flex lg:flex-col items-start lg:items-center gap-2.5 sm:gap-4 text-left lg:text-center">
                 <div className={`relative w-11 sm:w-14 h-11 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${bg}`}>
                   <Icon className={`w-6 h-6 ${ic}`} />
-                  <div className={`absolute -top-2 -right-2 w-5 h-5 rounded-full ${dot} flex items-center justify-center text-[9px] font-black text-white shadow-sm`}>
+                  <div className={`absolute -top-2 -right-2 w-5 h-5 rounded-full ${dot} flex items-center justify-center text-4xs font-black text-white shadow-sm`}>
                     {i + 1}
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-stone-900 dark:text-white text-[13px] sm:text-sm mb-1.5">{title}</h3>
+                  <h3 className="font-extrabold text-stone-900 dark:text-white text-sm sm:text-sm mb-1.5">{title}</h3>
                   <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed font-medium">{desc}</p>
                 </div>
               </div>
@@ -394,11 +394,11 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-14">
       <Reveal>
         <div className="mb-5 sm:mb-10">
-          <span className="text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Quick Start</span>
+          <span className="text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Quick Start</span>
           <h2 className="text-lg sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
             What do you need?
           </h2>
-          <p className="text-[13px] sm:text-sm text-stone-500 dark:text-stone-400 mt-2 font-medium max-w-md">
+          <p className="text-sm sm:text-sm text-stone-500 dark:text-stone-400 mt-2 font-medium max-w-md">
             Pick a category and we&apos;ll pre-fill your request form — takes under 2 minutes.
           </p>
         </div>
@@ -431,7 +431,7 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
                   {/* Request count */}
                   <div className="relative z-10 self-end">
                     {count > 0 && (
-                      <span className="bg-white/15 backdrop-blur text-white text-[9px] sm:text-[10px] font-black px-1.5 py-0 sm:px-2.5 sm:py-1 rounded-full border border-white/20">
+                      <span className="bg-white/15 backdrop-blur text-white text-4xs sm:text-3xs font-black px-1.5 py-0 sm:px-2.5 sm:py-1 rounded-full border border-white/20">
                         {count} active
                       </span>
                     )}
@@ -443,8 +443,8 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
                       <Icon className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-extrabold text-[13px] sm:text-sm leading-tight">{cat}</p>
-                      <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-white/55 text-[9px] sm:text-[10px] font-bold group-hover:text-white/90 transition-colors">
+                      <p className="text-white font-extrabold text-sm sm:text-sm leading-tight">{cat}</p>
+                      <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-white/55 text-4xs sm:text-3xs font-bold group-hover:text-white/90 transition-colors">
                         Request this <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
@@ -470,14 +470,14 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
         <Reveal>
           <div className="flex items-center justify-between mb-4 sm:mb-8">
             <div>
-              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-0.5 sm:mb-1 block">Tracking</span>
+              <span className="text-3xs sm:text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-0.5 sm:mb-1 block">Tracking</span>
               <h2 className="text-base sm:text-2xl font-extrabold text-stone-900 dark:text-white">
                 Your Requests
-                <span className="ml-2 sm:ml-3 text-[13px] sm:text-base font-semibold text-stone-400">({requests.length})</span>
+                <span className="ml-2 sm:ml-3 text-sm sm:text-base font-semibold text-stone-400">({requests.length})</span>
               </h2>
             </div>
             <Link href="/requests/new">
-              <button className="flex items-center gap-1.5 sm:gap-2 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-bold px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all shadow-sm">
+              <button className="flex items-center gap-1.5 sm:gap-2 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-bold px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-2xs sm:text-xs transition-all shadow-sm">
                 <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> New Need
               </button>
             </Link>
@@ -497,10 +497,10 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[13px] sm:text-sm text-stone-900 dark:text-stone-100 truncate group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors">
+                    <p className="font-bold text-sm sm:text-sm text-stone-900 dark:text-stone-100 truncate group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors">
                       <TranslatedText text={r.title} />
                     </p>
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-stone-400 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-3xs sm:text-2xs text-stone-400 mt-0.5 flex-wrap">
                       <span>{r.category}</span>
                       <span>·</span>
                       <span>Qty: {r.quantity}</span>
@@ -511,7 +511,7 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
                       </span>
                     </div>
                   </div>
-                  <Badge variant={sb.variant} className="text-[9px] sm:text-[10px] px-1.5 sm:px-2.5 shrink-0 whitespace-nowrap">
+                  <Badge variant={sb.variant} className="text-4xs sm:text-3xs px-1.5 sm:px-2.5 shrink-0 whitespace-nowrap">
                     {sb.label}
                   </Badge>
                 </div>
@@ -534,11 +534,11 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-14">
       <Reveal>
         <div className="mb-5 sm:mb-10">
-          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-1 sm:mb-2 block">Community</span>
+          <span className="text-3xs sm:text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-1 sm:mb-2 block">Community</span>
           <h2 className="text-base sm:text-3xl font-extrabold text-stone-900 dark:text-white">
             Others are requesting too
           </h2>
-          <p className="text-[13px] sm:text-sm text-stone-500 dark:text-stone-400 mt-1 sm:mt-2 font-medium leading-snug">
+          <p className="text-sm sm:text-sm text-stone-500 dark:text-stone-400 mt-1 sm:mt-2 font-medium leading-snug">
             Browse what your community needs — and add yours.
           </p>
         </div>
@@ -556,10 +556,10 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
                   <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-extrabold text-[13px] sm:text-sm text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 mb-1">
+                  <p className="font-extrabold text-sm sm:text-sm text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 mb-1">
                     <TranslatedText text={r.title} />
                   </p>
-                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-stone-400">
+                  <div className="flex flex-wrap items-center gap-2 text-3xs text-stone-400">
                     <span className="font-bold">{r.quantity} needed</span>
                     <span>·</span>
                     <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" /><TranslatedText text={r.city} /></span>
@@ -582,9 +582,9 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
 
       <Reveal delay={420}>
         <div className="mt-7 sm:mt-12 text-center">
-          <p className="text-stone-500 dark:text-stone-400 text-[13px] sm:text-sm mb-3 sm:mb-5">Don&apos;t see what you need? Post your own.</p>
+          <p className="text-stone-500 dark:text-stone-400 text-sm sm:text-sm mb-3 sm:mb-5">Don&apos;t see what you need? Post your own.</p>
           <Link href="/requests/new">
-            <button className="inline-flex items-center gap-2 sm:gap-2.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-extrabold px-4 py-2.5 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl text-[13px] sm:text-sm transition-all shadow-lg shadow-blue-900/20 btn-shine">
+            <button className="inline-flex items-center gap-2 sm:gap-2.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-extrabold px-4 py-2.5 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-sm transition-all shadow-lg shadow-blue-900/20 btn-shine">
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Post What You Need
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

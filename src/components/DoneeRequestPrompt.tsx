@@ -159,13 +159,13 @@ export function DoneeRequestPrompt() {
 
           {/* Text */}
           <div className="flex flex-col gap-0 min-w-0 flex-1">
-            <span className={`text-[10px] font-black uppercase tracking-wide ${visual.text}`}>
+            <span className={`text-3xs font-black uppercase tracking-wide ${visual.text}`}>
               {request.category}
             </span>
-            <span className="text-[13px] font-bold text-stone-900 leading-tight truncate">
+            <span className="text-sm font-bold text-stone-900 leading-tight truncate">
               {request.title}
             </span>
-            <span className="flex items-center gap-1 text-[11px] text-stone-500 leading-tight truncate">
+            <span className="flex items-center gap-1 text-2xs text-stone-500 leading-tight truncate">
               <MapPin className="w-2.5 h-2.5 shrink-0" /> {request.city}
             </span>
           </div>
@@ -178,7 +178,7 @@ export function DoneeRequestPrompt() {
               releasePromptLane(LANE_ID);
               setVisible(false);
             }}
-            className="flex items-center gap-1 bg-[#1e3a60] hover:bg-[#16304d] active:scale-95 text-white text-[11px] font-black uppercase tracking-wide px-3 py-1.5 rounded-full transition-all whitespace-nowrap shrink-0"
+            className="flex items-center gap-1 bg-[#1e3a60] hover:bg-[#16304d] active:scale-95 text-white text-2xs font-black uppercase tracking-wide px-3 py-1.5 rounded-full transition-all whitespace-nowrap shrink-0"
           >
             Help →
           </Link>

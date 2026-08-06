@@ -42,7 +42,7 @@ export function HandoverJourneyRail({ state }: { state: HandoverState }) {
               </div>
               <span
                 aria-current={isCurrent ? "step" : undefined}
-                className={`w-full truncate text-center text-[10px] font-semibold sm:text-[11px] ${
+                className={`w-full truncate text-center text-3xs font-semibold sm:text-2xs ${
                   isCurrent
                     ? "text-[var(--handover-accent)]"
                     : done

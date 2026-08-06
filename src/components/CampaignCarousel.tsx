@@ -113,20 +113,20 @@ function HorizontalCampaignCard({
         {/* Floating Bottom Info & Engagement Bar (Horizontal layout for 16:9) */}
         <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 text-white">
           <div className="flex items-center gap-1.5 min-w-0 max-w-[65%]">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center font-bold text-[8px] border border-white/20 uppercase shrink-0">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center font-bold text-5xs border border-white/20 uppercase shrink-0">
               {campaign.doneeName[0]}
             </div>
-            <span className="text-[10px] font-black drop-shadow-md truncate">
+            <span className="text-3xs font-black drop-shadow-md truncate">
               {doneeUsername}
             </span>
           </div>
 
           <div className="flex items-center gap-2.5 text-white/90 shrink-0">
-            <div className="flex items-center gap-0.5 text-[9px] font-black">
+            <div className="flex items-center gap-0.5 text-4xs font-black">
               <Heart className="w-3 h-3 fill-white text-white" />
               <span className="drop-shadow-md">{likes}</span>
             </div>
-            <div className="flex items-center gap-0.5 text-[9px] font-black">
+            <div className="flex items-center gap-0.5 text-4xs font-black">
               <MessageCircle className="w-3 h-3 fill-white text-white" />
               <span className="drop-shadow-md">{comments}</span>
             </div>
@@ -147,7 +147,7 @@ function HorizontalCampaignCard({
         <div>
           {/* Category & City badges */}
           <div className="flex items-center gap-3 text-xs mb-4">
-            <Badge className="bg-[#b04a15]/10 dark:bg-[#b04a15]/20 text-[#b04a15] dark:text-[#e07b3a] border-0 font-extrabold uppercase tracking-wider text-[10px] px-3 py-1 rounded-full">
+            <Badge className="bg-[#b04a15]/10 dark:bg-[#b04a15]/20 text-[#b04a15] dark:text-[#e07b3a] border-0 font-extrabold uppercase tracking-wider text-3xs px-3 py-1 rounded-full">
               <TranslatedText text={campaign.category} />
             </Badge>
             <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500 font-bold">
@@ -187,7 +187,7 @@ function HorizontalCampaignCard({
 
           <div className="flex justify-between items-center text-xs border-y border-stone-100 dark:border-zinc-800/50 py-3.5">
             <div className="flex flex-col">
-              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5">
+              <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5">
                 Amount Raised
               </span>
               <span className="font-extrabold text-[#b04a15] dark:text-[#e07b3a] text-lg tabular-nums">
@@ -195,12 +195,12 @@ function HorizontalCampaignCard({
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-[#b04a15]/10 dark:bg-[#e07b3a]/10 text-[#b04a15] dark:text-[#e07b3a] font-black px-3 py-1 rounded-full text-[10px] tracking-wider uppercase border border-[#b04a15]/20 dark:border-[#e07b3a]/20">
+            <div className="flex items-center gap-1.5 bg-[#b04a15]/10 dark:bg-[#e07b3a]/10 text-[#b04a15] dark:text-[#e07b3a] font-black px-3 py-1 rounded-full text-3xs tracking-wider uppercase border border-[#b04a15]/20 dark:border-[#e07b3a]/20">
               {pct}% Funded
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5">
+              <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5">
                 Campaign Goal
               </span>
               <span className="font-bold text-stone-700 dark:text-stone-300 text-base tabular-nums">

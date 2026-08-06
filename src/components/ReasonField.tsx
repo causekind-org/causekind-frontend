@@ -48,7 +48,7 @@ export function ReasonField({
               height as the admin types. */}
           {REASON_HINT}
         </p>
-        <span className={`shrink-0 text-[10px] tabular-nums ${overLength ? "text-red-600" : "text-stone-400"}`}>
+        <span className={`shrink-0 text-3xs tabular-nums ${overLength ? "text-red-600" : "text-stone-400"}`}>
           {value.trim().length}/{MAX_REASON_LENGTH}
         </span>
       </div>

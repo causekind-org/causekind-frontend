@@ -10,10 +10,14 @@ import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import { AdminPermissionsPanel } from "@/components/super-admin/AdminPermissionsPanel";
 import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
 import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
+import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
+import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
+import { CommandPalette } from "@/components/super-admin/CommandPalette";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
   Sun, Moon, AlertTriangle, MessageCircle, KeyRound, History, Scale,
+  Search, UserSearch, LifeBuoy, Send, ShieldCheck, SlidersHorizontal, Activity, Lock,
 } from "lucide-react";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -153,7 +157,9 @@ const MATCH_COLS: Column[] = [
 
 const NAV = [
   { key: "overview",      label: "Overview",    icon: LayoutDashboard },
-  { key: "users",         label: "Users",       icon: Users },
+  { key: "search",        label: "Search",      icon: Search },
+  { key: "directory",     label: "User 360",    icon: UserSearch },
+  { key: "users",         label: "Users (raw)", icon: Users },
   { key: "campaigns",     label: "Campaigns",   icon: Megaphone },
   { key: "donations",     label: "Donations",   icon: CreditCard },
   { key: "item-requests", label: "Requests",    icon: ClipboardList },
@@ -164,6 +170,24 @@ const NAV = [
   { key: "admin-permissions", label: "Admin Access", icon: KeyRound },
   { key: "audit-log",     label: "Audit Log",   icon: History },
   { key: "sql",           label: "SQL Console", icon: Terminal },
+] as const;
+
+/**
+ * Areas of the target information architecture that are not built yet. Shown as
+ * disabled rows rather than left out: the shape of the finished console should
+ * be visible, so nobody goes hunting for a screen that simply does not exist
+ * and no one rebuilds one of these by accident.
+ *
+ * Kept separate from NAV on purpose — SectionKey derives from NAV, so listing
+ * these there would force the content switch to handle sections that render
+ * nothing.
+ */
+const PLANNED_NAV = [
+  { label: "Support cases",     icon: LifeBuoy,          phase: "Phase 3" },
+  { label: "Restrictions",      icon: ShieldCheck,       phase: "Phase 4" },
+  { label: "Interventions",     icon: SlidersHorizontal, phase: "Phase 5" },
+  { label: "Communications",    icon: Send,              phase: "Phase 6" },
+  { label: "Operational health", icon: Activity,         phase: "Phase 8" },
 ] as const;
 
 type SectionKey = (typeof NAV)[number]["key"];
@@ -211,7 +235,7 @@ function StatTile({
       <p className={`text-xl sm:text-3xl font-black tabular-nums leading-none relative z-10 ${th.textPrimary}`}>
         {v.toLocaleString("en-IN")}
       </p>
-      <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider mt-1 sm:mt-1.5 relative z-10 ${th.textDim}`}>
+      <p className={`text-3xs sm:text-2xs font-bold uppercase tracking-wider mt-1 sm:mt-1.5 relative z-10 ${th.textDim}`}>
         {label}
       </p>
     </div>
@@ -238,7 +262,7 @@ function OverviewSection({ th }: { th: Th }) {
     <div className="space-y-5 sm:space-y-8">
       <div>
         <h2 className={`text-base sm:text-lg font-black tracking-tight ${th.textPrimary}`}>Database Overview</h2>
-        <p className={`text-[11px] sm:text-xs ${th.textDim}`}>Live snapshot of every table.</p>
+        <p className={`text-2xs sm:text-xs ${th.textDim}`}>Live snapshot of every table.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
@@ -255,7 +279,7 @@ function OverviewSection({ th }: { th: Th }) {
         <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 ${th.card}`}>
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <Database className="w-4 h-4" style={{ color: th.accent }} />
-            <h3 className={`text-[13px] sm:text-sm font-bold ${th.textPrimary}`}>Users by role</h3>
+            <h3 className={`text-sm sm:text-sm font-bold ${th.textPrimary}`}>Users by role</h3>
           </div>
           <div className="space-y-2.5 sm:space-y-3">
             {Object.entries(data.roleBreakdown).map(([role, count]) => {
@@ -283,14 +307,14 @@ function OverviewSection({ th }: { th: Th }) {
         <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 flex flex-col justify-center ${th.card}`}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <h3 className={`text-[13px] sm:text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
+            <h3 className={`text-sm sm:text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
           </div>
           {/* Currency values run long (₹1,23,45,678) — text-4xl overflowed the
               card on a phone before this stepped down. */}
           <p className="text-2xl sm:text-4xl font-black text-emerald-400 tabular-nums break-words">
             ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
           </p>
-          <p className={`text-[11px] sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
+          <p className={`text-2xs sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
         </div>
       </div>
     </div>
@@ -302,6 +326,9 @@ export default function SuperAdminPage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const [section, setSection] = useState<SectionKey>("overview");
+  // Set when a user is chosen from search or ⌘K, so the directory opens straight
+  // into their 360 instead of making the agent find them a second time.
+  const [focusUserId, setFocusUserId] = useState<number | undefined>(undefined);
 
   // Theme
   const [isDark, setIsDark] = useState(true);
@@ -316,7 +343,16 @@ export default function SuperAdminPage() {
       setSqlModalOpen(true);
       return;
     }
+    // Leaving the directory by the nav should not silently reopen the last user
+    // the next time it's entered.
+    if (key !== "directory") setFocusUserId(undefined);
     setSection(key);
+  }
+
+  /** Search and ⌘K both land on the same User 360 workspace. */
+  function openUser(id: number) {
+    setFocusUserId(id);
+    setSection("directory");
   }
 
   useEffect(() => {
@@ -328,6 +364,8 @@ export default function SuperAdminPage() {
   const content = useMemo(() => {
     switch (section) {
       case "overview":      return <OverviewSection th={th} />;
+      case "search":        return <GlobalSearchPanel onOpenUser={openUser} isDark={isDark} />;
+      case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} isDark={isDark} />;
       case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
                               onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
@@ -342,7 +380,7 @@ export default function SuperAdminPage() {
       case "sql":           return <SqlConsole isDark={isDark} />;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, isDark]);
+  }, [section, isDark, focusUserId]);
 
   // Theme toggle button (reused in sidebar + topbar)
   const ThemeToggle = (
@@ -387,7 +425,7 @@ export default function SuperAdminPage() {
               </span>
               <div>
                 <p className={`text-sm font-black tracking-tight leading-none ${th.textPrimary}`}>Command Center</p>
-                <p className={`text-[10px] mt-0.5 ${th.textDim}`}>Super Admin</p>
+                <p className={`text-3xs mt-0.5 ${th.textDim}`}>Super Admin</p>
               </div>
             </div>
           </div>
@@ -404,14 +442,31 @@ export default function SuperAdminPage() {
                 <Icon className="w-4 h-4 shrink-0" />
                 {label}
                 {key === "sql" && (
-                  <span className={`ml-auto text-[9px] font-black uppercase ${th.sqlLabel}`}>danger</span>
+                  <span className={`ml-auto text-4xs font-black uppercase ${th.sqlLabel}`}>danger</span>
                 )}
               </button>
             ))}
+
+            <div className={`mt-4 pt-3 border-t ${th.divider}`}>
+              <p className={`px-3 pb-1.5 text-[9px] font-black uppercase tracking-wider ${th.textDimmer}`}>
+                Not built yet
+              </p>
+              {PLANNED_NAV.map(({ label, icon: Icon, phase }) => (
+                <div
+                  key={label}
+                  title={`Arrives with ${phase} of the console rebuild`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold border border-transparent cursor-not-allowed opacity-40 ${th.textMuted}`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {label}
+                  <Lock className="w-3 h-3 ml-auto shrink-0" />
+                </div>
+              ))}
+            </div>
           </nav>
 
           <div className={`shrink-0 p-3 border-t ${th.divider}`}>
-            <p className={`text-[10px] px-3 mb-2 truncate font-mono ${th.textDimmer}`}>{user.email}</p>
+            <p className={`text-3xs px-3 mb-2 truncate font-mono ${th.textDimmer}`}>{user.email}</p>
             <div className="flex items-center gap-1.5">
               {ThemeToggle}
               <button
@@ -449,7 +504,7 @@ export default function SuperAdminPage() {
               <button
                 key={key}
                 onClick={() => handleNavClick(key)}
-                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
                   section === key
                     ? isDark ? "bg-[#f0b97a]/10 text-[#f0b97a]" : "bg-[#b04a15]/10 text-[#b04a15]"
                     : th.textMuted + " hover:text-white"
@@ -466,6 +521,10 @@ export default function SuperAdminPage() {
           </main>
         </div>
       </div>
+
+      {/* ⌘K from anywhere in the console. Mounted once, outside the section
+          switch, so it survives navigation and does not remount on every tab. */}
+      <CommandPalette onOpenUser={openUser} isDark={isDark} />
 
       {/* ── SQL Warning Modal ─────────────────────────────────────────────── */}
       {sqlModalOpen && (
@@ -496,13 +555,13 @@ export default function SuperAdminPage() {
               </p>
               <p className="text-sm text-stone-400 leading-relaxed">
                 Queries run directly against the live database. Destructive operations such as{" "}
-                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
                   UPDATE
                 </code>{" "}
-                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
                   DELETE
                 </code>{" "}
-                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
                   DROP
                 </code>{" "}
                 bypass all application safeguards.

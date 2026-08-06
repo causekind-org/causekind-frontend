@@ -98,7 +98,7 @@ function Row({ icon: Icon, label, children }: {
     <div className="flex gap-2.5">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden />
       <div className="min-w-0 flex-1">
-        <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">{label}</dt>
+        <dt className="text-2xs font-semibold uppercase tracking-wide text-stone-400">{label}</dt>
         <dd className="text-stone-700 dark:text-stone-300">{children}</dd>
       </div>
     </div>
@@ -112,7 +112,7 @@ export function Panel({ title, children, className = "" }: {
   return (
     <section className={`rounded-lg border border-stone-200 bg-white p-3 sm:p-4 dark:border-zinc-800 dark:bg-zinc-900 ${className}`}>
       {title && (
-        <h2 className="mb-3 text-[11px] font-bold uppercase tracking-wider text-stone-400">{title}</h2>
+        <h2 className="mb-3 text-2xs font-bold uppercase tracking-wider text-stone-400">{title}</h2>
       )}
       {children}
     </section>

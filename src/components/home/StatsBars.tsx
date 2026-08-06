@@ -32,7 +32,7 @@ export function DesktopStatsBar({ stats }: { stats: PlatformStats | null }) {
             <s.icon className={`h-6 w-6 shrink-0 ${s.color}`} />
             <div>
               <p className="text-2xl font-black text-stone-900 dark:text-stone-100 tabular-nums leading-none">{s.value}</p>
-              <p className="text-[11px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-0.5 whitespace-nowrap">{s.label}</p>
+              <p className="text-2xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-0.5 whitespace-nowrap">{s.label}</p>
             </div>
           </div>
         ))}
@@ -46,7 +46,7 @@ export function LiveTicker({ activity }: { activity: RecentActivity[] }) {
 
   return (
     <div className="border-b border-orange-100/40 dark:border-stone-850/40 bg-orange-50/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
-      <span className="shrink-0 ml-6 rounded-full bg-[#963c0d] px-3 py-1 text-[10px] font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
+      <span className="shrink-0 ml-6 rounded-full bg-[#963c0d] px-3 py-1 text-3xs font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
         <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#f0b97a]" />
         LIVE
       </span>

@@ -49,7 +49,7 @@ export function HeroQuoteSlider() {
           <p className="text-white/70 text-sm sm:text-base leading-relaxed font-medium italic line-clamp-3">
             &ldquo;{q.text}&rdquo;
           </p>
-          <span className="mt-1 flex items-center gap-2 text-[#f0b97a] text-[11px] font-black uppercase tracking-wider">
+          <span className="mt-1 flex items-center gap-2 text-[#f0b97a] text-2xs font-black uppercase tracking-wider">
             <span className="block h-px w-5 bg-[#e07b3a]" />
             {q.author}
           </span>
@@ -176,7 +176,7 @@ export function HeroSection({
                     <div className="mb-0 lg:mb-4">
                       <div className={`lg:hidden inline-flex items-center gap-1.5 rounded-full border px-3 py-1 mb-3 ${urgencyConfig.badge}`}>
                         {urgencyConfig.dot && <span className={`w-1.5 h-1.5 rounded-full bg-current ${urgencyConfig.dot}`} />}
-                        <span className="text-[10px] font-black uppercase tracking-wider">{urgencyConfig.label}</span>
+                        <span className="text-3xs font-black uppercase tracking-wider">{urgencyConfig.label}</span>
                       </div>
                       <div className="hidden lg:flex items-center justify-between">
                         <div className="flex items-center gap-2">

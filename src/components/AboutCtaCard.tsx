@@ -35,7 +35,7 @@ function CtaButton({
   return (
     <Link
       href={href}
-      className={`group/cta relative overflow-hidden inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 md:px-5 text-[10px] md:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-200 active:scale-95 ${skin}`}
+      className={`group/cta relative overflow-hidden inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 md:px-5 text-3xs md:text-2xs font-extrabold uppercase tracking-wider transition-all duration-200 active:scale-95 ${skin}`}
     >
       <span
         aria-hidden="true"
@@ -66,7 +66,7 @@ export function AboutCtaCard() {
     <div className="bg-[#120c04] border border-stone-800 rounded-3xl p-5 md:p-8 flex flex-col justify-between hover:shadow-xl transition-all duration-300 overflow-hidden relative group">
       <div className="pointer-events-none absolute -bottom-24 -right-24 w-[280px] h-[280px] rounded-full bg-[#b04a15]/10 blur-3xl" />
       <div className="relative">
-        <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-[#f0b97a] mb-2 md:mb-3 block">03</span>
+        <span className="text-3xs md:text-2xs font-black uppercase tracking-widest text-[#f0b97a] mb-2 md:mb-3 block">03</span>
         <h3 className="text-lg md:text-xl font-extrabold text-white mb-2 md:mb-3">
           {t("ctaTitle")}
         </h3>

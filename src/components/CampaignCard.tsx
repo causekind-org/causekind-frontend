@@ -55,10 +55,10 @@ export function CampaignCard({ campaign }: Props) {
         
         {/* Floating Category and Location Glassmorphic tags */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2">
-          <Badge className="glass-pill text-[#006c49] dark:text-[#4edea3] font-bold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
+          <Badge className="glass-pill text-[#006c49] dark:text-[#4edea3] font-bold text-3xs px-3 py-1 rounded-full uppercase tracking-wider">
             <TranslatedText text={campaign.category} />
           </Badge>
-          <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white font-bold border border-white/10 shadow-xs">
+          <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-3xs text-white font-bold border border-white/10 shadow-xs">
             <MapPin className="size-3 text-[#ffbe76] shrink-0" />
             <TranslatedText text={campaign.city} />
           </span>
@@ -90,16 +90,16 @@ export function CampaignCard({ campaign }: Props) {
 
           <div className="flex justify-between text-xs items-center pt-1">
             <div className="flex flex-col">
-              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider">{t("raised")}</span>
+              <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider">{t("raised")}</span>
               <span className="font-extrabold text-[#006c49] dark:text-[#4edea3] text-base">{formatINR(campaign.amountRaised)}</span>
             </div>
             
-            <div className="flex items-center gap-1.5 bg-[#006c49]/10 dark:bg-[#4edea3]/10 text-[#006c49] dark:text-[#4edea3] font-black px-2.5 py-1 rounded-full text-[10px] tracking-wider uppercase">
+            <div className="flex items-center gap-1.5 bg-[#006c49]/10 dark:bg-[#4edea3]/10 text-[#006c49] dark:text-[#4edea3] font-black px-2.5 py-1 rounded-full text-3xs tracking-wider uppercase">
               {pct}% Funded
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider">{t("goal")}</span>
+              <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider">{t("goal")}</span>
               <span className="font-bold text-stone-700 dark:text-stone-300 text-sm">{formatINR(campaign.targetAmount)}</span>
             </div>
           </div>

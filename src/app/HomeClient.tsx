@@ -118,7 +118,7 @@ function MobileHeroSlider() {
       <div className="relative z-10 w-full h-full p-6 flex flex-col justify-between items-start">
         <div className="bg-[#faf8f3]/85 dark:bg-zinc-900/85 backdrop-blur-xs border border-[#e5e2d5]/30 rounded-full px-3.5 py-1 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse" />
-          <span className="text-[#b04a15] text-[10px] font-extrabold uppercase tracking-wider">
+          <span className="text-[#b04a15] text-3xs font-extrabold uppercase tracking-wider">
             <TranslatedText text="Making Lives Better" />
           </span>
         </div>
@@ -126,12 +126,12 @@ function MobileHeroSlider() {
           <h1 className="text-white text-xl sm:text-2xl font-black leading-tight tracking-tight">
             <TranslatedText text="Together We Support, Educate and Heal" />
           </h1>
-          <p className="text-white/80 text-[11px] sm:text-xs font-semibold leading-relaxed">
+          <p className="text-white/80 text-2xs sm:text-xs font-semibold leading-relaxed">
             <TranslatedText text="Every donation helps a family grow stronger, healthier, and more secure." />
           </p>
           {FEATURES.money && (
             <Link href="/campaigns" className="inline-block mt-1">
-              <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-950/20">
+              <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 rounded-xl text-3xs uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-950/20">
                 <TranslatedText text="Explore Campaigns" />
               </button>
             </Link>
@@ -263,7 +263,7 @@ export default function HomeClient({
                     <div key={s.label} className="flex items-center gap-2 px-5">
                       <s.icon className={`h-4 w-4 shrink-0 ${s.color}`} />
                       <span className="text-stone-900 dark:text-stone-100 font-black text-sm tabular-nums">{s.value}</span>
-                      <span className="text-stone-500 font-bold text-[10px] uppercase tracking-wider whitespace-nowrap">{s.label}</span>
+                      <span className="text-stone-500 font-bold text-3xs uppercase tracking-wider whitespace-nowrap">{s.label}</span>
                       <span className="text-stone-200 dark:text-zinc-700 ml-3 select-none">·</span>
                     </div>
                   ))}
@@ -307,7 +307,7 @@ export default function HomeClient({
                 <div className="grid lg:grid-cols-[1fr_auto] gap-6 items-end">
                   <div>
                     <div className="flex items-center gap-4 mb-3">
-                      <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15]">In-Kind Giving</span>
+                      <span className="text-2xs font-black uppercase tracking-widest text-[#b04a15]">In-Kind Giving</span>
                       <span className="h-px flex-1 bg-[#b04a15]/20" />
                     </div>
                     <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
@@ -343,13 +343,13 @@ export default function HomeClient({
                                 <Image src={req.imageUrl || getMobileCardImage(req.category, req.id)} alt={req.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 33vw" />
                                 {isFeatured && <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />}
                                 <div className="absolute top-2 right-2">
-                                  <span className={`text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase border ${req.urgency === "CRITICAL" ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400" : req.urgency === "HIGH" ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400" : "bg-stone-100/90 dark:bg-zinc-800/90 border-stone-200 dark:border-zinc-700 text-stone-500 dark:text-stone-400"}`}>
+                                  <span className={`text-5xs sm:text-4xs font-black px-1.5 py-0.5 rounded-full uppercase border ${req.urgency === "CRITICAL" ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400" : req.urgency === "HIGH" ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400" : "bg-stone-100/90 dark:bg-zinc-800/90 border-stone-200 dark:border-zinc-700 text-stone-500 dark:text-stone-400"}`}>
                                     {tCommon("urgency" + req.urgency.charAt(0) + req.urgency.slice(1).toLowerCase())}
                                   </span>
                                 </div>
                                 {isFeatured && (
                                   <div className="absolute bottom-3 left-3">
-                                    <span className="text-[10px] font-black text-white/80 uppercase tracking-wider bg-black/30 backdrop-blur-sm rounded-full px-2.5 py-1">{req.category}</span>
+                                    <span className="text-3xs font-black text-white/80 uppercase tracking-wider bg-black/30 backdrop-blur-sm rounded-full px-2.5 py-1">{req.category}</span>
                                   </div>
                                 )}
                               </div>
@@ -358,7 +358,7 @@ export default function HomeClient({
                                   <h3 className={`font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 ${isFeatured ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}>
                                     <TranslatedText text={req.title} />
                                   </h3>
-                                  <p className="text-[10px] sm:text-xs text-stone-400 font-semibold mt-0.5 truncate">
+                                  <p className="text-3xs sm:text-xs text-stone-400 font-semibold mt-0.5 truncate">
                                     By {req.doneeName} · <TranslatedText text={req.city} />
                                   </p>
                                 </div>
@@ -368,11 +368,11 @@ export default function HomeClient({
                                   </p>
                                 )}
                                 <div className="mt-auto pt-2 border-t border-orange-50 dark:border-zinc-800 flex justify-between items-center">
-                                  <span className="text-[10px] sm:text-xs text-stone-400 font-semibold">
+                                  <span className="text-3xs sm:text-xs text-stone-400 font-semibold">
                                     Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span>
                                   </span>
                                   <Link href="/requests" className="inline-flex">
-                                    <span className="text-[#b04a15] font-extrabold uppercase text-[9px] sm:text-[10px] tracking-wider hover:underline">Give →</span>
+                                    <span className="text-[#b04a15] font-extrabold uppercase text-4xs sm:text-3xs tracking-wider hover:underline">Give →</span>
                                   </Link>
                                 </div>
                               </CardContent>
@@ -425,7 +425,7 @@ export default function HomeClient({
                     <span key={item.label + copy} className="flex items-center gap-2 text-white">
                       <item.icon className="w-3.5 h-3.5 opacity-80" />
                       <span className="text-xs font-bold">{item.value}</span>
-                      <span className="text-[10px] opacity-75 font-medium">{item.label}</span>
+                      <span className="text-3xs opacity-75 font-medium">{item.label}</span>
                       <span className="opacity-40 mx-2">·</span>
                     </span>
                   ))}
@@ -457,7 +457,7 @@ export default function HomeClient({
               <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
                 <TranslatedText text="Latest Active Campaigns" />
               </h2>
-              <Link href="/campaigns" className="text-[10px] font-extrabold text-[#b04a15] uppercase tracking-wider hover:underline">
+              <Link href="/campaigns" className="text-3xs font-extrabold text-[#b04a15] uppercase tracking-wider hover:underline">
                 <TranslatedText text="Browse All" /> →
               </Link>
             </div>
@@ -471,26 +471,26 @@ export default function HomeClient({
                       <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
                         <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
                       </div>
-                      <p className="text-[10px] font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
+                      <p className="text-3xs font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
                     </div>
                     <div className="flex-1 flex flex-col justify-between min-w-0">
-                      <h4 className="text-[11px] font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
+                      <h4 className="text-2xs font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {[campaign.city, campaign.category].map(t => (
-                          <span key={t} className="bg-[#faf1e1] dark:bg-zinc-850 text-[#b04a15] dark:text-orange-400 font-extrabold text-[8px] px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
+                          <span key={t} className="bg-[#faf1e1] dark:bg-zinc-850 text-[#b04a15] dark:text-orange-400 font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
                         ))}
                       </div>
                       <div className="mt-2.5 space-y-1">
-                        <div className="flex justify-between items-center text-[9px] font-extrabold text-stone-400 uppercase">
+                        <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
                           <span>Progress</span><span className="text-[#b04a15]">{pct}% Funded</span>
                         </div>
                         <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
                           <div className="bg-[#b04a15] h-full rounded-full" style={{ width: `${pct}%` }} />
                         </div>
-                        <p className="text-[9px] text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
+                        <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
                       </div>
                       <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
-                        <button className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold py-2 rounded-lg text-[9px] tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
+                        <button className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
                       </Link>
                     </div>
                   </div>

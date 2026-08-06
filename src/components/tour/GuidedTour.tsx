@@ -218,13 +218,13 @@ export default function GuidedTour({ steps, onFinish }: {
             <X className="h-3.5 w-3.5" />
           </button>
 
-          <p className="mb-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ck-role-accent)]">
+          <p className="mb-0.5 text-4xs font-bold uppercase tracking-[0.18em] text-[var(--ck-role-accent)]">
             Step {idx + 1} of {validSteps.length}
           </p>
-          <h3 className="font-serif text-[15px] font-bold leading-snug text-stone-900 dark:text-stone-100" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+          <h3 className="font-serif text-base font-bold leading-snug text-stone-900 dark:text-stone-100" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
             {step.title}
           </h3>
-          <p className="mt-1 text-[12.5px] leading-[1.45] text-stone-600 dark:text-stone-400">
+          <p className="mt-1 text-sm leading-[1.45] text-stone-600 dark:text-stone-400">
             {step.body}
           </p>
 
@@ -260,7 +260,7 @@ export default function GuidedTour({ steps, onFinish }: {
           </div>
 
           {!isLast && (
-            <button onClick={finish} className="mt-1.5 text-[10.5px] text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300">
+            <button onClick={finish} className="mt-1.5 text-3xs text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300">
               Skip tour
             </button>
           )}

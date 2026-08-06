@@ -35,7 +35,10 @@ function InputOTP({
 }
 
 function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="input-otp-group" className={cn("flex items-center gap-2", className)} {...props} />;
+  // gap-1 below sm. Six 44px slots with 8px gaps need 304px, which does not fit
+  // a 320px screen once the page and panel padding are taken out — the row was
+  // pushing the whole handover page into horizontal scroll.
+  return <div data-slot="input-otp-group" className={cn("flex items-center gap-1 sm:gap-2", className)} {...props} />;
 }
 
 function InputOTPSlot({
@@ -52,7 +55,11 @@ function InputOTPSlot({
       data-slot="input-otp-slot"
       data-active={isActive}
       className={cn(
-        "relative flex h-12 w-11 items-center justify-center rounded-md border border-input",
+        // w-9 below sm: 6×36 + 5×4 = 236px, which clears the ~264px a 320px
+        // screen leaves after the page's px-4 and the panel's p-3. Height stays
+        // at 48px, and the slots are decorative anyway — input-otp renders one
+        // real input behind them — so narrowing costs no touch target.
+        "relative flex h-12 w-9 items-center justify-center rounded-md border border-input sm:w-11",
         "bg-background text-lg font-semibold text-foreground shadow-xs transition-all",
         "data-[active=true]:z-10 data-[active=true]:border-ring data-[active=true]:ring-[3px] data-[active=true]:ring-ring/50",
         "aria-invalid:border-destructive data-[active=true]:aria-invalid:ring-destructive/20",

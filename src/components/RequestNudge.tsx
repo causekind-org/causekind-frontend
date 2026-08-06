@@ -125,7 +125,7 @@ export function RequestNudge({
           <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ck-role-accent)]/12">
             <ClipboardList className="h-3 w-3 text-[var(--ck-role-accent)]" aria-hidden />
           </span>
-          <span className="min-w-0 flex-1 truncate text-[11px] font-bold leading-tight text-stone-800 dark:text-stone-100">
+          <span className="min-w-0 flex-1 truncate text-2xs font-bold leading-tight text-stone-800 dark:text-stone-100">
             {label}
           </span>
         </Link>

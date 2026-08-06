@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getOffersForMyRequests, doneeReviewOffer, type DonationOffer } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -106,6 +107,7 @@ function DoneeOffersView() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const reducedMotion = !!useReducedMotion();
   const [offers, setOffers] = useState<DonationOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<number | null>(null);
@@ -152,6 +154,40 @@ function DoneeOffersView() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <div className="mx-auto max-w-2xl px-4 pt-5 sm:pt-8">
+        {/* Bare control — no pill, no border, no background. The arrow slides
+            back on hover and the label follows it, so the motion says "return"
+            rather than just highlighting. RTL flips the glyph and the travel
+            direction together, otherwise the arrow would point away from where
+            it actually goes. */}
+        <motion.button
+          type="button"
+          onClick={() => (focused ? router.replace("/donee/offers") : router.back())}
+          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -6 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: reducedMotion ? 0.15 : 0.35, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={reducedMotion ? undefined : "hover"}
+          whileFocus={reducedMotion ? undefined : "hover"}
+          whileTap={reducedMotion ? undefined : { scale: 0.97 }}
+          // min-h keeps the 44px touch target even though nothing is drawn
+          // around it — a container-less control is still a control.
+          className="group -ml-1 mb-3 inline-flex min-h-[44px] items-center gap-1.5 px-1 text-sm font-semibold text-stone-500 transition-colors hover:text-[var(--ck-role-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:text-stone-400"
+        >
+          <motion.span
+            aria-hidden
+            className="inline-flex rtl:rotate-180"
+            variants={{ hover: { x: -3 } }}
+            transition={{ type: "spring", stiffness: 420, damping: 24 }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </motion.span>
+          <motion.span
+            variants={{ hover: { x: -2 } }}
+            transition={{ type: "spring", stiffness: 420, damping: 24 }}
+          >
+            {focused ? "All offers" : "Back"}
+          </motion.span>
+        </motion.button>
+
         <div className="mb-6">
           <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
             {focused ? "Offer Details" : "Donation Offers"}

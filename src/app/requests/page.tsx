@@ -258,7 +258,7 @@ function RequestsHero({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-highlight)] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--ck-role-highlight)]" />
               </span>
-              <span className="text-[var(--ck-role-highlight)] text-[10px] font-black uppercase tracking-widest">Live Community Needs</span>
+              <span className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest">Live Community Needs</span>
             </div>
 
             {/* Headline */}
@@ -278,21 +278,21 @@ function RequestsHero({
             <div className="flex flex-wrap items-center gap-5 sm:gap-8 anim-up anim-d4">
               <div>
                 <p className="text-xl sm:text-3xl font-black text-white tabular-nums">{total}</p>
-                <p className="text-[10px] font-bold text-white/35 uppercase tracking-wider mt-0.5">Active Needs</p>
+                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Active Needs</p>
               </div>
               {critical > 0 && (
                 <>
                   <div className="w-px h-10 bg-white/10" />
                   <div>
                     <p className="text-xl sm:text-3xl font-black text-red-400 tabular-nums">{critical}</p>
-                    <p className="text-[10px] font-bold text-white/35 uppercase tracking-wider mt-0.5">Urgent</p>
+                    <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Urgent</p>
                   </div>
                 </>
               )}
               <div className="hidden sm:block w-px h-10 bg-white/10" />
               <div className="hidden sm:block">
                 <p className="text-xl sm:text-3xl font-black text-[var(--ck-role-highlight)]">0%</p>
-                <p className="text-[10px] font-bold text-white/35 uppercase tracking-wider mt-0.5">Platform Fees</p>
+                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Platform Fees</p>
               </div>
             </div>
 
@@ -348,7 +348,7 @@ function RequestsHero({
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
-                    <p className="text-[var(--ck-role-highlight)] text-[10px] font-black uppercase tracking-widest mb-1">Got spare items?</p>
+                    <p className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest mb-1">Got spare items?</p>
                     <p className="text-white/80 text-xs leading-relaxed pr-3">
                       List your item from here — books, clothes, electronics. Someone nearby needs it.
                     </p>
@@ -359,7 +359,7 @@ function RequestsHero({
 
             {/* Scroll cue */}
             <div className="flex items-center gap-2 anim-up anim-d6">
-              <span className="text-white/25 text-[10px] font-bold uppercase tracking-widest">Browse needs below</span>
+              <span className="text-white/25 text-3xs font-bold uppercase tracking-widest">Browse needs below</span>
               <ChevronDown className="h-4 w-4 text-white/25 animate-bounce-slow" />
             </div>
           </div>
@@ -388,23 +388,25 @@ function CategoryBar({
     <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-b border-stone-100 dark:border-zinc-800 sticky top-14 lg:top-[88px] z-40 shadow-sm">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center gap-2">
 
-        {/* Scrollable pill row */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-3 flex-1 min-w-0">
+        {/* Scrollable pill row. Mobile-first sizing: the base values are the
+            phone ones and every sm: restores the previous desktop value, so
+            nothing at >=640px moves. */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-2 sm:py-3 flex-1 min-w-0">
 
           {/* All */}
           <button
             onClick={onClearAll}
-            className={`flex items-center gap-1.5 shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+            className={`flex items-center gap-1 sm:gap-1.5 shrink-0 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-2xs sm:text-xs font-bold transition-all duration-200 ${
               selected.length === 0
                 ? "bg-[var(--ck-role-accent)] text-white shadow-sm shadow-orange-900/25"
                 : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-700"
             }`}
           >
             All
-            <span className={`tabular-nums text-[10px] font-black ${selected.length === 0 ? "text-white/60" : "text-stone-400"}`}>{total}</span>
+            <span className={`tabular-nums text-4xs sm:text-3xs font-black ${selected.length === 0 ? "text-white/60" : "text-stone-400"}`}>{total}</span>
           </button>
 
-          <div className="w-px h-5 bg-stone-200 dark:bg-zinc-700 shrink-0 mx-0.5" />
+          <div className="w-px h-4 sm:h-5 bg-stone-200 dark:bg-zinc-700 shrink-0 mx-0.5" />
 
           {ITEM_REQ_CATEGORIES.map(cat => {
             const Icon  = CAT_ICON[cat] ?? Package;
@@ -417,16 +419,16 @@ function CategoryBar({
                 key={cat}
                 onClick={() => onToggle(cat)}
                 disabled={count === 0}
-                className={`flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-xs font-bold border transition-all duration-200
+                className={`flex items-center gap-1.5 sm:gap-2 shrink-0 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-2xs sm:text-xs font-bold border transition-all duration-200
                             disabled:opacity-35 disabled:cursor-not-allowed
                             ${act
                               ? "bg-[var(--ck-role-accent)] text-white border-transparent shadow-sm shadow-orange-900/20"
                               : `${col.pill} hover:opacity-80`
                             }`}
               >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                 <span>{cat}</span>
-                <span className={`tabular-nums text-[10px] font-black ${act ? "text-white/60" : ""}`}>{count}</span>
+                <span className={`tabular-nums text-4xs sm:text-3xs font-black ${act ? "text-white/60" : ""}`}>{count}</span>
               </button>
             );
           })}
@@ -460,7 +462,7 @@ function RequestFilterPanel({
 
       {/* Urgency */}
       <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-3">Urgency</p>
+        <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Urgency</p>
         <div className="space-y-1">
           {URGENCY_LEVELS.map(({ value, label, dot }) => (
             <label
@@ -488,7 +490,7 @@ function RequestFilterPanel({
 
       {/* Sort */}
       <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-3">Sort By</p>
+        <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Sort By</p>
         <div className="space-y-1">
           {REQ_SORT_OPTIONS.map(opt => (
             <label
@@ -888,7 +890,7 @@ export default function RequestsPage() {
             <SlidersHorizontal className="h-4 w-4" />
             Filters
             {advancedFilterCount > 0 && (
-              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[var(--ck-role-accent)] text-white text-[10px] font-black">
+              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[var(--ck-role-accent)] text-white text-3xs font-black">
                 {advancedFilterCount}
               </span>
             )}
@@ -1109,7 +1111,7 @@ export default function RequestsPage() {
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30 pointer-events-none" />
               <div className="relative z-10 space-y-3 sm:space-y-4">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-[var(--ck-role-highlight)] bg-white/10 backdrop-blur-md border border-white/20 py-1.5 px-3.5 rounded-full uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1.5 text-3xs font-extrabold text-[var(--ck-role-highlight)] bg-white/10 backdrop-blur-md border border-white/20 py-1.5 px-3.5 rounded-full uppercase tracking-wider">
                   <Heart className="w-3 h-3 fill-[var(--ck-role-highlight)]" /> Give Back
                 </span>
                 <h2 className="text-lg sm:text-2xl font-extrabold leading-snug tracking-tight">
@@ -1123,11 +1125,11 @@ export default function RequestsPage() {
               <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl sm:rounded-2xl p-3 sm:p-4 mt-8 space-y-2">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="text-[11px] text-white/80 font-semibold">Admin-verified before contact is shared</span>
+                  <span className="text-2xs text-white/80 font-semibold">Admin-verified before contact is shared</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[var(--ck-role-highlight)] shrink-0" />
-                  <span className="text-[11px] text-white/80 font-semibold">Local 10 km radius matching</span>
+                  <span className="text-2xs text-white/80 font-semibold">Local 10 km radius matching</span>
                 </div>
               </div>
             </div>
@@ -1153,7 +1155,7 @@ export default function RequestsPage() {
                             <button onClick={() => removeImage(i)} className="absolute right-1 top-1 rounded-full bg-black/70 p-0.5 text-white hover:bg-black transition">
                               <X className="h-2.5 w-2.5" />
                             </button>
-                            {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[8px] text-white">AI scans</span>}
+                            {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-5xs text-white">AI scans</span>}
                           </div>
                         ))}
                       </div>
@@ -1163,7 +1165,7 @@ export default function RequestsPage() {
                       </div>
                     )}
                     <p className="text-xs font-extrabold text-stone-800 dark:text-stone-200">Click to upload photos</p>
-                    <p className="text-[10px] text-stone-400 mt-0.5">JPG, PNG — up to 10 MB each</p>
+                    <p className="text-3xs text-stone-400 mt-0.5">JPG, PNG — up to 10 MB each</p>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
                 </div>
@@ -1174,7 +1176,7 @@ export default function RequestsPage() {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-stone-800 dark:text-stone-200">AI auto-describe</p>
-                      <p className="text-[10px] text-stone-400">We&apos;ll generate a description from your photo</p>
+                      <p className="text-3xs text-stone-400">We&apos;ll generate a description from your photo</p>
                     </div>
                   </div>
                   <Switch checked={aiGenerated || analyzing} onCheckedChange={val => { if (val && images.length > 0) runAnalysis(images[0]); else if (!val) setAiGenerated(false); }} />
@@ -1185,12 +1187,12 @@ export default function RequestsPage() {
                     {analyzing && (
                       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs">
                         <Loader2 className="h-4 w-4 text-[var(--ck-role-accent)] animate-spin" />
-                        <p className="text-[11px] font-bold text-stone-700 dark:text-stone-300">Analysing your photo…</p>
+                        <p className="text-2xs font-bold text-stone-700 dark:text-stone-300">Analysing your photo…</p>
                       </div>
                     )}
                     <Textarea id="desc" rows={3} value={description} onChange={e => { setDescription(e.target.value); setAiGenerated(false); }} placeholder="Describe the item, its condition, and any notes…" className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[var(--ck-role-accent)]/20 text-sm resize-none" disabled={analyzing} />
                   </div>
-                  <div className="flex justify-between text-[10px] text-stone-400 font-semibold">
+                  <div className="flex justify-between text-3xs text-stone-400 font-semibold">
                     <span>{description.length >= 20 ? "✓ Minimum met" : `${description.length}/20 min`}</span>
                     <span>{description.length}/1000</span>
                   </div>
@@ -1198,7 +1200,7 @@ export default function RequestsPage() {
                 <button onClick={handleSubmitDonate} disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20} className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine">
                   {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : <><Heart className="h-4 w-4" /> Complete Donation <ArrowRight className="h-4 w-4" /></>}
                 </button>
-                <div className="flex justify-between text-[10px] text-stone-400 font-bold border-t border-stone-100 dark:border-zinc-800 pt-4">
+                <div className="flex justify-between text-3xs text-stone-400 font-bold border-t border-stone-100 dark:border-zinc-800 pt-4">
                   <div className="flex gap-3">
                     <Link href="/faq" className="hover:text-[var(--ck-role-accent)] transition-colors">Help</Link>
                     <Link href="/privacy" className="hover:text-[var(--ck-role-accent)] transition-colors">Privacy</Link>

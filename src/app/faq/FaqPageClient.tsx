@@ -64,7 +64,7 @@ export function FaqPageClient() {
           </Link>
           <div className="grid lg:grid-cols-[1fr_auto] items-end gap-8">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-widest text-[#f0b97a] mb-3">
+              <p className="text-2xs font-black uppercase tracking-widest text-[#f0b97a] mb-3">
                 Support
               </p>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.05]">

@@ -99,6 +99,45 @@
 }
 
 @theme inline {
+  /* ── Fluid type scale ───────────────────────────────────────────────────
+     Redefining Tailwind's --text-* here makes every text-xs … text-9xl
+     utility on the site fluid from one place — no component file needs to
+     change for any of them.
+
+     Each value is clamp(min, A rem + B vw, max), solved so the preferred
+     value passes through `min` at a 320px viewport and `max` at 1280px.
+
+     The `rem` term is NOT optional. A pure-vw preferred value ignores browser
+     zoom and the user's font-size setting, so text can never reach 200% and
+     the page fails WCAG 1.4.4. Keeping a rem component preserves zoom.
+
+     --text-base is deliberately floored at exactly 1rem. It is the size on
+     every form control (the wizard's controlClass, both auth pages), and
+     below 16px iOS Safari zooms the viewport on focus and never zooms back —
+     leaving the user on a horizontally-scrolled page with no way out. It may
+     grow; it must never shrink.
+
+     The four tokens below xs replace 654 hard-coded text-[Npx] values. They
+     shrink over a deliberately narrow band: 8-11px is already at the readable
+     floor, and taking 8px down to 6.5px on a phone makes it decorative. */
+  --text-5xs: clamp(0.4688rem, 0.4375rem + 0.1563vw, 0.5625rem);
+  --text-4xs: clamp(0.5313rem, 0.5rem + 0.1563vw, 0.625rem);
+  --text-3xs: clamp(0.5938rem, 0.5625rem + 0.1563vw, 0.6875rem);
+  --text-2xs: clamp(0.6563rem, 0.625rem + 0.1563vw, 0.75rem);
+  --text-xs: clamp(0.6875rem, 0.6458rem + 0.2083vw, 0.8125rem);
+  --text-sm: clamp(0.8125rem, 0.7708rem + 0.2083vw, 0.9375rem);
+  --text-base: clamp(1rem, 0.9792rem + 0.1042vw, 1.0625rem);
+  --text-lg: clamp(1.0313rem, 0.9792rem + 0.2604vw, 1.1875rem);
+  --text-xl: clamp(1.125rem, 1.0625rem + 0.3125vw, 1.3125rem);
+  --text-2xl: clamp(1.25rem, 1.125rem + 0.625vw, 1.625rem);
+  --text-3xl: clamp(1.5rem, 1.3333rem + 0.8333vw, 2rem);
+  --text-4xl: clamp(1.6875rem, 1.4375rem + 1.25vw, 2.4375rem);
+  --text-5xl: clamp(2rem, 1.5833rem + 2.0833vw, 3.25rem);
+  --text-6xl: clamp(2.375rem, 1.8333rem + 2.7083vw, 4rem);
+  --text-7xl: clamp(2.75rem, 2.0417rem + 3.5417vw, 4.875rem);
+  --text-8xl: clamp(3.375rem, 2.3333rem + 5.2083vw, 6.5rem);
+  --text-9xl: clamp(4rem, 2.4167rem + 7.9167vw, 8.75rem);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -1121,37 +1160,41 @@ section:focus-within {
 
 /* Mobile dock — raised draggable active bead inspired by the supplied motion
    reference, expressed with CauseKind's role-aware palette and warm glass. */
+/* The dock keeps its geometry and behaviour; the glass LAYER inside it now owns
+   the surface (background, border, backdrop-filter, shadow). Keeping both would
+   be "double glass": two stacked backdrop-filters, where the inner one samples
+   the outer one's already-blurred output — a second full-surface filter pass
+   that also washes the refraction out.
+
+   Retained here deliberately: overflow:visible (the socket, glow and bead all
+   extend past this box), border-radius, the near-footer transform/opacity
+   transition, and the role-theme context the children read from. */
 .ck-mobile-dock {
   overflow: visible;
-  border: 1px solid color-mix(in srgb, var(--ck-role-accent) 18%, #d6d3d1 82%);
   border-radius: 1.35rem;
-  background:
-    radial-gradient(120% 180% at 50% -80%, rgba(255, 255, 255, 0.9) 0%, transparent 54%),
-    rgba(250, 248, 245, 0.88);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(120, 113, 108, 0.08),
-    0 18px 44px -22px color-mix(in srgb, var(--ck-role-accent) 45%, transparent),
-    0 10px 28px -20px rgba(28, 25, 23, 0.55);
-  -webkit-backdrop-filter: blur(18px) saturate(165%);
-  backdrop-filter: blur(18px) saturate(165%);
+  /* Its own stacking context, so the decorative layer at z-index 0 can never
+     land above page content that happens to sit near the dock. */
+  isolation: isolate;
   transition:
     transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.3s ease,
-    border-color 0.25s ease,
-    background-color 0.25s ease;
+    opacity 0.3s ease;
 }
 
-.dark .ck-mobile-dock {
-  border-color: color-mix(in srgb, var(--ck-role-accent) 28%, #3f3f46 72%);
-  background:
-    radial-gradient(120% 180% at 50% -80%, rgba(255, 255, 255, 0.16) 0%, transparent 54%),
-    rgba(9, 9, 11, 0.88);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-    0 18px 48px -20px color-mix(in srgb, var(--ck-role-accent) 55%, transparent),
-    0 12px 34px -18px rgba(0, 0, 0, 0.9);
+/* Decorative glass layer. Clipped to the capsule internally by .ck-glass; the
+   interactive track is a SIBLING, so nothing that overflows the dock is inside
+   this box. Never interactive, never in the a11y tree. */
+.ck-mobile-dock-glass-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Above the glass. The socket (11) and bead (20) sit higher still. */
+.ck-mobile-dock-track {
+  position: relative;
+  z-index: 1;
 }
 
 /* Public/logged-out dark mode has no role attribute, so lift the default
@@ -1173,15 +1216,39 @@ section:focus-within {
   border: 1px solid color-mix(in srgb, var(--ck-role-accent) 18%, #d6d3d1 82%);
   border-top: 0;
   border-radius: 0 0 999px 999px;
-  background: rgba(250, 248, 245, 0.96);
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.78);
+  /* Retuned for the glass capsule: at 0.96 opaque this read as a cream chip
+     pasted on top of the glass. Now translucent with its own blur, so it
+     belongs to the same surface. Dimensions and position are unchanged. */
+  background: rgba(250, 248, 245, 0.62);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.65);
   transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
 }
 
 .dark .ck-mobile-dock-socket {
   border-color: color-mix(in srgb, var(--ck-role-accent) 28%, #3f3f46 72%);
-  background: rgba(9, 9, 11, 0.97);
+  background: rgba(9, 9, 11, 0.66);
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Without backdrop-filter the translucent socket would show the page through
+   it; go back to near-opaque so the notch still reads as a solid cut-out. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ck-mobile-dock-socket {
+    background: rgba(250, 248, 245, 0.96);
+  }
+  .dark .ck-mobile-dock-socket {
+    background: rgba(9, 9, 11, 0.97);
+  }
+}
+
+@media (forced-colors: active) {
+  .ck-mobile-dock-socket {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 .ck-mobile-dock-glow {
@@ -1911,7 +1978,7 @@ div:has(.searchable-select-open) {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
   font-style: normal;
-  font-size: 24px;
+  font-size: var(--text-2xl);
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
@@ -1928,7 +1995,7 @@ div:has(.searchable-select-open) {
 /* ── Typography utility classes for blog reading page ── */
 .font-display-lg {
   font-family: var(--font-source-serif-4, var(--font-plus-jakarta-sans, serif));
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(2rem, 1.6667rem + 1.6667vw, 3rem);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -1936,21 +2003,21 @@ div:has(.searchable-select-open) {
 
 .font-body-lg {
   font-family: var(--font-source-serif-4, serif);
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   font-weight: 400;
   line-height: 1.8;
 }
 
 .font-body-md {
   font-family: var(--font-plus-jakarta-sans, sans-serif);
-  font-size: 1rem;
+  font-size: var(--text-base);
   font-weight: 400;
   line-height: 1.6;
 }
 
 .font-label-sm {
   font-family: var(--font-plus-jakarta-sans, sans-serif);
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 500;
   line-height: 1.4;
   letter-spacing: 0.02em;
@@ -1958,7 +2025,7 @@ div:has(.searchable-select-open) {
 
 .font-label-md {
   font-family: var(--font-plus-jakarta-sans, sans-serif);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0.04em;
@@ -1966,7 +2033,7 @@ div:has(.searchable-select-open) {
 
 .font-headline-md {
   font-family: var(--font-source-serif-4, var(--font-plus-jakarta-sans, serif));
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   font-weight: 600;
   line-height: 1.4;
 }
@@ -2008,7 +2075,7 @@ div:has(.searchable-select-open) {
 
 .article-content p {
   font-family: var(--font-source-serif-4), serif;
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   line-height: 1.8;
   margin-bottom: 2rem;
   color: currentColor;
@@ -2016,7 +2083,7 @@ div:has(.searchable-select-open) {
 
 .article-content h2 {
   font-family: var(--font-source-serif-4), serif;
-  font-size: 2rem;
+  font-size: var(--text-4xl);
   line-height: 1.3;
   font-weight: 600;
   margin-top: 3rem;
@@ -2027,7 +2094,7 @@ div:has(.searchable-select-open) {
 .article-content blockquote {
   font-family: var(--font-source-serif-4), serif;
   font-style: italic;
-  font-size: 1.5rem;
+  font-size: var(--text-2xl);
   line-height: 1.5;
   color: var(--rust-action, #8e3400);
   border-left: 4px solid var(--rust-action, #b04a15);

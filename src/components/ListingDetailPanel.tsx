@@ -208,7 +208,7 @@ function Detail({ icon: Icon, label, value }: { icon: React.ElementType; label: 
     <div className="flex items-start gap-2">
       <Icon className="w-3.5 h-3.5 text-stone-400 mt-0.5 shrink-0" />
       <div>
-        <span className="text-[10px] text-stone-400 uppercase tracking-wide block">{label}</span>
+        <span className="text-3xs text-stone-400 uppercase tracking-wide block">{label}</span>
         <span className="text-xs text-stone-700 dark:text-stone-300 font-medium">{value}</span>
       </div>
     </div>
@@ -303,9 +303,9 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
           <div className="min-w-0">
             <p className="font-extrabold text-stone-900 dark:text-stone-50 text-base leading-tight truncate">{listing.title}</p>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.color}`}>{meta.label}</span>
-              {listing.category && <span className="text-[10px] text-stone-400">{listing.category}{listing.subcategory ? ` · ${listing.subcategory}` : ""}</span>}
-              <span className="text-[10px] text-stone-400">Qty: {listing.quantity}</span>
+              <span className={`text-3xs font-bold px-2 py-0.5 rounded-full border ${meta.color}`}>{meta.label}</span>
+              {listing.category && <span className="text-3xs text-stone-400">{listing.category}{listing.subcategory ? ` · ${listing.subcategory}` : ""}</span>}
+              <span className="text-3xs text-stone-400">Qty: {listing.quantity}</span>
             </div>
           </div>
           <button
@@ -316,8 +316,19 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
           </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Scrollable body.
+            The panel is pinned to bottom-0, but the floating mobile dock sits
+            ~92px up from that edge and paints over it — so the last rows were
+            unreadable behind the nav. --ck-bottom-chrome is the dock's full
+            height (float + safe-area inset + bar) and resolves to 0 at lg,
+            where there is no dock and this is a right-hand rail.
+
+            The clearance belongs to whichever element actually touches the
+            viewport bottom. When the action bar renders it is a flex sibling
+            BELOW this scroller, so it — not this — is the last element, and
+            carrying the padding here as well would only add dead space at the
+            end of the scroll content while leaving the buttons under the dock. */}
+        <div className={`flex-1 overflow-y-auto ${isTerminal ? "pb-[calc(var(--ck-bottom-chrome)+1rem)]" : "pb-4"}`}>
 
           {/* Photos */}
           {photos.length > 0 && (
@@ -325,7 +336,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
               {photos.map((src, i) => (
                 <div key={i} className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700">
                   <Image src={src} alt={`Photo ${i + 1}`} fill className="object-cover" unoptimized />
-                  {i === 0 && <span className="absolute bottom-1 left-1 text-[9px] bg-[#1e3a60] text-white rounded px-1 py-0.5 font-bold">MAIN</span>}
+                  {i === 0 && <span className="absolute bottom-1 left-1 text-4xs bg-[#1e3a60] text-white rounded px-1 py-0.5 font-bold">MAIN</span>}
                 </div>
               ))}
             </div>
@@ -333,7 +344,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
 
           {/* ── Journey Timeline ─────────────────────────────────────────── */}
           <div className="px-5 py-4 border-b border-stone-100 dark:border-zinc-800">
-            <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-4">Donation Journey</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-4">Donation Journey</p>
 
             <div className="space-y-0">
               {PHASES.map((phase, i) => {
@@ -373,7 +384,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
                       }`}>
                         {phase.label}
                         {(isCurrent || isProblem) && (
-                          <span className={`ml-2 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                          <span className={`ml-2 text-4xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
                             isProblem ? "bg-amber-100 text-amber-700 border border-amber-300" :
                             isReview ? "bg-amber-50 text-amber-600 border border-amber-200" :
                             "bg-[#1e3a60]/10 text-[#1e3a60] border border-[#1e3a60]/20"
@@ -424,7 +435,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
 
           {/* ── Item Details ─────────────────────────────────────────────── */}
           <div className="px-5 py-4 border-b border-stone-100 dark:border-zinc-800">
-            <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-3">Item Details</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Item Details</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Detail icon={Tag}      label="Condition"      value={listing.condition} />
               <Detail icon={Layers}   label="Age"            value={listing.approximateAge} />
@@ -450,7 +461,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
             )}
             {listing.description && (
               <div className="mt-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-1">Description</p>
+                <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-1">Description</p>
                 <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{listing.description}</p>
               </div>
             )}
@@ -458,7 +469,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
 
           {/* ── Location & Delivery ──────────────────────────────────────── */}
           <div className="px-5 py-4 border-b border-stone-100 dark:border-zinc-800">
-            <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-3">Location & Delivery</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Location & Delivery</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               <Detail icon={MapPin}      label="City"      value={listing.city?.split(",")[0]} />
               <Detail icon={MapPin}      label="PIN Code"  value={listing.pincode ?? undefined} />
@@ -466,22 +477,22 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {listing.pickupDays && (
-                <span className="text-[10px] bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-stone-400 rounded-full px-2 py-0.5 font-semibold">
+                <span className="text-3xs bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-stone-400 rounded-full px-2 py-0.5 font-semibold">
                   Pickup: {listing.pickupDays.split(",").slice(0, 3).join(", ")}{listing.pickupDays.split(",").length > 3 ? "…" : ""}
                 </span>
               )}
               {listing.donorDropOffAvailable && (
-                <span className="text-[10px] bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 rounded-full px-2 py-0.5 font-semibold flex items-center gap-1">
+                <span className="text-3xs bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 rounded-full px-2 py-0.5 font-semibold flex items-center gap-1">
                   <Truck className="w-3 h-3" /> Drop-off available {listing.maxTravelDistance ? `(${listing.maxTravelDistance}km)` : ""}
                 </span>
               )}
               {listing.packagingAvailable === "YES" && (
-                <span className="text-[10px] bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-full px-2 py-0.5 font-semibold">
+                <span className="text-3xs bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-full px-2 py-0.5 font-semibold">
                   Packaging available
                 </span>
               )}
               {listing.specialHandling && listing.specialHandling.split("|").slice(0, 2).map(h => (
-                <span key={h} className="text-[10px] bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 font-semibold">
+                <span key={h} className="text-3xs bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 font-semibold">
                   {h}
                 </span>
               ))}
@@ -497,16 +508,23 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
           {/* Listing submitted date */}
           {listing.submittedAt && (
             <div className="px-5 py-3 border-b border-stone-100 dark:border-zinc-800">
-              <p className="text-[10px] text-stone-400">
+              <p className="text-3xs text-stone-400">
                 Submitted on {new Date(listing.submittedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
           )}
         </div>
 
-        {/* ── Sticky action bar ────────────────────────────────────────────── */}
+        {/* ── Action bar ───────────────────────────────────────────────────
+            Not sticky — a flex child in normal flow at the bottom of a panel
+            that is itself pinned to bottom-0. That distinction is the whole bug:
+            it means this row lands exactly in the floating dock's band, where
+            Pause and Withdraw showed through the dock's translucent glass and
+            could not be tapped. The extra pb clears it; the row's own background
+            extends behind the dock so there is no gap. --ck-bottom-chrome is 0
+            at lg, where this resolves to the py-4 it has always had. */}
         {!isTerminal && (
-          <div className="border-t border-stone-100 dark:border-zinc-800 px-5 py-4 flex flex-wrap gap-2 bg-white dark:bg-zinc-950">
+          <div className="border-t border-stone-100 dark:border-zinc-800 px-5 py-4 pb-[calc(var(--ck-bottom-chrome)+1rem)] flex flex-wrap gap-2 bg-white dark:bg-zinc-950">
             {isNeedsInfo && (
               <Link href={`/items/${listing.id}/edit`} className="flex-1">
                 <button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-colors">

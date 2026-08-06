@@ -18,6 +18,16 @@ interface Props {
 
 const POLL_INTERVAL_MS = 5_000;
 
+/**
+ * The "from the beginning" anchor, used until a thread has a message to anchor on.
+ *
+ * <p>Deliberately NOT `new Date(0).toISOString()`. That yields
+ * `1970-01-01T00:00:00.000Z`, and this API's timestamps are `LocalDateTime` —
+ * no zone, no `Z`. The server rejected the suffix and returned 500 on every
+ * poll, so every empty chat thread failed forever.
+ */
+const EPOCH_SINCE = "1970-01-01T00:00:00";
+
 export default function MatchChatWindow({ matchId, currentUserEmail, locked = false, className = "" }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -25,6 +35,8 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const lastSentAt = useRef<string | null>(null);
+  /** Poll ticks to skip while backing off after failures. */
+  const skipTicks = useRef(0);
 
   // Initial load
   useEffect(() => {
@@ -46,11 +58,17 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
 
   // Polling fallback — covers SSE reconnect gaps, same dual SSE+poll pattern as ChatWindow.
   useEffect(() => {
+    // Consecutive failures back the poll off — see ChatWindow for why a bare
+    // catch on a fixed timer turned one broken response into hundreds.
+    let failures = 0;
+
     const interval = setInterval(async () => {
       if (document.hidden) return;
+      if (failures > 0 && skipTicks.current > 0) { skipTicks.current -= 1; return; }
+
       try {
-        const since = lastSentAt.current ?? new Date(0).toISOString();
-        const newMsgs = await getMatchChatMessagesSince(matchId, since);
+        const newMsgs = await getMatchChatMessagesSince(matchId, lastSentAt.current ?? EPOCH_SINCE);
+        failures = 0;
         if (newMsgs.length > 0) {
           setMessages((prev) => {
             const existingIds = new Set(prev.map((m) => m.id));
@@ -61,8 +79,12 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
             return [...prev, ...fresh];
           });
         }
-      } catch {
-        // Silent — polling failure is non-critical
+      } catch (e) {
+        failures += 1;
+        skipTicks.current = Math.min(failures, 12);
+        if (failures === 1 || failures % 6 === 0) {
+          console.warn(`Match chat poll failed for match ${matchId} (${failures}x)`, e);
+        }
       }
     }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
@@ -164,7 +186,7 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
                 >
                   {msg.content}
                 </div>
-                <p className={`mt-0.5 text-[10px] text-gray-400 ${isMe ? "text-right" : ""}`}>
+                <p className={`mt-0.5 text-3xs text-gray-400 ${isMe ? "text-right" : ""}`}>
                   {new Date(msg.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   {msg.readAt && isMe && " · Read"}
                 </p>

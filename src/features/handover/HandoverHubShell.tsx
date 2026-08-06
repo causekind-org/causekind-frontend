@@ -91,8 +91,8 @@ export function HandoverHubShell({
                 {vm.counterpart.name ?? (vm.role === "DONOR" ? "the recipient" : "the donor")}
               </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-mono text-[11px] text-stone-400">{vm.transactionCode}</span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 dark:text-green-400">
+                <span className="font-mono text-2xs text-stone-400">{vm.transactionCode}</span>
+                <span className="inline-flex items-center gap-1 text-2xs font-semibold text-green-700 dark:text-green-400">
                   <ShieldCheck className="h-3 w-3" aria-hidden /> Verified handover
                 </span>
               </div>
@@ -195,7 +195,7 @@ function ItemImage({ url, alt }: { url: string | null; alt: string }) {
 function HelpSection({ vm }: { vm: HandoverViewModel }) {
   return (
     <section className="border-t border-stone-200 pt-5 dark:border-zinc-800">
-      <h2 className="text-[11px] font-bold uppercase tracking-wider text-stone-400">How this works</h2>
+      <h2 className="text-2xs font-bold uppercase tracking-wider text-stone-400">How this works</h2>
       <dl className="mt-2.5 space-y-2 text-sm text-stone-600 dark:text-stone-400">
         <div>
           <dt className="font-semibold text-stone-700 dark:text-stone-300">The code</dt>

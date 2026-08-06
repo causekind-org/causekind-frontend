@@ -10,6 +10,7 @@ import { FEATURES } from "@/lib/features";
 import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 import { useNearFooter } from "@/hooks/useNearFooter";
 import { RequestNudge } from "@/components/RequestNudge";
+import GlassSurface from "@/components/GlassSurface";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
 type MobileNavItem = {
@@ -119,10 +120,12 @@ export function MobileBottomNav() {
     return { x, index };
   }
 
-  // Hidden inside the super-admin command center and admin dashboard (by path or role).
+  // Hidden inside super-admin, admin dashboard, and the item listing wizard (which has its own navigation).
+  const isItemListingWizard = pathname === "/items/new" || (pathname?.startsWith("/items/") && pathname?.endsWith("/edit"));
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
+    isItemListingWizard ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 
@@ -146,9 +149,37 @@ export function MobileBottomNav() {
       aria-label={t("mobileNavAriaLabel")}
       dir={isRtl ? "rtl" : "ltr"}
     >
+      {/* Decorative liquid-glass shell. A LAYER behind the track, never a
+          wrapper around it: GlassSurface clips to its own box, which would cut
+          off the raised bead, the socket, the glow and the RequestNudge bubble —
+          all of which deliberately extend past the dock. pointer-events are off
+          so it can never intercept a tap, drag or focus. */}
+      <div aria-hidden="true" className="ck-mobile-dock-glass-layer">
+        <GlassSurface
+          width="100%"
+          height="100%"
+          borderRadius={22}
+          mixBlendMode="screen"
+          borderWidth={0.05}
+          brightness={60}
+          opacity={0.84}
+          blur={10}
+          displace={0.5}
+          // Frost tint (--ck-glass-frost). Started at 0.22, where page content
+          // read straight through the capsule and competed with the icons.
+          // The dark rule adds a further +0.28 on top of this.
+          backgroundOpacity={0.75}
+          saturation={1.28}
+          distortionScale={-75}
+          redOffset={0}
+          greenOffset={4}
+          blueOffset={9}
+        />
+      </div>
+
       <div
         ref={trackRef}
-        className="relative mx-2 grid h-full"
+        className="ck-mobile-dock-track mx-2 grid h-full"
         style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         <span
@@ -194,7 +225,7 @@ export function MobileBottomNav() {
                 strokeWidth={2.1}
               />
               <span
-                className={`pointer-events-none absolute inset-x-1 bottom-1.5 truncate text-center text-[9px] font-black tracking-[0.025em] text-[var(--ck-role-accent)] transition-all duration-300 ${selected
+                className={`pointer-events-none absolute inset-x-1 bottom-1.5 truncate text-center text-4xs font-black tracking-[0.025em] text-[var(--ck-role-accent)] transition-all duration-300 ${selected
                   ? "translate-y-0 opacity-100"
                   : "translate-y-1 opacity-0"
                 }`}
@@ -315,12 +346,16 @@ export function FloatingSupportButton() {
     };
   }, []);
 
-  // Hidden inside the super-admin command center and admin dashboard (by path or
-  // role), and on the Handover Hub, which has its own Messages button here.
+  // Hidden inside super-admin, admin dashboard, Handover Hub, and focused form wizards.
+  // The support bubble otherwise lands directly on top of the wizard's sticky CTA.
+  const isItemListingWizard = pathname === "/items/new" || (pathname?.startsWith("/items/") && pathname?.endsWith("/edit"));
+  const isDonationOfferWizard = /^\/requests\/[^/]+\/offer\/?$/.test(pathname ?? "");
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
     onHandover ||
+    isItemListingWizard ||
+    isDonationOfferWizard ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 
@@ -357,7 +392,7 @@ export function FloatingSupportButton() {
             </span>
             <div>
               <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("emailUs")}</p>
-              <p className="text-[10px] text-stone-400 font-medium">support@causekind.com</p>
+              <p className="text-3xs text-stone-400 font-medium">support@causekind.com</p>
             </div>
           </a>
           <a
@@ -369,7 +404,7 @@ export function FloatingSupportButton() {
             </span>
             <div>
               <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("helpFaq")}</p>
-              <p className="text-[10px] text-stone-400 font-medium">{t("helpFaqSub")}</p>
+              <p className="text-3xs text-stone-400 font-medium">{t("helpFaqSub")}</p>
             </div>
           </a>
         </div>

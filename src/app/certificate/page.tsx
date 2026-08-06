@@ -194,7 +194,7 @@ export default function CertificatePage() {
           <div style={{ marginBottom: "16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-filled.webp" alt="CauseKind" style={{ width: "64px", height: "64px", objectFit: "contain" }} />
-            <div style={{ fontSize: "18px", fontWeight: "700", letterSpacing: "0.05em", color: "#1a1008", marginTop: "4px" }}>
+            <div style={{ fontSize: "var(--text-lg)", fontWeight: "700", letterSpacing: "0.05em", color: "#1a1008", marginTop: "4px" }}>
               <span style={{ color: "#c4501a" }}>Cause</span>Kind
             </div>
           </div>
@@ -202,7 +202,7 @@ export default function CertificatePage() {
           {/* Title */}
           <div style={{ textAlign: "center", marginBottom: "12px" }}>
             <div style={{
-              fontSize: "clamp(32px, 6vw, 64px)",
+              fontSize: "clamp(2rem, 1.3333rem + 3.3333vw, 4rem)",
               fontWeight: "900",
               letterSpacing: "0.15em",
               color: "#1a1008",
@@ -212,7 +212,7 @@ export default function CertificatePage() {
               CERTIFICATE
             </div>
             <div style={{
-              fontSize: "clamp(11px, 2vw, 18px)",
+              fontSize: "clamp(0.6875rem, 0.5417rem + 0.7292vw, 1.125rem)",
               letterSpacing: "0.35em",
               color: "#1a1008",
               fontWeight: "600",
@@ -227,7 +227,7 @@ export default function CertificatePage() {
             fontStyle: "italic",
             textAlign: "center",
             color: "#3a2a1a",
-            fontSize: "clamp(10px, 1.6vw, 15px)",
+            fontSize: "clamp(0.625rem, 0.5208rem + 0.5208vw, 0.9375rem)",
             lineHeight: 1.7,
             maxWidth: "580px",
             marginBottom: "20px",
@@ -240,12 +240,12 @@ export default function CertificatePage() {
           {/* Donor name with signature style */}
           <div style={{ marginBottom: "24px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "8px", justifyContent: "center" }}>
-              <span style={{ fontSize: "clamp(10px, 1.4vw, 14px)", color: "#5a4a3a" }}>Mr./Ms.</span>
+              <span style={{ fontSize: "clamp(0.625rem, 0.5417rem + 0.4167vw, 0.875rem)", color: "#5a4a3a" }}>Mr./Ms.</span>
               <div style={{ borderBottom: "1.5px solid #5a4a3a", minWidth: "220px", textAlign: "center" }}>
                 <span style={{
                   fontFamily: dancingScript.style.fontFamily,
                   fontWeight: 700,
-                  fontSize: "clamp(26px, 4.6vw, 46px)",
+                  fontSize: "clamp(1.625rem, 1.2083rem + 2.0833vw, 2.875rem)",
                   color: "#1a1008",
                 }}>
                   {cert.donorName}
@@ -258,7 +258,7 @@ export default function CertificatePage() {
           <table style={{
             borderCollapse: "collapse",
             marginBottom: "20px",
-            fontSize: "clamp(10px, 1.5vw, 14px)",
+            fontSize: "clamp(0.625rem, 0.5417rem + 0.4167vw, 0.875rem)",
           }}>
             <tbody>
               <TableRow label="Item Donated" value={cert.category} />
@@ -271,7 +271,7 @@ export default function CertificatePage() {
           <div style={{
             fontStyle: "italic",
             color: "#5a4a3a",
-            fontSize: "clamp(10px, 1.5vw, 14px)",
+            fontSize: "clamp(0.625rem, 0.5417rem + 0.4167vw, 0.875rem)",
             marginBottom: "8px",
           }}>
             www.causekind.com
@@ -281,7 +281,7 @@ export default function CertificatePage() {
           <div style={{
             fontStyle: "italic",
             color: "#7a6a5a",
-            fontSize: "clamp(8px, 1.2vw, 11px)",
+            fontSize: "clamp(0.5rem, 0.4375rem + 0.3125vw, 0.6875rem)",
             marginBottom: "10px",
           }}>
             This certificate is digitally issued and valid without a physical signature.
@@ -306,7 +306,7 @@ export default function CertificatePage() {
                 alt="Scan to verify this certificate"
                 style={{ width: "clamp(48px, 7vw, 72px)", height: "clamp(48px, 7vw, 72px)" }}
               />
-              <span style={{ fontSize: "clamp(7px, 1vw, 10px)", color: "#5a4a3a", marginTop: "3px" }}>
+              <span style={{ fontSize: "clamp(0.4375rem, 0.375rem + 0.3125vw, 0.625rem)", color: "#5a4a3a", marginTop: "3px" }}>
                 Scan to verify
               </span>
             </div>

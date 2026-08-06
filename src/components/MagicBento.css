@@ -59,7 +59,7 @@
 }
 
 .magic-bento-card__badge {
-  font-size: 10px;
+  font-size: var(--text-3xs);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -76,7 +76,7 @@
 }
 
 .magic-bento-card__label {
-  font-size: 13px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-weight: 700;
@@ -91,12 +91,12 @@
 
 .magic-bento-card__title {
   font-weight: 500;
-  font-size: 18px;
+  font-size: var(--text-lg);
   margin: 0 0 0.35em;
 }
 
 .magic-bento-card__description {
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.35;
   opacity: 0.75;
 }
@@ -128,7 +128,7 @@
   margin-top: 0.75em;
   padding-top: 0.75em;
   border-top: 1px solid var(--border-color);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   color: #1c1917;
   opacity: 0.55;
 }
@@ -208,15 +208,15 @@
     border-radius: 14px;
   }
   .card-grid--mosaic > .magic-bento-card .magic-bento-card__label {
-    font-size: 10px;
+    font-size: var(--text-3xs);
     letter-spacing: 0.1em;
   }
   .card-grid--mosaic > .magic-bento-card .magic-bento-card__title {
-    font-size: 15px;
+    font-size: var(--text-base);
     margin-bottom: 0;
   }
   .card-grid--mosaic > .magic-bento-card .magic-bento-card__badge {
-    font-size: 9px;
+    font-size: var(--text-4xs);
   }
   .card-grid--mosaic > .magic-bento-card .magic-bento-card__header {
     gap: 0.5em;
@@ -224,7 +224,7 @@
   .card-grid--mosaic > .magic-bento-card .magic-bento-card__meta {
     margin-top: 0.5em;
     padding-top: 0.5em;
-    font-size: 10px;
+    font-size: var(--text-3xs);
   }
 }
 
