@@ -236,7 +236,7 @@ function StatTile({
       <p className={`text-xl sm:text-3xl font-black tabular-nums leading-none relative z-10 ${th.textPrimary}`}>
         {v.toLocaleString("en-IN")}
       </p>
-      <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider mt-1 sm:mt-1.5 relative z-10 ${th.textDim}`}>
+      <p className={`text-3xs sm:text-2xs font-bold uppercase tracking-wider mt-1 sm:mt-1.5 relative z-10 ${th.textDim}`}>
         {label}
       </p>
     </div>
@@ -263,7 +263,7 @@ function OverviewSection({ th }: { th: Th }) {
     <div className="space-y-5 sm:space-y-8">
       <div>
         <h2 className={`text-base sm:text-lg font-black tracking-tight ${th.textPrimary}`}>Database Overview</h2>
-        <p className={`text-[11px] sm:text-xs ${th.textDim}`}>Live snapshot of every table.</p>
+        <p className={`text-2xs sm:text-xs ${th.textDim}`}>Live snapshot of every table.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
@@ -280,7 +280,7 @@ function OverviewSection({ th }: { th: Th }) {
         <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 ${th.card}`}>
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <Database className="w-4 h-4" style={{ color: th.accent }} />
-            <h3 className={`text-[13px] sm:text-sm font-bold ${th.textPrimary}`}>Users by role</h3>
+            <h3 className={`text-sm sm:text-sm font-bold ${th.textPrimary}`}>Users by role</h3>
           </div>
           <div className="space-y-2.5 sm:space-y-3">
             {Object.entries(data.roleBreakdown).map(([role, count]) => {
@@ -308,14 +308,14 @@ function OverviewSection({ th }: { th: Th }) {
         <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 flex flex-col justify-center ${th.card}`}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <h3 className={`text-[13px] sm:text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
+            <h3 className={`text-sm sm:text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
           </div>
           {/* Currency values run long (₹1,23,45,678) — text-4xl overflowed the
               card on a phone before this stepped down. */}
           <p className="text-2xl sm:text-4xl font-black text-emerald-400 tabular-nums break-words">
             ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
           </p>
-          <p className={`text-[11px] sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
+          <p className={`text-2xs sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
         </div>
       </div>
     </div>
@@ -427,7 +427,7 @@ export default function SuperAdminPage() {
               </span>
               <div>
                 <p className={`text-sm font-black tracking-tight leading-none ${th.textPrimary}`}>Command Center</p>
-                <p className={`text-[10px] mt-0.5 ${th.textDim}`}>Super Admin</p>
+                <p className={`text-3xs mt-0.5 ${th.textDim}`}>Super Admin</p>
               </div>
             </div>
           </div>
@@ -444,7 +444,7 @@ export default function SuperAdminPage() {
                 <Icon className="w-4 h-4 shrink-0" />
                 {label}
                 {key === "sql" && (
-                  <span className={`ml-auto text-[9px] font-black uppercase ${th.sqlLabel}`}>danger</span>
+                  <span className={`ml-auto text-4xs font-black uppercase ${th.sqlLabel}`}>danger</span>
                 )}
               </button>
             ))}
@@ -468,7 +468,7 @@ export default function SuperAdminPage() {
           </nav>
 
           <div className={`shrink-0 p-3 border-t ${th.divider}`}>
-            <p className={`text-[10px] px-3 mb-2 truncate font-mono ${th.textDimmer}`}>{user.email}</p>
+            <p className={`text-3xs px-3 mb-2 truncate font-mono ${th.textDimmer}`}>{user.email}</p>
             <div className="flex items-center gap-1.5">
               {ThemeToggle}
               <button
@@ -506,7 +506,7 @@ export default function SuperAdminPage() {
               <button
                 key={key}
                 onClick={() => handleNavClick(key)}
-                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
                   section === key
                     ? isDark ? "bg-[#f0b97a]/10 text-[#f0b97a]" : "bg-[#b04a15]/10 text-[#b04a15]"
                     : th.textMuted + " hover:text-white"
@@ -557,13 +557,13 @@ export default function SuperAdminPage() {
               </p>
               <p className="text-sm text-stone-400 leading-relaxed">
                 Queries run directly against the live database. Destructive operations such as{" "}
-                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
                   UPDATE
                 </code>{" "}
-                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
                   DELETE
                 </code>{" "}
-                <code className="text-[11px] font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
                   DROP
                 </code>{" "}
                 bypass all application safeguards.

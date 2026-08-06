@@ -403,7 +403,7 @@ function BlogListingContent() {
                 />
               </div>
               <nav className="hidden lg:block lg:sticky lg:top-28 border-t border-stone-200 dark:border-stone-800">
-                <p className="pt-4 pb-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                <p className="pt-4 pb-2 text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
                   {t("categories")}
                 </p>
                 <div className="flex flex-col divide-y divide-stone-200 dark:divide-stone-800">
@@ -465,16 +465,16 @@ function BlogListingContent() {
                           src={featured.image}
                         />
                         <div className="absolute top-2 left-2 z-20 md:top-4 md:left-4">
-                          <span className="bg-[#b04a15] text-white px-2 py-0.5 text-[9px] rounded-lg font-bold uppercase tracking-wider shadow-sm md:px-3 md:py-1 md:text-xs">
+                          <span className="bg-[#b04a15] text-white px-2 py-0.5 text-4xs rounded-lg font-bold uppercase tracking-wider shadow-sm md:px-3 md:py-1 md:text-xs">
                             {tr.category}
                           </span>
                         </div>
                       </div>
                       <div className="p-3 md:p-8">
-                        <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5 md:mb-3">
+                        <p className="text-4xs md:text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5 md:mb-3">
                           {tr.category} · {featured.publishedDate}
                         </p>
-                        <h2 className="font-extrabold text-[15px] md:text-3xl text-stone-900 dark:text-stone-100 mb-1.5 md:mb-3 line-clamp-3 md:line-clamp-none group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
+                        <h2 className="font-extrabold text-base md:text-3xl text-stone-900 dark:text-stone-100 mb-1.5 md:mb-3 line-clamp-3 md:line-clamp-none group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
                           {tr.title}
                         </h2>
                         <p className="text-stone-600 dark:text-stone-400 text-xs md:text-base line-clamp-2 mb-3 md:mb-5 leading-relaxed">
@@ -483,7 +483,7 @@ function BlogListingContent() {
                         <div className="flex flex-col items-start gap-1.5 md:flex-row md:items-center md:justify-between">
                           <div className="flex items-center gap-1.5">
                             <span className="text-orange-500 animate-pulse text-xs md:text-sm">🔥</span>
-                            <span className="text-[10px] md:text-xs text-orange-500 font-bold uppercase tracking-wider">
+                            <span className="text-3xs md:text-xs text-orange-500 font-bold uppercase tracking-wider">
                               {t("featuredStory")}
                             </span>
                           </div>
@@ -524,14 +524,14 @@ function BlogListingContent() {
                   <div>
                     <div className="flex items-center gap-2 mb-3 md:mb-5">
                       <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <h3 className="text-[10px] md:text-xs uppercase tracking-widest text-[#b04a15] dark:text-orange-400 font-bold">
+                      <h3 className="text-3xs md:text-xs uppercase tracking-widest text-[#b04a15] dark:text-orange-400 font-bold">
                         {t("liveFeedTitle")}
       </h3>
                     </div>
                     {positiveUpdate && (
                       <div className="flex items-start gap-2 mb-2.5 p-2 md:mb-4 md:p-3 rounded-xl bg-[#b04a15]/8 dark:bg-orange-400/10 border border-[#b04a15]/15 dark:border-orange-400/20">
                         <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#b04a15] dark:text-orange-400 shrink-0 mt-0.5" />
-                        <p className="text-[10.5px] md:text-xs leading-[1.4] md:leading-relaxed text-stone-700 dark:text-stone-300 font-medium line-clamp-4 md:line-clamp-none">
+                        <p className="text-3xs md:text-xs leading-[1.4] md:leading-relaxed text-stone-700 dark:text-stone-300 font-medium line-clamp-4 md:line-clamp-none">
                           {positiveUpdate}
                         </p>
                       </div>
@@ -544,17 +544,17 @@ function BlogListingContent() {
                             idx === 0 ? "border-[#b04a15] dark:border-orange-500 bg-white dark:bg-stone-900/50 rounded-r-lg" : "border-stone-200 dark:border-stone-800"
                           }`}
                         >
-                          <p className="text-[9px] md:text-[10px] text-orange-600 dark:text-orange-400 font-bold opacity-80 uppercase tracking-wide md:tracking-wider">
+                          <p className="text-4xs md:text-3xs text-orange-600 dark:text-orange-400 font-bold opacity-80 uppercase tracking-wide md:tracking-wider">
                             {item.time}
                           </p>
-                          <p className="text-[10.5px] md:text-xs leading-[1.35] md:leading-normal mt-0.5 text-stone-600 dark:text-stone-400">
+                          <p className="text-3xs md:text-xs leading-[1.35] md:leading-normal mt-0.5 text-stone-600 dark:text-stone-400">
                             <strong className="text-stone-800 dark:text-stone-200">{item.user}</strong> {item.text}
                           </p>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <Link href="/requests" className="mt-3 md:mt-6 block text-center w-full py-2 md:py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-[11px] md:text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
+                  <Link href="/requests" className="mt-3 md:mt-6 block text-center w-full py-2 md:py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-2xs md:text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
                     {t("startYourImpact")}
                   </Link>
                 </div>
@@ -604,7 +604,7 @@ function BlogListingContent() {
                       />
                     </div>
                     <div className={`flex flex-col flex-1 ${isLarge ? "p-8" : "p-6"}`}>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                      <p className="text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
                         {tr.category} · {post.publishedDate}
                       </p>
                       <h3

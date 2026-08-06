@@ -135,7 +135,7 @@ function Donate3DButton() {
         {hearts.map(({ id, x }) => (
           <span
             key={id}
-            className="absolute z-50 text-[11px] text-[var(--ck-role-highlight)] pointer-events-none select-none"
+            className="absolute z-50 text-2xs text-[var(--ck-role-highlight)] pointer-events-none select-none"
             style={{
               left: `${x}%`,
               bottom: "110%",
@@ -577,13 +577,6 @@ export function SiteHeader() {
           </Link>
           <div className="flex items-center gap-2">
             <NotificationBell />
-            <Link
-              href={user ? "/profile" : "/login"}
-              className="flex items-center justify-center w-8 h-8 rounded-full border border-[var(--ck-role-accent)]/30 text-[var(--ck-role-accent)] active:scale-95 hover:bg-[var(--ck-role-accent)]/5 transition-all"
-              aria-label="Profile"
-            >
-              <User className="w-4.5 h-4.5" />
-            </Link>
           </div>
         </div>
 
@@ -785,7 +778,7 @@ export function SiteHeader() {
         footer={
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Theme</span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Theme</span>
               <button
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
@@ -796,7 +789,7 @@ export function SiteHeader() {
               </button>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Language</span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Language</span>
               <LanguageSwitcher dropUp />
             </div>
             {user && (
@@ -831,7 +824,7 @@ export function SiteFooter() {
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
       {/* items-start stops the short columns stretching; the row-span on Get
           support (below) is what actually compacts this on mobile. */}
-      <div className={`mx-auto grid max-w-7xl items-start gap-x-4 gap-y-5 sm:gap-y-6 px-4 py-6 sm:px-6 sm:py-8 text-[13px] grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
+      <div className={`mx-auto grid max-w-7xl items-start gap-x-4 gap-y-5 sm:gap-y-6 px-4 py-6 sm:px-6 sm:py-8 text-sm grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
         <div className="col-span-2 space-y-2 sm:space-y-2.5 md:col-span-1">
           <div className="inline-block bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl shadow-sm border border-stone-200/10 dark:border-zinc-800">
             <CareNestLogo size="md" />
@@ -841,10 +834,10 @@ export function SiteFooter() {
             <span className="text-white font-semibold">{t("contact")}:</span> +91 7719938619
           </div>
           <div className="flex gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
-            <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
+            <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
               <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ck-role-accent)]" /> {t("adminVerified")}
             </span>
-            <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
+            <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
               <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
             </span>
           </div>
@@ -889,7 +882,7 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-stone-900 py-2.5 sm:py-3 text-center text-[11px] sm:text-xs text-stone-500 font-medium px-3 sm:px-4">
+      <div className="border-t border-stone-900 py-2.5 sm:py-3 text-center text-2xs sm:text-xs text-stone-500 font-medium px-3 sm:px-4">
         <div className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3 gap-y-1 sm:gap-y-1.5">
           <span className="w-full sm:w-auto">
             © {new Date().getFullYear()} <span className="font-bold text-[var(--ck-role-accent)]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}

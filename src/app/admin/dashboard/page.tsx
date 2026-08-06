@@ -1,17 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
   adminGetItemListings, adminApproveItemListing, adminRejectItemListing, adminMarkListingNeedsInformation, type ItemListing,
-  adminGetItemRequests, type ItemRequest,
+  adminGetItemRequests, adminApproveItemRequest, type ItemRequest,
   adminGetMatches, adminApproveMatch, adminRejectMatch, adminGetMatchHistory, type ItemMatch, type StatusHistoryEntry,
   adminGetAllOffers,
   adminGetAllAiAssessments, type AiAssessmentResponse,
   adminGetMyPermissions,
 } from "@/lib/api";
+import { displayReason } from "@/lib/rejectionReason";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { OffersQueuePanel } from "../offers/OffersQueuePanel";
@@ -182,6 +183,17 @@ export default function AdminDashboardPage() {
   // Elevate-on-scroll: the sticky header casts a shadow only once content
   // actually slides beneath it, fading in/out via transition-shadow.
   const [scrolled, setScrolled] = useState(false);
+
+  // The below-lg nav strip scrolls horizontally and now holds ten destinations,
+  // so the active one is frequently off-screen to the right — most obviously
+  // when the page opens straight onto a report tab. Bring it into view.
+  const navStripRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const active = navStripRef.current?.querySelector<HTMLElement>("[data-active]");
+    // `inline` only — `block: "nearest"` would still let the browser scroll the
+    // page vertically to reach a strip that is already sticky and in view.
+    active?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [tab]);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -225,6 +237,16 @@ export default function AdminDashboardPage() {
   const [aiFraudFilter, setAiFraudFilter] = useState("ALL");
   const [aiExpandedId, setAiExpandedId] = useState<number | null>(null);
 
+  // Rejected queues + the pending reinstate confirmation. Reinstating republishes
+  // something that was blocked for a stated safety reason, so it is never a
+  // single click.
+  const [rejectedListings, setRejectedListings] = useState<ItemListing[]>([]);
+  const [rejectedRequests, setRejectedRequests] = useState<ItemRequest[]>([]);
+  const [reinstateTarget, setReinstateTarget] = useState<
+    { kind: "listing" | "request"; id: number; title: string } | null
+  >(null);
+  const [reinstating, setReinstating] = useState(false);
+
   // ── Data loading ──
   const loadData = useCallback(() => {
     setLoading(true);
@@ -243,10 +265,17 @@ export default function AdminDashboardPage() {
         needsAction: all.filter(o => ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(o.status)).length,
         open: all.filter(o => !["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED", "DRAFT"].includes(o.status)).length,
       })),
-    ]).then(([c, r, l, m, offerCounts]) => {
+      // Rejected items were previously fetched by nothing at all, so an AI
+      // auto-reject was final AND invisible — no queue contained it and no admin
+      // could act on it. These two make it reviewable.
+      adminGetItemListings("REJECTED"),
+      adminGetItemRequests("REJECTED"),
+    ]).then(([c, r, l, m, offerCounts, rejL, rejR]) => {
       setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
       setOffersNeedingAction(offerCounts.needsAction);
       setOffersInFlight(offerCounts.open);
+      setRejectedListings(rejL as ItemListing[]);
+      setRejectedRequests(rejR as ItemRequest[]);
     }).catch(() => toast.error("Failed to load approval queue"))
       .finally(() => setLoading(false));
   }, []);
@@ -380,6 +409,42 @@ export default function AdminDashboardPage() {
     finally { setProcessing(null); }
   }
 
+  /**
+   * Puts a rejected item back into circulation.
+   *
+   * <p>Reuses the existing admin approve endpoints — they already clear the
+   * rejection reason and the `rejectedByAi` flag, notify the owner, and re-run
+   * the matching engine, so nothing new is needed server-side.
+   *
+   * <p>The two sides differ and the difference matters: listing approve is
+   * unguarded, but request approve throws BAD_REQUEST with a specific blocker
+   * sentence when required verification is still outstanding. That message is
+   * shown verbatim — an admin needs to know it is a missing document, not a
+   * broken button, and a rejected request must NOT go live just because someone
+   * disagrees with the AI.
+   */
+  async function handleReinstate() {
+    if (!reinstateTarget) return;
+    const { kind, id } = reinstateTarget;
+    setReinstating(true);
+    try {
+      if (kind === "listing") {
+        await adminApproveItemListing(id);
+        setRejectedListings(p => p.filter(l => l.id !== id));
+      } else {
+        await adminApproveItemRequest(id);
+        setRejectedRequests(p => p.filter(r => r.id !== id));
+      }
+      setReinstateTarget(null);
+      toast.success("Back live — the owner has been notified.");
+      loadData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not reinstate this item");
+    } finally {
+      setReinstating(false);
+    }
+  }
+
   async function handleApproveMatch(id: number) {
     setProcessing(id);
     try {
@@ -410,7 +475,11 @@ export default function AdminDashboardPage() {
   if (!user) return null;
 
   const total = campaigns.length + requests.length + listings.length + matches.length + offersNeedingAction;
-  const isReportTab = tab === "match-history" || tab === "ai-logs" || tab === "analytics" || tab === "whatsapp";
+  // "user-journey" belongs here too. Leaving it out meant that tab rendered its
+  // own panel *and* the approval-queue feed underneath it, and put it on the
+  // wrong side of the mobile nav split below.
+  const isReportTab = tab === "match-history" || tab === "ai-logs"
+    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp";
 
   const TABS = [
     { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#e07b3a" },
@@ -420,7 +489,18 @@ export default function AdminDashboardPage() {
     { key: "offers"    as TabKey, label: "Offers",       count: offersNeedingAction, icon: Gift,          color: "#f472b6" },
   ].filter(t => canSeeTab(t.key));
 
-  const headerTitle = tab === "match-history" ? "Match History"
+  // Single source for the report destinations, consumed by both the desktop
+  // sidebar and the mobile strip — the two were hand-duplicated before, which is
+  // how "User Journey" ended up in one list and not the other.
+  const REPORTS = [
+    { key: "match-history" as TabKey, label: "Match History",     icon: Handshake,     color: "text-teal-400"   },
+    { key: "ai-logs"       as TabKey, label: "AI Screening Logs", icon: Bot,           color: "text-violet-400" },
+    { key: "user-journey"  as TabKey, label: "User Journey",      icon: UserRound,     color: "text-sky-400"    },
+    { key: "analytics"     as TabKey, label: "Analytics",         icon: TrendingUp,    color: "text-amber-400"  },
+    { key: "whatsapp"      as TabKey, label: "WhatsApp",          icon: MessageCircle, color: "text-green-400"  },
+  ].filter(t => canSeeTab(t.key));
+
+  const headerTitle =tab === "match-history" ? "Match History"
     : tab === "ai-logs" ? "AI Screening Logs"
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
@@ -457,8 +537,8 @@ export default function AdminDashboardPage() {
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-[15px] font-black text-white leading-none tracking-tight">CauseKind</p>
-              <p className="text-[11px] text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">Admin Panel</p>
+              <p className="text-base font-black text-white leading-none tracking-tight">CauseKind</p>
+              <p className="text-2xs text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">Admin Panel</p>
             </div>
           </div>
         </div>
@@ -467,18 +547,18 @@ export default function AdminDashboardPage() {
         <div className="px-3.5 sm:px-5 pt-5 pb-2">
           <div className="rounded-xl px-4 py-3.5 border border-white/[0.07]"
             style={{ background: "rgba(176,74,21,0.08)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#b04a15]/70 mb-1">Signed in as</p>
+            <p className="text-3xs font-bold uppercase tracking-widest text-[#b04a15]/70 mb-1">Signed in as</p>
             <p className="text-sm font-semibold text-stone-200 truncate">{user.email}</p>
             <div className="inline-flex items-center gap-1.5 mt-2 bg-[#b04a15]/20 rounded-full px-2 py-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse" />
-              <span className="text-[10px] font-black text-[#b04a15] uppercase tracking-wide">Admin</span>
+              <span className="text-3xs font-black text-[#b04a15] uppercase tracking-wide">Admin</span>
             </div>
           </div>
         </div>
 
         {/* Queue count pills */}
         <div className="px-3.5 sm:px-5 pt-5 space-y-2 flex-1">
-          <p className="text-[10px] font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Pending Review</p>
+          <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Pending Review</p>
           {TABS.map(({ key, label, count, icon: Icon, color }) => (
             <button
               key={key}
@@ -504,77 +584,23 @@ export default function AdminDashboardPage() {
 
         {/* Reports */}
         <div className="px-3.5 sm:px-5 pb-3 pt-2 space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Reports</p>
-          {canSeeTab("match-history") && (
+          <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Reports</p>
+          {REPORTS.map(({ key, label, icon: Icon, color }) => (
             <button
-              onClick={() => setTab("match-history")}
+              key={key}
+              onClick={() => setTab(key)}
+              aria-current={tab === key ? "page" : undefined}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                tab === "match-history"
+                tab === key
                   ? "border-[#b04a15]/40 text-white"
                   : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
               }`}
-              style={{ background: tab === "match-history" ? "rgba(176,74,21,0.12)" : undefined }}
+              style={{ background: tab === key ? "rgba(176,74,21,0.12)" : undefined }}
             >
-              <Handshake className={`w-4 h-4 shrink-0 ${tab === "match-history" ? "text-[#b04a15]" : "text-teal-400"}`} />
-              Match History
+              <Icon className={`w-4 h-4 shrink-0 ${tab === key ? "text-[#b04a15]" : color}`} aria-hidden />
+              {label}
             </button>
-          )}
-          {canSeeTab("ai-logs") && (
-            <button
-              onClick={() => setTab("ai-logs")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                tab === "ai-logs"
-                  ? "border-[#b04a15]/40 text-white"
-                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-              }`}
-              style={{ background: tab === "ai-logs" ? "rgba(176,74,21,0.12)" : undefined }}
-            >
-              <Bot className={`w-4 h-4 shrink-0 ${tab === "ai-logs" ? "text-[#b04a15]" : "text-violet-400"}`} />
-              AI Screening Logs
-            </button>
-          )}
-          {canSeeTab("user-journey") && (
-            <button
-              onClick={() => setTab("user-journey")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                tab === "user-journey"
-                  ? "border-[#b04a15]/40 text-white"
-                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-              }`}
-              style={{ background: tab === "user-journey" ? "rgba(176,74,21,0.12)" : undefined }}
-            >
-              <UserRound className={`w-4 h-4 shrink-0 ${tab === "user-journey" ? "text-[#b04a15]" : "text-sky-400"}`} />
-              User Journey
-            </button>
-          )}
-          {canSeeTab("analytics") && (
-            <button
-              onClick={() => setTab("analytics")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                tab === "analytics"
-                  ? "border-[#b04a15]/40 text-white"
-                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-              }`}
-              style={{ background: tab === "analytics" ? "rgba(176,74,21,0.12)" : undefined }}
-            >
-              <TrendingUp className={`w-4 h-4 shrink-0 ${tab === "analytics" ? "text-[#b04a15]" : "text-amber-400"}`} />
-              Analytics
-            </button>
-          )}
-          {canSeeTab("whatsapp") && (
-            <button
-              onClick={() => setTab("whatsapp")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                tab === "whatsapp"
-                  ? "border-[#b04a15]/40 text-white"
-                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-              }`}
-              style={{ background: tab === "whatsapp" ? "rgba(176,74,21,0.12)" : undefined }}
-            >
-              <MessageCircle className={`w-4 h-4 shrink-0 ${tab === "whatsapp" ? "text-[#b04a15]" : "text-green-400"}`} />
-              WhatsApp
-            </button>
-          )}
+          ))}
         </div>
 
         {/* Sign out */}
@@ -604,7 +630,7 @@ export default function AdminDashboardPage() {
             </div>
             <div>
               <p className="text-sm font-black text-white leading-none">Admin Panel</p>
-              <p className="text-[9px] text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">CauseKind</p>
+              <p className="text-4xs text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">CauseKind</p>
             </div>
           </div>
           <button
@@ -621,35 +647,9 @@ export default function AdminDashboardPage() {
           }`}>
           <div className="px-4 sm:px-7 lg:px-10 py-3.5 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-[22px] font-black text-stone-900 tracking-tight leading-none">{headerTitle}</h1>
+              <h1 className="text-xl font-black text-stone-900 tracking-tight leading-none">{headerTitle}</h1>
               <p className="text-sm text-stone-500 mt-1.5">{headerSubtitle}</p>
             </div>
-
-            {/* Approval queue tab pills (desktop) */}
-            {!isReportTab && (
-              <div className="hidden sm:flex gap-1.5 flex-wrap">
-                {TABS.map(({ key, label, count }) => (
-                  <button
-                    key={key}
-                    onClick={() => setTab(key)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                      tab === key
-                        ? "bg-[#b04a15] text-white shadow-sm shadow-[#b04a15]/30"
-                        : "bg-white text-stone-500 hover:text-stone-900 border border-stone-200 hover:border-stone-300"
-                    }`}
-                  >
-                    {label}
-                    {count > 0 && (
-                      <span className={`text-xs font-black rounded-full min-w-[18px] px-1 text-center ${
-                        tab === key ? "bg-white/20 text-white" : "bg-[#b04a15]/10 text-[#b04a15]"
-                      }`}>
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
 
             {/* AI logs refresh button */}
             {tab === "ai-logs" && (
@@ -664,63 +664,59 @@ export default function AdminDashboardPage() {
             )}
           </div>
 
-          {/* Mobile tab strip — approval queue only */}
-          {!isReportTab && (
-            <div className="sm:hidden flex gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide">
-              {TABS.map(({ key, label, count }) => (
-                <button
-                  key={key}
-                  onClick={() => setTab(key)}
-                  className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    tab === key
-                      ? "bg-[#b04a15] text-white"
-                      : "bg-white text-stone-500 border border-stone-200"
-                  }`}
-                >
-                  {label}
-                  {count > 0 && <span className="opacity-80">{count}</span>}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* ── Below-lg navigation ──────────────────────────────────────────
+              One strip carrying *every* destination, always rendered. It used to
+              be two strips switched on `isReportTab`, which meant the reports
+              were unreachable from any queue tab and the queue was unreachable
+              from any report — on a phone the only way across was to edit the
+              URL. Both halves live here now, separated by a rule.
 
-          {/* Mobile report links */}
-          {isReportTab && (
-            <div className="sm:hidden flex gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide">
-              {canSeeTab("match-history") && (
-                <button
-                  onClick={() => setTab("match-history")}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "match-history" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
-                >
-                  Match History
-                </button>
-              )}
-              {canSeeTab("ai-logs") && (
-                <button
-                  onClick={() => setTab("ai-logs")}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "ai-logs" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
-                >
-                  AI Screening Logs
-                </button>
-              )}
-              {canSeeTab("analytics") && (
-                <button
-                  onClick={() => setTab("analytics")}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "analytics" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
-                >
-                  Analytics
-                </button>
-              )}
-              {canSeeTab("whatsapp") && (
-                <button
-                  onClick={() => setTab("whatsapp")}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "whatsapp" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}
-                >
-                  WhatsApp
-                </button>
-              )}
-            </div>
-          )}
+              `lg:hidden`, not `sm:hidden`: the sidebar only appears at `lg`, so
+              anything narrower than that needs this. The old `sm:hidden` left
+              tablets (640–1023px) with no report navigation at all. */}
+          <nav
+            aria-label="Admin sections"
+            ref={navStripRef}
+            className="lg:hidden flex items-center gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide"
+          >
+            {TABS.map(({ key, label, count }) => (
+              <button
+                key={key}
+                data-active={tab === key || undefined}
+                onClick={() => setTab(key)}
+                aria-current={tab === key ? "page" : undefined}
+                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  tab === key
+                    ? "bg-[#b04a15] text-white"
+                    : "bg-white text-stone-500 border border-stone-200"
+                }`}
+              >
+                {label}
+                {count > 0 && <span className="opacity-80">{count}</span>}
+              </button>
+            ))}
+
+            {REPORTS.length > 0 && (
+              <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
+            )}
+
+            {REPORTS.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                data-active={tab === key || undefined}
+                onClick={() => setTab(key)}
+                aria-current={tab === key ? "page" : undefined}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  tab === key
+                    ? "bg-[#b04a15] text-white"
+                    : "bg-white text-stone-500 border border-stone-200"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
 
         {/* ── Cards feed ── */}
@@ -762,6 +758,14 @@ export default function AdminDashboardPage() {
                         onCancelReject={cancelReject}
                       />
                     ))
+                )}
+
+                {tab === "listings" && (
+                  <RejectedReviewSection
+                    listings={rejectedListings}
+                    requests={rejectedRequests}
+                    onReinstate={(kind, id, title) => setReinstateTarget({ kind, id, title })}
+                  />
                 )}
 
                 {tab === "listings" && (
@@ -959,6 +963,40 @@ export default function AdminDashboardPage() {
           selection={detailSelection}
           onClose={() => setDetailSelection(null)}
         />
+
+        {/* Reinstate confirmation. Deliberately not a one-click action: this
+            republishes something that was blocked for a stated safety reason. */}
+        {reinstateTarget && (
+          <div className="fixed inset-0 z-[70] grid place-items-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="reinstate-title">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl dark:bg-zinc-900">
+              <h2 id="reinstate-title" className="text-sm font-black text-stone-900 dark:text-stone-100">
+                Put this back live?
+              </h2>
+              <p className="mt-1.5 text-xs leading-relaxed text-stone-600 dark:text-stone-400">
+                &ldquo;{reinstateTarget.title}&rdquo; will become visible to the matching engine again,
+                its rejection will be cleared, and the owner will be notified.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReinstateTarget(null)}
+                  disabled={reinstating}
+                  className="flex-1 rounded-xl border border-stone-300 py-2 text-xs font-bold text-stone-600 disabled:opacity-50 dark:border-zinc-700 dark:text-stone-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReinstate}
+                  disabled={reinstating}
+                  className="flex-1 rounded-xl bg-green-600 py-2 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
+                >
+                  {reinstating ? "Working…" : "Make live again"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
@@ -1060,6 +1098,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -1092,8 +1131,8 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
                 Fraud: {a.fraudRisk}
               </span>
             )}
-            <span className="text-[11px] text-stone-400">{Math.round(a.confidence)}% conf</span>
-            <span className="text-[11px] text-stone-400">{new Date(a.createdAt).toLocaleDateString()}</span>
+            <span className="text-2xs text-stone-400">{Math.round(a.confidence)}% conf</span>
+            <span className="text-2xs text-stone-400">{new Date(a.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
         {a.evidenceNotes && (
@@ -1118,7 +1157,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
 
           {/* Donor + origin */}
           <div className="rounded-xl border border-stone-200 bg-white p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
+            <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
@@ -1126,10 +1165,10 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-xs font-semibold">{a.donorName ?? "Unknown donor"}</span>
-                  <span className="block truncate text-[11px] text-stone-500">{a.donorEmail ?? "—"}</span>
+                  <span className="block truncate text-2xs text-stone-500">{a.donorEmail ?? "—"}</span>
                 </span>
               </div>
-              <div className="text-right text-[11px] text-stone-500">
+              <div className="text-right text-2xs text-stone-500">
                 <span className="block">{[a.locality, a.city].filter(Boolean).join(", ") || "Location not given"}</span>
                 {a.pincode && <span className="block">PIN {a.pincode}</span>}
               </div>
@@ -1137,7 +1176,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             {a.donorId && (
               <a
                 href={`/admin/dashboard?journeyUser=${a.donorId}`}
-                className="mt-2 inline-block text-[11px] font-semibold text-[#b04a15] hover:underline"
+                className="mt-2 inline-block text-2xs font-semibold text-[#b04a15] hover:underline"
               >
                 View donor&apos;s full journey →
               </a>
@@ -1164,10 +1203,10 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
 
           {a.detectedLabels && (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1">Detected labels</p>
+              <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1">Detected labels</p>
               <div className="flex flex-wrap gap-1">
                 {a.detectedLabels.split(",").map((lbl, i) => (
-                  <span key={i} className="rounded-full bg-white border border-stone-200 px-2 py-0.5 text-[11px] text-stone-600">{lbl.trim()}</span>
+                  <span key={i} className="rounded-full bg-white border border-stone-200 px-2 py-0.5 text-2xs text-stone-600">{lbl.trim()}</span>
                 ))}
               </div>
             </div>
@@ -1175,10 +1214,10 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
 
           {a.moderationLabels && (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-red-400 mb-1">Moderation labels</p>
+              <p className="text-3xs font-semibold uppercase tracking-wide text-red-400 mb-1">Moderation labels</p>
               <div className="flex flex-wrap gap-1">
                 {a.moderationLabels.split(",").map((lbl, i) => (
-                  <span key={i} className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[11px] text-red-600">{lbl.trim()}</span>
+                  <span key={i} className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-2xs text-red-600">{lbl.trim()}</span>
                 ))}
               </div>
             </div>
@@ -1191,7 +1230,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             <p className="text-xs text-red-700"><span className="font-semibold">Safety: </span>{a.safetyWarnings}</p>
           )}
 
-          <p className="text-[10px] text-stone-400 pt-1">Assessed {new Date(a.createdAt).toLocaleString()}</p>
+          <p className="text-3xs text-stone-400 pt-1">Assessed {new Date(a.createdAt).toLocaleString()}</p>
         </div>
       )}
     </div>
@@ -1202,7 +1241,7 @@ function MiniBar({ label, value, color }: { label: string; value: number; color:
   const pct = Math.max(0, Math.min(100, Math.round(value)));
   return (
     <div>
-      <div className="flex justify-between text-[10px] text-stone-500 mb-0.5">
+      <div className="flex justify-between text-3xs text-stone-500 mb-0.5">
         <span>{label}</span><span>{pct}%</span>
       </div>
       <div className="h-1.5 rounded-full bg-stone-200 overflow-hidden">
@@ -1288,7 +1327,7 @@ function ApprovalCard({
               <p className="text-xs text-stone-400 mt-1 leading-relaxed">{meta}</p>
             </div>
             {badge && (
-              <span className="shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+              <span className="shrink-0 text-3xs font-black px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
                 {badge}
               </span>
             )}
@@ -1398,7 +1437,7 @@ function ListingApprovalCard({
                 {[l.donorName, l.city, l.category, l.subcategory && `/ ${l.subcategory}`, l.condition, l.brand, l.model && l.model, `Qty ${l.quantity}`].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <span className={`shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full whitespace-nowrap border ${
+            <span className={`shrink-0 text-3xs font-black px-2.5 py-1 rounded-full whitespace-nowrap border ${
               l.status === "MANUAL_REVIEW"
                 ? "bg-amber-50 text-amber-700 border-amber-200"
                 : "bg-stone-100 text-stone-500 border-stone-200"
@@ -1415,7 +1454,7 @@ function ListingApprovalCard({
 
           {/* Submitted by */}
           <div className="rounded-xl border border-stone-200 bg-white p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
+            <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
@@ -1423,10 +1462,10 @@ function ListingApprovalCard({
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-xs font-semibold">{l.donorName ?? "Unknown donor"}</span>
-                  <span className="block truncate text-[11px] text-stone-500">{l.donorEmail ?? "—"}</span>
+                  <span className="block truncate text-2xs text-stone-500">{l.donorEmail ?? "—"}</span>
                 </span>
               </div>
-              <div className="text-right text-[11px] text-stone-500">
+              <div className="text-right text-2xs text-stone-500">
                 <span className="block">{[l.locality, l.city].filter(Boolean).join(", ") || "Location not given"}</span>
                 {l.pincode && <span className="block">PIN {l.pincode}</span>}
               </div>
@@ -1435,7 +1474,7 @@ function ListingApprovalCard({
               <a
                 href={`/admin/dashboard?journeyUser=${l.donorId}`}
                 onClick={event => event.stopPropagation()}
-                className="mt-2 inline-block text-[11px] font-semibold text-[#b04a15] hover:underline"
+                className="mt-2 inline-block text-2xs font-semibold text-[#b04a15] hover:underline"
               >
                 View donor&apos;s full journey →
               </a>
@@ -1583,7 +1622,7 @@ function ApprovalDetailDrawer({
       >
         <div className="flex items-start justify-between gap-3 sm:gap-4 border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#b04a15]">{kindLabel}</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-[#b04a15]">{kindLabel}</p>
             <h2 id="approval-detail-title" className="mt-1 truncate text-base sm:text-lg font-black leading-tight text-stone-900">
               {title}
             </h2>
@@ -1926,7 +1965,7 @@ function PersonInfoCard({
 }) {
   return (
     <div className="rounded-xl sm:rounded-2xl border border-stone-100 bg-stone-50 p-3">
-      <p className="text-[10px] font-black uppercase tracking-widest text-[#b04a15]">{label}</p>
+      <p className="text-3xs font-black uppercase tracking-widest text-[#b04a15]">{label}</p>
       <p className="mt-1 text-sm font-black text-stone-900">{name ?? "Unknown"}</p>
       <div className="mt-2 space-y-1 text-xs text-stone-500">
         {hasDetailValue(id) && <p><span className="font-bold text-stone-400">ID:</span> {id}</p>}
@@ -1949,7 +1988,7 @@ function SectionPhotoStrip({ photos, title = "Photos" }: { photos: string[]; tit
     <div className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
         <ImageIcon className="h-4 w-4 text-[#b04a15]" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{title}</p>
+        <p className="text-3xs font-black uppercase tracking-widest text-stone-400">{title}</p>
       </div>
       <PhotoStrip images={photos} />
     </div>
@@ -1969,7 +2008,7 @@ function DetailSection({
     <section className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
         <Icon className="h-4 w-4 text-[#b04a15]" />
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400">{title}</h3>
+        <h3 className="text-3xs font-black uppercase tracking-widest text-stone-400">{title}</h3>
       </div>
       {children}
     </section>
@@ -2000,7 +2039,7 @@ function DetailGrid({ items }: { items: Array<{ label: string; value: DetailValu
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {visible.map(item => (
         <div key={item.label} className="rounded-xl bg-stone-50 px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">{item.label}</p>
+          <p className="text-3xs font-bold uppercase tracking-wide text-stone-400">{item.label}</p>
           <p className="mt-0.5 break-words text-sm font-semibold text-stone-800">{renderDetailValue(item.value)}</p>
         </div>
       ))}
@@ -2025,7 +2064,7 @@ function DetailTextBlock({
 
   return (
     <div className={`mt-3 rounded-xl border px-3 py-2 ${color}`}>
-      <p className="text-[10px] font-bold uppercase tracking-wide opacity-60">{label}</p>
+      <p className="text-3xs font-bold uppercase tracking-wide opacity-60">{label}</p>
       <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{value}</p>
     </div>
   );
@@ -2040,9 +2079,103 @@ function StatusPill({ value }: { value?: string | null }) {
       : "border-stone-200 bg-stone-100 text-stone-600";
 
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${color}`}>
+    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-3xs font-black uppercase tracking-wide ${color}`}>
       {normalized}
     </span>
+  );
+}
+
+/**
+ * Rejected items an admin can put back live.
+ *
+ * <p>Split into two groups on purpose. An AI rejection is a machine call that can
+ * be plain wrong — a first-aid kit was auto-rejected on a >70% Rekognition
+ * "Weapons" label — whereas an admin rejection was a considered human decision.
+ * Overriding those two things should not look identical, so the source of the
+ * decision is stated rather than implied.
+ */
+function RejectedReviewSection({
+  listings, requests, onReinstate,
+}: {
+  listings: ItemListing[];
+  requests: ItemRequest[];
+  onReinstate: (kind: "listing" | "request", id: number, title: string) => void;
+}) {
+  const byAi = listings.filter(l => l.rejectedByAi);
+  const byAdmin = listings.filter(l => !l.rejectedByAi);
+  if (listings.length === 0 && requests.length === 0) return null;
+
+  const Row = ({ id, title, subtitle, reason, kind }: {
+    id: number; title: string; subtitle: string; reason: string | null; kind: "listing" | "request";
+  }) => (
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-100">{title}</p>
+        <p className="mt-0.5 truncate text-2xs text-stone-400">{subtitle}</p>
+        {reason && (
+          <p className="mt-1.5 rounded-lg bg-red-50 p-2 text-2xs font-semibold leading-relaxed text-red-700 dark:bg-red-950/20 dark:text-red-400">
+            {displayReason(reason)}
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => onReinstate(kind, id, title)}
+        className="shrink-0 rounded-full bg-green-600 px-3 py-1.5 text-2xs font-black text-white transition-colors hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+      >
+        Make live again
+      </button>
+    </div>
+  );
+
+  const Group = ({ title, note, children }: { title: string; note: string; children: ReactNode }) => (
+    <div className="space-y-2">
+      <div>
+        <p className="text-2xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">{title}</p>
+        <p className="text-2xs text-stone-400">{note}</p>
+      </div>
+      {children}
+    </div>
+  );
+
+  return (
+    <section className="mb-5 space-y-4 rounded-2xl border border-amber-300 bg-amber-50/50 p-3 dark:border-amber-900 dark:bg-amber-950/10">
+      <div>
+        <h3 className="text-sm font-black text-stone-900 dark:text-stone-100">Rejected — review</h3>
+        <p className="text-2xs text-stone-500 dark:text-stone-400">
+          Putting one back live clears its rejection, notifies the owner and re-runs matching.
+        </p>
+      </div>
+
+      {byAi.length > 0 && (
+        <Group title={`Rejected by AI (${byAi.length})`} note="Automated decision — check before trusting it.">
+          {byAi.map(l => (
+            <Row key={l.id} kind="listing" id={l.id} title={l.title}
+              subtitle={`${l.category}${l.subcategory ? ` · ${l.subcategory}` : ""} · ${l.donorName}`}
+              reason={l.rejectionReason} />
+          ))}
+        </Group>
+      )}
+
+      {byAdmin.length > 0 && (
+        <Group title={`Rejected by an admin (${byAdmin.length})`} note="A human decided this — override only with reason.">
+          {byAdmin.map(l => (
+            <Row key={l.id} kind="listing" id={l.id} title={l.title}
+              subtitle={`${l.category}${l.subcategory ? ` · ${l.subcategory}` : ""} · ${l.donorName}`}
+              reason={l.rejectionReason} />
+          ))}
+        </Group>
+      )}
+
+      {requests.length > 0 && (
+        <Group title={`Rejected requests (${requests.length})`} note="Approval still requires verification to be satisfied.">
+          {requests.map(r => (
+            <Row key={r.id} kind="request" id={r.id} title={r.title}
+              subtitle={`${r.category} · ${r.city}`} reason={r.rejectionReason} />
+          ))}
+        </Group>
+      )}
+    </section>
   );
 }
 

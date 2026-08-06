@@ -162,7 +162,7 @@ function FixResubmitButton({ requestId }: { requestId: number }) {
       size="sm"
       variant="outline"
       disabled={busy}
-      className="h-7 px-2.5 text-[11px] font-bold border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+      className="h-7 px-2.5 text-2xs font-bold border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
       onClick={async () => {
         setBusy(true);
         try {
@@ -230,7 +230,7 @@ function ConfirmRequestActionButton({
         variant="outline"
         disabled={busy}
         onClick={() => setOpen(true)}
-        className="h-7 px-2.5 text-[11px] font-bold border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+        className="h-7 px-2.5 text-2xs font-bold border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
       >
         {busy
           ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> {busyLabel}</>
@@ -359,7 +359,7 @@ function JourneyRail({ status }: { status: string }) {
                 )}
                 {brokenHere && <X className="w-2 h-2 text-white" strokeWidth={4} />}
               </span>
-              <span className={`text-[9px] font-bold uppercase tracking-wider ${
+              <span className={`text-4xs font-bold uppercase tracking-wider ${
                 brokenHere ? "text-red-500" : reached || current ? "text-stone-600 dark:text-stone-300" : "text-stone-300 dark:text-zinc-600"}`}>
                 {label}
               </span>
@@ -397,12 +397,12 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">{badge.label}</Badge>
+          <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
           {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
           {canDeleteDraft(r.status) && (
             <>
               <Link href={`/requests/new?draftId=${r.id}`}
-                className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#1e3a60]/30 dark:border-blue-400/40 text-[11px] font-bold text-[#1e3a60] dark:text-blue-400 hover:bg-[#1e3a60]/5 dark:hover:bg-blue-400/10 transition-colors">
+                className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#1e3a60]/30 dark:border-blue-400/40 text-2xs font-bold text-[#1e3a60] dark:text-blue-400 hover:bg-[#1e3a60]/5 dark:hover:bg-blue-400/10 transition-colors">
                 <Pencil className="w-3 h-3" /> Continue editing
               </Link>
               <DeleteDraftButton requestId={r.id} onDeleted={onCancelled} />
@@ -414,10 +414,10 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
       </div>
       <JourneyRail status={r.status} />
       {r.status === "REJECTED" && r.rejectionReason && (
-        <p className="text-[11px] text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{displayReason(r.rejectionReason)}</p>
+        <p className="text-2xs text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{displayReason(r.rejectionReason)}</p>
       )}
       {r.status === "DRAFT" && (
-        <p className="text-[11px] text-stone-400 mt-2.5">Saved as a draft &mdash; continue where you left off and submit when ready.</p>
+        <p className="text-2xs text-stone-400 mt-2.5">Saved as a draft &mdash; continue where you left off and submit when ready.</p>
       )}
     </motion.div>
   );
@@ -576,7 +576,7 @@ function OfferStageCard({
               <span className="text-sm">🔍</span>
               <div>
                 <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">Offer to a different request</p>
-                <p className="text-[10px] text-stone-400">Browse all verified requests and find a better match for your item.</p>
+                <p className="text-3xs text-stone-400">Browse all verified requests and find a better match for your item.</p>
               </div>
             </Link>
             <Link href={`/items/new`}
@@ -584,7 +584,7 @@ function OfferStageCard({
               <span className="text-sm">📦</span>
               <div>
                 <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">List the item as a general listing</p>
-                <p className="text-[10px] text-stone-400">Let the system find any suitable recipient automatically.</p>
+                <p className="text-3xs text-stone-400">Let the system find any suitable recipient automatically.</p>
               </div>
             </Link>
             <Link href={`/requests/${offer.requestId}/offer`}
@@ -592,7 +592,7 @@ function OfferStageCard({
               <span className="text-sm">✏️</span>
               <div>
                 <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">Re-offer with updated details</p>
-                <p className="text-[10px] text-stone-400">Address the rejection reason and submit a fresh offer for the same request.</p>
+                <p className="text-3xs text-stone-400">Address the rejection reason and submit a fresh offer for the same request.</p>
               </div>
             </Link>
           </div>
@@ -619,10 +619,23 @@ function OfferStageCard({
                 comes from the same dialog every other cancellation uses. */}
             <ReconfirmDeclineButton offerId={offer.id} onCancelled={onCancelled} />
           </div>
-        ) : actionHref ? (
+        ) : null
+      )}
+
+      {/* Primary action and the exit share one row.
+          `empty:hidden` because either side can be absent — a status with no
+          action, or a listing the server says cannot be cancelled — and an empty
+          flex row would still eat a space-y gap.
+
+          The exit path is rendered from the server's own policy rather than a
+          hardcoded status list. Deliberately a visible secondary action, not
+          buried in a menu: at ADMIN_APPROVED the donor previously had NO way out
+          at all — "Go to Handover Hub" was the only control on the card. */}
+      <div className="flex items-stretch gap-2 empty:hidden">
+        {meta.action !== "reconfirm" && actionHref && (
           <Link
             href={actionHref}
-            className={`block w-full rounded-xl py-2 text-center text-xs font-semibold transition-colors ${
+            className={`flex-1 min-w-0 truncate rounded-xl py-2 text-center text-xs font-semibold transition-colors ${
               meta.severity === "success"
                 ? "bg-green-600 hover:bg-green-700 text-white"
                 : meta.severity === "warning"
@@ -632,14 +645,9 @@ function OfferStageCard({
           >
             {meta.actionLabel}
           </Link>
-        ) : null
-      )}
-
-      {/* Exit path, rendered from the server's own policy rather than a hardcoded
-          status list. Deliberately a visible secondary action, not buried in a
-          menu: at ADMIN_APPROVED the donor previously had NO way out at all —
-          "Go to Handover Hub" was the only control on the card. */}
-      <OfferCancelAction offerId={offer.id} onCancelled={onCancelled} />
+        )}
+        <OfferCancelAction offerId={offer.id} onCancelled={onCancelled} />
+      </div>
     </div>
   );
 }
@@ -697,7 +705,9 @@ function OfferCancelAction({ offerId, onCancelled }: { offerId: number; onCancel
       <button
         type="button"
         onClick={() => setDialogOpen(true)}
-        className="mt-2 w-full rounded-xl border border-red-200 bg-white py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/30"
+        // Sized by the flex row it now sits in, not w-full — it shares a line
+        // with the primary action. flex-1 still fills the row when it is alone.
+        className="flex-1 min-w-0 truncate rounded-xl border border-red-200 bg-white py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/30"
       >
         {option.actionLabel}
       </button>
@@ -747,7 +757,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
       {/* Needs action — shown first and highlighted */}
       {needsAction.length > 0 && (
         <div className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+          <p className="text-3xs font-black uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
             <AlertTriangle className="w-3 h-3" /> Action Required
           </p>
           {needsAction.map(o => (
@@ -760,7 +770,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
       {active.filter(o => !needsAction.includes(o)).length > 0 && (
         <div className="space-y-3">
           {needsAction.length > 0 && (
-            <p className="text-[10px] font-black uppercase tracking-wider text-stone-400">In Progress</p>
+            <p className="text-3xs font-black uppercase tracking-wider text-stone-400">In Progress</p>
           )}
           {active.filter(o => !needsAction.includes(o)).map(o => (
             <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
@@ -771,7 +781,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
       {/* Completed */}
       {completed.length > 0 && (
         <div className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-wider text-stone-400">Completed</p>
+          <p className="text-3xs font-black uppercase tracking-wider text-stone-400">Completed</p>
           {completed.map(o => (
             <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
           ))}
@@ -781,7 +791,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
       {/* Terminal / Closed */}
       {terminal.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer text-[10px] font-black uppercase tracking-wider text-stone-400 flex items-center gap-1">
+          <summary className="cursor-pointer text-3xs font-black uppercase tracking-wider text-stone-400 flex items-center gap-1">
             <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
             Closed ({terminal.length})
           </summary>
@@ -849,7 +859,7 @@ function PastOffersStrip({ offers, activeRequestIds }: {
               <div className="flex items-center gap-2">
                 <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">{group[0].requestTitle}</p>
                 {group.length > 1 && (
-                  <span className="flex-shrink-0 text-[10px] font-semibold text-stone-400">{group.length} offers</span>
+                  <span className="flex-shrink-0 text-3xs font-semibold text-stone-400">{group.length} offers</span>
                 )}
               </div>
               <div className="mt-1.5 space-y-1">
@@ -857,8 +867,8 @@ function PastOffersStrip({ offers, activeRequestIds }: {
                   const { label, tone } = pastOfferLabel(o.status);
                   return (
                     <div key={o.id} className="flex items-baseline gap-2 text-xs">
-                      <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}`}>{label}</span>
-                      <span className="flex-shrink-0 text-[10px] text-stone-400">
+                      <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
+                      <span className="flex-shrink-0 text-3xs text-stone-400">
                         {new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                       </span>
                       {o.rejectionReason && (
@@ -874,7 +884,7 @@ function PastOffersStrip({ offers, activeRequestIds }: {
             </div>
           ))}
           {someRequestStillOpen && (
-            <p className="px-2 text-[11px] leading-relaxed text-stone-400">
+            <p className="px-2 text-2xs leading-relaxed text-stone-400">
               These requests remain open to other donors — you&apos;ll be notified the moment a new offer arrives.{" "}
               <Link href="/requests" className="font-semibold text-[var(--ck-role-accent)] hover:underline">Browse donors offering to help →</Link>
             </p>
@@ -992,7 +1002,7 @@ function DoneeDashboard({
         <div className="mx-auto max-w-5xl relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="space-y-3 min-w-0">
-              <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/30 rounded-full px-2.5 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-bold uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/30 rounded-full px-2.5 py-0.5 text-2xs sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified Donee
               </div>
               <h1 className="text-xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
@@ -1005,7 +1015,7 @@ function DoneeDashboard({
               </p>
             </motion.div>
             <Link href="/requests/new" data-tour="primary-cta">
-              <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-xl sm:rounded-2xl px-3.5 sm:px-6 py-2 sm:py-3 h-auto text-[13px] sm:text-sm flex items-center gap-2 shadow-xl shadow-[var(--ck-role-highlight)]/20 shrink-0">
+              <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-xl sm:rounded-2xl px-3.5 sm:px-6 py-2 sm:py-3 h-auto text-sm sm:text-sm flex items-center gap-2 shadow-xl shadow-[var(--ck-role-highlight)]/20 shrink-0">
                 <Plus className="w-4 h-4" /> Post a Need
               </Button>
             </Link>
@@ -1021,7 +1031,7 @@ function DoneeDashboard({
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
                 className={`py-3.5 sm:py-5 ${i > 0 ? "border-l border-white/10 pl-3.5 sm:pl-8" : ""}`}>
                 <p className="text-xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
-                <p className="text-[10px] uppercase tracking-[0.22em] text-white/45 mt-2">{stat.label}</p>
+                <p className="text-3xs uppercase tracking-[0.22em] text-white/45 mt-2">{stat.label}</p>
               </motion.div>
             ))}
           </div>
@@ -1176,7 +1186,7 @@ function DoneeDashboard({
                             <div className="flex">
                               {stages.map((stage, i) => (
                                 <div key={i} className="flex-1 min-w-0">
-                                  <div className={`text-[9px] font-semibold leading-tight truncate text-center ${
+                                  <div className={`text-4xs font-semibold leading-tight truncate text-center ${
                                     i < currentIdx  ? "text-green-600 dark:text-green-400" :
                                     i === currentIdx ? (isAtRisk ? "text-amber-600 dark:text-amber-400" : "text-[var(--ck-role-accent)]") :
                                     "text-stone-300 dark:text-zinc-600"
@@ -1191,11 +1201,11 @@ function DoneeDashboard({
                               {/* Current */}
                               {currentIdx >= 0 && (
                                 <div className="flex items-start gap-2">
-                                  <span className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-white ${isAtRisk ? "bg-amber-500" : "bg-[var(--ck-role-accent)]"}`}>
+                                  <span className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-4xs font-black text-white ${isAtRisk ? "bg-amber-500" : "bg-[var(--ck-role-accent)]"}`}>
                                     {currentIdx + 1}
                                   </span>
                                   <div>
-                                    <p className="text-[10px] font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Now · {stages[currentIdx].label}</p>
+                                    <p className="text-3xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Now · {stages[currentIdx].label}</p>
                                     <p className="text-xs text-stone-500 dark:text-stone-400">
                                       {isPendingReview && "A donor has offered to fulfil your request. Review their item details above and accept or decline."}
                                       {offer.status === "DONEE_ACCEPTED" && "You accepted this offer. Waiting for the donor to confirm their item is still available."}
@@ -1215,11 +1225,11 @@ function DoneeDashboard({
                               {/* What's next */}
                               {currentIdx >= 0 && currentIdx < stages.length - 1 && !isComplete && (
                                 <div className="flex items-start gap-2 pt-1 border-t border-stone-100 dark:border-zinc-700">
-                                  <span className="mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-black text-stone-400 border border-stone-300 dark:border-zinc-600">
+                                  <span className="mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-4xs font-black text-stone-400 border border-stone-300 dark:border-zinc-600">
                                     {currentIdx + 2}
                                   </span>
                                   <div>
-                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wide">Next · {stages[currentIdx + 1].label}</p>
+                                    <p className="text-3xs font-bold text-stone-400 uppercase tracking-wide">Next · {stages[currentIdx + 1].label}</p>
                                     <p className="text-xs text-stone-400 dark:text-stone-500">{stages[currentIdx + 1].sublabel}</p>
                                   </div>
                                 </div>
@@ -1274,7 +1284,7 @@ function DoneeDashboard({
                               Report an issue
                             </Link>
                           </div>
-                          <p className="text-[10px] text-stone-400 text-center">Marking complete ends the issue window — you won&apos;t be able to report a problem afterward.</p>
+                          <p className="text-3xs text-stone-400 text-center">Marking complete ends the issue window — you won&apos;t be able to report a problem afterward.</p>
                         </div>
                       )}
                       {isIssueRaised && (
@@ -1285,7 +1295,7 @@ function DoneeDashboard({
                           <Link href={`/offers/${offer.id}/issues`} className="block w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 py-2 text-center text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors">
                             Report an issue
                           </Link>
-                          <p className="text-[10px] text-stone-400 text-center">Noticed a problem with the item? You can still report it for a few days after completion.</p>
+                          <p className="text-3xs text-stone-400 text-center">Noticed a problem with the item? You can still report it for a few days after completion.</p>
                         </div>
                       )}
                     </div>
@@ -1310,7 +1320,7 @@ function DoneeDashboard({
           <section data-tour="requests-list">
             <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
+                <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
                 <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
               </div>
               <Link href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0">
@@ -1346,7 +1356,7 @@ function DoneeDashboard({
           {/* Matches */}
           <section data-tour="matches">
             <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
+              <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
               <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
             </div>
             <div className="pt-3.5 sm:pt-5">
@@ -1402,7 +1412,7 @@ function DoneeDashboard({
                             </p>
                             <p className="text-xs text-stone-400 mt-0.5 truncate">For: <TranslatedText text={m.requestTitle || ""} /></p>
                           </div>
-                          <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap shrink-0">{badge.label}</Badge>
+                          <Badge variant={badge.variant} className="text-3xs whitespace-nowrap shrink-0">{badge.label}</Badge>
                         </div>
                         <div className="flex justify-between items-center text-xs bg-stone-50 dark:bg-zinc-950 p-2.5 rounded-xl">
                           <div><p className="text-stone-400">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
@@ -1665,7 +1675,7 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-7xl relative z-10">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 sm:gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="min-w-0 space-y-3">
-              <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/30 rounded-full px-2.5 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-semibold">
+              <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/30 rounded-full px-2.5 py-0.5 text-2xs sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified Donor
               </div>
               <h1 className="text-xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
@@ -1682,25 +1692,25 @@ export default function DashboardPage() {
               {myProfile?.role === "ADMIN" && (
                 <div className="grid grid-cols-2 gap-1 bg-white/10 border border-white/15 p-1 rounded-xl">
                   <button onClick={() => setActiveTab("donor")}
-                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${activeTab === "donor" ? "bg-[var(--ck-role-accent)] text-white" : "text-white/60"}`}>
+                    className={`px-3 py-1.5 text-3xs font-bold rounded-lg transition-all ${activeTab === "donor" ? "bg-[var(--ck-role-accent)] text-white" : "text-white/60"}`}>
                     Donor
                   </button>
                   <button onClick={() => setActiveTab("donee")}
-                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${activeTab === "donee" ? "bg-[var(--ck-role-accent)] text-white" : "text-white/60"}`}>
+                    className={`px-3 py-1.5 text-3xs font-bold rounded-lg transition-all ${activeTab === "donee" ? "bg-[var(--ck-role-accent)] text-white" : "text-white/60"}`}>
                     Donee
                   </button>
                 </div>
               )}
               {(myProfile?.role === "DONOR" || myProfile?.role === "ADMIN") && (
                 <Link href="/items/new" data-tour="primary-cta">
-                  <Button className="bg-[var(--ck-role-accent)] hover:bg-[#943e11] text-white font-bold rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 h-auto btn-shine flex items-center gap-1.5 text-[13px] sm:text-sm">
+                  <Button className="bg-[var(--ck-role-accent)] hover:bg-[#943e11] text-white font-bold rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 h-auto btn-shine flex items-center gap-1.5 text-sm sm:text-sm">
                     <Plus className="w-4 h-4" /> List Item Privately
                   </Button>
                 </Link>
               )}
               {(myProfile?.role === "DONEE" || myProfile?.role === "ADMIN") && (
                 <Link href="/requests/new">
-                  <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 h-auto flex items-center gap-1.5 text-[13px] sm:text-sm">
+                  <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 h-auto flex items-center gap-1.5 text-sm sm:text-sm">
                     <Plus className="w-4 h-4" /> Post a Need
                   </Button>
                 </Link>
@@ -1718,7 +1728,7 @@ export default function DashboardPage() {
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
                 className={`py-3.5 sm:py-5 ${i > 0 ? "border-l border-white/10 pl-3.5 sm:pl-8" : ""}`}>
                 <p className="text-xl sm:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
-                <p className="text-[10px] uppercase tracking-[0.22em] text-white/45 mt-2">{stat.label}</p>
+                <p className="text-3xs uppercase tracking-[0.22em] text-white/45 mt-2">{stat.label}</p>
               </motion.div>
             ))}
           </div>
@@ -1764,7 +1774,7 @@ export default function DashboardPage() {
                 {donationOffers.length > 0 && (
                   <section data-tour="offers">
                     <div className="border-b-2 border-[var(--ck-role-highlight)]/70 pb-3 mb-4 sm:mb-5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)] dark:text-[var(--ck-role-highlight)]">Your Offers</p>
+                      <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)] dark:text-[var(--ck-role-highlight)]">Your Offers</p>
                       <p className="text-xs text-stone-400 mt-1">Items you offered directly against someone&apos;s request.</p>
                     </div>
                     <DonorOfferSection
@@ -1783,7 +1793,7 @@ export default function DashboardPage() {
                   <section>
                     <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/70 pb-3">
                       <div>
-                        <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">
+                        <p className="flex items-center gap-2 text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">
                           <EyeOff className="w-3.5 h-3.5" /> Your Private Inventory
                         </p>
                         <p className="text-xs text-stone-400 mt-1">Only our matching engine sees these — never other users.</p>
@@ -1823,7 +1833,7 @@ export default function DashboardPage() {
                                         <span>Qty: {l.quantity}</span>
                                       </div>
                                     </div>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${meta.color} ${meta.bg} ${meta.border}`}>
+                                    <span className={`text-3xs font-bold px-2 py-0.5 rounded-full border shrink-0 ${meta.color} ${meta.bg} ${meta.border}`}>
                                       {meta.label}
                                     </span>
                                   </div>
@@ -1836,6 +1846,18 @@ export default function DashboardPage() {
                                     {l.rejectionReason
                                       ? <>Admin note: {displayReason(l.rejectionReason)}</>
                                       : "Admin has requested more information. Please update your listing."}
+                                  </div>
+                                )}
+
+                                {/* A rejected listing showed only a red badge, so the
+                                    donor had to open the detail panel to find out why —
+                                    or never found out at all. The reason lives on the
+                                    same field the needs-info branch already reads. */}
+                                {l.status === "REJECTED" && (
+                                  <div className="mt-2 rounded-lg bg-red-50 p-2 text-xs font-semibold text-red-700 dark:bg-red-950/20 dark:text-red-400">
+                                    {l.rejectionReason
+                                      ? <>Reason: {displayReason(l.rejectionReason)}</>
+                                      : "This listing wasn't approved. Open it for details."}
                                   </div>
                                 )}
 
@@ -1904,7 +1926,7 @@ export default function DashboardPage() {
                   {/* Donor Matches */}
                   <section data-tour="matches">
                     <div className="border-b-2 border-emerald-500/60 pb-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-400">Match Opportunities</p>
+                      <p className="text-3xs font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-400">Match Opportunities</p>
                       <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
                     </div>
                     <div className="pt-3.5 sm:pt-5 space-y-3 sm:space-y-4">
@@ -1964,7 +1986,7 @@ export default function DashboardPage() {
                                     </p>
                                     <p className="text-xs text-stone-400 mt-0.5">Matched with item: <TranslatedText text={m.listingTitle || ""} /></p>
                                   </div>
-                                  <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">{badge.label}</Badge>
+                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
                                 </div>
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
                                   <div><p className="text-stone-500">Recipient Donee</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.doneeName}</p></div>
@@ -1984,7 +2006,7 @@ export default function DashboardPage() {
                                     ) : (
                                       <div className="space-y-2">
                                         <input type="text" placeholder="Optional reason for declining..." value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-xs border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
-                                        <label className="flex items-center gap-1.5 text-[11px] text-stone-500 cursor-pointer select-none">
+                                        <label className="flex items-center gap-1.5 text-2xs text-stone-500 cursor-pointer select-none">
                                           <input type="checkbox" checked={declineConditionChanged} onChange={e => setDeclineConditionChanged(e.target.checked)} className="rounded border-stone-300" />
                                           The item&apos;s condition has changed since I listed it (pauses the listing)
                                         </label>
@@ -2122,17 +2144,17 @@ export default function DashboardPage() {
                                     <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
                                   </div>
                                   {r.status === "REJECTED" && r.rejectionReason && (
-                                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{displayReason(r.rejectionReason)}</p>
+                                    <p className="text-2xs text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{displayReason(r.rejectionReason)}</p>
                                   )}
                                 </div>
                                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                  <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">
+                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
                                     {badge.label}
                                   </Badge>
                                   {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
                                   {r.status === "DRAFT" && (
                                     <Link href={`/requests/new?draftId=${r.id}`}
-                                      className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-[11px] font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
+                                      className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-2xs font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
                                       <Pencil className="w-3 h-3" /> Continue editing
                                     </Link>
                                   )}
@@ -2171,7 +2193,7 @@ export default function DashboardPage() {
                                     </p>
                                     <p className="text-xs text-stone-400 mt-0.5">For your need: <TranslatedText text={m.requestTitle || ""} /></p>
                                   </div>
-                                  <Badge variant={badge.variant} className="text-[10px] whitespace-nowrap">{badge.label}</Badge>
+                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
                                 </div>
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
                                   <div><p className="text-stone-500">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>

@@ -268,7 +268,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
             <Card className="overflow-hidden border-stone-200/70 bg-white/90 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/80">
               <CardContent className="p-0">
                 <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2.5 dark:border-zinc-800">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400">
                     {roleFilter === "ALL" ? "All users" : roleFilter === "DONOR" ? "Donors" : "Donees"} · A–Z
                   </p>
                   <p className="text-xs text-stone-400">{visibleUsers.length}</p>
@@ -337,7 +337,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                   {Object.entries(journey.stats).filter(([k]) => k !== "totalEvents").map(([k, v]) => (
                     <div key={k} className="rounded-xl border border-stone-200/70 bg-stone-50 px-3 py-1.5 text-center dark:border-zinc-700/60 dark:bg-zinc-800/60">
                       <p className="text-base font-black leading-none tabular-nums" style={{ color: k === "fraudFlags" && v > 0 ? "#dc2626" : "#b04a15" }}>{v}</p>
-                      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">{k.replace(/([A-Z])/g, " $1")}</p>
+                      <p className="mt-0.5 text-3xs font-semibold uppercase tracking-wide text-stone-400">{k.replace(/([A-Z])/g, " $1")}</p>
                     </div>
                   ))}
                 </div>
@@ -448,7 +448,7 @@ function TimelineEvent({ event, index, showDay }: { event: JourneyEvent; index: 
   return (
     <div className="journey-event relative pb-5" style={{ animationDelay: `${delay}ms` }}>
       {showDay && (
-        <p className="mb-2 -ml-6 text-[11px] font-black uppercase tracking-widest text-stone-400">{fmtDay(event.at)}</p>
+        <p className="mb-2 -ml-6 text-2xs font-black uppercase tracking-widest text-stone-400">{fmtDay(event.at)}</p>
       )}
       <span
         className="journey-dot absolute -left-6 top-[3px] flex h-5 w-5 items-center justify-center rounded-full ring-4 ring-[#faf6f0] dark:ring-zinc-950"
@@ -459,10 +459,10 @@ function TimelineEvent({ event, index, showDay }: { event: JourneyEvent; index: 
       <div className={`rounded-xl border border-stone-200/70 p-3.5 shadow-sm dark:border-zinc-700/50 ${cat.bg}`}>
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{event.title}</p>
-          <span className="shrink-0 text-[11px] font-medium tabular-nums text-stone-400">{fmtDate(event.at)}</span>
+          <span className="shrink-0 text-2xs font-medium tabular-nums text-stone-400">{fmtDate(event.at)}</span>
         </div>
         {event.detail && <p className="mt-1 text-xs leading-relaxed text-stone-600 dark:text-stone-400">{event.detail}</p>}
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-3xs font-semibold uppercase tracking-wide text-stone-400">
           {event.actor && <span className="rounded bg-white/70 px-1.5 py-0.5 dark:bg-zinc-800/70">by {event.actor}</span>}
           {event.entityType && event.entityId && (
             <span className="rounded bg-white/70 px-1.5 py-0.5 dark:bg-zinc-800/70">{event.entityType} #{event.entityId}</span>

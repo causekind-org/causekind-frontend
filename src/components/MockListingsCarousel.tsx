@@ -83,7 +83,7 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
 
                   {/* Category Badge */}
                   <div className="absolute top-3 right-3 z-10">
-                    <span className="bg-[#b04a15] text-white font-bold text-[10px] px-2.5 py-1 rounded-lg shadow-sm tracking-wider uppercase">
+                    <span className="bg-[#b04a15] text-white font-bold text-3xs px-2.5 py-1 rounded-lg shadow-sm tracking-wider uppercase">
                       <TranslatedText text={item.category} />
                     </span>
                   </div>
@@ -103,7 +103,7 @@ export function MockListingsCarousel({ listings }: { listings?: ListingSlide[] }
                     <TranslatedText text={item.title} />
                   </h3>
 
-                  <div className="mt-auto pt-3 border-t border-orange-50/50 dark:border-stone-800 flex justify-between items-center text-[11px] text-stone-400 font-bold">
+                  <div className="mt-auto pt-3 border-t border-orange-50/50 dark:border-stone-800 flex justify-between items-center text-2xs text-stone-400 font-bold">
                     <span>Available to donate</span>
                   </div>
                 </div>

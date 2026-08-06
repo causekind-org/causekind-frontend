@@ -108,7 +108,7 @@ export function CancelOfferDialog({
                     : "A short explanation for the other person."}
                 />
                 {reason === "SAFETY_CONCERN" && (
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-2xs text-stone-500">
                     Safety reports are reviewed by the CauseKind team.
                   </p>
                 )}

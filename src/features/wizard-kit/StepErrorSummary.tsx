@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { TriangleAlert } from "lucide-react";
-import { errorVariants } from "../wizardMotion";
+import { errorVariants } from "@/features/wizard-kit/wizardMotion";
 
 /**
  * Compact step-level error summary.
@@ -33,7 +33,7 @@ export function StepErrorSummary({
           role="alert"
           className="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30"
         >
-          <p className="flex items-center gap-1.5 text-[11px] font-bold text-red-700 dark:text-red-400">
+          <p className="flex items-center gap-1.5 text-2xs font-bold text-red-700 dark:text-red-400">
             <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {entries.length === 1 ? "One thing needs fixing" : `${entries.length} things need fixing`}
           </p>
@@ -43,7 +43,7 @@ export function StepErrorSummary({
                 <button
                   type="button"
                   onClick={() => onFocusField(field)}
-                  className="text-left text-[11px] font-semibold text-red-600 underline underline-offset-2 hover:opacity-80 dark:text-red-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                  className="text-left text-2xs font-semibold text-red-600 underline underline-offset-2 hover:opacity-80 dark:text-red-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
                 >
                   {message}
                 </button>

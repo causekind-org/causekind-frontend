@@ -62,7 +62,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         className="hidden lg:flex lg:w-[40%] relative p-8 flex-col justify-between overflow-hidden bg-[#120c04] shrink-0"
       >
         <div className="relative z-10 flex items-center gap-2 mb-8">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3 py-1">
+          <span className="text-3xs font-black uppercase tracking-widest text-[#f0b97a] bg-[#b04a15]/25 border border-[#b04a15]/40 rounded-full px-3 py-1">
             Verified In-Kind
           </span>
         </div>
@@ -108,7 +108,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="absolute inset-0 bg-gradient-to-t from-[#120c04] via-transparent to-[#120c04]" />
         </div>
 
-        <div className="relative z-10 text-[10px] font-bold text-white/30 uppercase tracking-widest">
+        <div className="relative z-10 text-3xs font-bold text-white/30 uppercase tracking-widest">
           CauseKind India &middot; 2026
         </div>
       </motion.div>

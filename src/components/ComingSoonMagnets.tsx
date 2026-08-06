@@ -26,7 +26,7 @@ function Stamp() {
       position: "absolute", top: "18px", right: "14px",
       border: `2.5px solid ${GOLD}`, borderRadius: "6px", padding: "3px 8px",
       transform: "rotate(12deg)", color: GOLD, fontFamily: "monospace",
-      fontSize: "10px", fontWeight: 900, letterSpacing: "0.15em",
+      fontSize: "var(--text-3xs)", fontWeight: 900, letterSpacing: "0.15em",
       textTransform: "uppercase" as const, lineHeight: 1.2,
       userSelect: "none" as const, opacity: 0.9, whiteSpace: "nowrap" as const,
       boxShadow: `0 0 0 1px ${GOLD}44 inset`,
@@ -57,12 +57,12 @@ function PosterFace({ gradient, title, Illustration }: { gradient: string; title
       </div>
       <p style={{
         margin: 0, color: CREAM, fontWeight: 800,
-        fontSize: "var(--ck-poster-title, clamp(15px, 4vw, 18px))", textAlign: "center" as const,
+        fontSize: "var(--ck-poster-title, clamp(0.9375rem, 0.875rem + 0.3125vw, 1.125rem))", textAlign: "center" as const,
         lineHeight: 1.25, letterSpacing: "-0.01em",
         textShadow: "0 1px 4px rgba(0,0,0,0.35)", zIndex: 1,
       }}>{title}</p>
       <p style={{
-        margin: 0, color: GOLD, fontWeight: 700, fontSize: "9px",
+        margin: 0, color: GOLD, fontWeight: 700, fontSize: "var(--text-4xs)",
         letterSpacing: "0.2em", textTransform: "uppercase" as const, zIndex: 1,
         display: "var(--ck-poster-brand, block)",
       }}>CauseKind</p>
@@ -289,7 +289,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
             background: "rgba(255,255,255,0.15)",
             border: "1px solid rgba(255,255,255,0.3)",
             backdropFilter: "blur(8px)",
-            color: GOLD, fontSize: "9px", fontWeight: 900,
+            color: GOLD, fontSize: "var(--text-4xs)", fontWeight: 900,
             letterSpacing: "0.22em", textTransform: "uppercase" as const,
           }}>Coming Soon</div>
 
@@ -304,7 +304,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
           {/* Card title */}
           <p style={{
             zIndex: 1, margin: 0,
-            color: "rgba(255,255,255,0.92)", fontSize: "18px",
+            color: "rgba(255,255,255,0.92)", fontSize: "var(--text-lg)",
             fontWeight: 800, lineHeight: 1.25, letterSpacing: "-0.02em",
             textShadow: "0 1px 6px rgba(0,0,0,0.35)",
           }}>{card.title}</p>
@@ -325,7 +325,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
               which overlays this corner on desktop. */}
           <p style={{
             margin: "0 0 6px", paddingRight: "40px",
-            fontSize: "10px", fontWeight: 900,
+            fontSize: "var(--text-3xs)", fontWeight: 900,
             letterSpacing: "0.16em", textTransform: "uppercase" as const,
             color: detail.accent,
           }}>{detail.tagline}</p>
@@ -333,7 +333,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
           {/* Heading */}
           <h3 style={{
             margin: "0 0 10px", paddingRight: "40px",
-            fontSize: "23px", fontWeight: 800,
+            fontSize: "var(--text-2xl)", fontWeight: 800,
             color: "#1c1917", letterSpacing: "-0.025em", lineHeight: 1.2,
           }}>{card.title}</h3>
 
@@ -342,7 +342,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
 
           {/* Description */}
           <p style={{
-            margin: "0 0 18px", fontSize: "13.5px", color: "#57534e", lineHeight: 1.7,
+            margin: "0 0 18px", fontSize: "var(--text-sm)", color: "#57534e", lineHeight: 1.7,
           }}>{detail.description}</p>
 
           {/* Bullets */}
@@ -350,14 +350,14 @@ function CardModal({ cardIdx, startRect, onClose }: {
             {detail.bullets.map((b) => (
               <li key={b} style={{
                 display: "flex", alignItems: "flex-start", gap: "10px",
-                fontSize: "13px", color: "#44403c", lineHeight: 1.5,
+                fontSize: "var(--text-sm)", color: "#44403c", lineHeight: 1.5,
               }}>
                 <span style={{
                   flexShrink: 0, marginTop: "2px",
                   width: "18px", height: "18px", borderRadius: "50%",
                   background: `${detail.accent}18`, color: detail.accent,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "10px", fontWeight: 900,
+                  fontSize: "var(--text-3xs)", fontWeight: 900,
                 }}>✓</span>
                 {b}
               </li>
@@ -371,8 +371,8 @@ function CardModal({ cardIdx, startRect, onClose }: {
             border: `1px solid ${detail.accent}25`,
             display: "flex", alignItems: "center", gap: "8px",
           }}>
-            <span style={{ fontSize: "14px" }}>🔔</span>
-            <p style={{ margin: 0, fontSize: "12px", fontWeight: 700, color: detail.accent, lineHeight: 1.4 }}>
+            <span style={{ fontSize: "var(--text-sm)" }}>🔔</span>
+            <p style={{ margin: 0, fontSize: "var(--text-xs)", fontWeight: 700, color: detail.accent, lineHeight: 1.4 }}>
               We're building this now — follow CauseKind for early access.
             </p>
           </div>
@@ -395,7 +395,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
             boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
             backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
             cursor: "pointer", color: "#57534e",
-            fontSize: "19px", lineHeight: 1,
+            fontSize: "var(--text-xl)", lineHeight: 1,
             display: "flex", alignItems: "center", justifyContent: "center",
             transition: "background 0.15s ease, transform 0.15s ease",
           }}
@@ -740,7 +740,7 @@ export function ComingSoonMagnets() {
         </span>
         <span
           style={{
-            fontSize: "11px", fontWeight: 700, color: "#a8a29e",
+            fontSize: "var(--text-2xs)", fontWeight: 700, color: "#a8a29e",
             letterSpacing: "0.14em", textTransform: "uppercase" as const,
             animation: "ck-hint-pulse 2.4s ease-in-out infinite 1s",
           }}

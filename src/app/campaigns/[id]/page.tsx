@@ -471,7 +471,7 @@ function CampaignDetailPageInner() {
             <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 sm:p-8 space-y-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
               <div className="flex justify-between items-center flex-wrap gap-2">
                 <h2 className="text-xl font-bold text-stone-900">Where your money goes</h2>
-                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-3 rounded-full uppercase tracking-wider select-none">
+                <span className="flex items-center gap-1.5 text-3xs font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-3 rounded-full uppercase tracking-wider select-none">
                   <Sparkles className="h-3 w-3 animate-pulse text-[#8C3D1D]" /> AI Suggested
                 </span>
               </div>
@@ -627,7 +627,7 @@ function CampaignDetailPageInner() {
 
               {/* Trust & Security Info */}
               <div className="pt-4 border-t border-[#F2F1EC] space-y-3.5">
-                <p className="text-[11px] font-extrabold text-stone-400 uppercase tracking-widest">Trust & Security</p>
+                <p className="text-2xs font-extrabold text-stone-400 uppercase tracking-widest">Trust & Security</p>
                 
                 <div className="flex items-start gap-3">
                   <div className="h-5 w-5 text-emerald-600 bg-emerald-50 rounded-full flex items-center justify-center shrink-0 mt-0.5">
@@ -664,7 +664,7 @@ function CampaignDetailPageInner() {
 
             {/* Campaign Organizer */}
             <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] space-y-4">
-              <p className="text-[11px] font-extrabold text-stone-400 uppercase tracking-widest">Campaign Organizer</p>
+              <p className="text-2xs font-extrabold text-stone-400 uppercase tracking-widest">Campaign Organizer</p>
               
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 bg-gradient-to-tr from-[#8C3D1D]/35 to-orange-100 text-[#8C3D1D] rounded-full flex items-center justify-center font-bold text-lg border border-[#EDECE7]">
@@ -691,8 +691,8 @@ function CampaignDetailPageInner() {
             {/* FAQ Accordion - AI Suggested FAQ accordion */}
             <div className="bg-white border border-[#EDECE7] rounded-3xl p-6 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-2">
-                <p className="text-[11px] font-extrabold text-stone-400 uppercase tracking-widest">FAQ</p>
-                <span className="flex items-center gap-1 text-[9px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-0.5 px-2 rounded-full uppercase tracking-wider select-none">
+                <p className="text-2xs font-extrabold text-stone-400 uppercase tracking-widest">FAQ</p>
+                <span className="flex items-center gap-1 text-4xs font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-0.5 px-2 rounded-full uppercase tracking-wider select-none">
                   <Sparkles className="h-2.5 w-2.5 text-[#8C3D1D]" /> AI Suggested
                 </span>
               </div>
@@ -700,7 +700,7 @@ function CampaignDetailPageInner() {
               {aiGenerating || !aiContent ? (
                 <div className="flex flex-col items-center justify-center py-6 space-y-2">
                   <Loader2 className="h-5 w-5 text-[#8C3D1D] animate-spin" />
-                  <p className="text-[10px] text-stone-400 font-bold animate-pulse">Drafting questions...</p>
+                  <p className="text-3xs text-stone-400 font-bold animate-pulse">Drafting questions...</p>
                 </div>
               ) : (
                 <div className="space-y-3 animate-in fade-in duration-300">
@@ -740,7 +740,12 @@ function CampaignDetailPageInner() {
       >
         <div
           className="bg-white/95 backdrop-blur-sm border-t border-[#EDECE7] px-4 py-3.5 flex items-center gap-3 shadow-xl"
-          style={{ marginBottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}
+          // --ck-bottom-chrome, not a guessed pixel value. The dock is
+          // 0.75rem float + safe-area inset + 5rem bar = 92px + inset, so the
+          // hardcoded 72px that stood here left this bar ~20px inside the dock.
+          // The token already carries env(safe-area-inset-bottom), so adding
+          // one here too would double-count it on a notched phone.
+          style={{ marginBottom: "calc(var(--ck-bottom-chrome) + 0.5rem)" }}
         >
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-stone-900 truncate">{translatedTitle ?? campaign.title}</p>
@@ -751,7 +756,7 @@ function CampaignDetailPageInner() {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="text-[10px] text-stone-400 font-bold shrink-0">{pct}%</span>
+              <span className="text-3xs text-stone-400 font-bold shrink-0">{pct}%</span>
             </div>
           </div>
           <button
@@ -778,7 +783,7 @@ function CampaignDetailPageInner() {
 
             {/* Header */}
             <div className="mb-5">
-              <span className="text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
+              <span className="text-3xs font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
                 Support this campaign
               </span>
               <h3 className="text-lg font-extrabold text-stone-900 mt-2.5 line-clamp-1">{translatedTitle ?? campaign.title}</h3>
@@ -892,7 +897,7 @@ function CampaignDetailPageInner() {
                     value={formatINR(total)}
                     bold
                   />
-                  <p className="pt-1 text-[11px] text-stone-400 font-medium leading-relaxed">
+                  <p className="pt-1 text-2xs text-stone-400 font-medium leading-relaxed">
                     Donee receives {formatINR(amount - Math.round(amount * 0.05))} after 5% platform service charges ({formatINR(Math.round(amount * 0.05))}).
                   </p>
                 </div>
@@ -916,7 +921,7 @@ function CampaignDetailPageInner() {
                 )}
               </button>
 
-              <p className="text-center text-[10px] text-stone-400 font-bold">
+              <p className="text-center text-3xs text-stone-400 font-bold">
                 Secured by Razorpay · UPI · Cards · Netbanking
               </p>
 
@@ -940,7 +945,7 @@ function CampaignDetailPageInner() {
 
             {/* Header */}
             <div className="mb-5 border-b border-[#F2F1EC] pb-4">
-              <span className="text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
+              <span className="text-3xs font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
                 Campaign Supporters
               </span>
               <h3 className="text-lg font-extrabold text-stone-900 mt-2.5">All {donations.length} Donors</h3>
@@ -985,7 +990,7 @@ function CampaignDetailPageInner() {
 
             {/* Header */}
             <div className="mb-5">
-              <span className="text-[10px] font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
+              <span className="text-3xs font-extrabold text-[#8C3D1D] bg-[#FDF0E9] py-1 px-2.5 rounded-full uppercase tracking-wider">
                 Contact Organizer
               </span>
               <h3 className="text-lg font-extrabold text-stone-900 mt-2.5">Send a message to {campaign.doneeName}</h3>

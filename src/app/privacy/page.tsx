@@ -54,7 +54,7 @@ const SECTIONS = [
 
 // ── Tiny prose helpers (consistent typography across sections) ─────────────────
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">{children}</p>;
+  return <p className="text-base leading-relaxed text-stone-600 dark:text-stone-300">{children}</p>;
 }
 
 function Lead({ children }: { children: React.ReactNode }) {
@@ -65,7 +65,7 @@ function Bullets({ items }: { items: React.ReactNode[] }) {
   return (
     <ul className="space-y-2.5">
       {items.map((it, i) => (
-        <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
+        <li key={i} className="flex gap-3 text-base leading-relaxed text-stone-600 dark:text-stone-300">
           <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[#b04a15] dark:text-orange-400" />
           <span>{it}</span>
         </li>
@@ -104,7 +104,7 @@ function Section({
             <Icon className="h-5 w-5" />
           </span>
           <div>
-            <span className="block text-[11px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
+            <span className="block text-2xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
               Section {num}
             </span>
             <h2 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-2xl">
@@ -238,7 +238,7 @@ export default function PrivacyPolicyPage() {
           {/* TOC (desktop) */}
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <p className="mb-4 text-[11px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
+              <p className="mb-4 text-2xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
                 On this page
               </p>
               <div className="relative">
@@ -255,7 +255,7 @@ export default function PrivacyPolicyPage() {
                       <button
                         key={s.id}
                         onClick={() => jumpTo(s.id)}
-                        className={`group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] font-semibold transition-all duration-200 ${
+                        className={`group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm font-semibold transition-all duration-200 ${
                           on
                             ? "bg-[#b04a15]/10 text-[#b04a15] dark:bg-orange-400/10 dark:text-orange-400"
                             : "text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
@@ -287,9 +287,9 @@ export default function PrivacyPolicyPage() {
                   <button
                     key={s.id}
                     onClick={() => jumpTo(s.id)}
-                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] font-semibold text-stone-600 dark:text-stone-300"
+                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-stone-600 dark:text-stone-300"
                   >
-                    <span className="text-[11px] font-black text-stone-400">{s.num}</span>
+                    <span className="text-2xs font-black text-stone-400">{s.num}</span>
                     {s.title}
                   </button>
                 ))}
@@ -606,7 +606,7 @@ export default function PrivacyPolicyPage() {
                   Grievance Officer are:
                 </P>
                 <div className="rounded-2xl border border-[#b04a15]/15 bg-gradient-to-br from-[#fff7f0] to-[#fdeede] p-5 dark:border-orange-400/15 dark:from-zinc-900 dark:to-zinc-900/60">
-                  <dl className="space-y-3 text-[15px]">
+                  <dl className="space-y-3 text-base">
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
                       <dt className="w-28 shrink-0 font-bold text-stone-900 dark:text-stone-100">Name</dt>
                       <dd className="text-stone-600 dark:text-stone-300">{GRIEVANCE_NAME}</dd>

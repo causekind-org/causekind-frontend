@@ -91,7 +91,7 @@ export function WhatWeProvideSection() {
               <span
                 key={i}
                 className="font-black text-white leading-none"
-                style={{ fontSize: "clamp(3rem, 6vw, 6rem)" }}
+                style={{ fontSize: "clamp(3rem, 2rem + 5vw, 6rem)" }}
               >
                 {w}
               </span>
@@ -111,7 +111,7 @@ export function WhatWeProvideSection() {
               <span
                 key={i}
                 className="font-black text-white leading-none"
-                style={{ fontSize: "clamp(2rem, 4vw, 4rem)" }}
+                style={{ fontSize: "clamp(2rem, 1.3333rem + 3.3333vw, 4rem)" }}
               >
                 {w}
               </span>
@@ -125,7 +125,7 @@ export function WhatWeProvideSection() {
             {t("what.subtitle")}
           </p>
           <div className="lg:text-right">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#f0b97a] mb-1 block">
+            <span className="text-3xs font-black uppercase tracking-widest text-[#f0b97a] mb-1 block">
               How it works
             </span>
             <h2 className="text-2xl lg:text-4xl font-extrabold tracking-tight text-white leading-[1.05]">
@@ -141,7 +141,7 @@ export function WhatWeProvideSection() {
             return (
               <div key={s.step} className="relative flex-1 py-4 pr-8">
                 <span
-                  className="block text-[10px] font-black uppercase tracking-[0.2em] mb-1.5"
+                  className="block text-3xs font-black uppercase tracking-[0.2em] mb-1.5"
                   style={{ color: i === activeStep ? s.accent : "#78716c", transition: "color 0.5s" }}
                 >
                   Step {s.step}
@@ -207,7 +207,7 @@ export function WhatWeProvideSection() {
                     <span
                       className="hidden lg:block font-black leading-none select-none"
                       style={{
-                        fontSize: "clamp(3rem, 5vw, 5rem)",
+                        fontSize: "clamp(3rem, 2.3333rem + 3.3333vw, 5rem)",
                         color: `${s.accent}22`,
                         WebkitTextStroke: `1px ${s.accent}45`,
                         opacity: numOp,
@@ -253,7 +253,7 @@ export function WhatWeProvideSection() {
                       {s.desc}
                     </p>
                     <div
-                      className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest"
+                      className="inline-flex items-center gap-1.5 text-2xs font-black uppercase tracking-widest"
                       style={{ color: s.accent, opacity: hintOp * 0.65 }}
                     >
                       {i < STEP_COUNT - 1 ? (

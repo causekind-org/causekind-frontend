@@ -267,7 +267,7 @@ function SuperAdminWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss
 
       <div className="relative z-10 w-full max-w-lg" onClick={e => e.stopPropagation()}>
         {/* Boot log */}
-        <div className="font-mono text-[13px] space-y-2 mb-8">
+        <div className="font-mono text-sm space-y-2 mb-8">
           {bootLines.map((l, i) => (
             <div key={i} className="sa-line-in flex items-center gap-2.5 text-emerald-400/90" style={{ animationDelay: `${l.delay}s` }}>
               <l.icon className="w-3.5 h-3.5 shrink-0" />

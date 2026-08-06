@@ -65,7 +65,7 @@ export function AuditLogPanel() {
                   </td>
                   <td className="px-4 py-2">
                     <p className="text-xs">{e.actorEmail}</p>
-                    <Badge variant="secondary" className="text-[10px]">{e.actorRole}</Badge>
+                    <Badge variant="secondary" className="text-3xs">{e.actorRole}</Badge>
                   </td>
                   <td className="px-4 py-2 font-medium text-xs">{e.action}</td>
                   <td className="px-4 py-2 text-xs text-muted-foreground">

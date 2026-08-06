@@ -49,7 +49,7 @@ export default async function AboutPage() {
             {t("backToHome")}
           </Link>
           {/* Asymmetric: label left, heading oversized left-aligned */}
-          <p className="text-[11px] font-black uppercase tracking-widest text-[#f0b97a] mb-3">
+          <p className="text-2xs font-black uppercase tracking-widest text-[#f0b97a] mb-3">
             {t("aboutUs")}
           </p>
           <div className="grid lg:grid-cols-[1fr_auto] items-end gap-8">
@@ -115,7 +115,7 @@ export default async function AboutPage() {
               />
             </div>
             {/* Float badge — bottom-LEFT this time (not right) */}
-            <div className="absolute -bottom-3 -left-3 md:-bottom-4 md:-left-4 bg-[#b04a15] text-white px-3 py-1.5 md:px-5 md:py-2.5 rounded-xl md:rounded-2xl shadow-lg border border-orange-400/20 text-[10px] md:text-xs font-black uppercase tracking-widest flex items-center gap-1.5 animate-bounce">
+            <div className="absolute -bottom-3 -left-3 md:-bottom-4 md:-left-4 bg-[#b04a15] text-white px-3 py-1.5 md:px-5 md:py-2.5 rounded-xl md:rounded-2xl shadow-lg border border-orange-400/20 text-3xs md:text-xs font-black uppercase tracking-widest flex items-center gap-1.5 animate-bounce">
               <Heart className="w-3 h-3 md:w-4 md:h-4 fill-white" />
               Verified Safe
             </div>
@@ -135,7 +135,7 @@ export default async function AboutPage() {
           {/* Right-flush heading */}
           <div className="flex flex-col lg:flex-row-reverse lg:items-end lg:justify-between gap-4 mb-7 md:mb-10">
             <div className="lg:text-right">
-              <span className="text-[11px] font-black uppercase tracking-widest text-[#f0b97a] mb-2 block">Our Direction</span>
+              <span className="text-2xs font-black uppercase tracking-widest text-[#f0b97a] mb-2 block">Our Direction</span>
               <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-snug">Where We Are Heading</h2>
             </div>
             <p className="text-sm text-stone-400 font-medium max-w-sm">
@@ -160,7 +160,7 @@ export default async function AboutPage() {
                 </div>
                 <h3 className="text-base md:text-xl font-extrabold text-white mb-1.5 md:mb-3">{t("visionHeadline")}</h3>
                 <p className="text-stone-400 leading-relaxed font-medium text-xs md:text-base">{t("visionText")}</p>
-                <div className="mt-3 md:mt-5 text-[10px] md:text-xs font-bold leading-tight text-[#f0b97a] uppercase tracking-wider">
+                <div className="mt-3 md:mt-5 text-3xs md:text-xs font-bold leading-tight text-[#f0b97a] uppercase tracking-wider">
                   Transparent Ecosystem →
                 </div>
               </div>
@@ -171,7 +171,7 @@ export default async function AboutPage() {
                 </div>
                 <h3 className="text-base md:text-xl font-extrabold text-white mb-1.5 md:mb-3">{t("missionHeadline")}</h3>
                 <p className="text-stone-400 leading-relaxed font-medium text-xs md:text-base">{t("missionText")}</p>
-                <div className="mt-3 md:mt-5 text-[10px] md:text-xs font-bold leading-tight text-blue-400 uppercase tracking-wider">
+                <div className="mt-3 md:mt-5 text-3xs md:text-xs font-bold leading-tight text-blue-400 uppercase tracking-wider">
                   Direct Resource Distribution →
                 </div>
               </div>
@@ -189,7 +189,7 @@ export default async function AboutPage() {
         {/* Left-flush heading */}
         <Reveal>
         <div className="mb-7 md:mb-10">
-          <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-2 block">02</span>
+          <span className="text-2xs font-black uppercase tracking-widest text-[#b04a15] mb-2 block">02</span>
           <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-stone-900 dark:text-white leading-snug max-w-md">
             {t("standForHeading")}
           </h2>
@@ -224,12 +224,12 @@ export default async function AboutPage() {
               <div className="w-9 h-9 md:w-12 md:h-12 rounded-2xl bg-[#1e3a60]/10 flex items-center justify-center text-[#1e3a60] dark:text-blue-400 mb-3 md:mb-6 group-hover:scale-110 transition-transform">
                 <Shield className="w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <h4 className="font-extrabold text-[15px] md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("securePlatformTitle")}</h4>
+              <h4 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("securePlatformTitle")}</h4>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
                 {t("securePlatformText")}
               </p>
             </div>
-            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-[11px] font-bold text-stone-400 uppercase tracking-widest">
+            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-400 uppercase tracking-widest">
               {t("razorpaySecured")}
             </div>
           </div>
@@ -245,12 +245,12 @@ export default async function AboutPage() {
               <div className="w-9 h-9 md:w-12 md:h-12 rounded-2xl bg-[#b04a15]/10 flex items-center justify-center text-[#b04a15] mb-3 md:mb-6 group-hover:scale-110 transition-transform">
                 <Heart className="w-5 h-5 md:w-6 md:h-6 fill-[#b04a15]" />
               </div>
-              <h4 className="font-extrabold text-[15px] md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("verifiedNeedsTitle")}</h4>
+              <h4 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("verifiedNeedsTitle")}</h4>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
                 {t("verifiedNeedsText")}
               </p>
             </div>
-            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-[11px] font-bold text-stone-400 uppercase tracking-widest">
+            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-400 uppercase tracking-widest">
               {t("adminAudited")}
             </div>
           </div>

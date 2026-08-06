@@ -164,7 +164,7 @@ export default function ItemDetailPage() {
               <div className="space-y-4 sm:space-y-5">
                 {/* Quantity */}
                 <div className="border-b border-stone-100 dark:border-zinc-850 pb-4">
-                  <p className="text-[10px] font-black text-stone-400 dark:text-zinc-500 uppercase tracking-widest">
+                  <p className="text-3xs font-black text-stone-400 dark:text-zinc-500 uppercase tracking-widest">
                     Quantity Listed
                   </p>
                   <p className="text-2xl sm:text-4xl font-black text-stone-900 dark:text-white tracking-tight mt-1">

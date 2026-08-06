@@ -114,7 +114,7 @@ export function CategoryDropdown({
 
   return (
     <div ref={rootRef} className="relative w-full" onKeyDown={onKeyDown}>
-      <p className="pb-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+      <p className="pb-2 text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
         {label}
       </p>
 

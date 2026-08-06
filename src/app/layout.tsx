@@ -32,10 +32,27 @@ const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
 });
 
+/**
+ * Only the two fonts the site actually renders with on every page are
+ * preloaded: Source Serif 4 (headings) and Plus Jakarta Sans (body). The other
+ * four are used on a handful of surfaces each.
+ *
+ * <p>`next/font` emits a `<link rel="preload">` for every declared family by
+ * default, on every page. Six families' worth of font files were therefore
+ * preloaded everywhere and mostly never used, which is exactly what Chrome's
+ * "resource was preloaded using link preload but not used within a few seconds"
+ * warning is reporting — hundreds of times, once per family per navigation and
+ * again after every hot reload.
+ *
+ * <p>`preload: false` does NOT stop these loading. The font still downloads the
+ * moment something uses it; it just stops the browser being told to fetch it
+ * eagerly on pages that never will.
+ */
 const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
   weight: ["700", "800", "900"],
+  preload: false,
 });
 
 const sourceSerif4 = Source_Serif_4({
@@ -46,16 +63,19 @@ const sourceSerif4 = Source_Serif_4({
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  preload: false,
 });
 
 const lora = Lora({
   variable: "--font-lora",
   subsets: ["latin"],
+  preload: false,
 });
 
 const robotoMono = Roboto_Mono({
   variable: "--font-roboto-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {

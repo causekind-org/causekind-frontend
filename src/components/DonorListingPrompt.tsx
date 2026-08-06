@@ -132,8 +132,8 @@ export function DonorListingPrompt() {
               past the screen. Truncating lets it absorb whatever space the
               fixed-size icon and CTA leave. */}
           <div className="flex flex-col gap-0 min-w-0 flex-1">
-            <span className="text-[13px] font-bold text-stone-900 truncate leading-tight">Got spare items?</span>
-            <span className="text-[10px] sm:text-[11px] text-stone-500 truncate leading-tight">Books, clothes, electronics — someone needs them</span>
+            <span className="text-sm font-bold text-stone-900 truncate leading-tight">Got spare items?</span>
+            <span className="text-3xs sm:text-2xs text-stone-500 truncate leading-tight">Books, clothes, electronics — someone needs them</span>
           </div>
 
           {/* Divider */}
@@ -147,7 +147,7 @@ export function DonorListingPrompt() {
               releasePromptLane(LANE_ID);
               setVisible(false);
             }}
-            className="flex items-center gap-1.5 bg-[#b04a15] hover:bg-[#963c0d] active:scale-95 text-white text-[11px] sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 sm:px-3.5 rounded-full transition-all whitespace-nowrap shrink-0"
+            className="flex items-center gap-1.5 bg-[#b04a15] hover:bg-[#963c0d] active:scale-95 text-white text-2xs sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 sm:px-3.5 rounded-full transition-all whitespace-nowrap shrink-0"
           >
             List an Item →
           </Link>

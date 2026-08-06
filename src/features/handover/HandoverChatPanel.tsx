@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import {
-  Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerTitle,
+  Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
 import ChatWindow from "@/components/ChatWindow";
 import MatchChatWindow from "@/components/MatchChatWindow";
@@ -107,6 +107,14 @@ export function HandoverChatDrawer({ vm, currentUserEmail, open, onOpenChange }:
         <DrawerContent className={`${handoverScope(vm.role)} h-[85dvh]`}>
           <DrawerHeader>
             <DrawerTitle>Messages</DrawerTitle>
+            {/* Radix warns when a Dialog has no description and no explicit
+                opt-out. sr-only rather than aria-describedby={undefined}: the
+                sentence is genuinely useful to a screen-reader user opening a
+                sheet with no other context, and silencing the warning without
+                supplying one would just hide the gap. */}
+            <DrawerDescription className="sr-only">
+              Messages between you and the other person about this handover.
+            </DrawerDescription>
           </DrawerHeader>
           <DrawerBody>
             {vm.flow === "OFFER"

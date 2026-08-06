@@ -54,13 +54,13 @@ function RowForm({
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm" onClick={onClose} style={{ animation: "fadeIn 0.15s ease forwards" }}>
       <div className="w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-y-auto bg-[#0e1320] border border-[#f0b97a]/20 rounded-xl sm:rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4 border-b border-white/10 sticky top-0 bg-[#0e1320]">
-          <h3 className="text-[13px] sm:text-sm font-bold text-white">{title}</h3>
+          <h3 className="text-sm sm:text-sm font-bold text-white">{title}</h3>
           <button onClick={onClose} className="text-stone-400 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
           {editable.map(c => (
             <div key={c.key} className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-stone-400">{c.label}</label>
+              <label className="text-2xs font-bold uppercase tracking-wider text-stone-400">{c.label}</label>
               {c.type === "boolean" ? (
                 <button
                   type="button"
@@ -351,18 +351,18 @@ export function EntityTable({
           <table className="w-full text-sm">
             <thead className={t.thead}>
               <tr>
-                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-2xs uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                   #
                 </th>
-                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-2xs uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                   Code
                 </th>
                 {tableCols.map(c => (
-                  <th key={c.key} className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-[11px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                  <th key={c.key} className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-2xs uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                     {c.label}
                   </th>
                 ))}
-                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-right font-bold text-[11px] uppercase tracking-wider ${t.theadTh}`}>
+                <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-right font-bold text-2xs uppercase tracking-wider ${t.theadTh}`}>
                   Actions
                 </th>
               </tr>

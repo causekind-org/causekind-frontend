@@ -98,8 +98,8 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
       {/* Editor */}
       <div className={`rounded-xl sm:rounded-2xl border overflow-hidden ${t.editor}`}>
         <div className={`flex items-center justify-between px-4 py-2 ${t.editorHeader}`}>
-          <span className={`text-[11px] font-mono ${t.filenameText}`}>query.sql</span>
-          <span className={`text-[10px] font-mono ${t.shortcutText}`}>⌘/Ctrl + Enter to run</span>
+          <span className={`text-2xs font-mono ${t.filenameText}`}>query.sql</span>
+          <span className={`text-3xs font-mono ${t.shortcutText}`}>⌘/Ctrl + Enter to run</span>
         </div>
         <textarea
           value={query}
@@ -124,7 +124,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
               <button
                 key={i}
                 onClick={() => setQuery(s)}
-                className={`text-[10px] font-mono px-2 py-1 rounded border transition-colors ${t.sampleBtn}`}
+                className={`text-3xs font-mono px-2 py-1 rounded border transition-colors ${t.sampleBtn}`}
               >
                 sample {i + 1}
               </button>
@@ -148,7 +148,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
             </div>
           ) : (
             <>
-              <div className={`px-4 py-2.5 text-[11px] font-mono ${t.resultCount}`}>
+              <div className={`px-4 py-2.5 text-2xs font-mono ${t.resultCount}`}>
                 {result.rowCount} row(s)
               </div>
               <div className="overflow-x-auto max-h-[420px]">
@@ -156,7 +156,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
                   <thead className={`sticky top-0 ${t.tableHead}`}>
                     <tr>
                       {(result.columns ?? []).map(c => (
-                        <th key={c} className={`px-3 py-2 text-left font-bold text-[10px] uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
+                        <th key={c} className={`px-3 py-2 text-left font-bold text-3xs uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                           {c}
                         </th>
                       ))}
@@ -185,7 +185,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
       {/* History */}
       {history.length > 0 && (
         <div className="space-y-2">
-          <div className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${t.histTitle}`}>
+          <div className={`flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider ${t.histTitle}`}>
             <History className="w-3.5 h-3.5" /> Recent queries
           </div>
           <div className="space-y-1">
@@ -193,7 +193,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
               <button
                 key={i}
                 onClick={() => setQuery(h)}
-                className={`block w-full text-left truncate font-mono text-[11px] px-3 py-1.5 rounded border transition-colors ${t.histBtn}`}
+                className={`block w-full text-left truncate font-mono text-2xs px-3 py-1.5 rounded border transition-colors ${t.histBtn}`}
               >
                 {h}
               </button>

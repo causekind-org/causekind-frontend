@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Camera, ImagePlus, Loader2, RefreshCw, Sparkles, Star, TriangleAlert, X } from "lucide-react";
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { ACCEPT_ATTR, MAX_PHOTOS, MIN_PHOTOS } from "../useListingPhotos";
-import { pressProps } from "../wizardMotion";
+import { pressProps } from "@/features/wizard-kit/wizardMotion";
 import type { WizardPhoto } from "../wizardModel";
 
 /**
@@ -35,8 +35,8 @@ export function PhotosStep({
   const atLimit = photos.length >= MAX_PHOTOS;
 
   return (
-    <div className="space-y-3">
-      <p className="text-[13px] leading-relaxed text-stone-600 dark:text-stone-300">
+    <div className="space-y-2">
+      <p className="text-sm leading-relaxed text-stone-600 dark:text-stone-300">
         Add {MIN_PHOTOS}–{MAX_PHOTOS} clear photos. We use them to fill in the details for you — you can
         change anything we get wrong.
       </p>
@@ -47,7 +47,7 @@ export function PhotosStep({
           onClick={() => setCameraOpen(true)}
           disabled={atLimit}
           {...pressProps(reduced)}
-          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/40 bg-[var(--ck-role-soft)] px-3 py-2 text-[13px] font-bold text-[var(--ck-role-accent)] transition-colors hover:bg-[var(--ck-role-soft)]/70 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
+          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/40 bg-[var(--ck-role-soft)] px-3 py-2 text-sm font-bold text-[var(--ck-role-accent)] transition-colors hover:bg-[var(--ck-role-soft)]/70 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
         >
           <Camera className="h-4 w-4" aria-hidden /> Take photo
         </motion.button>
@@ -57,7 +57,7 @@ export function PhotosStep({
           onClick={() => fileRef.current?.click()}
           disabled={atLimit}
           {...pressProps(reduced)}
-          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 px-3 py-2 text-[13px] font-bold text-stone-600 transition-colors hover:bg-stone-100 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:text-stone-300 dark:hover:bg-zinc-800"
+          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 px-3 py-2 text-sm font-bold text-stone-600 transition-colors hover:bg-stone-100 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:text-stone-300 dark:hover:bg-zinc-800"
         >
           <ImagePlus className="h-4 w-4" aria-hidden /> Choose photo
         </motion.button>
@@ -106,11 +106,11 @@ export function PhotosStep({
 
                   {photo.status === "failed" && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-red-900/70 p-2 text-center">
-                      <p className="text-[10px] font-bold text-white">Upload failed</p>
+                      <p className="text-3xs font-bold text-white">Upload failed</p>
                       <button
                         type="button"
                         onClick={() => onRetryPhoto(photo.id)}
-                        className="flex min-h-[32px] items-center gap-1 rounded-full bg-white px-2.5 text-[11px] font-black text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                        className="flex min-h-[32px] items-center gap-1 rounded-full bg-white px-2.5 text-2xs font-black text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                       >
                         <RefreshCw className="h-3 w-3" aria-hidden /> Retry
                       </button>
@@ -118,7 +118,7 @@ export function PhotosStep({
                   )}
 
                   {isMain && photo.status === "uploaded" && (
-                    <span className="absolute left-1 top-1 rounded-full bg-[var(--ck-role-accent)] px-1.5 py-0.5 text-[9px] font-black uppercase text-white">
+                    <span className="absolute left-1 top-1 rounded-full bg-[var(--ck-role-accent)] px-1.5 py-0.5 text-4xs font-black uppercase text-white">
                       Main
                     </span>
                   )}
@@ -130,7 +130,7 @@ export function PhotosStep({
                         type="button"
                         onClick={() => onMakeMain(photo.id)}
                         aria-label={`Make photo ${i + 1} the main photo`}
-                        className="flex min-h-[32px] items-center gap-1 rounded-full bg-white/90 px-2 text-[10px] font-black text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
+                        className="flex min-h-[32px] items-center gap-1 rounded-full bg-white/90 px-2 text-3xs font-black text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
                       >
                         <Star className="h-3 w-3" aria-hidden /> Main
                       </button>
@@ -151,7 +151,7 @@ export function PhotosStep({
         </ul>
       )}
 
-      {error && <p role="alert" className="text-[11px] font-semibold text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p role="alert" className="text-2xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
 
       {/* AI status — never blocks the form. */}
       {(aiState.running || aiState.note || aiState.canReanalyze) && (
@@ -161,17 +161,17 @@ export function PhotosStep({
               ? <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-[var(--ck-role-accent)]" aria-hidden />
               : <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--ck-role-accent)]" aria-hidden />}
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold text-stone-700 dark:text-stone-200" aria-live="polite">
+              <p className="text-2xs font-semibold text-stone-700 dark:text-stone-200" aria-live="polite">
                 {aiState.running
                   ? "Reading your photos…"
                   : aiState.note ?? "Details filled in from your photos — review them as you go."}
               </p>
-              <p className="mt-0.5 text-[11px] text-stone-400">You can keep filling the form while this runs.</p>
+              <p className="mt-0.5 text-2xs text-stone-400">You can keep filling the form while this runs.</p>
               {aiState.canReanalyze && !aiState.running && (
                 <button
                   type="button"
                   onClick={onReanalyze}
-                  className="mt-1.5 flex min-h-[32px] items-center gap-1 text-[11px] font-bold text-[var(--ck-role-accent)] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
+                  className="mt-1.5 flex min-h-[32px] items-center gap-1 text-2xs font-bold text-[var(--ck-role-accent)] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
                 >
                   <RefreshCw className="h-3 w-3" aria-hidden /> Re-analyse photos
                 </button>
@@ -183,10 +183,10 @@ export function PhotosStep({
 
       {prohibited && (
         <div role="alert" className="rounded-xl border border-amber-400 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
-          <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-amber-800 dark:text-amber-300">
+          <p className="flex items-center gap-1.5 text-2xs font-black uppercase tracking-wide text-amber-800 dark:text-amber-300">
             <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> Check this item is allowed
           </p>
-          <p className="mt-1 text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
+          <p className="mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">
             {prohibited.reason ?? "This may be a category CauseKind cannot accept."}
             {prohibited.category ? ` (${prohibited.category})` : ""} You can still continue — our team makes the
             final decision during review.
@@ -195,10 +195,10 @@ export function PhotosStep({
       )}
 
       <details className="rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-        <summary className="cursor-pointer text-[11px] font-bold text-stone-600 dark:text-stone-300">
+        <summary className="cursor-pointer text-2xs font-bold text-stone-600 dark:text-stone-300">
           What makes a good photo?
         </summary>
-        <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] text-stone-500 dark:text-stone-400">
+        <ul className="mt-2 list-disc space-y-1 pl-4 text-2xs text-stone-500 dark:text-stone-400">
           <li>Natural light, plain background.</li>
           <li>One photo of the whole item, one of any damage.</li>
           <li>Include labels or model numbers if there are any.</li>

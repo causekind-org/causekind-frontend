@@ -87,10 +87,10 @@ function CampaignCard({ c, i, featured = false }: { c: Campaign; i: number; feat
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
       <div className="absolute top-3 left-3 flex items-center gap-1.5">
-        <span className="bg-[#e07b3a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+        <span className="bg-[#e07b3a] text-white text-2xs font-bold px-2.5 py-0.5 rounded-full">
           {c.category}
         </span>
-        <span className="bg-white/20 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1">
+        <span className="bg-white/20 backdrop-blur-sm text-white text-2xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1">
           <BadgeCheck className="h-3 w-3" /> Verified
         </span>
       </div>
@@ -238,7 +238,7 @@ function SearchWithSuggestions({
             </div>
           ) : (
             <>
-              <p className="px-3 pt-2 pb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+              <p className="px-3 pt-2 pb-1 text-3xs font-bold text-stone-400 uppercase tracking-widest">
                 Suggestions
               </p>
               {suggestions.map((c, idx) => {
@@ -266,10 +266,10 @@ function SearchWithSuggestions({
                         {c.title}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-[#b04a15] dark:text-orange-400 px-1.5 py-0.5 rounded-full">
+                        <span className="text-3xs font-bold bg-orange-100 dark:bg-orange-900/30 text-[#b04a15] dark:text-orange-400 px-1.5 py-0.5 rounded-full">
                           {c.category}
                         </span>
-                        <span className="text-[11px] text-stone-400 flex items-center gap-0.5 truncate">
+                        <span className="text-2xs text-stone-400 flex items-center gap-0.5 truncate">
                           <MapPin className="h-2.5 w-2.5 shrink-0" />{c.city}
                         </span>
                       </div>
@@ -279,19 +279,19 @@ function SearchWithSuggestions({
                       <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">
                         ₹{formatINR(c.amountRaised)}
                       </p>
-                      <p className="text-[10px] text-stone-400">{pct}% funded</p>
+                      <p className="text-3xs text-stone-400">{pct}% funded</p>
                     </div>
                   </Link>
                 );
               })}
               <div className="border-t border-stone-100 dark:border-stone-800 px-3 py-2">
-                <p className="text-[11px] text-stone-400">
+                <p className="text-2xs text-stone-400">
                   {suggestions.length} result{suggestions.length !== 1 ? "s" : ""} —{" "}
-                  <kbd className="bg-stone-100 dark:bg-zinc-800 text-stone-500 px-1 py-0.5 rounded text-[10px]">↑↓</kbd>{" "}
+                  <kbd className="bg-stone-100 dark:bg-zinc-800 text-stone-500 px-1 py-0.5 rounded text-3xs">↑↓</kbd>{" "}
                   navigate,{" "}
-                  <kbd className="bg-stone-100 dark:bg-zinc-800 text-stone-500 px-1 py-0.5 rounded text-[10px]">↵</kbd>{" "}
+                  <kbd className="bg-stone-100 dark:bg-zinc-800 text-stone-500 px-1 py-0.5 rounded text-3xs">↵</kbd>{" "}
                   open,{" "}
-                  <kbd className="bg-stone-100 dark:bg-zinc-800 text-stone-500 px-1 py-0.5 rounded text-[10px]">Esc</kbd>{" "}
+                  <kbd className="bg-stone-100 dark:bg-zinc-800 text-stone-500 px-1 py-0.5 rounded text-3xs">Esc</kbd>{" "}
                   close
                 </p>
               </div>
@@ -383,7 +383,7 @@ function FilterPanel({
 }) {
   return (
     <>
-      <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-3">
+      <p className="text-3xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-3">
         {impactAreaLabel}
       </p>
       <div className="space-y-2.5 mb-5">
@@ -412,7 +412,7 @@ function FilterPanel({
               >
                 {cat === "Disaster Relief" ? emergencyReliefLabel : cat}
               </span>
-              <span className="text-[11px] text-stone-400 dark:text-stone-500 tabular-nums">
+              <span className="text-2xs text-stone-400 dark:text-stone-500 tabular-nums">
                 {selectedCategories.length > 0 ? `${matched}/${total}` : `(${total})`}
               </span>
             </label>
@@ -422,7 +422,7 @@ function FilterPanel({
 
       <div className="border-t border-stone-100 dark:border-stone-800 mb-5" />
 
-      <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-3">
+      <p className="text-3xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-3">
         {statusLabel}
       </p>
       <div className="space-y-2.5 mb-5">
@@ -601,7 +601,7 @@ function CampaignsPageInner() {
             <SlidersHorizontal className="h-4 w-4" />
             {t("filtersMobile")}
             {activeFilterCount > 0 && (
-              <span className="bg-[#b04a15] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <span className="bg-[#b04a15] text-white text-3xs font-bold w-4 h-4 rounded-full flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}

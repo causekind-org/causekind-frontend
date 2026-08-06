@@ -41,7 +41,7 @@ export function WhyCauseKindSection() {
       <Reveal className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
           <div>
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] mb-2 block">
+            <span className="text-2xs font-black uppercase tracking-widest text-[#b04a15] mb-2 block">
               Why CauseKind
             </span>
             <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
@@ -82,7 +82,7 @@ export function WhyCauseKindSection() {
 
                 {/* Step number */}
                 <span
-                  className="text-[10px] font-black tracking-[0.15em] flex-shrink-0 w-5 transition-colors duration-200"
+                  className="text-3xs font-black tracking-[0.15em] flex-shrink-0 w-5 transition-colors duration-200"
                   style={{ color: isActive ? f.accent : "#c7c3bd" }}
                 >
                   {f.num}
@@ -164,7 +164,7 @@ export function WhyCauseKindSection() {
 
                   {/* Feature number badge */}
                   <span
-                    className="text-[10px] font-black tracking-[0.25em] uppercase mb-2"
+                    className="text-3xs font-black tracking-[0.25em] uppercase mb-2"
                     style={{ color: f.accent }}
                   >
                     {f.num} / 0{FEATURE_COUNT}

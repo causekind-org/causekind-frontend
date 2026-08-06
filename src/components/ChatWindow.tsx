@@ -18,6 +18,17 @@ interface Props {
 
 const POLL_INTERVAL_MS = 5_000;
 
+/**
+ * The "from the beginning" anchor, used until a thread has a message to anchor on.
+ *
+ * <p>Deliberately NOT `new Date(0).toISOString()`. That yields
+ * `1970-01-01T00:00:00.000Z`, and this API's timestamps are `LocalDateTime` —
+ * no zone, no `Z`. The server rejected the suffix and returned 500 on every
+ * poll, so every empty chat thread failed forever. The server now accepts both,
+ * but sending a shape the API actually speaks is the honest fix.
+ */
+const EPOCH_SINCE = "1970-01-01T00:00:00";
+
 export default function ChatWindow({ offerId, currentUserEmail, locked = false, className = "" }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -25,6 +36,8 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const lastSentAt = useRef<string | null>(null);
+  /** Poll ticks to skip while backing off after failures. */
+  const skipTicks = useRef(0);
 
   // Initial load
   useEffect(() => {
@@ -49,11 +62,20 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
   // catch-up path even with the SSE push below (covers the SSE connection dropping,
   // reconnect gaps, etc.) — see [[Decisions and Gotchas]] on the dual SSE+poll pattern.
   useEffect(() => {
+    // Consecutive failures back the poll off. Silently swallowing an error and
+    // retrying on a fixed 5s timer turned one broken response into hundreds:
+    // an empty thread produced a 500 every tick, forever, and nothing in the UI
+    // ever said so. Backing off keeps the fallback alive without the flood.
+    let failures = 0;
+
     const interval = setInterval(async () => {
       if (document.hidden) return;
+      // 1 failure → skip 1 tick, 2 → 2, capped at 12 (a minute at 5s).
+      if (failures > 0 && skipTicks.current > 0) { skipTicks.current -= 1; return; }
+
       try {
-        const since = lastSentAt.current ?? new Date(0).toISOString();
-        const newMsgs = await getChatMessagesSince(offerId, since);
+        const newMsgs = await getChatMessagesSince(offerId, lastSentAt.current ?? EPOCH_SINCE);
+        failures = 0;
         if (newMsgs.length > 0) {
           setMessages((prev) => {
             const existingIds = new Set(prev.map((m) => m.id));
@@ -64,8 +86,15 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
             return [...prev, ...fresh];
           });
         }
-      } catch {
-        // Silent — polling failure is non-critical
+      } catch (e) {
+        failures += 1;
+        skipTicks.current = Math.min(failures, 12);
+        // Logged once per backoff step rather than never. A poll that has been
+        // failing for a minute is worth knowing about; the previous bare
+        // `catch {}` is why this ran broken indefinitely without anyone noticing.
+        if (failures === 1 || failures % 6 === 0) {
+          console.warn(`Chat poll failed for offer ${offerId} (${failures}x)`, e);
+        }
       }
     }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
@@ -168,7 +197,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
                 >
                   {msg.content}
                 </div>
-                <p className={`mt-0.5 text-[10px] text-gray-400 ${isMe ? "text-right" : ""}`}>
+                <p className={`mt-0.5 text-3xs text-gray-400 ${isMe ? "text-right" : ""}`}>
                   {new Date(msg.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   {msg.readAt && isMe && " · Read"}
                 </p>

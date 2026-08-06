@@ -45,6 +45,7 @@ import {
   Handshake,
   Sparkles,
   Star,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -156,6 +157,19 @@ export default function ProfilePage() {
   const [myListings, setMyListings] = useState<ItemListing[]>([]);
   const [myMatches, setMyMatches] = useState<ItemMatch[]>([]);
 
+  /**
+   * True when any of the three in-kind fetches failed.
+   *
+   * <p>Each of those calls catches its own rejection and yields `[]` so one dead
+   * endpoint cannot blank the whole profile. That is the right call for the page,
+   * but an empty array is indistinguishable from "this user has done nothing" —
+   * so without this flag a backend outage rendered a donor's earned milestones as
+   * three greyed-out "Locked" stamps and a ledger of zeros. The page asserted, as
+   * fact, that they had achieved nothing. Unknown has to look unknown.
+   */
+  const [activityLoadFailed, setActivityLoadFailed] = useState(false);
+  const [activityRetrying, setActivityRetrying] = useState(false);
+
   // Settings panel toggle
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storyExpanded, setStoryExpanded] = useState(false);
@@ -185,15 +199,25 @@ export default function ProfilePage() {
     const savedAvatar = localStorage.getItem(avatarKey(user.email));
     if (savedAvatar) setAvatarDataUrl(savedAvatar);
 
+    // Set by the three in-kind catches below. A plain local, not state: it is
+    // written while the promises settle and read once in `finally`, so a setter
+    // per rejection would just queue redundant renders.
+    let activityFailed = false;
+
     // Run IP geolocation, profile fetch, donation/campaign history, and in-kind data in parallel
     Promise.all([
       detectCountryFromIP(),
       getProfile(),
       getMyDonations().catch((): Donation[] => []),
       getMyCampaigns().catch((): Campaign[] => []),
-      getMyItemRequests().catch((): ItemRequest[] => []),
-      getMyItemListings({ silent401: true }).catch((): ItemListing[] => []),
-      getMyMatches().catch((): ItemMatch[] => []),
+      // These three feed the milestones and the ledger. Still caught — but the
+      // failure is recorded rather than discarded, so the UI can distinguish
+      // "nothing yet" from "we could not find out". Campaigns and donations are
+      // excluded on purpose: money features are flagged off (see `void campaigns`
+      // below) and neither drives a milestone in that state.
+      getMyItemRequests().catch((): ItemRequest[] => { activityFailed = true; return []; }),
+      getMyItemListings({ silent401: true }).catch((): ItemListing[] => { activityFailed = true; return []; }),
+      getMyMatches().catch((): ItemMatch[] => { activityFailed = true; return []; }),
       getDialCodes(),
     ])
       .then(([detectedCountry, p, d, c, req, listings, matches, serverDialCodes]) => {
@@ -257,9 +281,39 @@ export default function ProfilePage() {
         setCountryIso(fallback);
         setDialCountry(fallback);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setActivityLoadFailed(activityFailed);
+        setLoading(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, router]);
+
+  /**
+   * Re-fetches only the three in-kind endpoints, for the Retry control.
+   *
+   * <p>Deliberately not the whole `Promise.all` above: that one also parses the
+   * phone number and resolves the country/state/city selects from the profile,
+   * and re-running it would stamp over anything the donor had typed into the
+   * settings form since the page loaded.
+   */
+  const retryActivity = useCallback(async () => {
+    setActivityRetrying(true);
+    let failed = false;
+    const [req, listings, matches] = await Promise.all([
+      getMyItemRequests().catch((): ItemRequest[] => { failed = true; return []; }),
+      getMyItemListings({ silent401: true }).catch((): ItemListing[] => { failed = true; return []; }),
+      getMyMatches().catch((): ItemMatch[] => { failed = true; return []; }),
+    ]);
+    // Only adopt the results when every call came back. A partial success would
+    // otherwise overwrite good state with the empty arrays from the failures.
+    if (!failed) {
+      setMyRequests(req);
+      setMyListings(listings);
+      setMyMatches(matches);
+    }
+    setActivityLoadFailed(failed);
+    setActivityRetrying(false);
+  }, []);
 
   // Avatar persistence
   const handleAvatarChange = useCallback(
@@ -470,7 +524,6 @@ export default function ProfilePage() {
       };
 
   const completedDonations = donations.filter((d) => d.status === "COMPLETED");
-  const campaignsSupported = new Set(completedDonations.map((d) => d.campaignId)).size;
   void campaigns;
 
   const fulfilledCount = myRequests.filter((r) => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status)).length;
@@ -570,12 +623,12 @@ export default function ProfilePage() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }} className="min-w-0">
-            <p className={`text-[10px] font-black uppercase tracking-[0.28em] ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`}>CauseKind member</p>
+            <p className={`text-3xs font-black uppercase tracking-[0.28em] ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`}>CauseKind member</p>
             <h1 className="mt-1.5 sm:mt-2 text-2xl sm:text-4xl md:text-5xl leading-[1.05] break-words"
               style={{ fontFamily: "var(--font-lora), serif", fontStyle: "italic", fontWeight: 600 }}>
               {fullName || profile?.fullName}
             </h1>
-            <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 text-[11px] sm:text-xs text-white/55">
+            <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 text-2xs sm:text-xs text-white/55">
               <span className="flex items-center gap-1.5"><Mail className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile?.email}</span>
               {profile?.phone && <span className="flex items-center gap-1.5"><Phone className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.phone}</span>}
               {profile?.city && <span className="flex items-center gap-1.5"><MapPin className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.city}</span>}
@@ -583,7 +636,7 @@ export default function ProfilePage() {
             <button
               onClick={() => setSettingsOpen((v) => !v)}
               data-tour="account-settings"
-              className={`mt-4 sm:mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br px-4 py-2.5 sm:px-5 sm:py-3 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl hover:-translate-y-0.5 ${
+              className={`mt-4 sm:mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br px-4 py-2.5 sm:px-5 sm:py-3 text-2xs sm:text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl hover:-translate-y-0.5 ${
                 isDonee
                   ? "from-[#3a6aa8] to-[#1e3a60] hover:from-[#4678b8] hover:to-[#26497a] shadow-[#0d1e36]/50 hover:shadow-[#0d1e36]/60"
                   : "from-[var(--ck-role-secondary)] to-[var(--ck-role-accent)] hover:from-[#e8894c] hover:to-[#c25620] shadow-[var(--ck-role-accent)]/40 hover:shadow-[var(--ck-role-accent)]/50"
@@ -601,8 +654,13 @@ export default function ProfilePage() {
             {ledger.map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
                 className={`py-4 sm:py-6 ${i > 0 ? "border-l border-white/10 pl-3 sm:pl-8" : ""}`}>
-                <p className="text-2xl sm:text-4xl md:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>{stat.n}</p>
-                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.22em] text-white/40 mt-1 sm:mt-2 leading-tight">{stat.label}</p>
+                {/* An em dash, not 0, when the fetch failed — the same reasoning
+                    as the milestones: a confident "0 items listed" is a false
+                    statement about this person, where "—" is merely unknown. */}
+                <p className="text-2xl sm:text-4xl md:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+                  {activityLoadFailed ? "—" : stat.n}
+                </p>
+                <p className="text-4xs sm:text-3xs uppercase tracking-[0.16em] sm:tracking-[0.22em] text-white/40 mt-1 sm:mt-2 leading-tight">{stat.label}</p>
               </motion.div>
             ))}
           </div>
@@ -614,7 +672,7 @@ export default function ProfilePage() {
         {/* Your story: a chronicle of real events */}
         <section data-tour="story">
           <div className={`border-b-2 ${acc.rule} pb-2.5 sm:pb-3`}>
-            <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>Your story</p>
+            <p className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>Your story</p>
             <p className="text-xs text-stone-400 mt-1">Everything that has happened on your CauseKind journey, newest first.</p>
           </div>
 
@@ -647,13 +705,13 @@ export default function ProfilePage() {
                       {(ev.done || ev.broken) && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </span>
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 sm:gap-x-4 gap-y-1">
-                      <p className={`text-[13px] sm:text-[15px] font-bold text-stone-900 dark:text-stone-100 leading-snug ${acc.hoverText} transition-colors`}
+                      <p className={`text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug ${acc.hoverText} transition-colors`}
                         style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
                         {ev.title}
                       </p>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 shrink-0">{fmtDate(ev.at)}</span>
+                      <span className="text-3xs font-bold uppercase tracking-wider text-stone-400 shrink-0">{fmtDate(ev.at)}</span>
                     </div>
-                    <p className={`text-[11px] sm:text-xs mt-0.5 capitalize ${ev.broken ? "text-red-500" : ev.done ? "text-emerald-600" : "text-stone-400"}`}>{ev.detail}</p>
+                    <p className={`text-2xs sm:text-xs mt-0.5 capitalize ${ev.broken ? "text-red-500" : ev.done ? "text-emerald-600" : "text-stone-400"}`}>{ev.detail}</p>
                   </motion.li>
                 ))}
               </ol>
@@ -662,7 +720,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setStoryExpanded((v) => !v)}
-                  className={`sm:hidden mt-3 ml-2 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider ${acc.softBg} ${acc.eyebrow}`}
+                  className={`sm:hidden mt-3 ml-2 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-2xs font-bold uppercase tracking-wider ${acc.softBg} ${acc.eyebrow}`}
                 >
                   {storyExpanded
                     ? "Show less"
@@ -677,9 +735,28 @@ export default function ProfilePage() {
         {/* Milestone stamps */}
         <aside data-tour="milestones">
           <div className={`border-b-2 ${acc.rule} pb-2.5 sm:pb-3`}>
-            <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>Milestones</p>
+            <p className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>Milestones</p>
             <p className="text-xs text-stone-400 mt-1">Earned by doing, never bought.</p>
           </div>
+          {/* A failed fetch must not render as "Locked". Locked is a claim about
+              what this person has done; when the request never came back we do
+              not know, and saying so is the only honest option. */}
+          {activityLoadFailed ? (
+            <div className="mt-4 sm:mt-6">
+              <p className="text-xs text-stone-500 dark:text-zinc-400">
+                Couldn&apos;t load your activity, so your milestones aren&apos;t shown.
+              </p>
+              <button
+                type="button"
+                onClick={() => void retryActivity()}
+                disabled={activityRetrying}
+                className={`mt-2 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-2xs font-bold uppercase tracking-wider disabled:opacity-60 ${acc.softBg} ${acc.eyebrow}`}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${activityRetrying ? "animate-spin" : ""}`} aria-hidden />
+                {activityRetrying ? "Retrying" : "Retry"}
+              </button>
+            </div>
+          ) : (
           <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-5">
             {milestones.map(({ label, desc, icon: Icon, earned }, i) => (
               <motion.div key={label}
@@ -691,12 +768,13 @@ export default function ProfilePage() {
                   <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className={`text-[13px] sm:text-sm font-bold ${earned ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-zinc-600"}`}>{label}</p>
-                  <p className="text-[10px] sm:text-[11px] text-stone-400 dark:text-zinc-600 mt-0.5">{earned ? desc : `Locked - ${desc.toLowerCase()}`}</p>
+                  <p className={`text-sm sm:text-sm font-bold ${earned ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-zinc-600"}`}>{label}</p>
+                  <p className="text-3xs sm:text-2xs text-stone-400 dark:text-zinc-600 mt-0.5">{earned ? desc : `Locked - ${desc.toLowerCase()}`}</p>
                 </div>
               </motion.div>
             ))}
           </div>
+          )}
         </aside>
       </div>
 
@@ -705,7 +783,7 @@ export default function ProfilePage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-12">
           <Reveal>
             <div className={`border-t-2 ${acc.rule} pt-5 sm:pt-6`}>
-              <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${acc.eyebrow} mb-4 sm:mb-6`}>Account settings</p>
+              <p className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow} mb-4 sm:mb-6`}>Account settings</p>
               <form onSubmit={handleSave} className="space-y-4 sm:space-y-5">
                     {/* Avatar Upload */}
                     <div className="flex justify-center">
@@ -854,7 +932,7 @@ export default function ProfilePage() {
                               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                               <div>
                                 <p className="text-xs font-bold text-stone-850 dark:text-white">{t("locationSaved")}</p>
-                                <p className="text-[10px] text-stone-400">
+                                <p className="text-3xs text-stone-400">
                                   {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
                                 </p>
                               </div>
@@ -864,7 +942,7 @@ export default function ProfilePage() {
                               <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
                               <div>
                                 <p className="text-xs font-bold text-stone-850 dark:text-white">{t("noGpsLocation")}</p>
-                                <p className="text-[10px] text-stone-400">{t("gpsMatchingNote")}</p>
+                                <p className="text-3xs text-stone-400">{t("gpsMatchingNote")}</p>
                               </div>
                             </div>
                           )}
@@ -882,7 +960,7 @@ export default function ProfilePage() {
                           )}
                         </button>
                       </div>
-                      <p className="text-[10px] text-stone-400 leading-relaxed">
+                      <p className="text-3xs text-stone-400 leading-relaxed">
                         {t("gpsPrivacyNote")}
                       </p>
                     </div>
@@ -965,8 +1043,8 @@ function MemberPass({ name, role, city, avatarDataUrl, initials }: {
             )}
           </div>
           <div className="text-right">
-            <p className="text-[8px] font-black uppercase tracking-[0.3em] text-white/50">CauseKind</p>
-            <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/35 mt-0.5">In-kind network</p>
+            <p className="text-5xs font-black uppercase tracking-[0.3em] text-white/50">CauseKind</p>
+            <p className="text-5xs font-bold uppercase tracking-[0.2em] text-white/35 mt-0.5">In-kind network</p>
           </div>
         </div>
 
@@ -977,12 +1055,12 @@ function MemberPass({ name, role, city, avatarDataUrl, initials }: {
 
         <div className="relative mt-4 sm:mt-6 flex items-end justify-between">
           <div>
-            <p className="text-[8px] font-black uppercase tracking-[0.25em] text-white/45">Role</p>
+            <p className="text-5xs font-black uppercase tracking-[0.25em] text-white/45">Role</p>
             <p className="text-xs font-black uppercase tracking-wider text-white mt-0.5">{role}</p>
           </div>
           {city && (
             <div className="text-right max-w-[55%]">
-              <p className="text-[8px] font-black uppercase tracking-[0.25em] text-white/45">Based in</p>
+              <p className="text-5xs font-black uppercase tracking-[0.25em] text-white/45">Based in</p>
               <p className="text-xs font-bold text-white mt-0.5 truncate">{city}</p>
             </div>
           )}

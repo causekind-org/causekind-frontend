@@ -1,6 +1,7 @@
 import type { ItemListing } from "@/lib/api";
 import { DONOR_LISTING_CATEGORIES, ITEM_SUBCATEGORIES } from "@/lib/categoryVisuals";
 import { parseCity } from "./wizardLocation";
+import { fieldsFor } from "./wizardFields";
 
 /**
  * The single typed form model for creating, resuming and resubmitting a listing.
@@ -25,6 +26,43 @@ export const AGE_RANGES = ["Less than 1 year", "1–3 years", "3–5 years", "5�
 export const WORKING_STATUSES = ["Fully working", "Partially working", "Not working"];
 
 /**
+ * Normalises a working status arriving from the vision service.
+ *
+ * <p>`ListingVisionService` whitelists `WORKING` / `PARTIALLY_WORKING` /
+ * `NOT_WORKING`, while this form (and the value the donor actually submits) uses
+ * title case. Assigning the raw value straight through put a string in the model
+ * that no `<option>` matched — the select rendered **blank** — and that the zod
+ * rule then rejected, so the donor saw an empty required field carrying an error
+ * about a value the AI had in fact supplied.
+ *
+ * <p>Normalising on receipt rather than changing the backend enum: the column is
+ * a free-form String already holding title-case values written by this form, so
+ * rewriting the enum would leave old rows inconsistent with new ones.
+ *
+ * <p>Returns `""` for anything unrecognised, so an unknown value is dropped
+ * rather than smuggled past the validator.
+ */
+export function normalizeWorkingStatus(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const value = raw.trim();
+  if (WORKING_STATUSES.includes(value)) return value;
+
+  switch (value.toUpperCase().replace(/[\s-]+/g, "_")) {
+    case "WORKING":
+    case "FULLY_WORKING":
+      return "Fully working";
+    case "PARTIALLY_WORKING":
+    case "PARTIAL":
+      return "Partially working";
+    case "NOT_WORKING":
+    case "BROKEN":
+      return "Not working";
+    default:
+      return "";
+  }
+}
+
+/**
  * Conditional-field rules.
  *
  * <p>"Tools & Equipment" was in both lists but is NOT a donor listing category
@@ -32,14 +70,20 @@ export const WORKING_STATUSES = ["Fully working", "Partially working", "Not work
  * match, so it is gone. Every entry below is verified against the real category
  * list; a typo here silently disables a required field.
  */
-export const NEEDS_WORKING_STATUS = ["Electronics", "Household", "Medical aid", "Sports"] as const;
-export const NEEDS_DIMENSIONS = ["Furniture", "Clothing", "Medical aid"] as const;
-
-export function needsWorkingStatus(category: string): boolean {
-  return (NEEDS_WORKING_STATUS as readonly string[]).includes(category);
+/**
+ * Both now delegate to the per-category manifest (`wizardFields.ts`) so there is
+ * one source of truth. Signatures are unchanged, which is why every existing
+ * caller keeps working.
+ *
+ * <p>`subcategory` is optional here because most callers only know the category;
+ * omitting it just means subcategory overrides do not apply, which is the safe
+ * direction (a field is shown by the category rule or not at all).
+ */
+export function needsWorkingStatus(category: string, subcategory = ""): boolean {
+  return fieldsFor(category, subcategory).visible("workingStatus");
 }
-export function needsDimensions(category: string): boolean {
-  return (NEEDS_DIMENSIONS as readonly string[]).includes(category);
+export function needsDimensions(category: string, subcategory = ""): boolean {
+  return fieldsFor(category, subcategory).visible("dimensions");
 }
 export function subcategoriesFor(category: string): string[] {
   return SUBCATEGORIES[category] ?? [];
@@ -79,20 +123,10 @@ export const DECLARATION_GROUPS = [
   },
 ] as const;
 
-export type PhotoStatus = "pending" | "uploading" | "uploaded" | "failed";
-
-export type WizardPhoto = {
-  /** Stable client id — never the array index, which reorders when main changes. */
-  id: string;
-  /** Object URL for instant preview; null once it is a server-hydrated photo. */
-  localUrl: string | null;
-  /** S3 URL, present only once uploaded. */
-  remoteUrl: string | null;
-  status: PhotoStatus;
-  /** Retained so a failed upload can be retried without re-picking the file. */
-  file: File | null;
-  error: string | null;
-};
+// Photo types now live in the wizard kit so both wizards share one definition.
+// Re-exported here so every existing `from "./wizardModel"` import keeps working.
+export type { PhotoStatus, WizardPhoto } from "@/features/wizard-kit/types";
+import type { WizardPhoto } from "@/features/wizard-kit/types";
 
 export type WizardModel = {
   photos: WizardPhoto[];

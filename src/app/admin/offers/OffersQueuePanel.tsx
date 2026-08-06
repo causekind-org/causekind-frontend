@@ -283,7 +283,7 @@ export function OffersQueuePanel() {
               }`}>
               {f.label}
               {count > 0 && (
-                <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+                <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-3xs tabular-nums ${
                   active ? "bg-white/25" : f.key === "PENDING" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300" : "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400"
                 }`}>{count}</span>
               )}
@@ -404,17 +404,17 @@ export function OffersQueuePanel() {
                     {cfg.label}
                   </span>
                   {needsAction && (
-                    <span className="rounded-full bg-amber-500 text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wide animate-pulse">
+                    <span className="rounded-full bg-amber-500 text-white px-2 py-0.5 text-3xs font-black uppercase tracking-wide animate-pulse">
                       Action Required
                     </span>
                   )}
                   {isScreening && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-500 text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wide">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-500 text-white px-2 py-0.5 text-3xs font-black uppercase tracking-wide">
                       <Bot className="w-2.5 h-2.5" /> AI Screening
                     </span>
                   )}
                   {offer.matchScore != null && (
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    <span className={`rounded-full px-2 py-0.5 text-3xs font-semibold ${
                       offer.matchScore >= 80 ? "bg-green-50 text-green-700" :
                       offer.matchScore >= 50 ? "bg-amber-50 text-amber-700" :
                       "bg-red-50 text-red-700"
@@ -423,7 +423,7 @@ export function OffersQueuePanel() {
                     </span>
                   )}
                   {offer.compatibilityIndicator && (
-                    <span className="rounded-full bg-stone-100 dark:bg-zinc-800 px-2 py-0.5 text-[10px] text-stone-500">
+                    <span className="rounded-full bg-stone-100 dark:bg-zinc-800 px-2 py-0.5 text-3xs text-stone-500">
                       {offer.compatibilityIndicator.replace(/_/g, " ")}
                     </span>
                   )}
@@ -445,7 +445,7 @@ export function OffersQueuePanel() {
                     }`} />
                   ))}
                 </div>
-                <p className="text-[10px] text-stone-400 mt-0.5">
+                <p className="text-3xs text-stone-400 mt-0.5">
                   Stage {stageIdx + 1} of {FLOW_STAGES.length} · {FLOW_STAGES[stageIdx]}
                 </p>
               </div>
@@ -465,31 +465,78 @@ export function OffersQueuePanel() {
 
                 {expandedData && expandedData.offer.id === offer.id && (
                   <div className="p-3.5 sm:p-5 space-y-4 sm:space-y-6">
-                    {/* Full stage progress */}
+                    {/* Full stage progress.
+                        No per-segment labels. Nine multi-word labels in nine
+                        flex-1 columns gave each about 40px while "Sent to
+                        Recipient" needs ~80, so they overflowed and collided
+                        into "SubmittedChecked to RecipientReconfirmed…". They
+                        were text-5xs (~8px) — already past the readable floor
+                        and still not fitting, so no size rescued them.
+
+                        This now matches the collapsed row above, which already
+                        did the right thing: bar + one caption. The label text
+                        moves to title/aria-label per segment and the expander
+                        below, i.e. from "always rendered, never legible" to
+                        "on demand, and legible". */}
                     <div className="space-y-2">
                       <h4 className="text-xs font-black uppercase tracking-widest text-stone-400">Flow Progress</h4>
-                      <div className="flex gap-0.5">
-                        {FLOW_STAGES.map((_, i) => (
-                          <div key={i} className={`h-2 flex-1 rounded-full ${
-                            i < stageIdx ? "bg-green-400" :
-                            i === stageIdx ? "bg-[#b04a15] animate-pulse" :
-                            "bg-stone-200 dark:bg-zinc-700"
-                          }`} />
-                        ))}
+
+                      <div className="flex gap-0.5" role="list" aria-label="Offer flow progress">
+                        {FLOW_STAGES.map((label, i) => {
+                          const done = i < stageIdx;
+                          const current = i === stageIdx;
+                          return (
+                            <div
+                              key={i}
+                              role="listitem"
+                              title={label}
+                              aria-label={`${label}: ${done ? "done" : current ? "current" : "not started"}`}
+                              aria-current={current ? "step" : undefined}
+                              className={`h-2 flex-1 rounded-full ${
+                                done ? "bg-green-400" :
+                                current ? "bg-[#b04a15]" :
+                                "bg-stone-200 dark:bg-zinc-700"
+                              }`}
+                            />
+                          );
+                        })}
                       </div>
-                      <div className="flex">
-                        {FLOW_STAGES.map((label, i) => (
-                          <div key={i} className="flex-1 min-w-0 text-center">
-                            <span className={`text-[8px] font-semibold ${
-                              i < stageIdx ? "text-green-600" :
-                              i === stageIdx ? "text-[#b04a15]" :
-                              "text-stone-300 dark:text-zinc-600"
-                            }`}>
-                              {i < stageIdx ? "✓ " : i === stageIdx ? "● " : "○ "}{label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+
+                      {/* State is icon + colour, never colour alone. */}
+                      <p className="text-2xs font-semibold text-[#b04a15]">
+                        ● Stage {stageIdx + 1} of {FLOW_STAGES.length} · {FLOW_STAGES[stageIdx]}
+                      </p>
+
+                      {/* Native <details>: no state to hold, keyboard-accessible
+                          for free. The donor side uses a vaul Drawer, which
+                          would be far heavier than this warrants inside a queue
+                          row that may be one of several open at once. */}
+                      <details className="group">
+                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-2xs font-bold text-stone-400 transition-colors hover:text-stone-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b04a15] dark:hover:text-stone-300">
+                          <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" aria-hidden />
+                          All stages
+                        </summary>
+                        <ol className="mt-2 space-y-1 border-l border-stone-200 pl-3 dark:border-zinc-700">
+                          {FLOW_STAGES.map((label, i) => {
+                            const done = i < stageIdx;
+                            const current = i === stageIdx;
+                            return (
+                              <li
+                                key={i}
+                                aria-current={current ? "step" : undefined}
+                                className={`flex items-center gap-1.5 text-2xs ${
+                                  done ? "text-green-600 dark:text-green-400" :
+                                  current ? "font-bold text-[#b04a15]" :
+                                  "text-stone-400 dark:text-zinc-600"
+                                }`}
+                              >
+                                <span aria-hidden>{done ? "✓" : current ? "●" : "○"}</span>
+                                {label}
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      </details>
                     </div>
 
                     {/* Two-column: left = item details, right = donor/donee info */}
@@ -546,7 +593,7 @@ export function OffersQueuePanel() {
                         <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-2 text-sm">
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <p className="text-[10px] text-stone-400 uppercase font-bold">Compatibility</p>
+                              <p className="text-3xs text-stone-400 uppercase font-bold">Compatibility</p>
                               <p className={`font-semibold ${
                                 offer.compatibilityResult === "COMPATIBLE" ? "text-green-600" :
                                 offer.compatibilityResult === "PARTIALLY_COMPATIBLE" ? "text-amber-600" :
@@ -554,19 +601,19 @@ export function OffersQueuePanel() {
                               }`}>{offer.compatibilityResult?.replace(/_/g, " ") ?? "—"}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-stone-400 uppercase font-bold">Match Score</p>
+                              <p className="text-3xs text-stone-400 uppercase font-bold">Match Score</p>
                               <p className="font-semibold text-stone-700 dark:text-stone-300">
                                 {offer.matchScore != null ? `${offer.matchScore.toFixed(0)}%` : "—"}
                               </p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-stone-400 uppercase font-bold">Indicator</p>
+                              <p className="text-3xs text-stone-400 uppercase font-bold">Indicator</p>
                               <p className="font-semibold text-stone-700 dark:text-stone-300">
                                 {offer.compatibilityIndicator?.replace(/_/g, " ") ?? "—"}
                               </p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-stone-400 uppercase font-bold">Flow Type</p>
+                              <p className="text-3xs text-stone-400 uppercase font-bold">Flow Type</p>
                               <p className="font-semibold text-stone-700 dark:text-stone-300">
                                 {offer.flowType === "ALREADY_OWN" ? "Already Owns" :
                                  offer.flowType === "WILL_PURCHASE" ? "Will Purchase" :
@@ -602,11 +649,11 @@ export function OffersQueuePanel() {
                           <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-2 text-sm">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <p className="text-[10px] text-stone-400 uppercase font-bold">Eligibility</p>
+                                <p className="text-3xs text-stone-400 uppercase font-bold">Eligibility</p>
                                 <p className="font-semibold text-stone-700 dark:text-stone-300">{expandedData.offer.assessment.eligibilityResult ?? "—"}</p>
                               </div>
                               <div>
-                                <p className="text-[10px] text-stone-400 uppercase font-bold">Fraud Risk</p>
+                                <p className="text-3xs text-stone-400 uppercase font-bold">Fraud Risk</p>
                                 <p className={`font-semibold ${
                                   expandedData.offer.assessment.fraudRisk === "HIGH" ? "text-red-600" :
                                   expandedData.offer.assessment.fraudRisk === "MEDIUM" ? "text-amber-600" :
@@ -614,11 +661,11 @@ export function OffersQueuePanel() {
                                 }`}>{expandedData.offer.assessment.fraudRisk ?? "—"}</p>
                               </div>
                               <div>
-                                <p className="text-[10px] text-stone-400 uppercase font-bold">Recommendation</p>
+                                <p className="text-3xs text-stone-400 uppercase font-bold">Recommendation</p>
                                 <p className="font-semibold text-stone-700 dark:text-stone-300">{expandedData.offer.assessment.recommendation ?? "—"}</p>
                               </div>
                               <div>
-                                <p className="text-[10px] text-stone-400 uppercase font-bold">Model</p>
+                                <p className="text-3xs text-stone-400 uppercase font-bold">Model</p>
                                 <p className="font-semibold text-stone-700 dark:text-stone-300">{expandedData.offer.assessment.modelVersion ?? "—"}</p>
                               </div>
                             </div>
@@ -640,14 +687,14 @@ export function OffersQueuePanel() {
                             {(expandedData.offer.assessment.detectedLabels || expandedData.offer.assessment.moderationLabels) && (
                               <div className="pt-1 space-y-1">
                                 {expandedData.offer.assessment.detectedLabels && (
-                                  <p className="text-[11px] text-stone-500"><span className="font-semibold">Detected:</span> {expandedData.offer.assessment.detectedLabels}</p>
+                                  <p className="text-2xs text-stone-500"><span className="font-semibold">Detected:</span> {expandedData.offer.assessment.detectedLabels}</p>
                                 )}
                                 {expandedData.offer.assessment.moderationLabels && (
-                                  <p className="text-[11px] text-stone-500"><span className="font-semibold">Moderation:</span> {expandedData.offer.assessment.moderationLabels}</p>
+                                  <p className="text-2xs text-stone-500"><span className="font-semibold">Moderation:</span> {expandedData.offer.assessment.moderationLabels}</p>
                                 )}
                               </div>
                             )}
-                            <p className="text-[10px] text-stone-400 pt-1">
+                            <p className="text-3xs text-stone-400 pt-1">
                               Screened {new Date(expandedData.offer.assessment.createdAt).toLocaleString()}
                             </p>
                           </div>
@@ -662,7 +709,7 @@ export function OffersQueuePanel() {
                         <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-3 text-sm">
                           {/* Donor */}
                           <div>
-                            <p className="text-[10px] text-stone-400 uppercase font-bold mb-1">Donor</p>
+                            <p className="text-3xs text-stone-400 uppercase font-bold mb-1">Donor</p>
                             <p className="text-stone-700 dark:text-stone-300 font-semibold">{expandedData.offer.donorName}</p>
                             {expandedData.offer.donorPhone ? (
                               <a href={`tel:${expandedData.offer.donorPhone}`}
@@ -676,7 +723,7 @@ export function OffersQueuePanel() {
                           </div>
                           {/* Donee */}
                           <div className="border-t border-stone-100 dark:border-zinc-700 pt-2">
-                            <p className="text-[10px] text-stone-400 uppercase font-bold mb-1">Recipient (Donee)</p>
+                            <p className="text-3xs text-stone-400 uppercase font-bold mb-1">Recipient (Donee)</p>
                             <p className="text-stone-700 dark:text-stone-300 font-semibold">{expandedData.offer.doneeName}</p>
                             {expandedData.offer.doneePhone ? (
                               <a href={`tel:${expandedData.offer.doneePhone}`}
@@ -690,7 +737,7 @@ export function OffersQueuePanel() {
                           </div>
                           {/* Request */}
                           <div className="border-t border-stone-100 dark:border-zinc-700 pt-2">
-                            <p className="text-[10px] text-stone-400 uppercase font-bold mb-1">Request</p>
+                            <p className="text-3xs text-stone-400 uppercase font-bold mb-1">Request</p>
                             <p className="text-stone-700 dark:text-stone-300 font-medium">{offer.requestTitle}</p>
                             <p className="text-xs text-stone-400">{offer.requestCategory} · {offer.requestCity} · Qty: {offer.requestQuantity}</p>
                           </div>
@@ -732,7 +779,7 @@ export function OffersQueuePanel() {
                             <div key={entry.id}
                               className={`flex items-start gap-3 px-4 py-3 text-sm ${i % 2 === 0 ? "bg-stone-50 dark:bg-zinc-800/50" : "bg-white dark:bg-zinc-900"}`}>
                               <div className="flex-shrink-0 mt-0.5">
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-black ${
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-4xs font-black ${
                                   entry.toStatus.includes("APPROVED") || entry.toStatus === "COMPLETED" ? "bg-green-500" :
                                   entry.toStatus.includes("REJECTED") || entry.toStatus.includes("DECLINED") || entry.toStatus === "WITHDRAWN" ? "bg-red-500" :
                                   entry.toStatus.includes("SCREENING") || entry.toStatus === "SUBMITTED" ? "bg-blue-500" :
@@ -754,9 +801,9 @@ export function OffersQueuePanel() {
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-3 mt-0.5">
-                                  <span className="text-[10px] text-stone-400">{new Date(entry.changedAt).toLocaleString()}</span>
+                                  <span className="text-3xs text-stone-400">{new Date(entry.changedAt).toLocaleString()}</span>
                                   {entry.changedByEmail && (
-                                    <span className="text-[10px] text-stone-400">by {entry.changedByEmail}</span>
+                                    <span className="text-3xs text-stone-400">by {entry.changedByEmail}</span>
                                   )}
                                 </div>
                                 {entry.note && (
@@ -784,16 +831,16 @@ export function OffersQueuePanel() {
                               <span className="text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-wide">
                                 Handover Problem Reported
                               </span>
-                              <span className="ml-auto text-[10px] text-red-400">{new Date(m.sentAt).toLocaleString()}</span>
+                              <span className="ml-auto text-3xs text-red-400">{new Date(m.sentAt).toLocaleString()}</span>
                             </div>
                             <p className="text-sm text-red-700 dark:text-red-300 font-medium">
                               {m.content.replace("[HANDOVER PROBLEM] ", "")}
                             </p>
-                            <p className="text-[10px] text-red-400">Reported by: {m.senderName}</p>
+                            <p className="text-3xs text-red-400">Reported by: {m.senderName}</p>
 
                             {/* Admin dispute resolution actions */}
                             <div className="border-t border-red-200 dark:border-red-800 pt-3">
-                              <p className="text-[10px] font-black uppercase tracking-wide text-red-600 dark:text-red-400 mb-2">
+                              <p className="text-3xs font-black uppercase tracking-wide text-red-600 dark:text-red-400 mb-2">
                                 Admin Action on this Report
                               </p>
                               <div className="grid grid-cols-2 gap-2">
@@ -803,7 +850,7 @@ export function OffersQueuePanel() {
                                   className="rounded-lg bg-green-600 hover:bg-green-700 text-white px-3 py-2 text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1">
                                   <Check className="w-3 h-3" />
                                   Mark Complete
-                                  <span className="block font-normal opacity-80 text-[9px] hidden sm:block">Donor's account accepted</span>
+                                  <span className="block font-normal opacity-80 text-4xs hidden sm:block">Donor's account accepted</span>
                                 </button>
                                 <button
                                   onClick={() => { setCancelId(offer.id); setCancelReason(""); }}
@@ -811,10 +858,10 @@ export function OffersQueuePanel() {
                                   className="rounded-lg bg-red-700 hover:bg-red-800 text-white px-3 py-2 text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1">
                                   <X className="w-3 h-3" />
                                   Cancel Donation
-                                  <span className="block font-normal opacity-80 text-[9px] hidden sm:block">Donee's account accepted</span>
+                                  <span className="block font-normal opacity-80 text-4xs hidden sm:block">Donee's account accepted</span>
                                 </button>
                               </div>
-                              <p className="text-[10px] text-red-400 mt-1.5">
+                              <p className="text-3xs text-red-400 mt-1.5">
                                 "Mark Complete" sides with the donor. "Cancel Donation" sides with the donee and releases the reservation.
                               </p>
                             </div>
@@ -830,7 +877,7 @@ export function OffersQueuePanel() {
                                 <div key={m.id}
                                   className={`px-4 py-2.5 text-sm ${i % 2 === 0 ? "bg-stone-50 dark:bg-zinc-800/50" : "bg-white dark:bg-zinc-900"}`}>
                                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                    <span className={`text-3xs font-bold px-1.5 py-0.5 rounded ${
                                       m.messageType === "ADMIN_NOTE" ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
                                       m.messageType === "SYSTEM" ? "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" :
                                       "bg-green-50 text-green-600"
@@ -838,7 +885,7 @@ export function OffersQueuePanel() {
                                       {m.messageType === "ADMIN_NOTE" ? "ADMIN" : m.messageType === "SYSTEM" ? "SYSTEM" : "MSG"}
                                     </span>
                                     {m.recipientTarget && m.recipientTarget !== "BOTH" && (
-                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                                      <span className={`text-4xs font-bold px-1.5 py-0.5 rounded border ${
                                         m.recipientTarget === "DONOR"
                                           ? "border-purple-300 text-purple-600 bg-purple-50 dark:bg-purple-950/30 dark:text-purple-400"
                                           : "border-teal-300 text-teal-600 bg-teal-50 dark:bg-teal-950/30 dark:text-teal-400"
@@ -847,7 +894,7 @@ export function OffersQueuePanel() {
                                       </span>
                                     )}
                                     <span className="text-xs font-medium text-stone-600 dark:text-stone-300">{m.senderName}</span>
-                                    <span className="ml-auto text-[10px] text-stone-400">{new Date(m.sentAt).toLocaleString()}</span>
+                                    <span className="ml-auto text-3xs text-stone-400">{new Date(m.sentAt).toLocaleString()}</span>
                                   </div>
                                   <p className="text-stone-700 dark:text-stone-300">{m.content.replace("[ADMIN] ", "")}</p>
                                 </div>
@@ -858,10 +905,10 @@ export function OffersQueuePanel() {
                         {/* Admin reply box with target selector */}
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-black uppercase tracking-wide text-stone-400">
+                            <label className="text-3xs font-black uppercase tracking-wide text-stone-400">
                               Send message to:
                             </label>
-                            <div className="flex rounded-lg overflow-hidden border border-stone-200 dark:border-zinc-700 text-[10px] font-bold">
+                            <div className="flex rounded-lg overflow-hidden border border-stone-200 dark:border-zinc-700 text-3xs font-bold">
                               {(["BOTH", "DONOR", "DONEE"] as const).map(t => (
                                 <button key={t}
                                   onClick={() => setReplyTarget(prev => ({ ...prev, [offer.id]: t }))}
@@ -876,7 +923,7 @@ export function OffersQueuePanel() {
                             </div>
                           </div>
                           {(replyTarget[offer.id] === "DONOR" || replyTarget[offer.id] === "DONEE") && (
-                            <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                            <p className="text-3xs text-amber-600 dark:text-amber-400">
                               ⚠ This message will only be visible to the {replyTarget[offer.id] === "DONOR" ? "donor" : "donee"}.
                             </p>
                           )}

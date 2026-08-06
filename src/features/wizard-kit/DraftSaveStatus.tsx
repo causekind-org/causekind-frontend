@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Cloud, TriangleAlert } from "lucide-react";
-import type { SaveStatus } from "../useListingDraft";
+import type { SaveStatus } from "./types";
 
 /**
  * Autosave status.
@@ -30,19 +30,19 @@ export function DraftSaveStatus({ status, onRetry }: { status: SaveStatus; onRet
       <AnimatePresence mode="wait" initial={false}>
         {status === "saving" && (
           <motion.span key="saving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={fade}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-stone-400">
+            className="flex items-center gap-1.5 text-2xs font-semibold text-stone-400">
             <Cloud className="h-3 w-3" aria-hidden /> Saving…
           </motion.span>
         )}
         {status === "saved" && (
           <motion.span key="saved" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={fade}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-green-600 dark:text-green-400">
+            className="flex items-center gap-1.5 text-2xs font-semibold text-green-600 dark:text-green-400">
             <Check className="h-3 w-3" strokeWidth={3} aria-hidden /> Saved
           </motion.span>
         )}
         {status === "error" && (
           <motion.span key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={fade}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-red-600 dark:text-red-400">
+            className="flex items-center gap-1.5 text-2xs font-semibold text-red-600 dark:text-red-400">
             <TriangleAlert className="h-3 w-3" aria-hidden /> Not saved
             <button
               type="button"

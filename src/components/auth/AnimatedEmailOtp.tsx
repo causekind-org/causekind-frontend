@@ -159,7 +159,7 @@ export function AnimatedEmailOtp<T>({
           jump when it crossfades to the verified state — smaller here because
           the heading itself steps down on mobile. */}
       <div className="min-h-[76px] sm:min-h-[104px] space-y-1 sm:space-y-1.5">
-        <span className="text-[11px] font-black uppercase tracking-widest text-[#b04a15] dark:text-[#e07b3a]">
+        <span className="text-2xs font-black uppercase tracking-widest text-[#b04a15] dark:text-[#e07b3a]">
           {labels.eyebrow}
         </span>
         <div className="relative">
@@ -204,7 +204,7 @@ export function AnimatedEmailOtp<T>({
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
               transition={{ duration: 0.24, ease: "easeOut" }}
             >
-              <p className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200/70 bg-amber-50/70 px-3 py-2.5 text-[12.5px] leading-relaxed text-stone-600 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-stone-300">
+              <p className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200/70 bg-amber-50/70 px-3 py-2.5 text-sm leading-relaxed text-stone-600 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-stone-300">
                 <Mail className="mt-px size-4 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden />
                 <span className="min-w-0">{labels.spamFolderHint}</span>
               </p>

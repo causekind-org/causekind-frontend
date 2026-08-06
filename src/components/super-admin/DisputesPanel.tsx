@@ -152,11 +152,11 @@ function DisputeCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${resolved ? `${t.okBg} ${t.ok}` : `${t.warnBg} ${t.warnText}`}`}>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-3xs font-black uppercase tracking-wider ${resolved ? `${t.okBg} ${t.ok}` : `${t.warnBg} ${t.warnText}`}`}>
               {resolved ? <CheckCircle2 className="w-3 h-3" /> : <Scale className="w-3 h-3" />}
               {resolved ? "Resolved" : "Open"}
             </span>
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${t.muted}`}>
+            <span className={`text-3xs font-bold uppercase tracking-wider ${t.muted}`}>
               {ISSUE_TYPE_LABELS[d.issueType ?? ""] ?? d.issueType ?? "Unknown"}
             </span>
           </div>
@@ -166,7 +166,7 @@ function DisputeCard({
           </p>
         </div>
         {d.windowExpiresAt && !resolved && (
-          <span className={`inline-flex items-center gap-1 text-[10px] font-bold shrink-0 ${t.muted}`}>
+          <span className={`inline-flex items-center gap-1 text-3xs font-bold shrink-0 ${t.muted}`}>
             <Clock className="w-3 h-3" /> Window: {new Date(d.windowExpiresAt).toLocaleDateString("en-IN")}
           </span>
         )}

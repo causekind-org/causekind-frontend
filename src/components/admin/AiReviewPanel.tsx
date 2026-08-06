@@ -91,23 +91,23 @@ export function AiReviewPanel({
               outcome and the exact auto-approval blocker. Reading this card as
               the decision is what made an APPROVE verdict look like it had been
               ignored. */}
-          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-violet-700">
+          <span className="inline-flex items-center gap-1 text-3xs font-black uppercase tracking-wide text-violet-700">
             <Bot className="h-3.5 w-3.5" /> AI Second Opinion
           </span>
-          <span className="rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[10px] font-bold text-stone-500">
+          <span className="rounded-full border border-stone-300 bg-white px-2 py-0.5 text-3xs font-bold text-stone-500">
             advisory
           </span>
-          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${badgeClass}`}>
+          <span className={`rounded-full border px-2 py-0.5 text-3xs font-black ${badgeClass}`}>
             {review.recommendation.replace(/_/g, " ")}
           </span>
           {/* This field is severity — "how badly this person is harmed if denied".
               It is deliberately NOT called risk any more: labelling it that way is
               what led to a policy treating a desperate need as a reason to escalate. */}
-          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${riskClass}`}>
+          <span className={`rounded-full border px-2 py-0.5 text-3xs font-bold ${riskClass}`}>
             urgency if denied: {review.riskLevel}
           </span>
         </div>
-        <span className="text-[10px] font-bold text-stone-400">{Math.round(review.confidence)}% confidence</span>
+        <span className="text-3xs font-bold text-stone-400">{Math.round(review.confidence)}% confidence</span>
       </div>
 
       <p className="mt-1.5 text-xs font-medium leading-relaxed text-stone-700">{review.summary}</p>
@@ -115,7 +115,7 @@ export function AiReviewPanel({
       {review.evidence.length > 0 && (
         <div className="mt-2 space-y-1">
           {review.evidence.slice(0, 2).map((item, index) => (
-            <p key={index} className="text-[11px] leading-relaxed text-stone-500">- {item}</p>
+            <p key={index} className="text-2xs leading-relaxed text-stone-500">- {item}</p>
           ))}
         </div>
       )}
@@ -126,7 +126,7 @@ export function AiReviewPanel({
             <button
               type="button"
               onClick={() => onUseReason(review.suggestedAdminReason)}
-              className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-[11px] font-bold text-red-700 transition hover:bg-red-50"
+              className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-2xs font-bold text-red-700 transition hover:bg-red-50"
             >
               {review.recommendation === "REJECT" ? "Use reject reason" : "Use AI note"}
             </button>
@@ -135,7 +135,7 @@ export function AiReviewPanel({
             <button
               type="button"
               onClick={() => canUseNeedsInfo(review.suggestedAdminReason)}
-              className="rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-[11px] font-bold text-amber-700 transition hover:bg-amber-50"
+              className="rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-2xs font-bold text-amber-700 transition hover:bg-amber-50"
             >
               Use needs-info note
             </button>

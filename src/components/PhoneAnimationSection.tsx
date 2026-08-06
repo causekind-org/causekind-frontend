@@ -50,15 +50,15 @@ function DiscoverScreen() {
   return (
     <div className="flex flex-col h-full pt-4 pb-2 px-3 bg-white">
       <div className="flex items-center justify-between mb-2.5">
-        <span className="text-[11px] font-black text-stone-900">CauseKind</span>
+        <span className="text-2xs font-black text-stone-900">CauseKind</span>
         <div className="w-5 h-5 rounded-full bg-orange-50 flex items-center justify-center">
           <Search className="w-2.5 h-2.5 text-[#b04a15]" />
         </div>
       </div>
       <div className="flex gap-1.5 mb-3">
-        <span className="bg-[#b04a15] text-white text-[7px] px-2 py-0.5 rounded-full font-bold shrink-0">All</span>
-        <span className="bg-stone-100 text-stone-500 text-[7px] px-2 py-0.5 rounded-full font-medium shrink-0">Medical</span>
-        <span className="bg-stone-100 text-stone-500 text-[7px] px-2 py-0.5 rounded-full font-medium shrink-0">Education</span>
+        <span className="bg-[#b04a15] text-white text-5xs px-2 py-0.5 rounded-full font-bold shrink-0">All</span>
+        <span className="bg-stone-100 text-stone-500 text-5xs px-2 py-0.5 rounded-full font-medium shrink-0">Medical</span>
+        <span className="bg-stone-100 text-stone-500 text-5xs px-2 py-0.5 rounded-full font-medium shrink-0">Education</span>
       </div>
       {[
         { cat: "Child Education", city: "Mumbai", pct: 65, color: "from-orange-400 to-amber-300" },
@@ -68,8 +68,8 @@ function DiscoverScreen() {
           <div className={`w-full h-10 bg-gradient-to-r ${c.color}`} />
           <div className="p-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[8px] font-bold text-stone-900 truncate">{c.cat} · {c.city}</span>
-              <span className="text-[7px] text-[#b04a15] font-black">{c.pct}%</span>
+              <span className="text-5xs font-bold text-stone-900 truncate">{c.cat} · {c.city}</span>
+              <span className="text-5xs text-[#b04a15] font-black">{c.pct}%</span>
             </div>
             <div className="w-full h-1 bg-stone-100 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-[#b04a15] to-[#e07b3a] rounded-full" style={{ width: `${c.pct}%` }} />
@@ -79,7 +79,7 @@ function DiscoverScreen() {
       ))}
       <div className="mt-auto pt-1">
         <div className="w-full h-7 bg-[#b04a15] rounded-xl flex items-center justify-center">
-          <span className="text-white text-[8px] font-black">Donate Now</span>
+          <span className="text-white text-5xs font-black">Donate Now</span>
         </div>
       </div>
     </div>
@@ -91,26 +91,26 @@ function DetailScreen() {
     <div className="flex flex-col h-full pb-3 bg-white">
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-stone-50">
         <ArrowLeft className="w-3 h-3 text-stone-500" />
-        <span className="text-[9px] font-bold text-stone-700">In-Kind Request</span>
+        <span className="text-4xs font-bold text-stone-700">In-Kind Request</span>
       </div>
       <div className="w-full h-[72px] bg-gradient-to-br from-orange-400 via-amber-400 to-orange-600 relative shrink-0">
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         <div className="absolute bottom-2 left-2">
-          <span className="text-[7px] bg-[#b04a15] text-white px-1.5 py-0.5 rounded-md font-bold">Education</span>
+          <span className="text-5xs bg-[#b04a15] text-white px-1.5 py-0.5 rounded-md font-bold">Education</span>
         </div>
       </div>
       <div className="px-3 pt-2 flex flex-col flex-1">
-        <h3 className="text-[10px] font-black text-stone-900 leading-tight mb-1.5">School Kit Support · Mumbai</h3>
-        <div className="flex items-center justify-between text-[7px] mb-1">
+        <h3 className="text-3xs font-black text-stone-900 leading-tight mb-1.5">School Kit Support · Mumbai</h3>
+        <div className="flex items-center justify-between text-5xs mb-1">
           <span className="text-stone-400 font-medium">Kits Contributed</span>
           <span className="font-black text-[#b04a15]">65 Kits</span>
         </div>
         <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden mb-1">
           <div className="h-full bg-gradient-to-r from-[#b04a15] to-[#e07b3a] rounded-full" style={{ width: "65%" }} />
         </div>
-        <p className="text-[7px] text-stone-400 font-medium mb-auto">Goal: 100 Kits · 65% completed</p>
+        <p className="text-5xs text-stone-400 font-medium mb-auto">Goal: 100 Kits · 65% completed</p>
         <div className="w-full h-7 mt-2 bg-[#b04a15] rounded-xl flex items-center justify-center gap-1 shadow-md shadow-[#b04a15]/20">
-          <span className="text-white text-[8px] font-black">Support Now</span>
+          <span className="text-white text-5xs font-black">Support Now</span>
           <ChevronRight className="w-2.5 h-2.5 text-white" />
         </div>
       </div>
@@ -123,7 +123,7 @@ function DonateScreen() {
     <div className="flex flex-col h-full px-3 py-2.5 bg-white">
       <div className="flex items-center gap-1.5 mb-3 pb-2 border-b border-stone-50">
         <ArrowLeft className="w-3 h-3 text-stone-500" />
-        <span className="text-[9px] font-bold text-stone-700">Select Quantity</span>
+        <span className="text-4xs font-bold text-stone-700">Select Quantity</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5 mb-2.5">
         {[
@@ -134,7 +134,7 @@ function DonateScreen() {
         ].map((a) => (
           <div
             key={a.label}
-            className={`h-8 rounded-xl flex items-center justify-center border text-[9px] font-black ${a.active
+            className={`h-8 rounded-xl flex items-center justify-center border text-4xs font-black ${a.active
                 ? "bg-[#b04a15] border-[#b04a15] text-white shadow-md shadow-[#b04a15]/25"
                 : "bg-white border-stone-200 text-stone-600"
               }`}
@@ -144,10 +144,10 @@ function DonateScreen() {
         ))}
       </div>
       <div className="flex items-center border border-stone-200 rounded-xl px-2.5 h-7 mb-auto gap-1">
-        <span className="text-[8px] text-stone-400 font-medium">Custom quantity</span>
+        <span className="text-5xs text-stone-400 font-medium">Custom quantity</span>
       </div>
       <div className="mt-3 w-full h-7 bg-[#b04a15] rounded-xl flex items-center justify-center shadow-md shadow-[#b04a15]/20">
-        <span className="text-white text-[8px] font-black">Confirm 5 Kits</span>
+        <span className="text-white text-5xs font-black">Confirm 5 Kits</span>
       </div>
     </div>
   );
@@ -161,16 +161,16 @@ function SuccessScreen() {
           <CheckCircle2 className="w-6 h-6 text-white" />
         </div>
       </div>
-      <h3 className="text-[13px] font-black text-stone-900 mb-1">Thank you!</h3>
-      <p className="text-[8px] text-stone-500 text-center leading-relaxed mb-5 max-w-[140px]">
+      <h3 className="text-sm font-black text-stone-900 mb-1">Thank you!</h3>
+      <p className="text-5xs text-stone-500 text-center leading-relaxed mb-5 max-w-[140px]">
         You just made a real difference in someone&apos;s life.
       </p>
       <div className="w-full space-y-1.5">
         <div className="w-full h-7 bg-[#b04a15] rounded-xl flex items-center justify-center shadow-md shadow-[#b04a15]/20">
-          <span className="text-white text-[8px] font-black">View Certificate</span>
+          <span className="text-white text-5xs font-black">View Certificate</span>
         </div>
         <div className="w-full h-7 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center">
-          <span className="text-stone-600 text-[8px] font-semibold">Share your impact ↗</span>
+          <span className="text-stone-600 text-5xs font-semibold">Share your impact ↗</span>
         </div>
       </div>
     </div>
@@ -582,13 +582,13 @@ export function PhoneAnimationSection() {
                       {/* Text */}
                       <div className="flex-1 min-w-0 pt-1">
                         <span
-                          className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 transition-colors duration-300 ${isActive ? s.accentText : "text-stone-300 dark:text-zinc-600"
+                          className={`text-3xs font-black uppercase tracking-widest block mb-0.5 transition-colors duration-300 ${isActive ? s.accentText : "text-stone-300 dark:text-zinc-600"
                             }`}
                         >
                           {s.number}
                         </span>
                         <p
-                          className={`text-[15px] font-bold leading-snug transition-all duration-300 ${isActive ? "text-stone-900 dark:text-white" : "text-stone-400 dark:text-zinc-600"
+                          className={`text-base font-bold leading-snug transition-all duration-300 ${isActive ? "text-stone-900 dark:text-white" : "text-stone-400 dark:text-zinc-600"
                             }`}
                         >
                           {s.title}
@@ -670,7 +670,7 @@ export function PhoneAnimationSection() {
 
                       {/* Status bar */}
                       <div className="relative z-20 flex items-center justify-between px-5 pt-2.5 pb-0.5 bg-white">
-                        <span className="text-[9px] font-bold text-stone-800">9:41</span>
+                        <span className="text-4xs font-bold text-stone-800">9:41</span>
                         <div className="flex items-center gap-1.5">
                           <div className="flex gap-[2px] items-end h-[10px]">
                             {[3, 5, 7, 9].map((h, i) => (

@@ -36,7 +36,7 @@ export function PhotoStrip({ images, label }: { images: string[]; label?: string
   return (
     <div>
       {label && (
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1">
+        <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1">
           {label} ({images.length})
         </p>
       )}

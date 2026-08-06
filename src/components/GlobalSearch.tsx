@@ -175,7 +175,7 @@ export function GlobalSearch() {
               <X className="w-4 h-4" />
             </button>
           )}
-          <kbd className="hidden sm:flex items-center gap-0.5 text-[10px] text-stone-400 border border-stone-200 dark:border-zinc-700 rounded px-1.5 py-0.5 font-mono shrink-0">
+          <kbd className="hidden sm:flex items-center gap-0.5 text-3xs text-stone-400 border border-stone-200 dark:border-zinc-700 rounded px-1.5 py-0.5 font-mono shrink-0">
             ESC
           </kbd>
         </div>
@@ -201,7 +201,7 @@ export function GlobalSearch() {
           ) : (
             <>
               {/* Label */}
-              <p className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
+              <p className="px-4 py-1.5 text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
                 {query ? `${results.length} result${results.length !== 1 ? "s" : ""}` : "Recent"}
               </p>
               {results.map((r, i) => (
@@ -218,7 +218,7 @@ export function GlobalSearch() {
         </div>
 
         {/* Footer hint */}
-        <div className="border-t border-stone-100 dark:border-zinc-800 px-4 py-2 flex items-center gap-4 text-[10px] text-stone-400 font-medium">
+        <div className="border-t border-stone-100 dark:border-zinc-800 px-4 py-2 flex items-center gap-4 text-3xs text-stone-400 font-medium">
           <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono">↑↓</kbd> navigate</span>
           <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono">↵</kbd> open</span>
           <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono">ESC</kbd> close</span>
