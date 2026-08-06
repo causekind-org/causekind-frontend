@@ -22,6 +22,7 @@ export default function CertificatePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     if (certNumber) {
@@ -46,14 +47,35 @@ export default function CertificatePage() {
       .catch(() => setQrDataUrl(null));
   }, [cert]);
 
-  // Native browser print, not a client-side canvas re-render — this is the only
-  // way the download can be *exactly* the live page: it's the same DOM through
-  // the same rendering engine, so there's no separate layout/font/color
-  // approximation step that can ever drift from what's on screen. Colors are
-  // preserved via print-color-adjust:exact below rather than requiring the
-  // visitor to check "Background graphics" in the print dialog.
-  function handlePrint() {
-    window.print();
+  // Snapshots the live certificate card into a raster image, then embeds that
+  // image into an actual .pdf file — a real download, not a "use your
+  // browser's Save as PDF" print dialog. html2canvas/jsPDF are dynamically
+  // imported here (not top-level) so their ~200kb doesn't load until someone
+  // actually clicks download. The card's 1414:1000 ratio matches A4 landscape
+  // exactly, so the snapshot fills the page edge to edge with no letterboxing.
+  async function handleDownload() {
+    if (!printRef.current || !cert) return;
+    setGenerating(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      const canvas = await html2canvas(printRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#f5f0e8",
+      });
+
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      pdf.addImage(canvas.toDataURL("image/png", 1.0), "PNG", 0, 0, pageWidth, pageHeight);
+      pdf.save(`CauseKind-Certificate-${cert.certificateNumber}.pdf`);
+    } finally {
+      setGenerating(false);
+    }
   }
 
   if (loading) {
@@ -128,10 +150,11 @@ export default function CertificatePage() {
           <ArrowLeft size={14} /> Back
         </button>
         <button
-          onClick={handlePrint}
-          className="flex items-center gap-2 rounded-xl bg-[#b04a15] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
+          onClick={handleDownload}
+          disabled={generating}
+          className="flex items-center gap-2 rounded-xl bg-[#b04a15] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors disabled:opacity-60 disabled:cursor-wait"
         >
-          <Download size={14} /> Download / Print
+          <Download size={14} /> {generating ? "Generating PDF…" : "Download PDF"}
         </button>
       </div>
 
