@@ -2672,3 +2672,298 @@ export function superAdminUserTimeline(
   if (opts.to) params.set("to", opts.to);
   return request<SaTimelinePage>(`/api/v1/super-admin/users/${id}/timeline?${params.toString()}`);
 }
+
+// ── Super Admin console — Phase 3: support cases ──────────────────────────────
+// Disputes are a category of case as of this phase: raising a post-delivery
+// issue auto-opens one, so the disputes queue is a filter over this queue rather
+// than a second place to look.
+
+export type SaCaseStatus =
+  | "NEW" | "IN_PROGRESS" | "WAITING_ON_USER" | "WAITING_ON_INTERNAL"
+  | "RESOLVED" | "CLOSED" | "MERGED" | "REJECTED";
+
+export type SaCasePriority = "URGENT" | "HIGH" | "NORMAL" | "LOW";
+
+export type SaCaseVisibility = "INTERNAL" | "USER";
+
+export type SaCaseSummary = {
+  id: number;
+  caseNumber: string;
+  subject: string;
+  category: string;
+  priority: SaCasePriority;
+  status: SaCaseStatus;
+  subjectUserName: string | null;
+  subjectUserId: number | null;
+  assignedAdminEmail: string | null;
+  dueAt: string | null;
+  overdue: boolean;
+  createdAt: string;
+};
+
+export type SaCaseEvent = {
+  id: number;
+  eventType: string;
+  visibility: SaCaseVisibility;
+  actor: string;
+  body: string | null;
+  previousValue: string | null;
+  newValue: string | null;
+  createdAt: string;
+};
+
+export type SaCaseLink = {
+  id: number;
+  entityType: string;
+  entityId: number;
+  note: string | null;
+  createdAt: string;
+};
+
+export type SaInformationItem = {
+  id: number;
+  itemType: string;
+  label: string;
+  docType: string | null;
+  required: boolean;
+  response: string | null;
+  answered: boolean;
+  respondedAt: string | null;
+};
+
+export type SaInformationRequest = {
+  id: number;
+  caseId: number | null;
+  targetUserId: number;
+  instructions: string;
+  status: string;
+  dueAt: string | null;
+  holdWorkflow: boolean;
+  overdue: boolean;
+  createdByEmail: string;
+  reviewNote: string | null;
+  createdAt: string;
+  items: SaInformationItem[];
+};
+
+export type SaCaseDetail = {
+  summary: SaCaseSummary;
+  description: string | null;
+  resolutionSummary: string | null;
+  resolvedAt: string | null;
+  resolvedByEmail: string | null;
+  mergedIntoCaseId: number | null;
+  systemOpened: boolean;
+  waitingOnUserMinutes: number;
+  events: SaCaseEvent[];
+  links: SaCaseLink[];
+  informationRequests: SaInformationRequest[];
+  // Only these moves are legal from the current status. Drive the UI off this
+  // rather than offering every status and taking a 409 back.
+  allowedNextStatuses: SaCaseStatus[];
+};
+
+export type SaCaseMeta = {
+  categories: { name: string; label: string; defaultSlaHours: number }[];
+  statuses: SaCaseStatus[];
+  priorities: SaCasePriority[];
+  linkableTypes: string[];
+};
+
+export type SaCaseFilters = {
+  q?: string;
+  status?: SaCaseStatus;
+  category?: string;
+  priority?: SaCasePriority;
+  assignedAdminId?: number;
+  subjectUserId?: number;
+  unassigned?: boolean;
+};
+
+export function superAdminCaseQueue(filters: SaCaseFilters = {}, page = 0, size = 25) {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (filters.q) params.set("q", filters.q);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.priority) params.set("priority", filters.priority);
+  if (filters.assignedAdminId) params.set("assignedAdminId", String(filters.assignedAdminId));
+  if (filters.subjectUserId) params.set("subjectUserId", String(filters.subjectUserId));
+  if (filters.unassigned) params.set("unassigned", "true");
+  return request<SaPage<SaCaseSummary>>(`/api/v1/super-admin/cases?${params.toString()}`);
+}
+
+export function superAdminCaseMeta() {
+  return request<SaCaseMeta>("/api/v1/super-admin/cases/meta");
+}
+
+export function superAdminCase(id: number) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}`);
+}
+
+export function superAdminCreateCase(body: {
+  subject: string; description?: string; category: string;
+  priority?: SaCasePriority; subjectUserId?: number; reportedByUserId?: number;
+}) {
+  return request<SaCaseDetail>("/api/v1/super-admin/cases", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminCaseStatus(id: number, status: SaCaseStatus, reason?: string) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, reason }),
+  });
+}
+
+export function superAdminCasePriority(id: number, priority: SaCasePriority) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/priority`, {
+    method: "PATCH",
+    body: JSON.stringify({ priority }),
+  });
+}
+
+export function superAdminCaseAssign(id: number, adminUserId: number | null) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/assignee`, {
+    method: "PATCH",
+    body: JSON.stringify({ adminUserId }),
+  });
+}
+
+// Visibility is never defaulted here, matching the backend. An internal note
+// reaching the user it is about is the worst failure this screen can have.
+export function superAdminCaseMessage(id: number, body: string, visibility: SaCaseVisibility) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ body, visibility }),
+  });
+}
+
+export function superAdminCaseLink(id: number, entityType: string, entityId: number, note?: string) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/links`, {
+    method: "POST",
+    body: JSON.stringify({ entityType, entityId, note }),
+  });
+}
+
+export function superAdminCaseMerge(id: number, targetCaseId: number) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/merge`, {
+    method: "POST",
+    body: JSON.stringify({ targetCaseId }),
+  });
+}
+
+export function superAdminRequestInformation(body: {
+  targetUserId: number; caseId?: number; contextType?: string; contextId?: number;
+  instructions: string; dueAt?: string; holdWorkflow?: boolean;
+  items: { label: string; itemType: string; docType?: string; required?: boolean }[];
+}) {
+  return request<SaInformationRequest>("/api/v1/super-admin/cases/information-requests", {
+    method: "POST",
+    body: JSON.stringify({ holdWorkflow: false, ...body }),
+  });
+}
+
+export function superAdminReviewInformation(requestId: number, accept: boolean, note?: string) {
+  return request<SaInformationRequest>(
+    `/api/v1/super-admin/cases/information-requests/${requestId}/review`,
+    { method: "POST", body: JSON.stringify({ accept, note }) }
+  );
+}
+
+export type SaUserNote = {
+  id: number;
+  authorEmail: string;
+  body: string;
+  pinned: boolean;
+  createdAt: string;
+};
+
+export function superAdminUserNotes(userId: number, page = 0, size = 25) {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  return request<SaPage<SaUserNote>>(
+    `/api/v1/super-admin/cases/users/${userId}/notes?${params.toString()}`
+  );
+}
+
+export function superAdminAddUserNote(userId: number, body: string, pinned = false) {
+  return request<SaUserNote>(`/api/v1/super-admin/cases/users/${userId}/notes`, {
+    method: "POST",
+    body: JSON.stringify({ body, pinned }),
+  });
+}
+
+// ── User-facing: what the platform is waiting on from you ─────────────────────
+// Deliberately no case id, staff identity or internal note in these types. The
+// shape itself is the guarantee, matching UserTask on the backend.
+
+export type MyTaskItem = {
+  id: number;
+  itemType: string;
+  label: string;
+  docType: string | null;
+  required: boolean;
+  response: string | null;
+  answered: boolean;
+};
+
+export type MyTask = {
+  requestId: number;
+  instructions: string;
+  status: string;
+  dueAt: string | null;
+  overdue: boolean;
+  createdAt: string;
+  items: MyTaskItem[];
+};
+
+export function myTasks() {
+  return request<MyTask[]>("/api/v1/me/tasks");
+}
+
+export function myTaskCount() {
+  return request<{ outstanding: number }>("/api/v1/me/tasks/count");
+}
+
+// Item id to answer. Items left out are untouched rather than cleared, so a long
+// task can be answered across several sittings.
+export function respondToTask(requestId: number, answers: Record<number, string>) {
+  return request<MyTask>(`/api/v1/me/tasks/${requestId}/respond`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  });
+}
+
+/**
+ * Uploads a photo for a PHOTO/DOCUMENT item and returns its URL, which is then
+ * sent as that item's answer through respondToTask.
+ *
+ * Raw fetch rather than request(), which sets a JSON content type — the browser
+ * has to set the multipart boundary itself.
+ *
+ * The backend scopes this to the request's target user and 404s otherwise, so a
+ * failure here is genuinely "not yours or not open", never a silent success.
+ */
+export async function uploadTaskAttachment(requestId: number, file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/me/tasks/${requestId}/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!res.ok) {
+    // 413 is refused by the servlet container before the handler runs, so there
+    // is no JSON body to read a message out of.
+    if (res.status === 413) throw new Error("That photo is too large — please use one under 10MB.");
+    let msg = "Upload failed — please try again.";
+    try {
+      const body = await res.json();
+      if (body?.message) msg = body.message;
+    } catch { /* non-JSON error body; keep the default */ }
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data.url as string;
+}
