@@ -269,12 +269,16 @@ function CaseWorkspace({
       <div className={`flex flex-wrap items-center gap-2 rounded-xl border p-3 ${t.card}`}>
         {/* Only legal moves are offered — the backend rejects the rest with a
             409, and an agent should not have to discover that by trying. */}
-        {data.allowedNextStatuses.length === 0 ? (
+        {/* MERGED is filtered out even though the state machine allows it. It has
+            its own endpoint, which records what the case was merged into and
+            carries the links across; setting the status directly would strand a
+            case claiming to be merged into nothing, with no legal move back. */}
+        {data.allowedNextStatuses.filter((s) => s !== "MERGED").length === 0 ? (
           <span className={`flex items-center gap-1.5 text-xs ${t.dim}`}>
             <Lock className="size-3" /> This case is closed to further changes.
           </span>
         ) : (
-          data.allowedNextStatuses.map((next) => (
+          data.allowedNextStatuses.filter((s) => s !== "MERGED").map((next) => (
             <button
               key={next}
               disabled={busy}
