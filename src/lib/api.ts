@@ -2934,3 +2934,36 @@ export function respondToTask(requestId: number, answers: Record<number, string>
     body: JSON.stringify({ answers }),
   });
 }
+
+/**
+ * Uploads a photo for a PHOTO/DOCUMENT item and returns its URL, which is then
+ * sent as that item's answer through respondToTask.
+ *
+ * Raw fetch rather than request(), which sets a JSON content type — the browser
+ * has to set the multipart boundary itself.
+ *
+ * The backend scopes this to the request's target user and 404s otherwise, so a
+ * failure here is genuinely "not yours or not open", never a silent success.
+ */
+export async function uploadTaskAttachment(requestId: number, file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/me/tasks/${requestId}/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!res.ok) {
+    // 413 is refused by the servlet container before the handler runs, so there
+    // is no JSON body to read a message out of.
+    if (res.status === 413) throw new Error("That photo is too large — please use one under 10MB.");
+    let msg = "Upload failed — please try again.";
+    try {
+      const body = await res.json();
+      if (body?.message) msg = body.message;
+    } catch { /* non-JSON error body; keep the default */ }
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data.url as string;
+}

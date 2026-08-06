@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { myTasks, respondToTask, type MyTask } from "@/lib/api";
+import { useEffect, useRef, useState } from "react";
+import { myTasks, respondToTask, uploadTaskAttachment, type MyTask } from "@/lib/api";
+import { compressImageIfNeeded } from "@/lib/imageCompression";
+import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ClipboardList, AlertTriangle, Check } from "lucide-react";
+import { Loader2, ClipboardList, AlertTriangle, Check, Camera, Upload } from "lucide-react";
 
 /**
  * "We need something from you" — the user's side of an information request.
@@ -160,15 +161,14 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
                   onChange={(e) => setAnswers((a) => ({ ...a, [item.id]: e.target.value }))}
                 />
               ) : (
-                // DOCUMENT and PHOTO take a link for now. Direct upload reuses the
-                // existing verification-document pipeline and is a separate piece
-                // of work; asking for a link is honest rather than a broken button.
-                <Input
-                  id={`item-${item.id}`}
-                  className="mt-1"
-                  placeholder="Paste a link to the file"
+                // DOCUMENT and PHOTO: take the photo or pick one. Documents are
+                // photographed here the same way ID and residence proofs already
+                // are — the whole application is images-only.
+                <PhotoAnswer
+                  requestId={task.requestId}
+                  itemId={item.id}
                   value={answers[item.id] ?? ""}
-                  onChange={(e) => setAnswers((a) => ({ ...a, [item.id]: e.target.value }))}
+                  onChange={(url) => setAnswers((a) => ({ ...a, [item.id]: url }))}
                 />
               )}
             </div>
@@ -187,6 +187,102 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Take a photo, or pick one — the answer to a PHOTO/DOCUMENT item.
+ *
+ * <p>The value carried in form state is the uploaded S3 URL, not the file, so
+ * the photo is stored the moment it is chosen and the eventual respond() call
+ * stays a small JSON body. That also means a failed upload is reported here and
+ * now, rather than as part of a submit that appears to lose several answers at
+ * once.
+ *
+ * <p>Rear camera by default: you photograph a delivered item or a document, not
+ * your own face.
+ */
+function PhotoAnswer({
+  requestId,
+  itemId,
+  value,
+  onChange,
+}: {
+  requestId: number;
+  itemId: number;
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function store(file: File) {
+    setBusy(true);
+    try {
+      // Same compression the rest of the app applies before upload — a raw
+      // gallery shot from a modern phone otherwise trips the 10MB multipart cap.
+      const prepared = await compressImageIfNeeded(file);
+      onChange(await uploadTaskAttachment(requestId, prepared));
+      toast.success("Photo attached.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't upload that photo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-1">
+      <input
+        ref={fileRef}
+        id={`item-${itemId}`}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          // Reset first: picking the same file twice must still fire onChange.
+          e.target.value = "";
+          if (f) void store(f);
+        }}
+      />
+
+      {value ? (
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="Your uploaded photo" className="size-12 rounded object-cover border" />
+          <span className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+            <Check className="size-3" /> Attached
+          </span>
+          <Button type="button" size="sm" variant="ghost" disabled={busy}
+            onClick={() => fileRef.current?.click()}>
+            Replace
+          </Button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Button type="button" size="sm" variant="outline" disabled={busy}
+            onClick={() => setCameraOpen(true)}>
+            {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Camera className="size-3.5" />}
+            Take photo
+          </Button>
+          <Button type="button" size="sm" variant="outline" disabled={busy}
+            onClick={() => fileRef.current?.click()}>
+            <Upload className="size-3.5" />
+            Upload
+          </Button>
+        </div>
+      )}
+
+      <CameraCaptureDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        facingMode="environment"
+        onCapture={(file) => { setCameraOpen(false); void store(file); }}
+        onChoosePhoto={() => { setCameraOpen(false); fileRef.current?.click(); }}
+      />
     </div>
   );
 }
