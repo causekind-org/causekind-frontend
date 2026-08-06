@@ -13,6 +13,7 @@ import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
 import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
 import { CommandPalette } from "@/components/super-admin/CommandPalette";
+import { CasesPanel } from "@/components/super-admin/CasesPanel";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
@@ -159,6 +160,7 @@ const NAV = [
   { key: "overview",      label: "Overview",    icon: LayoutDashboard },
   { key: "search",        label: "Search",      icon: Search },
   { key: "directory",     label: "User 360",    icon: UserSearch },
+  { key: "cases",         label: "Support cases", icon: LifeBuoy },
   { key: "users",         label: "Users (raw)", icon: Users },
   { key: "campaigns",     label: "Campaigns",   icon: Megaphone },
   { key: "donations",     label: "Donations",   icon: CreditCard },
@@ -183,7 +185,6 @@ const NAV = [
  * nothing.
  */
 const PLANNED_NAV = [
-  { label: "Support cases",     icon: LifeBuoy,          phase: "Phase 3" },
   { label: "Restrictions",      icon: ShieldCheck,       phase: "Phase 4" },
   { label: "Interventions",     icon: SlidersHorizontal, phase: "Phase 5" },
   { label: "Communications",    icon: Send,              phase: "Phase 6" },
@@ -366,6 +367,7 @@ export default function SuperAdminPage() {
       case "overview":      return <OverviewSection th={th} />;
       case "search":        return <GlobalSearchPanel onOpenUser={openUser} isDark={isDark} />;
       case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} isDark={isDark} />;
+      case "cases":         return <CasesPanel isDark={isDark} />;
       case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
                               onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
