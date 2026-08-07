@@ -4,7 +4,16 @@ import {
   getPlatformStats,
   getRecentActivity
 } from "@/lib/api";
+import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
+
+// Self-referencing canonical on the apex route. Resolves against metadataBase
+// in src/app/layout.tsx, so it emits https://www.causekind.com — the host the
+// non-www domain redirects to — and stops the two hostnames competing as
+// separate URLs for the same page.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export const revalidate = 60; // ISR cache for 60 seconds
 

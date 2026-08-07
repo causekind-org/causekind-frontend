@@ -302,9 +302,9 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<p class="mb-4 leading-relaxed"><a href="https://www.causekind.com/how-it-works" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">See How CauseKind Verifies Every Donation →</a>
+<p class="mb-4 leading-relaxed"><a href="https://www.causekind.com/about" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">See How CauseKind Verifies Every Donation →</a>
 <a href="https://www.causekind.com/requests" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Browse Verified In-Kind Requests Near You →</a>
-<a href="https://www.causekind.com/impact-certificate" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Download a Sample Impact Certificate →</a>
+<a href="https://www.causekind.com/faq" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">See How Impact Certificates Work →</a>
 <a href="https://www.causekind.com/register" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Create Your Free CauseKind Account →</a></p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
@@ -681,7 +681,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed"><a href="https://www.causekind.com/requests" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Browse Board Exam Donation Requests Near You →</a>
 <a href="https://www.causekind.com/items" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Donate Exam Essentials to a Verified Student →</a>
-<a href="https://www.causekind.com/drives" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Organise a Board Exam Drive for Your Society or Office →</a>
+<a href="https://www.causekind.com/contact" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Organise a Board Exam Drive for Your Society or Office →</a>
 <a href="https://www.causekind.com/register" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Create Your Free CauseKind Account →</a></p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
@@ -868,7 +868,7 @@ The complete donation record - from verified request through confirmed delivery 
       <p>If the honest answer to the second question is no - and for most companies running purely cash-based CSR, it is - then in-kind giving is not an addition to your strategy.</p>
       <p><strong>It is the correction.</strong></p>
       <hr class="my-8 border-stone-200 dark:border-stone-850" />
-      <p><a href="https://www.causekind.com/corporate" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Explore CauseKind's Corporate In-Kind Programme →</a> <a href="https://www.causekind.com/drives" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Register Your Company for a Quarterly Drive →</a> <a href="https://www.causekind.com/resources" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Download the Corporate CSR In-Kind Guide →</a> <a href="https://www.causekind.com/contact" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Contact Our Corporate Team →</a></p>
+      <p><a href="https://www.causekind.com/contact" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Explore CauseKind's Corporate In-Kind Programme →</a> <a href="https://www.causekind.com/contact" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Register Your Company for a Quarterly Drive →</a> <a href="https://www.causekind.com/contact" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Talk to Us About Corporate CSR Giving →</a> <a href="https://www.causekind.com/contact" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Contact Our Corporate Team →</a></p>
       <hr class="my-8 border-stone-200 dark:border-stone-850" />
       <p><em>CauseKind is India's verified giving platform. Zero fees. Admin-verified recipients. Every donation tracked to delivery with full ESG documentation.</em></p>
       <hr class="my-8 border-stone-200 dark:border-stone-850" />
@@ -1083,7 +1083,7 @@ The complete donation record - from verified request through confirmed delivery 
       <p><strong>The monsoon is coming. It comes every year. And every year, it catches the same families under-prepared because nobody thought to run a drive in May.</strong></p>
       <p>This year, be the person who thought to.</p>
       <hr class="my-8 border-stone-200 dark:border-stone-850" />
-      <p><a href="https://www.causekind.com/requests" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Browse Monsoon In-Kind Requests Near You →</a> <a href="https://www.causekind.com/items" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Donate Monsoon Essentials Through CauseKind →</a> <a href="https://www.causekind.com/drives" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Organise a Monsoon Drive for Your Office or Society →</a> <a href="https://www.causekind.com/register" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Create Your Free Account →</a></p>
+      <p><a href="https://www.causekind.com/requests" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Browse Monsoon In-Kind Requests Near You →</a> <a href="https://www.causekind.com/items" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Donate Monsoon Essentials Through CauseKind →</a> <a href="https://www.causekind.com/contact" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Organise a Monsoon Drive for Your Office or Society →</a> <a href="https://www.causekind.com/register" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Create Your Free Account →</a></p>
       <hr class="my-8 border-stone-200 dark:border-stone-850" />
       <p><em>CauseKind is India's verified giving platform. Zero fees. Admin-verified listings. Every donation matched within 10 km and tracked to delivery.</em></p>
       `
@@ -1658,7 +1658,7 @@ The complete donation record - from verified request through confirmed delivery 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <p class="mb-4 leading-relaxed"><a href="https://www.causekind.com/requests" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Browse Verified Causes on CauseKind →</a>
-<a href="https://www.causekind.com/how-it-works" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">See How CauseKind Verifies Every Listing →</a>
+<a href="https://www.causekind.com/about" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">See How CauseKind Verifies Every Listing →</a>
 <a href="https://www.causekind.com/register" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">Create Your Free Account →</a></p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
