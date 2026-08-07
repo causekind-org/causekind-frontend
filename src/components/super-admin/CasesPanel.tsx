@@ -9,6 +9,7 @@ import {
   superAdminCasePriority,
   superAdminCaseQueue,
   superAdminCaseStatus,
+  superAdminRequestInformation,
   superAdminReviewInformation,
   type SaCaseDetail,
   type SaCaseFilters,
@@ -192,6 +193,7 @@ function CaseWorkspace({
   // No default. Choosing who sees a note should be a decision every time, not
   // something inherited from whatever was sent last.
   const [visibility, setVisibility] = useState<"INTERNAL" | "USER" | null>(null);
+  const [asking, setAsking] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -320,9 +322,60 @@ function CaseWorkspace({
       </div>
 
       {/* Information requests */}
-      {data.informationRequests.length > 0 && (
-        <section className={`rounded-xl border p-4 ${t.card}`}>
-          <h3 className={`mb-2 text-sm font-bold ${t.heading}`}>Information requested</h3>
+      <section className={`rounded-xl border p-4 ${t.card}`}>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className={`text-sm font-bold ${t.heading}`}>Information requested</h3>
+          {!asking && (
+            <button
+              disabled={busy || s.subjectUserId == null}
+              onClick={() => setAsking(true)}
+              title={s.subjectUserId == null
+                ? "This case has no subject user, so there is nobody to ask."
+                : undefined}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${t.btn}`}
+            >
+              Request information
+            </button>
+          )}
+        </div>
+
+        {/* A case opened against no particular user has nobody to ask. Saying so
+            beats a disabled button with no explanation. */}
+        {data.informationRequests.length === 0 && !asking && (
+          <p className={`text-xs ${t.muted}`}>
+            {s.subjectUserId == null
+              ? "This case is not filed against a user, so there is nobody to request information from."
+              : "Nothing requested yet."}
+          </p>
+        )}
+
+        {asking && s.subjectUserId != null && (
+          <RequestInformationForm
+            t={t}
+            busy={busy}
+            targetName={s.subjectUserName}
+            onCancel={() => setAsking(false)}
+            onSubmit={async (payload) => {
+              setBusy(true);
+              try {
+                await superAdminRequestInformation({
+                  ...payload,
+                  targetUserId: s.subjectUserId as number,
+                  caseId,
+                });
+                setAsking(false);
+                load();
+                toast.success("Request sent");
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "That didn't work.");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+        )}
+
+        {data.informationRequests.length > 0 && (
           <ul className="space-y-2">
             {data.informationRequests.map((r) => (
               <li key={r.id} className={`rounded-lg border p-3 ${t.cardFlat}`}>
@@ -361,8 +414,8 @@ function CaseWorkspace({
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Linked records */}
       {data.links.length > 0 && (
@@ -449,6 +502,175 @@ function CaseWorkspace({
 }
 
 // ── Chrome ────────────────────────────────────────────────────────────────────
+
+/** What the user is asked to supply, one row per item. */
+const ITEM_TYPES = [
+  { value: "TEXT", label: "Text answer" },
+  { value: "PHOTO", label: "Photo" },
+  { value: "DOCUMENT", label: "Document" },
+  { value: "CONFIRMATION", label: "Yes / no" },
+] as const;
+
+type DraftItem = { label: string; itemType: string; required: boolean };
+
+/**
+ * Composer for a new information request.
+ *
+ * <p>Phase 3 shipped the review half of this — accept or reject what came back —
+ * but nothing that could raise one, so `superAdminRequestInformation` sat unused
+ * in api.ts and creating a request meant calling the API by hand.
+ *
+ * <p>`docType` is deliberately not offered. It is optional on the backend, where
+ * it reuses the VerificationDocumentType vocabulary to feed an uploaded answer
+ * into the existing screening pipeline — but nothing exposes that list to the
+ * console, and a free-text box for an enum is a way to generate rejected
+ * requests. The label carries the meaning until there is a real list to pick
+ * from.
+ */
+function RequestInformationForm({
+  t, busy, targetName, onCancel, onSubmit,
+}: {
+  t: SaTheme;
+  busy: boolean;
+  targetName: string | null;
+  onCancel: () => void;
+  onSubmit: (payload: {
+    instructions: string;
+    dueAt?: string;
+    holdWorkflow: boolean;
+    items: DraftItem[];
+  }) => void;
+}) {
+  const [instructions, setInstructions] = useState("");
+  const [dueAt, setDueAt] = useState("");
+  const [holdWorkflow, setHoldWorkflow] = useState(false);
+  const [items, setItems] = useState<DraftItem[]>([
+    { label: "", itemType: "TEXT", required: true },
+  ]);
+
+  function patch(index: number, change: Partial<DraftItem>) {
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...change } : it)));
+  }
+
+  // An item with no label asks the user for nothing, so blanks are dropped
+  // rather than sent. Requiring at least one keeps an empty request from being
+  // raised at all.
+  const filled = items.filter((i) => i.label.trim() !== "");
+  const canSend = instructions.trim() !== "" && filled.length > 0;
+
+  return (
+    <div className={`rounded-lg border p-3 ${t.cardFlat}`}>
+      <p className={`mb-2 text-xs ${t.muted}`}>
+        {targetName ? <>This will appear as a task for <span className={t.text}>{targetName}</span>.</>
+                    : "This will appear as a task for the user this case is about."}
+      </p>
+
+      <textarea
+        rows={3}
+        value={instructions}
+        onChange={(e) => setInstructions(e.target.value)}
+        placeholder="What do you need, and why? The user reads this."
+        className={`w-full rounded-lg border p-2.5 text-sm ${t.input} ${t.placeholder}`}
+      />
+
+      <p className={`mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide ${t.dim}`}>
+        What to ask for
+      </p>
+      <ul className="space-y-1.5">
+        {items.map((item, i) => (
+          <li key={i} className="flex flex-wrap items-center gap-1.5">
+            <input
+              value={item.label}
+              onChange={(e) => patch(i, { label: e.target.value })}
+              placeholder="e.g. A photo of the damaged item"
+              className={`min-w-0 flex-1 rounded-lg border px-2.5 py-1.5 text-xs ${t.input} ${t.placeholder}`}
+            />
+            <select
+              value={item.itemType}
+              onChange={(e) => patch(i, { itemType: e.target.value })}
+              className={`rounded-lg border px-2 py-1.5 text-xs ${t.input}`}
+            >
+              {ITEM_TYPES.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <label className={`flex items-center gap-1 text-[11px] ${t.muted}`}>
+              <input
+                type="checkbox"
+                checked={item.required}
+                onChange={(e) => patch(i, { required: e.target.checked })}
+              />
+              Required
+            </label>
+            {items.length > 1 && (
+              <button
+                onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}
+                className={`rounded-lg border px-2 py-1 text-[11px] ${t.btn}`}
+                aria-label={`Remove item ${i + 1}`}
+              >
+                ✕
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <button
+        onClick={() => setItems((prev) => [...prev, { label: "", itemType: "TEXT", required: true }])}
+        className={`mt-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-semibold ${t.btn}`}
+      >
+        Add another
+      </button>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <label className={`flex items-center gap-1.5 text-[11px] ${t.muted}`}>
+          Due
+          <input
+            type="datetime-local"
+            value={dueAt}
+            onChange={(e) => setDueAt(e.target.value)}
+            className={`rounded-lg border px-2 py-1 text-xs ${t.input}`}
+          />
+        </label>
+        <label className={`flex items-center gap-1.5 text-[11px] ${t.muted}`}>
+          <input
+            type="checkbox"
+            checked={holdWorkflow}
+            onChange={(e) => setHoldWorkflow(e.target.checked)}
+          />
+          Hold the workflow until this is answered
+        </label>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          disabled={busy || !canSend}
+          onClick={() => {
+            // Same care as replying on a case: this reaches the user, so it is
+            // confirmed rather than sent on a single click.
+            if (!window.confirm("This will be sent to the user as a task. Send it?")) return;
+            onSubmit({
+              instructions: instructions.trim(),
+              dueAt: dueAt === "" ? undefined : dueAt,
+              holdWorkflow,
+              items: filled.map((i) => ({ ...i, label: i.label.trim() })),
+            });
+          }}
+          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${t.btnAccent}`}
+        >
+          Send request
+        </button>
+        <button
+          disabled={busy}
+          onClick={onCancel}
+          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${t.btn}`}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function BackButton({ t, onBack }: { t: SaTheme; onBack: () => void }) {
   return (
