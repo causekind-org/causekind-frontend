@@ -118,6 +118,8 @@ export function ItemListingWizard({
    * currently on screen or it is not shown at all.
    */
   const analysedKeyRef = useRef<string | null>(mode === "create" ? null : "__existing__");
+  const modelRef = useRef(model);
+  useEffect(() => { modelRef.current = model; }, [model]);
 
   const draft = useListingDraft({
     initialId: initialDraftId ?? listing?.id ?? null,
@@ -178,6 +180,7 @@ export function ItemListingWizard({
         setDeclarationsInvalidated(false);
       }
 
+      modelRef.current = next;
       queueSave(next);
       return next;
     });
@@ -187,13 +190,17 @@ export function ItemListingWizard({
   }, [queueSave]);
 
   const setPhotos = useCallback((updater: (prev: WizardPhoto[]) => WizardPhoto[]) => {
-    setModel(prev => ({ ...prev, photos: updater(prev.photos) }));
+    setModel(prev => {
+      const next = { ...prev, photos: updater(prev.photos) };
+      modelRef.current = next;
+      return next;
+    });
   }, []);
 
   const onUrlsChanged = useCallback(() => {
     // Photo changes are worth an immediate save; waiting out the debounce risks
     // losing an upload if the tab closes.
-    setModel(prev => { queueSaveNow(prev); return prev; });
+    queueSaveNow(modelRef.current);
   }, [queueSaveNow]);
 
   const photoApi = useListingPhotos({
@@ -220,57 +227,57 @@ export function ItemListingWizard({
     }
 
     const filled = new Set<string>();
-    setModel(prev => {
-      const next = { ...prev };
-      const canSet = (k: string) => !dirtyRef.current.has(k);
+    const current = modelRef.current;
+    const next: WizardModel = { ...current };
+    const canSet = (k: string) => !dirtyRef.current.has(k);
 
-      // Category and subcategory are one decision: applying a category without
-      // its subcategory (or vice versa) can leave an incompatible pair.
-      if (r.category && canSet("category") && !next.category) {
-        next.category = r.category;
-        filled.add("category");
-        if (r.subcategory && canSet("subcategory") && isSubcategoryValid(r.category, r.subcategory)) {
-          next.subcategory = r.subcategory;
-          filled.add("subcategory");
-        }
-      } else if (r.subcategory && canSet("subcategory") && !next.subcategory
-                 && isSubcategoryValid(next.category, r.subcategory)) {
+    // Category and subcategory are one decision: applying a category without
+    // its subcategory (or vice versa) can leave an incompatible pair.
+    if (r.category && canSet("category") && !next.category) {
+      next.category = r.category;
+      filled.add("category");
+      if (r.subcategory && canSet("subcategory") && isSubcategoryValid(r.category, r.subcategory)) {
         next.subcategory = r.subcategory;
         filled.add("subcategory");
       }
+    } else if (r.subcategory && canSet("subcategory") && !next.subcategory
+               && isSubcategoryValid(next.category, r.subcategory)) {
+      next.subcategory = r.subcategory;
+      filled.add("subcategory");
+    }
 
-      const simple: [keyof WizardModel, string | null][] = [
-        ["title", r.title], ["brand", r.brand], ["model", r.model],
-        ["condition", r.condition], ["approximateAge", r.approximateAge],
-        ["description", r.description],
-      ];
-      for (const [key, value] of simple) {
-        if (value && canSet(key as string) && !next[key]) {
-          (next[key] as string) = value;
-          filled.add(key as string);
-        }
+    const simple: [keyof WizardModel, string | null][] = [
+      ["title", r.title], ["brand", r.brand], ["model", r.model],
+      ["condition", r.condition], ["approximateAge", r.approximateAge],
+      ["description", r.description],
+    ];
+    for (const [key, value] of simple) {
+      if (value && canSet(key as string) && !next[key]) {
+        (next[key] as string) = value;
+        filled.add(key as string);
       }
+    }
 
-      // Normalised, never assigned raw: the service returns WORKING /
-      // PARTIALLY_WORKING / NOT_WORKING, which no <option> here matches. An
-      // unrecognised value resolves to "" and is dropped rather than written.
-      const normalizedWorking = normalizeWorkingStatus(r.workingStatus);
-      if (normalizedWorking && canSet("workingStatus") && !next.workingStatus && needsWorkingStatus(next.category)) {
-        next.workingStatus = normalizedWorking;
-        filled.add("workingStatus");
-      }
-      if (needsDimensions(next.category)) {
-        if (r.dimensions && canSet("dimensions") && !next.dimensions) { next.dimensions = r.dimensions; filled.add("dimensions"); }
-        if (r.approximateWeight && canSet("approximateWeight") && !next.approximateWeight) { next.approximateWeight = r.approximateWeight; filled.add("approximateWeight"); }
-      }
-      if (r.knownDefects && canSet("knownDefects") && !next.knownDefects && !next.noDefects) {
-        if (r.knownDefects === "NONE") next.noDefects = true;
-        else { next.knownDefects = r.knownDefects; filled.add("knownDefects"); }
-      }
+    // Normalised, never assigned raw: the service returns WORKING /
+    // PARTIALLY_WORKING / NOT_WORKING, which no <option> here matches. An
+    // unrecognised value resolves to "" and is dropped rather than written.
+    const normalizedWorking = normalizeWorkingStatus(r.workingStatus);
+    if (normalizedWorking && canSet("workingStatus") && !next.workingStatus && needsWorkingStatus(next.category)) {
+      next.workingStatus = normalizedWorking;
+      filled.add("workingStatus");
+    }
+    if (needsDimensions(next.category)) {
+      if (r.dimensions && canSet("dimensions") && !next.dimensions) { next.dimensions = r.dimensions; filled.add("dimensions"); }
+      if (r.approximateWeight && canSet("approximateWeight") && !next.approximateWeight) { next.approximateWeight = r.approximateWeight; filled.add("approximateWeight"); }
+    }
+    if (r.knownDefects && canSet("knownDefects") && !next.knownDefects && !next.noDefects) {
+      if (r.knownDefects === "NONE") next.noDefects = true;
+      else { next.knownDefects = r.knownDefects; filled.add("knownDefects"); }
+    }
 
-      queueSave(next);
-      return next;
-    });
+    modelRef.current = next;
+    setModel(next);
+    queueSave(next);
 
     setAiFilled(filled);
     setUncertain(new Set(r.uncertainFields ?? []));
@@ -353,27 +360,34 @@ export function ItemListingWizard({
   // ── Profile prefill — never over a value the donor already set ─────────────
   const prefilledRef = useRef(false);
   useEffect(() => {
+    let isMounted = true;
     if (prefilledRef.current || mode !== "create") return;
     prefilledRef.current = true;
     getProfile()
-      .then(p => setModel(prev => {
-        // The profile stores city in the same flattened "City, StateIso,
-        // CountryIso" shape, so it is parsed rather than dropped into the city
-        // box whole. parseCity falls back to free text for older profiles.
-        // There is no postal code on UserProfile, so the donor always supplies
-        // that themselves — which is why the location step opens in edit mode
-        // for a new listing rather than offering a half-empty summary.
-        const parsed = parseCity(p.city);
-        return {
-          ...prev,
-          countryIso: dirtyRef.current.has("countryIso") ? prev.countryIso : (parsed.countryIso || prev.countryIso),
-          stateIso: dirtyRef.current.has("stateIso") ? prev.stateIso : (prev.stateIso || parsed.stateIso),
-          city: dirtyRef.current.has("city") ? prev.city : (prev.city || parsed.city),
-          latitude: prev.latitude ?? p.latitude ?? undefined,
-          longitude: prev.longitude ?? p.longitude ?? undefined,
-        };
-      }))
+      .then(p => {
+        if (!isMounted) return;
+        setModel(prev => {
+          // The profile stores city in the same flattened "City, StateIso,
+          // CountryIso" shape, so it is parsed rather than dropped into the city
+          // box whole. parseCity falls back to free text for older profiles.
+          // There is no postal code on UserProfile, so the donor always supplies
+          // that themselves — which is why the location step opens in edit mode
+          // for a new listing rather than offering a half-empty summary.
+          const parsed = parseCity(p.city);
+          const next = {
+            ...prev,
+            countryIso: dirtyRef.current.has("countryIso") ? prev.countryIso : (parsed.countryIso || prev.countryIso),
+            stateIso: dirtyRef.current.has("stateIso") ? prev.stateIso : (prev.stateIso || parsed.stateIso),
+            city: dirtyRef.current.has("city") ? prev.city : (prev.city || parsed.city),
+            latitude: prev.latitude ?? p.latitude ?? undefined,
+            longitude: prev.longitude ?? p.longitude ?? undefined,
+          };
+          modelRef.current = next;
+          return next;
+        });
+      })
       .catch(() => { /* prefill is best-effort and must never block the form */ });
+    return () => { isMounted = false; };
   }, [mode]);
 
   const handleGps = useCallback(() => {
@@ -566,7 +580,7 @@ export function ItemListingWizard({
 
         <div className="flex min-w-0 flex-1 flex-col justify-between">
           {/* Mobile sticky progress — never rendered alongside the desktop rail. */}
-          <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5]/95 backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-950/95">
+          <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5] dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
             <div className="flex items-center justify-between px-4 pt-2">
               <button
                 type="button"

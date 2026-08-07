@@ -45,6 +45,7 @@ import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { WhyCauseKindSection }   from "@/components/home/WhyCauseKindSection";
+import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
 import { CTASection }            from "@/components/home/CTASection";
 
@@ -287,6 +288,12 @@ export default function HomeClient({
             <LiveTicker activity={activity} />
           </>
         )}
+
+        {/* Donor / Donee pathways — the two sides of the platform, each with a
+            role-preselecting signup CTA. Placed before "Why CauseKind" so the
+            visitor is told which side they are on before being told why the
+            platform is worth using. */}
+        <AudiencePathwaysSection />
 
         {/* "Why CauseKind" — 4-feature asymmetric grid */}
         <WhyCauseKindSection />

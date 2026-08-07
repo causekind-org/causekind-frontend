@@ -11,7 +11,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
 import { useTilt } from "@/hooks/useTilt";
@@ -20,6 +20,7 @@ import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
+import InKindMegaMenu from "@/components/InKindMegaMenu";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -349,6 +350,60 @@ export function SiteHeader() {
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
 
+  // Desktop mega-menu hover state and timers.
+  //
+  // One controller, not one boolean per panel: "About Us" and "In-Kind" sit next
+  // to each other in the capsule, and with independent flags a fast horizontal
+  // sweep leaves the first still inside its 200ms grace while the second opens —
+  // two panels animating in at once. A single `openMegaMenu` makes that
+  // impossible by construction.
+  type MegaMenu = "about" | "inkind";
+  const [openMegaMenu, setOpenMegaMenu] = useState<MegaMenu | null>(null);
+  const megaLeaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const openMega = (menu: MegaMenu) => {
+    if (megaLeaveTimeoutRef.current) {
+      clearTimeout(megaLeaveTimeoutRef.current);
+      megaLeaveTimeoutRef.current = null;
+    }
+    setOpenMegaMenu(menu);
+  };
+
+  // The grace period forgives a diagonal mouse path from the trigger down to the
+  // panel, which would otherwise cross dead space and snap it shut.
+  const closeMegaSoon = () => {
+    if (megaLeaveTimeoutRef.current) clearTimeout(megaLeaveTimeoutRef.current);
+    megaLeaveTimeoutRef.current = setTimeout(() => setOpenMegaMenu(null), 200);
+  };
+
+  const isAboutMegaMenuOpen = openMegaMenu === "about";
+  const isInKindMegaMenuOpen = openMegaMenu === "inkind";
+  const handleAboutMouseEnter = () => openMega("about");
+  const handleAboutMouseLeave = closeMegaSoon;
+  const handleInKindMouseEnter = () => openMega("inkind");
+  const handleInKindMouseLeave = closeMegaSoon;
+
+  useEffect(() => {
+    setOpenMegaMenu(null);
+  }, [pathname]);
+
+  // Escape closes whichever panel is open, and hover-opened menus otherwise have
+  // no keyboard way out.
+  useEffect(() => {
+    if (!openMegaMenu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenMegaMenu(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openMegaMenu]);
+
+  useEffect(() => {
+    return () => {
+      if (megaLeaveTimeoutRef.current) clearTimeout(megaLeaveTimeoutRef.current);
+    };
+  }, []);
+
   // Elevate-on-scroll: flat at the top of the page, soft shadow fades in once
   // content scrolls beneath the bar (same pattern as the admin panel header).
   const [scrolled, setScrolled] = useState(false);
@@ -512,7 +567,11 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    ...(user ? [{ href: "/requests", label: t("nav.requests") }] : []),
+    // Visible to everyone, including guests: the board itself is public
+    // (reduced-field endpoint, no GPS) and only the act of offering needs an
+    // account. Hiding it from logged-out visitors meant nobody could see what
+    // CauseKind is actually for before signing up.
+    { href: "/requests", label: t("nav.requests") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -555,13 +614,13 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className={`sticky top-0 z-50 w-full bg-[#faf8f5]/75 dark:bg-zinc-950/75 backdrop-blur-md border-b border-[#e5e2d5]/60 dark:border-stone-850/30 transition-shadow duration-300 ease-out ${
+      <header className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 transition-shadow duration-300 ease-out ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
-        {/* Mobile Header (lg:hidden) */}
-        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-transparent">
+        {/* Mobile Header (lg:hidden) - Strict 100% opaque background */}
+        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
           <button
             ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
@@ -601,43 +660,92 @@ export function SiteHeader() {
                 const groupActive = !!activeAboutItem;
                 const triggerLabel = activeAboutItem ? activeAboutItem.label : t("nav.about");
                 return (
-                  <DropdownMenu key="about-dropdown">
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        className={`group relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none ${groupActive
-                            ? "text-[var(--ck-role-accent)]"
-                            : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
-                          }`}
-                      >
-                        {groupActive && (
-                          <motion.span
-                            layoutId="nav-glass-pill"
-                            transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                            className="glass-pill absolute inset-0 rounded-full"
-                          />
-                        )}
-                        {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                        <span className="relative z-10">{triggerLabel}</span>
-                        <ChevronDown className="relative z-10 w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="min-w-[11rem]">
-                      {aboutMenuItems.map((item) => (
-                        <DropdownMenuItem key={item.href} asChild>
-                          <Link
-                            href={item.href}
-                            className={isActive(item.href) ? "text-[var(--ck-role-accent)]" : ""}
-                          >
-                            {item.label}
-                          </Link>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div
+                    key="about-mega-trigger"
+                    className="relative"
+                    onMouseEnter={handleAboutMouseEnter}
+                    onMouseLeave={handleAboutMouseLeave}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenMegaMenu((prev) => (prev === "about" ? null : "about"))}
+                      aria-expanded={isAboutMegaMenuOpen}
+                      className={`group relative text-sm px-4 py-2 transition-all duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none cursor-pointer ${
+                        groupActive || isAboutMegaMenuOpen
+                          ? "text-[var(--ck-role-accent)]"
+                          : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
+                      }`}
+                    >
+                      {(groupActive || isAboutMegaMenuOpen) && (
+                        <motion.span
+                          layoutId="nav-glass-pill"
+                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                          className="glass-pill absolute inset-0 rounded-full"
+                        />
+                      )}
+                      {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
+                      <span className="relative z-10">{triggerLabel}</span>
+                      <ChevronDown
+                        className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
+                          isAboutMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
                 );
               }
 
               const active = isActive(link.href);
+
+              // "In-Kind Requests" is both a destination and the category
+              // mega-menu trigger — one pill, not two. Clicking still goes to
+              // the hub; hover or keyboard focus opens the nine categories
+              // beneath it.
+              //
+              // Open to donors and to guests. A guest browsing categories is
+              // exactly the person this menu is for, and every page behind it is
+              // public. Only a donee is excluded — they post needs rather than
+              // fill them, so "what should I donate" is noise on their nav.
+              const isInKindTrigger = link.href === "/requests" && user?.role !== "DONEE";
+              if (isInKindTrigger) {
+                return (
+                  <div
+                    key={link.label}
+                    className="relative"
+                    onMouseEnter={handleInKindMouseEnter}
+                    onMouseLeave={handleInKindMouseLeave}
+                  >
+                    <Link
+                      href={link.href}
+                      data-tour="nav-requests"
+                      onFocus={handleInKindMouseEnter}
+                      aria-expanded={isInKindMegaMenuOpen}
+                      className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold ${
+                        active || isInKindMegaMenuOpen
+                          ? "text-[var(--ck-role-accent)]"
+                          : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
+                      }`}
+                    >
+                      {(active || isInKindMegaMenuOpen) && (
+                        <motion.span
+                          layoutId="nav-glass-pill"
+                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                          className="glass-pill absolute inset-0 rounded-full"
+                        />
+                      )}
+                      {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
+                      <span className="relative z-10">{link.label}</span>
+                      <ChevronDown
+                        className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
+                          isInKindMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={link.label}
@@ -660,6 +768,7 @@ export function SiteHeader() {
                 </Link>
               );
             })}
+
           </nav>
 
           {/* Right buttons */}
@@ -724,6 +833,186 @@ export function SiteHeader() {
           </div>
         </div>
 
+        {/* Animated Desktop Mega Menu for "In-Kind" — mirrors the About panel's
+            chrome, positioning and timing exactly; only the body differs. */}
+        <AnimatePresence>
+          {isInKindMegaMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              onMouseEnter={handleInKindMouseEnter}
+              onMouseLeave={handleInKindMouseLeave}
+              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5]/98 dark:bg-stone-900/98 backdrop-blur-2xl border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+            >
+              <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
+                <InKindMegaMenu onNavigate={() => setOpenMegaMenu(null)} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Animated Desktop Mega Menu for "About Us" - Full Screen Width & Rich Design */}
+        <AnimatePresence>
+          {isAboutMegaMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              onMouseEnter={handleAboutMouseEnter}
+              onMouseLeave={handleAboutMouseLeave}
+              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5]/98 dark:bg-stone-900/98 backdrop-blur-2xl border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+            >
+              <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
+                <div className="grid grid-cols-12 gap-6">
+                  {/* Left Column: 3 Rich Navigation Cards (8 cols) */}
+                  <div className="col-span-8 grid grid-cols-2 gap-4">
+                    {/* 1. About Us */}
+                    <Link
+                      href="/about"
+                      onClick={() => setOpenMegaMenu(null)}
+                      className="group flex flex-col justify-between p-5 rounded-2xl bg-white/70 dark:bg-stone-850/60 hover:bg-white dark:hover:bg-stone-800 border border-stone-200/70 dark:border-stone-800 hover:border-[var(--ck-role-accent)]/40 dark:hover:border-[var(--ck-role-accent)]/40 transition-all duration-300 shadow-2xs hover:shadow-md"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-orange-500/10 dark:bg-orange-400/15 flex items-center justify-center text-[var(--ck-role-accent)] group-hover:scale-110 transition-transform duration-200">
+                            <HeartHandshake className="w-5 h-5" />
+                          </div>
+                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-orange-500/10 text-[var(--ck-role-accent)] border border-orange-500/20">
+                            Story
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors mb-1.5 flex items-center gap-1.5">
+                          {t("nav.about")}
+                        </h4>
+                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+                          Our story, mission, and transparent model for direct peer-to-peer giving.
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-center text-xs font-semibold text-[var(--ck-role-accent)] opacity-80 group-hover:opacity-100 transition-opacity">
+                        <span>Read our story</span>
+                        <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
+                      </div>
+                    </Link>
+
+                    {/* 2. FAQ */}
+                    <Link
+                      href="/faq"
+                      onClick={() => setOpenMegaMenu(null)}
+                      className="group flex flex-col justify-between p-5 rounded-2xl bg-white/70 dark:bg-stone-850/60 hover:bg-white dark:hover:bg-stone-800 border border-stone-200/70 dark:border-stone-800 hover:border-emerald-500/40 dark:hover:border-emerald-400/40 transition-all duration-300 shadow-2xs hover:shadow-md"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-400/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-200">
+                            <HelpCircle className="w-5 h-5" />
+                          </div>
+                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                            Help & Safety
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1.5 flex items-center gap-1.5">
+                          {t("nav.faq")}
+                        </h4>
+                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+                          Clear answers on item matching, verification rules, and donor safety.
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <span>Browse answers</span>
+                        <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
+                      </div>
+                    </Link>
+
+                    {/* 3. Contact (Wide Card) */}
+                    <Link
+                      href="/contact"
+                      onClick={() => setOpenMegaMenu(null)}
+                      className="col-span-2 group flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-stone-850/60 hover:bg-white dark:hover:bg-stone-800 border border-stone-200/70 dark:border-stone-800 hover:border-blue-500/40 dark:hover:border-blue-400/40 transition-all duration-300 shadow-2xs hover:shadow-md"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-400/15 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 group-hover:scale-110 transition-transform duration-200">
+                          <Mail className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              {t("nav.contact")}
+                            </h4>
+                            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
+                              Support
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-600 dark:text-stone-400">
+                            Need help, partnership inquiries, or donor support? Talk directly to our team.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-xs font-semibold text-blue-600 dark:text-blue-400 shrink-0 pl-4 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <span>Get in touch</span>
+                        <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
+                      </div>
+                    </Link>
+                  </div>
+
+                  {/* Right Column: Featured Direct-Giving Impact Card (4 cols) */}
+                  <div className="col-span-4 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-[#b04a15]/10 via-amber-500/5 to-stone-100/50 dark:from-orange-500/15 dark:via-stone-850 dark:to-stone-900 border border-[#b04a15]/20 dark:border-orange-500/20 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-[var(--ck-role-accent)] text-white shadow-2xs">
+                          <Heart className="w-3 h-3 fill-current" />
+                          100% Direct Giving
+                        </span>
+                      </div>
+                      <h4 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2">
+                        Giving Directly to People in Need.
+                      </h4>
+                      <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-4">
+                        Zero platform fees on in-kind donations. Every request is vetted to ensure your generosity makes an immediate impact.
+                      </p>
+                    </div>
+
+                    <Link
+                      href="/requests"
+                      onClick={() => setOpenMegaMenu(null)}
+                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[var(--ck-role-accent)] hover:brightness-110 shadow-sm hover:shadow-md transition-all duration-200"
+                    >
+                      <span>Explore Community Needs</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Bottom Trust & Verification Footer Strip */}
+                <div className="mt-6 pt-4 border-t border-[#e5e2d5]/80 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+                  <div className="flex items-center gap-6 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span className="font-medium">Verified Beneficiaries</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" />
+                      <span className="font-medium">100% Free Peer Giving</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span className="font-medium">Smart AI Matching</span>
+                    </div>
+                  </div>
+                  <Link
+                    href="/about"
+                    onClick={() => setOpenMegaMenu(null)}
+                    className="flex items-center gap-1 font-semibold text-[var(--ck-role-accent)] hover:underline"
+                  >
+                    <span>Learn about CauseKind verification</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* ── Mobile menu — StaggeredMenu (replaces the former rich side drawer).
@@ -811,9 +1100,16 @@ export function SiteFooter() {
   const t = useTranslations("footer");
   const pathname = usePathname();
   const { user } = useAuth();
+  const isWizard =
+    pathname === "/items/new" ||
+    (pathname?.startsWith("/items/") && pathname?.endsWith("/edit")) ||
+    (pathname?.startsWith("/requests/") && pathname?.endsWith("/offer")) ||
+    pathname === "/donations/offer";
+
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
+    isWizard ||
     user?.role === "SUPER_ADMIN"
   ) return null;
   const giveBackLinks = [

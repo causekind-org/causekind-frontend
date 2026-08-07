@@ -164,7 +164,24 @@ function RegisterContent() {
 
   const isSocialFlow = searchParams.get("social") === "google";
 
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", role: "DONOR" });
+  // `?role=DONOR|DONEE` preselects the role picker — used by the landing page's
+  // two audience CTAs so someone who clicked "Join as a donee" does not have to
+  // state that a second time.
+  //
+  // Only the two self-registerable roles are honoured. The backend refuses
+  // ADMIN / SUPER_ADMIN / NGO_PARTNER self-registration anyway
+  // (parseRegistrationRole), but accepting them here would render a form that
+  // visibly promises something the submit will reject.
+  //
+  // Seeded through useState's initialiser rather than an effect so the correct
+  // choice is highlighted on first paint, with no flicker from DONOR to DONEE —
+  // and so a user who changes it is never overwritten by a later re-render.
+  const initialRole = (() => {
+    const raw = searchParams.get("role")?.toUpperCase();
+    return raw === "DONEE" || raw === "DONOR" ? raw : "DONOR";
+  })();
+
+  const [form, setForm] = useState({ fullName: "", email: "", password: "", role: initialRole });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 

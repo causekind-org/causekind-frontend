@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
+import { safeInternalPath } from "@/lib/safeRedirect";
 import { login, googleAuth } from "@/lib/api";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -49,6 +50,16 @@ function LoginContent() {
   const { setUser, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Where to land after sign-in. Guests bounced off a protected destination
+  // (`/requests/<id>/offer`, say) arrive with `?next=` and should be returned
+  // there rather than dumped on the homepage to find their way back.
+  // `safeInternalPath` is what stops that parameter becoming an open redirect —
+  // it is attacker-controlled, so anything not plainly a path on this origin is
+  // discarded in favour of the role's normal landing page.
+  const nextPath = safeInternalPath(searchParams.get("next"));
+  const destinationFor = (role: string | null) => nextPath ?? homeForRole(role);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -85,7 +96,7 @@ function LoginContent() {
           // Fix #4: cookie set by server; use role from response directly
           setUser({ email: res.email, role: res.role });
           toast.success("Welcome back!");
-          router.push(homeForRole(res.role));
+          router.push(destinationFor(res.role));
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Google login failed");
@@ -96,7 +107,7 @@ function LoginContent() {
     onError: () => toast.error("Google sign-in failed"),
   });
 
-  useEffect(() => { if (user) router.replace(homeForRole(user.role)); }, [user, router]);
+  useEffect(() => { if (user) router.replace(destinationFor(user.role)); }, [user, router]);
 
   useEffect(() => {
     if (searchParams.get("expired") === "1") {
@@ -133,7 +144,7 @@ function LoginContent() {
       setSignedIn(true);
       const settle = () => {
         setUser({ email: res.email, role: res.role });
-        router.push(homeForRole(res.role));
+        router.push(destinationFor(res.role));
       };
       if (reduced) settle();
       else setTimeout(settle, 380);

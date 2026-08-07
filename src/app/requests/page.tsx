@@ -9,6 +9,7 @@ import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTransla
 import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import PublicRequestsBoard from "@/components/PublicRequestsBoard";
 import { Reveal } from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -808,13 +809,18 @@ export default function RequestsPage() {
 
   // ── Guard ─────────────────────────────────────────────────────────────────
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f7f4f0] dark:bg-zinc-950">
         <Loader2 className="w-6 h-6 animate-spin text-[var(--ck-role-accent)]" />
       </div>
     );
   }
+
+  // Logged-out visitors get the public board: the reduced-field endpoint, no GPS
+  // prompt, and every action routed through /login?next=. They used to be held
+  // on the spinner above forever, since `user` never arrives for a guest.
+  if (!user) return <PublicRequestsBoard />;
 
   // Dedicated donee portal
   if (user.role === "DONEE") return <DoneeRequestsPage />;

@@ -120,12 +120,16 @@ export function MobileBottomNav() {
     return { x, index };
   }
 
-  // Hidden inside super-admin, admin dashboard, and the item listing wizard (which has its own navigation).
-  const isItemListingWizard = pathname === "/items/new" || (pathname?.startsWith("/items/") && pathname?.endsWith("/edit"));
+  // Hidden inside super-admin, admin dashboard, and wizard flows (which have their own navigation).
+  const isWizardRoute =
+    pathname === "/items/new" ||
+    (pathname?.startsWith("/items/") && pathname?.endsWith("/edit")) ||
+    (pathname?.startsWith("/requests/") && pathname?.endsWith("/offer")) ||
+    pathname === "/donations/offer";
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
-    isItemListingWizard ||
+    isWizardRoute ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 
