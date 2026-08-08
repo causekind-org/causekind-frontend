@@ -2,12 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  superAdminApplyRestriction,
+  superAdminRestrictionMeta,
+  superAdminRestrictions,
+  superAdminRevokeRestriction,
   superAdminUserProfile,
   superAdminUserRecords,
   superAdminUserTimeline,
   type SaPage,
   type SaRecordSummary,
   type SaRecordType,
+  type SaRestriction,
+  type SaRestrictionMeta,
+  type SaRestrictionScope,
+  type SaRestrictionType,
   type SaTimelineEvent,
   type SaTimelinePage,
   type SaUserProfile,
@@ -17,7 +25,7 @@ import { saTheme, type SaTheme } from "@/components/super-admin/saTheme";
 import { SaPagination } from "@/components/super-admin/SaPagination";
 import { ArrowLeft, Loader2, ShieldAlert, Lock } from "lucide-react";
 
-type Tab = "identity" | "timeline" | "records";
+type Tab = "identity" | "timeline" | "records" | "restrictions";
 
 const RECORD_TABS: { key: SaRecordType; label: string }[] = [
   { key: "REQUEST", label: "Requests" },
@@ -30,9 +38,13 @@ const RECORD_TABS: { key: SaRecordType; label: string }[] = [
 /**
  * User 360 — everything known about one account, on one screen.
  *
- * <p>Read-only. Restrictions, suspension and interventions are Phases 4–5; the
- * tabs for those are shown as locked rather than hidden so the shape of the
- * finished console is visible and nobody goes looking for a screen that is
+ * <p>Identity, Timeline and Records are read-only. Restrictions (Phase 4) is the
+ * first tab here that changes anything: granular, reversible controls short of
+ * suspension, each of which the backend actually enforces at the point the
+ * action happens.
+ *
+ * <p>Cases and Actions remain locked rather than hidden, so the shape of the
+ * finished console stays visible and nobody goes looking for a screen that is
  * simply not built yet.
  */
 export function User360Panel({
@@ -92,7 +104,7 @@ export function User360Panel({
         <TabButton active={tab === "identity"} onClick={() => setTab("identity")} t={t}>Identity</TabButton>
         <TabButton active={tab === "timeline"} onClick={() => setTab("timeline")} t={t}>Timeline</TabButton>
         <TabButton active={tab === "records"} onClick={() => setTab("records")} t={t}>Records</TabButton>
-        <LockedTab t={t}>Restrictions</LockedTab>
+        <TabButton active={tab === "restrictions"} onClick={() => setTab("restrictions")} t={t}>Restrictions</TabButton>
         <LockedTab t={t}>Cases</LockedTab>
         <LockedTab t={t}>Actions</LockedTab>
       </div>
@@ -100,6 +112,290 @@ export function User360Panel({
       {tab === "identity" && <IdentityTab profile={profile} t={t} />}
       {tab === "timeline" && <TimelineTab userId={userId} t={t} isDark={isDark} />}
       {tab === "records" && <RecordsTab userId={userId} t={t} isDark={isDark} />}
+      {tab === "restrictions" && <RestrictionsTab userId={userId} t={t} />}
+    </div>
+  );
+}
+
+// ── Restrictions (Phase 4) ────────────────────────────────────────────────────
+
+/**
+ * Granular, reversible controls short of suspension.
+ *
+ * <p>Renders `inForce`, never `status`. A row keeps status ACTIVE after its
+ * expiry passes — expiry is computed from the timestamp rather than swept by a
+ * job — so showing the raw status would present a lapsed restriction as live.
+ *
+ * <p>The type list comes from the server rather than being hard-coded here. A
+ * copy of the enum in the frontend is a copy that drifts, and the labels
+ * describe what each one actually blocks, which is not derivable from the name.
+ */
+function RestrictionsTab({ userId, t }: { userId: number; t: SaTheme }) {
+  const [rows, setRows] = useState<SaRestriction[] | null>(null);
+  const [meta, setMeta] = useState<SaRestrictionMeta | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    superAdminRestrictions(userId)
+      .then(setRows)
+      .catch(() => { setRows([]); toast.error("Couldn't load restrictions."); });
+  }, [userId]);
+
+  useEffect(load, [load]);
+  useEffect(() => {
+    superAdminRestrictionMeta().then(setMeta).catch(() => setMeta(null));
+  }, []);
+
+  const inForce = (rows ?? []).filter((r) => r.inForce);
+  const past = (rows ?? []).filter((r) => !r.inForce);
+
+  async function revoke(r: SaRestriction) {
+    const reason = window.prompt("Why is this being lifted? (required)");
+    if (!reason || !reason.trim()) return;
+    setBusy(true);
+    try {
+      await superAdminRevokeRestriction(r.id, reason.trim());
+      load();
+      toast.success("Restriction lifted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "That didn't work.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (rows === null) {
+    return <div className="flex justify-center py-10"><Loader2 className={`size-6 animate-spin ${t.dim}`} /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className={`text-xs ${t.muted}`}>
+          Controls short of suspension. The user is told the reason, so write it for them.
+        </p>
+        {!adding && (
+          <button
+            disabled={busy || !meta}
+            onClick={() => setAdding(true)}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${t.btn}`}
+          >
+            Add restriction
+          </button>
+        )}
+      </div>
+
+      {adding && meta && (
+        <AddRestrictionForm
+          t={t}
+          meta={meta}
+          busy={busy}
+          onCancel={() => setAdding(false)}
+          onSubmit={async (body) => {
+            setBusy(true);
+            try {
+              await superAdminApplyRestriction(userId, body);
+              setAdding(false);
+              load();
+              toast.success("Restriction applied");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "That didn't work.");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      )}
+
+      <section>
+        <h3 className={`mb-2 text-sm font-bold ${t.heading}`}>In force</h3>
+        {inForce.length === 0 ? (
+          <p className={`text-xs ${t.muted}`}>Nothing currently restricted.</p>
+        ) : (
+          <ul className="space-y-2">
+            {inForce.map((r) => (
+              <li key={r.id} className={`rounded-xl border p-3 ${t.dangerPanel}`}>
+                <RestrictionBody r={r} t={t} meta={meta} />
+                <button
+                  disabled={busy}
+                  onClick={() => revoke(r)}
+                  className={`mt-2 rounded-lg border px-2.5 py-1 text-[11px] font-semibold ${t.btn}`}
+                >
+                  Lift
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {past.length > 0 && (
+        <section>
+          <h3 className={`mb-2 text-sm font-bold ${t.heading}`}>Lifted or expired</h3>
+          <ul className="space-y-2">
+            {past.map((r) => (
+              <li key={r.id} className={`rounded-xl border p-3 ${t.card}`}>
+                <RestrictionBody r={r} t={t} meta={meta} />
+                {r.revokedBy && (
+                  <p className={`mt-1 text-[11px] ${t.dim}`}>
+                    Lifted by {r.revokedBy}
+                    {r.revocationReason && ` — ${r.revocationReason}`}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function RestrictionBody({ r, t, meta }: { r: SaRestriction; t: SaTheme; meta: SaRestrictionMeta | null }) {
+  const label = meta?.types.find((x) => x.name === r.type)?.label ?? r.type.replace(/_/g, " ");
+  return (
+    <>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className={`text-sm font-semibold ${t.heading}`}>
+          {label}
+          {r.scopeType !== "PLATFORM" && (
+            <span className={`font-normal ${t.muted}`}>
+              {" "}· {r.scopeType.toLowerCase()} #{r.scopeId}
+            </span>
+          )}
+        </p>
+        <span className={`text-[11px] ${t.dim}`}>
+          {r.expiresAt ? `until ${new Date(r.expiresAt).toLocaleString()}` : "no end date"}
+        </span>
+      </div>
+      <p className={`mt-0.5 text-xs ${t.text}`}>{r.reason}</p>
+      {r.internalNote && <p className={`mt-1 text-[11px] italic ${t.muted}`}>Internal: {r.internalNote}</p>}
+      <p className={`mt-1 text-[11px] ${t.dim}`}>
+        by {r.createdBy} · {new Date(r.createdAt).toLocaleString()}
+      </p>
+    </>
+  );
+}
+
+function AddRestrictionForm({
+  t, meta, busy, onCancel, onSubmit,
+}: {
+  t: SaTheme;
+  meta: SaRestrictionMeta;
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (body: {
+    type: SaRestrictionType; scopeType?: SaRestrictionScope; scopeId?: number;
+    reason: string; internalNote?: string; expiresAt?: string;
+  }) => void;
+}) {
+  const [type, setType] = useState<SaRestrictionType>(meta.types[0].name);
+  const [scopeType, setScopeType] = useState<SaRestrictionScope>("PLATFORM");
+  const [scopeId, setScopeId] = useState("");
+  const [reason, setReason] = useState("");
+  const [internalNote, setInternalNote] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+
+  const blocks = meta.types.find((x) => x.name === type)?.blocks;
+  const needsScopeId = scopeType !== "PLATFORM";
+  const canSend = reason.trim() !== "" && (!needsScopeId || scopeId.trim() !== "");
+
+  return (
+    <div className={`rounded-xl border p-3 ${t.card}`}>
+      <label className={`mb-1 block text-[11px] font-semibold uppercase tracking-wide ${t.dim}`}>
+        What to block
+      </label>
+      <select
+        value={type}
+        onChange={(e) => setType(e.target.value as SaRestrictionType)}
+        className={`w-full rounded-lg border px-2.5 py-1.5 text-xs ${t.input}`}
+      >
+        {meta.types.map((o) => <option key={o.name} value={o.name}>{o.label}</option>)}
+      </select>
+      {/* What the type actually prevents, from the server. Names like
+          CALL_REQUEST do not say whether they block making or receiving. */}
+      {blocks && <p className={`mt-1 text-[11px] ${t.muted}`}>{blocks}</p>}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <label className={`text-[11px] ${t.muted}`}>Applies to</label>
+        <select
+          value={scopeType}
+          onChange={(e) => setScopeType(e.target.value as SaRestrictionScope)}
+          className={`rounded-lg border px-2 py-1.5 text-xs ${t.input}`}
+        >
+          <option value="PLATFORM">Everywhere</option>
+          {meta.scopes.filter((s) => s !== "PLATFORM").map((s) => (
+            <option key={s} value={s}>One {s.toLowerCase()}</option>
+          ))}
+        </select>
+        {needsScopeId && (
+          <input
+            value={scopeId}
+            onChange={(e) => setScopeId(e.target.value.replace(/[^0-9]/g, ""))}
+            placeholder={`${scopeType.toLowerCase()} id`}
+            inputMode="numeric"
+            className={`w-28 rounded-lg border px-2 py-1.5 text-xs ${t.input} ${t.placeholder}`}
+          />
+        )}
+      </div>
+
+      <label className={`mb-1 mt-3 block text-[11px] font-semibold uppercase tracking-wide ${t.dim}`}>
+        Reason — the user sees this
+      </label>
+      <textarea
+        rows={2}
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Why this is being applied, written for the person it affects"
+        className={`w-full rounded-lg border p-2.5 text-sm ${t.input} ${t.placeholder}`}
+      />
+
+      <label className={`mb-1 mt-2 block text-[11px] font-semibold uppercase tracking-wide ${t.dim}`}>
+        Internal note — the user never sees this
+      </label>
+      <textarea
+        rows={2}
+        value={internalNote}
+        onChange={(e) => setInternalNote(e.target.value)}
+        placeholder="Context for colleagues"
+        className={`w-full rounded-lg border p-2.5 text-sm ${t.input} ${t.placeholder}`}
+      />
+
+      <label className={`mt-3 flex flex-wrap items-center gap-1.5 text-[11px] ${t.muted}`}>
+        Until
+        <input
+          type="datetime-local"
+          value={expiresAt}
+          onChange={(e) => setExpiresAt(e.target.value)}
+          className={`rounded-lg border px-2 py-1 text-xs ${t.input}`}
+        />
+        <span className={t.dim}>leave empty to keep it until lifted</span>
+      </label>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          disabled={busy || !canSend}
+          onClick={() => onSubmit({
+            type,
+            scopeType,
+            scopeId: needsScopeId ? Number(scopeId) : undefined,
+            reason: reason.trim(),
+            internalNote: internalNote.trim() === "" ? undefined : internalNote.trim(),
+            expiresAt: expiresAt === "" ? undefined : expiresAt,
+          })}
+          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${t.btnAccent}`}
+        >
+          Apply restriction
+        </button>
+        <button
+          disabled={busy}
+          onClick={onCancel}
+          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${t.btn}`}
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
