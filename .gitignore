@@ -36,3 +36,9 @@ graphify-out/
 
 # Obsidian
 .obsidian/
+
+# Blog source artwork — the multi-MB originals authors drop in. The optimised
+# WebP the site actually serves lives in public/ and IS committed; keeping the
+# ~50MB of PNGs out means they don't sit in git history forever. Delete this
+# rule if the originals need to be versioned.
+content/blog-source/images/

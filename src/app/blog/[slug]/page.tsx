@@ -66,10 +66,37 @@ export function generateStaticParams() {
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
+  const post = blogPosts.find((p) => p.slug === slug);
 
-  if (!blogPosts.some((p) => p.slug === slug)) {
+  if (!post) {
     notFound();
   }
 
-  return <BlogPostClient slug={slug} />;
+  // FAQPage markup for the guides that carry Q&A. Emitted here rather than in
+  // BlogPostClient so it is in the server-rendered document; the questions
+  // themselves are also in the article body, which Google requires — FAQ
+  // structured data must reflect content visible on the page.
+  const faqSchema = post.faq?.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: post.faq.map((f) => ({
+          "@type": "Question",
+          name: f.question,
+          acceptedAnswer: { "@type": "Answer", text: f.answer },
+        })),
+      }
+    : null;
+
+  return (
+    <>
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+      )}
+      <BlogPostClient slug={slug} />
+    </>
+  );
 }
