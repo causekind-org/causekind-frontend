@@ -2854,6 +2854,76 @@ export function superAdminCaseMerge(id: number, targetCaseId: number) {
   });
 }
 
+// ── Phase 4: account restrictions ───────────────────────────────────────────
+
+export type SaRestrictionType =
+  | "CHAT_SEND" | "CALL_REQUEST" | "REQUEST_CREATE" | "LISTING_CREATE"
+  | "OFFER_MAKE" | "PHOTO_UPLOAD" | "CAMPAIGN_CREATE" | "MONEY_DONATE";
+
+export type SaRestrictionScope =
+  | "PLATFORM" | "REQUEST" | "LISTING" | "OFFER" | "MATCH" | "USER";
+
+export type SaRestriction = {
+  id: number;
+  userId: number;
+  type: SaRestrictionType;
+  scopeType: SaRestrictionScope;
+  scopeId: number | null;
+  status: "ACTIVE" | "REVOKED";
+  /**
+   * Computed, not stored. A row keeps status ACTIVE after its expiry passes —
+   * expiry is read from the timestamp rather than swept by a job — so render
+   * this, not status, or an expired restriction will look live.
+   */
+  inForce: boolean;
+  reason: string;
+  internalNote: string | null;
+  startsAt: string;
+  expiresAt: string | null;
+  createdBy: string;
+  revokedBy: string | null;
+  revokedAt: string | null;
+  revocationReason: string | null;
+  caseId: number | null;
+  createdAt: string;
+};
+
+export type SaRestrictionMeta = {
+  types: { name: SaRestrictionType; label: string; blocks: string }[];
+  scopes: SaRestrictionScope[];
+};
+
+export function superAdminRestrictionMeta() {
+  return request<SaRestrictionMeta>("/api/v1/super-admin/restrictions/meta");
+}
+
+export function superAdminRestrictions(userId: number) {
+  return request<SaRestriction[]>(`/api/v1/super-admin/users/${userId}/restrictions`);
+}
+
+export function superAdminApplyRestriction(userId: number, body: {
+  type: SaRestrictionType;
+  scopeType?: SaRestrictionScope;
+  scopeId?: number;
+  reason: string;
+  internalNote?: string;
+  expiresAt?: string;
+  caseId?: number;
+}) {
+  return request<SaRestriction>(`/api/v1/super-admin/users/${userId}/restrictions`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/** A reason is required, which is why lifting takes a body rather than a bare DELETE. */
+export function superAdminRevokeRestriction(restrictionId: number, reason: string) {
+  return request<SaRestriction>(`/api/v1/super-admin/restrictions/${restrictionId}`, {
+    method: "DELETE",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export function superAdminRequestInformation(body: {
   targetUserId: number; caseId?: number; contextType?: string; contextId?: number;
   instructions: string; dueAt?: string; holdWorkflow?: boolean;
