@@ -27,6 +27,7 @@ import {
   Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck,
   ChevronDown, History, MessageCircle, Trash2
 } from "lucide-react";
+import { DashboardSkeleton, PageSkeleton } from "@/components/skeletons";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
@@ -1650,10 +1651,12 @@ export default function DashboardPage() {
   if (!user) return null;
 
   if (loading) {
+    // Stat tiles and panels in the shape the dashboard actually renders, rather
+    // than a spinner in a 400px void that then jumps to a full page.
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
+      <PageSkeleton>
+        <DashboardSkeleton tiles={3} label="Loading your dashboard" />
+      </PageSkeleton>
     );
   }
 

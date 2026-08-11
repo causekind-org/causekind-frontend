@@ -184,6 +184,26 @@
   --color-stone-text: var(--stone-text);
   --color-tertiary-fixed-dim: var(--tertiary-fixed-dim);
   --color-on-tertiary-fixed: var(--on-tertiary-fixed);
+
+  /* ── Half-step shades used across the app but absent from Tailwind ──
+     Tailwind ships 50, 100…900, 950. There is no 150/250/550/850, so
+     `dark:bg-stone-850/60`, `border-stone-850`, `text-stone-250` and friends
+     were compiling to *nothing* — around ninety class usages that silently did
+     no work.
+
+     The visible symptom was the About mega menu in dark mode: its cards read
+     `bg-white/70 dark:bg-stone-850/60`, and with the dark override dead the
+     white stayed on, painting pale grey blocks with unreadable body text.
+
+     Defining the tokens here is the honest fix rather than rewriting every call
+     site to 800/900 — the author wanted a step between, and this makes every
+     existing usage mean what it already says. Values are the true midpoints of
+     their Tailwind neighbours in oklch. */
+  --color-stone-150: oklch(94.6% 0.002 77.5);   /* between stone-100 and 200 */
+  --color-stone-250: oklch(89.6% 0.004 52.5);   /* between stone-200 and 300 */
+  --color-stone-850: oklch(24.2% 0.0065 45.2);  /* between stone-800 and 900 */
+  --color-zinc-850: oklch(24.2% 0.006 285.96);  /* between zinc-800 and 900  */
+  --color-emerald-550: oklch(64.6% 0.158 162.85); /* between emerald-500/600 */
 }
 
 * {
@@ -2360,6 +2380,22 @@ div:has(.searchable-select-open) {
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  /* Loading placeholders.
+     `ui/skeleton.tsx` used to claim `animate-pulse` stopped here "via
+     Tailwind". It does not — Tailwind has no such behaviour, and nothing in
+     this file covered it either. That was harmless while Skeleton was used in
+     exactly one place; it stops being harmless now that skeletons cover most
+     of the app.
+
+     Only the pulse is removed. The muted fill stays, because the placeholder
+     still has to show that something is loading — a reduced-motion preference
+     asks for no movement, not for an invisible UI. */
+  [data-slot="skeleton"],
+  .ck-route-progress {
+    animation: none !important;
+    transition: none !important;
   }
 }
 

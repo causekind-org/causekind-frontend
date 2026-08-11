@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { MapPin, AlertTriangle, Loader2, Inbox, RefreshCw, LogIn, Search } from "lucide-react";
 import { getPublicItemRequests, type PublicItemRequest } from "@/lib/api";
+import { CardGridSkeleton } from "@/components/skeletons";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { loginUrlFor } from "@/lib/safeRedirect";
 
@@ -152,7 +153,8 @@ export default function PublicRequestsBoard() {
         {/* ── Results ── */}
         <div className="mt-7" aria-live="polite">
           {loading ? (
-            <Shell><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Loading open needs…</Shell>
+            // Same grid the results land in, so nothing shifts when they do.
+            <CardGridSkeleton count={6} label="Loading open needs" />
           ) : failed ? (
             <Shell>
               <AlertTriangle className="w-4 h-4 text-amber-600" aria-hidden="true" />

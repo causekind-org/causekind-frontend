@@ -359,6 +359,11 @@ export function SiteHeader() {
   // impossible by construction.
   type MegaMenu = "about" | "inkind";
   const [openMegaMenu, setOpenMegaMenu] = useState<MegaMenu | null>(null);
+
+  // Which capsule link the pointer or keyboard focus is currently on, so the
+  // hover pill knows where to travel to. Keyed by href rather than index so
+  // it survives the conditional entries in `navLinks` (campaigns, requests).
+  const [hoveredHref, setHoveredHref] = useState<string | null>(null);
   const megaLeaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const openMega = (menu: MegaMenu) => {
@@ -385,6 +390,9 @@ export function SiteHeader() {
 
   useEffect(() => {
     setOpenMegaMenu(null);
+    // Navigating away from under the cursor otherwise leaves the hover pill
+    // parked on a link the pointer is no longer on.
+    setHoveredHref(null);
   }, [pathname]);
 
   // Escape closes whichever panel is open, and hover-opened menus otherwise have
@@ -676,7 +684,11 @@ export function SiteHeader() {
                           : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                       }`}
                     >
-                      {(groupActive || isAboutMegaMenuOpen) && (
+                      {/* Releases the pill while a plain link is hovered, so
+                          exactly one element ever claims `nav-glass-pill`. Two
+                          claimants at once make Framer pick a winner and the
+                          slide stutters. */}
+                      {(isAboutMegaMenuOpen || (groupActive && !hoveredHref)) && (
                         <motion.span
                           layoutId="nav-glass-pill"
                           transition={{ type: "spring", stiffness: 380, damping: 32 }}
@@ -726,7 +738,7 @@ export function SiteHeader() {
                           : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                       }`}
                     >
-                      {(active || isInKindMegaMenuOpen) && (
+                      {(isInKindMegaMenuOpen || (active && !hoveredHref)) && (
                         <motion.span
                           layoutId="nav-glass-pill"
                           transition={{ type: "spring", stiffness: 380, damping: 32 }}
@@ -751,12 +763,31 @@ export function SiteHeader() {
                   key={link.label}
                   href={link.href}
                   data-tour={link.href === "/requests" ? "nav-requests" : undefined}
+                  // Landing on a plain link also dismisses any open mega panel.
+                  // Without this, sweeping from "About Us" to "Blog" inside the
+                  // 200ms leave grace leaves the panel open while Blog is
+                  // hovered — two elements claiming `nav-glass-pill` at once,
+                  // which is exactly the stutter the single-owner rule prevents.
+                  onMouseEnter={() => { setHoveredHref(link.href); setOpenMegaMenu(null); }}
+                  onMouseLeave={() => setHoveredHref(null)}
+                  onFocus={() => { setHoveredHref(link.href); setOpenMegaMenu(null); }}
+                  onBlur={() => setHoveredHref(null)}
                   className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
                       ? "text-[var(--ck-role-accent)]"
                       : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                     }`}
                 >
-                  {active && (
+                  {/* The one travelling glass pill, shared with both dropdown
+                      triggers through `layoutId="nav-glass-pill"`. Hovering any
+                      of them slides it off the current page and onto whatever
+                      you are pointing at, then back when you leave.
+
+                      Blog used to be the only item in the capsule the pill would
+                      not travel to: the dropdown triggers render it on
+                      `groupActive || isOpen`, and hovering opens the menu, so
+                      they got the slide for free. A plain link has no open state,
+                      so it needs `hoveredHref` to say the same thing. */}
+                  {(hoveredHref === link.href || (active && !hoveredHref)) && (
                     <motion.span
                       layoutId="nav-glass-pill"
                       transition={{ type: "spring", stiffness: 380, damping: 32 }}
@@ -873,7 +904,7 @@ export function SiteHeader() {
                     <Link
                       href="/about"
                       onClick={() => setOpenMegaMenu(null)}
-                      className="group flex flex-col justify-between p-5 rounded-2xl bg-white/70 dark:bg-stone-850/60 hover:bg-white dark:hover:bg-stone-800 border border-stone-200/70 dark:border-stone-800 hover:border-[var(--ck-role-accent)]/40 dark:hover:border-[var(--ck-role-accent)]/40 transition-all duration-300 shadow-2xs hover:shadow-md"
+                      className="group flex flex-col justify-between p-5 rounded-2xl bg-white/70 dark:bg-black/55 hover:bg-white dark:hover:bg-black/75 border border-stone-200/70 dark:border-stone-800 hover:border-[var(--ck-role-accent)]/40 dark:hover:border-[var(--ck-role-accent)]/40 transition-all duration-300 shadow-2xs hover:shadow-md"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-3">
@@ -901,7 +932,7 @@ export function SiteHeader() {
                     <Link
                       href="/faq"
                       onClick={() => setOpenMegaMenu(null)}
-                      className="group flex flex-col justify-between p-5 rounded-2xl bg-white/70 dark:bg-stone-850/60 hover:bg-white dark:hover:bg-stone-800 border border-stone-200/70 dark:border-stone-800 hover:border-emerald-500/40 dark:hover:border-emerald-400/40 transition-all duration-300 shadow-2xs hover:shadow-md"
+                      className="group flex flex-col justify-between p-5 rounded-2xl bg-white/70 dark:bg-black/55 hover:bg-white dark:hover:bg-black/75 border border-stone-200/70 dark:border-stone-800 hover:border-emerald-500/40 dark:hover:border-emerald-400/40 transition-all duration-300 shadow-2xs hover:shadow-md"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-3">
@@ -929,7 +960,7 @@ export function SiteHeader() {
                     <Link
                       href="/contact"
                       onClick={() => setOpenMegaMenu(null)}
-                      className="col-span-2 group flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-stone-850/60 hover:bg-white dark:hover:bg-stone-800 border border-stone-200/70 dark:border-stone-800 hover:border-blue-500/40 dark:hover:border-blue-400/40 transition-all duration-300 shadow-2xs hover:shadow-md"
+                      className="col-span-2 group flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-black/55 hover:bg-white dark:hover:bg-black/75 border border-stone-200/70 dark:border-stone-800 hover:border-blue-500/40 dark:hover:border-blue-400/40 transition-all duration-300 shadow-2xs hover:shadow-md"
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-400/15 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 group-hover:scale-110 transition-transform duration-200">

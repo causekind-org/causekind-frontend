@@ -10,6 +10,8 @@ import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyze
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import PublicRequestsBoard from "@/components/PublicRequestsBoard";
+import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -810,10 +812,19 @@ export default function RequestsPage() {
   // ── Guard ─────────────────────────────────────────────────────────────────
 
   if (authLoading) {
+    // Shaped like the board that follows, so the page settles once rather than
+    // jumping from a centred spinner to a three-column grid.
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f4f0] dark:bg-zinc-950">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--ck-role-accent)]" />
-      </div>
+      <PageSkeleton>
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-9 w-64 max-w-full" />
+          <Skeleton className="h-4 w-full max-w-xl" />
+        </div>
+        <div className="mt-7">
+          <CardGridSkeleton count={6} label="Loading in-kind requests" />
+        </div>
+      </PageSkeleton>
     );
   }
 
