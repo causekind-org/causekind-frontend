@@ -10,6 +10,7 @@ import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyze
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import PublicRequestsBoard from "@/components/PublicRequestsBoard";
+import { loginUrlFor } from "@/lib/safeRedirect";
 import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/Reveal";
@@ -544,11 +545,18 @@ export default function RequestsPage() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.replace("/login?redirect=/requests"); }
-    // DONEEs now get their own view — no redirect
-  }, [user, authLoading, router]);
+  // No guest redirect. Browsing is public; only offering is authenticated.
+  //
+  // This used to be `router.replace("/login?redirect=/requests")`, which made
+  // the whole public board below unreachable — `PublicRequestsBoard` was
+  // already wired up at the guard, but the effect fired first and bounced every
+  // logged-out visitor to login before it could render. It also used the
+  // obsolete `redirect` parameter; login reads `next` and validates it through
+  // `safeInternalPath`, so the old value was ignored even when it arrived.
+  //
+  // Nothing replaces it: the render guard further down already branches
+  // authLoading -> guest -> DONEE -> donor, and every data effect in this
+  // component is gated on `user`, so a guest fetches nothing from here.
 
   const [requests,  setRequests]  = useState<ItemRequest[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
@@ -740,7 +748,11 @@ export default function RequestsPage() {
   // ── Donate modal handlers ─────────────────────────────────────────────────
 
   function openDonateModal(req: ItemRequest) {
-    if (!user) { router.push("/login"); return; }
+    // Defence in depth: a guest never reaches this board (the guard returns
+    // PublicRequestsBoard first), but if that ever changes, losing the
+    // destination is the failure mode that is invisible in testing — the user
+    // logs in successfully and simply lands somewhere else.
+    if (!user) { router.push(loginUrlFor(`/requests/${req.id}/offer`)); return; }
     router.push(`/requests/${req.id}/offer`);
   }
 

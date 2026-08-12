@@ -26,11 +26,41 @@ import { loginUrlFor } from "@/lib/safeRedirect";
  * signed-in board works — sending `categories` to the server would shrink the
  * response and break the per-category counts.
  */
+/**
+ * Sorting a guest may do.
+ *
+ * <p>There is deliberately no "nearest": the public projection carries no
+ * coordinates, so distance cannot be computed, and offering the option would
+ * mean asking an anonymous visitor for GPS in order to sort a list they are
+ * only reading. The signed-in donor board keeps its distance sort — that path
+ * has both a location and a reason to use it.
+ */
+const SORTS = [
+  { value: "newest", label: "Newest" },
+  { value: "urgent", label: "Most urgent" },
+  { value: "quantity", label: "Highest quantity" },
+] as const;
+type SortValue = (typeof SORTS)[number]["value"];
+
+/** Urgency values in severity order, so the filter row reads worst-first. */
+const URGENCIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
+
+/** Rank for the "most urgent" sort. Emergency outranks every urgency label. */
+function urgencyRank(r: PublicItemRequest): number {
+  if (r.emergency) return 0;
+  const i = (URGENCIES as readonly string[]).indexOf(r.urgency ?? "");
+  // Unknown or absent urgency sorts after everything known rather than
+  // silently ranking as most urgent, which is what `indexOf` -1 would do.
+  return i === -1 ? URGENCIES.length + 1 : i + 1;
+}
+
 export default function PublicRequestsBoard() {
   const [requests, setRequests] = useState<PublicItemRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
+  const [urgencies, setUrgencies] = useState<string[]>([]);
+  const [sort, setSort] = useState<SortValue>("newest");
   const [query, setQuery] = useState("");
 
   const load = useCallback(() => {
@@ -52,8 +82,17 @@ export default function PublicRequestsBoard() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return requests.filter(r => {
+    const out = requests.filter(r => {
       if (selected.length > 0 && !selected.includes(r.category)) return false;
+      // An emergency request satisfies a CRITICAL filter even if its own
+      // urgency label is lower — the banner on the card says "Urgent", so
+      // filtering it out would contradict what the user can see.
+      if (urgencies.length > 0) {
+        const matches =
+          urgencies.includes(r.urgency ?? "") ||
+          (r.emergency && urgencies.includes("CRITICAL"));
+        if (!matches) return false;
+      }
       if (!q) return true;
       return (
         r.title.toLowerCase().includes(q) ||
@@ -61,10 +100,32 @@ export default function PublicRequestsBoard() {
         r.category.toLowerCase().includes(q)
       );
     });
-  }, [requests, selected, query]);
+
+    // Copy before sorting: `filter` already returned a new array here, but that
+    // is an easy invariant to break later and an in-place sort of `requests`
+    // would mutate state.
+    return [...out].sort((a, b) => {
+      if (sort === "quantity") return b.quantity - a.quantity;
+      if (sort === "urgent") return urgencyRank(a) - urgencyRank(b);
+      // Newest. Missing timestamps sort last rather than being treated as
+      // epoch-zero, which would park them at the bottom under a label that
+      // claims they are simply the oldest.
+      const at = a.createdAt ? Date.parse(a.createdAt) : NaN;
+      const bt = b.createdAt ? Date.parse(b.createdAt) : NaN;
+      if (Number.isNaN(at) && Number.isNaN(bt)) return 0;
+      if (Number.isNaN(at)) return 1;
+      if (Number.isNaN(bt)) return -1;
+      return bt - at;
+    });
+  }, [requests, selected, urgencies, query, sort]);
 
   const toggle = (cat: string) =>
     setSelected(prev => (prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]));
+
+  const toggleUrgency = (u: string) =>
+    setUrgencies(prev => (prev.includes(u) ? prev.filter(x => x !== u) : [...prev, u]));
+
+  const hasFilters = selected.length > 0 || urgencies.length > 0 || query.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100">
@@ -87,8 +148,12 @@ export default function PublicRequestsBoard() {
         {/* ── Sign-in nudge. A note, not a wall: the board below is fully readable. ── */}
         <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--ck-role-accent)]/25 bg-[var(--ck-role-accent)]/[0.06] px-4 py-3">
           <LogIn className="w-4 h-4 shrink-0 text-[var(--ck-role-accent)]" aria-hidden="true" />
+          {/* States what browsing costs (nothing) before what login adds. The
+              previous copy led with what the visitor was missing, which reads
+              as a soft wall on a board that is in fact fully open. */}
           <p className="min-w-0 flex-1 text-sm text-stone-700 dark:text-stone-300">
-            Sign in to see needs sorted by distance from you, and to offer an item.
+            You can browse open needs without an account. Log in only when
+            you&apos;re ready to offer an item.
           </p>
           <Link
             href={loginUrlFor("/requests")}
@@ -138,13 +203,61 @@ export default function PublicRequestsBoard() {
                 </button>
               );
             })}
-            {selected.length > 0 && (
+          </div>
+
+          {/* Urgency + sort. One row, wrapping — on a 320px screen the sort
+              select drops below the urgency chips rather than squeezing them. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by urgency">
+              {URGENCIES.map(u => {
+                const on = urgencies.includes(u);
+                return (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => toggleUrgency(u)}
+                    aria-pressed={on}
+                    className={`inline-flex min-h-11 items-center rounded-full border px-3.5 text-sm font-semibold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] ${
+                      on
+                        ? "border-[var(--ck-role-accent)] bg-[var(--ck-role-accent)] text-white"
+                        : "border-stone-200 bg-white text-stone-600 hover:border-stone-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-stone-300"
+                    }`}
+                  >
+                    {u.toLowerCase()}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="ms-auto flex items-center gap-2">
+              <label
+                htmlFor="public-requests-sort"
+                className="text-xs font-semibold text-stone-500 dark:text-stone-400"
+              >
+                Sort
+              </label>
+              {/* A native <select>: it is keyboard- and screen-reader-correct
+                  for free, and on a phone it opens the platform picker rather
+                  than a custom menu that has to be re-solved for touch. */}
+              <select
+                id="public-requests-sort"
+                value={sort}
+                onChange={e => setSort(e.target.value as SortValue)}
+                className="min-h-11 rounded-full border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 focus:border-[var(--ck-role-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-white/10 dark:bg-white/[0.04] dark:text-stone-200"
+              >
+                {SORTS.map(s => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {hasFilters && (
               <button
                 type="button"
-                onClick={() => setSelected([])}
-                className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-stone-500 underline underline-offset-4 hover:text-[var(--ck-role-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] rounded"
+                onClick={() => { setSelected([]); setUrgencies([]); setQuery(""); }}
+                className="inline-flex min-h-11 items-center rounded px-3 text-sm font-semibold text-stone-500 underline underline-offset-4 hover:text-[var(--ck-role-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)]"
               >
-                Clear
+                Clear filters
               </button>
             )}
           </div>
@@ -168,11 +281,33 @@ export default function PublicRequestsBoard() {
               </button>
             </Shell>
           ) : filtered.length === 0 ? (
+            // Two distinct empty states. "Nothing matched your filters" and
+            // "nothing exists yet" are different facts, and collapsing them
+            // would tell someone with an over-narrow filter that the platform
+            // is empty. Neither is reachable when the fetch failed — that case
+            // is handled above and never falls through to here, so a network
+            // error can never be reported as "no requests".
             <Shell>
-              <Inbox className="w-4 h-4" aria-hidden="true" />
-              {requests.length === 0
-                ? "There are no open public needs at the moment. Check back soon."
-                : "No needs match these filters."}
+              <Inbox className="w-4 h-4 shrink-0" aria-hidden="true" />
+              {requests.length === 0 ? (
+                <span className="flex-1">
+                  There are no open public needs at the moment. Check back soon.
+                </span>
+              ) : (
+                <>
+                  <span className="flex-1">
+                    No open requests match these filters right now. Try another
+                    category or check back soon.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setSelected([]); setUrgencies([]); setQuery(""); }}
+                    className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-3.5 text-sm font-semibold hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-white/15 dark:hover:bg-white/5"
+                  >
+                    Clear filters
+                  </button>
+                </>
+              )}
             </Shell>
           ) : (
             <>

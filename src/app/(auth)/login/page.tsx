@@ -6,7 +6,7 @@ import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
-import { safeInternalPath } from "@/lib/safeRedirect";
+import { registerUrlPreserving, resolvePostAuthDestination, socialCompletionUrl } from "@/lib/postAuthDestination";
 import { login, googleAuth } from "@/lib/api";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -37,12 +37,6 @@ function FacebookIcon() {
   );
 }
 
-// Role-based landing destination after auth.
-function homeForRole(role: string | null): string {
-  if (role === "SUPER_ADMIN") return "/super-admin";
-  if (role === "ADMIN") return "/admin/dashboard";
-  return "/";
-}
 
 // ── Main content ───────────────────────────────────────────────────────────────
 function LoginContent() {
@@ -57,8 +51,17 @@ function LoginContent() {
   // `safeInternalPath` is what stops that parameter becoming an open redirect —
   // it is attacker-controlled, so anything not plainly a path on this origin is
   // discarded in favour of the role's normal landing page.
-  const nextPath = safeInternalPath(searchParams.get("next"));
-  const destinationFor = (role: string | null) => nextPath ?? homeForRole(role);
+  //
+  // A donee arriving with an offer destination is redirected to their own
+  // requests view with an explanation rather than into the donor wizard —
+  // `resolvePostAuthDestination` owns that decision so login and register
+  // cannot disagree about it.
+  const rawNext = searchParams.get("next");
+  const goAfterAuth = (role: string | null, navigate: (p: string) => void) => {
+    const { path, notice } = resolvePostAuthDestination(rawNext, role);
+    if (notice) toast.error(notice);
+    navigate(path);
+  };
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,12 +94,15 @@ function LoginContent() {
         if (res.needsCompletion) {
           sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
           sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-          router.push("/register?social=google");
+          // The destination has to survive account completion too — otherwise
+          // a guest who signs in with a brand-new Google account finishes
+          // registration and lands on the homepage, having lost the request.
+          router.push(socialCompletionUrl(rawNext));
         } else {
           // Fix #4: cookie set by server; use role from response directly
           setUser({ email: res.email, role: res.role });
           toast.success("Welcome back!");
-          router.push(destinationFor(res.role));
+          goAfterAuth(res.role, router.push);
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Google login failed");
@@ -107,7 +113,10 @@ function LoginContent() {
     onError: () => toast.error("Google sign-in failed"),
   });
 
-  useEffect(() => { if (user) router.replace(destinationFor(user.role)); }, [user, router]);
+  // Already signed in and landing on /login — usually a bookmark, or a guest
+  // who authenticated in another tab. Still honours `next`, so the round trip
+  // completes rather than dumping them on their role's home page.
+  useEffect(() => { if (user) goAfterAuth(user.role, router.replace); }, [user, router]);
 
   useEffect(() => {
     if (searchParams.get("expired") === "1") {
@@ -144,7 +153,7 @@ function LoginContent() {
       setSignedIn(true);
       const settle = () => {
         setUser({ email: res.email, role: res.role });
-        router.push(destinationFor(res.role));
+        goAfterAuth(res.role, router.push);
       };
       if (reduced) settle();
       else setTimeout(settle, 380);
@@ -159,7 +168,10 @@ function LoginContent() {
 
   function goToRegister(e: React.MouseEvent) {
     e.preventDefault();
-    router.push("/register");
+    // "Create account" is the other half of the same journey — a guest who
+    // came here to offer an item and has no account yet must still end up back
+    // at the request once they have one.
+    router.push(registerUrlPreserving(rawNext));
   }
 
   return (

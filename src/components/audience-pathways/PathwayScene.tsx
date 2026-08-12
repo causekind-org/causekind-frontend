@@ -107,10 +107,27 @@ export default function PathwayScene({
         />
       ))}
 
-      {/* Emblem + orbit, anchored to the top-end corner rather than the panel
-          centre. Centred, they sat directly behind the heading and the orbit
-          glyphs crossed the words — legible only by luck. Up here the motif
-          reads as a device chrome element and the copy below stays clear. */}
+      {/*
+        Emblem + orbit, anchored to the top-end corner rather than the panel
+        centre. Centred, they sat directly behind the heading and the orbit
+        glyphs crossed the words — legible only by luck. Up here the motif
+        reads as a device chrome element and the copy below stays clear.
+
+        The wrapper exists to scale the whole motif as one unit on small
+        screens. At full size the orbit is 104px wide sitting 72px from the
+        right edge, so on a 320px phone it reaches 104px into a 280px-wide text
+        column — the heading ran straight underneath it. Scaling here moves the
+        ring, the emblem and every orbit glyph together; scaling them
+        individually would need the orbit radius recomputed to match, and the
+        two would drift apart the moment one changed.
+
+        The origin keeps the motif pinned in its corner as it shrinks rather
+        than sliding toward the middle. It needs the `rtl:` pair because
+        `origin-*` is physical while the anchor above is logical: `end-[4.5rem]`
+        puts the motif top-LEFT under RTL, where a top-right origin would drag
+        it away from its own anchor as it scaled.
+      */}
+      <div className="absolute inset-0 origin-top-right scale-[0.62] rtl:origin-top-left sm:scale-100">
       <motion.div
         className="absolute end-[4.5rem] top-[4.5rem] flex h-12 w-12 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl border backdrop-blur-sm"
         style={{ borderColor: `${ring}66`, background: `${glow}14`, color: ring }}
@@ -156,6 +173,7 @@ export default function PathwayScene({
           );
         })}
       </motion.div>
+      </div>
     </div>
   );
 }

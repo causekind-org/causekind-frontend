@@ -109,11 +109,13 @@ export default async function CategoryPage({ params }: Params) {
         </ol>
       </section>
 
-      {/* ── Live needs ── */}
+      {/* ── Live needs ──
+           The heading moved inside the board because it makes a claim that
+           depends on who is asking: only a signed-in donor's results are
+           distance-scoped. Rendered here it was server-side and unconditional,
+           so a logged-out visitor — who has no GPS and sees needs from
+           everywhere — was told the list was "near you". */}
       <section className="mt-10">
-        <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100">
-          Open {cat.name} needs near you
-        </h2>
         <CategoryNeedsBoard categoryName={cat.name} />
       </section>
 

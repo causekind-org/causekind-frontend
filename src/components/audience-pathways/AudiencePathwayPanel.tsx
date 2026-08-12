@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, type LucideIcon } from "lucide-react";
@@ -50,6 +51,9 @@ export default function AudiencePathwayPanel({
     : "bg-teal-700 hover:bg-teal-800";
   const ringFocus = isDonor ? "focus-visible:ring-[#b04a15]" : "focus-visible:ring-teal-600";
 
+  // Where a touch went down, so a scroll can be told apart from a tap.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
   return (
     <motion.div
       className="relative flex-1 overflow-hidden rounded-3xl border border-stone-200/80 bg-white/70 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
@@ -60,6 +64,33 @@ export default function AudiencePathwayPanel({
       // wanted here — the parent element hears its child's focus.
       onFocus={onActivate}
       onBlur={onDeactivate}
+      // Touch activation. Without this the panel had no interactive state at
+      // all on a phone: hover does not exist, and the section scrim is gated to
+      // fine pointers, so tapping a card did nothing.
+      //
+      // Guarded on movement rather than using onClick. A tap that begins on the
+      // card and ends 40px away is a scroll, and treating it as a tap makes the
+      // section feel like it is grabbing at the page. The threshold is compared
+      // against where the pointer went down, so a genuine tap (a few pixels of
+      // finger roll) still registers.
+      //
+      // Nothing here calls preventDefault or stopPropagation, so the CTA link
+      // keeps working normally — the panel lights up and the link still
+      // navigates.
+      onPointerDown={e => {
+        if (e.pointerType === "mouse") return;
+        touchStart.current = { x: e.clientX, y: e.clientY };
+      }}
+      onPointerUp={e => {
+        if (e.pointerType === "mouse") return;
+        const start = touchStart.current;
+        touchStart.current = null;
+        if (!start) return;
+        const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+        if (moved > 12) return; // a scroll, not a tap
+        active ? onDeactivate() : onActivate();
+      }}
+      onPointerCancel={() => { touchStart.current = null; }}
       // On a fine pointer the section scrim does the dimming for everything at
       // once, so a second per-panel blur here would just double-darken the
       // inactive side. The local fallback stays for coarse pointers and for
@@ -87,12 +118,22 @@ export default function AudiencePathwayPanel({
           text is translated — but it is now a floor, not a reservation: the
           motif moved to the top-end corner, so the copy no longer has to be
           pushed below a full-panel graphic. */}
-      <div className="relative z-10 flex min-h-[13rem] flex-col p-5 sm:p-6">
+      <div className="relative z-10 flex min-h-[11.5rem] flex-col p-4 sm:min-h-[13rem] sm:p-6">
         <div className="mt-auto">
-          <p className={`text-[0.6875rem] font-bold uppercase tracking-[0.14em] ${accent}`}>
+          {/*
+            The eyebrow and heading are held clear of the motif on small screens.
+            Even scaled to 62% the orbit reaches into the top-right of the card,
+            and these are the two lines that sit at that height — the body copy
+            below is already clear of it.
+
+            A right margin rather than a narrower container: the body and CTA
+            should still use the full width, so constraining the whole column
+            would waste space on the lines that do not need it.
+          */}
+          <p className={`me-16 text-[0.6875rem] font-bold uppercase tracking-[0.14em] sm:me-0 ${accent}`}>
             {eyebrow}
           </p>
-          <h3 className="mt-1.5 text-[clamp(1.15rem,1rem+0.65vw,1.5rem)] font-bold leading-snug text-stone-900 dark:text-stone-50">
+          <h3 className="me-16 mt-1.5 text-[clamp(1.15rem,1rem+0.65vw,1.5rem)] font-bold leading-snug text-stone-900 sm:me-0 dark:text-stone-50">
             {heading}
           </h3>
           <p className="mt-1.5 max-w-md text-[clamp(0.8125rem,0.79rem+0.12vw,0.9rem)] leading-relaxed text-stone-600 dark:text-stone-300">

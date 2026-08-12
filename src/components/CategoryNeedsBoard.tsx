@@ -69,8 +69,28 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
 
   useEntityUpdates(["REQUEST"], () => { load(); });
 
+  // Only a signed-in donor whose GPS actually resolved is looking at a
+  // distance-scoped list. Everyone else — guests, donees, and donors still
+  // waiting on or denied location — is seeing unscoped results, so the heading
+  // must not claim otherwise.
+  const scopedToDistance = isDonor && !!coords;
+
+  // The heading lives here rather than on the page because it makes a claim
+  // that depends on the viewer. `renderBody` keeps the existing early-return
+  // state chain intact below; function declarations hoist, so it can be defined
+  // after this return.
+  return (
+    <>
+      <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100">
+        Open {categoryName} needs{scopedToDistance ? " near you" : ""}
+      </h2>
+      {renderBody()}
+    </>
+  );
+
   // ── States ───────────────────────────────────────────────────────────────
 
+  function renderBody() {
   if (authLoading) return <BoardShell><Spinner label="Checking your session…" /></BoardShell>;
 
   // Guests read the same needs from the reduced-field public endpoint — no
@@ -139,7 +159,9 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
   }
 
   return (
-    <BoardShell count={requests.length}>
+    // The donor path is the one that genuinely is distance-scoped: it reached
+    // here only after GPS resolved and the fetch was made with coordinates.
+    <BoardShell count={requests.length} near>
       <ul className="grid gap-3 sm:grid-cols-2">
         {requests.map((r) => {
           const visual = CATEGORY_VISUALS[r.category];
@@ -178,6 +200,7 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
       </ul>
     </BoardShell>
   );
+  }
 }
 
 /**
@@ -275,12 +298,24 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
 
 // ── Small presentational helpers ───────────────────────────────────────────
 
-function BoardShell({ children, count }: { children: React.ReactNode; count?: number }) {
+/**
+ * `near` must be passed explicitly rather than defaulting to true.
+ *
+ * <p>"near you" was previously unconditional, so the guest board — which reads
+ * the public projection, has no coordinates and never asks for GPS — told
+ * visitors their results were filtered by distance. They were not: a guest sees
+ * every open need in the country. Claiming otherwise makes an empty category
+ * look like "nothing near me" when it is actually "nothing anywhere", which is
+ * the opposite conclusion.
+ */
+function BoardShell({ children, count, near = false }: {
+  children: React.ReactNode; count?: number; near?: boolean;
+}) {
   return (
     <section aria-live="polite" className="mt-4">
       {count !== undefined && (
         <p className="mb-3 text-xs text-stone-500 dark:text-stone-400">
-          {count} open {count === 1 ? "need" : "needs"} near you
+          {count} open {count === 1 ? "need" : "needs"}{near ? " near you" : ""}
         </p>
       )}
       {children}

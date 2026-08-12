@@ -511,6 +511,17 @@ export default function HomeClient({
             the Hero; otherwise it is rendered above, inside the layered wrapper. */}
         {!heroTouchesBeTheChange && <BeTheChangeSection initialStats={stats} tourAnchors />}
 
+        {/* Donor / Donee pathways.
+            This was added to the desktop branch only and so never rendered
+            below lg — HomeClient keeps two separate trees (hidden lg:block and
+            lg:hidden) and a component placed in one is simply absent from the
+            other. Same treatment as ComingSoonMagnets below: one component in
+            both branches, with -mx-4 cancelling this column's px-4 so the
+            section's own full-bleed background and padding apply. */}
+        <div className="-mx-4">
+          <AudiencePathwaysSection />
+        </div>
+
         {/* Coming soon magnets — previously desktop-only. The section sizes
             itself down through its own CSS vars, so the same component serves
             both branches rather than a mobile-specific copy. The negative

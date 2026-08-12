@@ -10,6 +10,8 @@
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "translate": "node scripts/generate-translations.mjs",
     "build:ds": "tsup && npm run build:ds:css",
     "build:ds:css": "tailwindcss -i src/design-system/entry.css -o dist/styles.css"
@@ -77,13 +79,20 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.2",
     "@tailwindcss/postcss": "^4.2.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.3",
     "@types/node": "^22.16.5",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.5",
+    "jsdom": "^30.0.1",
     "sharp": "^0.35.1",
     "tsup": "^8.5.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^3.2.7"
   },
   "overrides": {
     "sharp": "^0.35.1",
