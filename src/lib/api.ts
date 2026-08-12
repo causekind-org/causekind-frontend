@@ -772,6 +772,35 @@ export type ItemRequest = {
   verificationDueAt: string | null;
 };
 
+/**
+ * The guest-browsable projection of a need. Deliberately a *different* type
+ * from `ItemRequest`, not a Partial of it — the backend endpoint that serves
+ * this omits latitude/longitude/pincode/doneeId/status entirely, and modelling
+ * it as an optional-fields variant would invite code that reads
+ * `req.latitude ?? fallback` and quietly assumes the data might be there.
+ */
+export type PublicItemRequest = {
+  id: number;
+  title: string;
+  category: string;
+  quantity: number;
+  urgency: string;
+  city: string;
+  description: string | null;
+  createdAt: string;
+  imageUrl: string | null;
+  emergency: boolean;
+  doneeFirstName: string;
+};
+
+/** Public need board — no auth, no GPS, no distance sorting (newest first). */
+export function getPublicItemRequests(categories?: string[]) {
+  const params = new URLSearchParams();
+  if (categories && categories.length > 0) categories.forEach(c => params.append("categories", c));
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return request<PublicItemRequest[]>(`/api/v1/item-requests/public${qs}`, { silent401: true });
+}
+
 export function getItemRequests(categories?: string[], lat?: number, lng?: number, opts?: { silent401?: boolean }) {
   const params = new URLSearchParams();
   if (categories && categories.length > 0) {

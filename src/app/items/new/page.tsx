@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { FormSkeleton, PageSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { getItemListing, type ItemListing } from "@/lib/api";
 import { ItemListingWizard } from "@/features/item-listing-wizard/ItemListingWizard";
@@ -69,11 +70,16 @@ export default function NewItemPage() {
   }, [router]);
 
   if (isLoading || loading) {
+    // The wizard opens on a form, so hold that shape rather than centring a
+    // spinner in 60dvh and then replacing it with fields.
     return (
-      <div className="grid min-h-[60dvh] place-items-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--ck-role-accent)]" aria-hidden />
-        <span className="sr-only">Loading</span>
-      </div>
+      <PageSkeleton>
+        <div className="mx-auto w-full max-w-[680px] space-y-5">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-7 w-56 max-w-full" />
+          <FormSkeleton fields={4} label="Loading the listing form" />
+        </div>
+      </PageSkeleton>
     );
   }
 
