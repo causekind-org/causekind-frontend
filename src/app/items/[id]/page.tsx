@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { ArrowLeft, Loader2, MapPin, Package, ShieldCheck, Navigation, Truck, Lock, Pencil } from "lucide-react";
+import { DetailPageSkeleton } from "@/components/skeletons";
 import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { useTranslations } from "next-intl";
 
@@ -51,8 +52,8 @@ export default function ItemDetailPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="size-8 animate-spin text-[#b04a15]" />
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+        <DetailPageSkeleton label="Loading item" />
       </div>
     );
   }

@@ -45,6 +45,7 @@ import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { WhyCauseKindSection }   from "@/components/home/WhyCauseKindSection";
+import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
 import { CTASection }            from "@/components/home/CTASection";
 
@@ -288,6 +289,12 @@ export default function HomeClient({
           </>
         )}
 
+        {/* Donor / Donee pathways — the two sides of the platform, each with a
+            role-preselecting signup CTA. Placed before "Why CauseKind" so the
+            visitor is told which side they are on before being told why the
+            platform is worth using. */}
+        <AudiencePathwaysSection />
+
         {/* "Why CauseKind" — 4-feature asymmetric grid */}
         <WhyCauseKindSection />
 
@@ -503,6 +510,17 @@ export default function HomeClient({
         {/* Be the Change — only here when the Campaigns rail separates it from
             the Hero; otherwise it is rendered above, inside the layered wrapper. */}
         {!heroTouchesBeTheChange && <BeTheChangeSection initialStats={stats} tourAnchors />}
+
+        {/* Donor / Donee pathways.
+            This was added to the desktop branch only and so never rendered
+            below lg — HomeClient keeps two separate trees (hidden lg:block and
+            lg:hidden) and a component placed in one is simply absent from the
+            other. Same treatment as ComingSoonMagnets below: one component in
+            both branches, with -mx-4 cancelling this column's px-4 so the
+            section's own full-bleed background and padding apply. */}
+        <div className="-mx-4">
+          <AudiencePathwaysSection />
+        </div>
 
         {/* Coming soon magnets — previously desktop-only. The section sizes
             itself down through its own CSS vars, so the same component serves

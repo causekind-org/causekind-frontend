@@ -28,7 +28,22 @@ type Th = {
   navActive: string; navInactive: string; signout: string;
   accent: string; roleBar: string; toggleBtn: string; sqlLabel: string;
   roleText: string; barGradient: string;
+  /** Positive/money figures. Neon greens read fine on #05070d and wash out on #faf7f2. */
+  positive: string;
+  /**
+   * Per-tile accents for the overview stats. These were a single hardcoded set
+   * of dark-mode neons (#4ade80, #60a5fa, #a78bfa, #f472b6) used in both
+   * themes — on the light ground they sat around 2:1 against white and read as
+   * pastel smudges. Light mode gets the 700-weight equivalents instead.
+   */
+  tone: Record<StatTone, string>;
 };
+
+type StatTone = "users" | "campaigns" | "donations" | "requests" | "listings" | "matches";
+
+/** Console-local, deliberately not the app's `ck_theme` — this panel manages
+ *  its own palette and should not be dragged around by the public site. */
+const THEME_KEY = "ck_sa_theme";
 
 const DARK: Th = {
   root:        "bg-[#05070d] text-white",
@@ -49,6 +64,11 @@ const DARK: Th = {
   sqlLabel:    "text-red-400/70",
   roleText:    "text-stone-400",
   barGradient: "from-[#b04a15] to-[#f0b97a]",
+  positive:    "text-emerald-400",
+  tone: {
+    users: "#f0b97a", campaigns: "#e07b3a", donations: "#4ade80",
+    requests: "#60a5fa", listings: "#a78bfa", matches: "#f472b6",
+  },
 };
 
 const LIGHT: Th = {
@@ -70,6 +90,11 @@ const LIGHT: Th = {
   sqlLabel:    "text-red-600/70",
   roleText:    "text-stone-500",
   barGradient: "from-[#b04a15] to-[#e07b3a]",
+  positive:    "text-emerald-700",
+  tone: {
+    users: "#b04a15", campaigns: "#c2410c", donations: "#047857",
+    requests: "#1d4ed8", listings: "#6d28d9", matches: "#be185d",
+  },
 };
 
 // ── Enum option sets (mirror backend enums) ──────────────────────────────────
@@ -211,11 +236,12 @@ function useCountUp(target: number, ms = 900) {
 }
 
 function StatTile({
-  label, value, icon: Icon, delay, accent = "#f0b97a", th,
+  label, value, icon: Icon, delay, tone, th,
 }: {
-  label: string; value: number; icon: React.ElementType; delay: number; accent?: string; th: Th;
+  label: string; value: number; icon: React.ElementType; delay: number; tone: StatTone; th: Th;
 }) {
   const v = useCountUp(value);
+  const accent = th.tone[tone];
   return (
     <div
       className={`sa-count-glow relative rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 overflow-hidden ${th.card}`}
@@ -267,12 +293,12 @@ function OverviewSection({ th }: { th: Th }) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
-        <StatTile label="Users"     value={c["users"] ?? 0}         icon={Users}        delay={0}   accent="#f0b97a" th={th} />
-        <StatTile label="Campaigns" value={c["campaigns"] ?? 0}     icon={Megaphone}    delay={60}  accent="#e07b3a" th={th} />
-        <StatTile label="Donations" value={c["donations"] ?? 0}     icon={CreditCard}   delay={120} accent="#4ade80" th={th} />
-        <StatTile label="Requests"  value={c["item-requests"] ?? 0} icon={ClipboardList} delay={180} accent="#60a5fa" th={th} />
-        <StatTile label="Listings"  value={c["item-listings"] ?? 0} icon={Package}      delay={240} accent="#a78bfa" th={th} />
-        <StatTile label="Matches"   value={c["matches"] ?? 0}       icon={Handshake}    delay={300} accent="#f472b6" th={th} />
+        <StatTile label="Users"     value={c["users"] ?? 0}         icon={Users}        delay={0}   tone="users"     th={th} />
+        <StatTile label="Campaigns" value={c["campaigns"] ?? 0}     icon={Megaphone}    delay={60}  tone="campaigns" th={th} />
+        <StatTile label="Donations" value={c["donations"] ?? 0}     icon={CreditCard}   delay={120} tone="donations" th={th} />
+        <StatTile label="Requests"  value={c["item-requests"] ?? 0} icon={ClipboardList} delay={180} tone="requests"  th={th} />
+        <StatTile label="Listings"  value={c["item-listings"] ?? 0} icon={Package}      delay={240} tone="listings"  th={th} />
+        <StatTile label="Matches"   value={c["matches"] ?? 0}       icon={Handshake}    delay={300} tone="matches"   th={th} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-3 sm:gap-4">
@@ -307,12 +333,12 @@ function OverviewSection({ th }: { th: Th }) {
         {/* Total raised */}
         <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 flex flex-col justify-center ${th.card}`}>
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <TrendingUp className={`w-4 h-4 ${th.positive}`} />
             <h3 className={`text-sm sm:text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
           </div>
           {/* Currency values run long (₹1,23,45,678) — text-4xl overflowed the
               card on a phone before this stepped down. */}
-          <p className="text-2xl sm:text-4xl font-black text-emerald-400 tabular-nums break-words">
+          <p className={`text-2xl sm:text-4xl font-black tabular-nums break-words ${th.positive}`}>
             ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
           </p>
           <p className={`text-2xs sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
@@ -331,9 +357,27 @@ export default function SuperAdminPage() {
   // into their 360 instead of making the agent find them a second time.
   const [focusUserId, setFocusUserId] = useState<number | undefined>(undefined);
 
-  // Theme
-  const [isDark, setIsDark] = useState(true);
+  // Theme. Light is the default; the console used to open dark regardless of
+  // preference. Read from storage in an effect rather than in the useState
+  // initialiser — localStorage does not exist on the server, and seeding state
+  // from it during render makes the first client paint disagree with the
+  // server HTML.
+  const [isDark, setIsDark] = useState(false);
   const th = isDark ? DARK : LIGHT;
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(THEME_KEY) === "dark") setIsDark(true);
+    } catch { /* private mode / storage disabled — light default stands */ }
+  }, []);
+
+  const toggleTheme = () => {
+    setIsDark((d) => {
+      const next = !d;
+      try { localStorage.setItem(THEME_KEY, next ? "dark" : "light"); } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   // SQL warning modal
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
@@ -387,7 +431,7 @@ export default function SuperAdminPage() {
   // Theme toggle button (reused in sidebar + topbar)
   const ThemeToggle = (
     <button
-      onClick={() => setIsDark(d => !d)}
+      onClick={toggleTheme}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${th.toggleBtn}`}
     >
@@ -509,7 +553,9 @@ export default function SuperAdminPage() {
                 className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
                   section === key
                     ? isDark ? "bg-[#f0b97a]/10 text-[#f0b97a]" : "bg-[#b04a15]/10 text-[#b04a15]"
-                    : th.textMuted + " hover:text-white"
+                    // hover:text-white here was white-on-white in light mode —
+                    // the label vanished under the cursor.
+                    : `${th.textMuted} ${isDark ? "hover:text-white" : "hover:text-stone-900"}`
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" /> {label}
@@ -517,9 +563,17 @@ export default function SuperAdminPage() {
             ))}
           </div>
 
-          {/* Content */}
-          <main className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-7 max-w-6xl w-full">
-            {content}
+          {/* Content.
+              The width cap belongs on the inner wrapper, not on <main>. With
+              `max-w-6xl` on the scrolling element itself, the browser painted
+              the scrollbar at that element's right edge — stranding it in the
+              middle of any viewport wider than 72rem, with dead page
+              background beyond it. <main> now spans the full column and only
+              the content inside it is capped. */}
+          <main className="flex-1 min-h-0 overflow-y-auto">
+            <div className="p-3.5 sm:p-7 max-w-6xl w-full">
+              {content}
+            </div>
           </main>
         </div>
       </div>
@@ -531,46 +585,56 @@ export default function SuperAdminPage() {
       {/* ── SQL Warning Modal ─────────────────────────────────────────────── */}
       {sqlModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm ${isDark ? "bg-black/80" : "bg-stone-900/45"}`}
           onClick={() => setSqlModalOpen(false)}
         >
+          {/* This modal was written dark-only. In light mode it rendered as a
+              near-black card on a cream page — legible, but plainly a different
+              product. It keeps its red danger identity in both themes; only the
+              ground and the text weights change. */}
           <div
-            className="w-full max-w-md mx-4 rounded-2xl border border-red-500/40 bg-[#0f0a0d] shadow-2xl p-6 space-y-5"
+            className={`w-full max-w-md mx-4 rounded-2xl border shadow-2xl p-6 space-y-5 ${
+              isDark ? "border-red-500/40 bg-[#0f0a0d]" : "border-red-300 bg-white"
+            }`}
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5.5 h-5.5 text-red-400" />
+              <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${
+                isDark ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200"
+              }`}>
+                <AlertTriangle className={`w-5.5 h-5.5 ${isDark ? "text-red-400" : "text-red-600"}`} />
               </div>
               <div>
-                <h2 className="text-base font-black text-white leading-tight">SQL Console — Danger Zone</h2>
-                <p className="text-xs text-stone-500 mt-0.5">Direct production database access</p>
+                <h2 className={`text-base font-black leading-tight ${th.textPrimary}`}>SQL Console — Danger Zone</h2>
+                <p className={`text-xs mt-0.5 ${th.textDim}`}>Direct production database access</p>
               </div>
             </div>
 
             {/* Warning body */}
-            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] px-4 py-3.5 space-y-2">
-              <p className="text-sm text-stone-200 leading-relaxed">
-                <span className="font-black text-red-400">Warning:</span> Changes made here are{" "}
-                <span className="font-bold text-white underline decoration-red-500/50">permanent and cannot be undone</span>.
+            <div className={`rounded-xl border px-4 py-3.5 space-y-2 ${
+              isDark ? "border-red-500/20 bg-red-500/[0.05]" : "border-red-200 bg-red-50"
+            }`}>
+              <p className={`text-sm leading-relaxed ${isDark ? "text-stone-200" : "text-stone-700"}`}>
+                <span className={`font-black ${isDark ? "text-red-400" : "text-red-700"}`}>Warning:</span> Changes made here are{" "}
+                <span className={`font-bold underline ${isDark ? "text-white decoration-red-500/50" : "text-stone-900 decoration-red-400"}`}>permanent and cannot be undone</span>.
               </p>
-              <p className="text-sm text-stone-400 leading-relaxed">
+              <p className={`text-sm leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
                 Queries run directly against the live database. Destructive operations such as{" "}
-                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/5 text-red-300" : "bg-white text-red-700 border border-red-200"}`}>
                   UPDATE
                 </code>{" "}
-                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/5 text-red-300" : "bg-white text-red-700 border border-red-200"}`}>
                   DELETE
                 </code>{" "}
-                <code className="text-2xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-red-300">
+                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/5 text-red-300" : "bg-white text-red-700 border border-red-200"}`}>
                   DROP
                 </code>{" "}
                 bypass all application safeguards.
               </p>
             </div>
 
-            <p className="text-xs text-stone-600 leading-relaxed">
+            <p className={`text-xs leading-relaxed ${th.textDimmer}`}>
               Only proceed if you fully understand the consequences. This action has been logged.
             </p>
 
@@ -582,13 +646,19 @@ export default function SuperAdminPage() {
                   setSqlModalOpen(false);
                   setSection("sql");
                 }}
-                className="flex-1 bg-red-700/80 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-colors"
+                className={`flex-1 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-colors ${
+                  isDark ? "bg-red-700/80 hover:bg-red-700" : "bg-red-600 hover:bg-red-700"
+                }`}
               >
                 I understand — proceed
               </button>
               <button
                 onClick={() => setSqlModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-stone-400 hover:text-white border border-white/10 hover:bg-white/5 transition-colors"
+                className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
+                  isDark
+                    ? "text-stone-400 hover:text-white border-white/10 hover:bg-white/5"
+                    : "text-stone-600 hover:text-stone-900 border-stone-300 hover:bg-stone-100"
+                }`}
               >
                 Go back
               </button>

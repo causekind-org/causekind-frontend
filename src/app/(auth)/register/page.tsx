@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { resolvePostAuthDestination } from "@/lib/postAuthDestination";
+import { loginUrlFor } from "@/lib/safeRedirect";
 import { Suspense } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
@@ -164,7 +166,38 @@ function RegisterContent() {
 
   const isSocialFlow = searchParams.get("social") === "google";
 
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", role: "DONOR" });
+  // Where to return once the account exists. A guest who clicked "offer help",
+  // was sent to login and chose "create account" arrives here with the request
+  // still encoded in `?next=` — this page previously ignored it and hard-routed
+  // everyone to "/", which silently ended the journey one step from the finish.
+  //
+  // Validation happens inside `resolvePostAuthDestination`; the raw value is
+  // only ever passed through, never routed to.
+  const rawNext = searchParams.get("next");
+  const goAfterAuth = (role: string | null, navigate: (p: string) => void) => {
+    const { path, notice } = resolvePostAuthDestination(rawNext, role);
+    if (notice) toast.error(notice);
+    navigate(path);
+  };
+
+  // `?role=DONOR|DONEE` preselects the role picker — used by the landing page's
+  // two audience CTAs so someone who clicked "Join as a donee" does not have to
+  // state that a second time.
+  //
+  // Only the two self-registerable roles are honoured. The backend refuses
+  // ADMIN / SUPER_ADMIN / NGO_PARTNER self-registration anyway
+  // (parseRegistrationRole), but accepting them here would render a form that
+  // visibly promises something the submit will reject.
+  //
+  // Seeded through useState's initialiser rather than an effect so the correct
+  // choice is highlighted on first paint, with no flicker from DONOR to DONEE —
+  // and so a user who changes it is never overwritten by a later re-render.
+  const initialRole = (() => {
+    const raw = searchParams.get("role")?.toUpperCase();
+    return raw === "DONEE" || raw === "DONOR" ? raw : "DONOR";
+  })();
+
+  const [form, setForm] = useState({ fullName: "", email: "", password: "", role: initialRole });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -268,7 +301,7 @@ function RegisterContent() {
         } else {
           setUser({ email: res.email, role: res.role });
           toast.success("Welcome back!");
-          router.push("/");
+          goAfterAuth(res.role, router.push);
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Google sign-up failed");
@@ -310,7 +343,7 @@ function RegisterContent() {
     return [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
   }
 
-  useEffect(() => { if (user) router.replace("/"); }, [user, router]);
+  useEffect(() => { if (user) goAfterAuth(user.role, router.replace); }, [user, router]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -384,10 +417,13 @@ function RegisterContent() {
         setGoogleToken(token);
         setForm(f => ({ ...f, email: email ?? "", fullName: fullName ?? "" }));
       } else {
-        router.replace("/login");
+        // The social handshake is gone (reload, or a direct hit on the URL).
+        // Start over at login, but keep the destination so the journey can
+        // still finish where it was headed.
+        router.replace(loginUrlFor(rawNext ?? "/"));
       }
     }
-  }, [isSocialFlow, router]);
+  }, [isSocialFlow, router, rawNext]);
 
   if (user) return null;
 
@@ -458,7 +494,7 @@ function RegisterContent() {
           sessionStorage.removeItem("ck_google_profile");
           setUser({ email: res.email, role: res.role });
           toast.success("Account created! Welcome to CauseKind.");
-          router.push("/");
+          goAfterAuth(res.role, router.push);
         }
       } else {
         await initiateRegistration({ ...form, phone: fullPhone, city: cityStr });
@@ -504,7 +540,9 @@ function RegisterContent() {
   function completeRegistration(res: { email: string; role: string }) {
     setUser({ email: res.email, role: res.role });
     toast.success("Account created!");
-    router.replace("/");
+    // The end of the email/OTP path — and the one that matters most for the
+    // guest journey, since a new donor reaches the offer wizard through here.
+    goAfterAuth(res.role, router.replace);
   }
 
   async function handleResendOtp() {

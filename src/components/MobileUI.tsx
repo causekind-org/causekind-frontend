@@ -67,9 +67,12 @@ export function MobileBottomNav() {
     ...(user?.role === "DONEE" || user?.role === "DONOR"
       ? []
       : [{ href: centerHref, icon: Plus, label: centerLabel }]),
-    ...(user
-      ? [{ href: "/requests", icon: ClipboardList, label: t("requests") }]
-      : []),
+    // Requests is public now — browsing needs no account, only offering does.
+    // This used to be gated on `user`, so a logged-out visitor had no route to
+    // the board from the bottom bar at all: the destination was reachable from
+    // the desktop navbar and simply missing on a phone, which is where most
+    // guests arrive.
+    { href: "/requests", icon: ClipboardList, label: t("requests") },
     { href: user ? "/profile" : "/login", icon: User, label: t("profile") },
   ];
 
@@ -85,8 +88,11 @@ export function MobileBottomNav() {
   const activeIndex = dragIndex ?? pendingIndex ?? routeActiveIndex;
   const activeItem = activeIndex >= 0 ? items[activeIndex] : null;
   const visualActiveIndex = isRtl ? items.length - 1 - Math.max(activeIndex, 0) : Math.max(activeIndex, 0);
-  // Requests tab is only ever in `items` for a signed-in user, so >= 0 doubles
-  // as the auth check for the nudge below.
+  // The Requests tab is now present for guests too, so its index no longer
+  // implies a signed-in user — the nudge below needs its own explicit check.
+  // Left implicit, a logged-out visitor would get the nudge with donor-framed
+  // copy, since RequestNudge falls back to the donor label whenever role is
+  // not DONEE and a guest has no role at all.
   const requestsIndex = items.findIndex((item) => item.href === "/requests");
   const visualRequestsIndex = isRtl ? items.length - 1 - requestsIndex : requestsIndex;
   const indicatorLeft = dragPosition === null
@@ -120,12 +126,16 @@ export function MobileBottomNav() {
     return { x, index };
   }
 
-  // Hidden inside super-admin, admin dashboard, and the item listing wizard (which has its own navigation).
-  const isItemListingWizard = pathname === "/items/new" || (pathname?.startsWith("/items/") && pathname?.endsWith("/edit"));
+  // Hidden inside super-admin, admin dashboard, and wizard flows (which have their own navigation).
+  const isWizardRoute =
+    pathname === "/items/new" ||
+    (pathname?.startsWith("/items/") && pathname?.endsWith("/edit")) ||
+    (pathname?.startsWith("/requests/") && pathname?.endsWith("/offer")) ||
+    pathname === "/donations/offer";
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
-    isItemListingWizard ||
+    isWizardRoute ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 
@@ -289,7 +299,7 @@ export function MobileBottomNav() {
           </span>
         )}
 
-        {requestsIndex >= 0 && (
+        {user && requestsIndex >= 0 && (
           <RequestNudge
             leftPercent={((visualRequestsIndex + 0.5) / items.length) * 100}
             role={user?.role}
