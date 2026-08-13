@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
@@ -51,13 +51,65 @@ const logoStagger = {
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
+  const clothFilterId = `ck-logo-cloth-wave-${useId().replace(/:/g, "")}`;
   return (
     <motion.span
-      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
+      className={`relative font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
       aria-label="CauseKind"
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
+      {/* Applies a travelling, fabric-like distortion to the complete wordmark.
+          It lives in the DOM (rather than an external SVG asset) so the text
+          keeps its existing font, colour, shimmer, and responsive sizing. */}
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        width="0"
+        height="0"
+        className="absolute pointer-events-none"
+      >
+        <defs>
+          <filter
+            id={clothFilterId}
+            x="-10%"
+            y="-40%"
+            width="120%"
+            height="180%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.014 0.12"
+              numOctaves="1"
+              seed="5"
+              result="clothNoise"
+            >
+              <animate
+                attributeName="baseFrequency"
+                dur="3.1s"
+                values="0.014 0.10;0.024 0.17;0.014 0.10"
+                repeatCount="indefinite"
+              />
+            </feTurbulence>
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="clothNoise"
+              scale="2.4"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            >
+              <animate
+                attributeName="scale"
+                dur="3.1s"
+                values="0.8;2.6;1.3;2.8;0.8"
+                repeatCount="indefinite"
+              />
+            </feDisplacementMap>
+          </filter>
+        </defs>
+      </svg>
+
       {!hideIcon && (
         <motion.div
           className="shrink-0"
@@ -69,33 +121,38 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
         </motion.div>
       )}
 
-      <span className="flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
-        {/* "Cause" — stagger letter reveal */}
+      <span
+        className="ck-logo-wordmark-cloth flex items-center font-extrabold text-base sm:text-xl"
+        style={{ filter: `url(#${clothFilterId})` }}
+        aria-hidden="true"
+      >
+        {/* Indian Tricolour: Cau = saffron, seK = white, ind = green. */}
         <motion.span
-          className="text-stone-900 dark:text-stone-100 tracking-tight flex"
+          className="tracking-tight flex"
           variants={logoStagger}
           initial="hidden"
           animate="visible"
         >
-          {"Cause".split("").map((l, i) => (
+          {"Cause".split("").map((letter, index) => (
             <motion.span
-              key={i}
+              key={letter}
+              className={index < 3 ? "ck-logo-tricolour-saffron" : "ck-logo-tricolour-white"}
               variants={logoLetterVariants}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              {l}
+              {letter}
             </motion.span>
           ))}
         </motion.span>
 
-        {/* "Kind" — slides in as one word after "Cause", then shimmers */}
         <motion.span
-          className="ck-logo-kind-shimmer"
+          className="flex"
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.44 }}
         >
-          Kind
+          <span className="ck-logo-tricolour-white">K</span>
+          <span className="ck-logo-tricolour-green">ind</span>
         </motion.span>
       </span>
     </motion.span>
