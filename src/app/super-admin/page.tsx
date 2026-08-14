@@ -17,6 +17,7 @@ import { CasesPanel } from "@/components/super-admin/CasesPanel";
 import { InterventionsPanel } from "@/components/super-admin/InterventionsPanel";
 import { CommunicationsPanel } from "@/components/super-admin/CommunicationsPanel";
 import { GovernancePanel } from "@/components/super-admin/GovernancePanel";
+import { OperationsPanel } from "@/components/super-admin/OperationsPanel";
 import type { SaInterventionEntity } from "@/lib/api";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
@@ -193,6 +194,7 @@ const NAV = [
   { key: "interventions", label: "Interventions", icon: SlidersHorizontal },
   { key: "communications", label: "Communications", icon: Send },
   { key: "governance",     label: "Governance",     icon: Lock },
+  { key: "operations",     label: "Operational health", icon: Activity },
   { key: "users",         label: "Users (raw)", icon: Users },
   { key: "campaigns",     label: "Campaigns",   icon: Megaphone },
   { key: "donations",     label: "Donations",   icon: CreditCard },
@@ -217,8 +219,10 @@ const NAV = [
  * nothing.
  */
 const PLANNED_NAV = [
-  { label: "Restrictions",      icon: ShieldCheck,       phase: "Phase 4" },
-  { label: "Operational health", icon: Activity,         phase: "Phase 8" },
+  // Restrictions shipped in Phase 4 but is a tab inside User 360 rather than a
+  // section of its own, so it stays listed here as a destination that exists
+  // elsewhere rather than one that does not exist yet.
+  { label: "Restrictions",      icon: ShieldCheck,       phase: "in User 360" },
 ] as const;
 
 type SectionKey = (typeof NAV)[number]["key"];
@@ -434,6 +438,7 @@ export default function SuperAdminPage() {
       case "interventions": return <InterventionsPanel initialTarget={focusIntervention} isDark={isDark} />;
       case "communications": return <CommunicationsPanel isDark={isDark} />;
       case "governance": return <GovernancePanel isDark={isDark} />;
+      case "operations": return <OperationsPanel isDark={isDark} />;
       case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
                               onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;

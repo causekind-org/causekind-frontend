@@ -3510,3 +3510,48 @@ export async function superAdminAuditExport(filters: {
   }
   return res.text();
 }
+
+// ── Phase 8: operations ──────────────────────────────────────────────────────
+
+/**
+ * UNKNOWN is not a synonym for OK. It means the check could not determine an
+ * answer — render it differently, because a health screen showing green because
+ * the check itself failed is worse than one showing nothing.
+ */
+export type SaCheckState = "OK" | "DEGRADED" | "FAILED" | "UNKNOWN";
+
+export type SaHealthCheck = { name: string; state: SaCheckState; detail: string };
+
+export type SaHealthReport = {
+  at: string;
+  checks: SaHealthCheck[];
+  configuration: Record<string, string>;
+  /** Null when Flyway has never run in this environment. */
+  schemaVersion: string | null;
+};
+
+export type SaPlatformConfig = {
+  id: number;
+  configKey: string;
+  configValue: string | null;
+  updatedBy: string | null;
+  reason: string | null;
+  updatedAt: string;
+};
+
+export function superAdminHealth() {
+  return request<SaHealthReport>("/api/v1/super-admin/operations/health");
+}
+
+export function superAdminConfig() {
+  return request<SaPlatformConfig[]>("/api/v1/super-admin/operations/config");
+}
+
+/** The reason is mandatory server-side — a setting that changed for no recorded
+ *  reason is one nobody dares change back. */
+export function superAdminSetConfig(key: string, value: string, reason: string) {
+  return request<SaPlatformConfig>("/api/v1/super-admin/operations/config", {
+    method: "PUT",
+    body: JSON.stringify({ key, value, reason }),
+  });
+}
