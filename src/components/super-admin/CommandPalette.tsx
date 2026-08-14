@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useGlobalSearch } from "@/components/super-admin/GlobalSearchPanel";
 import { saTheme } from "@/components/super-admin/saTheme";
-import type { SaSearchHit } from "@/lib/api";
+import type { SaInterventionEntity, SaSearchHit } from "@/lib/api";
 import { Loader2, Search } from "lucide-react";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -28,9 +28,11 @@ const TYPE_LABEL: Record<string, string> = {
  */
 export function CommandPalette({
   onOpenUser,
+  onOpenIntervention,
   isDark,
 }: {
   onOpenUser: (id: number) => void;
+  onOpenIntervention: (entity: SaInterventionEntity, id: number) => void;
   isDark: boolean;
 }) {
   const t = saTheme(isDark);
@@ -62,14 +64,21 @@ export function CommandPalette({
 
   if (!open) return null;
 
+  /** Types that have somewhere to go. The rest still show, because "does this
+   *  record exist and what state is it in" is itself the answer an agent often
+   *  needs — they just are not clickable. */
+  function destinationOf(hit: SaSearchHit): (() => void) | null {
+    if (hit.type === "USER") return () => onOpenUser(hit.id);
+    if (hit.type === "OFFER") return () => onOpenIntervention("offers", hit.id);
+    if (hit.type === "MATCH") return () => onOpenIntervention("matches", hit.id);
+    return null;
+  }
+
   function choose(hit: SaSearchHit) {
-    // Only users have a destination in this phase. The rest still show, because
-    // "does this record exist and what state is it in" is itself the answer an
-    // agent often needs; their workspaces arrive with the intervention phases.
-    if (hit.type === "USER") {
-      onOpenUser(hit.id);
-      setOpen(false);
-    }
+    const go = destinationOf(hit);
+    if (!go) return;
+    go();
+    setOpen(false);
   }
 
   function onInputKey(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -123,7 +132,7 @@ export function CommandPalette({
                     onClick={() => choose(hit)}
                     className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors ${
                       i === cursor ? t.surfaceAlt : ""
-                    } ${hit.type === "USER" ? "" : "cursor-default"}`}
+                    } ${destinationOf(hit) ? "" : "cursor-default"}`}
                   >
                     <div className="min-w-0">
                       <p className={`truncate text-sm ${t.heading}`}>{hit.title}</p>
@@ -147,7 +156,7 @@ export function CommandPalette({
           className={`flex items-center justify-between border-t px-3 py-1.5 text-[11px] ${t.cardFlat} ${t.dim}`}
         >
           <span>↑↓ to move · ↵ to open · esc to close</span>
-          <span>Users open directly; other types are lookup only for now</span>
+          <span>Users, offers and matches open; other types are lookup only for now</span>
         </div>
       </div>
     </div>
