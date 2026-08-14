@@ -12,8 +12,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getHeroImages } from "@/app/actions/getHeroImages";
-import type { Campaign } from "@/lib/api";
+import type { Campaign, PlatformStats } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
+import { isIndependenceDayCampaignActive } from "@/lib/independence-day";
+import {
+  INDEPENDENCE_QUOTES,
+  IndependenceCount,
+  TricolourSweep,
+  UnfurlReveal,
+} from "@/components/home/IndependenceHero";
 
 /* ── Quotes cycle ─────────────────────────────────────────────────────────── */
 const HERO_QUOTES = [
@@ -25,15 +32,24 @@ const HERO_QUOTES = [
   { text: "Alone we can do so little; together we can do so much.", author: "Helen Keller" },
 ];
 
-export function HeroQuoteSlider() {
+export function HeroQuoteSlider({
+  quotes = HERO_QUOTES,
+}: {
+  /** Swapped for the Independence Day set during the campaign window. */
+  quotes?: readonly { text: string; author: string }[];
+} = {}) {
   const [idx, setIdx] = useState(0);
 
-  useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % HERO_QUOTES.length), 6000);
-    return () => clearInterval(t);
-  }, []);
+  // Reset when the set changes, so a shorter list cannot leave the index out of
+  // range and render `undefined`.
+  useEffect(() => setIdx(0), [quotes]);
 
-  const q = HERO_QUOTES[idx];
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % quotes.length), 6000);
+    return () => clearInterval(t);
+  }, [quotes.length]);
+
+  const q = quotes[idx] ?? quotes[0];
 
   return (
     <div className="relative h-[96px] sm:h-[76px] overflow-hidden">
@@ -94,12 +110,19 @@ export function HeroSection({
   currentCampaign,
   translatedTitle,
   translatedDesc,
+  stats = null,
 }: {
   currentCampaign: Campaign | null;
   translatedTitle: string | null;
   translatedDesc: string | null;
+  /** Feeds the Independence Day count card. Null until the fetch resolves. */
+  stats?: PlatformStats | null;
 }) {
   const tHero = useTranslations("hero");
+
+  // One switch for the whole campaign — the same call the strip above the hero
+  // makes, so the two can never disagree about whether it is on.
+  const independenceDay = isIndependenceDayCampaignActive();
 
   const urgency = currentCampaign?.urgency ?? "NORMAL";
   const urgencyConfig = {
@@ -114,6 +137,13 @@ export function HeroSection({
         <div className="absolute inset-0 w-full h-full pointer-events-none">
           <HeroImageSlider />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
+          {/* Between the two gradients, deliberately. Below both, the sweep sat
+              under 60% black twice over and the colour vanished. Above both, it
+              would wash across the headline. Here it clears the horizontal
+              darkening — the one that was killing it — while the bottom-up
+              gradient still goes over the top of it, which is what protects the
+              text sitting in that corner. */}
+          {independenceDay && <TricolourSweep />}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
         </div>
 
@@ -146,13 +176,21 @@ export function HeroSection({
 
           <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mt-auto">
             <div className="lg:col-span-7 flex flex-col items-start gap-5 relative">
+              {/* During the campaign the unfurl owns the headline's entrance
+                  outright. Layering it inside framer's spring was tried and
+                  looked wrong: two opacity animations multiply, so the headline
+                  sat at roughly a fifth of full strength while the tricolour
+                  band was supposed to be sweeping over it, and neither read.
+                  One animation, or the other — not both on the same element. */}
               <motion.h1
                 className="text-white font-extrabold leading-[1.08] tracking-tight text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] max-w-2xl font-jakarta"
-                initial={{ opacity: 0, x: -28 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={independenceDay ? false : { opacity: 0, x: -28 }}
+                animate={independenceDay ? undefined : { opacity: 1, x: 0 }}
                 transition={{ type: "spring", stiffness: 75, damping: 20, delay: 0.15 }}
               >
-                {tHero("headline")}
+                {independenceDay
+                  ? <UnfurlReveal>{tHero("headline")}</UnfurlReveal>
+                  : tHero("headline")}
               </motion.h1>
               <motion.div
                 className="max-w-lg w-full"
@@ -160,9 +198,24 @@ export function HeroSection({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ type: "spring", stiffness: 75, damping: 20, delay: 0.28 }}
               >
-                <HeroQuoteSlider />
+                <HeroQuoteSlider quotes={independenceDay ? INDEPENDENCE_QUOTES : HERO_QUOTES} />
               </motion.div>
             </div>
+
+            {/* The right column holds the monetary campaign card, which never
+                renders while FEATURES.money is false — roughly 40% of the hero
+                is empty every other day of the year. The campaign fills it with
+                the platform's own handover count rather than more decoration. */}
+            {independenceDay && !FEATURES.money && (
+              <motion.div
+                className="lg:col-span-5 flex justify-end"
+                initial={{ opacity: 0, x: 36, scale: 0.94 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 65, damping: 18, delay: 0.22 }}
+              >
+                <IndependenceCount stats={stats} />
+              </motion.div>
+            )}
 
             {FEATURES.money && (
               <motion.div

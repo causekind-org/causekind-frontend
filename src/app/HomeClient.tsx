@@ -281,6 +281,7 @@ export default function HomeClient({
           currentCampaign={currentCampaign}
           translatedTitle={translatedCampaignTitle ?? null}
           translatedDesc={translatedCampaignDesc ?? null}
+          stats={stats}
         />
 
         {/* Stats bar + live ticker — only when money feature enabled */}
