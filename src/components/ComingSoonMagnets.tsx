@@ -223,8 +223,15 @@ function CardModal({ cardIdx, startRect, onClose }: {
 
   return createPortal(
     <>
-      {/* Backdrop */}
+      {/* Backdrop.
+          This closes on click, and that is correct — but it is only safe
+          because the card opens from its own `click` handler. A tap's
+          compatibility click is dispatched after `pointerup`, so a card that
+          opened on `pointerup` mounted this element under the finger in time
+          for that trailing click to land here and close it again. See the
+          activation comment in MagnetCard. */}
       <div
+        className="ck-modal-backdrop"
         onClick={close}
         style={{
           position: "fixed", inset: 0, zIndex: 9998,
@@ -407,6 +414,9 @@ function CardModal({ cardIdx, startRect, onClose }: {
 }
 
 /* ─── MagnetCard ─────────────────────────────────────────────────────────── */
+/** Movement past this many px makes the gesture a drag rather than a tap. */
+const DRAG_THRESHOLD_PX = 6;
+
 function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
   card: CardDef;
   idx: number;
@@ -414,12 +424,19 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
   sectionRef: React.RefObject<HTMLElement | null>;
   onOpen: (rect: DOMRect) => void;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLButtonElement>(null);
 
   const dragging          = useRef(false);
   const dragStart         = useRef({ x: 0, y: 0 });
   const dragOffset        = useRef({ x: 0, y: 0 });
   const accumulatedOffset = useRef({ x: 0, y: 0 });
+  /**
+   * Set once a drag passes the threshold, and read by the click handler: a
+   * mouse drag still ends in a `click`, and that click must not be mistaken
+   * for a tap on the card.
+   */
+  const draggedPastThreshold = useRef(false);
+  const releaseTimer         = useRef<number | null>(null);
 
   const [tilt,        setTilt]        = useState({ rx: 0, ry: 0 });
   const [isHover,     setIsHover]     = useState(false);
@@ -427,8 +444,11 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
   const [dragPos,     setDragPos]     = useState({ x: 0, y: 0 });
   const [isReleasing, setIsReleasing] = useState(false);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (dragging.current) {
+      if (Math.hypot(e.clientX - dragStart.current.x, e.clientY - dragStart.current.y) >= DRAG_THRESHOLD_PX) {
+        draggedPastThreshold.current = true;
+      }
       let dx = e.clientX - dragStart.current.x + accumulatedOffset.current.x;
       let dy = e.clientY - dragStart.current.y + accumulatedOffset.current.y;
       if (wrapRef.current && sectionRef.current) {
@@ -443,7 +463,7 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
       setDragPos({ x: dx, y: dy });
       return;
     }
-    if (!wrapRef.current || reducedMotion) return;
+    if (!wrapRef.current || reducedMotion || e.pointerType !== "mouse") return;
     const rect = wrapRef.current.getBoundingClientRect();
     setTilt({
       rx: ((e.clientY - (rect.top  + rect.height / 2)) / (rect.height / 2)) * -12,
@@ -454,24 +474,67 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
   const handlePointerEnter = useCallback(() => setIsHover(true), []);
   const handlePointerLeave = useCallback(() => { setIsHover(false); setTilt({ rx: 0, ry: 0 }); }, []);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    // Dragging and tilting are desktop affordances only. Claiming a touch
+    // pointer here would mean owning the whole gesture — the card would have
+    // to keep `touch-action: none`, and a swipe that happened to start on a
+    // card could no longer scroll the page. On touch this element is purely a
+    // tap target, which is also what makes its activation reliable.
+    if (e.pointerType !== "mouse") return;
     dragging.current = true;
+    draggedPastThreshold.current = false;
     dragStart.current = { x: e.clientX, y: e.clientY };
     setIsDragging(true);
     setIsReleasing(false);
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // Optional: jsdom and older engines ship no pointer capture. Losing it
+    // costs only the drag, so it must never throw and take the tap with it.
+    e.currentTarget.setPointerCapture?.(e.pointerId);
   }, []);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  /**
+   * Ends a drag. Deliberately does NOT open the modal.
+   *
+   * <p>Opening from `pointerup` is what made an edge tap unreliable: mobile
+   * browsers dispatch the gesture's compatibility `click` afterwards, and by
+   * then the modal's full-screen backdrop had already mounted. A tap near the
+   * middle of a card sent that trailing click into the centred dialog and it
+   * stayed open; a tap near an edge sent it to the backdrop, whose `onClick`
+   * closed the dialog that had just opened. Activation lives in `handleClick`
+   * for that reason — see the comment there.
+   */
+  const endDrag = useCallback(() => {
     if (!dragging.current) return;
-    const moved = Math.hypot(e.clientX - dragStart.current.x, e.clientY - dragStart.current.y);
     dragging.current = false;
     setIsDragging(false);
     setIsReleasing(true);
     accumulatedOffset.current = { x: dragOffset.current.x, y: dragOffset.current.y };
-    const t = window.setTimeout(() => setIsReleasing(false), 500);
-    if (moved < 6 && wrapRef.current) onOpen(wrapRef.current.getBoundingClientRect());
-    return () => window.clearTimeout(t);
+    if (releaseTimer.current !== null) window.clearTimeout(releaseTimer.current);
+    releaseTimer.current = window.setTimeout(() => setIsReleasing(false), 500);
+  }, []);
+
+  // The release timer used to be "cleaned up" by returning a function from the
+  // pointerup handler, which React never calls — so a card unmounted mid-spring
+  // left a timer to fire into a dead component.
+  useEffect(() => () => {
+    if (releaseTimer.current !== null) window.clearTimeout(releaseTimer.current);
+  }, []);
+
+  /**
+   * The single activation path for a card.
+   *
+   * <p>A `click` is the end of the gesture, not the middle of it: nothing
+   * follows it that could reach the backdrop this handler is about to mount.
+   * That is the whole fix — no delay, no debounce, no temporarily inert
+   * backdrop, just the event that browsers already guarantee fires exactly
+   * once per tap, on the element the user actually touched.
+   */
+  const handleClick = useCallback(() => {
+    if (draggedPastThreshold.current) {
+      // The click that terminates a mouse drag is not a tap on the card.
+      draggedPastThreshold.current = false;
+      return;
+    }
+    if (wrapRef.current) onOpen(wrapRef.current.getBoundingClientRect());
   }, [onOpen]);
 
   const floatAnim = !reducedMotion && !isHover && !isDragging
@@ -495,21 +558,41 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
     : "0 6px 18px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.10)";
 
   return (
-    <div
+    <button
+      type="button"
       ref={wrapRef}
+      className="ck-magnet-card"
+      // The accessible name is set explicitly rather than left to the poster's
+      // own text, which would read out "COMING SOON … CauseKind" from the
+      // stamp and the brand line on every card.
+      aria-label={`${card.title} — coming soon`}
+      aria-haspopup="dialog"
+      onClick={handleClick}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerMove={handlePointerMove}
       onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       style={{
+        // Button reset. This element is the transformed card root, so it has
+        // to lay out exactly as the div it replaced — the browser's default
+        // padding, border, centred text and inherited-font opt-out would all
+        // shift the poster inside it.
+        appearance: "none", padding: 0, border: 0, background: "transparent",
+        font: "inherit", color: "inherit", textAlign: "inherit", display: "block",
+        // No grey flash on tap; the card has its own press feedback.
+        WebkitTapHighlightColor: "transparent",
         position: "relative", width: "var(--ck-card-w, 220px)", height: "var(--ck-card-h, 280px)", flexShrink: 0,
         marginTop: `calc(var(--ck-card-mt, 20px) + ${card.stagger} * var(--ck-stagger, 26px))`,
         // Real overlap, which a flex `gap` cannot express — the smallest a gap
         // can be is 0, so only a negative margin puts one card ON another.
         marginLeft: idx === 0 ? 0 : "calc(-1 * var(--ck-magnet-overlap, 36px))",
         cursor: isDragging ? "grabbing" : "grab",
-        userSelect: "none", touchAction: "none",
+        // `manipulation`, not `none`: touch no longer starts a drag, so the
+        // page must stay scrollable from a swipe that begins on a card. It
+        // also drops the legacy double-tap delay before the click fires.
+        userSelect: "none", touchAction: "manipulation",
         zIndex: isDragging ? 20 : 1,
         animation: floatAnim, transform, transition, boxShadow: shadow,
         borderRadius: "14px", willChange: "transform",
@@ -520,7 +603,7 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
       <div style={{ width: "100%", height: "100%", borderRadius: "14px", overflow: "hidden", border: "2px solid rgba(255,255,255,0.18)" }}>
         <PosterFace gradient={card.gradient} title={card.title} Illustration={CARD_DETAILS[idx].Illustration} />
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -549,6 +632,14 @@ export function ComingSoonMagnets() {
           0%   { transform: var(--ck-base-transform, rotate(-3deg)) translateY(0px); }
           50%  { transform: var(--ck-base-transform, rotate(-3deg)) translateY(-10px) rotate(0.5deg); }
           100% { transform: var(--ck-base-transform, rotate(-3deg)) translateY(0px); }
+        }
+        /* The card is a real button now, so it can be tabbed to and opened
+           with Enter or Space. Offset outside the rotated poster rather than
+           on it, where the card's own border swallows a 2px ring. */
+        .ck-magnet-card:focus-visible {
+          outline: 3px solid ${TERRACOTTA};
+          outline-offset: 4px;
+          border-radius: 16px;
         }
         @keyframes ck-bd-in  { from { opacity: 0 } to { opacity: 1 } }
         @keyframes ck-bd-out { from { opacity: 1 } to { opacity: 0 } }

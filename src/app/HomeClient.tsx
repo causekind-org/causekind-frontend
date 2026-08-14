@@ -38,6 +38,8 @@ import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, ArrowRight } from "lucide-react";
 import { FEATURES } from "@/lib/features";
+import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
+
 import type { Campaign, ItemRequest, PlatformStats, RecentActivity } from "@/lib/api";
 import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 
@@ -246,6 +248,7 @@ export default function HomeClient({
 
   return (
     <div className="bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+      <IndependenceDayStrip />
 
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
@@ -253,7 +256,6 @@ export default function HomeClient({
           file in src/components/home/ to change that section.
       ════════════════════════════════════════════════════════════ */}
       <div className="hidden lg:block bg-white dark:bg-zinc-950 relative z-10">
-
         {/* Mobile stats strip (inside desktop wrapper but sm:hidden) */}
         {FEATURES.money && (
           <div className="sm:hidden overflow-hidden border-b border-orange-100 bg-white dark:bg-zinc-950">
@@ -421,7 +423,6 @@ export default function HomeClient({
           in a future session if it grows.
       ════════════════════════════════════════════════════════════ */}
       <div className="lg:hidden min-h-screen bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-5">
-
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white */}
         {FEATURES.money && (
           <div className="overflow-hidden bg-[#b04a15] -mx-4">
