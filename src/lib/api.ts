@@ -3192,3 +3192,130 @@ export function superAdminCancel(
     body: JSON.stringify(body),
   });
 }
+
+// ── Phase 5B-2: named domain actions ─────────────────────────────────────────
+
+/**
+ * The five named actions. §8 of the rebuild plan requires interventions to be
+ * expressed this way rather than as status writes, so there is deliberately no
+ * "set status" call anywhere in this file for these record types.
+ */
+export type SaInterventionType = "HOLD" | "RESUME" | "REQUEST_INFO" | "REASSESS" | "REPUBLISH";
+
+/**
+ * One action and whether it can be taken right now.
+ *
+ * Unavailable actions are returned too, carrying `blockedReason` — "why can't I
+ * do this" is the question, and an action that vanishes from the list answers it
+ * with a blank space. Render the reason; never hide the row.
+ */
+export type SaInterventionAction = {
+  type: SaInterventionType;
+  available: boolean;
+  /** Contextual — "Pause this listing", never a generic "Hold". Null when blocked. */
+  label: string | null;
+  /** Free text is mandatory, not optional. The owner reads it. */
+  requiresText: boolean;
+  /** Why not, when `available` is false. Written to be shown as-is. */
+  blockedReason: string | null;
+  /** Counterpart impact worth reading before acting. Null when nobody else is affected. */
+  warning: string | null;
+};
+
+/** Record types the named actions apply to. Path segments. */
+export type SaActionEntity = "requests" | "listings" | "offers";
+
+export function superAdminActions(entity: SaActionEntity, id: number) {
+  return request<SaInterventionAction[]>(`/api/v1/super-admin/${entity}/${id}/actions`);
+}
+
+/** All three mutating actions answer with the refreshed action list, not a bare 200. */
+export function superAdminHold(entity: SaActionEntity, id: number, reason: string) {
+  return request<SaInterventionAction[]>(`/api/v1/super-admin/${entity}/${id}/hold`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function superAdminResume(entity: SaActionEntity, id: number, reason?: string) {
+  return request<SaInterventionAction[]>(`/api/v1/super-admin/${entity}/${id}/resume`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function superAdminReassess(entity: SaActionEntity, id: number) {
+  return request<SaInterventionAction[]>(`/api/v1/super-admin/${entity}/${id}/reassess`, {
+    method: "POST",
+  });
+}
+
+/**
+ * No `targetUserId`: who to ask follows from the record, and the server derives
+ * it. Letting the console name someone would allow a request about one person's
+ * listing to be sent to another.
+ */
+export function superAdminRequestInfoFor(
+  entity: SaActionEntity,
+  id: number,
+  body: {
+    instructions: string;
+    dueAt?: string;
+    holdWorkflow?: boolean;
+    caseId?: number;
+    items: { label?: string; itemType: string; docType?: string; required?: boolean }[];
+  }
+) {
+  return request<{ informationRequestId: number }>(
+    `/api/v1/super-admin/${entity}/${id}/request-info`,
+    { method: "POST", body: JSON.stringify({ holdWorkflow: false, ...body }) }
+  );
+}
+
+// ── Phase 5B-2: match state machine view ─────────────────────────────────────
+
+/**
+ * @property partlyConfirmed the state with **no status of its own** — exactly one
+ * side has confirmed the handover. It is the most confusing thing to meet in
+ * support, because the match still reads as in-progress while one party believes
+ * it is finished, and it is why staff cancelling here get OVERRIDE.
+ */
+export type SaHandoverState = {
+  donorConfirmed: boolean;
+  donorConfirmedAt: string | null;
+  doneeConfirmed: boolean;
+  doneeConfirmedAt: string | null;
+  partlyConfirmed: boolean;
+  bothConfirmed: boolean;
+};
+
+export type SaMatchParticipant = { userId: number; name: string; email: string };
+
+export type SaTransitionRecord = {
+  fromStatus: string;
+  toStatus: string;
+  changedBy: string | null;
+  note: string | null;
+  at: string;
+};
+
+/**
+ * @property stuckSince when the current status began. **Null means unknown, not
+ * "just changed"** — nothing has been recorded — and staff must be able to tell
+ * those apart before chasing someone about a delay.
+ */
+export type SaMatchState = {
+  matchId: number;
+  status: string;
+  terminal: boolean;
+  handover: SaHandoverState;
+  stuckSince: string | null;
+  donor: SaMatchParticipant | null;
+  donee: SaMatchParticipant | null;
+  cancellation: SaCancellationOption;
+  history: SaTransitionRecord[];
+};
+
+export function superAdminMatchState(id: number) {
+  return request<SaMatchState>(`/api/v1/super-admin/matches/${id}/state`);
+}
