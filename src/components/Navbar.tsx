@@ -6,6 +6,7 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
 import SpecularButton from "@/components/SpecularButton";
 import Link from "next/link";
+import { CauseKindWordmark } from "@/components/brand/CauseKindWordmark";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -39,25 +40,18 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-const logoLetterVariants = {
-  hidden: { opacity: 0, y: 6 },
-  visible: { opacity: 1, y: 0 },
-};
-const logoStagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.15 } },
-};
 
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
   return (
     <motion.span
-      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
+      className={`relative font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
       aria-label="CauseKind"
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
+
       {!hideIcon && (
         <motion.div
           className="shrink-0"
@@ -69,35 +63,12 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
         </motion.div>
       )}
 
-      <span className="flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
-        {/* "Cause" — stagger letter reveal */}
-        <motion.span
-          className="text-stone-900 dark:text-stone-100 tracking-tight flex"
-          variants={logoStagger}
-          initial="hidden"
-          animate="visible"
-        >
-          {"Cause".split("").map((l, i) => (
-            <motion.span
-              key={i}
-              variants={logoLetterVariants}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {l}
-            </motion.span>
-          ))}
-        </motion.span>
-
-        {/* "Kind" — slides in as one word after "Cause", then shimmers */}
-        <motion.span
-          className="ck-logo-kind-shimmer"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.44 }}
-        >
-          Kind
-        </motion.span>
-      </span>
+      {/* The wordmark is the supplied animated asset now, not styled text.
+          The tricolour letter spans and the cloth-wave SVG filter that used to
+          be here are gone with it: the asset carries its own motion, and
+          running a turbulence displacement over an already-animating image
+          would fight it. Reduced motion is handled inside the wordmark. */}
+      <CauseKindWordmark size={size} alt="" priority />
     </motion.span>
   );
 }
