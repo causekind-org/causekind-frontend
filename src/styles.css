@@ -2932,3 +2932,104 @@ div:has(.searchable-select-open) {
   --primary-foreground: #0b1929;
   --ring: #7fb0e8;
 }
+
+/* ── Independence Day hero (15 August, campaign window only) ──────────────────
+   Three additions, all decorative and all reversible with the campaign flag.
+   Each has a prefers-reduced-motion path — the strip above the hero set that
+   precedent and it is the right one. */
+
+/* 1. Tricolour light sweep.
+      A band of saffron-white-green drifting diagonally across the hero
+      photograph. soft-light rather than normal blending so it reads as light
+      catching the scene rather than a flag laid on top of it — the strip above
+      already carries the literal tricolour, and a second one would be noise. */
+@keyframes ck-tricolour-sweep {
+  0%   { transform: translate3d(-60%, -20%, 0) rotate(12deg); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translate3d(160%, 20%, 0) rotate(12deg); opacity: 0; }
+}
+
+.ck-tricolour-sweep {
+  position: absolute;
+  top: -30%;
+  left: 0;
+  width: 42%;
+  height: 160%;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  will-change: transform, opacity;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 153, 51, 0.00) 8%,
+    rgba(255, 153, 51, 0.55) 26%,
+    rgba(255, 255, 255, 0.70) 50%,
+    rgba(19, 136, 8, 0.55) 74%,
+    rgba(19, 136, 8, 0.00) 92%,
+    transparent 100%
+  );
+  filter: blur(14px);
+  animation: ck-tricolour-sweep 12s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: 1.4s;
+}
+
+/* 2. The unfurl — one band sweeping across the headline on first load, then
+      gone. Masked by the headline itself, so it reveals rather than covers. */
+@keyframes ck-unfurl-band {
+  0%   { transform: scaleX(0); transform-origin: left center; opacity: 1; }
+  55%  { transform: scaleX(1); transform-origin: left center; }
+  56%  { transform: scaleX(1); transform-origin: right center; }
+  100% { transform: scaleX(0); transform-origin: right center; opacity: 1; }
+}
+
+/* The text leads, the band trails. An earlier version had the headline reach
+   full strength only as the band finished, which meant the most important words
+   on the page were faint for most of a second — the reveal is meant to draw the
+   eye to them, not withhold them. */
+@keyframes ck-unfurl-text {
+  0%, 12% { opacity: 0; transform: translateY(6px); }
+  55%     { opacity: 1; transform: translateY(0); }
+  100%    { opacity: 1; transform: translateY(0); }
+}
+
+.ck-unfurl { position: relative; display: block; }
+
+.ck-unfurl > .ck-unfurl-band {
+  position: absolute;
+  inset: -0.25em -0.5em;
+  border-radius: 0.35rem;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    #ff9933 0%, #ff9933 33%,
+    #ffffff 33%, #ffffff 66%,
+    #138808 66%, #138808 100%
+  );
+  animation: ck-unfurl-band 1.15s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+.ck-unfurl > .ck-unfurl-text {
+  animation: ck-unfurl-text 1.15s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+/* 3. Count-up figure — a quiet rise, not a bounce. */
+@keyframes ck-count-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ck-count-rise { animation: ck-count-rise .6s cubic-bezier(0.33, 1, 0.68, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* The sweep holds still at a low, even tint rather than vanishing — the
+     colour is the point, the movement is not. */
+  .ck-tricolour-sweep {
+    animation: none;
+    opacity: .35;
+    transform: translate3d(30%, 0, 0) rotate(12deg);
+  }
+  .ck-unfurl > .ck-unfurl-band { display: none; }
+  .ck-unfurl > .ck-unfurl-text { animation: none; opacity: 1; transform: none; }
+  .ck-count-rise { animation: none; }
+}
