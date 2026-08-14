@@ -127,7 +127,10 @@ export function OperationsPanel({ isDark }: { isDark: boolean }) {
             <h3 className={`mb-2 text-xs font-black uppercase tracking-wider ${t.dim}`}>
               Environment
             </h3>
-            <dl className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+            {/* gap-x-8, not the gap-1.5 this started with: at two columns the
+                right-aligned value of one pair sat flush against the next pair's
+                label, so "update" and "flyway.enabled" read as a single item. */}
+            <dl className="grid grid-cols-1 gap-y-1.5 gap-x-8 sm:grid-cols-2">
               {Object.entries(health.configuration).map(([k, v]) => (
                 <div key={k} className="flex items-baseline justify-between gap-3">
                   <dt className={`text-xs ${t.muted}`}>{k}</dt>

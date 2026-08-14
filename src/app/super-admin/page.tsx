@@ -520,19 +520,24 @@ export default function SuperAdminPage() {
               </button>
             ))}
 
+            {/* Every rebuild phase now has a home, so this stopped being a list
+                of things that do not exist and became a list of things that live
+                somewhere other than where you would look for them. Labelling it
+                "Not built yet" said the opposite of the truth about Restrictions,
+                which shipped in Phase 4. */}
             <div className={`mt-4 pt-3 border-t ${th.divider}`}>
               <p className={`px-3 pb-1.5 text-[9px] font-black uppercase tracking-wider ${th.textDimmer}`}>
-                Not built yet
+                Lives elsewhere
               </p>
               {PLANNED_NAV.map(({ label, icon: Icon, phase }) => (
                 <div
                   key={label}
-                  title={`Arrives with ${phase} of the console rebuild`}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold border border-transparent cursor-not-allowed opacity-40 ${th.textMuted}`}
+                  title={`Built — find it ${phase}`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold border border-transparent cursor-default opacity-60 ${th.textMuted}`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   {label}
-                  <Lock className="w-3 h-3 ml-auto shrink-0" />
+                  <span className={`ml-auto shrink-0 text-[9px] ${th.textDimmer}`}>{phase}</span>
                 </div>
               ))}
             </div>
