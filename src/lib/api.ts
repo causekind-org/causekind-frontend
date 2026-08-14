@@ -3066,3 +3066,129 @@ export async function uploadTaskAttachment(requestId: number, file: File): Promi
   const data = await res.json();
   return data.url as string;
 }
+
+// ── Phase 5: interventions (staff cancellation) ──────────────────────────────
+
+/**
+ * What staff may do to a record, as decided by CancellationPolicy.
+ *
+ * Mirrors the backend's CancellationOption. The important property is that this
+ * is not advisory: the execute endpoint consults the same policy, so `allowed:
+ * false` means the POST would be refused for the stated reason. The console must
+ * not offer an action the preview says is unavailable.
+ */
+export type SaCancellationOutcome =
+  | "DELETE"      // never visible to anyone — removed outright
+  | "WITHDRAW"    // out of circulation before a counterpart committed
+  | "CANCEL"      // backing out after a counterpart committed; cascades and notifies
+  | "HIDE"        // already terminal; clears the owner's dashboard, keeps the record
+  | "DISPUTE"     // past the point of no return — the honest route is Report an issue
+  | "OVERRIDE"    // staff acting past the boundary a donor or donee is stopped at
+  | "NONE";       // no exit exists for this actor in this state
+
+export type SaCancellationOption = {
+  allowed: boolean;
+  outcome: SaCancellationOutcome;
+  /** Contextual — "Withdraw offer", never a generic "Cancel". Null when not allowed. */
+  actionLabel: string | null;
+  requiresReason: boolean;
+  /** A counterpart has already committed time or an item to this. */
+  late: boolean;
+  /** Counterpart-impact copy. Null when nobody else is involved yet. */
+  warning: string | null;
+  /** Why not, when `allowed` is false. Written to be shown as-is. */
+  blockedReason: string | null;
+  /**
+   * Derived server-side from `isMutating()`, not a stored field: true when the
+   * outcome changes something rather than merely describing it. The backend uses
+   * it to decide whether to build `consequences` at all, so an empty list on a
+   * `mutating: true` option is a real "nothing else follows" — the distinction
+   * the consequences renderer depends on.
+   */
+  mutating: boolean;
+};
+
+export type SaConsequenceKind =
+  | "STATUS_CHANGE"
+  | "ITEM_RELEASED"
+  | "REQUEST_REOPENED"
+  | "BACKUP_PROMOTED"
+  | "WAITLIST_NOTIFIED"
+  | "NOTIFICATION"
+  | "FRAUD_FLAG"
+  | "CONFIRMATION_ERASED"
+  | "CERTIFICATE_AFFECTED";
+
+export type SaCancellationConsequence = {
+  kind: SaConsequenceKind;
+  description: string;
+};
+
+/**
+ * @property consequences empty means "nothing else would follow", never "we could
+ * not work it out" — the backend builds this list only for mutating outcomes and
+ * returns an empty one otherwise. Render it as a statement, not as a failure.
+ */
+export type SaCancellationPreview = {
+  entityType: string;
+  entityId: number;
+  currentStatus: string;
+  option: SaCancellationOption;
+  consequences: SaCancellationConsequence[];
+};
+
+export type SaCancellationReason =
+  | "ITEM_NO_LONGER_AVAILABLE"
+  | "CANNOT_ARRANGE_HANDOVER"
+  | "SCHEDULING_PROBLEM"
+  | "OTHER_PARTY_UNRESPONSIVE"
+  | "SAFETY_CONCERN"
+  | "CREATED_BY_MISTAKE"
+  | "OTHER";
+
+/** Labels copied from CancellationReason so the console reads as the app does. */
+export const SA_CANCELLATION_REASONS: { value: SaCancellationReason; label: string }[] = [
+  { value: "ITEM_NO_LONGER_AVAILABLE", label: "The item is no longer available" },
+  { value: "CANNOT_ARRANGE_HANDOVER",  label: "Unable to arrange handover" },
+  { value: "SCHEDULING_PROBLEM",       label: "Scheduling problem" },
+  { value: "OTHER_PARTY_UNRESPONSIVE", label: "The other party is unresponsive" },
+  { value: "SAFETY_CONCERN",           label: "Safety concern" },
+  { value: "CREATED_BY_MISTAKE",       label: "Created by mistake" },
+  { value: "OTHER",                    label: "Other" },
+];
+
+/**
+ * Mirrors CancellationReason.requiresDetails(). Duplicated deliberately so the
+ * submit button can be disabled before the request rather than after a 400 —
+ * the server still enforces it, and this is the friendlier half of the same rule.
+ * SAFETY_CONCERN because a safety report nobody can read is not actionable, and
+ * OTHER because it is definitionally uninformative.
+ */
+export function saReasonRequiresDetails(reason: SaCancellationReason): boolean {
+  return reason === "SAFETY_CONCERN" || reason === "OTHER";
+}
+
+/**
+ * The two record types staff can currently act on. These are path segments, and
+ * they sit at `/{entity}/{id}/…` — deeper than the generic console's
+ * `/super-admin/{entity}` mapping, which is why they cannot hijack it. Anything
+ * added here must keep that shape.
+ */
+export type SaInterventionEntity = "offers" | "matches";
+
+export function superAdminCancellationPreview(entity: SaInterventionEntity, id: number) {
+  return request<SaCancellationPreview>(
+    `/api/v1/super-admin/${entity}/${id}/cancellation-preview`
+  );
+}
+
+export function superAdminCancel(
+  entity: SaInterventionEntity,
+  id: number,
+  body: { reason: SaCancellationReason; details?: string }
+) {
+  return request<SaCancellationOption>(`/api/v1/super-admin/${entity}/${id}/cancel`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}

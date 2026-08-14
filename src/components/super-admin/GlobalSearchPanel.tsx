@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { superAdminSearch, type SaSearchHit, type SaSearchResponse } from "@/lib/api";
+import {
+  superAdminSearch,
+  type SaInterventionEntity,
+  type SaSearchHit,
+  type SaSearchResponse,
+} from "@/lib/api";
 import { saTheme } from "@/components/super-admin/saTheme";
 import { Loader2, Search } from "lucide-react";
 
@@ -54,17 +59,30 @@ export function useGlobalSearch(minLength = 2, limit = 5) {
 
 export function GlobalSearchPanel({
   onOpenUser,
+  onOpenIntervention,
   isDark,
 }: {
   onOpenUser: (id: number) => void;
+  onOpenIntervention: (entity: SaInterventionEntity, id: number) => void;
   isDark: boolean;
 }) {
   const t = saTheme(isDark);
   const { query, setQuery, results, loading } = useGlobalSearch(2, 10);
 
+  // Kept in step with CommandPalette's destinationOf — the same hit must lead to
+  // the same place whether it was found here or through ⌘K.
+  const hasDestination = useCallback(
+    (hit: SaSearchHit) => hit.type === "USER" || hit.type === "OFFER" || hit.type === "MATCH",
+    []
+  );
+
   const open = useCallback(
-    (hit: SaSearchHit) => { if (hit.type === "USER") onOpenUser(hit.id); },
-    [onOpenUser]
+    (hit: SaSearchHit) => {
+      if (hit.type === "USER") onOpenUser(hit.id);
+      else if (hit.type === "OFFER") onOpenIntervention("offers", hit.id);
+      else if (hit.type === "MATCH") onOpenIntervention("matches", hit.id);
+    },
+    [onOpenUser, onOpenIntervention]
   );
 
   return (
@@ -114,7 +132,7 @@ export function GlobalSearchPanel({
                   key={`${hit.type}-${hit.id}`}
                   onClick={() => open(hit)}
                   className={`flex flex-wrap items-center justify-between gap-2 p-3 transition-colors ${
-                    hit.type === "USER" ? `cursor-pointer ${t.rowHover}` : ""
+                    hasDestination(hit) ? `cursor-pointer ${t.rowHover}` : ""
                   }`}
                 >
                   <div className="min-w-0">
