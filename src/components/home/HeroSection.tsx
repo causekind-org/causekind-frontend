@@ -136,10 +136,14 @@ export function HeroSection({
       <div className="relative w-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] rounded-t-[3rem] rounded-b-none overflow-hidden bg-stone-900 shadow-xl border-x border-t border-[#e5e2d5]/60">
         <div className="absolute inset-0 w-full h-full pointer-events-none">
           <HeroImageSlider />
-          {/* Above the photograph, below the darkening gradients — so the sweep
-              tints the image but never fights the text's contrast. */}
-          {independenceDay && <TricolourSweep />}
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
+          {/* Between the two gradients, deliberately. Below both, the sweep sat
+              under 60% black twice over and the colour vanished. Above both, it
+              would wash across the headline. Here it clears the horizontal
+              darkening — the one that was killing it — while the bottom-up
+              gradient still goes over the top of it, which is what protects the
+              text sitting in that corner. */}
+          {independenceDay && <TricolourSweep />}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
         </div>
 
