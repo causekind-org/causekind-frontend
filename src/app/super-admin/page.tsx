@@ -14,6 +14,11 @@ import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
 import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
 import { CommandPalette } from "@/components/super-admin/CommandPalette";
 import { CasesPanel } from "@/components/super-admin/CasesPanel";
+import { InterventionsPanel } from "@/components/super-admin/InterventionsPanel";
+import { CommunicationsPanel } from "@/components/super-admin/CommunicationsPanel";
+import { GovernancePanel } from "@/components/super-admin/GovernancePanel";
+import { OperationsPanel } from "@/components/super-admin/OperationsPanel";
+import type { SaInterventionEntity } from "@/lib/api";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
@@ -186,6 +191,10 @@ const NAV = [
   { key: "search",        label: "Search",      icon: Search },
   { key: "directory",     label: "User 360",    icon: UserSearch },
   { key: "cases",         label: "Support cases", icon: LifeBuoy },
+  { key: "interventions", label: "Interventions", icon: SlidersHorizontal },
+  { key: "communications", label: "Communications", icon: Send },
+  { key: "governance",     label: "Governance",     icon: Lock },
+  { key: "operations",     label: "Operational health", icon: Activity },
   { key: "users",         label: "Users (raw)", icon: Users },
   { key: "campaigns",     label: "Campaigns",   icon: Megaphone },
   { key: "donations",     label: "Donations",   icon: CreditCard },
@@ -210,10 +219,10 @@ const NAV = [
  * nothing.
  */
 const PLANNED_NAV = [
-  { label: "Restrictions",      icon: ShieldCheck,       phase: "Phase 4" },
-  { label: "Interventions",     icon: SlidersHorizontal, phase: "Phase 5" },
-  { label: "Communications",    icon: Send,              phase: "Phase 6" },
-  { label: "Operational health", icon: Activity,         phase: "Phase 8" },
+  // Restrictions shipped in Phase 4 but is a tab inside User 360 rather than a
+  // section of its own, so it stays listed here as a destination that exists
+  // elsewhere rather than one that does not exist yet.
+  { label: "Restrictions",      icon: ShieldCheck,       phase: "in User 360" },
 ] as const;
 
 type SectionKey = (typeof NAV)[number]["key"];
@@ -357,6 +366,11 @@ export default function SuperAdminPage() {
   // into their 360 instead of making the agent find them a second time.
   const [focusUserId, setFocusUserId] = useState<number | undefined>(undefined);
 
+  // Same idea for offers and matches: search knows which record the agent meant,
+  // so Interventions should open on it rather than asking for the id again.
+  const [focusIntervention, setFocusIntervention] =
+    useState<{ entity: SaInterventionEntity; id: number } | undefined>(undefined);
+
   // Theme. Light is the default; the console used to open dark regardless of
   // preference. Read from storage in an effect rather than in the useState
   // initialiser — localStorage does not exist on the server, and seeding state
@@ -391,6 +405,9 @@ export default function SuperAdminPage() {
     // Leaving the directory by the nav should not silently reopen the last user
     // the next time it's entered.
     if (key !== "directory") setFocusUserId(undefined);
+    // Same for Interventions: arriving via the nav is "I want to look something
+    // up", not "reopen the record I acted on earlier".
+    if (key !== "interventions") setFocusIntervention(undefined);
     setSection(key);
   }
 
@@ -398,6 +415,12 @@ export default function SuperAdminPage() {
   function openUser(id: number) {
     setFocusUserId(id);
     setSection("directory");
+  }
+
+  /** Offers and matches land in Interventions, already looked up. */
+  function openIntervention(entity: SaInterventionEntity, id: number) {
+    setFocusIntervention({ entity, id });
+    setSection("interventions");
   }
 
   useEffect(() => {
@@ -409,9 +432,13 @@ export default function SuperAdminPage() {
   const content = useMemo(() => {
     switch (section) {
       case "overview":      return <OverviewSection th={th} />;
-      case "search":        return <GlobalSearchPanel onOpenUser={openUser} isDark={isDark} />;
+      case "search":        return <GlobalSearchPanel onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} />;
       case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} isDark={isDark} />;
       case "cases":         return <CasesPanel isDark={isDark} />;
+      case "interventions": return <InterventionsPanel initialTarget={focusIntervention} isDark={isDark} />;
+      case "communications": return <CommunicationsPanel isDark={isDark} />;
+      case "governance": return <GovernancePanel isDark={isDark} />;
+      case "operations": return <OperationsPanel isDark={isDark} />;
       case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
                               onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
@@ -426,7 +453,7 @@ export default function SuperAdminPage() {
       case "sql":           return <SqlConsole isDark={isDark} />;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, isDark, focusUserId]);
+  }, [section, isDark, focusUserId, focusIntervention]);
 
   // Theme toggle button (reused in sidebar + topbar)
   const ThemeToggle = (
@@ -493,19 +520,24 @@ export default function SuperAdminPage() {
               </button>
             ))}
 
+            {/* Every rebuild phase now has a home, so this stopped being a list
+                of things that do not exist and became a list of things that live
+                somewhere other than where you would look for them. Labelling it
+                "Not built yet" said the opposite of the truth about Restrictions,
+                which shipped in Phase 4. */}
             <div className={`mt-4 pt-3 border-t ${th.divider}`}>
               <p className={`px-3 pb-1.5 text-[9px] font-black uppercase tracking-wider ${th.textDimmer}`}>
-                Not built yet
+                Lives elsewhere
               </p>
               {PLANNED_NAV.map(({ label, icon: Icon, phase }) => (
                 <div
                   key={label}
-                  title={`Arrives with ${phase} of the console rebuild`}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold border border-transparent cursor-not-allowed opacity-40 ${th.textMuted}`}
+                  title={`Built — find it ${phase}`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold border border-transparent cursor-default opacity-60 ${th.textMuted}`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   {label}
-                  <Lock className="w-3 h-3 ml-auto shrink-0" />
+                  <span className={`ml-auto shrink-0 text-[9px] ${th.textDimmer}`}>{phase}</span>
                 </div>
               ))}
             </div>
@@ -580,7 +612,7 @@ export default function SuperAdminPage() {
 
       {/* ⌘K from anywhere in the console. Mounted once, outside the section
           switch, so it survives navigation and does not remount on every tab. */}
-      <CommandPalette onOpenUser={openUser} isDark={isDark} />
+      <CommandPalette onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} />
 
       {/* ── SQL Warning Modal ─────────────────────────────────────────────── */}
       {sqlModalOpen && (
