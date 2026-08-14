@@ -9,10 +9,23 @@ import type {
 
 const superAdminCancellationPreview = vi.fn();
 const superAdminCancel = vi.fn();
+const superAdminMatchState = vi.fn();
+const superAdminActions = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   superAdminCancellationPreview: (...a: unknown[]) => superAdminCancellationPreview(...a),
   superAdminCancel: (...a: unknown[]) => superAdminCancel(...a),
+  // Phase 5B-2 turned the panel into a shell that loads these alongside the
+  // preview. They are stubbed rather than exercised here — the properties this
+  // file pins are the cancellation ones, and the actions surface has its own
+  // tests — but they must resolve, or the shell's Promise.all rejects and every
+  // assertion below fails for a reason that has nothing to do with cancellation.
+  superAdminMatchState: (...a: unknown[]) => superAdminMatchState(...a),
+  superAdminActions: (...a: unknown[]) => superAdminActions(...a),
+  superAdminHold: vi.fn(),
+  superAdminResume: vi.fn(),
+  superAdminReassess: vi.fn(),
+  superAdminRequestInfoFor: vi.fn(),
   // Real values, not stubs — the panel's gating is supposed to agree with these,
   // and a fake list would let the gate pass while disagreeing with the server.
   SA_CANCELLATION_REASONS: [
@@ -91,6 +104,24 @@ function confirmButton(name: RegExp): HTMLButtonElement | null {
 beforeEach(() => {
   superAdminCancellationPreview.mockReset();
   superAdminCancel.mockReset();
+  superAdminActions.mockReset();
+  superAdminMatchState.mockReset();
+  superAdminActions.mockResolvedValue([]);
+  superAdminMatchState.mockResolvedValue({
+    matchId: 42,
+    status: "DONEE_ACCEPTED",
+    terminal: false,
+    handover: {
+      donorConfirmed: false, donorConfirmedAt: null,
+      doneeConfirmed: false, doneeConfirmedAt: null,
+      partlyConfirmed: false, bothConfirmed: false,
+    },
+    stuckSince: null,
+    donor: null,
+    donee: null,
+    cancellation: option(),
+    history: [],
+  });
 });
 
 describe("a record the policy refuses", () => {
