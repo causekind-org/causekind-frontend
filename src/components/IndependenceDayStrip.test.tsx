@@ -41,12 +41,23 @@ describe("IndependenceDayStrip", () => {
     expect(container.querySelector(".ck-independence-flag-ink")).toBeNull();
   });
 
-  it("uses a complete saffron-white-green field with a chakra detail on the left", () => {
+  it("runs the saffron-white-green field the full width, with the chakra centred", () => {
     const { container } = render(<IndependenceDayStrip />);
     const flagField = container.querySelector('[class*="bg-[linear-gradient"]');
 
     expect(flagField?.className).toMatch(/#ff9933.*#ffffff.*#138808/);
-    expect(flagField?.querySelector('[class*="border-[#123f75]"]')).not.toBeNull();
+
+    // The field used to stop at 38rem and dissolve into solid green, leaving the
+    // right of the strip a plain dark band — and the ticker's near-black
+    // lettering sitting on it, barely readable. It spans the strip now.
+    expect(flagField?.className).toMatch(/inset-0/);
+    expect(flagField?.className).not.toMatch(/w-\[38rem\]/);
+
+    const chakra = flagField?.querySelector('[class*="border-[#123f75]"]');
+    expect(chakra).not.toBeNull();
+    // Centred on both axes, where it sits on the flag itself.
+    expect(chakra?.className).toMatch(/left-1\/2/);
+    expect(chakra?.className).toMatch(/-translate-x-1\/2/);
   });
 
   it("keeps the narrow-screen strip compact while retaining an accessible message", () => {
