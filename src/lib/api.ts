@@ -3319,3 +3319,194 @@ export type SaMatchState = {
 export function superAdminMatchState(id: number) {
   return request<SaMatchState>(`/api/v1/super-admin/matches/${id}/state`);
 }
+
+// ── Phase 6: communications ──────────────────────────────────────────────────
+
+export type SaCommunicationChannel = "EMAIL" | "WHATSAPP";
+export type SaCommunicationStatus = "QUEUED" | "SENT" | "FAILED";
+
+export type SaCommunicationTemplate = {
+  name: string;
+  /** Null for FREE_TEXT, where the composer supplies its own. */
+  subject: string | null;
+  placeholders: string[];
+  freeText: boolean;
+};
+
+/**
+ * Exactly what would be sent.
+ *
+ * Produced by the same compose step the send uses, so what an agent approved is
+ * what leaves — a preview rendered in the browser would be a second
+ * implementation of the message, and two implementations drift.
+ *
+ * @property recipient masked. Revealing it in full is a separate, separately
+ * audited capability, and the composer does not need it in order to send.
+ * @property warnings non-blocking. Staff legitimately quote a phone number back
+ * to the person it belongs to; pasting someone else's in is the leak, and this
+ * is the moment to notice.
+ */
+export type SaCommunicationPreview = {
+  targetUserId: number;
+  recipientName: string;
+  recipient: string;
+  channel: SaCommunicationChannel;
+  template: string;
+  subject: string;
+  body: string;
+  warnings: string[];
+  sendable: boolean;
+  blockedReason: string | null;
+};
+
+export type SaCommunication = {
+  id: number;
+  targetUserId: number;
+  recipient: string | null;
+  channel: SaCommunicationChannel;
+  template: string | null;
+  subject: string | null;
+  body: string | null;
+  status: SaCommunicationStatus;
+  providerMessageId: string | null;
+  failureReason: string | null;
+  caseId: number | null;
+  sentByEmail: string;
+  sentAt: string;
+};
+
+export type SaComposeRequest = {
+  targetUserId: number;
+  channel: SaCommunicationChannel;
+  template: string;
+  subject?: string;
+  body?: string;
+  values?: Record<string, string>;
+  caseId?: number;
+};
+
+export function superAdminCommunicationTemplates() {
+  return request<SaCommunicationTemplate[]>("/api/v1/super-admin/communications/templates");
+}
+
+export function superAdminCommunicationPreview(body: SaComposeRequest) {
+  return request<SaCommunicationPreview>("/api/v1/super-admin/communications/preview", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminCommunicationSend(body: SaComposeRequest) {
+  return request<SaCommunication>("/api/v1/super-admin/communications/send", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminCommunicationLog(params: {
+  userId?: number; caseId?: number; page?: number; size?: number;
+} = {}) {
+  const q = new URLSearchParams();
+  if (params.userId != null) q.set("userId", String(params.userId));
+  if (params.caseId != null) q.set("caseId", String(params.caseId));
+  q.set("page", String(params.page ?? 0));
+  q.set("size", String(params.size ?? 25));
+  return request<SaPage<SaCommunication>>(`/api/v1/super-admin/communications?${q}`);
+}
+
+// ── Phase 7: governance ──────────────────────────────────────────────────────
+
+export type SaRevealField = "EMAIL" | "PHONE";
+
+/**
+ * One occasion on which somebody read a private detail in full.
+ *
+ * Note there is no value here, only which field was read. Recording the value
+ * alongside the fact of reading it would make the trail a second copy of the
+ * data it exists to protect.
+ */
+export type SaRevealLogEntry = {
+  id: number;
+  actorEmail: string;
+  actorRole: string | null;
+  targetUserId: number;
+  field: SaRevealField;
+  justification: string | null;
+  caseId: number | null;
+  revealedAt: string;
+};
+
+export type SaPermissionHistoryEntry = {
+  id: number;
+  adminId: number;
+  capability: string;
+  granted: boolean;
+  changedBy: string;
+  reason: string | null;
+  changedAt: string;
+};
+
+/**
+ * The justification is sent with the request, not collected afterwards. That
+ * ordering is the control: a field that must be filled before the value appears
+ * makes the reader state a purpose.
+ */
+export function superAdminReveal(body: {
+  targetUserId: number;
+  field: SaRevealField;
+  justification: string;
+  caseId?: number;
+}) {
+  return request<{ field: string; value: string }>("/api/v1/super-admin/governance/reveal", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminRevealLog(params: {
+  userId?: number; actor?: string; page?: number; size?: number;
+} = {}) {
+  const q = new URLSearchParams();
+  if (params.userId != null) q.set("userId", String(params.userId));
+  if (params.actor) q.set("actor", params.actor);
+  q.set("page", String(params.page ?? 0));
+  q.set("size", String(params.size ?? 25));
+  return request<SaPage<SaRevealLogEntry>>(`/api/v1/super-admin/governance/reveals?${q}`);
+}
+
+export function superAdminPermissionHistory(adminId: number, page = 0, size = 25) {
+  return request<SaPage<SaPermissionHistoryEntry>>(
+    `/api/v1/super-admin/admins/${adminId}/history?page=${page}&size=${size}`
+  );
+}
+
+/**
+ * The audit trail as CSV.
+ *
+ * Returns the text rather than triggering a download here: the caller decides
+ * what to do with it, and a download started from library code is invisible to
+ * whoever is reading the component.
+ */
+export async function superAdminAuditExport(filters: {
+  actorEmail?: string; entityType?: string; action?: string;
+} = {}): Promise<string> {
+  const q = new URLSearchParams();
+  if (filters.actorEmail) q.set("actorEmail", filters.actorEmail);
+  if (filters.entityType) q.set("entityType", filters.entityType);
+  if (filters.action) q.set("action", filters.action);
+
+  // Not routed through `request`: that helper parses every successful body as
+  // JSON, and this one is CSV. Kept to a plain fetch rather than generalising
+  // `request` around a content type used by exactly one endpoint.
+  const res = await fetch(`${BASE_URL}/api/v1/super-admin/audit-log/export?${q}`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(
+      res.status === 403
+        ? "You don't have permission to export the audit log."
+        : `The export failed (${res.status}).`
+    );
+  }
+  return res.text();
+}
