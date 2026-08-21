@@ -34,15 +34,35 @@ export function WhatWeProvideSection() {
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    function update() {
+
+    // Coalesced to one update per frame. This used to call setProgress straight
+    // out of the scroll listener, so every scroll event reconciled the whole
+    // subtree — two marquee rows of ~14 spans, the tabs and both step blocks
+    // with their computed inline styles. The visuals are unchanged; this only
+    // stops the same work happening several times per frame.
+    let ticking = false;
+
+    function apply() {
+      ticking = false;
       const rect = el!.getBoundingClientRect();
       const scrollable = rect.height - window.innerHeight;
       if (scrollable <= 0) return;
       setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
     }
-    window.addEventListener("scroll", update, { passive: true });
-    update();
-    return () => window.removeEventListener("scroll", update);
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(apply);
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    apply();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   const activeStep = Math.min(Math.floor(progress * STEP_COUNT), STEP_COUNT - 1);
