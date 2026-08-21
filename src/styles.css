@@ -1171,6 +1171,30 @@ section:focus-within {
   --ck-bottom-chrome: calc(var(--ck-nav-float) + var(--ck-bottom-inset) + var(--ck-nav-h));
 }
 
+/* Bottom padding for the page's main element, so content ends ABOVE the dock
+   instead of sliding under it. The dock is translucent with a backdrop-filter,
+   so anything left underneath is blurred by it — which reads as "the page is
+   blurry" rather than "the page is too long", and hides the last interactive
+   element on a screen (on /login, the Sign up link).
+
+   Driven by --ck-bottom-chrome, never by a pixel guess. layout.tsx previously
+   hardcoded pb-[72px] against a chrome that is 92px at minimum and ~126px once
+   a notched phone's safe-area inset is counted, so every mobile page lost its
+   last 20-54px.
+
+   The +0.5rem is breathing room, so content clears the dock rather than
+   touching it.
+
+   No lg: override needed — at min-width 1024px the block below zeroes
+   --ck-nav-float and --ck-nav-h, so this collapses to the safe-area inset on
+   its own.
+
+   Real CSS, not pb-[var(--ck-bottom-chrome)]: an unemitted Tailwind arbitrary
+   value fails silently, and a layout value is the last place that can happen. */
+.ck-main-bottom-pad {
+  padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
+}
+
 @media (min-width: 1024px) {
   :root {
     --ck-nav-float: 0px;
