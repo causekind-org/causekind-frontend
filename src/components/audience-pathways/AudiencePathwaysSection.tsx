@@ -27,7 +27,20 @@ const LightRays = dynamic(() => import("@/components/LightRays"), { ssr: false }
  * landing page that is the difference between two permanent compositor loops
  * and none.
  */
-export default function AudiencePathwaysSection() {
+export default function AudiencePathwaysSection({
+  /**
+   * Emit the guest tour's `guest-join` anchor on the donor CTA.
+   *
+   * <p>Same rule as BeTheChangeSection: HomeClient mounts this component twice,
+   * once per branch, and `document.querySelector` returns the FIRST match — the
+   * desktop copy, which is `hidden lg:block` and reports a zero rect, collapsing
+   * the tour spotlight. Only the mobile instance may pass this.
+   *
+   * <p>The anchor lives here because the mobile tree drops the duplicate
+   * "Join as Donor" link that used to carry it in the trust-signals block.
+   */
+  tourAnchors = false,
+}: { tourAnchors?: boolean } = {}) {
   const t = useTranslations("audiencePathways");
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { amount: 0.15 });
@@ -56,6 +69,10 @@ export default function AudiencePathwaysSection() {
       cta: t("donor.cta"),
       // The signup route is /register, and ?role= preselects the picker there.
       href: "/register?role=DONOR",
+      // Guest tour's final step ("Ready to give?"). It used to sit on the
+      // trust-signals "Join as Donor" link, which the mobile tree no longer
+      // renders; tourSteps.ts still looks this anchor up by name.
+      dataTour: tourAnchors ? "guest-join" : undefined,
       Icon: Gift,
       orbitIcons: [PackageOpen, Boxes, Truck, HandHeart],
     },

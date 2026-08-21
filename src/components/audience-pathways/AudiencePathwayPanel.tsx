@@ -13,6 +13,8 @@ export type PathwayPanelProps = {
   body: string;
   cta: string;
   href: string;
+  /** Guest-tour anchor for the CTA, when the caller opts in. Undefined emits nothing. */
+  dataTour?: string;
   Icon: LucideIcon;
   orbitIcons: LucideIcon[];
   /** True when this panel is hovered/focused, or when neither is (balanced state). */
@@ -39,7 +41,7 @@ export type PathwayPanelProps = {
  * be stuck reading through a blur.
  */
 export default function AudiencePathwayPanel({
-  tone, eyebrow, heading, body, cta, href, Icon, orbitIcons,
+  tone, eyebrow, heading, body, cta, href, dataTour, Icon, orbitIcons,
   active, dimmed, spotlit, inView, onActivate, onDeactivate,
 }: PathwayPanelProps) {
   const reduceMotion = useReducedMotion();
@@ -144,6 +146,7 @@ export default function AudiencePathwayPanel({
               a density pass gets to trade away. */}
           <Link
             href={href}
+            data-tour={dataTour}
             className={`mt-3.5 inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${ctaBg} ${ringFocus}`}
           >
             {cta}

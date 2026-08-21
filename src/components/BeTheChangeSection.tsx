@@ -689,42 +689,40 @@ function MoreCategoriesToggle({
   );
 }
 
-/* ─── Main exported section ─────────────────────────────────────────── */
-export function BeTheChangeSection({
+/* ─── Trust signals + guest CTA ──────────────────────────────────────
+   Split out of BeTheChangeSection so the caller can order it independently.
+   It was always conceptually separate — on mobile it sits OUTSIDE the white
+   panel, on the homepage background — but being welded to the end of the
+   section meant the mobile tree could not put the donor/donee pathway cards
+   in front of it without also breaking the hero overlap those two share.
+
+   Still rendered inline by BeTheChangeSection by default (`trailing`), so the
+   desktop tree is untouched. ── */
+export function BeTheChangeTrustSignals({
+  /**
+   * The stats state and its fetch live here rather than in BeTheChangeSection,
+   * because this block is their only consumer — the section never read
+   * `platformStats` for anything else.
+   */
   initialStats,
-  /**
-   * Mobile only: tuck the white panel under the Hero's rounded lower edge.
-   * Passed by the caller ONLY when the two are direct visual neighbours — it is
-   * never inferred from sibling order, so enabling FEATURES.money (which puts
-   * the Campaigns rail between them) cannot silently produce a bad overlap.
-   */
-  overlapHero = false,
-  /**
-   * Emit the guest tour's `data-tour` anchors.
-   *
-   * <p>This component is mounted TWICE by HomeClient — once in the desktop
-   * branch, once in the mobile one. Emitting anchors unconditionally would put
-   * each `data-tour` in the DOM twice, and `document.querySelector` returns the
-   * FIRST match: the desktop copy, which is `hidden lg:block`. A `display: none`
-   * element reports a zero rect, so the tour's spotlight would collapse to
-   * nothing. Only the mobile instance may pass this.
-   */
   tourAnchors = false,
-}: { initialStats?: PlatformStats | null; overlapHero?: boolean; tourAnchors?: boolean } = {}) {
+  /**
+   * Mobile passes false: the AudiencePathways cards now sit directly above
+   * this block and already offer "Join as a donor", so a second register link
+   * one scroll later is the same door twice.
+   *
+   * <p>Only the register link is suppressed. "Browse Requests" stays — it is
+   * not a duplicate, and the Requests board is deliberately public.
+   */
+  showJoinCta = true,
+}: {
+  initialStats?: PlatformStats | null;
+  tourAnchors?: boolean;
+  showJoinCta?: boolean;
+} = {}) {
   const { ref: statsRef, inView: statsInView } = useInView(0.3);
   const { user } = useAuth();
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(initialStats ?? null);
-
-  // Category-pill overflow, below `lg` only. `useId` rather than a literal
-  // string because HomeClient mounts this component twice — a hardcoded id
-  // would put two of the same `aria-controls` target in the document and the
-  // toggle would resolve to whichever came first.
-  const pillsReduceMotion = useReducedMotion() ?? false;
-  const overflowId = useId();
-  const [pillsExpanded, setPillsExpanded] = useState(false);
-  // Focus must survive the collapse: the revealed group unmounts, and if focus
-  // had moved into it the document would drop focus to <body>.
-  const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!initialStats) {
@@ -824,6 +822,126 @@ export function BeTheChangeSection({
   ];
 
   const STATS = hasTraction ? LIVE_STATS : PROMISE_STATS;
+
+  return (
+    <>
+      {/* ── Trust signal rail — outside the surface on mobile, on the page bg.
+           `mt-5` is the controlled 20px gap below the white surface. ── */}
+      <div
+        ref={statsRef}
+        className="relative mt-5 py-0 lg:mt-0 lg:border-y lg:border-stone-200/80 lg:py-4 dark:lg:border-stone-800"
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500">
+            CauseKind trust signals
+          </p>
+          <div className="h-px min-w-24 flex-1 bg-gradient-to-r from-stone-200 via-stone-200 to-transparent dark:from-stone-800 dark:via-stone-800" />
+        </div>
+        {/* Open signal matrix: 2x2 on mobile, a four-station rail at xl.
+            `minmax(0,1fr)` (not plain `1fr`) so a long label can never push a
+            column past its share and overflow the row. */}
+        <div className="relative" data-tour={tourAnchors ? "guest-signals" : undefined}>
+          <SignalMatrixDividers />
+          <dl className="grid auto-rows-fr grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:auto-rows-auto xl:grid-cols-[repeat(4,minmax(0,1fr))]">
+          {STATS.map((s, i) => (
+            <TrustSignalMetric
+              key={s.label}
+              icon={s.icon}
+              value={s.value}
+              suffix={s.suffix}
+              label={s.label}
+              caption={s.caption}
+              color={s.color}
+              progress={s.progress}
+              index={i}
+              delay={i * 120}
+              start={statsInView}
+            />
+          ))}
+          </dl>
+        </div>
+      </div>
+
+      {/* ── CTA row — only shown when NOT logged in ── */}
+      {!user && (
+        <div className="flex flex-wrap items-center gap-2.5 mt-5">
+          {showJoinCta && (
+            <Link
+              href="/register"
+              data-tour={tourAnchors ? "guest-join" : undefined}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-sm text-white
+                         shadow-md hover:opacity-90 active:scale-95 transition-all duration-200"
+              style={{ background: TERRACOTTA }}
+            >
+              Join as Donor <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
+          <Link
+            href="/requests"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-sm
+                       border border-[#e5e2d5] dark:border-stone-700
+                       text-stone-700 dark:text-stone-300
+                       hover:border-[#b04a15]/40 hover:text-[#b04a15]
+                       transition-all duration-200"
+          >
+            Browse Requests <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ─── Main exported section ─────────────────────────────────────────── */
+export function BeTheChangeSection({
+  initialStats,
+  /**
+   * Mobile only: tuck the white panel under the Hero's rounded lower edge.
+   * Passed by the caller ONLY when the two are direct visual neighbours — it is
+   * never inferred from sibling order, so enabling FEATURES.money (which puts
+   * the Campaigns rail between them) cannot silently produce a bad overlap.
+   */
+  overlapHero = false,
+  /**
+   * Emit the guest tour's `data-tour` anchors.
+   *
+   * <p>This component is mounted TWICE by HomeClient — once in the desktop
+   * branch, once in the mobile one. Emitting anchors unconditionally would put
+   * each `data-tour` in the DOM twice, and `document.querySelector` returns the
+   * FIRST match: the desktop copy, which is `hidden lg:block`. A `display: none`
+   * element reports a zero rect, so the tour's spotlight would collapse to
+   * nothing. Only the mobile instance may pass this.
+   */
+  tourAnchors = false,
+  /**
+   * Render the trust signals + CTA inline at the end of this section.
+   *
+   * <p>Defaults to true so the desktop tree is unchanged. The mobile tree
+   * passes false and renders <BeTheChangeTrustSignals> itself, after the
+   * AudiencePathways cards — the hero overlap fuses this section to the Hero,
+   * so the pathways can only be moved in front of the trust signals by taking
+   * the trust signals out, not by reordering siblings.
+   */
+  trailing = true,
+}: {
+  initialStats?: PlatformStats | null;
+  overlapHero?: boolean;
+  tourAnchors?: boolean;
+  trailing?: boolean;
+} = {}) {
+  const { user } = useAuth();
+
+  // Category-pill overflow, below `lg` only. `useId` rather than a literal
+  // string because HomeClient mounts this component twice — a hardcoded id
+  // would put two of the same `aria-controls` target in the document and the
+  // toggle would resolve to whichever came first.
+  const pillsReduceMotion = useReducedMotion() ?? false;
+  const overflowId = useId();
+  const [pillsExpanded, setPillsExpanded] = useState(false);
+  // Focus must survive the collapse: the revealed group unmounts, and if focus
+  // had moved into it the document would drop focus to <body>.
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
 
   const cards: JourneyItem[] = [
     {
@@ -1039,67 +1157,9 @@ export function BeTheChangeSection({
 
         </div>{/* ── end elevated surface ── */}
 
-        {/* ── Trust signal rail — outside the surface on mobile, on the page bg.
-             `mt-5` is the controlled 20px gap below the white surface. ── */}
-        <div
-          ref={statsRef}
-          className="relative mt-5 py-0 lg:mt-0 lg:border-y lg:border-stone-200/80 lg:py-4 dark:lg:border-stone-800"
-        >
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500">
-              CauseKind trust signals
-            </p>
-            <div className="h-px min-w-24 flex-1 bg-gradient-to-r from-stone-200 via-stone-200 to-transparent dark:from-stone-800 dark:via-stone-800" />
-          </div>
-          {/* Open signal matrix: 2x2 on mobile, a four-station rail at xl.
-              `minmax(0,1fr)` (not plain `1fr`) so a long label can never push a
-              column past its share and overflow the row. */}
-          <div className="relative" data-tour={tourAnchors ? "guest-signals" : undefined}>
-            <SignalMatrixDividers />
-            <dl className="grid auto-rows-fr grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:auto-rows-auto xl:grid-cols-[repeat(4,minmax(0,1fr))]">
-            {STATS.map((s, i) => (
-              <TrustSignalMetric
-                key={s.label}
-                icon={s.icon}
-                value={s.value}
-                suffix={s.suffix}
-                label={s.label}
-                caption={s.caption}
-                color={s.color}
-                progress={s.progress}
-                index={i}
-                delay={i * 120}
-                start={statsInView}
-              />
-            ))}
-            </dl>
-          </div>
-        </div>
-
-        {/* ── CTA row — only shown when NOT logged in ── */}
-        {!user && (
-          <div className="flex flex-wrap items-center gap-2.5 mt-5">
-            <Link
-              href="/register"
-              data-tour={tourAnchors ? "guest-join" : undefined}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-sm text-white
-                         shadow-md hover:opacity-90 active:scale-95 transition-all duration-200"
-              style={{ background: TERRACOTTA }}
-            >
-              Join as Donor <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-            <Link
-              href="/requests"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-sm
-                         border border-[#e5e2d5] dark:border-stone-700
-                         text-stone-700 dark:text-stone-300
-                         hover:border-[#b04a15]/40 hover:text-[#b04a15]
-                         transition-all duration-200"
-            >
-              Browse Requests <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        )}
+        {/* initialStats must be forwarded: without it the desktop block would
+            drop the server-rendered stats and refetch on mount. */}
+        {trailing && <BeTheChangeTrustSignals initialStats={initialStats} tourAnchors={tourAnchors} />}
       </div>
     </section>
   );
