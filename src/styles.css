@@ -1211,6 +1211,59 @@ section:focus-within {
   pointer-events: none;
 }
 
+/* Self-contained sheen, so the dock reads as glass on every page.
+   GlassSurface's effect is a BACKDROP effect: the displacement filter distorts
+   whatever passes behind the capsule, and mix-blend-mode: screen composites
+   against it. On the landing page the hero and the coloured sections scroll
+   underneath and it reads beautifully; on a flat #faf8f5 page there is nothing
+   to distort, and screen blending against near-white washes out to near-white.
+   Same CSS both times — only the backdrop differs.
+
+   This layer supplies the part that does not need a backdrop: the specular
+   highlight along the top edge, a light falloff down the face, and a faint
+   contact shade at the bottom. That is what makes a real capsule read as glass
+   when it is sitting on a plain surface.
+
+   PAINT ONLY — deliberately no backdrop-filter here. Adding one would be the
+   "double glass" failure described above: a second full-surface pass sampling
+   the first one's already-blurred output, which flattens the refraction it was
+   meant to strengthen. No border and no outer shadow either; GlassSurface
+   already owns both, and repeating them reads as a double rim. */
+.ck-mobile-dock-glass-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.14) 34%,
+      rgba(255, 255, 255, 0) 58%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 76%, rgba(28, 25, 23, 0.05) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(28, 25, 23, 0.05);
+}
+
+/* Dark mode gets a much weaker sheen: the same white at full strength reads as
+   a grey film over the dark capsule rather than a highlight. */
+.dark .ck-mobile-dock-glass-layer::after {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.13) 0%,
+      rgba(255, 255, 255, 0.04) 34%,
+      rgba(255, 255, 255, 0) 58%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 76%, rgba(0, 0, 0, 0.16) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+}
+
 /* Above the glass. The socket (11) and bead (20) sit higher still. */
 .ck-mobile-dock-track {
   position: relative;
