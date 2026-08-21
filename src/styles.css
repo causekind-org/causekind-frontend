@@ -1195,6 +1195,48 @@ section:focus-within {
   padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
 }
 
+/* ── Scrollytelling panel ("What we Provide") ──────────────────────────
+   The sticky panel used a hardcoded 4.5rem for the navbar in both its `top`
+   and its height calc. That is 72px against a desktop bar that measures ~118px,
+   so ~46px of the panel sat behind the header. Same token as the hero, same
+   reason: measure the bar, never re-guess it. See --ck-nav-h in Navbar.tsx.
+
+   Real CSS rather than a Tailwind arbitrary value — an unemitted arbitrary
+   fails silently, and this one is load-bearing for the whole section. */
+.ck-scrolly-panel {
+  --ck-nav-fallback: 56px;  /* mobile bar */
+  position: sticky;
+  top: var(--ck-nav-h, var(--ck-nav-fallback));
+  height: calc(100svh - var(--ck-nav-h, var(--ck-nav-fallback)));
+}
+
+@media (min-width: 640px) {
+  .ck-scrolly-panel { --ck-nav-fallback: 118px; }  /* measured desktop bar */
+}
+
+/* Depth stack. Both are pure paint over the panel and never move, so they cost
+   nothing per frame — the parallax that does move is transform-only. */
+.ck-scrolly-vignette {
+  background:
+    radial-gradient(ellipse 120% 85% at 50% 50%, transparent 38%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* Grain as an inline SVG turbulence data-URI: no network fetch (the artifact
+   CSP and the app both prefer it) and no image asset to ship. */
+.ck-scrolly-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+}
+
+/* The section is built almost entirely of motion, and had no reduced-motion
+   path at all. Travel and parallax stop; the step content still changes with
+   scroll, so no information is lost — only the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .ck-scrolly-parallax { transform: none !important; }
+  .ck-scrolly-grain { display: none; }
+}
+
 @media (min-width: 1024px) {
   :root {
     --ck-nav-float: 0px;
