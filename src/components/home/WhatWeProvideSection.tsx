@@ -125,8 +125,15 @@ export function WhatWeProvideSection() {
           <div
             className="flex items-center gap-10 whitespace-nowrap"
             style={{
-              transform: reduceMotion ? "none" : `translateX(${-progress * 520}px)`,
-              opacity: 0.045,
+              // The two rows travel at genuinely different rates and drift in
+              // opposite scale, so the background reads as two planes at
+              // different depths rather than one sheet sliding sideways.
+              // translate3d keeps it on the compositor.
+              transform: reduceMotion
+                ? "none"
+                : `translate3d(${-progress * 900}px, 0, 0) scale(${1 + progress * 0.06})`,
+              // Was 0.045 — near-invisible, so the parallax was doing no work.
+              opacity: 0.075,
               willChange: "transform",
             }}
           >
@@ -145,8 +152,12 @@ export function WhatWeProvideSection() {
           <div
             className="flex items-center gap-8 whitespace-nowrap"
             style={{
-              transform: reduceMotion ? "none" : `translateX(${progress * 360 - 180}px)`,
-              opacity: 0.028,
+              // Slower, opposite direction, shrinking slightly as the other
+              // grows — that difference is what sells the depth.
+              transform: reduceMotion
+                ? "none"
+                : `translate3d(${progress * 420 - 180}px, 0, 0) scale(${1 - progress * 0.04})`,
+              opacity: 0.05,
               willChange: "transform",
             }}
           >
