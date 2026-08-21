@@ -38,12 +38,11 @@ export const GUEST_HOME_TOUR: TourStep[] = [
     body: "Medical equipment, school supplies, things that help someone earn a living. Every request names exactly what is needed.",
     placement: "bottom",
   },
-  {
-    anchor: "guest-journey",
-    title: "How a handover works",
-    body: "Swipe through the six checks every donation passes — from verifying the request to the certificate you get at the end.",
-    placement: "top",
-  },
+  // The "How a handover works" step lived here and pointed at the six-check
+  // journey rail. That rail was removed when the Be the Change band was
+  // redesigned (2026-08-21), and its copy — "swipe through the six checks" —
+  // described something that no longer exists, so the step went with it rather
+  // than being re-pointed at unrelated content.
   {
     anchor: "guest-signals",
     title: "Why you can trust it",

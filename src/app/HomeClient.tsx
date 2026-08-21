@@ -29,7 +29,7 @@ import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
-import { BeTheChangeSection, BeTheChangeTrustSignals } from "@/components/BeTheChangeSection";
+import { BeTheChangeSection } from "@/components/BeTheChangeSection";
 import { DoneeRequestsSection } from "@/components/home/DoneeRequestsSection";
 import { ComingSoonMagnets } from "@/components/ComingSoonMagnets";
 import { useAuth } from "@/hooks/useAuth";
@@ -406,7 +406,7 @@ export default function HomeClient({
         )}
 
         {/* "Be the Change" feature cards */}
-        <BeTheChangeSection initialStats={stats} />
+        <BeTheChangeSection />
 
         {/* Donee requests, filtered by the donor's chosen focus areas — hidden for donees themselves */}
         {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={itemRequests} />}
@@ -455,7 +455,7 @@ export default function HomeClient({
             <MobileHeroSlider />
           </div>
           {heroTouchesBeTheChange && (
-            <BeTheChangeSection initialStats={stats} overlapHero tourAnchors trailing={false} />
+            <BeTheChangeSection overlapHero tourAnchors />
           )}
         </div>
 
@@ -511,7 +511,7 @@ export default function HomeClient({
 
         {/* Be the Change — only here when the Campaigns rail separates it from
             the Hero; otherwise it is rendered above, inside the layered wrapper. */}
-        {!heroTouchesBeTheChange && <BeTheChangeSection initialStats={stats} tourAnchors trailing={false} />}
+        {!heroTouchesBeTheChange && <BeTheChangeSection tourAnchors />}
 
         {/* Donor / Donee pathways.
             This was added to the desktop branch only and so never rendered
@@ -524,18 +524,6 @@ export default function HomeClient({
           <AudiencePathwaysSection tourAnchors />
         </div>
 
-        {/* Trust signals sit AFTER the pathways on mobile, so a visitor meets
-            the donor/donee choice before the supporting proof — the order the
-            desktop tree has always had (pathways at the top, this section far
-            below). They cannot simply be reordered as siblings: this section is
-            fused to the Hero by ck-hero-overlap-wrap above, so the block is
-            rendered here on its own instead, with `trailing={false}` on the
-            section that would otherwise emit it.
-            showJoinCta={false}: the pathway cards directly above already offer
-            "Join as a donor". "Browse Requests" stays — not a duplicate. */}
-        <div className="-mx-4 px-6 sm:px-10">
-          <BeTheChangeTrustSignals initialStats={stats} tourAnchors showJoinCta={false} />
-        </div>
 
         {/* Coming soon magnets — previously desktop-only. The section sizes
             itself down through its own CSS vars, so the same component serves
