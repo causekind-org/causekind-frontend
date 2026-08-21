@@ -422,6 +422,26 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Publish the header's real height as --ck-nav-h so full-viewport sections can
+  // size themselves against it. It has to be measured, not assumed: the mobile
+  // bar and the lg: bar have different padding, and layout.tsx's 3.5rem is only
+  // right for the mobile one. Measuring also survives browser zoom and the bar
+  // wrapping to two lines, which a hardcoded value does not.
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty("--ck-nav-h", `${el.getBoundingClientRect().height}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty("--ck-nav-h");
+    };
+  }, []);
+
   useEffect(() => {
     if (user && isSidebarOpen) {
       const savedAvatar = localStorage.getItem(`ck_profile_image_${user.email}`);
@@ -622,7 +642,7 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 transition-shadow duration-300 ease-out ${
+      <header ref={headerRef} className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 transition-shadow duration-300 ease-out ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"

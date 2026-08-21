@@ -1984,6 +1984,48 @@ body.mobile-menu-open {
   .ck-hero-overlap-panel { padding-top: 0; }
 }
 
+/* ── Desktop hero: size to the viewport, not to a hardcoded px height ──
+   The hero used to be min-h-[520/640/720px]. Those are floors, not caps, so on
+   any window shorter than roughly 880px the card ran past the fold and clipped.
+
+   --ck-nav-h is published by Navbar.tsx from the header's measured height. The
+   88px fallback is the desktop bar (px-10 py-5 + content), NOT layout.tsx's
+   3.5rem — that value only describes the mobile bar, and using it here left the
+   hero ~32px too tall. The fallback only covers first paint before hydration.
+
+   --ck-hero-top-pad mirrors the section's sm:pt-8; without subtracting it the
+   hero overshoots by exactly that much.
+
+   Real CSS rather than Tailwind arbitrary values, for the reason given above. */
+.ck-hero-viewport {
+  --ck-hero-top-pad: 0px;
+  height: calc(100svh - var(--ck-nav-h, 88px) - var(--ck-hero-top-pad));
+  min-height: 480px;  /* very short windows scroll instead of crushing content */
+  max-height: 900px;  /* very tall monitors don't get an absurd letterbox */
+}
+
+@media (min-width: 640px) {
+  .ck-hero-viewport { --ck-hero-top-pad: 2rem; }
+}
+
+/* Fluid interior. Everything here previously stepped between fixed Tailwind
+   sizes and never shrank between breakpoints, which is what overflowed the
+   shorter box. clamp() tracks the viewport continuously and closes the hero's
+   missing md: range in one go. */
+.ck-hero-pad {
+  padding-block: clamp(1.25rem, 3.2vh, 4rem);
+}
+.ck-hero-title {
+  font-size: clamp(1.75rem, 1.1rem + 2.6vw, 4rem);
+}
+.ck-hero-quote {
+  min-height: 4.5rem;
+}
+
+@media (min-height: 900px) {
+  .ck-hero-quote { min-height: 5.5rem; }
+}
+
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
