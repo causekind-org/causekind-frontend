@@ -653,24 +653,40 @@ export function SiteHeader() {
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
-        {/* Mobile Header (lg:hidden) - Strict 100% opaque background */}
-        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
+        {/* Mobile Header (lg:hidden) - Strict 100% opaque background.
+
+            Three equal-sided columns, NOT flex + justify-between. A middle
+            child is only centred when the two flanking it are the same width,
+            and NotificationBell renders null for guests — so under
+            justify-between the logo sat half a button-width right of centre for
+            a visitor and somewhere else again once the bell appeared. With
+            1fr auto 1fr the side columns are equal by definition, so the logo
+            is exactly centred in both auth states.
+
+            Grid rather than absolute centring so everything stays in flow: a
+            side item that grows pushes nothing on top of the logo.
+
+            The menu button sits on the RIGHT because StaggeredMenu is
+            position="right" — the control and the panel it opens now share an
+            edge. This also puts the DOM order (bell, logo, menu) in step with
+            the visual order, so tab order reads left to right. */}
+        <div className="lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
+          <div className="flex items-center gap-2 justify-self-start">
+            <NotificationBell />
+          </div>
+          <Link href="/" className="flex items-center justify-center">
+            <CareNestLogo size="md" hideIcon={true} />
+          </Link>
           <button
             ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
             aria-expanded={isSidebarOpen}
             aria-controls="staggered-menu-panel"
-            className="flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+            className="justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <Link href="/" className="flex items-center justify-center">
-            <CareNestLogo size="md" hideIcon={true} />
-          </Link>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-          </div>
         </div>
 
         {/* Desktop Header */}
