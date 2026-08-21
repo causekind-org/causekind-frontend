@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Cookie, X } from "lucide-react";
 import { usePathname } from "next/navigation";
-
-// Re-ask after 24 h if user previously declined
-const RE_ASK_DELAY_MS = 24 * 60 * 60 * 1000;
+import { clearConsent, readConsent, writeConsent } from "@/lib/cookieConsent";
 
 export function CookieConsent() {
   const pathname = usePathname();
@@ -17,24 +15,17 @@ export function CookieConsent() {
   useEffect(() => {
     if (isAdminPath) return; // don't run on isolated admin pages
 
-    const stored = localStorage.getItem("ck_cookie_consent");
-    if (stored === "accepted") return; // accepted — never ask again
+    // Reading and writing this answer now lives in lib/cookieConsent, because
+    // MetaPixel gates on it and two parsers of the same key is how the gate
+    // silently stops matching the banner. "unset" covers never-asked, an expired
+    // decline, and any value we can't read.
+    const consent = readConsent();
+    if (consent === "accepted" || consent === "declined") return;
 
-    if (stored !== null) {
-      // declined previously — check if enough time has passed
-      try {
-        const data = JSON.parse(stored);
-        if (data.choice === "declined" && typeof data.ts === "number") {
-          if (Date.now() - data.ts < RE_ASK_DELAY_MS) return; // too soon
-          // Time expired — clear and re-ask below
-          localStorage.removeItem("ck_cookie_consent");
-        } else {
-          return; // unknown format, leave alone
-        }
-      } catch {
-        return; // old plain string, not our JSON — leave alone
-      }
-    }
+    // An expired or unreadable answer is stale. Drop it so overlayGatesClear()
+    // agrees the banner is pending — otherwise the guided tour reads a non-null
+    // key as "dealt with" and paints straight over the banner we're about to show.
+    clearConsent();
 
     // Show after small delay so entrance animation is visible on first paint
     const t = setTimeout(() => setVisible(true), 1200);
@@ -42,15 +33,9 @@ export function CookieConsent() {
   }, [isAdminPath]);
 
   function dismiss(choice: "accepted" | "declined") {
-    if (choice === "accepted") {
-      localStorage.setItem("ck_cookie_consent", "accepted");
-    } else {
-      // Store as JSON with timestamp so we can re-ask after the delay
-      localStorage.setItem(
-        "ck_cookie_consent",
-        JSON.stringify({ choice: "declined", ts: Date.now() })
-      );
-    }
+    // Notifies MetaPixel in this tab, so accepting starts tracking immediately
+    // and declining is honoured without a reload.
+    writeConsent(choice);
     setExiting(true);
     // Wait for exit animation before unmounting
     setTimeout(() => setVisible(false), 380);
@@ -105,8 +90,15 @@ export function CookieConsent() {
 
           {/* Text */}
           <p className="flex-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+            {/*
+              Says "and measure" because Accept loads the Meta pixel. The old copy
+              named only essential cookies, which made Accept consent to something
+              the banner never mentioned — the misdescription half of the same
+              compliance problem as the ungated pixel itself.
+            */}
             We use essential cookies to keep you signed in and remember your
-            preferences.{" "}
+            preferences, and — if you accept — Meta&rsquo;s pixel to measure how
+            our campaigns reach people. Decline and only the essential ones load.{" "}
             <Link
               href="/privacy"
               className="font-semibold text-[var(--ck-role-accent)] underline underline-offset-2 hover:opacity-80 transition-opacity"
