@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
@@ -427,19 +427,25 @@ export function SiteHeader() {
   // bar and the lg: bar have different padding, and layout.tsx's 3.5rem is only
   // right for the mobile one. Measuring also survives browser zoom and the bar
   // wrapping to two lines, which a hardcoded value does not.
-  const headerRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const el = headerRef.current;
+  // A callback ref, deliberately, not useRef + useEffect([]): the header is
+  // behind the `hideChrome` early-return below, so on any render where it is
+  // absent a mount-time effect would capture null and never retry. A callback
+  // ref attaches the moment the node exists and detaches when it goes.
+  const roRef = useRef<ResizeObserver | null>(null);
+  const headerRef = useCallback((el: HTMLElement | null) => {
+    roRef.current?.disconnect();
+    roRef.current = null;
     if (!el) return;
-    const publish = () =>
-      document.documentElement.style.setProperty("--ck-nav-h", `${el.getBoundingClientRect().height}px`);
+    const publish = () => {
+      const h = el.getBoundingClientRect().height;
+      // Never publish 0 — a zero here would size the hero to a full 100svh and
+      // overflow far worse than the fallback does.
+      if (h > 0) document.documentElement.style.setProperty("--ck-nav-h", `${h}px`);
+    };
     publish();
     const ro = new ResizeObserver(publish);
     ro.observe(el);
-    return () => {
-      ro.disconnect();
-      document.documentElement.style.removeProperty("--ck-nav-h");
-    };
+    roRef.current = ro;
   }, []);
 
   useEffect(() => {

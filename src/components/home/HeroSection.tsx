@@ -52,7 +52,7 @@ export function HeroQuoteSlider({
   const q = quotes[idx] ?? quotes[0];
 
   return (
-    <div className="ck-hero-quote relative overflow-hidden">
+    <div className="ck-hero-quote shrink-0 relative overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={idx}
