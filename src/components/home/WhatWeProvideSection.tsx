@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { useReducedMotion } from "framer-motion";
 import { Heart, Package, ChevronDown } from "lucide-react";
 
 const STEP_COUNT = 2;
@@ -11,6 +12,11 @@ const ROW2 = ["LOCAL", "·", "VERIFIED", "·", "DIRECT", "·", "IMPACT", "·", "
 
 export function WhatWeProvideSection() {
   const t = useTranslations("landing");
+  // This section is built almost entirely of motion and had no reduced-motion
+  // path at all. Travel and scale collapse to their settled values below; the
+  // steps still change with scroll and every opacity reveal stays, so nobody
+  // loses information — only the movement goes.
+  const reduceMotion = useReducedMotion() ?? false;
   const sectionRef = useRef<HTMLElement>(null);
   const [progress, setProgress] = useState(0);
 
@@ -102,7 +108,7 @@ export function WhatWeProvideSection() {
           <div
             className="flex items-center gap-10 whitespace-nowrap"
             style={{
-              transform: `translateX(${-progress * 520}px)`,
+              transform: reduceMotion ? "none" : `translateX(${-progress * 520}px)`,
               opacity: 0.045,
               willChange: "transform",
             }}
@@ -122,7 +128,7 @@ export function WhatWeProvideSection() {
           <div
             className="flex items-center gap-8 whitespace-nowrap"
             style={{
-              transform: `translateX(${progress * 360 - 180}px)`,
+              transform: reduceMotion ? "none" : `translateX(${progress * 360 - 180}px)`,
               opacity: 0.028,
               willChange: "transform",
             }}
@@ -194,13 +200,15 @@ export function WhatWeProvideSection() {
             // per-step progress 0→1
             const sp = Math.min(1, Math.max(0, progress * STEP_COUNT - i));
 
+            // Opacity reveals are kept under reduced motion — they carry the
+            // sequencing without moving anything. Only travel and scale go.
             const iconOp   = Math.min(1, sp * 5);
-            const iconSc   = 0.55 + Math.min(1, sp * 4) * 0.45;
+            const iconSc   = reduceMotion ? 1 : 0.55 + Math.min(1, sp * 4) * 0.45;
             const numOp    = Math.min(1, sp * 3);
             const titleOp  = Math.min(1, sp * 3.5);
-            const titleY   = (1 - titleOp) * 56;
+            const titleY   = reduceMotion ? 0 : (1 - titleOp) * 56;
             const descOp   = Math.min(1, Math.max(0, sp * 4 - 0.8));
-            const descY    = (1 - descOp) * 40;
+            const descY    = reduceMotion ? 0 : (1 - descOp) * 40;
             const hintOp   = Math.min(1, Math.max(0, sp * 5 - 1.8));
 
             return (
@@ -209,10 +217,12 @@ export function WhatWeProvideSection() {
                 className="absolute inset-x-6 lg:inset-x-20"
                 style={{
                   opacity: isActive ? 1 : 0,
-                  transform: isActive
+                  transform: isActive || reduceMotion
                     ? "none"
                     : `translateX(${i < activeStep ? -64 : 64}px)`,
-                  transition: "opacity 0.5s ease, transform 0.5s ease",
+                  transition: reduceMotion
+                    ? "opacity 0.2s linear"
+                    : "opacity 0.5s ease, transform 0.5s ease",
                   pointerEvents: isActive ? "auto" : "none",
                 }}
               >
@@ -278,7 +288,7 @@ export function WhatWeProvideSection() {
                     >
                       {i < STEP_COUNT - 1 ? (
                         <>
-                          <ChevronDown className="h-3.5 w-3.5 animate-bounce" />
+                          <ChevronDown className="h-3.5 w-3.5 animate-bounce motion-reduce:animate-none" />
                           <span>Scroll for next step</span>
                         </>
                       ) : (
