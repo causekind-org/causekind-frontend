@@ -81,7 +81,24 @@ export function WhatWeProvideSection() {
       className="relative"
       style={{ height: "180vh" }}
     >
-      <div className="sticky top-[4.5rem] h-[calc(100vh-4.5rem)] overflow-hidden bg-[#120c04] border-b border-stone-800/60 flex flex-col">
+      {/* The panel's offset comes from --ck-nav-h, the header's MEASURED height
+          (published by SiteHeader via ResizeObserver), not a constant. The old
+          4.5rem assumed a 72px bar against a desktop header that measures
+          ~118px, so roughly 46px of this panel sat behind it.
+
+          Written inline rather than as a class in styles.css on purpose: it
+          keeps the value on the element itself, with no cascade-layer
+          interaction between Tailwind's utilities and an unlayered rule. The
+          fallback is deliberately the OLD 4.5rem, so before hydration this
+          behaves exactly as it does today and the change can only improve on
+          it, never regress. */}
+      <div
+        className="sticky overflow-hidden bg-[#120c04] border-b border-stone-800/60 flex flex-col"
+        style={{
+          top: "var(--ck-nav-h, 4.5rem)",
+          height: "calc(100vh - var(--ck-nav-h, 4.5rem))",
+        }}
+      >
 
         {/* Shifting accent glow */}
         <div
