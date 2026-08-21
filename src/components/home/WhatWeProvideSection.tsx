@@ -100,19 +100,25 @@ export function WhatWeProvideSection() {
         }}
       >
 
-        {/* Shifting accent glow */}
+        {/* ── Accent glow. The light now TRAVELS across the frame with scroll
+             rather than only cross-fading when the step changes.
+
+             The `transition: background 0.85s` these carried is deliberately
+             gone. It was fine while `background` only changed twice per scroll,
+             but now that the gradient position moves every frame it would
+             restart an 0.85s transition on every one of them — the glow would
+             lag behind the scroll and never catch up. Progress drives the
+             position smoothly on its own; it needs no transition. ── */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(ellipse 55% 50% at 18% 60%, ${step.accent}1c 0%, transparent 62%)`,
-            transition: "background 0.85s ease",
+            background: `radial-gradient(ellipse 55% 50% at ${reduceMotion ? 18 : 18 + progress * 26}% 60%, ${step.accent}24 0%, transparent 62%)`,
           }}
         />
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(ellipse 30% 35% at 85% 20%, ${step.accent}0d 0%, transparent 55%)`,
-            transition: "background 0.85s ease",
+            background: `radial-gradient(ellipse 30% 35% at ${reduceMotion ? 85 : 85 - progress * 20}% 20%, ${step.accent}14 0%, transparent 55%)`,
           }}
         />
 
