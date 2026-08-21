@@ -179,6 +179,34 @@ export function WhatWeProvideSection() {
           </div>
         </div>
 
+        {/* ── The passing numeral. A large outlined step number that drifts up
+             through the frame as its step completes, so scrolling feels like
+             moving past something rather than watching a slideshow.
+
+             No z-index: the content below is `relative z-10`, so this stays
+             behind it. Desktop only — at phone widths it would crowd the copy
+             rather than sit behind it. Outline rather than fill: a solid glyph
+             this size competes with the headline instead of framing it. ── */}
+        <div
+          className="absolute inset-0 pointer-events-none select-none hidden lg:flex items-center justify-end pr-[6vw] overflow-hidden"
+          aria-hidden
+        >
+          <span
+            className="font-black leading-none"
+            style={{
+              fontSize: "32vh",
+              color: "transparent",
+              WebkitTextStroke: `1px ${step.accent}2e`,
+              transform: reduceMotion
+                ? "none"
+                : `translate3d(0, ${18 - progress * 36}vh, 0)`,
+              willChange: "transform",
+            }}
+          >
+            {step.step}
+          </span>
+        </div>
+
         {/* ── HEADER ── */}
         <div className="relative z-10 flex-shrink-0 flex items-end justify-between px-6 lg:px-20 pt-6 pb-4 border-b border-stone-800/30">
           <p className="text-xs text-stone-500 font-medium max-w-xs hidden lg:block">
