@@ -12,7 +12,6 @@
  *   src/components/home/
  *     HeroSection.tsx         — desktop hero: cycling images + quote slider + campaign card
  *     StatsBars.tsx           — desktop stats row + live activity ticker
- *     WhyCauseKindSection.tsx — "Why CauseKind" 4-feature asymmetric grid
  *     WhatWeProvideSection.tsx — "How it works" 2-step dark section
  *     CTASection.tsx          — bottom "Get started" CTA (hidden when logged in)
  *
@@ -46,7 +45,6 @@ import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
-import { WhyCauseKindSection }   from "@/components/home/WhyCauseKindSection";
 import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
 import { CTASection }            from "@/components/home/CTASection";
@@ -293,13 +291,12 @@ export default function HomeClient({
         )}
 
         {/* Donor / Donee pathways — the two sides of the platform, each with a
-            role-preselecting signup CTA. Placed before "Why CauseKind" so the
-            visitor is told which side they are on before being told why the
-            platform is worth using. */}
+            role-preselecting signup CTA. Placed high so the visitor is told
+            which side they are on before being told why the platform is worth
+            using. ("Why CauseKind" used to follow this and was removed on
+            2026-08-21: it advertised fundraising, which FEATURES.money gates
+            off, and repeated three claims the Be the Change band already makes.) */}
         <AudiencePathwaysSection />
-
-        {/* "Why CauseKind" — 4-feature asymmetric grid */}
-        <WhyCauseKindSection />
 
         {/* "What We Provide" — 2-step dark section */}
         <WhatWeProvideSection />
