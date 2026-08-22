@@ -1938,6 +1938,42 @@ export function deleteOfferVideo(offerId: number, mediaId: number) {
  * header would make S3 reject the signature. It is also a different origin —
  * allowed by the CSP's `connect-src https://*.amazonaws.com`.
  */
+// ── Item-listing video ────────────────────────────────────────────────────────
+// Same six shapes as the offer routes, under the listing controller prefix.
+// Kept as their own functions rather than a parameterised path builder: the two
+// resources are independent, and a shared builder would make a change to one
+// silently change the other.
+
+export function getListingVideoCapability() {
+  return request<OfferVideoCapability>("/api/v1/items/video/capability");
+}
+
+export function createListingVideoSlot(listingId: number, contentLength: number) {
+  return request<OfferVideoSlot>(
+    `/api/v1/items/${listingId}/video/slot?contentLength=${contentLength}`,
+    { method: "POST" },
+  );
+}
+
+export function finalizeListingVideo(listingId: number, mediaId: number) {
+  return request<OfferVideoStatus>(
+    `/api/v1/items/${listingId}/video/${mediaId}/finalize`,
+    { method: "POST" },
+  );
+}
+
+export function getListingVideoStatus(listingId: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/items/${listingId}/video/${mediaId}`);
+}
+
+export function getListingVideoPlayback(listingId: number, mediaId: number) {
+  return request<{ url: string }>(`/api/v1/items/${listingId}/video/${mediaId}/playback`);
+}
+
+export function deleteListingVideo(listingId: number, mediaId: number) {
+  return request<void>(`/api/v1/items/${listingId}/video/${mediaId}`, { method: "DELETE" });
+}
+
 export async function uploadOfferVideoBytes(slot: OfferVideoSlot, file: Blob) {
   const res = await fetch(slot.uploadUrl, {
     method: "PUT",

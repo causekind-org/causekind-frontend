@@ -19,6 +19,7 @@ import { StepErrorSummary } from "@/features/wizard-kit/StepErrorSummary";
 import { StepCardStack } from "@/features/wizard-kit/StepCardStack";
 import { WizardBorderGlow } from "@/features/wizard-kit/WizardBorderGlow";
 import { PhotosStep } from "./steps/PhotosStep";
+import { useOfferVideo, LISTING_VIDEO_ENDPOINTS } from "@/features/donation-offer-wizard/useOfferVideo";
 import { BasicsStep } from "./steps/BasicsStep";
 import { ConditionDetailsStep } from "./steps/ConditionDetailsStep";
 import { LocationStep } from "./steps/LocationStep";
@@ -126,6 +127,15 @@ export function ItemListingWizard({
     onDraftCreated,
   });
   const { queueSave, queueSaveNow, flush, ensureDraft, markSavedBaseline } = draft;
+
+  // The optional item video, shared with the offer wizard.
+  //
+  // The draft id can be null here — unlike the offer wizard, this draft is
+  // created lazily — so the hook is given 0 as a placeholder and the FIELD is
+  // only rendered once a real id exists. Capability is a global endpoint and
+  // takes no id, so asking it early is harmless; nothing that needs the id can
+  // be reached while the control is hidden.
+  const videoApi = useOfferVideo(draft.draftId ?? 0, LISTING_VIDEO_ENDPOINTS);
 
   // Hydrated data is already what the server holds; without this baseline the
   // status chip would claim "Not saved" the instant an edit screen opened.
@@ -655,6 +665,9 @@ export function ItemListingWizard({
                       onRetryPhoto={photoApi.retryPhoto}
                       onRemovePhoto={photoApi.removePhoto}
                       onMakeMain={photoApi.makeMain}
+                      video={draft.draftId != null ? videoApi : undefined}
+                      onPickVideo={draft.draftId != null ? (file => void videoApi.upload(file)) : undefined}
+                      onRemoveVideo={draft.draftId != null ? (() => void videoApi.remove()) : undefined}
                       onReanalyze={() => void runAnalysis()}
                     />
                   )}

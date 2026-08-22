@@ -9,6 +9,12 @@ import {
   getOfferVideoPlayback,
   getOfferVideoStatus,
   uploadOfferVideoBytes,
+  createListingVideoSlot,
+  deleteListingVideo,
+  finalizeListingVideo,
+  getListingVideoCapability,
+  getListingVideoPlayback,
+  getListingVideoStatus,
   OFFER_VIDEO_TERMINAL,
   type OfferVideoCapability,
   type OfferVideoStatus,
@@ -27,6 +33,45 @@ const POLL_MS = 2500;
  * status up again.
  */
 const POLL_CEILING_MS = 3 * 60 * 1000;
+
+/**
+ * The six calls the state machine needs, per owner.
+ *
+ * <p>Injected rather than branched on an owner-type string: the machine below is
+ * genuinely owner-agnostic, and passing it the functions keeps it that way
+ * instead of growing an if-offer-else-listing at every call site.
+ *
+ * <p><b>Pass a stable reference.</b> The two constants below are module-level
+ * and so are stable for free. An inline object literal would be a new value on
+ * every render, and the capability effect would refetch on each one — use one of
+ * these, or memoise.
+ */
+export type VideoEndpoints = {
+  capability: () => Promise<OfferVideoCapability>;
+  slot: (ownerId: number, contentLength: number) => Promise<import("@/lib/api").OfferVideoSlot>;
+  finalize: (ownerId: number, mediaId: number) => Promise<OfferVideoStatus>;
+  status: (ownerId: number, mediaId: number) => Promise<OfferVideoStatus>;
+  playback: (ownerId: number, mediaId: number) => Promise<{ url: string }>;
+  remove: (ownerId: number, mediaId: number) => Promise<void>;
+};
+
+export const OFFER_VIDEO_ENDPOINTS: VideoEndpoints = {
+  capability: getOfferVideoCapability,
+  slot: createOfferVideoSlot,
+  finalize: finalizeOfferVideo,
+  status: getOfferVideoStatus,
+  playback: getOfferVideoPlayback,
+  remove: deleteOfferVideo,
+};
+
+export const LISTING_VIDEO_ENDPOINTS: VideoEndpoints = {
+  capability: getListingVideoCapability,
+  slot: createListingVideoSlot,
+  finalize: finalizeListingVideo,
+  status: getListingVideoStatus,
+  playback: getListingVideoPlayback,
+  remove: deleteListingVideo,
+};
 
 export type OfferVideoState = {
   /** null while we have not asked the server yet. */
@@ -50,7 +95,7 @@ export type OfferVideoState = {
  * "a human will look at this". Sharing one hook would mean one of the two
  * getting a state machine it does not need.
  */
-export function useOfferVideo(offerId: number) {
+export function useOfferVideo(offerId: number, api: VideoEndpoints = OFFER_VIDEO_ENDPOINTS) {
   const [state, setState] = useState<OfferVideoState>({
     capability: null,
     video: null,
@@ -79,7 +124,7 @@ export function useOfferVideo(offerId: number) {
   // fail at the slot request.
   useEffect(() => {
     let cancelled = false;
-    getOfferVideoCapability()
+    api.capability()
       .then(cap => {
         if (!cancelled && alive.current) setState(s => ({ ...s, capability: cap }));
       })
@@ -96,20 +141,20 @@ export function useOfferVideo(offerId: number) {
 
   const fetchPlayback = useCallback(async (mediaId: number) => {
     try {
-      const { url } = await getOfferVideoPlayback(offerId, mediaId);
+      const { url } = await api.playback(offerId, mediaId);
       if (alive.current) setState(s => ({ ...s, playbackUrl: url }));
     } catch {
       // A missing playback URL is not an error worth showing: the status line
       // already tells the donor where the video stands.
     }
-  }, [offerId]);
+  }, [offerId, api]);
 
   /** Polls until the status settles, the ceiling is hit, or the step unmounts. */
   const poll = useCallback((mediaId: number, startedAt: number) => {
     pollTimer.current = window.setTimeout(async () => {
       if (!alive.current) return;
       try {
-        const next = await getOfferVideoStatus(offerId, mediaId);
+        const next = await api.status(offerId, mediaId);
         if (!alive.current) return;
         setState(s => ({ ...s, video: next }));
 
@@ -129,17 +174,17 @@ export function useOfferVideo(offerId: number) {
         if (alive.current) setState(s => ({ ...s, busy: false, phase: "idle" }));
       }
     }, POLL_MS);
-  }, [offerId, fetchPlayback]);
+  }, [offerId, api, fetchPlayback]);
 
   const upload = useCallback(async (file: Blob) => {
     setState(s => ({ ...s, busy: true, phase: "uploading", error: null, playbackUrl: null }));
     try {
-      const slot = await createOfferVideoSlot(offerId, file.size);
+      const slot = await api.slot(offerId, file.size);
       await uploadOfferVideoBytes(slot, file);
       if (!alive.current) return;
 
       setState(s => ({ ...s, phase: "screening" }));
-      const status = await finalizeOfferVideo(offerId, slot.mediaId);
+      const status = await api.finalize(offerId, slot.mediaId);
       if (!alive.current) return;
 
       setState(s => ({ ...s, video: status }));
@@ -158,14 +203,14 @@ export function useOfferVideo(offerId: number) {
         error: e instanceof Error ? e.message : "We couldn't upload that video. Please try again.",
       }));
     }
-  }, [offerId, poll, fetchPlayback]);
+  }, [offerId, api, poll, fetchPlayback]);
 
   const remove = useCallback(async () => {
     const mediaId = state.video?.mediaId;
     if (mediaId == null) return;
     setState(s => ({ ...s, busy: true, error: null }));
     try {
-      await deleteOfferVideo(offerId, mediaId);
+      await api.remove(offerId, mediaId);
       if (!alive.current) return;
       if (pollTimer.current !== null) window.clearTimeout(pollTimer.current);
       setState(s => ({ ...s, video: null, playbackUrl: null, busy: false, phase: "idle" }));
@@ -177,7 +222,7 @@ export function useOfferVideo(offerId: number) {
         error: e instanceof Error ? e.message : "We couldn't remove that video. Please try again.",
       }));
     }
-  }, [offerId, state.video?.mediaId]);
+  }, [offerId, api, state.video?.mediaId]);
 
   return { ...state, upload, remove };
 }

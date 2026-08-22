@@ -7,6 +7,8 @@ import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { ACCEPT_ATTR, MAX_PHOTOS, MIN_PHOTOS } from "../useListingPhotos";
 import { pressProps } from "@/features/wizard-kit/wizardMotion";
 import type { WizardPhoto } from "../wizardModel";
+import type { OfferVideoState } from "@/features/donation-offer-wizard/useOfferVideo";
+import { OfferVideoField } from "@/features/donation-offer-wizard/steps/OfferVideoField";
 
 /**
  * Step 1 — photos first, because the vision analysis fills the rest of the form
@@ -18,6 +20,7 @@ import type { WizardPhoto } from "../wizardModel";
  */
 export function PhotosStep({
   photos, error, aiState, prohibited, onAddFiles, onRetryPhoto, onRemovePhoto, onMakeMain, onReanalyze,
+  video, onPickVideo, onRemoveVideo,
 }: {
   photos: WizardPhoto[];
   error?: string;
@@ -28,6 +31,14 @@ export function PhotosStep({
   onRemovePhoto: (id: string) => void;
   onMakeMain: (id: string) => void;
   onReanalyze: () => void;
+  /**
+   * The optional item video. All three are optional together: the field simply
+   * does not render without them, so this step keeps working anywhere it is
+   * mounted without video wiring — including before a draft id exists.
+   */
+  video?: OfferVideoState;
+  onPickVideo?: (file: File) => void;
+  onRemoveVideo?: () => void;
 }) {
   const reduced = !!useReducedMotion();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -152,6 +163,14 @@ export function PhotosStep({
       )}
 
       {error && <p role="alert" className="text-2xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
+
+      {/* Below the photo controls, not beside them: photos are required and the
+          video is not, so it must not compete for the same attention. The field
+          is shared with the offer wizard — same states, same copy, same
+          fail-closed behaviour when the deployment has no ffmpeg. */}
+      {video && onPickVideo && onRemoveVideo && (
+        <OfferVideoField state={video} onPick={onPickVideo} onRemove={onRemoveVideo} />
+      )}
 
       {/* AI status — never blocks the form. */}
       {(aiState.running || aiState.note || aiState.canReanalyze) && (
