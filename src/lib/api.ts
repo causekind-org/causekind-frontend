@@ -1847,6 +1847,108 @@ export function submitOffer(offerId: number, declarationsAccepted: boolean) {
   );
 }
 
+// ── Optional item video ───────────────────────────────────────────────────────
+// Separate from the photo path on the server too: photos are synchronous
+// multipart through the API, video is a presigned direct-to-S3 upload followed
+// by asynchronous screening.
+
+/** Mirrors `MediaProcessingStatus`. Everything after MODERATING_AUDIO is terminal. */
+export type OfferVideoStatusName =
+  | "UPLOADING"
+  | "QUARANTINED"
+  | "VALIDATING"
+  | "TRANSCODING"
+  | "MALWARE_SCANNING"
+  | "MODERATING_VISUAL"
+  | "MODERATING_AUDIO"
+  | "REVIEW_REQUIRED"
+  | "APPROVED"
+  | "REJECTED"
+  | "FAILED";
+
+/** The four states screening can come to rest in. REVIEW_REQUIRED is a normal
+ *  outcome here, not a failure — a human looks at it next. */
+export const OFFER_VIDEO_TERMINAL: readonly OfferVideoStatusName[] = [
+  "REVIEW_REQUIRED", "APPROVED", "REJECTED", "FAILED", "QUARANTINED",
+];
+
+export type OfferVideoCapability = {
+  /** False when the deployment has no ffmpeg, or video is switched off. */
+  available: boolean;
+  maxBytes: number;
+  maxSeconds: number;
+};
+
+export type OfferVideoSlot = {
+  mediaId: number;
+  /** Presigned S3 URL. PUT the bytes here directly — NOT through `request`. */
+  uploadUrl: string;
+  contentType: string;
+  maxBytes: number;
+  expiresAt: string;
+};
+
+export type OfferVideoStatus = {
+  mediaId: number;
+  status: OfferVideoStatusName;
+  moderationCode: string | null;
+  durationMs: number | null;
+  playbackUrl: string | null;
+  available: boolean;
+};
+
+/** Ask before offering the control at all: the limits and the ffmpeg check are
+ *  the server's, so the copy a donor reads cannot drift from the rule enforced. */
+export function getOfferVideoCapability() {
+  return request<OfferVideoCapability>("/api/v1/offers/video/capability");
+}
+
+export function createOfferVideoSlot(offerId: number, contentLength: number) {
+  return request<OfferVideoSlot>(
+    `/api/v1/offers/${offerId}/video/slot?contentLength=${contentLength}`,
+    { method: "POST" },
+  );
+}
+
+export function finalizeOfferVideo(offerId: number, mediaId: number) {
+  return request<OfferVideoStatus>(
+    `/api/v1/offers/${offerId}/video/${mediaId}/finalize`,
+    { method: "POST" },
+  );
+}
+
+export function getOfferVideoStatus(offerId: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/offers/${offerId}/video/${mediaId}`);
+}
+
+/** Short-lived, and only ever issued for approved video. */
+export function getOfferVideoPlayback(offerId: number, mediaId: number) {
+  return request<{ url: string }>(`/api/v1/offers/${offerId}/video/${mediaId}/playback`);
+}
+
+export function deleteOfferVideo(offerId: number, mediaId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/video/${mediaId}`, { method: "DELETE" });
+}
+
+/**
+ * PUT the bytes straight at S3 using the presigned URL.
+ *
+ * <p>Deliberately bare `fetch`, not `request`: the presigned URL already carries
+ * its own authorisation in the query string, and attaching our Authorization
+ * header would make S3 reject the signature. It is also a different origin —
+ * allowed by the CSP's `connect-src https://*.amazonaws.com`.
+ */
+export async function uploadOfferVideoBytes(slot: OfferVideoSlot, file: Blob) {
+  const res = await fetch(slot.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": slot.contentType },
+    body: file,
+  });
+  if (!res.ok) {
+    throw new Error(`Video upload failed (${res.status})`);
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Donor Flow 2 — Donor read/manage
 // ─────────────────────────────────────────────────────────────────────────────
