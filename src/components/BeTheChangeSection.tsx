@@ -382,9 +382,14 @@ export function BeTheChangeSection({
                only call to action. Square, to match the direction. ── */}
           {!user && (
             <div className="mt-8 flex flex-wrap items-center gap-3">
+              {/* Desktop only: on mobile the AudiencePathways cards directly
+                  above already offer "Join as a donor" (and give the donee a
+                  door too), so this would be the same destination twice within
+                  a screen. "Browse requests" below stays at every width - it is
+                  not a duplicate, and the requests board is public. */}
               <Link
                 href="/register"
-                className="inline-flex min-h-11 items-center gap-1.5 px-5 text-sm font-extrabold uppercase
+                className="hidden min-h-11 lg:inline-flex items-center gap-1.5 px-5 text-sm font-extrabold uppercase
                            tracking-[0.08em] text-white transition-opacity duration-200
                            hover:opacity-90 active:scale-95
                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
