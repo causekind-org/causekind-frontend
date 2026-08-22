@@ -118,6 +118,58 @@ export function WhatWeProvideSection() {
           }}
         />
 
+        {/* ── Background, three planes deep, all driven by the same scroll ──
+             The section is a conveyor, so the background is the room it runs
+             in: a floor grid, other crates further back, and a belt texture
+             that makes the line read as actually running rather than drawn.
+
+             Each plane moves at its own rate — that difference is the depth.
+             Transform-only, so it composites; opacity stays low enough that the
+             copy never competes with it. All of it sits below the `z-10`
+             content and is hidden from assistive tech. ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+
+          {/* Floor grid — the furthest plane, barely moving. */}
+          <div
+            className="absolute inset-y-0 -left-[20%] -right-[20%]"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 88px)",
+              transform: reduceMotion ? "none" : `translate3d(${-progress * 120}px, 0, 0)`,
+              willChange: "transform",
+            }}
+          />
+
+          {/* Other crates, further back and out of focus — the sense that this
+              is one handover among many, not a diagram of a single parcel. */}
+          {[
+            { top: "16%", size: 120, rate: 300, tilt: -8, alpha: 0.05 },
+            { top: "72%", size: 172, rate: 520, tilt: 6, alpha: 0.04 },
+            { top: "34%", size: 84, rate: 680, tilt: 14, alpha: 0.055 },
+            { top: "84%", size: 108, rate: 420, tilt: -12, alpha: 0.035 },
+          ].map((c, i) => (
+            <div
+              key={i}
+              className="absolute"
+              style={{
+                top: c.top,
+                // Spread across the width, then carried leftward by scroll at
+                // their own rate — nearer crates move faster.
+                left: `${12 + i * 26}%`,
+                width: c.size,
+                height: c.size,
+                border: `2px solid rgba(255,255,255,${c.alpha})`,
+                borderRadius: 18,
+                transform: reduceMotion
+                  ? `rotate(${c.tilt}deg)`
+                  : `translate3d(${-progress * c.rate}px, 0, 0) rotate(${c.tilt}deg)`,
+                willChange: "transform",
+              }}
+            />
+          ))}
+
+        </div>
+
         {/* ── HEADER ── */}
         <div className="relative z-10 flex-shrink-0 flex items-end justify-between gap-6 px-6 lg:px-12 pt-7 pb-5 border-b border-white/10">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-[#e07b3a]">
@@ -161,6 +213,26 @@ export function WhatWeProvideSection() {
 
           {/* ── The belt ── */}
           <div className="absolute inset-x-0" style={{ top: "62%" }}>
+            {/* Belt texture: dashes sliding along the line, so it reads as a
+                belt that is running rather than a rule that was drawn. Lives
+                here, inside the stage, because the belt's 62% is a percentage
+                of the STAGE — putting this in the panel's background layer
+                would sit it at 62% of the panel and miss the line entirely. */}
+            <div
+              className="absolute inset-x-0 h-[3px] pointer-events-none overflow-hidden"
+              style={{ top: -1 }}
+              aria-hidden
+            >
+              <div
+                className="absolute inset-y-0 -left-[10%] -right-[10%]"
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(90deg, rgba(176,74,21,0.5) 0 18px, transparent 18px 46px)",
+                  transform: reduceMotion ? "none" : `translate3d(${-progress * 240}px, 0, 0)`,
+                  willChange: "transform",
+                }}
+              />
+            </div>
             <div className="relative h-px bg-white/10">
               {/* The travelled part, drawn behind the parcel. */}
               <div
