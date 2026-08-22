@@ -11,6 +11,29 @@ const STEP_COUNT = 2;
 const BELT_START = 13;
 const BELT_END = 87;
 
+/* ─── Scroll-linked colour ────────────────────────────────────────────────
+   The section warms at the donor end and cools at the donee end: terracotta
+   where the giving starts, ink where it lands. This is not decoration — the
+   old design gave step 01 terracotta and step 02 ink, and rebuilding as a
+   single travelling parcel had flattened that identity away. Tying it to
+   scroll gives it back as a gradient rather than a switch.
+
+   The ground shifts with it, warm-black to cool-black, so the whole room
+   changes temperature rather than just the accent sitting on top of it. */
+const ACCENT_WARM = [176, 74, 21] as const;   // #b04a15, the brand terracotta
+const ACCENT_COOL = [30, 58, 96] as const;    // #1e3a60, the brand ink
+const GROUND_WARM = [18, 16, 14] as const;    // #12100e
+const GROUND_COOL = [12, 16, 22] as const;    // a cooler near-black
+
+/** Channel-wise interpolation. Good enough at these low chromas, and it keeps
+ *  the whole thing dependency-free and cheap enough to run every frame. */
+function mix(a: readonly number[], b: readonly number[], t: number) {
+  const k = Math.max(0, Math.min(1, t));
+  return a.map((v, i) => Math.round(v + (b[i] - v) * k));
+}
+const rgb = (c: number[]) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+const rgba = (c: number[], alpha: number) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})`;
+
 /**
  * "How it works", built in the Conveyor direction: the item itself travels.
  *
@@ -91,6 +114,13 @@ export function WhatWeProvideSection() {
   // rather than announced.
   const arrival = Math.max(0, Math.min(1, (travel - 0.55) / 0.4));
 
+  // Colour tracks `progress`, NOT `travel`. Under reduced motion `travel` is
+  // pinned to 1 so nothing slides — but a colour shift is not motion and causes
+  // nobody any trouble, so it should still follow the scroll rather than jump
+  // straight to the end state.
+  const accent = mix(ACCENT_WARM, ACCENT_COOL, progress);
+  const ground = mix(GROUND_WARM, GROUND_COOL, progress);
+
   return (
     <section ref={sectionRef} id="how" className="relative" style={{ height: "180vh" }}>
       {/* The panel's offset comes from --ck-nav-h, the header's MEASURED height
@@ -107,6 +137,10 @@ export function WhatWeProvideSection() {
         style={{
           top: "var(--ck-nav-h, 4.5rem)",
           height: "calc(100vh - var(--ck-nav-h, 4.5rem))",
+          // The bg-[#12100e] class stays as the pre-hydration ground; this
+          // inline value wins once React runs and carries the warm-to-cool
+          // shift.
+          backgroundColor: rgb(ground),
         }}
       >
 
@@ -114,7 +148,7 @@ export function WhatWeProvideSection() {
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(ellipse 46% 40% at ${parcelLeft}% 62%, rgba(176,74,21,0.20) 0%, transparent 64%)`,
+            background: `radial-gradient(ellipse 46% 40% at ${parcelLeft}% 62%, ${rgba(accent, 0.2)} 0%, transparent 64%)`,
           }}
         />
 
@@ -227,7 +261,7 @@ export function WhatWeProvideSection() {
                 className="absolute inset-y-0 -left-[10%] -right-[10%]"
                 style={{
                   backgroundImage:
-                    "repeating-linear-gradient(90deg, rgba(176,74,21,0.5) 0 18px, transparent 18px 46px)",
+                    `repeating-linear-gradient(90deg, ${rgba(accent, 0.5)} 0 18px, transparent 18px 46px)`,
                   transform: reduceMotion ? "none" : `translate3d(${-progress * 240}px, 0, 0)`,
                   willChange: "transform",
                 }}
@@ -239,13 +273,13 @@ export function WhatWeProvideSection() {
                 className="absolute left-0 top-0 h-px"
                 style={{
                   width: `${parcelLeft}%`,
-                  background: "linear-gradient(90deg, rgba(176,74,21,0.15), #b04a15)",
+                  background: `linear-gradient(90deg, ${rgba(accent, 0.15)}, ${rgb(accent)})`,
                 }}
               />
             </div>
             <div
               className="h-16 pointer-events-none"
-              style={{ background: "linear-gradient(180deg, rgba(176,74,21,0.10), transparent)" }}
+              style={{ background: `linear-gradient(180deg, ${rgba(accent, 0.1)}, transparent)` }}
             />
           </div>
 
@@ -300,8 +334,8 @@ export function WhatWeProvideSection() {
             <span
               className="flex w-[68px] h-[68px] lg:w-[76px] lg:h-[76px] rounded-[18px] items-center justify-center"
               style={{
-                background: "#b04a15",
-                boxShadow: "0 18px 44px rgba(176,74,21,0.55)",
+                background: rgb(accent),
+                boxShadow: `0 18px 44px ${rgba(accent, 0.55)}`,
               }}
             >
               <Package className="w-8 h-8 lg:w-9 lg:h-9 text-white" strokeWidth={1.7} />
@@ -314,8 +348,12 @@ export function WhatWeProvideSection() {
         <div className="relative z-10 flex-shrink-0 flex items-center gap-4 px-6 lg:px-12 pb-7">
           <div className="flex-1 h-[2px] bg-white/10">
             <div
-              className="h-full origin-left bg-[#b04a15]"
-              style={{ transform: `scaleX(${progress})`, willChange: "transform" }}
+              className="h-full origin-left"
+              style={{
+                backgroundColor: rgb(accent),
+                transform: `scaleX(${progress})`,
+                willChange: "transform",
+              }}
             />
           </div>
           <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/30 whitespace-nowrap">
