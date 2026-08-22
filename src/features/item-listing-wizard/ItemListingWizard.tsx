@@ -135,7 +135,11 @@ export function ItemListingWizard({
   // only rendered once a real id exists. Capability is a global endpoint and
   // takes no id, so asking it early is harmless; nothing that needs the id can
   // be reached while the control is hidden.
-  const videoApi = useOfferVideo(draft.draftId ?? 0, LISTING_VIDEO_ENDPOINTS);
+  // ensureDraft creates the listing on demand, so picking a video brings a draft
+  // into being exactly as picking a photo does. Before this the hook took
+  // draft.draftId, which is null on a fresh listing, and the field stayed hidden
+  // until a photo had been added.
+  const videoApi = useOfferVideo(ensureDraft, LISTING_VIDEO_ENDPOINTS);
 
   // Hydrated data is already what the server holds; without this baseline the
   // status chip would claim "Not saved" the instant an edit screen opened.
@@ -665,9 +669,9 @@ export function ItemListingWizard({
                       onRetryPhoto={photoApi.retryPhoto}
                       onRemovePhoto={photoApi.removePhoto}
                       onMakeMain={photoApi.makeMain}
-                      video={draft.draftId != null ? videoApi : undefined}
-                      onPickVideo={draft.draftId != null ? (file => void videoApi.upload(file)) : undefined}
-                      onRemoveVideo={draft.draftId != null ? (() => void videoApi.remove()) : undefined}
+                      video={videoApi}
+                      onPickVideo={file => void videoApi.upload(file)}
+                      onRemoveVideo={() => void videoApi.remove()}
                       onReanalyze={() => void runAnalysis()}
                     />
                   )}

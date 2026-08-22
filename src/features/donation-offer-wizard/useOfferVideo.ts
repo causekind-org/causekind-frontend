@@ -95,7 +95,10 @@ export type OfferVideoState = {
  * "a human will look at this". Sharing one hook would mean one of the two
  * getting a state machine it does not need.
  */
-export function useOfferVideo(offerId: number, api: VideoEndpoints = OFFER_VIDEO_ENDPOINTS) {
+export function useOfferVideo(
+  resolveOwnerId: () => Promise<number>,
+  api: VideoEndpoints = OFFER_VIDEO_ENDPOINTS,
+) {
   const [state, setState] = useState<OfferVideoState>({
     capability: null,
     video: null,
@@ -110,6 +113,17 @@ export function useOfferVideo(offerId: number, api: VideoEndpoints = OFFER_VIDEO
   // component and, worse, keeps a timer alive.
   const alive = useRef(true);
   const pollTimer = useRef<number | null>(null);
+
+  // Resolved when the donor first picks a video, then reused for polling,
+  // playback and removal.
+  //
+  // A resolver rather than a plain id because the listing wizard creates its
+  // draft lazily — on the first photo — so at mount there is no id to give.
+  // Taking a number here meant the field had to be hidden until a photo existed,
+  // which made the video option invisible on a fresh listing. Resolving on
+  // demand lets picking a video create the draft, exactly as picking a photo
+  // does.
+  const ownerIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     alive.current = true;
@@ -141,20 +155,20 @@ export function useOfferVideo(offerId: number, api: VideoEndpoints = OFFER_VIDEO
 
   const fetchPlayback = useCallback(async (mediaId: number) => {
     try {
-      const { url } = await api.playback(offerId, mediaId);
+      const { url } = await api.playback(ownerIdRef.current!, mediaId);
       if (alive.current) setState(s => ({ ...s, playbackUrl: url }));
     } catch {
       // A missing playback URL is not an error worth showing: the status line
       // already tells the donor where the video stands.
     }
-  }, [offerId, api]);
+  }, [api]);
 
   /** Polls until the status settles, the ceiling is hit, or the step unmounts. */
   const poll = useCallback((mediaId: number, startedAt: number) => {
     pollTimer.current = window.setTimeout(async () => {
       if (!alive.current) return;
       try {
-        const next = await api.status(offerId, mediaId);
+        const next = await api.status(ownerIdRef.current!, mediaId);
         if (!alive.current) return;
         setState(s => ({ ...s, video: next }));
 
@@ -174,17 +188,19 @@ export function useOfferVideo(offerId: number, api: VideoEndpoints = OFFER_VIDEO
         if (alive.current) setState(s => ({ ...s, busy: false, phase: "idle" }));
       }
     }, POLL_MS);
-  }, [offerId, api, fetchPlayback]);
+  }, [api, fetchPlayback]);
 
   const upload = useCallback(async (file: Blob) => {
     setState(s => ({ ...s, busy: true, phase: "uploading", error: null, playbackUrl: null }));
     try {
-      const slot = await api.slot(offerId, file.size);
+      const ownerId = await resolveOwnerId();
+      ownerIdRef.current = ownerId;
+      const slot = await api.slot(ownerId, file.size);
       await uploadOfferVideoBytes(slot, file);
       if (!alive.current) return;
 
       setState(s => ({ ...s, phase: "screening" }));
-      const status = await api.finalize(offerId, slot.mediaId);
+      const status = await api.finalize(ownerId, slot.mediaId);
       if (!alive.current) return;
 
       setState(s => ({ ...s, video: status }));
@@ -203,14 +219,14 @@ export function useOfferVideo(offerId: number, api: VideoEndpoints = OFFER_VIDEO
         error: e instanceof Error ? e.message : "We couldn't upload that video. Please try again.",
       }));
     }
-  }, [offerId, api, poll, fetchPlayback]);
+  }, [resolveOwnerId, api, poll, fetchPlayback]);
 
   const remove = useCallback(async () => {
     const mediaId = state.video?.mediaId;
     if (mediaId == null) return;
     setState(s => ({ ...s, busy: true, error: null }));
     try {
-      await api.remove(offerId, mediaId);
+      await api.remove(ownerIdRef.current!, mediaId);
       if (!alive.current) return;
       if (pollTimer.current !== null) window.clearTimeout(pollTimer.current);
       setState(s => ({ ...s, video: null, playbackUrl: null, busy: false, phase: "idle" }));
@@ -222,7 +238,7 @@ export function useOfferVideo(offerId: number, api: VideoEndpoints = OFFER_VIDEO
         error: e instanceof Error ? e.message : "We couldn't remove that video. Please try again.",
       }));
     }
-  }, [offerId, api, state.video?.mediaId]);
+  }, [api, state.video?.mediaId]);
 
   return { ...state, upload, remove };
 }

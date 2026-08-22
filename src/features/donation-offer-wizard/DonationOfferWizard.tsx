@@ -216,7 +216,11 @@ export function DonationOfferWizard({
   // The optional item video. Held here rather than inside the photos step so it
   // survives stepping away and back — screening runs on the server and its
   // verdict should not be lost because the donor moved to Details and returned.
-  const videoApi = useOfferVideo(offerId);
+  // offerId exists for this component’s whole lifetime (the prelude creates the
+  // draft), so the resolver is immediate here. The listing wizard is the one
+  // that needs it lazy.
+  const resolveOfferId = useCallback(async () => offerId, [offerId]);
+  const videoApi = useOfferVideo(resolveOfferId);
 
   // Re-screen once uploads settle, keyed on the uploaded set.
   const uploadedKey = uploadedOfferPhotos(model.photos).map(p => p.remoteUrl).join("|");
