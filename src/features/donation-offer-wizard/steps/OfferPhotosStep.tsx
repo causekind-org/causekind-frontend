@@ -8,6 +8,8 @@ import { pressProps, revealVariants } from "@/features/wizard-kit/wizardMotion";
 import type { WizardPhoto } from "@/features/wizard-kit/types";
 import { MAX_OFFER_PHOTOS, MIN_OFFER_PHOTOS } from "../offerModel";
 import { OFFER_ACCEPT_ATTR } from "../useOfferPhotos";
+import type { OfferVideoState } from "../useOfferVideo";
+import { OfferVideoField } from "./OfferVideoField";
 
 export type ScreeningState =
   | { kind: "idle" }
@@ -27,6 +29,7 @@ export type ScreeningState =
  */
 export function OfferPhotosStep({
   photos, error, screening, onAddFiles, onRetryPhoto, onRemovePhoto, onRescreen,
+  video, onPickVideo, onRemoveVideo,
 }: {
   photos: WizardPhoto[];
   error?: string;
@@ -35,6 +38,14 @@ export function OfferPhotosStep({
   onRetryPhoto: (id: string) => void;
   onRemovePhoto: (id: string) => void;
   onRescreen: () => void;
+  /**
+   * The optional item video. All three are optional together: the field simply
+   * does not render without them, so this step keeps working anywhere it is
+   * mounted without video wiring.
+   */
+  video?: OfferVideoState;
+  onPickVideo?: (file: File) => void;
+  onRemoveVideo?: () => void;
 }) {
   const reduced = !!useReducedMotion();
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -82,6 +93,12 @@ export function OfferPhotosStep({
 
       {error && (
         <p id="photos-error" className="text-3xs font-semibold text-red-600 dark:text-red-400">{error}</p>
+      )}
+
+      {/* Below the photo controls, not beside them: photos are required and the
+          video is not, so it must not compete for the same attention. */}
+      {video && onPickVideo && onRemoveVideo && (
+        <OfferVideoField state={video} onPick={onPickVideo} onRemove={onRemoveVideo} />
       )}
 
       {photos.length > 0 && (
