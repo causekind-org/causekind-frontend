@@ -1207,7 +1207,7 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "from-clutter-to-impact",
     title: "From Clutter to Impact: Turning Unused Household Items Into Community Change",
-    description: "The items you no longer use aren't just clutter—they could be a lifeline for someone in your local community. Discover how an old school bag, a forgotten smartphone, or outgrown clothes can create real, verified impact right in your neighborhood.",
+    description: "The items you no longer use aren't just clutter-they could be a lifeline for someone in your local community. Discover how an old school bag, a forgotten smartphone, or outgrown clothes can create real, verified impact right in your neighborhood.",
     category: "Community Action",
     image: "/Impact.webp",
     author: "CauseKind",
@@ -1439,7 +1439,7 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "how-to-verify-ngo-before-donating-india",
     title: "The Fake NGO Problem: How to Verify a Charitable Organisation Before You Donate in India",
-    description: "Before you donate in India, verify the NGO. A complete step-by-step guide to checking FCRA registration, 80G certification, NITI Aayog Darpan listing, and MCA filings — so every rupee you give reaches a real cause.",
+    description: "Before you donate in India, verify the NGO. A complete step-by-step guide to checking FCRA registration, 80G certification, NITI Aayog Darpan listing, and MCA filings - so every rupee you give reaches a real cause.",
     category: "Giving Smarter",
     image: "/NGO_Verification_India.webp",
     author: "CauseKind",
@@ -1452,17 +1452,17 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">A flood relief appeal shared on WhatsApp. A child's medical campaign forwarded by a college friend. A donation drive organised in the office building lobby. A crowdfunding link that appears on Instagram with photographs that make it impossible not to feel something.</p>
 
-<p class="mb-4 leading-relaxed">And every year, a portion of that generosity — nobody knows exactly how much, but enough to matter — reaches organisations that are not what they say they are.</p>
+<p class="mb-4 leading-relaxed">And every year, a portion of that generosity - nobody knows exactly how much, but enough to matter - reaches organisations that are not what they say they are.</p>
 
 <p class="mb-4 leading-relaxed">Fake NGOs. Fraudulent campaigns. Organisations that exist on paper and nowhere else. Causes that are real but whose collection accounts are not connected to the cause at all.</p>
 
 <p class="mb-4 leading-relaxed">This is not a reason to stop giving. It is a reason to give smarter.</p>
 
-<p class="mb-4 leading-relaxed">India has over 3.1 million registered non-profit organisations — one of the highest concentrations of NGOs per capita in the world. The vast majority of them are run by people of genuine commitment doing vital work with very little. But within that enormous number, there are organisations that exploit the infrastructure of charity — the registration certificates, the receipt books, the photographs of children — to collect money that never reaches a community.</p>
+<p class="mb-4 leading-relaxed">India has over 3.1 million registered non-profit organisations - one of the highest concentrations of NGOs per capita in the world. The vast majority of them are run by people of genuine commitment doing vital work with very little. But within that enormous number, there are organisations that exploit the infrastructure of charity - the registration certificates, the receipt books, the photographs of children - to collect money that never reaches a community.</p>
 
 <p class="mb-4 leading-relaxed">The tools to distinguish between the two exist. They are public, free, and require no expertise to use.</p>
 
-<p class="mb-4 leading-relaxed">This blog walks you through every check, in order, so that the next time you decide to give — to any organisation, through any channel — you can give with certainty.</p>
+<p class="mb-4 leading-relaxed">This blog walks you through every check, in order, so that the next time you decide to give - to any organisation, through any channel - you can give with certainty.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -1472,7 +1472,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">But the same infrastructure that enables genuine giving also lowers the barrier for fraud.</p>
 
-<p class="mb-4 leading-relaxed">A fraudulent NGO in 2026 does not need an office. It needs a registration number, a bank account, a website that takes thirty minutes to build, and photographs borrowed from legitimate campaigns. It needs the language of charity — words like 'impact,' 'beneficiary,' 'transparent,' 'accountable' — and the visual grammar of poverty that triggers emotional giving.</p>
+<p class="mb-4 leading-relaxed">A fraudulent NGO in 2026 does not need an office. It needs a registration number, a bank account, a website that takes thirty minutes to build, and photographs borrowed from legitimate campaigns. It needs the language of charity - words like 'impact,' 'beneficiary,' 'transparent,' 'accountable' - and the visual grammar of poverty that triggers emotional giving.</p>
 
 <p class="mb-4 leading-relaxed">The sophistication of fraudulent campaigns has increased precisely as the tools available to donors have improved. This means verification cannot be based on how professional an organisation looks or how emotionally compelling its communication is.</p>
 
@@ -1480,9 +1480,9 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 1 — Check NITI Aayog Darpan Registration</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 1 - Check NITI Aayog Darpan Registration</h2>
 
-<p class="mb-4 leading-relaxed">The first and most fundamental check for any Indian NGO is its listing on NITI Aayog's NGO Darpan portal — darpan.gov.in.</p>
+<p class="mb-4 leading-relaxed">The first and most fundamental check for any Indian NGO is its listing on NITI Aayog's NGO Darpan portal - darpan.gov.in.</p>
 
 <p class="mb-4 leading-relaxed">NGO Darpan is the Government of India's official database of non-profit organisations. While registration on Darpan is not mandatory for all NGOs, any organisation seeking central government grants, FCRA registration, or CSR funding must be listed here. The database contains the organisation's registration details, PAN, registered address, stated objectives, and filing history.</p>
 
@@ -1503,13 +1503,13 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Does the stated objective of the organisation match the work they say they do?</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">An organisation not listed on Darpan is not automatically fraudulent — small, hyper-local NGOs may not have registered. But any organisation soliciting large donations or claiming government partnerships should be on Darpan without exception.</p>
+<p class="mb-4 leading-relaxed">An organisation not listed on Darpan is not automatically fraudulent - small, hyper-local NGOs may not have registered. But any organisation soliciting large donations or claiming government partnerships should be on Darpan without exception.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 2 — Verify FCRA Registration for Foreign Contributions</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 2 - Verify FCRA Registration for Foreign Contributions</h2>
 
-<p class="mb-4 leading-relaxed">If you are an NRI donating from abroad, or if an organisation claims to receive international funding, FCRA — Foreign Contribution Regulation Act — registration is mandatory.</p>
+<p class="mb-4 leading-relaxed">If you are an NRI donating from abroad, or if an organisation claims to receive international funding, FCRA - Foreign Contribution Regulation Act - registration is mandatory.</p>
 
 <p class="mb-4 leading-relaxed">An organisation without valid FCRA registration cannot legally receive foreign donations. An organisation that claims to receive international funding but is not FCRA-registered is either lying or operating illegally.</p>
 
@@ -1522,13 +1522,13 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Verify active registration status and renewal date</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">FCRA registrations must be renewed every five years. Check that the registration is not expired — an expired FCRA is as problematic as no registration at all.</p>
+<p class="mb-4 leading-relaxed">FCRA registrations must be renewed every five years. Check that the registration is not expired - an expired FCRA is as problematic as no registration at all.</p>
 
-<p class="mb-4 leading-relaxed">For domestic donors, FCRA status is not directly relevant — but an organisation with active FCRA registration has passed a significantly more rigorous government scrutiny process than one without it, which is a positive signal of legitimacy.</p>
+<p class="mb-4 leading-relaxed">For domestic donors, FCRA status is not directly relevant - but an organisation with active FCRA registration has passed a significantly more rigorous government scrutiny process than one without it, which is a positive signal of legitimacy.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 3 — Confirm 80G and 12A Tax Exemption Status</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 3 - Confirm 80G and 12A Tax Exemption Status</h2>
 
 <p class="mb-4 leading-relaxed">As covered in our earlier Section 80G guide, donations to eligible organisations allow tax deductions for donors. But 80G certification also serves a verification purpose beyond tax savings.</p>
 
@@ -1541,23 +1541,23 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Demonstrate that its funds are used for charitable purposes</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">The 80G certificate is therefore not just a tax document — it is evidence that the Income Tax Department has examined the organisation and found it legitimate.</p>
+<p class="mb-4 leading-relaxed">The 80G certificate is therefore not just a tax document - it is evidence that the Income Tax Department has examined the organisation and found it legitimate.</p>
 
 <p class="mb-4 leading-relaxed">How to check:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Ask the organisation for their current 80G certificate with validity dates</li>
   <li>Verify the certificate number on the Income Tax Department's e-filing portal at incometax.gov.in</li>
-  <li>Check that the certificate has not expired — 80G registrations now require periodic renewal</li>
+  <li>Check that the certificate has not expired - 80G registrations now require periodic renewal</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">Also check for 12A registration — this is the tax exemption status that allows the organisation's own income to be tax-exempt. An organisation with both 12A and 80G has cleared two layers of Income Tax Department review.</p>
+<p class="mb-4 leading-relaxed">Also check for 12A registration - this is the tax exemption status that allows the organisation's own income to be tax-exempt. An organisation with both 12A and 80G has cleared two layers of Income Tax Department review.</p>
 
-<p class="mb-4 leading-relaxed">An organisation that cannot produce a current 80G certificate and cannot explain why — if they claim to have one — is a significant red flag.</p>
+<p class="mb-4 leading-relaxed">An organisation that cannot produce a current 80G certificate and cannot explain why - if they claim to have one - is a significant red flag.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 4 — Check MCA and Registrar of Societies Filing History</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 4 - Check MCA and Registrar of Societies Filing History</h2>
 
 <p class="mb-4 leading-relaxed">Every registered society, trust, or Section 8 company in India has a filing obligation. Checking whether an organisation files regularly tells you whether it actually functions as a real organisation.</p>
 
@@ -1565,7 +1565,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Go to mca.gov.in</li>
-  <li>Search the company name under 'MCA Services — View Company/LLP Master Data'</li>
+  <li>Search the company name under 'MCA Services - View Company/LLP Master Data'</li>
   <li>Check filing status, registered address, and director details</li>
   <li>A company with no recent filings or 'struck off' status is a serious red flag</li>
 </ul>
@@ -1573,7 +1573,7 @@ The complete donation record - from verified request through confirmed delivery 
 <p class="mb-4 leading-relaxed">For trusts and societies:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>These are registered with the relevant state government — the Charity Commissioner's office in Maharashtra, for example</li>
+  <li>These are registered with the relevant state government - the Charity Commissioner's office in Maharashtra, for example</li>
   <li>You can request the trust deed and registration details directly from the organisation</li>
   <li>A legitimate trust will provide these without hesitation</li>
 </ul>
@@ -1582,32 +1582,32 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 5 — Search GuideStar India and Other Independent Databases</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 5 - Search GuideStar India and Other Independent Databases</h2>
 
 <p class="mb-4 leading-relaxed">Beyond government portals, several independent databases aggregate and verify NGO information in India.</p>
 
-<p class="mb-4 leading-relaxed">GuideStar India (now integrated with Darpan) rates organisations on transparency and accountability — organisations that voluntarily share financial statements, annual reports, and audit documents receive higher ratings.</p>
+<p class="mb-4 leading-relaxed">GuideStar India (now integrated with Darpan) rates organisations on transparency and accountability - organisations that voluntarily share financial statements, annual reports, and audit documents receive higher ratings.</p>
 
 <p class="mb-4 leading-relaxed">GiveIndia's NGO directory lists organisations that have passed GiveIndia's own due diligence process.</p>
 
 <p class="mb-4 leading-relaxed">Candid (formerly GuideStar internationally) covers larger Indian NGOs with international operations.</p>
 
-<p class="mb-4 leading-relaxed">Searching an organisation's name across these databases gives you a sense of how consistently its information appears — a legitimate organisation will have consistent registration numbers, addresses, and leadership across all platforms. Inconsistencies — different registration numbers on different sites, different addresses, different founding dates — are worth investigating before donating.</p>
+<p class="mb-4 leading-relaxed">Searching an organisation's name across these databases gives you a sense of how consistently its information appears - a legitimate organisation will have consistent registration numbers, addresses, and leadership across all platforms. Inconsistencies - different registration numbers on different sites, different addresses, different founding dates - are worth investigating before donating.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 6 — Ask For the Annual Report and Audited Accounts</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 6 - Ask For the Annual Report and Audited Accounts</h2>
 
-<p class="mb-4 leading-relaxed">This is the step most donors never take — and the most revealing one.</p>
+<p class="mb-4 leading-relaxed">This is the step most donors never take - and the most revealing one.</p>
 
 <p class="mb-4 leading-relaxed">Every legitimate NGO above a certain size is required to have its accounts audited annually. The audit report, along with the annual report, should be available on request from any organisation you are considering donating to.</p>
 
 <p class="mb-4 leading-relaxed">What to look for in an annual report:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>Programme expenditure as a percentage of total expenditure — a well-run NGO typically spends 70 to 85% of its funds on programmes, with 15 to 30% on administration and fundraising. An organisation spending 60% or more on administration relative to programmes is worth questioning.</li>
-  <li>Revenue sources — where does the organisation get its funding? A diverse mix of institutional grants, corporate CSR, and individual donations is a positive sign. Complete dependence on one large donor with no public profile is worth examining.</li>
-  <li>Beneficiary numbers — are the beneficiary counts plausible given the organisation's budget and staff size? An organisation claiming to reach 100,000 beneficiaries annually with a staff of 5 and a budget of ₹20 lakh is mathematically implausible.</li>
+  <li>Programme expenditure as a percentage of total expenditure - a well-run NGO typically spends 70 to 85% of its funds on programmes, with 15 to 30% on administration and fundraising. An organisation spending 60% or more on administration relative to programmes is worth questioning.</li>
+  <li>Revenue sources - where does the organisation get its funding? A diverse mix of institutional grants, corporate CSR, and individual donations is a positive sign. Complete dependence on one large donor with no public profile is worth examining.</li>
+  <li>Beneficiary numbers - are the beneficiary counts plausible given the organisation's budget and staff size? An organisation claiming to reach 100,000 beneficiaries annually with a staff of 5 and a budget of ₹20 lakh is mathematically implausible.</li>
 </ul>
 
 <p class="mb-4 leading-relaxed">An organisation that refuses to share its annual report or audited accounts when asked by a prospective donor is telling you something important.</p>
@@ -1635,7 +1635,7 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Address confirmation within the platform's local matching radius</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">When you donate through CauseKind, you are not required to run your own verification — CauseKind has done it. But for donations made outside a verified platform — to organisations you discover through WhatsApp, social media, or cold approaches — the six-step checklist above is your protection.</p>
+<p class="mb-4 leading-relaxed">When you donate through CauseKind, you are not required to run your own verification - CauseKind has done it. But for donations made outside a verified platform - to organisations you discover through WhatsApp, social media, or cold approaches - the six-step checklist above is your protection.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -1644,10 +1644,10 @@ The complete donation record - from verified request through confirmed delivery 
 <p class="mb-4 leading-relaxed">If you do nothing else, do this before donating to any organisation you are not familiar with:</p>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
-  <li>Search their name on darpan.gov.in — confirm they exist and are registered</li>
-  <li>Ask for their 80G certificate — confirm it is current</li>
-  <li>Search their name on Google with the word 'complaint' or 'fraud' added — see what comes up</li>
-  <li>Check that they have an audited annual report from the last financial year — confirm they are willing to share it</li>
+  <li>Search their name on darpan.gov.in - confirm they exist and are registered</li>
+  <li>Ask for their 80G certificate - confirm it is current</li>
+  <li>Search their name on Google with the word 'complaint' or 'fraud' added - see what comes up</li>
+  <li>Check that they have an audited annual report from the last financial year - confirm they are willing to share it</li>
 </ol>
 
 <p class="mb-4 leading-relaxed">Four steps. Two minutes. The difference between giving with confidence and giving into a void.</p>
@@ -1656,11 +1656,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">The existence of fraudulent organisations does not make giving dangerous. It makes verification necessary.</p>
 
-<p class="mb-4 leading-relaxed">India's genuine NGO sector — the organisations run by committed people doing vital, difficult work in communities that need them — deserves donors who give confidently, consistently, and generously. Those donors are best created by giving them the tools to trust what they give to.</p>
+<p class="mb-4 leading-relaxed">India's genuine NGO sector - the organisations run by committed people doing vital, difficult work in communities that need them - deserves donors who give confidently, consistently, and generously. Those donors are best created by giving them the tools to trust what they give to.</p>
 
 <p class="mb-4 leading-relaxed">Verify before you give. Then give without hesitation.</p>
 
-<p class="mb-4 leading-relaxed">Because the organisations that deserve your generosity have nothing to hide — and everything to show you.</p>
+<p class="mb-4 leading-relaxed">Because the organisations that deserve your generosity have nothing to hide - and everything to show you.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -1676,7 +1676,7 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "urban-india-donate-one-item-per-month-impact",
     title: "What Would Happen If Every Urban Indian Donated One Item per Month? A Thought Experiment With Real Numbers",
-    description: "What if every urban Indian donated just one item per month? We ran the numbers. The result is 2.4 billion items per year reaching communities in need — and a giving revolution that requires nothing extraordinary from anyone.",
+    description: "What if every urban Indian donated just one item per month? We ran the numbers. The result is 2.4 billion items per year reaching communities in need - and a giving revolution that requires nothing extraordinary from anyone.",
     category: "Awareness & Platform",
     image: "/One_Item_Per_Month.webp",
     author: "CauseKind",
@@ -1687,7 +1687,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Let us do something unusual for a moment.</p>
 
-<p class="mb-4 leading-relaxed">Let us not talk about what is broken. Let us not describe the scale of need in India — the millions without access to education, the communities without menstrual hygiene products, the students without devices, the families without winter clothing.</p>
+<p class="mb-4 leading-relaxed">Let us not talk about what is broken. Let us not describe the scale of need in India - the millions without access to education, the communities without menstrual hygiene products, the students without devices, the families without winter clothing.</p>
 
 <p class="mb-4 leading-relaxed">You know all of that. And knowing it, without a sense of what any individual can actually do about it, produces not generosity but paralysis.</p>
 
@@ -1695,7 +1695,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">A single, simple, honest number.</p>
 
-<p class="mb-4 leading-relaxed">What would actually happen — mathematically, specifically, in terms of items reaching people who need them — if every urban Indian donated one item per month through a verified platform?</p>
+<p class="mb-4 leading-relaxed">What would actually happen - mathematically, specifically, in terms of items reaching people who need them - if every urban Indian donated one item per month through a verified platform?</p>
 
 <p class="mb-4 leading-relaxed">Not a large item. Not an expensive one. One item. Per person. Per month.</p>
 
@@ -1716,7 +1716,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Let that number sit for a moment.</p>
 
-<p class="mb-4 leading-relaxed">Let us be even more conservative. Let us assume that only 50% of urban adults participate. That only half of India's urban population — people with enough economic stability to have items to spare — actually donates.</p>
+<p class="mb-4 leading-relaxed">Let us be even more conservative. Let us assume that only 50% of urban adults participate. That only half of India's urban population - people with enough economic stability to have items to spare - actually donates.</p>
 
 <p class="mb-4 leading-relaxed">200 million items per month.<br />
 2.4 billion items per year.</p>
@@ -1731,11 +1731,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Let us translate the number into specific, tangible impact.</p>
 
-<p class="mb-4 leading-relaxed">India has approximately 250 million school-going children. The most commonly needed in-kind items for school children — a bag, a notebook, a geometry box, a uniform, a pair of shoes — total five items per child per year.</p>
+<p class="mb-4 leading-relaxed">India has approximately 250 million school-going children. The most commonly needed in-kind items for school children - a bag, a notebook, a geometry box, a uniform, a pair of shoes - total five items per child per year.</p>
 
 <p class="mb-4 leading-relaxed">250 million children multiplied by 5 items equals 1.25 billion items per year.</p>
 
-<p class="mb-4 leading-relaxed">The 2.4 billion item scenario covers every school-going child in India's complete annual requirement — with 1.15 billion items remaining for other needs.</p>
+<p class="mb-4 leading-relaxed">The 2.4 billion item scenario covers every school-going child in India's complete annual requirement - with 1.15 billion items remaining for other needs.</p>
 
 <p class="mb-4 leading-relaxed">Those 1.15 billion remaining items cover:</p>
 
@@ -1756,7 +1756,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">The thought experiment only works if one item per month is genuinely within reach of most urban adults. Let us check.</p>
 
-<p class="mb-4 leading-relaxed">The most commonly needed in-kind donations — the items that appear most frequently on CauseKind's verified request list — include:</p>
+<p class="mb-4 leading-relaxed">The most commonly needed in-kind donations - the items that appear most frequently on CauseKind's verified request list - include:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>A 100-page notebook: ₹15 to ₹40</li>
@@ -1771,7 +1771,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">The median cost of a useful, dignity-appropriate in-kind donation: approximately ₹80 to ₹150 per item.</p>
 
-<p class="mb-4 leading-relaxed">For urban India's middle class — a household spending ₹50,000 to ₹1,50,000 per month — this is 0.05% to 0.3% of monthly household income.</p>
+<p class="mb-4 leading-relaxed">For urban India's middle class - a household spending ₹50,000 to ₹1,50,000 per month - this is 0.05% to 0.3% of monthly household income.</p>
 
 <p class="mb-4 leading-relaxed">One item per month costs the average urban Indian household roughly the same as one cup of coffee from a café. Less than a single streaming service subscription. A fraction of a restaurant meal.</p>
 
@@ -1779,11 +1779,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Why Habits Are the Right Frame — Not Heroism</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Why Habits Are the Right Frame - Not Heroism</h2>
 
 <p class="mb-4 leading-relaxed">Here is where most charitable giving campaigns go wrong.</p>
 
-<p class="mb-4 leading-relaxed">They ask for heroism. They present need at such a scale — millions of children, billions of rupees required — that the individual donor feels their contribution is meaningless. They frame giving as sacrifice. They use language that implies that to give significantly, you must give substantially.</p>
+<p class="mb-4 leading-relaxed">They ask for heroism. They present need at such a scale - millions of children, billions of rupees required - that the individual donor feels their contribution is meaningless. They frame giving as sacrifice. They use language that implies that to give significantly, you must give substantially.</p>
 
 <p class="mb-4 leading-relaxed">This framing is counterproductive. It produces admiration for large donors and inaction among everyone else.</p>
 
@@ -1803,11 +1803,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">It is 200 million individual transactions, each within 10 kilometres, each matched between a specific donor and a specific recipient, each confirmed and documented.</p>
 
-<p class="mb-4 leading-relaxed">This localisation is not just logistically efficient — it produces social effects that centralised giving cannot.</p>
+<p class="mb-4 leading-relaxed">This localisation is not just logistically efficient - it produces social effects that centralised giving cannot.</p>
 
 <p class="mb-4 leading-relaxed">When a donor gives within their neighbourhood, they are not an abstract philanthropist contributing to a distant cause. They are a neighbour giving to a neighbour. The relationship between their locality's surplus and their locality's need becomes visible to them in a way that national statistics never are.</p>
 
-<p class="mb-4 leading-relaxed">And when the same person donates twelve times over the course of a year — one item per month, always within 10 km — they begin to know their local giving landscape. They know what is needed in their area. They know when school term starts and what children need. They know which requests come up in monsoon season and which come up in winter.</p>
+<p class="mb-4 leading-relaxed">And when the same person donates twelve times over the course of a year - one item per month, always within 10 km - they begin to know their local giving landscape. They know what is needed in their area. They know when school term starts and what children need. They know which requests come up in monsoon season and which come up in winter.</p>
 
 <p class="mb-4 leading-relaxed">This knowledge is the foundation of community. Not abstract solidarity with distant suffering, but concrete, practical, mutual support between people who live near each other.</p>
 
@@ -1819,11 +1819,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">The thought experiment is compelling. But it requires three things to be true at the same time.</p>
 
-<p class="mb-4 leading-relaxed">First: The platform must be frictionless. The barrier between wanting to donate and completing a donation must be as small as possible. If finding a request, listing an item, and arranging a handoff takes more than 30 minutes, the habit will not form. CauseKind's local matching model — where a donor can find a verified request within their postcode in under five minutes — is designed around this requirement.</p>
+<p class="mb-4 leading-relaxed">First: The platform must be frictionless. The barrier between wanting to donate and completing a donation must be as small as possible. If finding a request, listing an item, and arranging a handoff takes more than 30 minutes, the habit will not form. CauseKind's local matching model - where a donor can find a verified request within their postcode in under five minutes - is designed around this requirement.</p>
 
-<p class="mb-4 leading-relaxed">Second: The matching must be specific and verified. A donor who gives an item and never knows whether it arrived will not give again next month. The Impact Certificate model — where every confirmed delivery produces a verifiable record for the donor — closes the feedback loop that sustains the habit.</p>
+<p class="mb-4 leading-relaxed">Second: The matching must be specific and verified. A donor who gives an item and never knows whether it arrived will not give again next month. The Impact Certificate model - where every confirmed delivery produces a verifiable record for the donor - closes the feedback loop that sustains the habit.</p>
 
-<p class="mb-4 leading-relaxed">Third: The social norm must exist. One item per month becomes a habit at scale only when it becomes a social norm — something people mention, share, discuss, and gently encourage in others. The viral potential of this model is not in dramatic one-off donations. It is in the quiet, consistent, month-after-month practice of giving locally.</p>
+<p class="mb-4 leading-relaxed">Third: The social norm must exist. One item per month becomes a habit at scale only when it becomes a social norm - something people mention, share, discuss, and gently encourage in others. The viral potential of this model is not in dramatic one-off donations. It is in the quiet, consistent, month-after-month practice of giving locally.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -1831,7 +1831,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">2.4 billion items per year is a striking number. It was chosen to make a point, not to set a target.</p>
 
-<p class="mb-4 leading-relaxed">The point is this: India's giving problem is not a shortage of resources. It is a shortage of organisation. The goods exist. The need exists. The distance between them is small — often less than 10 kilometres. The missing element is the habit, the platform, and the social norm that connect the two.</p>
+<p class="mb-4 leading-relaxed">The point is this: India's giving problem is not a shortage of resources. It is a shortage of organisation. The goods exist. The need exists. The distance between them is small - often less than 10 kilometres. The missing element is the habit, the platform, and the social norm that connect the two.</p>
 
 <p class="mb-4 leading-relaxed">You do not need to donate 2.4 billion items. You need to donate one.</p>
 
@@ -1865,7 +1865,7 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "why-people-dont-donate-behavioural-science-india",
     title: "The Giving Habit: Behavioural Science Explains Why Most People Who Want to Give Never Do",
-    description: "Most people who want to give never do. Behavioural science explains exactly why — and how removing friction, closing the intention-action gap, and redesigning the giving experience changes everything.",
+    description: "Most people who want to give never do. Behavioural science explains exactly why - and how removing friction, closing the intention-action gap, and redesigning the giving experience changes everything.",
     category: "Giving Smarter",
     image: "/Behavioural_Science.webp",
     author: "CauseKind",
@@ -1878,27 +1878,27 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">This is not a statement about India specifically. It is one of the most consistent findings in the global research on charitable behaviour. Survey after survey, country after country, income level after income level, finds the same result: the gap between how much people say they want to give and how much they actually give is enormous.</p>
 
-<p class="mb-4 leading-relaxed">In India, this gap is particularly visible. A country of extraordinary cultural generosity — where the concept of daan is embedded in religious and social practice across every community — gives relatively little to formal, verified causes. The informal giving is vast: to temples, to beggars, to family members in need. The formal giving — trackable, impactful, building sustainable community change — is a fraction of what the culture's generosity would suggest is possible.</p>
+<p class="mb-4 leading-relaxed">In India, this gap is particularly visible. A country of extraordinary cultural generosity - where the concept of daan is embedded in religious and social practice across every community - gives relatively little to formal, verified causes. The informal giving is vast: to temples, to beggars, to family members in need. The formal giving - trackable, impactful, building sustainable community change - is a fraction of what the culture's generosity would suggest is possible.</p>
 
 <p class="mb-4 leading-relaxed">The reason most people give for this gap is some variation of: I just never got around to it.</p>
 
 <p class="mb-4 leading-relaxed">Behavioural science has a much more precise and useful explanation.</p>
 
-<p class="mb-4 leading-relaxed">And understanding it is the first step to closing the gap — not through guilt or greater moral effort, but through the intelligent design of giving experiences that work with human psychology rather than against it.</p>
+<p class="mb-4 leading-relaxed">And understanding it is the first step to closing the gap - not through guilt or greater moral effort, but through the intelligent design of giving experiences that work with human psychology rather than against it.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">The Intention-Action Gap: The Central Problem of Human Behaviour</h2>
 
-<p class="mb-4 leading-relaxed">In 1999, psychologists Peter Gollwitzer and Paschal Sheeran identified what they called the 'intention-action gap' — the well-documented phenomenon in which people who intend to perform a behaviour consistently fail to follow through.</p>
+<p class="mb-4 leading-relaxed">In 1999, psychologists Peter Gollwitzer and Paschal Sheeran identified what they called the 'intention-action gap' - the well-documented phenomenon in which people who intend to perform a behaviour consistently fail to follow through.</p>
 
-<p class="mb-4 leading-relaxed">The intention-action gap applies to exercise, diet, medication adherence, financial planning — and charitable giving.</p>
+<p class="mb-4 leading-relaxed">The intention-action gap applies to exercise, diet, medication adherence, financial planning - and charitable giving.</p>
 
 <p class="mb-4 leading-relaxed">The key finding: <strong>intention predicts behaviour far less reliably than we assume.</strong> Having a strong intention to give is not a reliable predictor of actually giving. The correlation between 'I want to donate' and 'I donate' is surprisingly weak.</p>
 
 <p class="mb-4 leading-relaxed">What predicts giving is not the strength of intention but the presence or absence of specific behavioural conditions: a clear trigger, a simple action, an immediate path from decision to completion, and a closing feedback loop.</p>
 
-<p class="mb-4 leading-relaxed">When those conditions are present, people follow through on their intentions. When they are absent — when giving requires research, effort, uncertainty, and delayed feedback — the intention dissolves into the background of a busy life and is never acted on.</p>
+<p class="mb-4 leading-relaxed">When those conditions are present, people follow through on their intentions. When they are absent - when giving requires research, effort, uncertainty, and delayed feedback - the intention dissolves into the background of a busy life and is never acted on.</p>
 
 <p class="mb-4 leading-relaxed">This is not a character failure. It is human cognition working exactly as designed.</p>
 
@@ -1906,17 +1906,17 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Present Bias: Why 'I Will Give Later' Always Loses to 'I Will Give Now'</h2>
 
-<p class="mb-4 leading-relaxed">One of the most robust findings in behavioural economics is present bias — the consistent human tendency to overvalue immediate rewards and undervalue future ones.</p>
+<p class="mb-4 leading-relaxed">One of the most robust findings in behavioural economics is present bias - the consistent human tendency to overvalue immediate rewards and undervalue future ones.</p>
 
 <p class="mb-4 leading-relaxed">In charitable giving, present bias works against follow-through in a specific way.</p>
 
-<p class="mb-4 leading-relaxed">When you see a compelling cause — a child's story, a flood appeal, a donation drive at the office — the emotional response is immediate. The impulse to give is strong, present, and real.</p>
+<p class="mb-4 leading-relaxed">When you see a compelling cause - a child's story, a flood appeal, a donation drive at the office - the emotional response is immediate. The impulse to give is strong, present, and real.</p>
 
-<p class="mb-4 leading-relaxed">But the action of giving typically involves a small delay: finding the right organisation, navigating to a donation page, looking up payment details, composing a bank transfer. In that small delay — which might take only 3 to 5 minutes — present bias operates. The emotional response fades. The competing demands of the present moment — the email that just arrived, the meeting starting in ten minutes, the task you were in the middle of — reassert themselves.</p>
+<p class="mb-4 leading-relaxed">But the action of giving typically involves a small delay: finding the right organisation, navigating to a donation page, looking up payment details, composing a bank transfer. In that small delay - which might take only 3 to 5 minutes - present bias operates. The emotional response fades. The competing demands of the present moment - the email that just arrived, the meeting starting in ten minutes, the task you were in the middle of - reassert themselves.</p>
 
 <p class="mb-4 leading-relaxed">By the time you have navigated to the donation page, the emotional trigger that sent you there has weakened. You complete the donation if the process is simple. You abandon it if there is any friction.</p>
 
-<p class="mb-4 leading-relaxed"><strong>The implication for giving platform design is precise: every additional step in the donation process costs you a meaningful percentage of donors.</strong> Every form field, every verification step, every page load, every uncertainty about whether the cause is legitimate — each one is a point at which present bias wins and the donation does not happen.</p>
+<p class="mb-4 leading-relaxed"><strong>The implication for giving platform design is precise: every additional step in the donation process costs you a meaningful percentage of donors.</strong> Every form field, every verification step, every page load, every uncertainty about whether the cause is legitimate - each one is a point at which present bias wins and the donation does not happen.</p>
 
 <p class="mb-4 leading-relaxed">CauseKind's local matching model addresses this directly: a donor who sees a request from someone in their neighbourhood, where the need is specific and the handoff is simple, faces far less friction than a donor navigating a generic national platform.</p>
 
@@ -1924,11 +1924,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">The Identifiable Victim Effect: Why Statistics Do Not Move People</h2>
 
-<p class="mb-4 leading-relaxed">In 1968, economist Thomas Schelling identified what he called the identifiable victim effect — the finding that people respond far more generously to the specific, named, individual story of one person in need than to statistical descriptions of large-scale need.</p>
+<p class="mb-4 leading-relaxed">In 1968, economist Thomas Schelling identified what he called the identifiable victim effect - the finding that people respond far more generously to the specific, named, individual story of one person in need than to statistical descriptions of large-scale need.</p>
 
-<p class="mb-4 leading-relaxed">This has been replicated in studies consistently for five decades. Telling donors that 250 million children in India lack digital learning access produces far less giving than telling them about one specific child — a name, an age, a photograph, a specific story.</p>
+<p class="mb-4 leading-relaxed">This has been replicated in studies consistently for five decades. Telling donors that 250 million children in India lack digital learning access produces far less giving than telling them about one specific child - a name, an age, a photograph, a specific story.</p>
 
-<p class="mb-4 leading-relaxed">The reason is neurological. The anterior cingulate cortex — the brain region associated with empathy and emotional response — activates strongly for an individual face and story and weakly for an abstract number. Statistics do not have faces. The brain does not respond to them the same way.</p>
+<p class="mb-4 leading-relaxed">The reason is neurological. The anterior cingulate cortex - the brain region associated with empathy and emotional response - activates strongly for an individual face and story and weakly for an abstract number. Statistics do not have faces. The brain does not respond to them the same way.</p>
 
 <p class="mb-4 leading-relaxed">For giving platforms, this finding has a direct design implication: <strong>showing donors a specific, verified, local request from a real person produces more giving than describing aggregate need.</strong></p>
 
@@ -1942,27 +1942,27 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">One of the more counterintuitive findings in charitable behaviour research is the phenomenon of moral licensing.</p>
 
-<p class="mb-4 leading-relaxed">Moral licensing occurs when a past good action reduces the likelihood of a future good action — because the past action has satisfied the person's psychological need to see themselves as a good person.</p>
+<p class="mb-4 leading-relaxed">Moral licensing occurs when a past good action reduces the likelihood of a future good action - because the past action has satisfied the person's psychological need to see themselves as a good person.</p>
 
-<p class="mb-4 leading-relaxed">In giving terms: a person who made a significant donation in October is less likely to give again in November — not because they have less money, but because October's donation has 'banked' enough moral credit to feel psychologically complete for a while.</p>
+<p class="mb-4 leading-relaxed">In giving terms: a person who made a significant donation in October is less likely to give again in November - not because they have less money, but because October's donation has 'banked' enough moral credit to feel psychologically complete for a while.</p>
 
 <p class="mb-4 leading-relaxed">This is why one-off, large donations are less effective at building giving cultures than small, frequent, habitual giving. The large one-off donation satisfies the moral account and closes the chapter. The small monthly habit keeps the account active and open.</p>
 
-<p class="mb-4 leading-relaxed">The design implication: giving platforms and campaigns should explicitly frame giving as an ongoing practice rather than a single event. Language like 'your monthly giving habit' rather than 'your donation' — 'give again this month' rather than 'thank you for your donation' — works with the psychology rather than triggering moral licensing.</p>
+<p class="mb-4 leading-relaxed">The design implication: giving platforms and campaigns should explicitly frame giving as an ongoing practice rather than a single event. Language like 'your monthly giving habit' rather than 'your donation' - 'give again this month' rather than 'thank you for your donation' - works with the psychology rather than triggering moral licensing.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Social Proof and the Visibility of Giving</h2>
 
-<p class="mb-4 leading-relaxed">Human beings are profoundly social in their behaviour. Robert Cialdini's research on influence identified social proof — the tendency to model behaviour on what others around us are doing — as one of the most powerful drivers of human action.</p>
+<p class="mb-4 leading-relaxed">Human beings are profoundly social in their behaviour. Robert Cialdini's research on influence identified social proof - the tendency to model behaviour on what others around us are doing - as one of the most powerful drivers of human action.</p>
 
 <p class="mb-4 leading-relaxed">In charitable giving, social proof works in both directions.</p>
 
-<p class="mb-4 leading-relaxed">When giving is visible — when colleagues share that they donated, when a housing society WhatsApp group shows a collection drive in progress, when a LinkedIn post shows an Impact Certificate — social proof activates giving in people who might not have given otherwise.</p>
+<p class="mb-4 leading-relaxed">When giving is visible - when colleagues share that they donated, when a housing society WhatsApp group shows a collection drive in progress, when a LinkedIn post shows an Impact Certificate - social proof activates giving in people who might not have given otherwise.</p>
 
-<p class="mb-4 leading-relaxed">When giving is invisible — when it happens privately, quietly, with no social signal — it does not activate the social proof mechanism in others.</p>
+<p class="mb-4 leading-relaxed">When giving is invisible - when it happens privately, quietly, with no social signal - it does not activate the social proof mechanism in others.</p>
 
-<p class="mb-4 leading-relaxed">India's informal giving culture is largely invisible. The rupee given to a temple, the food given to a beggar, the clothes given to the building's domestic workers — these are private acts that produce no social signal and therefore no social proof effect.</p>
+<p class="mb-4 leading-relaxed">India's informal giving culture is largely invisible. The rupee given to a temple, the food given to a beggar, the clothes given to the building's domestic workers - these are private acts that produce no social signal and therefore no social proof effect.</p>
 
 <p class="mb-4 leading-relaxed">Verified giving platforms change this. An Impact Certificate shared on LinkedIn or Instagram is not self-promotion. It is a social proof signal that tells everyone in your network: giving is something people like us do. It is normal. It is easy. Here is how.</p>
 
@@ -1974,15 +1974,15 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Every friction-reduction, feedback, and social design decision on CauseKind maps to a specific behavioural finding:</p>
 
-<p class="mb-4 leading-relaxed"><strong>Specific, local requests</strong> (identifiable victim effect) — donors see a real person with a real need in their own neighbourhood, not an abstract statistic.</p>
+<p class="mb-4 leading-relaxed"><strong>Specific, local requests</strong> (identifiable victim effect) - donors see a real person with a real need in their own neighbourhood, not an abstract statistic.</p>
 
-<p class="mb-4 leading-relaxed"><strong>10-minute donation process</strong> (present bias reduction) — from browsing a request to confirming a match takes under 10 minutes. The emotional trigger does not have time to fade.</p>
+<p class="mb-4 leading-relaxed"><strong>10-minute donation process</strong> (present bias reduction) - from browsing a request to confirming a match takes under 10 minutes. The emotional trigger does not have time to fade.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Impact Certificate delivery</strong> (feedback loop closure) — the donor receives confirmed proof of delivery, closing the feedback loop that makes the habit sustainable. The brain rewards completed actions with a small dopamine signal. The Impact Certificate triggers it.</p>
+<p class="mb-4 leading-relaxed"><strong>Impact Certificate delivery</strong> (feedback loop closure) - the donor receives confirmed proof of delivery, closing the feedback loop that makes the habit sustainable. The brain rewards completed actions with a small dopamine signal. The Impact Certificate triggers it.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Local social proof</strong> (social proof activation) — CauseKind shows donors how many people in their area have given this month, how many requests have been fulfilled nearby, what items were most given in their locality. Local social proof is more powerful than national statistics.</p>
+<p class="mb-4 leading-relaxed"><strong>Local social proof</strong> (social proof activation) - CauseKind shows donors how many people in their area have given this month, how many requests have been fulfilled nearby, what items were most given in their locality. Local social proof is more powerful than national statistics.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Monthly giving reminders</strong> (habit formation) — the most effective giving habit is a time-anchored one: 'first Saturday of the month.' Reminders anchored to a specific, recurring time cue convert one-time donors into monthly givers at significantly higher rates than open-ended follow-ups.</p>
+<p class="mb-4 leading-relaxed"><strong>Monthly giving reminders</strong> (habit formation) - the most effective giving habit is a time-anchored one: 'first Saturday of the month.' Reminders anchored to a specific, recurring time cue convert one-time donors into monthly givers at significantly higher rates than open-ended follow-ups.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -1990,7 +1990,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">It is a gap in design.</p>
 
-<p class="mb-4 leading-relaxed">The people who want to give but do not — and that is most of us, most of the time — are not morally deficient. They are human. They experience present bias and the identifiable victim effect and moral licensing and all the other entirely normal cognitive patterns that make sustained giving difficult without the right infrastructure.</p>
+<p class="mb-4 leading-relaxed">The people who want to give but do not - and that is most of us, most of the time - are not morally deficient. They are human. They experience present bias and the identifiable victim effect and moral licensing and all the other entirely normal cognitive patterns that make sustained giving difficult without the right infrastructure.</p>
 
 <p class="mb-4 leading-relaxed">The right infrastructure does not require more willpower or more guilt or more awareness of need.</p>
 
@@ -2012,7 +2012,7 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "the-last-chapter-causekind-impact-story",
     title: "The Last Chapter",
-    description: "A woman in an old-age home receives a donated novel — the third book in a series she began reading forty years ago, in college. She did not know the third book existed. A story about what it means to finish something you started half a lifetime ago.",
+    description: "A woman in an old-age home receives a donated novel - the third book in a series she began reading forty years ago, in college. She did not know the third book existed. A story about what it means to finish something you started half a lifetime ago.",
     category: "Impact Story",
     image: "/Elderly_Reading.webp",
     author: "CauseKind",
@@ -2027,7 +2027,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Tuesday in the old-age home in Dadar was cleaning day. The floors were mopped with a phenyl solution that turned the air sharp and medicinal. The television in the common room played a devotional channel at a volume calibrated for the hearing aids of the majority, which meant it was too loud for everyone. The morning tea came at eight and the lunch bell was at twelve-thirty and in between there was a particular quality of time that Meera Iyer, who had been in the home for four years, had learned to navigate.</p>
 
-<p class="mb-4 leading-relaxed">She was seventy-three years old. She had been a Sanskrit professor at a women's college in Pune for thirty-one years. She had a son in Toronto who called on Sundays and a daughter in Hyderabad who called on Wednesdays and neither of whom — and she understood this without bitterness — could accommodate her in their current lives in their current cities.</p>
+<p class="mb-4 leading-relaxed">She was seventy-three years old. She had been a Sanskrit professor at a women's college in Pune for thirty-one years. She had a son in Toronto who called on Sundays and a daughter in Hyderabad who called on Wednesdays and neither of whom - and she understood this without bitterness - could accommodate her in their current lives in their current cities.</p>
 
 <p class="mb-4 leading-relaxed">She read. She had always read. She was reading when the books arrived.</p>
 
@@ -2035,17 +2035,17 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">The Donation</h2>
 
-<p class="mb-4 leading-relaxed">Rohit Sharma was thirty-four, lived in a third-floor flat in Dadar West, and was in the middle of what his wife called 'the great declutter' — the ambitious weekend project of clearing a decade of accumulated books from the shelves that lined the study.</p>
+<p class="mb-4 leading-relaxed">Rohit Sharma was thirty-four, lived in a third-floor flat in Dadar West, and was in the middle of what his wife called 'the great declutter' - the ambitious weekend project of clearing a decade of accumulated books from the shelves that lined the study.</p>
 
 <p class="mb-4 leading-relaxed">He had kept the ones he loved. He had kept the ones he thought he might love someday. He had kept a few he felt he should have loved and had not.</p>
 
-<p class="mb-4 leading-relaxed">Everything else — approximately 200 books, sorted into four cardboard boxes — he had listed on CauseKind's In-Kind platform.</p>
+<p class="mb-4 leading-relaxed">Everything else - approximately 200 books, sorted into four cardboard boxes - he had listed on CauseKind's In-Kind platform.</p>
 
-<p class="mb-4 leading-relaxed">He had not thought very carefully about what was in the boxes. He had thought about the shelf space. He had specified 'assorted English novels and non-fiction — good condition' and uploaded a photograph of the boxes stacked neatly in the corridor.</p>
+<p class="mb-4 leading-relaxed">He had not thought very carefully about what was in the boxes. He had thought about the shelf space. He had specified 'assorted English novels and non-fiction - good condition' and uploaded a photograph of the boxes stacked neatly in the corridor.</p>
 
 <p class="mb-4 leading-relaxed">The request came from the Shanti Niwas old-age home on the same day.</p>
 
-<p class="mb-4 leading-relaxed">The home's activities coordinator — a young woman named Devika who was twenty-six and who ran an informal lending library for residents from a shelf beside the common room — had seen the listing and sent a request through the platform for whatever the donor was willing to give.</p>
+<p class="mb-4 leading-relaxed">The home's activities coordinator - a young woman named Devika who was twenty-six and who ran an informal lending library for residents from a shelf beside the common room - had seen the listing and sent a request through the platform for whatever the donor was willing to give.</p>
 
 <p class="mb-4 leading-relaxed">Rohit loaded the boxes into his car on Saturday morning and drove four kilometres to Shanti Niwas.</p>
 
@@ -2059,15 +2059,15 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Meera Iyer had read the first two books of the trilogy in 1983.</p>
 
-<p class="mb-4 leading-relaxed">She was thirty years old. She was a junior lecturer. She had read them during the summer break — the long, slow Pune summer of that year — sitting on the narrow balcony of the flat she shared with her husband, a glass of nimbu pani going warm beside her.</p>
+<p class="mb-4 leading-relaxed">She was thirty years old. She was a junior lecturer. She had read them during the summer break - the long, slow Pune summer of that year - sitting on the narrow balcony of the flat she shared with her husband, a glass of nimbu pani going warm beside her.</p>
 
-<p class="mb-4 leading-relaxed">The books were by a British author she had found recommended in a literary magazine. They were dense, philosophical novels — part historical fiction, part meditation on memory and time and the impossibility of fully knowing another person. She had read the first one in three days and the second one in four and at the end of the second she had sat for a long time looking at the last page.</p>
+<p class="mb-4 leading-relaxed">The books were by a British author she had found recommended in a literary magazine. They were dense, philosophical novels - part historical fiction, part meditation on memory and time and the impossibility of fully knowing another person. She had read the first one in three days and the second one in four and at the end of the second she had sat for a long time looking at the last page.</p>
 
 <p class="mb-4 leading-relaxed">The story was not finished. It was clearly the middle of a longer work. A third book was coming, the author's note suggested, to complete the trilogy.</p>
 
 <p class="mb-4 leading-relaxed">She had waited for the third book.</p>
 
-<p class="mb-4 leading-relaxed">She had looked for it at the British Council Library in Pune the following year. She had asked at Manney's bookshop on Clover Centre. She had, in those pre-internet years, simply not found it — and gradually, as her life had filled with marking papers and raising children and the accumulating business of living, she had filed the unfinished story away in the part of the mind reserved for things that are not forgotten, exactly, but are not actively remembered.</p>
+<p class="mb-4 leading-relaxed">She had looked for it at the British Council Library in Pune the following year. She had asked at Manney's bookshop on Clover Centre. She had, in those pre-internet years, simply not found it - and gradually, as her life had filled with marking papers and raising children and the accumulating business of living, she had filed the unfinished story away in the part of the mind reserved for things that are not forgotten, exactly, but are not actively remembered.</p>
 
 <p class="mb-4 leading-relaxed">For forty years, without thinking about it often or thinking about it consciously at all, she had not finished that story.</p>
 
@@ -2079,15 +2079,15 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">She had organised them by genre and placed them on the common room shelf, on the small table outside the television room, on the windowsill of the reading corner where the morning light came in best.</p>
 
-<p class="mb-4 leading-relaxed">She had given Meera Iyer first pick because Meera read faster than anyone else in the home and because she sensed — without knowing quite why — that Meera needed books in a way that went beyond passing the time.</p>
+<p class="mb-4 leading-relaxed">She had given Meera Iyer first pick because Meera read faster than anyone else in the home and because she sensed - without knowing quite why - that Meera needed books in a way that went beyond passing the time.</p>
 
-<p class="mb-4 leading-relaxed">Meera had come to the common room on Tuesday morning, on the day of the phenyl floors and the loud devotional channel, and she had looked at the books the way she always looked at new books — with the particular attention of a person who has spent a lifetime considering what words do to minds.</p>
+<p class="mb-4 leading-relaxed">Meera had come to the common room on Tuesday morning, on the day of the phenyl floors and the loud devotional channel, and she had looked at the books the way she always looked at new books - with the particular attention of a person who has spent a lifetime considering what words do to minds.</p>
 
 <p class="mb-4 leading-relaxed">She had picked up several and read the first page.</p>
 
 <p class="mb-4 leading-relaxed">She had put them down.</p>
 
-<p class="mb-4 leading-relaxed">And then she had picked up a book near the end of the shelf — a paperback with a worn spine, slightly faded on the cover from what looked like years in sunlight — and she had read the title.</p>
+<p class="mb-4 leading-relaxed">And then she had picked up a book near the end of the shelf - a paperback with a worn spine, slightly faded on the cover from what looked like years in sunlight - and she had read the title.</p>
 
 <p class="mb-4 leading-relaxed">And she had stood very still.</p>
 
@@ -2109,23 +2109,23 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">What She Read</h2>
 
-<p class="mb-4 leading-relaxed">The novel picked up exactly where the second had ended — the same characters, the same unresolved questions, the same dense, patient prose that she remembered from the balcony in Pune in 1983.</p>
+<p class="mb-4 leading-relaxed">The novel picked up exactly where the second had ended - the same characters, the same unresolved questions, the same dense, patient prose that she remembered from the balcony in Pune in 1983.</p>
 
-<p class="mb-4 leading-relaxed">She had worried, faintly, that she would not remember enough of the first two books to follow the third. She had not re-read them — she did not have them anymore; they had been lost in one of the three house moves across her married life.</p>
+<p class="mb-4 leading-relaxed">She had worried, faintly, that she would not remember enough of the first two books to follow the third. She had not re-read them - she did not have them anymore; they had been lost in one of the three house moves across her married life.</p>
 
-<p class="mb-4 leading-relaxed">But the story came back as she read, the way things from a certain depth of the memory do — not as a recalled sequence of events but as a felt familiarity, a recognition, the sense of returning to a place rather than visiting it for the first time.</p>
+<p class="mb-4 leading-relaxed">But the story came back as she read, the way things from a certain depth of the memory do - not as a recalled sequence of events but as a felt familiarity, a recognition, the sense of returning to a place rather than visiting it for the first time.</p>
 
-<p class="mb-4 leading-relaxed">She read it over four days. The Tuesday of the phenyl floors, then Wednesday, then Thursday, then Friday morning — the last chapter finished before the eight o'clock tea, in the growing light of a November morning, the devotional channel not yet started, the home quiet around her.</p>
+<p class="mb-4 leading-relaxed">She read it over four days. The Tuesday of the phenyl floors, then Wednesday, then Thursday, then Friday morning - the last chapter finished before the eight o'clock tea, in the growing light of a November morning, the devotional channel not yet started, the home quiet around her.</p>
 
 <p class="mb-4 leading-relaxed">She closed the book.</p>
 
 <p class="mb-4 leading-relaxed">She held it in her lap for a long time.</p>
 
-<p class="mb-4 leading-relaxed">The ending was not what she would have predicted in 1983, sitting on the balcony in Pune, making guesses about where the author was taking the story. It was better. It was the kind of ending that changes what came before it — that reframes the first two books entirely, so that the whole trilogy becomes, in retrospect, a different story from the one she had thought she was reading.</p>
+<p class="mb-4 leading-relaxed">The ending was not what she would have predicted in 1983, sitting on the balcony in Pune, making guesses about where the author was taking the story. It was better. It was the kind of ending that changes what came before it - that reframes the first two books entirely, so that the whole trilogy becomes, in retrospect, a different story from the one she had thought she was reading.</p>
 
 <p class="mb-4 leading-relaxed">She sat with that for a while.</p>
 
-<p class="mb-4 leading-relaxed">There is a particular emotion that has no single name in English — the emotion of finishing something long, of arriving at an ending that was deferred for so long it had stopped feeling possible. In Sanskrit, she knew, there were words for the subtle emotional states that English could not quite reach.</p>
+<p class="mb-4 leading-relaxed">There is a particular emotion that has no single name in English - the emotion of finishing something long, of arriving at an ending that was deferred for so long it had stopped feeling possible. In Sanskrit, she knew, there were words for the subtle emotional states that English could not quite reach.</p>
 
 <p class="mb-4 leading-relaxed">She thought of one now. She held it quietly. She did not need to say it to anyone.</p>
 
@@ -2149,7 +2149,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">He did not know about the balcony in Pune in 1983, or the British Council Library, or Manney's bookshop, or the forty years of an unfinished story.</p>
 
-<p class="mb-4 leading-relaxed">He did not know that the paperback with the faded spine had sat in his study for eleven years — purchased at a secondhand bookshop in Bandra, read once, loved, placed on the shelf, forgotten — and had travelled four kilometres in a cardboard box to complete something he had never known was incomplete.</p>
+<p class="mb-4 leading-relaxed">He did not know that the paperback with the faded spine had sat in his study for eleven years - purchased at a secondhand bookshop in Bandra, read once, loved, placed on the shelf, forgotten - and had travelled four kilometres in a cardboard box to complete something he had never known was incomplete.</p>
 
 <p class="mb-4 leading-relaxed">He did not need to know.</p>
 
@@ -2187,41 +2187,41 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "ultimate-guide-in-kind-donations-india",
     title: "The Ultimate Guide to In-Kind Donations in India (2026)",
-    description: "Everything you need to know about in-kind donations in India — what they are, what to donate, how to find verified recipients, how local matching works, and how to donate safely through CauseKind. India's most complete guide to giving goods.",
+    description: "Everything you need to know about in-kind donations in India - what they are, what to donate, how to find verified recipients, how local matching works, and how to donate safely through CauseKind. India's most complete guide to giving goods.",
     category: "In-Kind Giving",
-    image: "/Impact.webp",
+    image: "/ultimate_guide_in_kind.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "January 2026",
     readTime: "12 min read",
     faq: [
-      { question: "What is an in-kind donation in India?", answer: "An in-kind donation in India is a non-cash contribution of physical goods — such as clothes, books, electronics, food, or stationery — given directly to a person or organisation in need, instead of donating money." },
-      { question: "What are examples of in-kind donations?", answer: "Examples of in-kind donations include school bags, textbooks, laptops, smartphones, clothes, uniforms, sanitary pads, blankets, raincoats, furniture, and food supplies — any physical item donated to someone who needs it." },
+      { question: "What is an in-kind donation in India?", answer: "An in-kind donation in India is a non-cash contribution of physical goods - such as clothes, books, electronics, food, or stationery - given directly to a person or organisation in need, instead of donating money." },
+      { question: "What are examples of in-kind donations?", answer: "Examples of in-kind donations include school bags, textbooks, laptops, smartphones, clothes, uniforms, sanitary pads, blankets, raincoats, furniture, and food supplies - any physical item donated to someone who needs it." },
       { question: "Is in-kind donation tax deductible in India?", answer: "Direct in-kind donations of goods are generally not eligible for 80G tax deduction. However, purchasing goods specifically for donation as part of a CSR programme may qualify as eligible CSR expenditure. Consult a qualified CA for specific guidance." },
       { question: "How does CauseKind's in-kind donation platform work?", answer: "CauseKind matches donors with verified recipients within 10 km. Recipients post specific in-kind requests that are admin-verified before going live. Donors browse local requests, offer matching items, arrange a direct handoff, and receive a verified Impact Certificate confirming delivery." },
-      { question: "What is the difference between in-kind and monetary donation?", answer: "A monetary donation gives an organisation cash to spend as they determine. An in-kind donation gives a specific, needed item directly — with no administrative overhead, no disbursement delay, and complete transparency about what the donation provides." },
+      { question: "What is the difference between in-kind and monetary donation?", answer: "A monetary donation gives an organisation cash to spend as they determine. An in-kind donation gives a specific, needed item directly - with no administrative overhead, no disbursement delay, and complete transparency about what the donation provides." },
     ],
     content: `
 
-<p class="mb-4 leading-relaxed">Every year, Indians donate billions of rupees to causes they care about. Food drives, flood relief, school supply campaigns, clothing collections — the instinct to give is deeply woven into Indian culture.</p>
+<p class="mb-4 leading-relaxed">Every year, Indians donate billions of rupees to causes they care about. Food drives, flood relief, school supply campaigns, clothing collections - the instinct to give is deeply woven into Indian culture.</p>
 
-<p class="mb-4 leading-relaxed">But there is a form of giving that is older than cash, more direct than a bank transfer, and in many situations more impactful than money — and it is one that most people in India do not fully understand or use.</p>
+<p class="mb-4 leading-relaxed">But there is a form of giving that is older than cash, more direct than a bank transfer, and in many situations more impactful than money - and it is one that most people in India do not fully understand or use.</p>
 
 <p class="mb-4 leading-relaxed">It is called in-kind donation.</p>
 
 <p class="mb-4 leading-relaxed">And in 2026, with verified platforms making local matching possible in minutes, in-kind giving is undergoing a transformation that is changing how communities across India support each other.</p>
 
-<p class="mb-4 leading-relaxed">This is the complete guide — everything you need to know about what in-kind donations are, why they matter, what to donate, how to find the right recipient, how to donate safely, and how CauseKind's verified platform makes it simpler than it has ever been.</p>
+<p class="mb-4 leading-relaxed">This is the complete guide - everything you need to know about what in-kind donations are, why they matter, what to donate, how to find the right recipient, how to donate safely, and how CauseKind's verified platform makes it simpler than it has ever been.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">What Is an In-Kind Donation?</h2>
 
-<p class="mb-4 leading-relaxed">An in-kind donation is a non-cash contribution — a physical good, a professional service, or a resource — given directly to a person or organisation in need.</p>
+<p class="mb-4 leading-relaxed">An in-kind donation is a non-cash contribution - a physical good, a professional service, or a resource - given directly to a person or organisation in need.</p>
 
 <p class="mb-4 leading-relaxed">Instead of donating money and letting an organisation decide how to spend it, an in-kind donor gives the actual item that is needed: a school bag, a set of textbooks, a laptop, a raincoat, a pack of sanitary pads, a geometry box.</p>
 
-<p class="mb-4 leading-relaxed">The word 'in-kind' comes from the phrase 'payment in kind' — meaning payment in goods rather than currency. In the context of charitable giving, it means giving the thing itself rather than the means to acquire it.</p>
+<p class="mb-4 leading-relaxed">The word 'in-kind' comes from the phrase 'payment in kind' - meaning payment in goods rather than currency. In the context of charitable giving, it means giving the thing itself rather than the means to acquire it.</p>
 
 <p class="mb-4 leading-relaxed">In-kind donations can be:</p>
 
@@ -2231,15 +2231,15 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Use of resources: office space, vehicles, printing facilities, storage</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">This guide focuses primarily on physical goods — the most common and most needed form of in-kind donation in India.</p>
+<p class="mb-4 leading-relaxed">This guide focuses primarily on physical goods - the most common and most needed form of in-kind donation in India.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Why In-Kind Donations Matter in India</h2>
 
-<p class="mb-4 leading-relaxed">India is a country of extraordinary resource inequality. Urban Indian households accumulate goods at a rate that outpaces their use — clothes that no longer fit, books that will not be re-read, devices that have been replaced, toys that have been outgrown.</p>
+<p class="mb-4 leading-relaxed">India is a country of extraordinary resource inequality. Urban Indian households accumulate goods at a rate that outpaces their use - clothes that no longer fit, books that will not be re-read, devices that have been replaced, toys that have been outgrown.</p>
 
-<p class="mb-4 leading-relaxed">At the same time, millions of families across the country — in informal urban settlements, in rural areas, in government schools, in shelter homes — need these very things and cannot afford them.</p>
+<p class="mb-4 leading-relaxed">At the same time, millions of families across the country - in informal urban settlements, in rural areas, in government schools, in shelter homes - need these very things and cannot afford them.</p>
 
 <p class="mb-4 leading-relaxed">The gap between the two is not a shortage of goods. It is a shortage of connection.</p>
 
@@ -2249,7 +2249,7 @@ The complete donation record - from verified request through confirmed delivery 
   <li>No administrative overhead: the item you donate is the item received</li>
   <li>No disbursement delay: a matched in-kind donation moves within days, not months</li>
   <li>No uncertainty about spending: you know exactly what your donation provides</li>
-  <li>No minimum amount: a single notebook, a pair of rubber chappals, one pack of sanitary pads — every item has value</li>
+  <li>No minimum amount: a single notebook, a pair of rubber chappals, one pack of sanitary pads - every item has value</li>
 </ul>
 
 <p class="mb-4 leading-relaxed">For India specifically, in-kind giving aligns with a cultural tradition of direct, community-centred generosity that predates modern philanthropy.</p>
@@ -2264,7 +2264,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>School bags and backpacks</li>
-  <li>Textbooks (CBSE, ICSE, State Board — by class and subject)</li>
+  <li>Textbooks (CBSE, ICSE, State Board - by class and subject)</li>
   <li>Notebooks, graph paper, drawing sheets</li>
   <li>Geometry boxes, rulers, calculators</li>
   <li>Pens, pencils, erasers, sharpeners</li>
@@ -2322,25 +2322,25 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Here is the complete process:</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 1 — A recipient posts a verified request</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 1 - A recipient posts a verified request</h3>
 
 <p class="mb-4 leading-relaxed">Families, individuals, schools, shelter homes, and community organisations post specific in-kind requests: the exact item needed, the size or specification, the location. Before any request goes live, CauseKind's admin team verifies the identity and need through its four-tier verification framework.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 2 — You browse requests near you</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 2 - You browse requests near you</h3>
 
-<p class="mb-4 leading-relaxed">Every request on CauseKind is location-tagged. You see requests from within your 10 km radius — real, specific, verified needs from your neighbourhood.</p>
+<p class="mb-4 leading-relaxed">Every request on CauseKind is location-tagged. You see requests from within your 10 km radius - real, specific, verified needs from your neighbourhood.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 3 — You match a request or list your item</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 3 - You match a request or list your item</h3>
 
 <p class="mb-4 leading-relaxed">You can either respond to an existing request (offering the item someone has asked for) or list an item you want to donate (and wait for a matching request). Both paths are available.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 4 — You arrange a local handoff</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 4 - You arrange a local handoff</h3>
 
-<p class="mb-4 leading-relaxed">All matches are within 10 km. No courier, no shipping, no cost. You and the recipient arrange a direct, local handoff — in person, at a time that suits both.</p>
+<p class="mb-4 leading-relaxed">All matches are within 10 km. No courier, no shipping, no cost. You and the recipient arrange a direct, local handoff - in person, at a time that suits both.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 5 — Delivery is confirmed and documented</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 5 - Delivery is confirmed and documented</h3>
 
-<p class="mb-4 leading-relaxed">Both parties confirm the handoff through the platform. A verified Impact Certificate is generated — a permanent, documented record of your donation, the recipient, and the confirmed delivery.</p>
+<p class="mb-4 leading-relaxed">Both parties confirm the handoff through the platform. A verified Impact Certificate is generated - a permanent, documented record of your donation, the recipient, and the confirmed delivery.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Cost: Zero. Always.</h3>
 
@@ -2352,7 +2352,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Condition</h3>
 
-<p class="mb-4 leading-relaxed">Donate items that are genuinely usable — not items that you have decided are charitable enough to give away. A shirt with a torn collar is not a donation. A phone that does not turn on is not a donation. A textbook from a syllabus that changed five years ago is not a donation.</p>
+<p class="mb-4 leading-relaxed">Donate items that are genuinely usable - not items that you have decided are charitable enough to give away. A shirt with a torn collar is not a donation. A phone that does not turn on is not a donation. A textbook from a syllabus that changed five years ago is not a donation.</p>
 
 <p class="mb-4 leading-relaxed">The test: would you be comfortable giving this item to a colleague you respect?</p>
 
@@ -2370,18 +2370,18 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">CauseKind matches every in-kind donation within a 10 km radius of the donor.</p>
 
-<p class="mb-4 leading-relaxed">This is not just a logistics decision — though it makes logistics simple. It is a philosophy about what community giving should look like.</p>
+<p class="mb-4 leading-relaxed">This is not just a logistics decision - though it makes logistics simple. It is a philosophy about what community giving should look like.</p>
 
 <p class="mb-4 leading-relaxed">When you give within your neighbourhood:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>No shipping or courier is required — reducing cost and delay to zero</li>
-  <li>You know where your donation went — the Impact Certificate confirms a local delivery</li>
-  <li>You are investing in the community you live in — making your own neighbourhood stronger</li>
-  <li>The recipient is truly your neighbour — someone who shops at similar markets, whose children may go to a nearby school</li>
+  <li>No shipping or courier is required - reducing cost and delay to zero</li>
+  <li>You know where your donation went - the Impact Certificate confirms a local delivery</li>
+  <li>You are investing in the community you live in - making your own neighbourhood stronger</li>
+  <li>The recipient is truly your neighbour - someone who shops at similar markets, whose children may go to a nearby school</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">Hyperlocal giving is more efficient, more personal, and more community-building than giving to a national pool. It is also, research suggests, more emotionally satisfying for donors — the connection between giver and receiver is proximate and real.</p>
+<p class="mb-4 leading-relaxed">Hyperlocal giving is more efficient, more personal, and more community-building than giving to a national pool. It is also, research suggests, more emotionally satisfying for donors - the connection between giver and receiver is proximate and real.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -2406,7 +2406,7 @@ The complete donation record - from verified request through confirmed delivery 
   <li>When you are contributing to a large infrastructure or programme goal that requires pooled funding</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">For most everyday community needs — education, clothing, hygiene, basic household items — in-kind giving through a verified platform is the most direct, most efficient, and most impactful form of giving available.</p>
+<p class="mb-4 leading-relaxed">For most everyday community needs - education, clothing, hygiene, basic household items - in-kind giving through a verified platform is the most direct, most efficient, and most impactful form of giving available.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -2422,7 +2422,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">How do I know my donation actually arrived?</h3>
 
-<p class="mb-4 leading-relaxed">On CauseKind, every confirmed in-kind donation generates a verified Impact Certificate — produced only after mutual delivery confirmation by both donor and recipient. This is independent verification, not self-reporting.</p>
+<p class="mb-4 leading-relaxed">On CauseKind, every confirmed in-kind donation generates a verified Impact Certificate - produced only after mutual delivery confirmation by both donor and recipient. This is independent verification, not self-reporting.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">What if I have items to donate but nobody has requested them?</h3>
 
@@ -2430,7 +2430,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Is there a minimum value or quantity for in-kind donations?</h3>
 
-<p class="mb-4 leading-relaxed">No. A single notebook, one pair of chappals, one pack of sanitary pads — every item is valuable if it is in good condition and matches a verified need.</p>
+<p class="mb-4 leading-relaxed">No. A single notebook, one pair of chappals, one pack of sanitary pads - every item is valuable if it is in good condition and matches a verified need.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -2439,11 +2439,11 @@ The complete donation record - from verified request through confirmed delivery 
 <p class="mb-4 leading-relaxed">Starting is simpler than most people expect.</p>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
-  <li>Go to causekind.com and create a free account — takes 2 minutes</li>
-  <li>Browse In-Kind Requests in your area — filter by category, distance, or need type</li>
+  <li>Go to causekind.com and create a free account - takes 2 minutes</li>
+  <li>Browse In-Kind Requests in your area - filter by category, distance, or need type</li>
   <li>Find a request that matches something you have or can easily purchase</li>
   <li>Accept the match or list your item</li>
-  <li>Arrange a local handoff with the recipient — within 10 km, at a time that works for both</li>
+  <li>Arrange a local handoff with the recipient - within 10 km, at a time that works for both</li>
   <li>Confirm delivery through the platform</li>
   <li>Receive your verified Impact Certificate</li>
 </ol>
@@ -2456,11 +2456,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">What is an in-kind donation in India?</h3>
 
-<p class="mb-4 leading-relaxed">An in-kind donation in India is a non-cash contribution of physical goods — such as clothes, books, electronics, food, or stationery — given directly to a person or organisation in need, instead of donating money.</p>
+<p class="mb-4 leading-relaxed">An in-kind donation in India is a non-cash contribution of physical goods - such as clothes, books, electronics, food, or stationery - given directly to a person or organisation in need, instead of donating money.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">What are examples of in-kind donations?</h3>
 
-<p class="mb-4 leading-relaxed">Examples of in-kind donations include school bags, textbooks, laptops, smartphones, clothes, uniforms, sanitary pads, blankets, raincoats, furniture, and food supplies — any physical item donated to someone who needs it.</p>
+<p class="mb-4 leading-relaxed">Examples of in-kind donations include school bags, textbooks, laptops, smartphones, clothes, uniforms, sanitary pads, blankets, raincoats, furniture, and food supplies - any physical item donated to someone who needs it.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Is in-kind donation tax deductible in India?</h3>
 
@@ -2472,7 +2472,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">What is the difference between in-kind and monetary donation?</h3>
 
-<p class="mb-4 leading-relaxed">A monetary donation gives an organisation cash to spend as they determine. An in-kind donation gives a specific, needed item directly — with no administrative overhead, no disbursement delay, and complete transparency about what the donation provides.</p>
+<p class="mb-4 leading-relaxed">A monetary donation gives an organisation cash to spend as they determine. An in-kind donation gives a specific, needed item directly - with no administrative overhead, no disbursement delay, and complete transparency about what the donation provides.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -2504,9 +2504,9 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "benefits-of-in-kind-donations-india",
     title: "7 Powerful Benefits of In-Kind Donations Over Cash Giving in India",
-    description: "Why in-kind donations are often more impactful than cash giving in India. Discover 7 key benefits — from zero overhead to verified delivery — and how CauseKind makes in-kind giving simple, local, and fully documented.",
+    description: "Why in-kind donations are often more impactful than cash giving in India. Discover 7 key benefits - from zero overhead to verified delivery - and how CauseKind makes in-kind giving simple, local, and fully documented.",
     category: "In-Kind Giving",
-    image: "/Ripple Effect of Opportunity.webp",
+    image: "/benefits_of_in_kind.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "January 2026",
@@ -2515,19 +2515,19 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">When most people think of charity in India, they think of money.</p>
 
-<p class="mb-4 leading-relaxed">A bank transfer. A UPI payment. A cheque to a registered NGO. Money, the thinking goes, is flexible — it can buy whatever is most needed, whenever it is needed.</p>
+<p class="mb-4 leading-relaxed">A bank transfer. A UPI payment. A cheque to a registered NGO. Money, the thinking goes, is flexible - it can buy whatever is most needed, whenever it is needed.</p>
 
 <p class="mb-4 leading-relaxed">This is true. But it is not the whole picture.</p>
 
-<p class="mb-4 leading-relaxed">For a large and growing category of everyday community needs — school supplies, clothing, devices, hygiene products, household essentials — in-kind donation consistently outperforms cash giving on the metrics that matter most: speed, efficiency, impact transparency, and the dignity of the recipient.</p>
+<p class="mb-4 leading-relaxed">For a large and growing category of everyday community needs - school supplies, clothing, devices, hygiene products, household essentials - in-kind donation consistently outperforms cash giving on the metrics that matter most: speed, efficiency, impact transparency, and the dignity of the recipient.</p>
 
 <p class="mb-4 leading-relaxed">Here are seven specific, evidence-backed reasons why.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 1 — Zero Administrative Overhead: Every Item Reaches Its Destination</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 1 - Zero Administrative Overhead: Every Item Reaches Its Destination</h2>
 
-<p class="mb-4 leading-relaxed">When you donate cash to an NGO, a portion of that donation — typically 15% to 40% depending on the organisation — is absorbed by administrative costs before reaching the community: staff salaries, office rent, transport, programme management.</p>
+<p class="mb-4 leading-relaxed">When you donate cash to an NGO, a portion of that donation - typically 15% to 40% depending on the organisation - is absorbed by administrative costs before reaching the community: staff salaries, office rent, transport, programme management.</p>
 
 <p class="mb-4 leading-relaxed">This overhead is legitimate. NGOs need operational capacity to function.</p>
 
@@ -2539,11 +2539,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 2 — Speed: In-Kind Giving Moves in Days, Not Months</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 2 - Speed: In-Kind Giving Moves in Days, Not Months</h2>
 
 <p class="mb-4 leading-relaxed">Cash CSR and formal monetary donation processes are slow.</p>
 
-<p class="mb-4 leading-relaxed">From initial allocation to community impact, the typical cash-based giving cycle — NGO identification, due diligence, MOU signing, fund release, procurement, distribution — takes 3 to 18 months.</p>
+<p class="mb-4 leading-relaxed">From initial allocation to community impact, the typical cash-based giving cycle - NGO identification, due diligence, MOU signing, fund release, procurement, distribution - takes 3 to 18 months.</p>
 
 <p class="mb-4 leading-relaxed">In-kind donation through a verified platform like CauseKind moves in a fundamentally different timeframe:</p>
 
@@ -2554,38 +2554,38 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Day 7: Impact Certificate generated</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">A child who needs a school bag before term starts next Monday can receive it this week — not next quarter.</p>
+<p class="mb-4 leading-relaxed">A child who needs a school bag before term starts next Monday can receive it this week - not next quarter.</p>
 
-<p class="mb-4 leading-relaxed">For time-sensitive needs — monsoon gear in June, exam stationery in January, warm clothing in November — speed is not a convenience. It is the difference between the donation mattering and arriving too late to matter.</p>
+<p class="mb-4 leading-relaxed">For time-sensitive needs - monsoon gear in June, exam stationery in January, warm clothing in November - speed is not a convenience. It is the difference between the donation mattering and arriving too late to matter.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 3 — Complete Transparency: You Know Exactly What Your Donation Provides</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 3 - Complete Transparency: You Know Exactly What Your Donation Provides</h2>
 
 <p class="mb-4 leading-relaxed">One of the most common frustrations among Indian donors is the inability to trace what their donation actually produced.</p>
 
-<p class="mb-4 leading-relaxed">A cash donation to an NGO is pooled with other donations and spent across programmes. Your specific contribution cannot be traced to a specific outcome. The impact report you receive describes programme activities — 'workshops conducted,' 'beneficiaries reached' — not the specific result of your specific rupees.</p>
+<p class="mb-4 leading-relaxed">A cash donation to an NGO is pooled with other donations and spent across programmes. Your specific contribution cannot be traced to a specific outcome. The impact report you receive describes programme activities - 'workshops conducted,' 'beneficiaries reached' - not the specific result of your specific rupees.</p>
 
 <p class="mb-4 leading-relaxed">In-kind donation is inherently transparent.</p>
 
-<p class="mb-4 leading-relaxed">You give a specific item. That specific item reaches a specific verified person. You receive a specific Impact Certificate confirming delivery. You know — exactly, verifiably — what your donation produced.</p>
+<p class="mb-4 leading-relaxed">You give a specific item. That specific item reaches a specific verified person. You receive a specific Impact Certificate confirming delivery. You know - exactly, verifiably - what your donation produced.</p>
 
 <p class="mb-4 leading-relaxed">This transparency is not just emotionally satisfying. It is increasingly important for corporate donors producing BRSR and ESG reports, and for individual donors who want confidence that their giving is genuinely impactful.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 4 — Hyperlocal Impact: Your Donation Stays in Your Community</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 4 - Hyperlocal Impact: Your Donation Stays in Your Community</h2>
 
 <p class="mb-4 leading-relaxed">CauseKind matches every in-kind donation within a 10 km radius of the donor.</p>
 
-<p class="mb-4 leading-relaxed">This means your donation does not go to a national pool, a distant district, or a centralised warehouse. It goes to someone in your neighbourhood — the community you live in, work in, and move through every day.</p>
+<p class="mb-4 leading-relaxed">This means your donation does not go to a national pool, a distant district, or a centralised warehouse. It goes to someone in your neighbourhood - the community you live in, work in, and move through every day.</p>
 
 <p class="mb-4 leading-relaxed">The benefits of hyperlocal giving compound:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>No transport cost or carbon footprint from long-distance logistics</li>
-  <li>The recipient is genuinely your neighbour — creating a direct community bond</li>
-  <li>Local impact is visible — you may see the child wearing the uniform you donated</li>
+  <li>The recipient is genuinely your neighbour - creating a direct community bond</li>
+  <li>Local impact is visible - you may see the child wearing the uniform you donated</li>
   <li>Your generosity builds the social fabric of the specific place you inhabit</li>
 </ul>
 
@@ -2593,7 +2593,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 5 — Verified Impact Documentation for Corporates and Individuals</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 5 - Verified Impact Documentation for Corporates and Individuals</h2>
 
 <p class="mb-4 leading-relaxed">For corporate donors, in-kind giving through CauseKind produces ESG documentation that cash-based giving cannot match:</p>
 
@@ -2616,7 +2616,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 6 — Dignity for the Recipient</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 6 - Dignity for the Recipient</h2>
 
 <p class="mb-4 leading-relaxed">There is a form of giving that communicates: 'I thought about what you need, and I chose this for you.'</p>
 
@@ -2624,33 +2624,33 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">In-kind donation, done well, is the first kind.</p>
 
-<p class="mb-4 leading-relaxed">When a student receives a specific book they requested — the Class 9 science textbook they needed for the term that started three weeks ago — they receive something chosen for them. The specificity communicates consideration. The consideration communicates dignity.</p>
+<p class="mb-4 leading-relaxed">When a student receives a specific book they requested - the Class 9 science textbook they needed for the term that started three weeks ago - they receive something chosen for them. The specificity communicates consideration. The consideration communicates dignity.</p>
 
-<p class="mb-4 leading-relaxed">When a family receives the exact size of tarpaulin they requested for a leaking roof section — not a general 'donation of goods' but the specific thing they asked for — they experience a form of being seen and responded to that cash donation, routed through an intermediary, cannot replicate.</p>
+<p class="mb-4 leading-relaxed">When a family receives the exact size of tarpaulin they requested for a leaking roof section - not a general 'donation of goods' but the specific thing they asked for - they experience a form of being seen and responded to that cash donation, routed through an intermediary, cannot replicate.</p>
 
 <p class="mb-4 leading-relaxed">In-kind giving, matched to a specific verified request, is one of the most dignity-preserving forms of charitable giving available.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 7 — Turning Existing Assets Into Community Good</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Benefit 7 - Turning Existing Assets Into Community Good</h2>
 
-<p class="mb-4 leading-relaxed">Every household in urban India has goods that are no longer used — clothes that no longer fit, books that will not be re-read, devices that have been replaced, toys that have been outgrown.</p>
+<p class="mb-4 leading-relaxed">Every household in urban India has goods that are no longer used - clothes that no longer fit, books that will not be re-read, devices that have been replaced, toys that have been outgrown.</p>
 
-<p class="mb-4 leading-relaxed">These goods are not junk. They are assets — goods with remaining useful life that happen to be misallocated. They are in homes where they are no longer needed, rather than in the communities where they are urgently needed.</p>
+<p class="mb-4 leading-relaxed">These goods are not junk. They are assets - goods with remaining useful life that happen to be misallocated. They are in homes where they are no longer needed, rather than in the communities where they are urgently needed.</p>
 
 <p class="mb-4 leading-relaxed">In-kind giving converts existing assets into community good without requiring any additional financial expenditure.</p>
 
 <p class="mb-4 leading-relaxed">You do not need to spend money to donate a textbook. You need to find it on your shelf and match it to a student nearby.</p>
 
-<p class="mb-4 leading-relaxed">This means in-kind giving is accessible to people across a much wider income range than cash giving. You do not need to be wealthy to give meaningfully in-kind. You need to have something that someone nearby needs — which, in urban India, is almost everyone.</p>
+<p class="mb-4 leading-relaxed">This means in-kind giving is accessible to people across a much wider income range than cash giving. You do not need to be wealthy to give meaningfully in-kind. You need to have something that someone nearby needs - which, in urban India, is almost everyone.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<p class="mb-4 leading-relaxed">Cash giving and in-kind giving are not competitors. They are complements — each more suited to certain types of need.</p>
+<p class="mb-4 leading-relaxed">Cash giving and in-kind giving are not competitors. They are complements - each more suited to certain types of need.</p>
 
 <p class="mb-4 leading-relaxed">For the large, complex, infrastructure-level problems that India faces, cash is essential.</p>
 
-<p class="mb-4 leading-relaxed">For the specific, immediate, community-level needs that determine whether a child attends school, whether a family stays dry during the monsoon, whether a student has what she needs to sit her board exams — in-kind giving is faster, more transparent, more dignified, and more efficient than any alternative.</p>
+<p class="mb-4 leading-relaxed">For the specific, immediate, community-level needs that determine whether a child attends school, whether a family stays dry during the monsoon, whether a student has what she needs to sit her board exams - in-kind giving is faster, more transparent, more dignified, and more efficient than any alternative.</p>
 
 <p class="mb-4 leading-relaxed">Your items are assets. Your community has needs. CauseKind is the connection between the two.</p>
 
@@ -2668,9 +2668,9 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "how-to-organise-item-donation-drive-india",
     title: "How to Organise an Item Donation Drive in India: A Step-by-Step Guide",
-    description: "A complete step-by-step guide to organising a successful item donation drive in India — for offices, housing societies, schools, or communities. From planning to delivery, with templates and checklists.",
+    description: "A complete step-by-step guide to organising a successful item donation drive in India - for offices, housing societies, schools, or communities. From planning to delivery, with templates and checklists.",
     category: "In-Kind Giving",
-    image: "/community_donation.webp",
+    image: "/b1.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "February 2026",
@@ -2683,17 +2683,17 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Items collected without knowing what is needed. No verified recipient identified before the drive. Collection boxes that sit unattended. Goods that pile up in a corner because nobody organised the delivery. Well-meaning efforts that produce boxes of unusable items that an NGO must now sort through and dispose of.</p>
 
-<p class="mb-4 leading-relaxed">The difference between a donation drive that actually helps and one that creates extra work for everyone is almost entirely in the planning — specifically, in doing a handful of things in the right order before the collection box goes out.</p>
+<p class="mb-4 leading-relaxed">The difference between a donation drive that actually helps and one that creates extra work for everyone is almost entirely in the planning - specifically, in doing a handful of things in the right order before the collection box goes out.</p>
 
-<p class="mb-4 leading-relaxed">This guide covers exactly that. Whether you are organising a drive for your office, your housing society, your school, or your neighbourhood — here is the complete process.</p>
+<p class="mb-4 leading-relaxed">This guide covers exactly that. Whether you are organising a drive for your office, your housing society, your school, or your neighbourhood - here is the complete process.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 1 — Identify the Recipient Before You Collect Anything</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 1 - Identify the Recipient Before You Collect Anything</h2>
 
 <p class="mb-4 leading-relaxed">This is the most important and most consistently skipped step in Indian donation drive planning.</p>
 
-<p class="mb-4 leading-relaxed">Most drives start with collection and end by searching for a recipient. This approach produces a mismatch between what is collected and what is needed — and places the burden of sorting and disposing of unusable items on the recipient organisation.</p>
+<p class="mb-4 leading-relaxed">Most drives start with collection and end by searching for a recipient. This approach produces a mismatch between what is collected and what is needed - and places the burden of sorting and disposing of unusable items on the recipient organisation.</p>
 
 <p class="mb-4 leading-relaxed">The correct sequence is:</p>
 
@@ -2717,7 +2717,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 2 — Define Your Drive's Focus Clearly</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 2 - Define Your Drive's Focus Clearly</h2>
 
 <p class="mb-4 leading-relaxed">Focused drives outperform general drives every time.</p>
 
@@ -2739,24 +2739,24 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 3 — Create a Specific Shopping and Donation List</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 3 - Create a Specific Shopping and Donation List</h2>
 
 <p class="mb-4 leading-relaxed">Give participants exactly what they need to contribute effectively. A vague ask produces vague contributions. A specific list produces specific, useful items.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Sample Donation List Template:</h3>
 
-<p class="mb-4 leading-relaxed">'What to Bring — [Drive Name]</p>
+<p class="mb-4 leading-relaxed">'What to Bring - [Drive Name]</p>
 
 <ul class="list-none pl-0 mb-4 leading-relaxed space-y-1">
   <li>✅ What we need (new or good condition):</li>
 </ul>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>School bags — sizes for children aged 8 to 14</li>
-  <li>Textbooks — CBSE, Classes 6 to 10 (any subject)</li>
-  <li>Notebooks — new or with significant unused pages</li>
-  <li>Geometry boxes — new preferred</li>
-  <li>Ballpoint pens — packs of 5 or 10</li>
+  <li>School bags - sizes for children aged 8 to 14</li>
+  <li>Textbooks - CBSE, Classes 6 to 10 (any subject)</li>
+  <li>Notebooks - new or with significant unused pages</li>
+  <li>Geometry boxes - new preferred</li>
+  <li>Ballpoint pens - packs of 5 or 10</li>
 </ul>
 
 <ul class="list-none pl-0 mb-4 leading-relaxed space-y-1">
@@ -2775,7 +2775,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 4 — Set Up Your Collection Point</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 4 - Set Up Your Collection Point</h2>
 
 <p class="mb-4 leading-relaxed">The collection point needs to be visible, accessible, and clearly labelled.</p>
 
@@ -2807,40 +2807,40 @@ The complete donation record - from verified request through confirmed delivery 
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Clear labelling: drive name, what is accepted, what is not</li>
-  <li>A clean, dry, covered storage space — goods left in open spaces in corridors get damaged</li>
-  <li>An end date prominently displayed — open-ended drives fade; drives with deadlines get last-minute contributions</li>
+  <li>A clean, dry, covered storage space - goods left in open spaces in corridors get damaged</li>
+  <li>An end date prominently displayed - open-ended drives fade; drives with deadlines get last-minute contributions</li>
   <li>A volunteer or staff member responsible for monitoring it</li>
 </ul>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 5 — Communicate the Drive Effectively</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 5 - Communicate the Drive Effectively</h2>
 
 <p class="mb-4 leading-relaxed">Three communication channels, used consistently across the two-week collection window:</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Channel 1 — The Announcement (Day 0)</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Channel 1 - The Announcement (Day 0)</h3>
 
 <p class="mb-4 leading-relaxed">Email for offices. WhatsApp message for societies. Physical notice plus verbal announcement for schools. The announcement must include: what the drive is for, what to donate, where the collection point is, and the end date.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Channel 2 — The Reminder (Day 7)</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Channel 2 - The Reminder (Day 7)</h3>
 
-<p class="mb-4 leading-relaxed">A mid-drive update: how many items have been collected so far, what is still needed, and a reminder of the end date. Progress updates increase participation — people are more motivated when they can see the collection building.</p>
+<p class="mb-4 leading-relaxed">A mid-drive update: how many items have been collected so far, what is still needed, and a reminder of the end date. Progress updates increase participation - people are more motivated when they can see the collection building.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Channel 3 — The Final Push (Day 12-13)</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Channel 3 - The Final Push (Day 12-13)</h3>
 
-<p class="mb-4 leading-relaxed">'Two days left — we still need [X items]. Here is the list.' A final, specific, urgent reminder consistently produces a significant percentage of total donations in the last 48 hours.</p>
+<p class="mb-4 leading-relaxed">'Two days left - we still need [X items]. Here is the list.' A final, specific, urgent reminder consistently produces a significant percentage of total donations in the last 48 hours.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Language that works:</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Be specific about the recipient: 'These items go to 40 students at [School Name] before term starts on [Date]'</li>
-  <li>Use numbers: 'We have collected 38 items so far — our target is 100'</li>
+  <li>Use numbers: 'We have collected 38 items so far - our target is 100'</li>
   <li>Make the action simple: 'Just bring one item to the box near the lift before Friday'</li>
 </ul>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 6 — Sort and Quality Check Before Delivery</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 6 - Sort and Quality Check Before Delivery</h2>
 
 <p class="mb-4 leading-relaxed">Before any collected items go to the recipient, a volunteer team should sort through them.</p>
 
@@ -2849,25 +2849,25 @@ The complete donation record - from verified request through confirmed delivery 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Remove any items that do not meet condition standards (torn, non-functional, wrong category)</li>
   <li>Count and record every item category and quantity</li>
-  <li>Pack items neatly — clothes folded, stationery in sealed bags, books stacked by category</li>
+  <li>Pack items neatly - clothes folded, stationery in sealed bags, books stacked by category</li>
   <li>Photograph the sorted, packed collection before delivery (for documentation)</li>
 </ul>
 
 <p class="mb-4 leading-relaxed">Do not skip this step.</p>
 
-<p class="mb-4 leading-relaxed">A recipient organisation that receives 80 bags of unsorted goods — including damaged items, wrong sizes, and random items not on the list — spends significant volunteer time managing the donation rather than distributing it.</p>
+<p class="mb-4 leading-relaxed">A recipient organisation that receives 80 bags of unsorted goods - including damaged items, wrong sizes, and random items not on the list - spends significant volunteer time managing the donation rather than distributing it.</p>
 
 <p class="mb-4 leading-relaxed">A recipient that receives 80 bags of sorted, photographed, categorised items can distribute immediately.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 7 — Deliver Through CauseKind and Receive Your Impact Certificate</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 7 - Deliver Through CauseKind and Receive Your Impact Certificate</h2>
 
 <p class="mb-4 leading-relaxed">If you organised your drive through CauseKind's platform:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Coordinate the delivery date and time with your recipient through the platform</li>
-  <li>Confirm the handoff through the CauseKind app — both parties confirm receipt</li>
+  <li>Confirm the handoff through the CauseKind app - both parties confirm receipt</li>
   <li>Your organisation receives a consolidated Impact Certificate covering the entire drive</li>
 </ul>
 
@@ -2884,7 +2884,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 8 — Close the Loop With Your Community</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 8 - Close the Loop With Your Community</h2>
 
 <p class="mb-4 leading-relaxed">This is the step that turns a one-off drive into an annual tradition.</p>
 
@@ -2899,7 +2899,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">In offices, a brief all-hands email or Slack message. In societies, a WhatsApp update. In schools, an assembly announcement.</p>
 
-<p class="mb-4 leading-relaxed">The update serves two purposes: it gives participants the feedback loop that makes giving emotionally satisfying, and it sets the expectation that this drive will happen again — next quarter, next season, next year.</p>
+<p class="mb-4 leading-relaxed">The update serves two purposes: it gives participants the feedback loop that makes giving emotionally satisfying, and it sets the expectation that this drive will happen again - next quarter, next season, next year.</p>
 
 <p class="mb-4 leading-relaxed">Drives that close the loop have significantly higher participation in their second and third iterations.</p>
 
@@ -2909,7 +2909,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">The difference between a drive that helps and one that creates extra work is not enthusiasm. It is planning.</p>
 
-<p class="mb-4 leading-relaxed">CauseKind handles the recipient matching, the verification, and the Impact Certificate — so your planning can focus entirely on your community.</p>
+<p class="mb-4 leading-relaxed">CauseKind handles the recipient matching, the verification, and the Impact Certificate - so your planning can focus entirely on your community.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -2926,16 +2926,16 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "monetary-versus-in-kind-donation-india",
     title: "Monetary vs In-Kind Donation: Which Should You Choose and When?",
-    description: "Cash or goods — which donation type is more impactful? A clear, honest comparison of monetary versus in-kind donations in India — when each works best, and how to choose the right approach for your cause.",
+    description: "Cash or goods - which donation type is more impactful? A clear, honest comparison of monetary versus in-kind donations in India - when each works best, and how to choose the right approach for your cause.",
     category: "In-Kind Giving",
-    image: "/Online_donation.webp",
+    image: "/monetary_vs_in_kind.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "February 2026",
     readTime: "6 min read",
     faq: [
       { question: "Is in-kind donation better than cash donation?", answer: "Neither is universally better. In-kind donation is better for specific, immediate, local needs where you know exactly what is required. Cash donation is better for complex, large-scale, or geographically distant needs where an organisation needs flexibility to determine priorities." },
-      { question: "Do in-kind donations qualify for tax deduction in India?", answer: "Direct in-kind donations of goods generally do not qualify for 80G tax deduction. Cash donations to eligible organisations do. Purchasing goods specifically to donate as part of a corporate CSR programme may qualify as eligible CSR expenditure — consult your CA for specific guidance." },
+      { question: "Do in-kind donations qualify for tax deduction in India?", answer: "Direct in-kind donations of goods generally do not qualify for 80G tax deduction. Cash donations to eligible organisations do. Purchasing goods specifically to donate as part of a corporate CSR programme may qualify as eligible CSR expenditure - consult your CA for specific guidance." },
     ],
     content: `
 
@@ -2957,9 +2957,9 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Choose cash donation when:</h3>
 
-<p class="mb-4 leading-relaxed"><strong>The need is complex and multi-dimensional.</strong> Disaster relief — floods, earthquakes, fires — requires a constantly shifting mix of goods and services. The organisation on the ground knows what is needed hour by hour. Your cash allows them to respond dynamically.</p>
+<p class="mb-4 leading-relaxed"><strong>The need is complex and multi-dimensional.</strong> Disaster relief - floods, earthquakes, fires - requires a constantly shifting mix of goods and services. The organisation on the ground knows what is needed hour by hour. Your cash allows them to respond dynamically.</p>
 
-<p class="mb-4 leading-relaxed"><strong>The need requires infrastructure investment.</strong> Building a classroom, installing a water filtration system, funding a two-year vocational training programme — these goals require pooled, sustained funding that individual in-kind items cannot address.</p>
+<p class="mb-4 leading-relaxed"><strong>The need requires infrastructure investment.</strong> Building a classroom, installing a water filtration system, funding a two-year vocational training programme - these goals require pooled, sustained funding that individual in-kind items cannot address.</p>
 
 <p class="mb-4 leading-relaxed"><strong>The recipient organisation is sophisticated and accountable.</strong> When you trust the organisation completely, have verified their financial management, and know they will convert your rupees efficiently into community impact, cash is a perfectly appropriate form of giving.</p>
 
@@ -2971,7 +2971,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">The Case for In-Kind: When Giving Goods Is the Better Choice</h2>
 
-<p class="mb-4 leading-relaxed">In-kind giving is the most direct form of charitable action. The item you donate is the item received — with no conversion loss, no administrative overhead, and no uncertainty about what your contribution produced.</p>
+<p class="mb-4 leading-relaxed">In-kind giving is the most direct form of charitable action. The item you donate is the item received - with no conversion loss, no administrative overhead, and no uncertainty about what your contribution produced.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Choose in-kind donation when:</h3>
 
@@ -2979,13 +2979,13 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed"><strong>Speed matters.</strong> A child who needs a school bag before term starts on Monday cannot wait for a cash donation to be processed, transferred, and spent. An in-kind donation arranged through CauseKind can be in their hands by Friday.</p>
 
-<p class="mb-4 leading-relaxed"><strong>You want zero overhead.</strong> In-kind giving through a verified platform like CauseKind means 100% of your donation reaches the recipient — no administrative cost, no conversion loss.</p>
+<p class="mb-4 leading-relaxed"><strong>You want zero overhead.</strong> In-kind giving through a verified platform like CauseKind means 100% of your donation reaches the recipient - no administrative cost, no conversion loss.</p>
 
 <p class="mb-4 leading-relaxed"><strong>You have a specific item to offer.</strong> If you have a working laptop, a set of textbooks, or a bag of good-condition children's clothing, donating the item itself is more efficient than selling it and donating the cash proceeds.</p>
 
-<p class="mb-4 leading-relaxed"><strong>You want verified, documented impact.</strong> In-kind giving through CauseKind produces item-level documentation and independent delivery confirmation — more specific and verifiable than most cash-based impact reports.</p>
+<p class="mb-4 leading-relaxed"><strong>You want verified, documented impact.</strong> In-kind giving through CauseKind produces item-level documentation and independent delivery confirmation - more specific and verifiable than most cash-based impact reports.</p>
 
-<p class="mb-4 leading-relaxed"><strong>The recipient has posted a specific request.</strong> When someone has specifically asked for a particular item — on CauseKind's verified platform — giving that item is the most direct, most efficient, most dignified response.</p>
+<p class="mb-4 leading-relaxed"><strong>The recipient has posted a specific request.</strong> When someone has specifically asked for a particular item - on CauseKind's verified platform - giving that item is the most direct, most efficient, most dignified response.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3004,7 +3004,7 @@ The complete donation record - from verified request through confirmed delivery 
 <tr>
   <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">Administrative overhead</td>
   <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">15-40% absorbed by intermediary</td>
-  <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">Zero — item goes directly</td>
+  <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">Zero - item goes directly</td>
 </tr>
 <tr>
   <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">Speed to impact</td>
@@ -3018,7 +3018,7 @@ The complete donation record - from verified request through confirmed delivery 
 </tr>
 <tr>
   <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">Flexibility</td>
-  <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">High — can fund any need</td>
+  <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">High - can fund any need</td>
   <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">Matched to specific need</td>
 </tr>
 <tr>
@@ -3039,7 +3039,7 @@ The complete donation record - from verified request through confirmed delivery 
 <tr>
   <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">Dignity for recipient</td>
   <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">Indirect</td>
-  <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">High — specific item matched to request</td>
+  <td class="border border-stone-300 dark:border-stone-700 px-3 py-2">High - specific item matched to request</td>
 </tr>
 </tbody>
 </table>
@@ -3079,13 +3079,13 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Do in-kind donations qualify for tax deduction in India?</h3>
 
-<p class="mb-4 leading-relaxed">Direct in-kind donations of goods generally do not qualify for 80G tax deduction. Cash donations to eligible organisations do. Purchasing goods specifically to donate as part of a corporate CSR programme may qualify as eligible CSR expenditure — consult your CA for specific guidance.</p>
+<p class="mb-4 leading-relaxed">Direct in-kind donations of goods generally do not qualify for 80G tax deduction. Cash donations to eligible organisations do. Purchasing goods specifically to donate as part of a corporate CSR programme may qualify as eligible CSR expenditure - consult your CA for specific guidance.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <p class="mb-4 leading-relaxed">The best donation is the one that reaches the right person in the right form at the right time.</p>
 
-<p class="mb-4 leading-relaxed">For specific, immediate, community-level needs — the school bag, the textbook, the sanitary pads, the laptop — in-kind giving through a verified local platform is almost always the fastest, most transparent, and most dignified approach.</p>
+<p class="mb-4 leading-relaxed">For specific, immediate, community-level needs - the school bag, the textbook, the sanitary pads, the laptop - in-kind giving through a verified local platform is almost always the fastest, most transparent, and most dignified approach.</p>
 
 <p class="mb-4 leading-relaxed">For complex, large-scale, programme-level goals, cash remains essential.</p>
 
@@ -3104,10 +3104,10 @@ The complete donation record - from verified request through confirmed delivery 
   },
   {
     slug: "how-local-donation-matching-works-india",
-    title: "How Local Donation Matching Works in India — And Why 10 km Changes Everything",
-    description: "How does local donation matching work? CauseKind matches donors with verified recipients within 10 km — no shipping, no courier, no cost. Learn how hyperlocal in-kind giving works and why proximity transforms community giving in India.",
+    title: "How Local Donation Matching Works in India - And Why 10 km Changes Everything",
+    description: "How does local donation matching work? CauseKind matches donors with verified recipients within 10 km - no shipping, no courier, no cost. Learn how hyperlocal in-kind giving works and why proximity transforms community giving in India.",
     category: "In-Kind Giving",
-    image: "/local_handover.webp",
+    image: "/b3.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "March 2026",
@@ -3126,13 +3126,13 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">What Is Local Donation Matching?</h2>
 
-<p class="mb-4 leading-relaxed">Local donation matching is the process of connecting donors with verified recipients within a defined geographic radius — so that in-kind donations can be transferred directly, without shipping, without couriers, and without intermediary logistics.</p>
+<p class="mb-4 leading-relaxed">Local donation matching is the process of connecting donors with verified recipients within a defined geographic radius - so that in-kind donations can be transferred directly, without shipping, without couriers, and without intermediary logistics.</p>
 
 <p class="mb-4 leading-relaxed">On CauseKind, this radius is 10 km.</p>
 
 <p class="mb-4 leading-relaxed">Every in-kind request posted on CauseKind is location-tagged. Every donor account is location-tagged. When you browse requests on CauseKind, you see only verified needs from within 10 km of your registered location.</p>
 
-<p class="mb-4 leading-relaxed">When a match is made — donor offers an item that matches a recipient's request — both parties are within 10 km of each other. The handoff is arranged locally, directly, with no third-party logistics required.</p>
+<p class="mb-4 leading-relaxed">When a match is made - donor offers an item that matches a recipient's request - both parties are within 10 km of each other. The handoff is arranged locally, directly, with no third-party logistics required.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3144,7 +3144,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed"><strong>It ensures the donation is culturally relevant.</strong> A donor in a Marathi-speaking neighbourhood in Pune giving to a Marathi-speaking family in the same area gives items that are likely to be the right size, the right type, the right cultural context. Local knowledge is embedded in local giving.</p>
 
-<p class="mb-4 leading-relaxed"><strong>It builds community bonds.</strong> When you donate within 10 km, you are giving to your neighbour — perhaps literally. The relationship between your locality's surplus and your locality's need becomes visible and personal.</p>
+<p class="mb-4 leading-relaxed"><strong>It builds community bonds.</strong> When you donate within 10 km, you are giving to your neighbour - perhaps literally. The relationship between your locality's surplus and your locality's need becomes visible and personal.</p>
 
 <p class="mb-4 leading-relaxed"><strong>It is environmentally efficient.</strong> Every kilometre of delivery distance adds carbon cost. Hyperlocal giving minimises the environmental footprint of charitable logistics.</p>
 
@@ -3157,76 +3157,76 @@ The complete donation record - from verified request through confirmed delivery 
 <p class="mb-4 leading-relaxed">When a recipient posts a verified in-kind request on CauseKind, the platform does the following:</p>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Geocodes the request</strong> — the recipient's location is mapped to a coordinate point (with privacy-preserving rounding to neighbourhood level, not street address)</li>
+  <li><strong>Geocodes the request</strong> - the recipient's location is mapped to a coordinate point (with privacy-preserving rounding to neighbourhood level, not street address)</li>
 </ol>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Makes the request discoverable to donors within 10 km</strong> — donors browsing the platform see requests within their radius, sorted by proximity and recency</li>
+  <li><strong>Makes the request discoverable to donors within 10 km</strong> - donors browsing the platform see requests within their radius, sorted by proximity and recency</li>
 </ol>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Sends notifications to registered donors in the area</strong> — donors who have listed available items or expressed interest in a category receive alerts when a matching request appears nearby</li>
+  <li><strong>Sends notifications to registered donors in the area</strong> - donors who have listed available items or expressed interest in a category receive alerts when a matching request appears nearby</li>
 </ol>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Facilitates secure communication</strong> — once a donor accepts a match, both parties can communicate through the platform to arrange the handoff without sharing personal contact details until both parties consent</li>
+  <li><strong>Facilitates secure communication</strong> - once a donor accepts a match, both parties can communicate through the platform to arrange the handoff without sharing personal contact details until both parties consent</li>
 </ol>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Tracks the handoff and generates the Impact Certificate</strong> — once both parties confirm delivery, the matching cycle is complete and documented</li>
+  <li><strong>Tracks the handoff and generates the Impact Certificate</strong> - once both parties confirm delivery, the matching cycle is complete and documented</li>
 </ol>
 
-<p class="mb-4 leading-relaxed">The entire process — from request to delivery — typically takes 3 to 7 days for most items.</p>
+<p class="mb-4 leading-relaxed">The entire process - from request to delivery - typically takes 3 to 7 days for most items.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Privacy in Local Matching: How Recipient Addresses Are Protected</h2>
 
-<p class="mb-4 leading-relaxed">A common concern about local matching is privacy — specifically, whether posting a request reveals a recipient's home address to strangers.</p>
+<p class="mb-4 leading-relaxed">A common concern about local matching is privacy - specifically, whether posting a request reveals a recipient's home address to strangers.</p>
 
 <p class="mb-4 leading-relaxed">CauseKind's matching system is designed with recipient privacy as a core requirement:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Recipient location is displayed at neighbourhood or area level</strong> — not street address. A request appears as 'Andheri West, Mumbai' not '14 Lokhandwala Street, Andheri West.'</li>
+  <li><strong>Recipient location is displayed at neighbourhood or area level</strong> - not street address. A request appears as 'Andheri West, Mumbai' not '14 Lokhandwala Street, Andheri West.'</li>
 </ul>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Address is shared only after mutual consent</strong> — when both donor and recipient agree to a handoff, the specific meeting location is shared through the platform under mutual agreement. The recipient controls where the handoff happens — it can be at a neutral public location rather than their home.</li>
+  <li><strong>Address is shared only after mutual consent</strong> - when both donor and recipient agree to a handoff, the specific meeting location is shared through the platform under mutual agreement. The recipient controls where the handoff happens - it can be at a neutral public location rather than their home.</li>
 </ul>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Recipient identity is verified but anonymised to donors</strong> — the donor knows the request is verified (by CauseKind's admin team) but does not see the recipient's name or ID until the recipient chooses to share it.</li>
+  <li><strong>Recipient identity is verified but anonymised to donors</strong> - the donor knows the request is verified (by CauseKind's admin team) but does not see the recipient's name or ID until the recipient chooses to share it.</li>
 </ul>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>All communication is on-platform until consent is given</strong> — phone numbers and personal details are never shared without explicit opt-in from both parties.</li>
+  <li><strong>All communication is on-platform until consent is given</strong> - phone numbers and personal details are never shared without explicit opt-in from both parties.</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">This privacy architecture protects recipients — many of whom are in vulnerable situations — while still enabling the specific, local matching that makes the system work.</p>
+<p class="mb-4 leading-relaxed">This privacy architecture protects recipients - many of whom are in vulnerable situations - while still enabling the specific, local matching that makes the system work.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">What Happens When There Is No Match in 10 km?</h2>
 
-<p class="mb-4 leading-relaxed">The 10 km radius is the default. In cases where no match exists within 10 km — for rare or highly specific items, or for donors in areas with fewer recipients — CauseKind's system offers two options:</p>
+<p class="mb-4 leading-relaxed">The 10 km radius is the default. In cases where no match exists within 10 km - for rare or highly specific items, or for donors in areas with fewer recipients - CauseKind's system offers two options:</p>
 
 <p class="mb-4 leading-relaxed"><strong>Extend the radius:</strong> Donors can opt to extend their matching radius to 25 km or 50 km. This requires the donor to arrange transport (typically a courier or auto delivery), but the platform facilitates the connection and the Impact Certificate system remains fully active.</p>
 
 <p class="mb-4 leading-relaxed"><strong>Hold the listing:</strong> If the donor lists an item and no immediate request exists nearby, the listing remains active and recipients who post matching requests within the radius are notified. Most items find a match within 7 to 21 days.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Redirect to a partner NGO:</strong> For some categories — particularly large quantities of items — CauseKind can connect the donor with an NGO partner in their city that can receive and distribute the goods, even if no individual recipient request exists.</p>
+<p class="mb-4 leading-relaxed"><strong>Redirect to a partner NGO:</strong> For some categories - particularly large quantities of items - CauseKind can connect the donor with an NGO partner in their city that can receive and distribute the goods, even if no individual recipient request exists.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">The Community Effect: What Happens When Local Matching Scales</h2>
 
-<p class="mb-4 leading-relaxed">Individual local matches are meaningful. But their cumulative effect — as a platform builds density of donors and recipients in a neighbourhood — is something qualitatively different.</p>
+<p class="mb-4 leading-relaxed">Individual local matches are meaningful. But their cumulative effect - as a platform builds density of donors and recipients in a neighbourhood - is something qualitatively different.</p>
 
 <p class="mb-4 leading-relaxed">When 50 donors in a 10 km radius are actively giving, and 100 verified recipients in the same radius are posting specific requests, the matching network becomes a community infrastructure.</p>
 
-<p class="mb-4 leading-relaxed">Needs are met faster. Donors begin to understand the specific patterns of need in their area — what is needed before the school term, what is needed in monsoon season, what is consistently under-donated. Recipients develop confidence that specific needs can be met through the platform.</p>
+<p class="mb-4 leading-relaxed">Needs are met faster. Donors begin to understand the specific patterns of need in their area - what is needed before the school term, what is needed in monsoon season, what is consistently under-donated. Recipients develop confidence that specific needs can be met through the platform.</p>
 
-<p class="mb-4 leading-relaxed">This is not just logistics. It is the social infrastructure of a community that has found a way to look after itself — neighbour to neighbour, item by item, 10 km at a time.</p>
+<p class="mb-4 leading-relaxed">This is not just logistics. It is the social infrastructure of a community that has found a way to look after itself - neighbour to neighbour, item by item, 10 km at a time.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3250,16 +3250,16 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "complete-guide-donating-clothes-india",
     title: "The Complete Guide to Donating Clothes in India (2026)",
-    description: "Everything you need to know about donating clothes in India — what to donate, what not to donate, how to prepare clothes for donation, where to donate, and how CauseKind matches your clothes with verified recipients nearby.",
+    description: "Everything you need to know about donating clothes in India - what to donate, what not to donate, how to prepare clothes for donation, where to donate, and how CauseKind matches your clothes with verified recipients nearby.",
     category: "Clothing Donation",
-    image: "/Distribution.webp",
+    image: "/b2.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "April 2026",
     readTime: "10 min read",
     faq: [
       { question: "Where can I donate clothes in India?", answer: "You can donate clothes in India through CauseKind's verified In-Kind platform (matches your clothes to specific recipients within 10 km), registered NGOs, Goonj collection points, Robin Hood Army chapters, or housing society collection drives. Always verify the organisation before donating." },
-      { question: "What condition should donated clothes be in?", answer: "Donated clothes should be clean, washed, and in wearable condition — no major stains, no tears, all fastenings working. Never donate damp, unwashed, or damaged clothing. The test: would you be comfortable giving this to someone you respect?" },
+      { question: "What condition should donated clothes be in?", answer: "Donated clothes should be clean, washed, and in wearable condition - no major stains, no tears, all fastenings working. Never donate damp, unwashed, or damaged clothing. The test: would you be comfortable giving this to someone you respect?" },
       { question: "Can I donate used undergarments?", answer: "No. Undergarments should always be donated new and sealed. This is a non-negotiable hygiene and dignity requirement. Used undergarments, regardless of condition, should not be donated." },
       { question: "How do I donate school uniforms in India?", answer: "List your child's old school uniforms on CauseKind, specifying the size and approximate class worn. Verified families nearby who need uniforms for their children can match the request. Ensure uniforms are clean and in wearable condition before donating." },
       { question: "Do I get a tax benefit for donating clothes in India?", answer: "Direct in-kind clothing donations do not qualify for 80G tax deduction. However, purchasing clothes specifically to donate as part of a corporate CSR programme may qualify as eligible CSR expenditure. Consult your CA for specific guidance." },
@@ -3268,7 +3268,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">India's wardrobes are full.</p>
 
-<p class="mb-4 leading-relaxed">Not in a comfortable, well-organised way — in the specific way of a country that produces, purchases, and accumulates clothing at a pace that outstrips its ability to use, store, or thoughtfully discard it.</p>
+<p class="mb-4 leading-relaxed">Not in a comfortable, well-organised way - in the specific way of a country that produces, purchases, and accumulates clothing at a pace that outstrips its ability to use, store, or thoughtfully discard it.</p>
 
 <p class="mb-4 leading-relaxed">The average urban Indian household generates a significant surplus of clothing every year: children's clothes outgrown too fast to wear out, school uniforms replaced when the size changes or the design is updated, festival clothes worn once and then stored indefinitely, adult clothing that no longer fits, no longer suits, or no longer has a place in a wardrobe that has moved on.</p>
 
@@ -3276,7 +3276,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">The distance between your surplus and their need is almost always shorter than you think.</p>
 
-<p class="mb-4 leading-relaxed">This is the complete guide to donating clothes in India — what to donate, what condition it needs to be in, how to prepare it, where it goes, and how to make sure it reaches someone who genuinely needs it.</p>
+<p class="mb-4 leading-relaxed">This is the complete guide to donating clothes in India - what to donate, what condition it needs to be in, how to prepare it, where it goes, and how to make sure it reaches someone who genuinely needs it.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3287,10 +3287,10 @@ The complete donation record - from verified request through confirmed delivery 
 <h3 class="mt-6 mb-2 font-bold text-lg">Children's Clothing (Highest Demand)</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>School uniforms — white shirts, formal trousers, skirts in children's standard sizes</li>
-  <li>Everyday casual wear — t-shirts, kurtas, frocks, shorts, leggings</li>
-  <li>Monsoon clothing — raincoats, waterproof ponchos for school-going children</li>
-  <li>Winter clothing — sweaters, jackets, full-sleeve shirts for October through January</li>
+  <li>School uniforms - white shirts, formal trousers, skirts in children's standard sizes</li>
+  <li>Everyday casual wear - t-shirts, kurtas, frocks, shorts, leggings</li>
+  <li>Monsoon clothing - raincoats, waterproof ponchos for school-going children</li>
+  <li>Winter clothing - sweaters, jackets, full-sleeve shirts for October through January</li>
   <li>School shoes and rubber chappals</li>
 </ul>
 
@@ -3299,8 +3299,8 @@ The complete donation record - from verified request through confirmed delivery 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Everyday salwar kameez, sarees, and western wear in wearable condition</li>
   <li>Professional/semi-formal clothing for interviews and workplaces</li>
-  <li>Winter clothing — shawls, cardigans, sweaters</li>
-  <li>New undergarments (new and sealed only — never used)</li>
+  <li>Winter clothing - shawls, cardigans, sweaters</li>
+  <li>New undergarments (new and sealed only - never used)</li>
 </ul>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Men's Clothing (Shelter Homes and Rehabilitation Centres)</h3>
@@ -3314,8 +3314,8 @@ The complete donation record - from verified request through confirmed delivery 
 <h3 class="mt-6 mb-2 font-bold text-lg">New Items (Always Needed, Always Sealed)</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>Undergarments for all genders — new, sealed, never donated used</li>
-  <li>Socks — children's and adult sizes</li>
+  <li>Undergarments for all genders - new, sealed, never donated used</li>
+  <li>Socks - children's and adult sizes</li>
   <li>New items purchased specifically to donate are always welcome</li>
 </ul>
 
@@ -3331,13 +3331,13 @@ The complete donation record - from verified request through confirmed delivery 
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Clean and washed (not wrinkled from storage, not damp)</li>
-  <li>All fastenings working — buttons intact, zippers functional, hooks in place</li>
+  <li>All fastenings working - buttons intact, zippers functional, hooks in place</li>
   <li>No major stains that washing will not remove</li>
   <li>No tears, fraying, or damage that affects wearability</li>
-  <li>Appropriate for the recipient — not culturally or contextually unsuitable</li>
+  <li>Appropriate for the recipient - not culturally or contextually unsuitable</li>
 </ul>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Not accepted — do not donate:</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Not accepted - do not donate:</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Torn, frayed, or significantly damaged items</li>
@@ -3355,25 +3355,25 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Preparation takes 20 minutes and makes an enormous difference to the recipient experience.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 1 — Sort ruthlessly</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 1 - Sort ruthlessly</h3>
 
-<p class="mb-4 leading-relaxed">Go through items one by one. Hold each one up. Apply the condition standard above. If it passes, it goes in the donation pile. If it does not, it goes in the disposal pile — do not let it become someone else's problem.</p>
+<p class="mb-4 leading-relaxed">Go through items one by one. Hold each one up. Apply the condition standard above. If it passes, it goes in the donation pile. If it does not, it goes in the disposal pile - do not let it become someone else's problem.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 2 — Wash everything</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 2 - Wash everything</h3>
 
 <p class="mb-4 leading-relaxed">All donated clothing should be freshly washed and completely dry before it is packed. This is non-negotiable. A recipient should be able to wear a donated item the same day without washing it first.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 3 — Fold or roll neatly</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 3 - Fold or roll neatly</h3>
 
 <p class="mb-4 leading-relaxed">Packed neatly = received respectfully. Clothes stuffed loosely into a bag communicate carelessness. Clothes folded and sorted by category communicate care.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 4 — Sort by category and size</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 4 - Sort by category and size</h3>
 
 <p class="mb-4 leading-relaxed">Group: children's clothes together, adult women's together, adult men's together. Within each group, sort by approximate size. This makes distribution significantly easier for the recipient or organisation.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Step 5 — Label the bags</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Step 5 - Label the bags</h3>
 
-<p class="mb-4 leading-relaxed">A simple label — 'Children's clothes, ages 6-10' or 'Women's salwar kameez, sizes M-L' — saves the recipient significant sorting time and makes the donation immediately more useful.</p>
+<p class="mb-4 leading-relaxed">A simple label - 'Children's clothes, ages 6-10' or 'Women's salwar kameez, sizes M-L' - saves the recipient significant sorting time and makes the donation immediately more useful.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3414,9 +3414,9 @@ The complete donation record - from verified request through confirmed delivery 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
   <li>You list your clothes (category, size range, condition, quantity) or match an existing request</li>
   <li>A verified recipient confirms they want the items</li>
-  <li>You arrange a local handoff — within 10 km, at a time that suits both</li>
+  <li>You arrange a local handoff - within 10 km, at a time that suits both</li>
   <li>The recipient confirms receipt through the platform</li>
-  <li>You receive your Impact Certificate — a verified record of exactly what was donated, who received it, and when</li>
+  <li>You receive your Impact Certificate - a verified record of exactly what was donated, who received it, and when</li>
 </ol>
 
 <p class="mb-4 leading-relaxed">You know where your clothes went. You know they arrived. And the person who needed them knows someone in their neighbourhood chose to give them specifically.</p>
@@ -3429,7 +3429,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">School Uniforms</h3>
 
-<p class="mb-4 leading-relaxed">School uniforms are needed before every new school term — primarily April-June and November-December. A uniform donated in June can keep a child in school for an entire academic year. When donating uniforms:</p>
+<p class="mb-4 leading-relaxed">School uniforms are needed before every new school term - primarily April-June and November-December. A uniform donated in June can keep a child in school for an entire academic year. When donating uniforms:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Specify the style (white shirt + grey trousers, or school-specific if known)</li>
@@ -3440,7 +3440,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Monsoon Clothing</h3>
 
-<p class="mb-4 leading-relaxed">Waterproof ponchos, raincoats, and rubber footwear are needed from May through September. These are almost never included in standard donation drives but are urgently needed by school-going children in low-income households. A children's raincoat costs ₹200 to ₹500 new — and donated in May, it keeps a child in school through four months of monsoon.</p>
+<p class="mb-4 leading-relaxed">Waterproof ponchos, raincoats, and rubber footwear are needed from May through September. These are almost never included in standard donation drives but are urgently needed by school-going children in low-income households. A children's raincoat costs ₹200 to ₹500 new - and donated in May, it keeps a child in school through four months of monsoon.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3452,7 +3452,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">What condition should donated clothes be in?</h3>
 
-<p class="mb-4 leading-relaxed">Donated clothes should be clean, washed, and in wearable condition — no major stains, no tears, all fastenings working. Never donate damp, unwashed, or damaged clothing. The test: would you be comfortable giving this to someone you respect?</p>
+<p class="mb-4 leading-relaxed">Donated clothes should be clean, washed, and in wearable condition - no major stains, no tears, all fastenings working. Never donate damp, unwashed, or damaged clothing. The test: would you be comfortable giving this to someone you respect?</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Can I donate used undergarments?</h3>
 
@@ -3468,9 +3468,9 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<p class="mb-4 leading-relaxed">Clothing donation is the most accessible form of in-kind giving in India — almost everyone has items to give, and the need is consistent and significant across the country.</p>
+<p class="mb-4 leading-relaxed">Clothing donation is the most accessible form of in-kind giving in India - almost everyone has items to give, and the need is consistent and significant across the country.</p>
 
-<p class="mb-4 leading-relaxed">The difference between a donation that helps and one that creates a burden is preparation — washing, sorting, labelling, and matching to a specific verified need.</p>
+<p class="mb-4 leading-relaxed">The difference between a donation that helps and one that creates a burden is preparation - washing, sorting, labelling, and matching to a specific verified need.</p>
 
 <p class="mb-4 leading-relaxed">CauseKind handles the matching and the verification. You handle the preparation.</p>
 
@@ -3490,21 +3490,21 @@ The complete donation record - from verified request through confirmed delivery 
   },
   {
     slug: "where-to-donate-clothes-near-me-india",
-    title: "Where to Donate Clothes Near You in India — Verified Options by City",
-    description: "Looking for where to donate clothes near you in India? Find verified clothing donation options in Mumbai, Delhi, Pune, Bangalore, Hyderabad, Chennai and more — or use CauseKind to match your clothes with someone nearby in minutes.",
+    title: "Where to Donate Clothes Near You in India - Verified Options by City",
+    description: "Looking for where to donate clothes near you in India? Find verified clothing donation options in Mumbai, Delhi, Pune, Bangalore, Hyderabad, Chennai and more - or use CauseKind to match your clothes with someone nearby in minutes.",
     category: "Clothing Donation",
-    image: "/community_donation.webp",
+    image: "/where_to_donate_clothes.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "April 2026",
     readTime: "6 min read",
     content: `
 
-<p class="mb-4 leading-relaxed">You have a bag of clothes ready to donate. The hardest part — sorting, washing, packing — is done.</p>
+<p class="mb-4 leading-relaxed">You have a bag of clothes ready to donate. The hardest part - sorting, washing, packing - is done.</p>
 
 <p class="mb-4 leading-relaxed">Now comes the question that stops most people: where, exactly, do I take this?</p>
 
-<p class="mb-4 leading-relaxed">This guide answers that question specifically — with verified options across India's major cities, and a platform that removes the question entirely by finding a recipient within 10 km of wherever you are.</p>
+<p class="mb-4 leading-relaxed">This guide answers that question specifically - with verified options across India's major cities, and a platform that removes the question entirely by finding a recipient within 10 km of wherever you are.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3516,10 +3516,10 @@ The complete donation record - from verified request through confirmed delivery 
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
   <li>Create a free account at causekind.com</li>
-  <li>List your clothes — category, size range, condition</li>
+  <li>List your clothes - category, size range, condition</li>
   <li>Browse existing verified clothing requests within 10 km of your location</li>
   <li>Match a request or wait for a request to match your listing</li>
-  <li>Arrange a direct local handoff — no courier, no shipping, no cost</li>
+  <li>Arrange a direct local handoff - no courier, no shipping, no cost</li>
   <li>Receive your Impact Certificate confirming delivery</li>
 </ol>
 
@@ -3527,10 +3527,10 @@ The complete donation record - from verified request through confirmed delivery 
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Every recipient is admin-verified before their request goes live</li>
-  <li>Your clothes go to a specific person with a specific need — not into a general pool</li>
+  <li>Your clothes go to a specific person with a specific need - not into a general pool</li>
   <li>Local matching means you can hand over directly, with no logistics complexity</li>
   <li>Available in every city and town where CauseKind has verified recipients</li>
-  <li>Zero platform fees — 100% of what you give reaches the recipient</li>
+  <li>Zero platform fees - 100% of what you give reaches the recipient</li>
 </ul>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
@@ -3624,8 +3624,8 @@ The complete donation record - from verified request through confirmed delivery 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
   <li><strong>Is the organisation registered?</strong> Check NITI Aayog Darpan (darpan.gov.in)</li>
   <li><strong>Do they have current 80G status?</strong> Ask for their certificate</li>
-  <li><strong>Do they currently need what you have?</strong> Call ahead — needs change. A shelter home that needed salwar kameezes last month may be fully stocked today</li>
-  <li><strong>What condition do they accept?</strong> Each organisation has standards — confirm before arriving with items</li>
+  <li><strong>Do they currently need what you have?</strong> Call ahead - needs change. A shelter home that needed salwar kameezes last month may be fully stocked today</li>
+  <li><strong>What condition do they accept?</strong> Each organisation has standards - confirm before arriving with items</li>
   <li><strong>Will you receive documentation?</strong> Any legitimate organisation can give you a donation receipt</li>
 </ol>
 
@@ -3637,7 +3637,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">If you live in an area without a convenient NGO drop-off point, or if you want to ensure your clothes go to a specific verified person rather than a general collection:</p>
 
-<p class="mb-4 leading-relaxed"><strong>Use CauseKind's listing feature.</strong> Post your clothes on the platform. Verified recipients in your area will see your listing and can request specific items. Most listings match within 7 to 14 days without you having to go anywhere — the recipient can arrange to come to you, or you can meet at a convenient local point.</p>
+<p class="mb-4 leading-relaxed"><strong>Use CauseKind's listing feature.</strong> Post your clothes on the platform. Verified recipients in your area will see your listing and can request specific items. Most listings match within 7 to 14 days without you having to go anywhere - the recipient can arrange to come to you, or you can meet at a convenient local point.</p>
 
 <p class="mb-4 leading-relaxed"><strong>Organise a society drive.</strong> If you have a significant quantity of clothes across multiple households, coordinate a building-level collection drive and contact CauseKind to match the collection with verified recipient organisations in your area.</p>
 
@@ -3662,17 +3662,17 @@ The complete donation record - from verified request through confirmed delivery 
   },
   {
     slug: "what-clothes-should-not-be-donated-india",
-    title: "What Clothes Should NOT Be Donated in India — A Brutally Honest Guide",
-    description: "Not everything in your wardrobe belongs in a donation bag. A direct, honest guide to what clothes should never be donated in India — and why sending the wrong items costs NGOs time, money, and storage space.",
+    title: "What Clothes Should NOT Be Donated in India - A Brutally Honest Guide",
+    description: "Not everything in your wardrobe belongs in a donation bag. A direct, honest guide to what clothes should never be donated in India - and why sending the wrong items costs NGOs time, money, and storage space.",
     category: "Clothing Donation",
-    image: "/Change_stories.webp",
+    image: "/b4.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "May 2026",
     readTime: "6 min read",
     faq: [
       { question: "Can I donate used underwear in India?", answer: "No. Used undergarments should never be donated. This is a hygiene and dignity requirement with no exceptions. Donate new, sealed undergarments instead." },
-      { question: "Can I donate torn clothes to an NGO in India?", answer: "Clothes with significant tears should not be donated as wearable clothing. Some organisations like Goonj accept fabric rags separately for conversion to other products — but torn clothing should not go into a general clothing donation bag." },
+      { question: "Can I donate torn clothes to an NGO in India?", answer: "Clothes with significant tears should not be donated as wearable clothing. Some organisations like Goonj accept fabric rags separately for conversion to other products - but torn clothing should not go into a general clothing donation bag." },
       { question: "Should I wash clothes before donating?", answer: "Yes, absolutely. All donated clothing should be freshly washed and completely dry before packing. A recipient should be able to wear it the same day without washing it first." },
     ],
     content: `
@@ -3681,11 +3681,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Not everything you want to donate should be donated.</p>
 
-<p class="mb-4 leading-relaxed">The impulse to give is good. But the impulse to give combined with the impulse to clear your wardrobe — without applying any standard to what goes into the donation bag — produces something that is not charity. It is clutter transfer.</p>
+<p class="mb-4 leading-relaxed">The impulse to give is good. But the impulse to give combined with the impulse to clear your wardrobe - without applying any standard to what goes into the donation bag - produces something that is not charity. It is clutter transfer.</p>
 
 <p class="mb-4 leading-relaxed">And clutter transfer creates a real, specific, documented problem for the organisations and families on the receiving end: the time spent sorting through unusable items, the cost of disposing of them, the storage space consumed, the volunteers diverted from actual distribution work.</p>
 
-<p class="mb-4 leading-relaxed">This guide names what should not be donated — directly, without softening the language — and explains why.</p>
+<p class="mb-4 leading-relaxed">This guide names what should not be donated - directly, without softening the language - and explains why.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3693,7 +3693,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">This is absolute. Non-negotiable. No exceptions.</p>
 
-<p class="mb-4 leading-relaxed">Used undergarments — underwear, bras, undershirts worn against the body — should never be donated, regardless of:</p>
+<p class="mb-4 leading-relaxed">Used undergarments - underwear, bras, undershirts worn against the body - should never be donated, regardless of:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>How clean they are</li>
@@ -3713,17 +3713,17 @@ The complete donation record - from verified request through confirmed delivery 
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>A collar that is visibly frayed or torn</li>
-  <li>A tear in the fabric (not a loose seam — an actual tear in the cloth)</li>
+  <li>A tear in the fabric (not a loose seam - an actual tear in the cloth)</li>
   <li>Stains that washing does not remove</li>
   <li>Broken zippers or missing buttons that cannot easily be replaced</li>
   <li>Significant discolouration or bleaching</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">— it is not in donatable condition. It is damaged clothing that you have decided is charitable enough to give away rather than dispose of.</p>
+<p class="mb-4 leading-relaxed">- it is not in donatable condition. It is damaged clothing that you have decided is charitable enough to give away rather than dispose of.</p>
 
 <p class="mb-4 leading-relaxed"><strong>The cost of donating damaged items:</strong> An NGO volunteer must spend time sorting your damaged item out of the collection. It must be stored until disposal can be arranged. Disposal of fabric waste in India is not free or simple. You have effectively given the NGO a disposal problem and called it a donation.</p>
 
-<p class="mb-4 leading-relaxed"><strong>What to do instead:</strong> Dispose of genuinely damaged clothing responsibly — many textile recycling initiatives (Goonj accepts fabric rags separately for conversion to other products) will take damaged cloth.</p>
+<p class="mb-4 leading-relaxed"><strong>What to do instead:</strong> Dispose of genuinely damaged clothing responsibly - many textile recycling initiatives (Goonj accepts fabric rags separately for conversion to other products) will take damaged cloth.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3731,7 +3731,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Clothing that has been stored unwashed, or that has become damp in storage, is not in donatable condition.</p>
 
-<p class="mb-4 leading-relaxed">Damp clothing develops mould within days. Clothing stored unwashed carries odour that affects surrounding items. An organisation that receives a bag of damp clothes does not receive a donation — it receives a contamination risk for the rest of its collection.</p>
+<p class="mb-4 leading-relaxed">Damp clothing develops mould within days. Clothing stored unwashed carries odour that affects surrounding items. An organisation that receives a bag of damp clothes does not receive a donation - it receives a contamination risk for the rest of its collection.</p>
 
 <p class="mb-4 leading-relaxed"><strong>Before donating:</strong> Wash everything. Dry it completely. Pack only when fully dry. If clothing has been in storage for more than a year, wash it again before packing.</p>
 
@@ -3741,7 +3741,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">This category requires judgment rather than an absolute rule.</p>
 
-<p class="mb-4 leading-relaxed">Heavily embroidered wedding lehengas, elaborate festival sherwani sets, extremely formal cocktail dresses — these items have limited practical utility for someone who is rebuilding their daily wardrobe. They cannot be worn to work, to school runs, or for everyday activities.</p>
+<p class="mb-4 leading-relaxed">Heavily embroidered wedding lehengas, elaborate festival sherwani sets, extremely formal cocktail dresses - these items have limited practical utility for someone who is rebuilding their daily wardrobe. They cannot be worn to work, to school runs, or for everyday activities.</p>
 
 <p class="mb-4 leading-relaxed">Before donating occasion wear, ask: <strong>Is there a specific community or organisation that would actually use this?</strong></p>
 
@@ -3775,7 +3775,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Context-irrelevant donations are not helpful. They create sorting work and take space that should be occupied by items the recipient can actually use.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Solution:</strong> Browse CauseKind's verified requests before packing. You will see exactly what specific recipients in your area need — by category, size, and type. Donate to match.</p>
+<p class="mb-4 leading-relaxed"><strong>Solution:</strong> Browse CauseKind's verified requests before packing. You will see exactly what specific recipients in your area need - by category, size, and type. Donate to match.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -3785,9 +3785,9 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">Ask: Would I give this to a colleague I respect, without embarrassment, as a gift?</p>
 
-<p class="mb-4 leading-relaxed">If yes — it goes in the donation bag.</p>
+<p class="mb-4 leading-relaxed">If yes - it goes in the donation bag.</p>
 
-<p class="mb-4 leading-relaxed">If no — it does not. It goes in the disposal pile.</p>
+<p class="mb-4 leading-relaxed">If no - it does not. It goes in the disposal pile.</p>
 
 <p class="mb-4 leading-relaxed">This test is not about perfection. It is about whether the item communicates care or communicates disposal. The recipient will know the difference. The donation should communicate the former.</p>
 
@@ -3801,7 +3801,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Can I donate torn clothes to an NGO in India?</h3>
 
-<p class="mb-4 leading-relaxed">Clothes with significant tears should not be donated as wearable clothing. Some organisations like Goonj accept fabric rags separately for conversion to other products — but torn clothing should not go into a general clothing donation bag.</p>
+<p class="mb-4 leading-relaxed">Clothes with significant tears should not be donated as wearable clothing. Some organisations like Goonj accept fabric rags separately for conversion to other products - but torn clothing should not go into a general clothing donation bag.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Should I wash clothes before donating?</h3>
 
@@ -3809,7 +3809,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<p class="mb-4 leading-relaxed">The goal of clothing donation is to give something good — not to dispose of something unusable.</p>
+<p class="mb-4 leading-relaxed">The goal of clothing donation is to give something good - not to dispose of something unusable.</p>
 
 <p class="mb-4 leading-relaxed">Applying a simple condition standard before packing your donation bag takes five minutes. It saves NGO volunteers hours of sorting time, protects the dignity of recipients, and ensures that your generosity actually produces what it is intended to produce: clean, wearable clothing in the hands of someone who needs it.</p>
 
@@ -3829,9 +3829,9 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "how-to-prepare-clothes-for-donation-india",
     title: "How to Prepare Clothes for Donation in India: The Complete Pre-Donation Checklist",
-    description: "Step-by-step guide to preparing clothes for donation in India — washing, sorting, labelling, packing, and what to include. Make sure every item you donate is genuinely useful and ready to wear.",
+    description: "Step-by-step guide to preparing clothes for donation in India - washing, sorting, labelling, packing, and what to include. Make sure every item you donate is genuinely useful and ready to wear.",
     category: "Clothing Donation",
-    image: "/Students.webp",
+    image: "/how_to_prepare_clothes.png",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "May 2026",
@@ -3840,18 +3840,18 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">The clothes are sorted. The donation bag is ready. But are the clothes actually ready to go?</p>
 
-<p class="mb-4 leading-relaxed">Most people skip the preparation step — and it shows at the receiving end. Clothes arrive damp, unsorted, unlabelled, mixed with items that do not meet condition standards. Volunteers spend hours sorting through what should have been sorted at source.</p>
+<p class="mb-4 leading-relaxed">Most people skip the preparation step - and it shows at the receiving end. Clothes arrive damp, unsorted, unlabelled, mixed with items that do not meet condition standards. Volunteers spend hours sorting through what should have been sorted at source.</p>
 
 <p class="mb-4 leading-relaxed">Preparing clothes for donation properly takes 30 to 45 minutes and makes an enormous difference to the people who receive your donation. Here is exactly how to do it.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 1 — Sort First, Pack Later</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 1 - Sort First, Pack Later</h2>
 
 <p class="mb-4 leading-relaxed">Before anything else, separate your clothes into two clear piles:</p>
 
-<p class="mb-4 leading-relaxed"><strong>Pile A — Donatable:</strong> Clean, wearable, intact, appropriate for the recipient&lt;br /&gt;
-<strong>Pile B — Not donatable:</strong> Damaged, stained, used undergarments, context-inappropriate</p>
+<p class="mb-4 leading-relaxed"><strong>Pile A - Donatable:</strong> Clean, wearable, intact, appropriate for the recipient<br />
+<strong>Pile B - Not donatable:</strong> Damaged, stained, used undergarments, context-inappropriate</p>
 
 <p class="mb-4 leading-relaxed">Apply the test: would you give this to a colleague you respect without embarrassment? If yes, Pile A. If no, Pile B.</p>
 
@@ -3859,7 +3859,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 2 — Wash and Dry Everything in Pile A</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 2 - Wash and Dry Everything in Pile A</h2>
 
 <p class="mb-4 leading-relaxed">Every item in your donation bag should be freshly washed.</p>
 
@@ -3873,11 +3873,11 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Damp or unwashed clothes contaminate other items in the bag</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">After washing: dry completely before packing. Completely means fully dry — not damp in any fold or seam. Damp clothes develop mould within 24 to 48 hours, especially in monsoon season.</p>
+<p class="mb-4 leading-relaxed">After washing: dry completely before packing. Completely means fully dry - not damp in any fold or seam. Damp clothes develop mould within 24 to 48 hours, especially in monsoon season.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 3 — Check Each Item After Washing</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 3 - Check Each Item After Washing</h2>
 
 <p class="mb-4 leading-relaxed">Washing sometimes reveals condition issues that were not visible beforehand:</p>
 
@@ -3891,7 +3891,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 4 — Sort by Category, Gender, and Size</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 4 - Sort by Category, Gender, and Size</h2>
 
 <p class="mb-4 leading-relaxed">Once washed and dry, sort your donation pile into groups:</p>
 
@@ -3903,7 +3903,7 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Men's clothing</li>
   <li>Footwear</li>
   <li>Winter wear</li>
-  <li>School uniforms (separate — these are high priority)</li>
+  <li>School uniforms (separate - these are high priority)</li>
 </ul>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">By approximate size within each category:</h3>
@@ -3917,7 +3917,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 5 — Fold or Roll Neatly</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 5 - Fold or Roll Neatly</h2>
 
 <p class="mb-4 leading-relaxed">Fold or roll each item neatly before packing.</p>
 
@@ -3934,33 +3934,33 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 6 — Label Your Bags Clearly</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 6 - Label Your Bags Clearly</h2>
 
 <p class="mb-4 leading-relaxed">Use simple sticky labels or paper labels tied to the bag handle:</p>
 
 <p class="mb-4 leading-relaxed">Examples:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>'Children's clothes — boys — ages 6 to 10 — 12 items'</li>
-  <li>'Women's salwar kameez — sizes M and L — 8 items'</li>
-  <li>'School uniforms — white shirts and grey trousers — sizes for Class 5 to 8'</li>
-  <li>'Winter sweaters — children's — ages 4 to 12'</li>
+  <li>'Children's clothes - boys - ages 6 to 10 - 12 items'</li>
+  <li>'Women's salwar kameez - sizes M and L - 8 items'</li>
+  <li>'School uniforms - white shirts and grey trousers - sizes for Class 5 to 8'</li>
+  <li>'Winter sweaters - children's - ages 4 to 12'</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">Labelling removes the need for the recipient to open and inspect every bag before distributing — they can match bags to needs immediately.</p>
+<p class="mb-4 leading-relaxed">Labelling removes the need for the recipient to open and inspect every bag before distributing - they can match bags to needs immediately.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 7 — The Final Checklist Before Handing Over</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 7 - The Final Checklist Before Handing Over</h2>
 
 <p class="mb-4 leading-relaxed">Before the bag leaves your home:</p>
 
-<p class="mb-4 leading-relaxed">☐ All items sorted — no damaged items in the bag&lt;br /&gt;
-☐ All items washed and completely dry&lt;br /&gt;
-☐ All items folded neatly and sorted by category and size&lt;br /&gt;
-☐ Each bag clearly labelled with contents and sizes&lt;br /&gt;
-☐ Used undergarments removed (these are never donated)&lt;br /&gt;
-☐ A rough count of total items noted — useful for documentation&lt;br /&gt;
+<p class="mb-4 leading-relaxed">☐ All items sorted - no damaged items in the bag<br />
+☐ All items washed and completely dry<br />
+☐ All items folded neatly and sorted by category and size<br />
+☐ Each bag clearly labelled with contents and sizes<br />
+☐ Used undergarments removed (these are never donated)<br />
+☐ A rough count of total items noted - useful for documentation<br />
 ☐ Matched to a verified recipient on CauseKind or confirmed with receiving organisation</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
@@ -3982,8 +3982,8 @@ The complete donation record - from verified request through confirmed delivery 
   },
   {
     slug: "what-happens-after-clothes-are-donated-india",
-    title: "What Happens After You Donate Clothes in India — From Your Wardrobe to Someone's Life",
-    description: "Ever wondered what actually happens to your donated clothes in India? From your wardrobe to a verified recipient — here is the complete journey of a clothing donation through CauseKind's verified platform, and what it means for the person who receives it.",
+    title: "What Happens After You Donate Clothes in India - From Your Wardrobe to Someone's Life",
+    description: "Ever wondered what actually happens to your donated clothes in India? From your wardrobe to a verified recipient - here is the complete journey of a clothing donation through CauseKind's verified platform, and what it means for the person who receives it.",
     category: "Clothing Donation",
     image: "/Clothes_Donation_Journey.webp",
     author: "CauseKind",
@@ -3996,25 +3996,25 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">And then you wondered: where do they actually go?</p>
 
-<p class="mb-4 leading-relaxed">It is the question every clothing donor has but rarely gets a complete answer to. Most donation platforms and collection drives are opaque about what happens after collection — the goods disappear into a process that produces a receipt but not a story.</p>
+<p class="mb-4 leading-relaxed">It is the question every clothing donor has but rarely gets a complete answer to. Most donation platforms and collection drives are opaque about what happens after collection - the goods disappear into a process that produces a receipt but not a story.</p>
 
 <p class="mb-4 leading-relaxed">On CauseKind, the journey of your donated clothes is fully visible from your wardrobe to the person who wears them. Here is what that journey looks like.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 1 — The Request: Someone Near You Asked for This</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 1 - The Request: Someone Near You Asked for This</h2>
 
 <p class="mb-4 leading-relaxed">Before your clothes are donated, someone near you has already asked for them.</p>
 
-<p class="mb-4 leading-relaxed">On CauseKind, every clothing donation is matched to a specific, verified request — not collected into a general pool.</p>
+<p class="mb-4 leading-relaxed">On CauseKind, every clothing donation is matched to a specific, verified request - not collected into a general pool.</p>
 
-<p class="mb-4 leading-relaxed">A mother in your neighbourhood posted a request for girls' school uniforms in sizes 8 to 10 — her daughters need them before the new term. A woman in a shelter home 7 km from your home posted a request for everyday salwar kameez in sizes M and L. A community organisation 4 km away posted a request for children's winter clothing for the families they support.</p>
+<p class="mb-4 leading-relaxed">A mother in your neighbourhood posted a request for girls' school uniforms in sizes 8 to 10 - her daughters need them before the new term. A woman in a shelter home 7 km from your home posted a request for everyday salwar kameez in sizes M and L. A community organisation 4 km away posted a request for children's winter clothing for the families they support.</p>
 
 <p class="mb-4 leading-relaxed">These requests are reviewed and verified by CauseKind's admin team before they go live. The identity, the need, and the location are all confirmed. What you see on the platform is a real, specific, verified need from a real, specific, verified person or organisation.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 2 — The Match: Your Clothes Find Their Person</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 2 - The Match: Your Clothes Find Their Person</h2>
 
 <p class="mb-4 leading-relaxed">When you list your clothes on CauseKind, the platform's matching system shows your listing to recipients within 10 km whose requests match your items.</p>
 
@@ -4031,21 +4031,21 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 3 — The Handoff: 10 km, In Person, Direct</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 3 - The Handoff: 10 km, In Person, Direct</h2>
 
 <p class="mb-4 leading-relaxed">All CauseKind clothing donations are completed through a direct, local handoff within 10 km.</p>
 
-<p class="mb-4 leading-relaxed">You and the recipient — or a representative of the receiving organisation — arrange a meeting point: at your building gate, at a local landmark, at the organisation's premises. Most handoffs take 10 to 15 minutes.</p>
+<p class="mb-4 leading-relaxed">You and the recipient - or a representative of the receiving organisation - arrange a meeting point: at your building gate, at a local landmark, at the organisation's premises. Most handoffs take 10 to 15 minutes.</p>
 
 <p class="mb-4 leading-relaxed">This is not just a logistical choice. It is the moment where the donation becomes human.</p>
 
-<p class="mb-4 leading-relaxed">Many donors describe the handoff as the most meaningful part of the giving experience — the moment the abstract impulse to give becomes a specific connection with a specific person. Some recipients, particularly in organised shelter homes, send a representative who can share a brief word about the community that will receive the items.</p>
+<p class="mb-4 leading-relaxed">Many donors describe the handoff as the most meaningful part of the giving experience - the moment the abstract impulse to give becomes a specific connection with a specific person. Some recipients, particularly in organised shelter homes, send a representative who can share a brief word about the community that will receive the items.</p>
 
 <p class="mb-4 leading-relaxed">The handoff is not required to be emotional. But it often is, quietly.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 4 — Confirmation: How CauseKind Verifies Your Clothes Arrived</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 4 - Confirmation: How CauseKind Verifies Your Clothes Arrived</h2>
 
 <p class="mb-4 leading-relaxed">After the handoff, both parties confirm receipt through the CauseKind platform.</p>
 
@@ -4055,11 +4055,11 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">This mutual confirmation is what distinguishes CauseKind's system from self-reported delivery confirmation. Neither party can confirm unilaterally. The confirmation requires both donor and recipient to acknowledge the completed handoff.</p>
 
-<p class="mb-4 leading-relaxed">This mutual confirmation is the most important verification step in the entire process — it is the moment the delivery is recorded as confirmed.</p>
+<p class="mb-4 leading-relaxed">This mutual confirmation is the most important verification step in the entire process - it is the moment the delivery is recorded as confirmed.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 5 — The Impact Certificate: Your Proof of Arrival</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 5 - The Impact Certificate: Your Proof of Arrival</h2>
 
 <p class="mb-4 leading-relaxed">After mutual confirmation, CauseKind generates your Impact Certificate.</p>
 
@@ -4074,15 +4074,15 @@ The complete donation record - from verified request through confirmed delivery 
   <li>CauseKind's digital verification signature</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">This is not a receipt. A receipt records a transaction. An Impact Certificate records a confirmed outcome — that your specific clothes reached a specific verified person on a specific date.</p>
+<p class="mb-4 leading-relaxed">This is not a receipt. A receipt records a transaction. An Impact Certificate records a confirmed outcome - that your specific clothes reached a specific verified person on a specific date.</p>
 
 <p class="mb-4 leading-relaxed">You can share this certificate, keep it for your records, or use it for CSR documentation if donating as part of a corporate programme.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 6 — In Use: What Your Clothes Become</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Stage 6 - In Use: What Your Clothes Become</h2>
 
-<p class="mb-4 leading-relaxed">This is the part nobody gets to see — and the part that matters most.</p>
+<p class="mb-4 leading-relaxed">This is the part nobody gets to see - and the part that matters most.</p>
 
 <p class="mb-4 leading-relaxed">The school uniform you donated is worn by a child on Monday morning. She did not know that the previous owner lived 6 km away. She knows that the uniform fits, that it is clean, that she looks like her classmates.</p>
 
@@ -4094,7 +4094,7 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<p class="mb-4 leading-relaxed">The journey of a donated item — from your home to someone's life — is more specific, more traceable, and more human than most donors ever get to see.</p>
+<p class="mb-4 leading-relaxed">The journey of a donated item - from your home to someone's life - is more specific, more traceable, and more human than most donors ever get to see.</p>
 
 <p class="mb-4 leading-relaxed">CauseKind's platform makes the full journey visible: the verified request, the local match, the direct handoff, the mutual confirmation, the Impact Certificate.</p>
 
@@ -4114,7 +4114,7 @@ The complete donation record - from verified request through confirmed delivery 
   {
     slug: "how-to-donate-laptops-electronics-india",
     title: "How to Safely Donate Laptops and Electronics in India (2026)",
-    description: "Complete guide to donating laptops, smartphones, and electronics in India — how to wipe your data, what condition devices must be in, where to donate, and how CauseKind matches your device with a student who needs it.",
+    description: "Complete guide to donating laptops, smartphones, and electronics in India - how to wipe your data, what condition devices must be in, where to donate, and how CauseKind matches your device with a student who needs it.",
     category: "Electronics Donation",
     image: "/Donate_Laptops_Electronics.webp",
     author: "CauseKind",
@@ -4122,20 +4122,20 @@ The complete donation record - from verified request through confirmed delivery 
     publishedDate: "July 2026",
     readTime: "10 min read",
     faq: [
-      { question: "Can I donate my old laptop in India?", answer: "Yes — if it powers on, connects to Wi-Fi, and holds battery charge for 3+ hours. Wipe all personal data with a factory reset before donating, and include the charger. Donate through CauseKind to match with a verified student within 10 km." },
+      { question: "Can I donate my old laptop in India?", answer: "Yes - if it powers on, connects to Wi-Fi, and holds battery charge for 3+ hours. Wipe all personal data with a factory reset before donating, and include the charger. Donate through CauseKind to match with a verified student within 10 km." },
       { question: "How do I wipe my phone before donating in India?", answer: "Remove your Google Account first (Settings → Accounts → Google → Remove Account), remove your SIM and SD card, then factory reset (Settings → General Management → Reset → Factory Data Reset). This removes all personal data completely." },
-      { question: "Where can I donate my old laptop in India?", answer: "CauseKind is the most verified option — your device is matched with a specific student within 10 km, delivery is confirmed, and you receive an Impact Certificate. You can also donate through verified NGOs like Pratham, Akshaya Patra digital literacy programmes, or community learning centres in your city." },
-      { question: "Is my old phone good enough to donate?", answer: "If it powers on, connects to Wi-Fi, runs a browser and basic apps, and holds charge for 3+ hours, it is worth donating to a student who needs it. A 4-year-old Android that feels slow to you can run DIKSHA, Khan Academy Lite, and WhatsApp — everything most students need." },
+      { question: "Where can I donate my old laptop in India?", answer: "CauseKind is the most verified option - your device is matched with a specific student within 10 km, delivery is confirmed, and you receive an Impact Certificate. You can also donate through verified NGOs like Pratham, Akshaya Patra digital literacy programmes, or community learning centres in your city." },
+      { question: "Is my old phone good enough to donate?", answer: "If it powers on, connects to Wi-Fi, runs a browser and basic apps, and holds charge for 3+ hours, it is worth donating to a student who needs it. A 4-year-old Android that feels slow to you can run DIKSHA, Khan Academy Lite, and WhatsApp - everything most students need." },
     ],
     content: `
 
 <p class="mb-4 leading-relaxed">There is a device in your home right now that still works.</p>
 
-<p class="mb-4 leading-relaxed">You are not using it. It was replaced six months ago, or a year ago, or two years ago by something newer. It sits in a drawer, or a shelf, or a box in the store room — functional, forgotten, and collecting dust.</p>
+<p class="mb-4 leading-relaxed">You are not using it. It was replaced six months ago, or a year ago, or two years ago by something newer. It sits in a drawer, or a shelf, or a box in the store room - functional, forgotten, and collecting dust.</p>
 
 <p class="mb-4 leading-relaxed">And 250 million students in India do not have a device to access their education.</p>
 
-<p class="mb-4 leading-relaxed">The arithmetic here is simple. The distance between your unused device and a student who needs it is almost certainly less than 10 kilometres. The only question is how to close that distance safely — protecting your data, ensuring the device is genuinely useful, and confirming it reaches someone who needs it.</p>
+<p class="mb-4 leading-relaxed">The arithmetic here is simple. The distance between your unused device and a student who needs it is almost certainly less than 10 kilometres. The only question is how to close that distance safely - protecting your data, ensuring the device is genuinely useful, and confirming it reaches someone who needs it.</p>
 
 <p class="mb-4 leading-relaxed">This is the complete guide to donating laptops and electronics in India in 2026.</p>
 
@@ -4145,18 +4145,18 @@ The complete donation record - from verified request through confirmed delivery 
 
 <p class="mb-4 leading-relaxed">India's education system has moved online faster than its students have moved online with it.</p>
 
-<p class="mb-4 leading-relaxed">Government school assignments are distributed via WhatsApp. Board exam preparation resources are hosted on state government e-learning portals. DIKSHA, the national digital learning platform, has millions of educational resources available — for students who have a device to access them.</p>
+<p class="mb-4 leading-relaxed">Government school assignments are distributed via WhatsApp. Board exam preparation resources are hosted on state government e-learning portals. DIKSHA, the national digital learning platform, has millions of educational resources available - for students who have a device to access them.</p>
 
 <p class="mb-4 leading-relaxed">For the 250 million students who do not have a personal device:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>They borrow a parent's phone — if the parent has one — and share screen time with household communication needs</li>
+  <li>They borrow a parent's phone - if the parent has one - and share screen time with household communication needs</li>
   <li>They access school computers in 30-minute slots, once a week, if their school has computers at all</li>
   <li>They miss live online classes because they cannot always borrow at the right time</li>
-  <li>They fall behind in ways that compound — each missed class a gap that makes the next harder to follow</li>
+  <li>They fall behind in ways that compound - each missed class a gap that makes the next harder to follow</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">A single donated device — a smartphone that runs apps and connects to Wi-Fi, a laptop that can run a browser and basic software — can change this entirely.</p>
+<p class="mb-4 leading-relaxed">A single donated device - a smartphone that runs apps and connects to Wi-Fi, a laptop that can run a browser and basic software - can change this entirely.</p>
 
 <p class="mb-4 leading-relaxed">For one student. Permanently.</p>
 
@@ -4164,9 +4164,9 @@ The complete donation record - from verified request through confirmed delivery 
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 1 — Assess Your Device: Is It Actually Donatable?</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 1 - Assess Your Device: Is It Actually Donatable?</h2>
 
-<p class="mb-4 leading-relaxed">The first question is honest self-assessment. Not all old devices are donatable — and donating a non-functional device creates a disposal problem for the recipient rather than an educational opportunity.</p>
+<p class="mb-4 leading-relaxed">The first question is honest self-assessment. Not all old devices are donatable - and donating a non-functional device creates a disposal problem for the recipient rather than an educational opportunity.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Donatable devices must:</h3>
 
@@ -4174,7 +4174,7 @@ The complete donation record - from verified request through confirmed delivery 
   <li>Power on and function normally</li>
   <li>Connect to Wi-Fi reliably</li>
   <li>Have a battery that holds charge for at least 3 to 4 hours of active use</li>
-  <li>Have a functional screen — no cracks that affect visibility or touch response</li>
+  <li>Have a functional screen - no cracks that affect visibility or touch response</li>
   <li>Have functional speakers and microphone (essential for online classes)</li>
   <li>Have a working camera (for video lessons and online examination proctoring)</li>
 </ul>
@@ -4182,9 +4182,9 @@ The complete donation record - from verified request through confirmed delivery 
 <h3 class="mt-6 mb-2 font-bold text-lg">Devices that need repair before donation:</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>Screen cracked in a way that affects touch response — repair the screen (₹800 to ₹3,000 depending on device) before donating</li>
-  <li>Battery drains in under 90 minutes — replace the battery (₹300 to ₹800 for most phones) before donating</li>
-  <li>Does not connect to Wi-Fi — if Wi-Fi is broken, the device cannot serve its primary educational purpose</li>
+  <li>Screen cracked in a way that affects touch response - repair the screen (₹800 to ₹3,000 depending on device) before donating</li>
+  <li>Battery drains in under 90 minutes - replace the battery (₹300 to ₹800 for most phones) before donating</li>
+  <li>Does not connect to Wi-Fi - if Wi-Fi is broken, the device cannot serve its primary educational purpose</li>
 </ul>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Devices that should not be donated:</h3>
@@ -4197,24 +4197,24 @@ The complete donation record - from verified request through confirmed delivery 
   <li>More than 8-10 years old and unable to run current educational apps</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">A device that cannot perform its basic educational function is not a donation. It is e-waste — and someone else now has to deal with it.</p>
+<p class="mb-4 leading-relaxed">A device that cannot perform its basic educational function is not a donation. It is e-waste - and someone else now has to deal with it.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 2 — Wipe Your Personal Data Completely</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 2 - Wipe Your Personal Data Completely</h2>
 
 <p class="mb-4 leading-relaxed">See our detailed data wiping guide for step-by-step instructions: <a href="https://www.causekind.com/blog/how-to-erase-personal-data-before-donation-india" class="text-[#b04a15] dark:text-orange-400 hover:underline font-semibold">How to Erase Personal Data Before Donating Your Phone or Laptop →</a></p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 3 — Include the Charger</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 3 - Include the Charger</h2>
 
 <p class="mb-4 leading-relaxed">This should not need to be said. And yet it is among the most common donation mistakes.</p>
 
-<p class="mb-4 leading-relaxed">A phone without a charger is significantly less useful.&lt;br /&gt;
+<p class="mb-4 leading-relaxed">A phone without a charger is significantly less useful.<br />
 A laptop without a charger is essentially useless.</p>
 
-<p class="mb-4 leading-relaxed">Include the original charger with every donated device. If you have lost the original charger, invest in a compatible replacement — they cost ₹200 to ₹600 for most devices — before donating. This small addition multiplies the usability of your donation enormously.</p>
+<p class="mb-4 leading-relaxed">Include the original charger with every donated device. If you have lost the original charger, invest in a compatible replacement - they cost ₹200 to ₹600 for most devices - before donating. This small addition multiplies the usability of your donation enormously.</p>
 
 <p class="mb-4 leading-relaxed">Also include, if available:</p>
 
@@ -4226,35 +4226,35 @@ A laptop without a charger is essentially useless.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 4 — Test Thoroughly Before Donating</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 4 - Test Thoroughly Before Donating</h2>
 
 <p class="mb-4 leading-relaxed">After wiping, go through a complete function test:</p>
 
-<p class="mb-4 leading-relaxed">☐ Device powers on and completes setup&lt;br /&gt;
-☐ Connects to Wi-Fi&lt;br /&gt;
-☐ Browser opens and loads a page (test educational site: diksha.gov.in)&lt;br /&gt;
-☐ Camera works (front and back)&lt;br /&gt;
-☐ Speakers work&lt;br /&gt;
-☐ Microphone works (test with a voice recording)&lt;br /&gt;
-☐ Battery charges when connected&lt;br /&gt;
-☐ Battery holds charge for 3+ hours of active use&lt;br /&gt;
-☐ All physical buttons functional&lt;br /&gt;
+<p class="mb-4 leading-relaxed">☐ Device powers on and completes setup<br />
+☐ Connects to Wi-Fi<br />
+☐ Browser opens and loads a page (test educational site: diksha.gov.in)<br />
+☐ Camera works (front and back)<br />
+☐ Speakers work<br />
+☐ Microphone works (test with a voice recording)<br />
+☐ Battery charges when connected<br />
+☐ Battery holds charge for 3+ hours of active use<br />
+☐ All physical buttons functional<br />
 ☐ Touch screen / trackpad responsive</p>
 
 <p class="mb-4 leading-relaxed">Document what you tested and confirm the device is functional in your CauseKind listing.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 5 — Donate Through CauseKind's Verified Platform</h2>
+<h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Step 5 - Donate Through CauseKind's Verified Platform</h2>
 
 <p class="mb-4 leading-relaxed">Once your device is wiped, tested, and confirmed functional:</p>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
   <li>Go to causekind.com and create or log in to your account</li>
   <li>Browse device requests from students and organisations within 10 km</li>
-  <li>List your device — model, specs, condition, what's included</li>
+  <li>List your device - model, specs, condition, what's included</li>
   <li>Match with a verified recipient request or wait for a request to come to you</li>
-  <li>Arrange a local handoff — within 10 km, direct, no courier needed</li>
+  <li>Arrange a local handoff - within 10 km, direct, no courier needed</li>
   <li>Both parties confirm delivery through the platform</li>
   <li>Receive your verified Impact Certificate</li>
 </ol>
@@ -4270,23 +4270,23 @@ A laptop without a charger is essentially useless.</p>
 <h3 class="mt-6 mb-2 font-bold text-lg">Highest demand:</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>Smartphones (Android) — 3 to 5 years old — for secondary school students</li>
-  <li>Laptops (Windows) — 4 to 6 years old — for Class 11-12 and college students</li>
-  <li>Tablets (Android or iPad) — for primary and upper primary students</li>
+  <li>Smartphones (Android) - 3 to 5 years old - for secondary school students</li>
+  <li>Laptops (Windows) - 4 to 6 years old - for Class 11-12 and college students</li>
+  <li>Tablets (Android or iPad) - for primary and upper primary students</li>
 </ul>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Consistently needed:</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li>Desktop computers with monitors — for community learning centres</li>
-  <li>Earphones and headphones — for online class audio</li>
+  <li>Desktop computers with monitors - for community learning centres</li>
+  <li>Earphones and headphones - for online class audio</li>
 </ul>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Lower demand (but accepted):</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Older smartphones (6+ years) that still connect to Wi-Fi and run educational apps</li>
-  <li>Printers — for community organisations producing learning materials</li>
+  <li>Printers - for community organisations producing learning materials</li>
 </ul>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
@@ -4295,7 +4295,7 @@ A laptop without a charger is essentially useless.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Can I donate my old laptop in India?</h3>
 
-<p class="mb-4 leading-relaxed">Yes — if it powers on, connects to Wi-Fi, and holds battery charge for 3+ hours. Wipe all personal data with a factory reset before donating, and include the charger. Donate through CauseKind to match with a verified student within 10 km.</p>
+<p class="mb-4 leading-relaxed">Yes - if it powers on, connects to Wi-Fi, and holds battery charge for 3+ hours. Wipe all personal data with a factory reset before donating, and include the charger. Donate through CauseKind to match with a verified student within 10 km.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">How do I wipe my phone before donating in India?</h3>
 
@@ -4303,17 +4303,17 @@ A laptop without a charger is essentially useless.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Where can I donate my old laptop in India?</h3>
 
-<p class="mb-4 leading-relaxed">CauseKind is the most verified option — your device is matched with a specific student within 10 km, delivery is confirmed, and you receive an Impact Certificate. You can also donate through verified NGOs like Pratham, Akshaya Patra digital literacy programmes, or community learning centres in your city.</p>
+<p class="mb-4 leading-relaxed">CauseKind is the most verified option - your device is matched with a specific student within 10 km, delivery is confirmed, and you receive an Impact Certificate. You can also donate through verified NGOs like Pratham, Akshaya Patra digital literacy programmes, or community learning centres in your city.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Is my old phone good enough to donate?</h3>
 
-<p class="mb-4 leading-relaxed">If it powers on, connects to Wi-Fi, runs a browser and basic apps, and holds charge for 3+ hours, it is worth donating to a student who needs it. A 4-year-old Android that feels slow to you can run DIKSHA, Khan Academy Lite, and WhatsApp — everything most students need.</p>
+<p class="mb-4 leading-relaxed">If it powers on, connects to Wi-Fi, runs a browser and basic apps, and holds charge for 3+ hours, it is worth donating to a student who needs it. A 4-year-old Android that feels slow to you can run DIKSHA, Khan Academy Lite, and WhatsApp - everything most students need.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <p class="mb-4 leading-relaxed">The device in your drawer is not obsolete.</p>
 
-<p class="mb-4 leading-relaxed">It is obsolete for you — because you have something newer. For a student who has never had a device, it is the most advanced piece of technology they have ever been given.</p>
+<p class="mb-4 leading-relaxed">It is obsolete for you - because you have something newer. For a student who has never had a device, it is the most advanced piece of technology they have ever been given.</p>
 
 <p class="mb-4 leading-relaxed">Wipe it. Test it. Include the charger.</p>
 
@@ -4345,9 +4345,9 @@ A laptop without a charger is essentially useless.</p>
 
 <p class="mb-4 leading-relaxed">Your phone knows everything about you.</p>
 
-<p class="mb-4 leading-relaxed">Your bank accounts. Your OTPs. Your messages. Your contacts. Your photographs — every one of them, going back years. Your email inbox. Your saved passwords. The apps where you remain logged in. The documents you scanned and stored. The navigation history of every place you have been.</p>
+<p class="mb-4 leading-relaxed">Your bank accounts. Your OTPs. Your messages. Your contacts. Your photographs - every one of them, going back years. Your email inbox. Your saved passwords. The apps where you remain logged in. The documents you scanned and stored. The navigation history of every place you have been.</p>
 
-<p class="mb-4 leading-relaxed">Before that phone goes to anyone else — even with the best intentions, even through a verified giving platform — all of that must be completely, irreversibly removed.</p>
+<p class="mb-4 leading-relaxed">Before that phone goes to anyone else - even with the best intentions, even through a verified giving platform - all of that must be completely, irreversibly removed.</p>
 
 <p class="mb-4 leading-relaxed">Not 'deleted.' Not 'cleared.' Completely wiped, so that no data recovery tool can retrieve any of it.</p>
 
@@ -4359,7 +4359,7 @@ A laptop without a charger is essentially useless.</p>
 
 <p class="mb-4 leading-relaxed">Spend 15 minutes on this before touching any reset setting.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Photos and videos:</strong> Upload to Google Photos or transfer to your new device. Google Photos offers free compressed storage — connect to Wi-Fi and let the backup complete before proceeding.</p>
+<p class="mb-4 leading-relaxed"><strong>Photos and videos:</strong> Upload to Google Photos or transfer to your new device. Google Photos offers free compressed storage - connect to Wi-Fi and let the backup complete before proceeding.</p>
 
 <p class="mb-4 leading-relaxed"><strong>Contacts:</strong> Ensure your contacts are synced to your Google Account or exported to a VCF file.</p>
 
@@ -4373,26 +4373,26 @@ A laptop without a charger is essentially useless.</p>
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">Android Smartphones and Tablets: Step-by-Step</h2>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Critical first step — Remove your Google Account BEFORE resetting:</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Critical first step - Remove your Google Account BEFORE resetting:</h3>
 
 <p class="mb-4 leading-relaxed">Go to Settings → Accounts → Google → [Your Email] → Remove Account</p>
 
-<p class="mb-4 leading-relaxed">Why this matters: If you factory reset without removing your Google Account first, Google's Factory Reset Protection (FRP) activates. The new user will be unable to set up the device without entering your Google credentials — rendering the donation useless.</p>
+<p class="mb-4 leading-relaxed">Why this matters: If you factory reset without removing your Google Account first, Google's Factory Reset Protection (FRP) activates. The new user will be unable to set up the device without entering your Google credentials - rendering the donation useless.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Remove all other accounts:</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Samsung Account (Settings → Accounts → Samsung Account → Sign Out)</li>
-  <li>Social media apps — log out from within each app</li>
-  <li>Banking and payment apps — log out and uninstall</li>
+  <li>Social media apps - log out from within each app</li>
+  <li>Banking and payment apps - log out and uninstall</li>
 </ul>
 
 <p class="mb-4 leading-relaxed"><strong>Remove SIM card and SD card physically</strong> before the next step.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Enable Encryption (strongly recommended):</h3>
 
-<p class="mb-4 leading-relaxed">Settings → Security → Encrypt Phone → Follow prompts&lt;br /&gt;
-This ensures that even if any data fragments survive the reset, they are unreadable.&lt;br /&gt;
+<p class="mb-4 leading-relaxed">Settings → Security → Encrypt Phone → Follow prompts<br />
+This ensures that even if any data fragments survive the reset, they are unreadable.<br />
 Time required: 30-60 minutes on older devices. Keep plugged in.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Factory Reset:</h3>
@@ -4421,17 +4421,17 @@ Time required: 30-60 minutes on older devices. Keep plugged in.</p>
 
 <p class="mb-4 leading-relaxed">Adobe apps, antivirus software, and other licenced software must be deactivated before wiping. Each has its own 'Deactivate' or 'Deauthorise' option in account settings. If you skip this, your licence may be consumed by the device permanently.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">The Reset — Critical Setting:</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">The Reset - Critical Setting:</h3>
 
 <p class="mb-4 leading-relaxed">Settings → System → Recovery → Reset this PC → Remove Everything → Local Reinstall → Change Settings → set 'Clean the drive' to ON → Confirm → Reset</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Why 'Clean the drive' is essential:</h3>
 
-<p class="mb-4 leading-relaxed">A standard reset removes your files but leaves them technically recoverable with basic data recovery software. With 'Clean the drive' enabled, the drive is overwritten with zeros — making recovery effectively impossible.</p>
+<p class="mb-4 leading-relaxed">A standard reset removes your files but leaves them technically recoverable with basic data recovery software. With 'Clean the drive' enabled, the drive is overwritten with zeros - making recovery effectively impossible.</p>
 
 <p class="mb-4 leading-relaxed">Time required: 1 to 3 hours. Keep plugged in. Do not interrupt.</p>
 
-<p class="mb-4 leading-relaxed"><strong>After reset:</strong> Windows reinstalls and the device starts at the initial setup screen. This is the ideal state for the recipient — a clean Windows installation ready to be set up.</p>
+<p class="mb-4 leading-relaxed"><strong>After reset:</strong> Windows reinstalls and the device starts at the initial setup screen. This is the ideal state for the recipient - a clean Windows installation ready to be set up.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -4441,7 +4441,7 @@ Time required: 30-60 minutes on older devices. Keep plugged in.</p>
 
 <p class="mb-4 leading-relaxed">Use Time Machine with an external drive for a full backup. Alternatively, ensure everything important is in iCloud.</p>
 
-<h3 class="mt-6 mb-2 font-bold text-lg">Sign out of Apple ID — do this before anything else:</h3>
+<h3 class="mt-6 mb-2 font-bold text-lg">Sign out of Apple ID - do this before anything else:</h3>
 
 <p class="mb-4 leading-relaxed">System Preferences → Apple ID → Overview → Sign Out</p>
 
@@ -4449,7 +4449,7 @@ Time required: 30-60 minutes on older devices. Keep plugged in.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Disable Find My Mac:</h3>
 
-<p class="mb-4 leading-relaxed">System Preferences → Apple ID → iCloud → Find My Mac → Uncheck&lt;br /&gt;
+<p class="mb-4 leading-relaxed">System Preferences → Apple ID → iCloud → Find My Mac → Uncheck<br />
 If Find My is not disabled, the next user cannot activate the Mac without your Apple ID credentials.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">For Intel Macs (pre-M1):</h3>
@@ -4462,7 +4462,7 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 
 <p class="mb-4 leading-relaxed">Both processes require Wi-Fi to download macOS. Time required: 1 to 3 hours. Keep plugged in.</p>
 
-<p class="mb-4 leading-relaxed"><strong>After reset:</strong> The Mac starts at the 'Hello' setup screen — completely clean, ready for the new user.</p>
+<p class="mb-4 leading-relaxed"><strong>After reset:</strong> The Mac starts at the 'Hello' setup screen - completely clean, ready for the new user.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -4484,25 +4484,25 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 
 <p class="mb-4 leading-relaxed">After completing the wipe process, run through this quick verification:</p>
 
-<p class="mb-4 leading-relaxed">☐ Device powers on to the initial setup screen (not to your account)&lt;br /&gt;
-☐ No personal accounts are accessible&lt;br /&gt;
-☐ No personal photos or files are visible&lt;br /&gt;
-☐ Wi-Fi connects normally&lt;br /&gt;
-☐ All basic functions work (screen, audio, camera)&lt;br /&gt;
-☐ Battery charges when connected&lt;br /&gt;
+<p class="mb-4 leading-relaxed">☐ Device powers on to the initial setup screen (not to your account)<br />
+☐ No personal accounts are accessible<br />
+☐ No personal photos or files are visible<br />
+☐ Wi-Fi connects normally<br />
+☐ All basic functions work (screen, audio, camera)<br />
+☐ Battery charges when connected<br />
 ☐ Charger is included with the device</p>
 
 <p class="mb-4 leading-relaxed">If the device powers on to your account rather than the setup screen, the wipe was incomplete. Repeat the factory reset process.</p>
 
-<p class="mb-4 leading-relaxed">Once verified, your device is ready to donate — your data is gone, completely, and the recipient has a clean device ready to set up as their own.</p>
+<p class="mb-4 leading-relaxed">Once verified, your device is ready to donate - your data is gone, completely, and the recipient has a clean device ready to set up as their own.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
-<p class="mb-4 leading-relaxed">Data privacy is not a reason to avoid donating your device. It is a step in the donation process — one that takes 30 to 90 minutes and completely protects your privacy while giving a functional device a new, impactful life.</p>
+<p class="mb-4 leading-relaxed">Data privacy is not a reason to avoid donating your device. It is a step in the donation process - one that takes 30 to 90 minutes and completely protects your privacy while giving a functional device a new, impactful life.</p>
 
 <p class="mb-4 leading-relaxed">Wipe it. Test it. Donate it.</p>
 
-<p class="mb-4 leading-relaxed">The student who receives it will not know what was on it before. They will know it works — and that it is theirs.</p>
+<p class="mb-4 leading-relaxed">The student who receives it will not know what was on it before. They will know it works - and that it is theirs.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -4529,9 +4529,9 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 
 <p class="mb-4 leading-relaxed">A laptop is not just a device.</p>
 
-<p class="mb-4 leading-relaxed">For a student in a government school in urban India — a student who has been attending online classes by borrowing a parent's phone for 30-minute windows, who has been missing submission deadlines because the phone was needed for household communication, who has been writing programming syntax on paper because there is no device to run it on — a laptop is a fundamental change in what is educationally possible.</p>
+<p class="mb-4 leading-relaxed">For a student in a government school in urban India - a student who has been attending online classes by borrowing a parent's phone for 30-minute windows, who has been missing submission deadlines because the phone was needed for household communication, who has been writing programming syntax on paper because there is no device to run it on - a laptop is a fundamental change in what is educationally possible.</p>
 
-<p class="mb-4 leading-relaxed">This blog is about what that change looks like. About what a donated laptop specifically enables — not in abstract terms, but in the specific, day-to-day reality of a student's life. And about how to donate one in a way that ensures it actually reaches a student who needs it.</p>
+<p class="mb-4 leading-relaxed">This blog is about what that change looks like. About what a donated laptop specifically enables - not in abstract terms, but in the specific, day-to-day reality of a student's life. And about how to donate one in a way that ensures it actually reaches a student who needs it.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -4545,7 +4545,7 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Assignment submission without a queue</h3>
 
-<p class="mb-4 leading-relaxed">Students sharing one device among siblings or family members submit assignments when the device is available — not when the deadline requires. A personal laptop means submitting on time, every time.</p>
+<p class="mb-4 leading-relaxed">Students sharing one device among siblings or family members submit assignments when the device is available - not when the deadline requires. A personal laptop means submitting on time, every time.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Access to DIKSHA and offline educational content</h3>
 
@@ -4553,15 +4553,15 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Learning to type and use productivity software</h3>
 
-<p class="mb-4 leading-relaxed">Typing proficiency, familiarity with document editors, spreadsheet basics — skills that every employer assumes in every job candidate, that students without devices never develop before entering the workforce.</p>
+<p class="mb-4 leading-relaxed">Typing proficiency, familiarity with document editors, spreadsheet basics - skills that every employer assumes in every job candidate, that students without devices never develop before entering the workforce.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Board exam online preparation</h3>
 
-<p class="mb-4 leading-relaxed">Mock tests, online practice papers, timer-based exam simulations — all available free online, all inaccessible without a device.</p>
+<p class="mb-4 leading-relaxed">Mock tests, online practice papers, timer-based exam simulations - all available free online, all inaccessible without a device.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Coding and vocational skills</h3>
 
-<p class="mb-4 leading-relaxed">Python, HTML, digital design, video editing — the skills that open pathways to employment in India's growing digital economy. None of them can be learned effectively on a shared phone with a 6-inch screen.</p>
+<p class="mb-4 leading-relaxed">Python, HTML, digital design, video editing - the skills that open pathways to employment in India's growing digital economy. None of them can be learned effectively on a shared phone with a 6-inch screen.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -4575,7 +4575,7 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Students in commerce and science streams</h3>
 
-<p class="mb-4 leading-relaxed">Accounting software, Python, laboratory data analysis, online resources for competitive exams — the subject requirements of science and commerce students are heavily digital.</p>
+<p class="mb-4 leading-relaxed">Accounting software, Python, laboratory data analysis, online resources for competitive exams - the subject requirements of science and commerce students are heavily digital.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Students in skill development and vocational training programmes</h3>
 
@@ -4583,7 +4583,7 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Students in rural or semi-urban areas with poor mobile data connectivity</h3>
 
-<p class="mb-4 leading-relaxed">A laptop with offline educational content loaded (DIKSHA offline, Khan Academy Lite, Kolibri) provides educational access even without reliable internet — more practical than a smartphone in areas with poor connectivity.</p>
+<p class="mb-4 leading-relaxed">A laptop with offline educational content loaded (DIKSHA offline, Khan Academy Lite, Kolibri) provides educational access even without reliable internet - more practical than a smartphone in areas with poor connectivity.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -4609,7 +4609,7 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
   <li>Attend online classes via Google Meet or Zoom</li>
   <li>Access DIKSHA, Khan Academy, and all major educational platforms</li>
   <li>Write and submit assignments in Google Docs</li>
-  <li>Run Python (Mu Editor or Thonny — lightweight, perfect for older devices)</li>
+  <li>Run Python (Mu Editor or Thonny - lightweight, perfect for older devices)</li>
   <li>Practice typing, spreadsheets, and presentations</li>
 </ul>
 
@@ -4622,14 +4622,14 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">How to Donate a Laptop to a Student Through CauseKind</h2>
 
 <ol class="list-decimal pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>Assess your device</strong> — confirm it meets the minimum functional requirements above</li>
-  <li><strong>Wipe all personal data</strong> — follow our complete data wiping guide (factory reset with 'clean the drive' enabled for Windows; Disk Utility erase and macOS reinstall for Mac)</li>
-  <li><strong>Include the charger</strong> — a laptop without a charger is not donatable</li>
-  <li><strong>Test after wiping</strong> — confirm Wi-Fi, browser, camera, and battery all work</li>
-  <li><strong>List on CauseKind</strong> — include the model, operating system, condition, and what's included</li>
-  <li><strong>Browse student requests</strong> — filter by 'electronics' to see verified device requests from students within 10 km</li>
-  <li><strong>Match and arrange handoff</strong> — direct local delivery, within 10 km, no courier</li>
-  <li><strong>Confirm delivery</strong> — mutual confirmation on the platform generates your Impact Certificate</li>
+  <li><strong>Assess your device</strong> - confirm it meets the minimum functional requirements above</li>
+  <li><strong>Wipe all personal data</strong> - follow our complete data wiping guide (factory reset with 'clean the drive' enabled for Windows; Disk Utility erase and macOS reinstall for Mac)</li>
+  <li><strong>Include the charger</strong> - a laptop without a charger is not donatable</li>
+  <li><strong>Test after wiping</strong> - confirm Wi-Fi, browser, camera, and battery all work</li>
+  <li><strong>List on CauseKind</strong> - include the model, operating system, condition, and what's included</li>
+  <li><strong>Browse student requests</strong> - filter by 'electronics' to see verified device requests from students within 10 km</li>
+  <li><strong>Match and arrange handoff</strong> - direct local delivery, within 10 km, no courier</li>
+  <li><strong>Confirm delivery</strong> - mutual confirmation on the platform generates your Impact Certificate</li>
 </ol>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
@@ -4641,11 +4641,11 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 <h3 class="mt-6 mb-2 font-bold text-lg">Offline apps to install:</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
-  <li><strong>DIKSHA app (offline mode):</strong> Download from diksha.gov.in — contains NCERT textbook content for all classes in text and video, downloadable for offline access</li>
-  <li><strong>Khan Academy Lite (KA Lite / Kolibri):</strong> Free, runs on any laptop, contains Khan Academy's full curriculum — maths, science, computing — without internet</li>
-  <li><strong>GCompris:</strong> Educational activities for primary school children — science, maths, memory games — completely offline</li>
-  <li><strong>LibreOffice:</strong> Free, open-source equivalent of Microsoft Office — word processing, spreadsheets, presentations</li>
-  <li><strong>Mu Editor or Thonny:</strong> Lightweight Python editors that run on older hardware — essential for students learning to code</li>
+  <li><strong>DIKSHA app (offline mode):</strong> Download from diksha.gov.in - contains NCERT textbook content for all classes in text and video, downloadable for offline access</li>
+  <li><strong>Khan Academy Lite (KA Lite / Kolibri):</strong> Free, runs on any laptop, contains Khan Academy's full curriculum - maths, science, computing - without internet</li>
+  <li><strong>GCompris:</strong> Educational activities for primary school children - science, maths, memory games - completely offline</li>
+  <li><strong>LibreOffice:</strong> Free, open-source equivalent of Microsoft Office - word processing, spreadsheets, presentations</li>
+  <li><strong>Mu Editor or Thonny:</strong> Lightweight Python editors that run on older hardware - essential for students learning to code</li>
 </ul>
 
 <p class="mb-4 leading-relaxed">Note the installed apps in your CauseKind listing so the recipient knows what is already on the device.</p>
@@ -4674,7 +4674,7 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
   {
     slug: "donating-versus-recycling-electronics-india",
     title: "Donating vs. Recycling Electronics in India: Which Creates More Impact?",
-    description: "Should you donate or recycle your old electronics in India? A clear comparison — when to donate a working device to a student, and when responsible e-waste recycling is the right choice for non-functional devices.",
+    description: "Should you donate or recycle your old electronics in India? A clear comparison - when to donate a working device to a student, and when responsible e-waste recycling is the right choice for non-functional devices.",
     category: "Electronics Donation",
     image: "/Donate_Vs_Recycle.webp",
     author: "CauseKind",
@@ -4695,8 +4695,8 @@ If Find My is not disabled, the next user cannot activate the Mac without your A
 
 <p class="mb-4 leading-relaxed">Choosing the right option depends on one straightforward question: <strong>does this device still work?</strong></p>
 
-<p class="mb-4 leading-relaxed">If yes — donate.&lt;br /&gt;
-If no — recycle.</p>
+<p class="mb-4 leading-relaxed">If yes - donate.<br />
+If no - recycle.</p>
 
 <p class="mb-4 leading-relaxed">Here is why, and how to do each correctly.</p>
 
@@ -4704,7 +4704,7 @@ If no — recycle.</p>
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">When to Donate: The Working Device Decision Tree</h2>
 
-<p class="mb-4 leading-relaxed">A device should be donated — not recycled — when it meets these criteria:</p>
+<p class="mb-4 leading-relaxed">A device should be donated - not recycled - when it meets these criteria:</p>
 
 <ul class="list-none pl-0 mb-4 leading-relaxed space-y-1">
   <li>✅ Powers on and completes startup</li>
@@ -4741,11 +4741,11 @@ If no — recycle.</p>
   <li>❌ Is so old it cannot run any current educational app</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">— it is not donatable. Donating a non-functional device to an individual or NGO creates a disposal problem for them, not an educational solution.</p>
+<p class="mb-4 leading-relaxed">- it is not donatable. Donating a non-functional device to an individual or NGO creates a disposal problem for them, not an educational solution.</p>
 
 <p class="mb-4 leading-relaxed">The right choice for non-functional devices is responsible e-waste recycling.</p>
 
-<p class="mb-4 leading-relaxed">In India, e-waste contains valuable materials — copper, gold, silver, palladium — as well as hazardous materials — lead, mercury, cadmium — that cause significant environmental and health damage when disposed of in general waste.</p>
+<p class="mb-4 leading-relaxed">In India, e-waste contains valuable materials - copper, gold, silver, palladium - as well as hazardous materials - lead, mercury, cadmium - that cause significant environmental and health damage when disposed of in general waste.</p>
 
 <p class="mb-4 leading-relaxed">Responsible e-waste recycling recovers the valuable materials and safely neutralises the hazardous ones.</p>
 
@@ -4757,7 +4757,7 @@ If no — recycle.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Manufacturer take-back programmes:</h3>
 
-<p class="mb-4 leading-relaxed">Most major electronics manufacturers in India — Samsung, Apple, Lenovo, HP, Dell — have producer responsibility schemes that accept old devices for responsible recycling. Check the manufacturer's India website for current take-back details.</p>
+<p class="mb-4 leading-relaxed">Most major electronics manufacturers in India - Samsung, Apple, Lenovo, HP, Dell - have producer responsibility schemes that accept old devices for responsible recycling. Check the manufacturer's India website for current take-back details.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Authorised e-waste recyclers:</h3>
 
@@ -4771,28 +4771,28 @@ If no — recycle.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Retailer collection programmes:</h3>
 
-<p class="mb-4 leading-relaxed">Many large electronics retailers — Croma, Reliance Digital — have e-waste collection points. Check in-store for current programmes.</p>
+<p class="mb-4 leading-relaxed">Many large electronics retailers - Croma, Reliance Digital - have e-waste collection points. Check in-store for current programmes.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">What not to do with non-functional devices:</h3>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li>Do not throw in general waste</li>
   <li>Do not give to unregistered scrap dealers who may not handle hazardous materials safely</li>
-  <li>Do not donate to NGOs or individuals — this creates a disposal burden</li>
+  <li>Do not donate to NGOs or individuals - this creates a disposal burden</li>
 </ul>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">The Grey Zone: Devices That Work But Barely</h2>
 
-<p class="mb-4 leading-relaxed">Some devices sit in a grey zone — they function, but marginally. Battery drains in 90 minutes. Screen has a crack that affects one corner. Wi-Fi connects but drops occasionally.</p>
+<p class="mb-4 leading-relaxed">Some devices sit in a grey zone - they function, but marginally. Battery drains in 90 minutes. Screen has a crack that affects one corner. Wi-Fi connects but drops occasionally.</p>
 
 <p class="mb-4 leading-relaxed">For these devices, consider whether a small repair investment is worthwhile:</p>
 
 <ul class="list-disc pl-6 mb-4 leading-relaxed space-y-1">
   <li><strong>Battery replacement:</strong> ₹300 to ₹800 for most Android phones. Transforms a marginal device into a confidently donatable one.</li>
   <li><strong>Screen repair:</strong> ₹800 to ₹3,000 depending on device. Worth it for devices with strong specifications otherwise.</li>
-  <li><strong>Wi-Fi chip repair:</strong> More complex — if Wi-Fi is fundamentally broken, recycling is likely the right choice unless repair cost is low.</li>
+  <li><strong>Wi-Fi chip repair:</strong> More complex - if Wi-Fi is fundamentally broken, recycling is likely the right choice unless repair cost is low.</li>
 </ul>
 
 <p class="mb-4 leading-relaxed">A small repair investment that converts a marginal device into a fully functional educational tool is money extremely well spent relative to the impact produced.</p>
@@ -4801,13 +4801,13 @@ If no — recycle.</p>
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">The Environmental Case for Donation Over Recycling</h2>
 
-<p class="mb-4 leading-relaxed">Recycling is presented as the environmentally responsible choice for old electronics — and it is, for genuinely non-functional devices.</p>
+<p class="mb-4 leading-relaxed">Recycling is presented as the environmentally responsible choice for old electronics - and it is, for genuinely non-functional devices.</p>
 
 <p class="mb-4 leading-relaxed">But for working devices, the environmental argument strongly favours donation:</p>
 
-<p class="mb-4 leading-relaxed"><strong>Manufacturing a new device</strong> — the device the student would otherwise need to have manufactured — produces approximately 40 to 80 kg of CO2 equivalent in the production process, consumes rare earth materials, and generates production waste.</p>
+<p class="mb-4 leading-relaxed"><strong>Manufacturing a new device</strong> - the device the student would otherwise need to have manufactured - produces approximately 40 to 80 kg of CO2 equivalent in the production process, consumes rare earth materials, and generates production waste.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Donating a working device</strong> — extending its useful life by 3 to 5 years — avoids that entire manufacturing footprint.</p>
+<p class="mb-4 leading-relaxed"><strong>Donating a working device</strong> - extending its useful life by 3 to 5 years - avoids that entire manufacturing footprint.</p>
 
 <p class="mb-4 leading-relaxed">The carbon avoided by donating one working laptop rather than recycling it is approximately equal to not driving 300 to 600 km in a petrol car.</p>
 
@@ -4831,7 +4831,7 @@ If no — recycle.</p>
 
 <p class="mb-4 leading-relaxed">Does it work? Donate it. A student nearby needs it.</p>
 
-<p class="mb-4 leading-relaxed">Does it not work? Recycle it responsibly. The materials can still serve a purpose — just not as a device.</p>
+<p class="mb-4 leading-relaxed">Does it not work? Recycle it responsibly. The materials can still serve a purpose - just not as a device.</p>
 
 <p class="mb-4 leading-relaxed">Neither option involves the bin. Both options are better than the drawer.</p>
 
@@ -4849,7 +4849,7 @@ If no — recycle.</p>
   {
     slug: "acceptable-condition-donated-devices-india",
     title: "What Condition Should a Donated Device Be In? The Honest Standard for Electronics Donations in India",
-    description: "What condition must a phone or laptop be in to donate in India? Clear, honest standards for donating electronics — what is acceptable, what needs repair first, and what should never be donated as a device.",
+    description: "What condition must a phone or laptop be in to donate in India? Clear, honest standards for donating electronics - what is acceptable, what needs repair first, and what should never be donated as a device.",
     category: "Electronics Donation",
     image: "/Device_Condition.webp",
     author: "CauseKind",
@@ -4866,9 +4866,9 @@ If no — recycle.</p>
 
 <p class="mb-4 leading-relaxed">The most common question CauseKind receives about device donation is a variation of this:</p>
 
-<p class="mb-4 leading-relaxed">'My old phone/laptop is [description of various imperfections] — is it good enough to donate?'</p>
+<p class="mb-4 leading-relaxed">'My old phone/laptop is [description of various imperfections] - is it good enough to donate?'</p>
 
-<p class="mb-4 leading-relaxed">The answer requires a specific standard — not a vague 'good condition' that leaves donors guessing, but a clear, functional definition of what makes a device genuinely useful for the student who receives it.</p>
+<p class="mb-4 leading-relaxed">The answer requires a specific standard - not a vague 'good condition' that leaves donors guessing, but a clear, functional definition of what makes a device genuinely useful for the student who receives it.</p>
 
 <p class="mb-4 leading-relaxed">Here is that standard.</p>
 
@@ -4889,8 +4889,8 @@ If no — recycle.</p>
   <li>Can a student use it for a full school day without the battery dying?</li>
 </ul>
 
-<p class="mb-4 leading-relaxed">If the honest answer to all four is yes — the device is donatable, regardless of cosmetic condition.&lt;br /&gt;
-If the honest answer to any one is no — the device needs repair before donating, or should not be donated.</p>
+<p class="mb-4 leading-relaxed">If the honest answer to all four is yes - the device is donatable, regardless of cosmetic condition.<br />
+If the honest answer to any one is no - the device needs repair before donating, or should not be donated.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -4902,22 +4902,22 @@ If the honest answer to any one is no — the device needs repair before donatin
 
 <p class="mb-4 leading-relaxed"><strong>Body:</strong> Dents, scratches, or scuffs on the casing that do not affect function. A slightly loose but functional charging port. A worn-looking keyboard that all keys work on.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Battery:</strong> Holds charge for 3 or more hours of active use. May not last a full day — but 3+ hours is sufficient for classes, sessions, and study blocks.</p>
+<p class="mb-4 leading-relaxed"><strong>Battery:</strong> Holds charge for 3 or more hours of active use. May not last a full day - but 3+ hours is sufficient for classes, sessions, and study blocks.</p>
 
 <p class="mb-4 leading-relaxed"><strong>Performance:</strong> May feel slow compared to new devices. Opens apps within 5 to 10 seconds. Runs a browser and educational apps without crashing. Plays educational videos without significant stuttering.</p>
 
-<p class="mb-4 leading-relaxed"><strong>Summary:</strong> If it works, connects, lasts 3+ hours, and the screen is fully readable — donate it.</p>
+<p class="mb-4 leading-relaxed"><strong>Summary:</strong> If it works, connects, lasts 3+ hours, and the screen is fully readable - donate it.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
 <h2 class="mt-8 mb-4 font-bold text-xl md:text-2xl">⚠️ Repair First, Then Donate</h2>
 
-<p class="mb-4 leading-relaxed">Some devices are worth repairing before donating — the repair cost is modest relative to the impact produced:</p>
+<p class="mb-4 leading-relaxed">Some devices are worth repairing before donating - the repair cost is modest relative to the impact produced:</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Battery under 90 minutes of active use:</h3>
 
-<p class="mb-4 leading-relaxed">Repair cost: ₹300 to ₹800 for most phones, ₹500 to ₹2,000 for laptops&lt;br /&gt;
-Impact: Transforms a marginal device into one that gets through a school day&lt;br /&gt;
+<p class="mb-4 leading-relaxed">Repair cost: ₹300 to ₹800 for most phones, ₹500 to ₹2,000 for laptops<br />
+Impact: Transforms a marginal device into one that gets through a school day<br />
 Recommendation: Repair and donate</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Screen cracked but touch/display still works:</h3>
@@ -4926,11 +4926,11 @@ Recommendation: Repair and donate</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Wi-Fi drops occasionally but connects reliably:</h3>
 
-<p class="mb-4 leading-relaxed">Test by running a 20-minute YouTube video without disconnect. If it holds — donate. If it drops repeatedly — investigate repair before donating.</p>
+<p class="mb-4 leading-relaxed">Test by running a 20-minute YouTube video without disconnect. If it holds - donate. If it drops repeatedly - investigate repair before donating.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Older operating system:</h3>
 
-<p class="mb-4 leading-relaxed">Android 8 or above and Windows 10 or above can run most educational apps. Below these versions, check whether DIKSHA and Khan Academy run acceptably. If they do — donate. If the OS cannot be updated and apps do not run — do not donate.</p>
+<p class="mb-4 leading-relaxed">Android 8 or above and Windows 10 or above can run most educational apps. Below these versions, check whether DIKSHA and Khan Academy run acceptably. If they do - donate. If the OS cannot be updated and apps do not run - do not donate.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -4944,7 +4944,7 @@ Recommendation: Repair and donate</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Screen completely shattered:</h3>
 
-<p class="mb-4 leading-relaxed">If the screen is broken to the point where it cannot display content or respond to touch — it is not usable.</p>
+<p class="mb-4 leading-relaxed">If the screen is broken to the point where it cannot display content or respond to touch - it is not usable.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Cannot connect to any network:</h3>
 
@@ -4956,7 +4956,7 @@ Recommendation: Repair and donate</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Significant water damage:</h3>
 
-<p class="mb-4 leading-relaxed">Some functions may work after water damage, but corrosion is ongoing. A device with water damage history that is not fully functional and stable should not be donated — it may fail days after the student receives it.</p>
+<p class="mb-4 leading-relaxed">Some functions may work after water damage, but corrosion is ongoing. A device with water damage history that is not fully functional and stable should not be donated - it may fail days after the student receives it.</p>
 
 <h3 class="mt-6 mb-2 font-bold text-lg">Missing charger with no practical replacement:</h3>
 
@@ -4968,13 +4968,13 @@ Recommendation: Repair and donate</p>
 
 <p class="mb-4 leading-relaxed">When listing a device on CauseKind, be specific and honest about its condition.</p>
 
-<p class="mb-4 leading-relaxed">A good listing:&lt;br /&gt;
-'Samsung Galaxy A50, 3 years old. Powers on. Connects to Wi-Fi. Battery lasts approximately 4 hours of active use. Minor scratches on back glass — no effect on function. Screen fully functional, no cracks. Front and rear cameras work. Includes original charger and a case. Factory reset completed.'</p>
+<p class="mb-4 leading-relaxed">A good listing:<br />
+'Samsung Galaxy A50, 3 years old. Powers on. Connects to Wi-Fi. Battery lasts approximately 4 hours of active use. Minor scratches on back glass - no effect on function. Screen fully functional, no cracks. Front and rear cameras work. Includes original charger and a case. Factory reset completed.'</p>
 
-<p class="mb-4 leading-relaxed">A poor listing:&lt;br /&gt;
+<p class="mb-4 leading-relaxed">A poor listing:<br />
 'Old Samsung phone, good condition.'</p>
 
-<p class="mb-4 leading-relaxed">The specific listing allows the recipient to assess whether the device meets their needs — and builds trust that leads to a successful match. Vague listings either fail to match or produce disappointment at the handoff.</p>
+<p class="mb-4 leading-relaxed">The specific listing allows the recipient to assess whether the device meets their needs - and builds trust that leads to a successful match. Vague listings either fail to match or produce disappointment at the handoff.</p>
 
 <hr class="my-8 border-stone-200 dark:border-stone-850" />
 
@@ -5002,9 +5002,9 @@ Recommendation: Repair and donate</p>
 
 <p class="mb-4 leading-relaxed">Not does it look new. Not does it feel fast. Does it connect to Wi-Fi, hold charge for a class, display content clearly, and run the apps a student needs.</p>
 
-<p class="mb-4 leading-relaxed">If yes — a student near you is waiting for it.</p>
+<p class="mb-4 leading-relaxed">If yes - a student near you is waiting for it.</p>
 
-<p class="mb-4 leading-relaxed">If no — a responsible recycler is the right destination.</p>
+<p class="mb-4 leading-relaxed">If no - a responsible recycler is the right destination.</p>
 
 <p class="mb-4 leading-relaxed">Both are better than the drawer.</p>
 

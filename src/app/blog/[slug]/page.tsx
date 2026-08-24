@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = blogPosts.find((p) => p.slug === slug);
 
   if (!post) {
-    return { title: "Post Not Found — CauseKind" };
+    return { title: "Post Not Found - CauseKind" };
   }
 
   // Relative canonical/openGraph URLs resolve against metadataBase in
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const path = `/blog/${post.slug}`;
 
   return {
-    title: `${post.title} — CauseKind`,
+    title: `${post.title} - CauseKind`,
     description: post.description,
     alternates: { canonical: path },
     openGraph: {

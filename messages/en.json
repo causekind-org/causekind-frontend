@@ -151,7 +151,14 @@
     "emailPlaceholder": "What's your email?",
     "subscribe": "Subscribe",
     "manifesto": "We view every unused laptop, every outgrown school bag, every spare hour, as an opportunity for someone else's turning point.",
-    "seeMore": "See more stories"
+    "seeMore": "See more stories",
+    "readTime": "{minutes} min read",
+    "readingTools": "Reading Tools",
+    "boldText": "Bold Text",
+    "fontOptions": "Font Options",
+    "notFoundTitle": "Story Not Found",
+    "notFoundBody": "The story you are looking for does not exist.",
+    "goHome": "Go Back Home"
   },
   "listings": {
     "title": "Item Listings",

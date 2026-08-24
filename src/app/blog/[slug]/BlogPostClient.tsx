@@ -340,10 +340,10 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
   if (!post) {
     return (
       <div className="min-h-screen bg-surface-cream flex flex-col justify-center items-center p-md">
-        <h1 className="font-display-lg text-primary text-3xl mb-md">Story Not Found</h1>
-        <p className="text-on-surface-variant mb-lg">The story you are looking for does not exist.</p>
+        <h1 className="font-display-lg text-primary text-3xl mb-md">{t("notFoundTitle")}</h1>
+        <p className="text-on-surface-variant mb-lg">{t("notFoundBody")}</p>
         <Link href="/" className="bg-rust-action text-white px-6 py-2.5 rounded-lg font-bold">
-          Go Back Home
+          {t("goHome")}
         </Link>
       </div>
     );
@@ -499,16 +499,15 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
             >
               <div className="sticky top-[120px] flex flex-col gap-8">
                 {/* Reading Tools Panel */}
-                {/* Reading Tools Panel */}
                 <div className="relative z-30 bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-3 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
                   <h3 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
-                    Reading Tools
+                    {t("readingTools")}
                   </h3>
                   {/* Bold Mode Toggle */}
                   <div className="flex items-center justify-between mb-8">
                     <span className="font-label-sm text-xs text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-1.5 font-medium whitespace-nowrap">
                       <span className="material-symbols-outlined text-lg leading-none text-[#b04a15] dark:text-[#e07b3a]">format_bold</span>
-                      Bold Text
+                      {t("boldText")}
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -524,7 +523,7 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
                   {/* Font Selector */}
                   <div className="space-y-3">
                     <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
-                      Font Options
+                      {t("fontOptions")}
                     </span>
                     <FontDropdown value={fontMode} onChange={setFontMode} />
                   </div>

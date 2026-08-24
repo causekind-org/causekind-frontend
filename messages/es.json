@@ -151,7 +151,14 @@
     "emailPlaceholder": "¿Cuál es tu correo electrónico?",
     "subscribe": "Suscribir",
     "manifesto": "Consideramos cada computadora portátil sin usar, cada mochila escolar que ya no le queda, cada hora libre, como una oportunidad para el punto de inflexión de otra persona.",
-    "seeMore": "Ver más historias"
+    "seeMore": "Ver más historias",
+    "readTime": "{minutes} min de lectura",
+    "readingTools": "Herramientas de lectura",
+    "boldText": "Texto en negrita",
+    "fontOptions": "Opciones de fuente",
+    "notFoundTitle": "Historia no encontrada",
+    "notFoundBody": "La historia que buscas no existe.",
+    "goHome": "Volver al inicio"
   },
   "listings": {
     "title": "Listados de artículos",

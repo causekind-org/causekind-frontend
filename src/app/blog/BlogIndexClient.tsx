@@ -14,6 +14,7 @@ import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
 import { Search, X, BookOpen } from "lucide-react";
 import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
 import { searchBlogPosts } from "@/lib/blogSearch";
+import { formatReadTime, formatPublishedDate } from "@/lib/blogMeta";
 import { Sparkles } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
@@ -174,13 +175,13 @@ function BlogListingContent() {
           setLiveFeed(data.slice(0, 3).map(activityToFeedItem));
         } else {
           setLiveFeed([
-            { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing — be the first donor in your area!" },
+            { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
           ]);
         }
       })
       .catch(() => {
         setLiveFeed([
-          { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing — be the first donor in your area!" },
+          { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
         ]);
       });
   }, []);
@@ -472,7 +473,7 @@ function BlogListingContent() {
                       </div>
                       <div className="p-3 md:p-8">
                         <p className="text-4xs md:text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5 md:mb-3">
-                          {tr.category} · {featured.publishedDate}
+                          {tr.category} · {formatPublishedDate(featured.publishedDate, locale)}
                         </p>
                         <h2 className="font-extrabold text-base md:text-3xl text-stone-900 dark:text-stone-100 mb-1.5 md:mb-3 line-clamp-3 md:line-clamp-none group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
                           {tr.title}
@@ -605,7 +606,7 @@ function BlogListingContent() {
                     </div>
                     <div className={`flex flex-col flex-1 ${isLarge ? "p-8" : "p-6"}`}>
                       <p className="text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
-                        {tr.category} · {post.publishedDate}
+                        {tr.category} · {formatPublishedDate(post.publishedDate, locale)}
                       </p>
                       <h3
                         className={`font-bold text-stone-900 dark:text-stone-100 mb-2 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors ${
@@ -622,7 +623,7 @@ function BlogListingContent() {
                         {tr.description}
                       </p>
                       <div className="flex justify-between items-center text-xs md:text-sm font-bold text-[#b04a15] dark:text-orange-400 mt-auto">
-                        <span>{post.readTime}</span>
+                        <span>{formatReadTime(post.readTime, t)}</span>
                         <span className="flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
                           {t("readStory")}
                         </span>
