@@ -33,7 +33,17 @@ function code(path: string): string {
     .replace(/(^|[^:])\/\/.*$/gm, "$1"); // line comments, sparing "https://"
 }
 
-const PAGE = code("page.tsx");
+/**
+ * The route is two files, so the guard reads both as one body of source.
+ *
+ * <p>`page.tsx` became a thin server wrapper when the route was given its own
+ * metadata — a "use client" module cannot export `metadata` — and the client
+ * logic these assertions are about moved to `RequestsClient.tsx`. Reading only
+ * `page.tsx` would leave every check below passing vacuously against a
+ * seventeen-line wrapper, which is worse than no test: the redirect could come
+ * back in the client component and this suite would still be green.
+ */
+const PAGE = [code("page.tsx"), code("RequestsClient.tsx")].join("\n");
 const OFFER_PAGE = code("[id]/offer/page.tsx");
 
 describe("/requests is public", () => {
