@@ -28,6 +28,7 @@ import {
   Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
 } from "lucide-react";
+import { DashboardSkeleton } from "@/components/skeletons";
 
 type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
 
@@ -467,8 +468,12 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#12101a]">
-        <Loader2 className="w-7 h-7 animate-spin text-[#b04a15]" />
+      // Admin runs on its own dark ground (#12101a), so the skeleton keeps that
+      // background rather than the app's cream PageSkeleton.
+      <div className="min-h-screen bg-[#12101a] px-4 py-8 sm:px-6">
+        <div className="mx-auto w-full max-w-6xl">
+          <DashboardSkeleton tiles={4} label="Loading the admin dashboard" />
+        </div>
       </div>
     );
   }

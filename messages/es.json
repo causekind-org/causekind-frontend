@@ -1190,5 +1190,23 @@
     "viewDonations": "Ver mis donaciones",
     "browseCampaigns": "Explorar más campañas",
     "toastSuccess": "¡Donación confirmada! Gracias por marcar la diferencia."
+  },
+  "audiencePathways": {
+    "eyebrow": "Dos lados, una plataforma",
+    "heading": "Estés del lado que estés, CauseKind te conecta.",
+    "subheading": "Algunas personas tienen cosas que dar. Otras tienen necesidades reales. Aquí es donde se encuentran: verificado, registrado y entregado en persona.",
+    "footnote": "Unirse es gratis. Puedes cambiar tu rol cuando quieras.",
+    "donor": {
+      "eyebrow": "Haz que lo que tienes importe",
+      "heading": "Convierte cosas útiles en apoyo oportuno.",
+      "body": "Explora necesidades en especie verificadas y ofrece artículos que puedan ayudar de inmediato a una persona, familia o comunidad.",
+      "cta": "Únete como donante"
+    },
+    "donee": {
+      "eyebrow": "Pide con dignidad",
+      "heading": "Consigue apoyo para lo que viene.",
+      "body": "Comparte una necesidad genuina, conecta con personas dispuestas a ayudar y recibe apoyo con claridad y respeto.",
+      "cta": "Únete como beneficiario"
+    }
   }
 }

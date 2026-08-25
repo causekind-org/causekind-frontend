@@ -15,6 +15,7 @@ import {
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { MyTasksCard } from "@/components/MyTasksCard";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
   Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck,
   ChevronDown, History, MessageCircle, Trash2
 } from "lucide-react";
+import { DashboardSkeleton, PageSkeleton } from "@/components/skeletons";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
@@ -1039,6 +1041,14 @@ function DoneeDashboard({
 
       <div className="mx-auto max-w-5xl px-4 py-5 sm:py-8 space-y-4 sm:space-y-6">
 
+        {/* Anything support has asked this user for. Donees take the early return
+            above and never reach the donor branch's copy of this card, so it has
+            to be mounted here too — and this is the branch that needs it most,
+            since information requests are mostly verification documents and
+            proof of need, which are asked of donees. Renders nothing when there
+            is nothing outstanding, so it costs the common case no space. */}
+        <MyTasksCard />
+
         {/* ── Identity line ── */}
         <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-3 sm:pb-4">
           <div className="w-9 h-9 rounded-full bg-[#1e3a60]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-sm text-[#1e3a60] dark:text-blue-400 shrink-0">
@@ -1641,10 +1651,12 @@ export default function DashboardPage() {
   if (!user) return null;
 
   if (loading) {
+    // Stat tiles and panels in the shape the dashboard actually renders, rather
+    // than a spinner in a 400px void that then jumps to a full page.
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
+      <PageSkeleton>
+        <DashboardSkeleton tiles={3} label="Loading your dashboard" />
+      </PageSkeleton>
     );
   }
 
@@ -1737,6 +1749,12 @@ export default function DashboardPage() {
       {/* Main Container */}
       <div className="mx-auto max-w-7xl px-4 py-5 sm:py-8">
         <div className="space-y-5 sm:space-y-8">
+
+          {/* Anything support has asked this user for. Renders nothing at all
+              when there is nothing outstanding, so it costs the common case
+              no space. Placed above the fold because an unanswered request can
+              be holding up their own verification. */}
+          <MyTasksCard />
 
           {/* ── Identity line ── */}
           <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-3 sm:pb-4">

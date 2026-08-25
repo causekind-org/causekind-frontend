@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { motion, useReducedMotion, useMotionValue, useMotionTemplate, useAnimationFrame, useScroll, useSpring } from "framer-motion";
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
@@ -19,10 +19,11 @@ import {
   ArrowRight,
   Languages,
   Play,
-  Plus,
+  ChevronDown,
 } from "lucide-react";
 import { getPlatformStats, type PlatformStats } from "@/lib/api";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
+import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { locales } from "@/i18n/config";
 import { MATCH_RADIUS_KM } from "@/lib/constants";
 
@@ -568,51 +569,123 @@ function TrustSignalMetric({
   );
 }
 
-/* ─── Category pill with slide-in animation ─────────────────────────── */
+/* ─── Category pill ──────────────────────────────────────────────────────
+   The `<Link>` is the OUTERMOST element and carries the padding, so the whole
+   visible pill is the hit target.
+
+   The previous version had this inverted: `motion.div` held the padding and
+   background while the `<Link>` wrapped only the icon and text, so the padded
+   ring around the label looked clickable and was not. It also made the link
+   optional, which is how six of these ended up as inert `motion.div`s that
+   merely resembled the one real link.
+
+   `motion.div` survives purely as an entrance wrapper. It cannot be the
+   interactive element, and hover/focus lift lives in CSS rather than
+   `whileHover` for two reasons: `whileHover` never fires for a keyboard user,
+   and a transform driven by Framer would fight the one the entrance spring is
+   still settling. `transition-transform` on the link handles both states at
+   once, and `motion-reduce:` opts the whole thing out. */
 function CategoryPill({
   icon: Icon,
   label,
-  delay,
   href,
+  delay,
+  reduceMotion,
 }: {
   icon: React.ElementType;
   label: string;
+  href: string;
   delay: number;
-  /** When set the pill becomes a link — used by the "+N more" variant. */
-  href?: string;
+  reduceMotion: boolean;
 }) {
-  const body = (
-    <>
-      <Icon className="w-3.5 h-3.5 text-[#b04a15]" />
-      <span className="text-sm font-bold text-stone-700 dark:text-stone-300">{label}</span>
-    </>
-  );
-
   return (
     <motion.div
-      className={`flex items-center gap-1.5 px-3 py-2 rounded-full bg-white dark:bg-zinc-900
-                 border border-[#e5e2d5]/60 dark:border-stone-800 shadow-sm ${
-                   href ? "cursor-pointer hover:border-[#b04a15]/40" : "cursor-default"
-                 }`}
-      initial={{ opacity: 0, x: -20 }}
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, amount: 0.1 }}
       transition={{
         type: "spring",
         stiffness: 80,
         damping: 18,
-        delay: delay / 1000,
+        // Stagger is entrance choreography, not information — it goes with the
+        // travel under reduced motion.
+        delay: reduceMotion ? 0 : delay / 1000,
       }}
-      whileHover={{ y: -2, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", transition: { duration: 0.15 } }}
     >
-      {href ? (
-        <Link href={href} className="flex items-center gap-1.5">
-          {body}
-        </Link>
-      ) : (
-        body
-      )}
+      <Link
+        href={href}
+        // Announces the destination rather than just the category, since the
+        // visible text alone ("Medical aid") does not say it is a link to a
+        // board of requests.
+        aria-label={`Browse ${label} requests`}
+        // min-h-11 is the 44px touch floor. `active:scale-[0.97]` is the press
+        // feedback that a touch device gets in place of hover.
+        className="group flex min-h-11 items-center gap-1.5 rounded-full border border-[#e5e2d5]/60
+                   bg-white px-3 shadow-sm transition-[transform,border-color,box-shadow] duration-150
+                   hover:-translate-y-0.5 hover:border-[#b04a15]/50 hover:shadow-[0_4px_16px_rgba(176,74,21,0.14)]
+                   focus-visible:-translate-y-0.5 focus-visible:border-[#b04a15]/50 focus-visible:outline-none
+                   focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2
+                   active:scale-[0.97]
+                   motion-reduce:transition-none motion-reduce:hover:translate-y-0
+                   motion-reduce:focus-visible:translate-y-0 motion-reduce:active:scale-100
+                   dark:border-stone-800 dark:bg-zinc-900 dark:focus-visible:ring-offset-zinc-950"
+      >
+        <Icon
+          className="h-3.5 w-3.5 shrink-0 text-[#b04a15] transition-transform duration-150
+                     group-hover:scale-110 group-focus-visible:scale-110
+                     motion-reduce:transition-none motion-reduce:group-hover:scale-100
+                     motion-reduce:group-focus-visible:scale-100"
+          aria-hidden="true"
+        />
+        <span className="text-sm font-bold text-stone-700 dark:text-stone-300">{label}</span>
+      </Link>
     </motion.div>
+  );
+}
+
+/* ─── "Show N more" toggle ───────────────────────────────────────────────
+   A button, deliberately styled apart from the pills. The old version was a
+   pill-shaped `<Link>` to /requests sitting in the same row as the categories,
+   so it read as a tenth category that happened to be called "3 more".
+
+   Only rendered below `lg` — the wide layout shows all nine and has nothing to
+   toggle, so the control is absent from the DOM there rather than hidden with
+   a class that would leave it in the tab order. */
+function MoreCategoriesToggle({
+  expanded,
+  count,
+  controls,
+  onToggle,
+  buttonRef,
+}: {
+  expanded: boolean;
+  count: number;
+  controls: string;
+  onToggle: () => void;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
+}) {
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      aria-controls={controls}
+      className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed
+                 border-stone-300 px-3 text-sm font-bold text-stone-500 transition-colors
+                 hover:border-[#b04a15]/50 hover:text-[#b04a15]
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]
+                 focus-visible:ring-offset-2
+                 dark:border-stone-700 dark:text-stone-400 dark:focus-visible:ring-offset-zinc-950"
+    >
+      <ChevronDown
+        className={`h-3.5 w-3.5 transition-transform duration-200 motion-reduce:transition-none ${
+          expanded ? "rotate-180" : ""
+        }`}
+        aria-hidden="true"
+      />
+      {expanded ? "Show fewer categories" : `Show ${count} more categories`}
+    </button>
   );
 }
 
@@ -641,6 +714,17 @@ export function BeTheChangeSection({
   const { ref: statsRef, inView: statsInView } = useInView(0.3);
   const { user } = useAuth();
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(initialStats ?? null);
+
+  // Category-pill overflow, below `lg` only. `useId` rather than a literal
+  // string because HomeClient mounts this component twice — a hardcoded id
+  // would put two of the same `aria-controls` target in the document and the
+  // toggle would resolve to whichever came first.
+  const pillsReduceMotion = useReducedMotion() ?? false;
+  const overflowId = useId();
+  const [pillsExpanded, setPillsExpanded] = useState(false);
+  // Focus must survive the collapse: the revealed group unmounts, and if focus
+  // had moved into it the document would drop focus to <body>.
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!initialStats) {
@@ -797,9 +881,17 @@ export function BeTheChangeSection({
    * <p>`CATEGORY_VISUALS` already calls itself the single source of truth for
    * category icons, so nothing needs mapping by hand: adding a category updates
    * the pills, the overflow count and the metric together.
+   *
+   * <p>Source is `IN_KIND_CATEGORIES` rather than `ALL_REQUEST_CATEGORIES`
+   * because a pill now needs a destination as well as a name, and that file
+   * owns the canonical name → slug pairing. Slugifying the label here would be
+   * a second mapping free to drift from the routes that actually exist — and
+   * `inKindCategories.ts` already throws at import if the two lists disagree,
+   * so taking the names from there means a missing editorial entry is a build
+   * failure rather than a pill linking to a 404.
    */
-  const shownCategories = ALL_REQUEST_CATEGORIES.slice(0, PILL_LIMIT);
-  const remainingCategories = ALL_REQUEST_CATEGORIES.length - shownCategories.length;
+  const firstCategories = IN_KIND_CATEGORIES.slice(0, PILL_LIMIT);
+  const overflowCategories = IN_KIND_CATEGORIES.slice(PILL_LIMIT);
 
   return (
     <section
@@ -858,27 +950,87 @@ export function BeTheChangeSection({
             </p>
           </div>
 
-          {/* ── Category pills (slide-in from left) ── */}
-          <div className="flex flex-wrap gap-2 mb-10" data-tour={tourAnchors ? "guest-categories" : undefined}>
-            {shownCategories.map((name, i) => (
-              <CategoryPill
-                key={name}
-                icon={CATEGORY_VISUALS[name].Icon}
-                label={name}
-                delay={i * 80}
-              />
-            ))}
-            {/* Only when there genuinely are more — if the list ever shrinks to
-                the limit this disappears rather than claiming "+0 more". */}
-            {remainingCategories > 0 && (
-              <CategoryPill
-                icon={Plus}
-                label={`${remainingCategories} more`}
-                delay={shownCategories.length * 80}
-                href="/requests"
-              />
-            )}
-          </div>
+          {/* ── Category pills — every one links to its own In-Kind page ──
+               A <nav> with a list: this is a set of navigation choices, and a
+               screen reader user benefits from being told how many there are
+               and being able to skip past them. */}
+          <nav
+            aria-label="Browse in-kind categories"
+            className="mb-10"
+            data-tour={tourAnchors ? "guest-categories" : undefined}
+          >
+            <ul className="flex flex-wrap gap-2">
+              {firstCategories.map((category, i) => (
+                <li key={category.slug}>
+                  <CategoryPill
+                    icon={CATEGORY_VISUALS[category.name].Icon}
+                    label={category.name}
+                    href={`/requests/category/${category.slug}`}
+                    delay={i * 80}
+                    reduceMotion={pillsReduceMotion}
+                  />
+                </li>
+              ))}
+
+              {/*
+                The overflow three, in a nested list so `aria-controls` has a
+                single element to point at. `<li>` containing `<ul>` is valid;
+                `display: contents` stops the nesting from creating a box, so
+                the three pills wrap into the same flex row as the first six
+                rather than forming a second row of their own.
+
+                All nine are always in the DOM. Below `lg` when collapsed the
+                last three are CSS-hidden, which keeps every category link
+                crawlable and means no pill is ever rendered twice.
+              */}
+              {overflowCategories.length > 0 && (
+                <li className="contents">
+                  <ul id={overflowId} className="contents">
+                    {overflowCategories.map((category, i) => (
+                      <li
+                        key={category.slug}
+                        // Hidden, not merely invisible: `display: none` takes
+                        // them out of the tab order too, so a keyboard user
+                        // cannot land on a pill they cannot see.
+                        className={pillsExpanded ? undefined : "max-lg:hidden"}
+                      >
+                        <CategoryPill
+                          icon={CATEGORY_VISUALS[category.name].Icon}
+                          label={category.name}
+                          href={`/requests/category/${category.slug}`}
+                          delay={(PILL_LIMIT + i) * 80}
+                          reduceMotion={pillsReduceMotion}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+
+              {/* Below `lg` only — the wide layout shows all nine, so there is
+                  nothing to toggle and the control is absent from the DOM
+                  rather than hidden while still focusable. */}
+              {overflowCategories.length > 0 && (
+                <li className="lg:hidden">
+                  <MoreCategoriesToggle
+                    expanded={pillsExpanded}
+                    count={overflowCategories.length}
+                    controls={overflowId}
+                    buttonRef={toggleRef}
+                    onToggle={() => {
+                      setPillsExpanded(v => !v);
+                      // Collapsing unmounts nothing here, but focus must stay
+                      // on the control either way: without this a click leaves
+                      // focus on a button whose label has just changed, and a
+                      // screen reader announces the new state against the old
+                      // position.
+                      toggleRef.current?.focus();
+                    }}
+                  />
+                </li>
+              )}
+            </ul>
+          </nav>
 
           {/* ── Trust journey — an animated connecting path, no card containers ── */}
           <div data-tour={tourAnchors ? "guest-journey" : undefined}>

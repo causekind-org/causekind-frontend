@@ -36,6 +36,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { loginUrlFor } from "@/lib/safeRedirect";
 import { toast } from "@/lib/toast";
 import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOfferWizard";
 import Link from "next/link";
@@ -387,8 +388,22 @@ function reducer(state: FormState, action: Action): FormState {
 export default function OfferWizardPage() {
   const params = useParams();
   const router = useRouter();
-  useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const requestId = Number(params.id);
+
+  // Direct navigation here as a guest (a shared link, a bookmark, the public
+  // board) has to end at login and come back — not at a wizard quietly failing
+  // on 401s, which is what `useAuth()` with its result discarded used to give.
+  // A donee is bounced too: this is the donor offer flow, and the whole page
+  // assumes the viewer is not the person who posted the need.
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.replace(loginUrlFor(`/requests/${params.id}/offer`));
+    } else if (user.role === "DONEE") {
+      router.replace("/requests");
+    }
+  }, [authLoading, user, router, params.id]);
 
   const [step, setStep] = useState<Step>(1);
   const [form, dispatch] = useReducer(reducer, INITIAL);
@@ -417,6 +432,9 @@ export default function OfferWizardPage() {
   // Load request data and check for an existing offer
   useEffect(() => {
     if (!requestId) return;
+    // Don't fire five authenticated calls for someone who is about to be
+    // redirected — a guest would just collect 401s, and a donee 403s.
+    if (authLoading || !user || user.role === "DONEE") return;
     getAnonymizedRequest(requestId).then(setRequest).catch(() => setRequestLoadFailed(true));
     getQuantityAllocation(requestId).then(setQty).catch(() => {});
     // Check if the donor already has an offer for this request
@@ -440,7 +458,7 @@ export default function OfferWizardPage() {
         }
       })
       .catch(() => {});
-  }, [requestId]);
+  }, [requestId, authLoading, user]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     dispatch({ type: "SET", key, value: value as string | boolean | DonorFlowType });
@@ -667,6 +685,17 @@ export default function OfferWizardPage() {
         >
           Back to Requests
         </button>
+      </div>
+    );
+  }
+
+  // Render nothing while the redirect above is in flight. Without this a guest
+  // sees a frame of the donor wizard — and the data effects fire, producing 401s
+  // for a page they were never allowed to open.
+  if (authLoading || !user || user.role === "DONEE") {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="sr-only">Redirecting…</p>
       </div>
     );
   }

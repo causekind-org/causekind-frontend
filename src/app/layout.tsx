@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
+import { RouteProgressBar } from "@/components/RouteProgressBar";
 import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -115,6 +117,14 @@ export default async function RootLayout({
           <GoogleProvider>
             <AuthProvider>
               <NotificationsProvider>
+                {/* Suspense is required, not stylistic: RouteProgressBar calls
+                    useSearchParams, and without a boundary Next opts the whole
+                    tree out of static rendering and fails the build. It has no
+                    fallback because there is nothing to show before a
+                    navigation starts. */}
+                <Suspense fallback={null}>
+                  <RouteProgressBar />
+                </Suspense>
                 <RoleThemeBridge />
                 <SuperAdminRedirect />
                 <AdminRedirect />

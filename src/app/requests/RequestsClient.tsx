@@ -9,6 +9,10 @@ import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTransla
 import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import PublicRequestsBoard from "@/components/PublicRequestsBoard";
+import { loginUrlFor } from "@/lib/safeRedirect";
+import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -541,11 +545,18 @@ export default function RequestsClient() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.replace("/login?redirect=/requests"); }
-    // DONEEs now get their own view — no redirect
-  }, [user, authLoading, router]);
+  // No guest redirect. Browsing is public; only offering is authenticated.
+  //
+  // This used to be `router.replace("/login?redirect=/requests")`, which made
+  // the whole public board below unreachable — `PublicRequestsBoard` was
+  // already wired up at the guard, but the effect fired first and bounced every
+  // logged-out visitor to login before it could render. It also used the
+  // obsolete `redirect` parameter; login reads `next` and validates it through
+  // `safeInternalPath`, so the old value was ignored even when it arrived.
+  //
+  // Nothing replaces it: the render guard further down already branches
+  // authLoading -> guest -> DONEE -> donor, and every data effect in this
+  // component is gated on `user`, so a guest fetches nothing from here.
 
   const [requests,  setRequests]  = useState<ItemRequest[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
@@ -737,7 +748,11 @@ export default function RequestsClient() {
   // ── Donate modal handlers ─────────────────────────────────────────────────
 
   function openDonateModal(req: ItemRequest) {
-    if (!user) { router.push("/login"); return; }
+    // Defence in depth: a guest never reaches this board (the guard returns
+    // PublicRequestsBoard first), but if that ever changes, losing the
+    // destination is the failure mode that is invisible in testing — the user
+    // logs in successfully and simply lands somewhere else.
+    if (!user) { router.push(loginUrlFor(`/requests/${req.id}/offer`)); return; }
     router.push(`/requests/${req.id}/offer`);
   }
 
@@ -808,13 +823,27 @@ export default function RequestsClient() {
 
   // ── Guard ─────────────────────────────────────────────────────────────────
 
-  if (authLoading || !user) {
+  if (authLoading) {
+    // Shaped like the board that follows, so the page settles once rather than
+    // jumping from a centred spinner to a three-column grid.
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f4f0] dark:bg-zinc-950">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--ck-role-accent)]" />
-      </div>
+      <PageSkeleton>
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-9 w-64 max-w-full" />
+          <Skeleton className="h-4 w-full max-w-xl" />
+        </div>
+        <div className="mt-7">
+          <CardGridSkeleton count={6} label="Loading in-kind requests" />
+        </div>
+      </PageSkeleton>
     );
   }
+
+  // Logged-out visitors get the public board: the reduced-field endpoint, no GPS
+  // prompt, and every action routed through /login?next=. They used to be held
+  // on the spinner above forever, since `user` never arrives for a guest.
+  if (!user) return <PublicRequestsBoard />;
 
   // Dedicated donee portal
   if (user.role === "DONEE") return <DoneeRequestsPage />;

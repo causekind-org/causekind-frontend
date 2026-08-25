@@ -1190,5 +1190,23 @@
     "viewDonations": "Voir mes dons",
     "browseCampaigns": "Parcourez plus de campagnes",
     "toastSuccess": "Don confirmé ! Merci d'avoir fait une différence."
+  },
+  "audiencePathways": {
+    "eyebrow": "Deux côtés, une plateforme",
+    "heading": "Quel que soit votre côté, CauseKind vous relie.",
+    "subheading": "Certains ont des choses à donner. D'autres ont de vrais besoins. C'est ici qu'ils se rencontrent — vérifié, suivi et remis en main propre.",
+    "footnote": "L'inscription est gratuite. Vous pouvez changer de rôle à tout moment.",
+    "donor": {
+      "eyebrow": "Donnez du sens à ce que vous avez",
+      "heading": "Transformez l'utile en soutien opportun.",
+      "body": "Parcourez des besoins en nature vérifiés et proposez des objets qui aident immédiatement une personne, une famille ou une communauté.",
+      "cta": "Rejoindre comme donateur"
+    },
+    "donee": {
+      "eyebrow": "Demandez avec dignité",
+      "heading": "Obtenez du soutien pour ce qui compte ensuite.",
+      "body": "Partagez un besoin réel, entrez en contact avec des personnes prêtes à aider, et recevez un soutien clair et respectueux.",
+      "cta": "Rejoindre comme bénéficiaire"
+    }
   }
 }

@@ -772,6 +772,35 @@ export type ItemRequest = {
   verificationDueAt: string | null;
 };
 
+/**
+ * The guest-browsable projection of a need. Deliberately a *different* type
+ * from `ItemRequest`, not a Partial of it — the backend endpoint that serves
+ * this omits latitude/longitude/pincode/doneeId/status entirely, and modelling
+ * it as an optional-fields variant would invite code that reads
+ * `req.latitude ?? fallback` and quietly assumes the data might be there.
+ */
+export type PublicItemRequest = {
+  id: number;
+  title: string;
+  category: string;
+  quantity: number;
+  urgency: string;
+  city: string;
+  description: string | null;
+  createdAt: string;
+  imageUrl: string | null;
+  emergency: boolean;
+  doneeFirstName: string;
+};
+
+/** Public need board — no auth, no GPS, no distance sorting (newest first). */
+export function getPublicItemRequests(categories?: string[]) {
+  const params = new URLSearchParams();
+  if (categories && categories.length > 0) categories.forEach(c => params.append("categories", c));
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return request<PublicItemRequest[]>(`/api/v1/item-requests/public${qs}`, { silent401: true });
+}
+
 export function getItemRequests(categories?: string[], lat?: number, lng?: number, opts?: { silent401?: boolean }) {
   const params = new URLSearchParams();
   if (categories && categories.length > 0) {
@@ -2671,4 +2700,858 @@ export function superAdminUserTimeline(
   if (opts.from) params.set("from", opts.from);
   if (opts.to) params.set("to", opts.to);
   return request<SaTimelinePage>(`/api/v1/super-admin/users/${id}/timeline?${params.toString()}`);
+}
+
+// ── Super Admin console — Phase 3: support cases ──────────────────────────────
+// Disputes are a category of case as of this phase: raising a post-delivery
+// issue auto-opens one, so the disputes queue is a filter over this queue rather
+// than a second place to look.
+
+export type SaCaseStatus =
+  | "NEW" | "IN_PROGRESS" | "WAITING_ON_USER" | "WAITING_ON_INTERNAL"
+  | "RESOLVED" | "CLOSED" | "MERGED" | "REJECTED";
+
+export type SaCasePriority = "URGENT" | "HIGH" | "NORMAL" | "LOW";
+
+export type SaCaseVisibility = "INTERNAL" | "USER";
+
+export type SaCaseSummary = {
+  id: number;
+  caseNumber: string;
+  subject: string;
+  category: string;
+  priority: SaCasePriority;
+  status: SaCaseStatus;
+  subjectUserName: string | null;
+  subjectUserId: number | null;
+  assignedAdminEmail: string | null;
+  dueAt: string | null;
+  overdue: boolean;
+  createdAt: string;
+};
+
+export type SaCaseEvent = {
+  id: number;
+  eventType: string;
+  visibility: SaCaseVisibility;
+  actor: string;
+  body: string | null;
+  previousValue: string | null;
+  newValue: string | null;
+  createdAt: string;
+};
+
+export type SaCaseLink = {
+  id: number;
+  entityType: string;
+  entityId: number;
+  note: string | null;
+  createdAt: string;
+};
+
+export type SaInformationItem = {
+  id: number;
+  itemType: string;
+  label: string;
+  docType: string | null;
+  required: boolean;
+  response: string | null;
+  answered: boolean;
+  respondedAt: string | null;
+};
+
+export type SaInformationRequest = {
+  id: number;
+  caseId: number | null;
+  targetUserId: number;
+  instructions: string;
+  status: string;
+  dueAt: string | null;
+  holdWorkflow: boolean;
+  overdue: boolean;
+  createdByEmail: string;
+  reviewNote: string | null;
+  createdAt: string;
+  items: SaInformationItem[];
+};
+
+export type SaCaseDetail = {
+  summary: SaCaseSummary;
+  description: string | null;
+  resolutionSummary: string | null;
+  resolvedAt: string | null;
+  resolvedByEmail: string | null;
+  mergedIntoCaseId: number | null;
+  systemOpened: boolean;
+  waitingOnUserMinutes: number;
+  events: SaCaseEvent[];
+  links: SaCaseLink[];
+  informationRequests: SaInformationRequest[];
+  // Only these moves are legal from the current status. Drive the UI off this
+  // rather than offering every status and taking a 409 back.
+  allowedNextStatuses: SaCaseStatus[];
+};
+
+export type SaCaseMeta = {
+  categories: { name: string; label: string; defaultSlaHours: number }[];
+  statuses: SaCaseStatus[];
+  priorities: SaCasePriority[];
+  linkableTypes: string[];
+};
+
+export type SaCaseFilters = {
+  q?: string;
+  status?: SaCaseStatus;
+  category?: string;
+  priority?: SaCasePriority;
+  assignedAdminId?: number;
+  subjectUserId?: number;
+  unassigned?: boolean;
+};
+
+export function superAdminCaseQueue(filters: SaCaseFilters = {}, page = 0, size = 25) {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (filters.q) params.set("q", filters.q);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.priority) params.set("priority", filters.priority);
+  if (filters.assignedAdminId) params.set("assignedAdminId", String(filters.assignedAdminId));
+  if (filters.subjectUserId) params.set("subjectUserId", String(filters.subjectUserId));
+  if (filters.unassigned) params.set("unassigned", "true");
+  return request<SaPage<SaCaseSummary>>(`/api/v1/super-admin/cases?${params.toString()}`);
+}
+
+export function superAdminCaseMeta() {
+  return request<SaCaseMeta>("/api/v1/super-admin/cases/meta");
+}
+
+export function superAdminCase(id: number) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}`);
+}
+
+export function superAdminCreateCase(body: {
+  subject: string; description?: string; category: string;
+  priority?: SaCasePriority; subjectUserId?: number; reportedByUserId?: number;
+}) {
+  return request<SaCaseDetail>("/api/v1/super-admin/cases", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminCaseStatus(id: number, status: SaCaseStatus, reason?: string) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, reason }),
+  });
+}
+
+export function superAdminCasePriority(id: number, priority: SaCasePriority) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/priority`, {
+    method: "PATCH",
+    body: JSON.stringify({ priority }),
+  });
+}
+
+export function superAdminCaseAssign(id: number, adminUserId: number | null) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/assignee`, {
+    method: "PATCH",
+    body: JSON.stringify({ adminUserId }),
+  });
+}
+
+// Visibility is never defaulted here, matching the backend. An internal note
+// reaching the user it is about is the worst failure this screen can have.
+export function superAdminCaseMessage(id: number, body: string, visibility: SaCaseVisibility) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ body, visibility }),
+  });
+}
+
+export function superAdminCaseLink(id: number, entityType: string, entityId: number, note?: string) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/links`, {
+    method: "POST",
+    body: JSON.stringify({ entityType, entityId, note }),
+  });
+}
+
+export function superAdminCaseMerge(id: number, targetCaseId: number) {
+  return request<SaCaseDetail>(`/api/v1/super-admin/cases/${id}/merge`, {
+    method: "POST",
+    body: JSON.stringify({ targetCaseId }),
+  });
+}
+
+// ── Phase 4: account restrictions ───────────────────────────────────────────
+
+export type SaRestrictionType =
+  | "CHAT_SEND" | "CALL_REQUEST" | "REQUEST_CREATE" | "LISTING_CREATE"
+  | "OFFER_MAKE" | "PHOTO_UPLOAD" | "CAMPAIGN_CREATE" | "MONEY_DONATE";
+
+export type SaRestrictionScope =
+  | "PLATFORM" | "REQUEST" | "LISTING" | "OFFER" | "MATCH" | "USER";
+
+export type SaRestriction = {
+  id: number;
+  userId: number;
+  type: SaRestrictionType;
+  scopeType: SaRestrictionScope;
+  scopeId: number | null;
+  status: "ACTIVE" | "REVOKED";
+  /**
+   * Computed, not stored. A row keeps status ACTIVE after its expiry passes —
+   * expiry is read from the timestamp rather than swept by a job — so render
+   * this, not status, or an expired restriction will look live.
+   */
+  inForce: boolean;
+  reason: string;
+  internalNote: string | null;
+  startsAt: string;
+  expiresAt: string | null;
+  createdBy: string;
+  revokedBy: string | null;
+  revokedAt: string | null;
+  revocationReason: string | null;
+  caseId: number | null;
+  createdAt: string;
+};
+
+export type SaRestrictionMeta = {
+  types: { name: SaRestrictionType; label: string; blocks: string }[];
+  scopes: SaRestrictionScope[];
+};
+
+export function superAdminRestrictionMeta() {
+  return request<SaRestrictionMeta>("/api/v1/super-admin/restrictions/meta");
+}
+
+export function superAdminRestrictions(userId: number) {
+  return request<SaRestriction[]>(`/api/v1/super-admin/users/${userId}/restrictions`);
+}
+
+export function superAdminApplyRestriction(userId: number, body: {
+  type: SaRestrictionType;
+  scopeType?: SaRestrictionScope;
+  scopeId?: number;
+  reason: string;
+  internalNote?: string;
+  expiresAt?: string;
+  caseId?: number;
+}) {
+  return request<SaRestriction>(`/api/v1/super-admin/users/${userId}/restrictions`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/** A reason is required, which is why lifting takes a body rather than a bare DELETE. */
+export function superAdminRevokeRestriction(restrictionId: number, reason: string) {
+  return request<SaRestriction>(`/api/v1/super-admin/restrictions/${restrictionId}`, {
+    method: "DELETE",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function superAdminRequestInformation(body: {
+  targetUserId: number; caseId?: number; contextType?: string; contextId?: number;
+  instructions: string; dueAt?: string; holdWorkflow?: boolean;
+  items: { label: string; itemType: string; docType?: string; required?: boolean }[];
+}) {
+  return request<SaInformationRequest>("/api/v1/super-admin/cases/information-requests", {
+    method: "POST",
+    body: JSON.stringify({ holdWorkflow: false, ...body }),
+  });
+}
+
+export function superAdminReviewInformation(requestId: number, accept: boolean, note?: string) {
+  return request<SaInformationRequest>(
+    `/api/v1/super-admin/cases/information-requests/${requestId}/review`,
+    { method: "POST", body: JSON.stringify({ accept, note }) }
+  );
+}
+
+export type SaUserNote = {
+  id: number;
+  authorEmail: string;
+  body: string;
+  pinned: boolean;
+  createdAt: string;
+};
+
+export function superAdminUserNotes(userId: number, page = 0, size = 25) {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  return request<SaPage<SaUserNote>>(
+    `/api/v1/super-admin/cases/users/${userId}/notes?${params.toString()}`
+  );
+}
+
+export function superAdminAddUserNote(userId: number, body: string, pinned = false) {
+  return request<SaUserNote>(`/api/v1/super-admin/cases/users/${userId}/notes`, {
+    method: "POST",
+    body: JSON.stringify({ body, pinned }),
+  });
+}
+
+// ── User-facing: what the platform is waiting on from you ─────────────────────
+// Deliberately no case id, staff identity or internal note in these types. The
+// shape itself is the guarantee, matching UserTask on the backend.
+
+export type MyTaskItem = {
+  id: number;
+  itemType: string;
+  label: string;
+  docType: string | null;
+  required: boolean;
+  response: string | null;
+  answered: boolean;
+};
+
+export type MyTask = {
+  requestId: number;
+  instructions: string;
+  status: string;
+  dueAt: string | null;
+  overdue: boolean;
+  createdAt: string;
+  items: MyTaskItem[];
+};
+
+export function myTasks() {
+  return request<MyTask[]>("/api/v1/me/tasks");
+}
+
+export function myTaskCount() {
+  return request<{ outstanding: number }>("/api/v1/me/tasks/count");
+}
+
+// Item id to answer. Items left out are untouched rather than cleared, so a long
+// task can be answered across several sittings.
+export function respondToTask(requestId: number, answers: Record<number, string>) {
+  return request<MyTask>(`/api/v1/me/tasks/${requestId}/respond`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  });
+}
+
+/**
+ * Uploads a photo for a PHOTO/DOCUMENT item and returns its URL, which is then
+ * sent as that item's answer through respondToTask.
+ *
+ * Raw fetch rather than request(), which sets a JSON content type — the browser
+ * has to set the multipart boundary itself.
+ *
+ * The backend scopes this to the request's target user and 404s otherwise, so a
+ * failure here is genuinely "not yours or not open", never a silent success.
+ */
+export async function uploadTaskAttachment(requestId: number, file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/me/tasks/${requestId}/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!res.ok) {
+    // 413 is refused by the servlet container before the handler runs, so there
+    // is no JSON body to read a message out of.
+    if (res.status === 413) throw new Error("That photo is too large — please use one under 10MB.");
+    let msg = "Upload failed — please try again.";
+    try {
+      const body = await res.json();
+      if (body?.message) msg = body.message;
+    } catch { /* non-JSON error body; keep the default */ }
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data.url as string;
+}
+
+// ── Phase 5: interventions (staff cancellation) ──────────────────────────────
+
+/**
+ * What staff may do to a record, as decided by CancellationPolicy.
+ *
+ * Mirrors the backend's CancellationOption. The important property is that this
+ * is not advisory: the execute endpoint consults the same policy, so `allowed:
+ * false` means the POST would be refused for the stated reason. The console must
+ * not offer an action the preview says is unavailable.
+ */
+export type SaCancellationOutcome =
+  | "DELETE"      // never visible to anyone — removed outright
+  | "WITHDRAW"    // out of circulation before a counterpart committed
+  | "CANCEL"      // backing out after a counterpart committed; cascades and notifies
+  | "HIDE"        // already terminal; clears the owner's dashboard, keeps the record
+  | "DISPUTE"     // past the point of no return — the honest route is Report an issue
+  | "OVERRIDE"    // staff acting past the boundary a donor or donee is stopped at
+  | "NONE";       // no exit exists for this actor in this state
+
+export type SaCancellationOption = {
+  allowed: boolean;
+  outcome: SaCancellationOutcome;
+  /** Contextual — "Withdraw offer", never a generic "Cancel". Null when not allowed. */
+  actionLabel: string | null;
+  requiresReason: boolean;
+  /** A counterpart has already committed time or an item to this. */
+  late: boolean;
+  /** Counterpart-impact copy. Null when nobody else is involved yet. */
+  warning: string | null;
+  /** Why not, when `allowed` is false. Written to be shown as-is. */
+  blockedReason: string | null;
+  /**
+   * Derived server-side from `isMutating()`, not a stored field: true when the
+   * outcome changes something rather than merely describing it. The backend uses
+   * it to decide whether to build `consequences` at all, so an empty list on a
+   * `mutating: true` option is a real "nothing else follows" — the distinction
+   * the consequences renderer depends on.
+   */
+  mutating: boolean;
+};
+
+export type SaConsequenceKind =
+  | "STATUS_CHANGE"
+  | "ITEM_RELEASED"
+  | "REQUEST_REOPENED"
+  | "BACKUP_PROMOTED"
+  | "WAITLIST_NOTIFIED"
+  | "NOTIFICATION"
+  | "FRAUD_FLAG"
+  | "CONFIRMATION_ERASED"
+  | "CERTIFICATE_AFFECTED";
+
+export type SaCancellationConsequence = {
+  kind: SaConsequenceKind;
+  description: string;
+};
+
+/**
+ * @property consequences empty means "nothing else would follow", never "we could
+ * not work it out" — the backend builds this list only for mutating outcomes and
+ * returns an empty one otherwise. Render it as a statement, not as a failure.
+ */
+export type SaCancellationPreview = {
+  entityType: string;
+  entityId: number;
+  currentStatus: string;
+  option: SaCancellationOption;
+  consequences: SaCancellationConsequence[];
+};
+
+export type SaCancellationReason =
+  | "ITEM_NO_LONGER_AVAILABLE"
+  | "CANNOT_ARRANGE_HANDOVER"
+  | "SCHEDULING_PROBLEM"
+  | "OTHER_PARTY_UNRESPONSIVE"
+  | "SAFETY_CONCERN"
+  | "CREATED_BY_MISTAKE"
+  | "OTHER";
+
+/** Labels copied from CancellationReason so the console reads as the app does. */
+export const SA_CANCELLATION_REASONS: { value: SaCancellationReason; label: string }[] = [
+  { value: "ITEM_NO_LONGER_AVAILABLE", label: "The item is no longer available" },
+  { value: "CANNOT_ARRANGE_HANDOVER",  label: "Unable to arrange handover" },
+  { value: "SCHEDULING_PROBLEM",       label: "Scheduling problem" },
+  { value: "OTHER_PARTY_UNRESPONSIVE", label: "The other party is unresponsive" },
+  { value: "SAFETY_CONCERN",           label: "Safety concern" },
+  { value: "CREATED_BY_MISTAKE",       label: "Created by mistake" },
+  { value: "OTHER",                    label: "Other" },
+];
+
+/**
+ * Mirrors CancellationReason.requiresDetails(). Duplicated deliberately so the
+ * submit button can be disabled before the request rather than after a 400 —
+ * the server still enforces it, and this is the friendlier half of the same rule.
+ * SAFETY_CONCERN because a safety report nobody can read is not actionable, and
+ * OTHER because it is definitionally uninformative.
+ */
+export function saReasonRequiresDetails(reason: SaCancellationReason): boolean {
+  return reason === "SAFETY_CONCERN" || reason === "OTHER";
+}
+
+/**
+ * The two record types staff can currently act on. These are path segments, and
+ * they sit at `/{entity}/{id}/…` — deeper than the generic console's
+ * `/super-admin/{entity}` mapping, which is why they cannot hijack it. Anything
+ * added here must keep that shape.
+ */
+export type SaInterventionEntity = "offers" | "matches";
+
+export function superAdminCancellationPreview(entity: SaInterventionEntity, id: number) {
+  return request<SaCancellationPreview>(
+    `/api/v1/super-admin/${entity}/${id}/cancellation-preview`
+  );
+}
+
+export function superAdminCancel(
+  entity: SaInterventionEntity,
+  id: number,
+  body: { reason: SaCancellationReason; details?: string }
+) {
+  return request<SaCancellationOption>(`/api/v1/super-admin/${entity}/${id}/cancel`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+// ── Phase 5B-2: named domain actions ─────────────────────────────────────────
+
+/**
+ * The five named actions. §8 of the rebuild plan requires interventions to be
+ * expressed this way rather than as status writes, so there is deliberately no
+ * "set status" call anywhere in this file for these record types.
+ */
+export type SaInterventionType = "HOLD" | "RESUME" | "REQUEST_INFO" | "REASSESS" | "REPUBLISH";
+
+/**
+ * One action and whether it can be taken right now.
+ *
+ * Unavailable actions are returned too, carrying `blockedReason` — "why can't I
+ * do this" is the question, and an action that vanishes from the list answers it
+ * with a blank space. Render the reason; never hide the row.
+ */
+export type SaInterventionAction = {
+  type: SaInterventionType;
+  available: boolean;
+  /** Contextual — "Pause this listing", never a generic "Hold". Null when blocked. */
+  label: string | null;
+  /** Free text is mandatory, not optional. The owner reads it. */
+  requiresText: boolean;
+  /** Why not, when `available` is false. Written to be shown as-is. */
+  blockedReason: string | null;
+  /** Counterpart impact worth reading before acting. Null when nobody else is affected. */
+  warning: string | null;
+};
+
+/** Record types the named actions apply to. Path segments. */
+export type SaActionEntity = "requests" | "listings" | "offers";
+
+export function superAdminActions(entity: SaActionEntity, id: number) {
+  return request<SaInterventionAction[]>(`/api/v1/super-admin/${entity}/${id}/actions`);
+}
+
+/** All three mutating actions answer with the refreshed action list, not a bare 200. */
+export function superAdminHold(entity: SaActionEntity, id: number, reason: string) {
+  return request<SaInterventionAction[]>(`/api/v1/super-admin/${entity}/${id}/hold`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function superAdminResume(entity: SaActionEntity, id: number, reason?: string) {
+  return request<SaInterventionAction[]>(`/api/v1/super-admin/${entity}/${id}/resume`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function superAdminReassess(entity: SaActionEntity, id: number) {
+  return request<SaInterventionAction[]>(`/api/v1/super-admin/${entity}/${id}/reassess`, {
+    method: "POST",
+  });
+}
+
+/**
+ * No `targetUserId`: who to ask follows from the record, and the server derives
+ * it. Letting the console name someone would allow a request about one person's
+ * listing to be sent to another.
+ */
+export function superAdminRequestInfoFor(
+  entity: SaActionEntity,
+  id: number,
+  body: {
+    instructions: string;
+    dueAt?: string;
+    holdWorkflow?: boolean;
+    caseId?: number;
+    items: { label?: string; itemType: string; docType?: string; required?: boolean }[];
+  }
+) {
+  return request<{ informationRequestId: number }>(
+    `/api/v1/super-admin/${entity}/${id}/request-info`,
+    { method: "POST", body: JSON.stringify({ holdWorkflow: false, ...body }) }
+  );
+}
+
+// ── Phase 5B-2: match state machine view ─────────────────────────────────────
+
+/**
+ * @property partlyConfirmed the state with **no status of its own** — exactly one
+ * side has confirmed the handover. It is the most confusing thing to meet in
+ * support, because the match still reads as in-progress while one party believes
+ * it is finished, and it is why staff cancelling here get OVERRIDE.
+ */
+export type SaHandoverState = {
+  donorConfirmed: boolean;
+  donorConfirmedAt: string | null;
+  doneeConfirmed: boolean;
+  doneeConfirmedAt: string | null;
+  partlyConfirmed: boolean;
+  bothConfirmed: boolean;
+};
+
+export type SaMatchParticipant = { userId: number; name: string; email: string };
+
+export type SaTransitionRecord = {
+  fromStatus: string;
+  toStatus: string;
+  changedBy: string | null;
+  note: string | null;
+  at: string;
+};
+
+/**
+ * @property stuckSince when the current status began. **Null means unknown, not
+ * "just changed"** — nothing has been recorded — and staff must be able to tell
+ * those apart before chasing someone about a delay.
+ */
+export type SaMatchState = {
+  matchId: number;
+  status: string;
+  terminal: boolean;
+  handover: SaHandoverState;
+  stuckSince: string | null;
+  donor: SaMatchParticipant | null;
+  donee: SaMatchParticipant | null;
+  cancellation: SaCancellationOption;
+  history: SaTransitionRecord[];
+};
+
+export function superAdminMatchState(id: number) {
+  return request<SaMatchState>(`/api/v1/super-admin/matches/${id}/state`);
+}
+
+// ── Phase 6: communications ──────────────────────────────────────────────────
+
+export type SaCommunicationChannel = "EMAIL" | "WHATSAPP";
+export type SaCommunicationStatus = "QUEUED" | "SENT" | "FAILED";
+
+export type SaCommunicationTemplate = {
+  name: string;
+  /** Null for FREE_TEXT, where the composer supplies its own. */
+  subject: string | null;
+  placeholders: string[];
+  freeText: boolean;
+};
+
+/**
+ * Exactly what would be sent.
+ *
+ * Produced by the same compose step the send uses, so what an agent approved is
+ * what leaves — a preview rendered in the browser would be a second
+ * implementation of the message, and two implementations drift.
+ *
+ * @property recipient masked. Revealing it in full is a separate, separately
+ * audited capability, and the composer does not need it in order to send.
+ * @property warnings non-blocking. Staff legitimately quote a phone number back
+ * to the person it belongs to; pasting someone else's in is the leak, and this
+ * is the moment to notice.
+ */
+export type SaCommunicationPreview = {
+  targetUserId: number;
+  recipientName: string;
+  recipient: string;
+  channel: SaCommunicationChannel;
+  template: string;
+  subject: string;
+  body: string;
+  warnings: string[];
+  sendable: boolean;
+  blockedReason: string | null;
+};
+
+export type SaCommunication = {
+  id: number;
+  targetUserId: number;
+  recipient: string | null;
+  channel: SaCommunicationChannel;
+  template: string | null;
+  subject: string | null;
+  body: string | null;
+  status: SaCommunicationStatus;
+  providerMessageId: string | null;
+  failureReason: string | null;
+  caseId: number | null;
+  sentByEmail: string;
+  sentAt: string;
+};
+
+export type SaComposeRequest = {
+  targetUserId: number;
+  channel: SaCommunicationChannel;
+  template: string;
+  subject?: string;
+  body?: string;
+  values?: Record<string, string>;
+  caseId?: number;
+};
+
+export function superAdminCommunicationTemplates() {
+  return request<SaCommunicationTemplate[]>("/api/v1/super-admin/communications/templates");
+}
+
+export function superAdminCommunicationPreview(body: SaComposeRequest) {
+  return request<SaCommunicationPreview>("/api/v1/super-admin/communications/preview", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminCommunicationSend(body: SaComposeRequest) {
+  return request<SaCommunication>("/api/v1/super-admin/communications/send", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminCommunicationLog(params: {
+  userId?: number; caseId?: number; page?: number; size?: number;
+} = {}) {
+  const q = new URLSearchParams();
+  if (params.userId != null) q.set("userId", String(params.userId));
+  if (params.caseId != null) q.set("caseId", String(params.caseId));
+  q.set("page", String(params.page ?? 0));
+  q.set("size", String(params.size ?? 25));
+  return request<SaPage<SaCommunication>>(`/api/v1/super-admin/communications?${q}`);
+}
+
+// ── Phase 7: governance ──────────────────────────────────────────────────────
+
+export type SaRevealField = "EMAIL" | "PHONE";
+
+/**
+ * One occasion on which somebody read a private detail in full.
+ *
+ * Note there is no value here, only which field was read. Recording the value
+ * alongside the fact of reading it would make the trail a second copy of the
+ * data it exists to protect.
+ */
+export type SaRevealLogEntry = {
+  id: number;
+  actorEmail: string;
+  actorRole: string | null;
+  targetUserId: number;
+  field: SaRevealField;
+  justification: string | null;
+  caseId: number | null;
+  revealedAt: string;
+};
+
+export type SaPermissionHistoryEntry = {
+  id: number;
+  adminId: number;
+  capability: string;
+  granted: boolean;
+  changedBy: string;
+  reason: string | null;
+  changedAt: string;
+};
+
+/**
+ * The justification is sent with the request, not collected afterwards. That
+ * ordering is the control: a field that must be filled before the value appears
+ * makes the reader state a purpose.
+ */
+export function superAdminReveal(body: {
+  targetUserId: number;
+  field: SaRevealField;
+  justification: string;
+  caseId?: number;
+}) {
+  return request<{ field: string; value: string }>("/api/v1/super-admin/governance/reveal", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function superAdminRevealLog(params: {
+  userId?: number; actor?: string; page?: number; size?: number;
+} = {}) {
+  const q = new URLSearchParams();
+  if (params.userId != null) q.set("userId", String(params.userId));
+  if (params.actor) q.set("actor", params.actor);
+  q.set("page", String(params.page ?? 0));
+  q.set("size", String(params.size ?? 25));
+  return request<SaPage<SaRevealLogEntry>>(`/api/v1/super-admin/governance/reveals?${q}`);
+}
+
+export function superAdminPermissionHistory(adminId: number, page = 0, size = 25) {
+  return request<SaPage<SaPermissionHistoryEntry>>(
+    `/api/v1/super-admin/admins/${adminId}/history?page=${page}&size=${size}`
+  );
+}
+
+/**
+ * The audit trail as CSV.
+ *
+ * Returns the text rather than triggering a download here: the caller decides
+ * what to do with it, and a download started from library code is invisible to
+ * whoever is reading the component.
+ */
+export async function superAdminAuditExport(filters: {
+  actorEmail?: string; entityType?: string; action?: string;
+} = {}): Promise<string> {
+  const q = new URLSearchParams();
+  if (filters.actorEmail) q.set("actorEmail", filters.actorEmail);
+  if (filters.entityType) q.set("entityType", filters.entityType);
+  if (filters.action) q.set("action", filters.action);
+
+  // Not routed through `request`: that helper parses every successful body as
+  // JSON, and this one is CSV. Kept to a plain fetch rather than generalising
+  // `request` around a content type used by exactly one endpoint.
+  const res = await fetch(`${BASE_URL}/api/v1/super-admin/audit-log/export?${q}`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(
+      res.status === 403
+        ? "You don't have permission to export the audit log."
+        : `The export failed (${res.status}).`
+    );
+  }
+  return res.text();
+}
+
+// ── Phase 8: operations ──────────────────────────────────────────────────────
+
+/**
+ * UNKNOWN is not a synonym for OK. It means the check could not determine an
+ * answer — render it differently, because a health screen showing green because
+ * the check itself failed is worse than one showing nothing.
+ */
+export type SaCheckState = "OK" | "DEGRADED" | "FAILED" | "UNKNOWN";
+
+export type SaHealthCheck = { name: string; state: SaCheckState; detail: string };
+
+export type SaHealthReport = {
+  at: string;
+  checks: SaHealthCheck[];
+  configuration: Record<string, string>;
+  /** Null when Flyway has never run in this environment. */
+  schemaVersion: string | null;
+};
+
+export type SaPlatformConfig = {
+  id: number;
+  configKey: string;
+  configValue: string | null;
+  updatedBy: string | null;
+  reason: string | null;
+  updatedAt: string;
+};
+
+export function superAdminHealth() {
+  return request<SaHealthReport>("/api/v1/super-admin/operations/health");
+}
+
+export function superAdminConfig() {
+  return request<SaPlatformConfig[]>("/api/v1/super-admin/operations/config");
+}
+
+/** The reason is mandatory server-side — a setting that changed for no recorded
+ *  reason is one nobody dares change back. */
+export function superAdminSetConfig(key: string, value: string, reason: string) {
+  return request<SaPlatformConfig>("/api/v1/super-admin/operations/config", {
+    method: "PUT",
+    body: JSON.stringify({ key, value, reason }),
+  });
 }

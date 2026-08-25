@@ -1,9 +1,9 @@
-
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, Suspense } from "react";
+import { useCookieConsent } from "@/hooks/useCookieConsent";
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "123456789";
 
@@ -41,7 +41,33 @@ function MetaPixelInner() {
   );
 }
 
+/**
+ * The Facebook pixel, which loads only after the visitor accepts cookies.
+ *
+ * <p>It used to load unconditionally. `CookieConsent` wrote the visitor's answer
+ * to localStorage and nothing ever read it, so Decline set a key and changed
+ * nothing — the pixel still initialised and reported a PageView on every route
+ * change. That is the case GDPR is specifically about: a non-essential tracker
+ * set before, and against, consent.
+ *
+ * <p>Gating rules, all deliberate:
+ * <ul>
+ *   <li><b>Deny by default.</b> Anything other than an explicit "accepted" —
+ *       unanswered, declined, expired, unreadable, storage disabled, or simply
+ *       not yet read on the first paint — renders nothing.</li>
+ *   <li><b>No unmount teardown.</b> Returning null after a decline stops us
+ *       adding the script, but `fbq` and its cookies survive in a session where
+ *       consent was previously given and then withdrawn. Withdrawal takes effect
+ *       on the next page load. Genuinely clearing it needs `_fbp`/`_fbc` cookie
+ *       removal, which belongs with a real preferences centre rather than here.</li>
+ *   <li><b>Admin routes never ask</b>, because `CookieConsent` skips them — so
+ *       consent stays "unset" there and the pixel correctly never loads.</li>
+ * </ul>
+ */
 export default function MetaPixel() {
+  const consent = useCookieConsent();
+  if (consent !== "accepted") return null;
+
   // Wrap in Suspense to avoid Next.js deoptimizing layout to client-side rendering due to searchParams
   return (
     <Suspense fallback={null}>
