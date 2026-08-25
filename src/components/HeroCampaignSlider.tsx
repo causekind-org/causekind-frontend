@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import type { Campaign } from "@/lib/api";
 import { initiateDonation } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 const TIMER_MS = 2600;
 
@@ -73,6 +74,7 @@ export function HeroCampaignSlider({
   const [paused, setPaused] = useState(false);
   const [donatingId, setDonatingId] = useState<number | null>(null);
   const router = useRouter();
+  const { user } = useAuth();
 
   const go = useCallback(
     (next: number) =>
@@ -95,9 +97,7 @@ export function HeroCampaignSlider({
   async function handleDonate(e: React.MouseEvent, campaign: Campaign) {
     e.preventDefault();
     e.stopPropagation();
-    const token =
-      typeof window !== "undefined" ? (localStorage.getItem("ck_token") ?? sessionStorage.getItem("ck_token")) : null;
-    if (!token) { router.push("/login"); return; }
+    if (!user) { router.push("/login"); return; }
 
     const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
     if (pct >= 100) { toast.info("Goal already reached!"); return; }

@@ -184,6 +184,26 @@
   --color-stone-text: var(--stone-text);
   --color-tertiary-fixed-dim: var(--tertiary-fixed-dim);
   --color-on-tertiary-fixed: var(--on-tertiary-fixed);
+
+  /* ── Half-step shades used across the app but absent from Tailwind ──
+     Tailwind ships 50, 100…900, 950. There is no 150/250/550/850, so
+     `dark:bg-stone-850/60`, `border-stone-850`, `text-stone-250` and friends
+     were compiling to *nothing* — around ninety class usages that silently did
+     no work.
+
+     The visible symptom was the About mega menu in dark mode: its cards read
+     `bg-white/70 dark:bg-stone-850/60`, and with the dark override dead the
+     white stayed on, painting pale grey blocks with unreadable body text.
+
+     Defining the tokens here is the honest fix rather than rewriting every call
+     site to 800/900 — the author wanted a step between, and this makes every
+     existing usage mean what it already says. Values are the true midpoints of
+     their Tailwind neighbours in oklch. */
+  --color-stone-150: oklch(94.6% 0.002 77.5);   /* between stone-100 and 200 */
+  --color-stone-250: oklch(89.6% 0.004 52.5);   /* between stone-200 and 300 */
+  --color-stone-850: oklch(24.2% 0.0065 45.2);  /* between stone-800 and 900 */
+  --color-zinc-850: oklch(24.2% 0.006 285.96);  /* between zinc-800 and 900  */
+  --color-emerald-550: oklch(64.6% 0.158 162.85); /* between emerald-500/600 */
 }
 
 * {
@@ -2303,6 +2323,55 @@ div:has(.searchable-select-open) {
   animation: ck-kind-shine 4s linear 1.4s infinite;
 }
 
+/* ── CauseKind Independence Day Tricolour ── */
+/* Cau = saffron, seK = white, ind = green. The restrained outline on white
+   keeps the middle band legible against the light navbar without changing the
+   requested Tricolour fill. */
+.ck-logo-tricolour-saffron {
+  color: #FF9933;
+}
+
+.ck-logo-tricolour-white {
+  color: #FFFFFF;
+  -webkit-text-stroke: 0.45px rgba(39, 44, 43, 0.62);
+  paint-order: stroke fill;
+  text-shadow: 0 0 1px rgba(39, 44, 43, 0.18);
+}
+
+.dark .ck-logo-tricolour-white {
+  -webkit-text-stroke: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.38);
+}
+
+.ck-logo-tricolour-green {
+  color: #138808;
+}
+
+/* ── CauseKind wordmark: travelling flag-cloth ripple ── */
+/* The SVG displacement filter in Navbar.tsx creates the fabric folds. This
+   wrapper adds the anchored-left motion of a flag moving out from its pole. */
+.ck-logo-wordmark-cloth {
+  display: inline-flex;
+  transform-origin: left center;
+  will-change: transform, filter;
+  animation: ck-logo-wordmark-cloth-drift 3.1s ease-in-out infinite;
+}
+
+@keyframes ck-logo-wordmark-cloth-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) skewY(0deg); }
+  25%      { transform: translate3d(0, -0.7px, 0) skewY(-0.35deg); }
+  50%      { transform: translate3d(0, 0.55px, 0) skewY(0.25deg); }
+  75%      { transform: translate3d(0, -0.35px, 0) skewY(-0.16deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-logo-wordmark-cloth {
+    animation: none;
+    filter: none !important;
+    will-change: auto;
+  }
+}
+
 /* ── CauseKind Logo SVG: all animation handled by Web Animations API in LogoSVG.tsx ── */
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -2360,6 +2429,22 @@ div:has(.searchable-select-open) {
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  /* Loading placeholders.
+     `ui/skeleton.tsx` used to claim `animate-pulse` stopped here "via
+     Tailwind". It does not — Tailwind has no such behaviour, and nothing in
+     this file covered it either. That was harmless while Skeleton was used in
+     exactly one place; it stops being harmless now that skeletons cover most
+     of the app.
+
+     Only the pulse is removed. The muted fill stays, because the placeholder
+     still has to show that something is loading — a reduced-motion preference
+     asks for no movement, not for an invisible UI. */
+  [data-slot="skeleton"],
+  .ck-route-progress {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -2846,4 +2931,118 @@ div:has(.searchable-select-open) {
   --primary: #7fb0e8;
   --primary-foreground: #0b1929;
   --ring: #7fb0e8;
+}
+
+/* ── Independence Day hero (15 August, campaign window only) ──────────────────
+   Three additions, all decorative and all reversible with the campaign flag.
+   Each has a prefers-reduced-motion path — the strip above the hero set that
+   precedent and it is the right one. */
+
+/* 1. Tricolour light sweep.
+      A band of saffron-white-green drifting diagonally across the hero
+      photograph. soft-light rather than normal blending so it reads as light
+      catching the scene rather than a flag laid on top of it — the strip above
+      already carries the literal tricolour, and a second one would be noise. */
+/* The pass is quick and then it waits. Moving the band slowly across the whole
+   cycle meant colour sat on somebody's face for seconds at a time, which reads
+   as a broken colour profile rather than as celebration. Here the sweep crosses
+   in about two seconds and the hero is left alone for the rest. */
+@keyframes ck-tricolour-sweep {
+  0%   { transform: translate3d(-75%, -18%, 0) rotate(12deg); opacity: 0; }
+  3%   { opacity: 1; }
+  22%  { opacity: 1; }
+  26%  { transform: translate3d(210%, 18%, 0) rotate(12deg); opacity: 0; }
+  100% { transform: translate3d(210%, 18%, 0) rotate(12deg); opacity: 0; }
+}
+
+.ck-tricolour-sweep {
+  position: absolute;
+  top: -30%;
+  left: 0;
+  width: 34%;
+  height: 160%;
+  pointer-events: none;
+  /* `screen`, after `soft-light` (invisible) and `overlay` (which recoloured
+     faces orange and green — a colour cast, not a celebration). screen only
+     ever lightens, so it reads as a beam of coloured light crossing the
+     photograph and leaves skin tones alone. */
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  /* A bright core with coloured edges, rather than three solid bands. The
+     alphas are low because screen compounds quickly — at full strength the
+     whole band blew out to white and the tricolour was lost inside it. */
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 153, 51, 0.00) 6%,
+    rgba(255, 153, 51, 0.58) 26%,
+    rgba(255, 240, 214, 0.64) 46%,
+    rgba(230, 255, 232, 0.60) 58%,
+    rgba(19, 136, 8, 0.54) 76%,
+    rgba(19, 136, 8, 0.00) 94%,
+    transparent 100%
+  );
+  filter: blur(10px);
+  animation: ck-tricolour-sweep 9s cubic-bezier(0.4, 0, 0.5, 1) infinite;
+  animation-delay: 1.2s;
+}
+
+/* 2. The unfurl — one band sweeping across the headline on first load, then
+      gone. Masked by the headline itself, so it reveals rather than covers. */
+@keyframes ck-unfurl-band {
+  0%   { transform: scaleX(0); transform-origin: left center; opacity: 1; }
+  55%  { transform: scaleX(1); transform-origin: left center; }
+  56%  { transform: scaleX(1); transform-origin: right center; }
+  100% { transform: scaleX(0); transform-origin: right center; opacity: 1; }
+}
+
+/* The text leads, the band trails. An earlier version had the headline reach
+   full strength only as the band finished, which meant the most important words
+   on the page were faint for most of a second — the reveal is meant to draw the
+   eye to them, not withhold them. */
+@keyframes ck-unfurl-text {
+  0%, 12% { opacity: 0; transform: translateY(6px); }
+  55%     { opacity: 1; transform: translateY(0); }
+  100%    { opacity: 1; transform: translateY(0); }
+}
+
+.ck-unfurl { position: relative; display: block; }
+
+.ck-unfurl > .ck-unfurl-band {
+  position: absolute;
+  inset: -0.25em -0.5em;
+  border-radius: 0.35rem;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    #ff9933 0%, #ff9933 33%,
+    #ffffff 33%, #ffffff 66%,
+    #138808 66%, #138808 100%
+  );
+  animation: ck-unfurl-band 1.15s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+.ck-unfurl > .ck-unfurl-text {
+  animation: ck-unfurl-text 1.15s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+/* 3. Count-up figure — a quiet rise, not a bounce. */
+@keyframes ck-count-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ck-count-rise { animation: ck-count-rise .6s cubic-bezier(0.33, 1, 0.68, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* The sweep holds still at a low, even tint rather than vanishing — the
+     colour is the point, the movement is not. */
+  .ck-tricolour-sweep {
+    animation: none;
+    opacity: .35;
+    transform: translate3d(30%, 0, 0) rotate(12deg);
+  }
+  .ck-unfurl > .ck-unfurl-band { display: none; }
+  .ck-unfurl > .ck-unfurl-text { animation: none; opacity: 1; transform: none; }
+  .ck-count-rise { animation: none; }
 }

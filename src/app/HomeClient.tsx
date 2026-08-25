@@ -38,6 +38,8 @@ import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, ArrowRight } from "lucide-react";
 import { FEATURES } from "@/lib/features";
+import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
+
 import type { Campaign, ItemRequest, PlatformStats, RecentActivity } from "@/lib/api";
 import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 
@@ -45,6 +47,7 @@ import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { WhyCauseKindSection }   from "@/components/home/WhyCauseKindSection";
+import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
 import { CTASection }            from "@/components/home/CTASection";
 
@@ -245,6 +248,7 @@ export default function HomeClient({
 
   return (
     <div className="bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+      <IndependenceDayStrip />
 
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
@@ -252,7 +256,6 @@ export default function HomeClient({
           file in src/components/home/ to change that section.
       ════════════════════════════════════════════════════════════ */}
       <div className="hidden lg:block bg-white dark:bg-zinc-950 relative z-10">
-
         {/* Mobile stats strip (inside desktop wrapper but sm:hidden) */}
         {FEATURES.money && (
           <div className="sm:hidden overflow-hidden border-b border-orange-100 bg-white dark:bg-zinc-950">
@@ -278,6 +281,7 @@ export default function HomeClient({
           currentCampaign={currentCampaign}
           translatedTitle={translatedCampaignTitle ?? null}
           translatedDesc={translatedCampaignDesc ?? null}
+          stats={stats}
         />
 
         {/* Stats bar + live ticker — only when money feature enabled */}
@@ -287,6 +291,12 @@ export default function HomeClient({
             <LiveTicker activity={activity} />
           </>
         )}
+
+        {/* Donor / Donee pathways — the two sides of the platform, each with a
+            role-preselecting signup CTA. Placed before "Why CauseKind" so the
+            visitor is told which side they are on before being told why the
+            platform is worth using. */}
+        <AudiencePathwaysSection />
 
         {/* "Why CauseKind" — 4-feature asymmetric grid */}
         <WhyCauseKindSection />
@@ -414,7 +424,6 @@ export default function HomeClient({
           in a future session if it grows.
       ════════════════════════════════════════════════════════════ */}
       <div className="lg:hidden min-h-screen bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-5">
-
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white */}
         {FEATURES.money && (
           <div className="overflow-hidden bg-[#b04a15] -mx-4">
@@ -503,6 +512,17 @@ export default function HomeClient({
         {/* Be the Change — only here when the Campaigns rail separates it from
             the Hero; otherwise it is rendered above, inside the layered wrapper. */}
         {!heroTouchesBeTheChange && <BeTheChangeSection initialStats={stats} tourAnchors />}
+
+        {/* Donor / Donee pathways.
+            This was added to the desktop branch only and so never rendered
+            below lg — HomeClient keeps two separate trees (hidden lg:block and
+            lg:hidden) and a component placed in one is simply absent from the
+            other. Same treatment as ComingSoonMagnets below: one component in
+            both branches, with -mx-4 cancelling this column's px-4 so the
+            section's own full-bleed background and padding apply. */}
+        <div className="-mx-4">
+          <AudiencePathwaysSection />
+        </div>
 
         {/* Coming soon magnets — previously desktop-only. The section sizes
             itself down through its own CSS vars, so the same component serves

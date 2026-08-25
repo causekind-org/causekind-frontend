@@ -1,3 +1,5 @@
+import { readConsent } from "@/lib/cookieConsent";
+
 // Shared "is any load-time overlay on screen?" check.
 //
 // Lives here rather than inside TourController because more than one thing needs
@@ -23,7 +25,13 @@ export function overlayGatesClear(): boolean {
     // there is no user, so for a visitor the cookie banner is the one thing that
     // can still be on screen. It exposes no stable DOM marker, so its stored
     // answer is the signal that it has been dealt with.
-    localStorage.getItem("ck_cookie_consent") !== null
+    //
+    // Goes through readConsent() rather than a null check on the raw key, because
+    // "the key exists" and "the banner is done" are not the same thing: an expired
+    // decline leaves a non-null value that the banner treats as pending and
+    // re-asks on. The null check called that "clear" and let the tour paint over
+    // a banner about to appear. One parser, in lib/cookieConsent, is the fix.
+    readConsent() !== "unset"
   );
 }
 

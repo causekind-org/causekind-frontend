@@ -437,7 +437,7 @@ export function DonationOfferWizard({
 
         <div className="flex min-w-0 flex-1 flex-col justify-between">
           {/* Mobile sticky progress — never rendered alongside the desktop rail. */}
-          <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5]/95 backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-950/95">
+          <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5] dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
             <div className="flex items-center justify-between px-4 pt-2">
               <button
                 type="button"

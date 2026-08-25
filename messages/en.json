@@ -1352,5 +1352,23 @@
       "agree": "I have read and agree to all declarations above.",
       "invalidated": "You changed the listing after agreeing, so please confirm the declarations again."
     }
+  },
+  "audiencePathways": {
+    "eyebrow": "Two sides, one platform",
+    "heading": "Whichever side you're on, CauseKind connects you.",
+    "subheading": "Some people have things to give. Others have needs worth meeting. This is where those two meet — verified, tracked, and handed over in person.",
+    "footnote": "Free to join. You can change how you participate at any time.",
+    "donor": {
+      "eyebrow": "Make what you have matter",
+      "heading": "Turn useful things into timely support.",
+      "body": "Browse verified in-kind needs and offer items that can immediately help a person, family or community.",
+      "cta": "Join as a donor"
+    },
+    "donee": {
+      "eyebrow": "Ask with dignity",
+      "heading": "Get support for what matters next.",
+      "body": "Share a genuine need, connect with people ready to help, and receive support with clarity and respect.",
+      "cta": "Join as a donee"
+    }
   }
 }
