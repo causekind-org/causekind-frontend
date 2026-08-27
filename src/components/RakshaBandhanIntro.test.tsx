@@ -112,15 +112,21 @@ describe("IST date gate", () => {
     expect(istDateString(new Date("2026-08-28T18:30:00.000Z"))).toBe("2026-08-29");
   });
 
-  it("is open for exactly the one IST day and closed forever after", () => {
-    expect(isRakshaBandhanIntroDay(new Date("2026-08-27T18:30:00.000Z"))).toBe(true);
+  it("runs for the whole campaign window, not just the festival day", () => {
+    // Widened from a single IST day: the campaign is a six-day run and the
+    // intro was asked to run with it. It now reads the campaign window itself
+    // rather than keeping a second date range that could drift out of step.
+    expect(isRakshaBandhanIntroDay(new Date("2026-08-26T18:30:00.000Z"))).toBe(true);
     expect(isRakshaBandhanIntroDay(new Date("2026-08-28T09:00:00.000Z"))).toBe(true);
-    expect(isRakshaBandhanIntroDay(new Date("2026-08-28T18:29:59.999Z"))).toBe(true);
+    // The days after the festival are in now, which the one-day gate excluded.
+    expect(isRakshaBandhanIntroDay(new Date("2026-08-29T09:00:00.000Z"))).toBe(true);
+    expect(isRakshaBandhanIntroDay(new Date("2026-09-01T18:29:59.999Z"))).toBe(true);
+  });
 
-    expect(isRakshaBandhanIntroDay(new Date("2026-08-27T18:29:59.999Z"))).toBe(false);
-    expect(isRakshaBandhanIntroDay(new Date("2026-08-28T18:30:00.000Z"))).toBe(false);
-    // It disables itself with no deploy — including a year later.
-    expect(isRakshaBandhanIntroDay(new Date("2026-08-29T09:00:00.000Z"))).toBe(false);
+  it("closes on its own at both ends, with no deploy", () => {
+    expect(isRakshaBandhanIntroDay(new Date("2026-08-26T18:29:59.999Z"))).toBe(false);
+    expect(isRakshaBandhanIntroDay(new Date("2026-09-01T18:30:00.000Z"))).toBe(false);
+    // Including a year later — the window is a fixed 2026 range.
     expect(isRakshaBandhanIntroDay(new Date("2027-08-28T09:00:00.000Z"))).toBe(false);
   });
 

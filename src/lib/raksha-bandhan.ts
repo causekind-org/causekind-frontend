@@ -110,9 +110,17 @@ export function pickRakshaBandhanIntroSource(): string {
 }
 
 /**
- * The single IST calendar date the intro runs on, as `YYYY-MM-DD`.
+ * Raksha Bandhan 2026 — Friday 28 August, as an IST `YYYY-MM-DD` date.
  *
- * <p>Raksha Bandhan 2026 is Friday 28 August.
+ * <p><b>This no longer gates anything.</b> It was the intro's window when the
+ * intro ran for one day; the intro now follows the campaign window instead, so
+ * this is kept only as the record of which day the festival actually falls on.
+ * The strip renders the same date from `RAKSHA_BANDHAN_CAMPAIGN.dateDay` /
+ * `.dateMonth`, which is where display copy belongs.
+ *
+ * <p>Retained rather than deleted because the date is the one fact here that a
+ * future year has to change, and a named constant is easier to find than a
+ * string in two components. Delete it if 2027's campaign is built fresh.
  */
 export const RAKSHA_BANDHAN_INTRO_DATE_IST = "2026-08-28";
 
@@ -166,20 +174,31 @@ export function istDateString(now = new Date()): string {
 /**
  * Whether the full-screen intro should run at all.
  *
- * <p>True only while it is 28 August 2026 in India — from 00:00:00 to 23:59:59
- * IST. The date is a fixed constant, so this returns false for the whole of the
- * rest of time with no deploy needed to switch it off.
+ * <p><b>It now runs for the whole campaign window, not only 28 August.</b> This
+ * originally returned true for the festival day alone, which is the more
+ * conservative call — a nine-second takeover is an arrival the first time and an
+ * obstacle the fifth. It was widened deliberately: the campaign is a six-day run
+ * and the intro was asked to run with it.
+ *
+ * <p>Reading {@link isRakshaBandhanCampaignActive} rather than keeping a second
+ * date range is the point. One window now drives every surface, so the intro
+ * cannot drift out of step with the strip, the wordmark and the homepage
+ * sections the way two independently maintained ranges would.
+ *
+ * <p>The `Day` in the name is kept because callers and tests use it and a rename
+ * would touch more than it is worth; read it as "is this an intro day", which is
+ * still exactly what it answers.
  *
  * <p>`forced` is the development escape hatch and is IGNORED in production, so
  * a stray environment variable on the live site can never resurrect the intro.
- * Callers pass `isRakshaBandhanIntroForced()`.
+ * Callers pass {@link isRakshaBandhanIntroForced}.
  */
 export function isRakshaBandhanIntroDay(
   now = new Date(),
   forced = false,
 ): boolean {
   if (forced) return true;
-  return istDateString(now) === RAKSHA_BANDHAN_INTRO_DATE_IST;
+  return isRakshaBandhanCampaignActive(now);
 }
 
 /**

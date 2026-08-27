@@ -8,7 +8,7 @@ Six surfaces:
 
 | Surface | From | Runs |
 |---|---|---|
-| **Full-screen intro** — a nine-second rakhi film on arrival | staging | **28 Aug only** |
+| **Full-screen intro** — a nine-second rakhi film on arrival | staging | whole window |
 | **Announcement strip** — the festival's line, with both CTAs | staging | whole window |
 | **Header dressing** — a rakhi pendant that turns as you scroll | staging | whole window |
 | **Wordmark** — the supplied rakhi artwork replaces the logo | this branch | whole window |
@@ -19,7 +19,9 @@ Six surfaces:
 
 **The window: six days, not one.** The staging version was scoped to the festival day itself; this one ran 27 August to the end of Tuesday 1 September. **The week won**, because that is the run that was asked for. Every campaign surface now shares that window.
 
-**The intro keeps its own gate**, and that exception is deliberate. `isRakshaBandhanIntroDay()` still restricts the full-screen film to 28 August. An intro that took over the screen every day for a week would stop being an arrival and become an obstacle.
+**The intro runs for the whole window too.** It was built for the festival day alone, and briefly kept that way here on the reasoning that a nine-second takeover is an arrival the first time and an obstacle the fifth. That was overruled: the campaign is a six-day run and the intro runs with it. `isRakshaBandhanIntroDay()` now reads `isRakshaBandhanCampaignActive()` rather than holding a second date range, so **one window drives every surface** and the intro cannot drift out of step with the strip and the wordmark.
+
+Two consequences worth knowing. `RAKSHA_BANDHAN_INTRO_DATE_IST` no longer gates anything — it is kept only as the record of which day the festival falls on, and is the one value a future year must change. And the intro replays on **every full page load** for six days, because `playedThisPageLoad` is deliberately a module variable rather than `sessionStorage` (its author's note explains that sessionStorage survives refreshes, which the one-day design did not want). If repeat visitors find it wearing, moving that flag to `sessionStorage` is the smallest possible change and would make it once per visit.
 
 **One environment variable, `NEXT_PUBLIC_RAKSHA_BANDHAN`** — staging's name, kept because more code referenced it and it may already be set in the deployment environment. The `_CAMPAIGN` suffix used on this branch is gone. `NEXT_PUBLIC_FORCE_RAKHI_INTRO` remains a separate dev-only switch for the intro.
 
@@ -185,4 +187,4 @@ Under `prefers-reduced-motion` **the thread stays drawn and the knot stays tied*
 
 ## Validation Completed
 
-`tsc --noEmit` clean, production `next build` succeeds (43/43 static pages). Full suite **281 tests across 22 files**, all passing after the merge.
+`tsc --noEmit` clean, production `next build` succeeds (43/43 static pages). Full suite **282 tests across 22 files**, all passing after the merge.
