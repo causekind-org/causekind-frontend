@@ -1,12 +1,31 @@
 # Raksha Bandhan Campaign Control
 
-A **temporary, reversible Raksha Bandhan presentation** on the homepage. It does not change donation, listing, verification, matching, or navigation logic.
+A **temporary, reversible Raksha Bandhan presentation**. It does not change donation, listing, verification, matching, or navigation logic.
 
-Three surfaces:
+> **This is a merge of two independently built treatments.** Two people built a Raksha Bandhan campaign at the same time without knowing about each other, and both landed on 27 August 2026. Neither was discarded — the surfaces did not overlap much, and where they did the collision is recorded below. The one hard conflict was `src/lib/raksha-bandhan.ts`, which both created from scratch with different APIs; it is now a single module holding both.
 
-1. **The hero** — the right column, empty every other day of the year, shows the one need on the public board that has gone **unclaimed the longest**. The hero's quote set is swapped for the window.
-2. **The homepage** — a new section, *"No one has tied a thread here yet"*, listing the next six longest-waiting unclaimed needs, oldest first.
-3. **The wordmark** — the supplied rakhi artwork, which spells CauseKind out of braided cords and beads, replaces the navbar wordmark for the window. See below; this change also fixes a live bug.
+Six surfaces:
+
+| Surface | From | Runs |
+|---|---|---|
+| **Full-screen intro** — a nine-second rakhi film on arrival | staging | **28 Aug only** |
+| **Announcement strip** — the festival's line, with both CTAs | staging | whole window |
+| **Header dressing** — a rakhi pendant that turns as you scroll | staging | whole window |
+| **Wordmark** — the supplied rakhi artwork replaces the logo | this branch | whole window |
+| **Hero right column** — the need that has waited **longest** with nobody behind it | this branch | whole window |
+| **"The Unclaimed"** — the next six, oldest first | this branch | whole window |
+
+### What the merge had to decide
+
+**The window: six days, not one.** The staging version was scoped to the festival day itself; this one ran 27 August to the end of Tuesday 1 September. **The week won**, because that is the run that was asked for. Every campaign surface now shares that window.
+
+**The intro keeps its own gate**, and that exception is deliberate. `isRakshaBandhanIntroDay()` still restricts the full-screen film to 28 August. An intro that took over the screen every day for a week would stop being an arrival and become an obstacle.
+
+**One environment variable, `NEXT_PUBLIC_RAKSHA_BANDHAN`** — staging's name, kept because more code referenced it and it may already be set in the deployment environment. The `_CAMPAIGN` suffix used on this branch is gone. `NEXT_PUBLIC_FORCE_RAKHI_INTRO` remains a separate dev-only switch for the intro.
+
+**One test had to change.** `RakshaBandhanStrip.test.tsx` asserted the one-day boundary; it now asserts the six-day one. That was the *only* test to break across both implementations, which is a fair sign the surfaces were genuinely independent.
+
+**The header now carries two rakhi motifs** — the pendant behind the header content, and the rakhi wordmark as the logo. They do not technically conflict: the pendant is a decorative background layer at `z-0`, the wordmark is the logo itself. **This is the one surface where the two designs stack, and it is the thing to look at first.** Dropping either is a one-line change.
 
 ## The logo, and the bug it was hiding
 
@@ -85,7 +104,7 @@ So the treatment is deliberately **not** a recoloured version of the August one:
 |---|---|---|
 | Hero device | Colour wash across the photo | *(none — see below)* |
 | Right column | Platform-wide handover count | **One real, named, waiting need** |
-| Announcement | Full-width strip | *(none)* |
+| Announcement | Full-width strip | Full-width strip (from staging) |
 | Homepage | *(none)* | A section of real unclaimed needs |
 | Palette | Full tricolour | A single gold on the page; the wordmark art carries its own |
 | Wordmark | Baked-in flag colours, **ungated** | Illustrated rakhi art, **gated on the window** |
@@ -108,9 +127,9 @@ By default the campaign renders from **27 August 2026, 00:00 IST** through **2 S
 
 | Requirement | Configuration | Result |
 | --- | --- | --- |
-| Use the scheduled period | Leave `NEXT_PUBLIC_RAKSHA_BANDHAN_CAMPAIGN` unset | Renders only during the date window. |
-| Launch early or extend | `NEXT_PUBLIC_RAKSHA_BANDHAN_CAMPAIGN=on` | Always renders after a rebuild and deploy. |
-| Remove immediately | `NEXT_PUBLIC_RAKSHA_BANDHAN_CAMPAIGN=off` | Hidden after a rebuild and deploy. |
+| Use the scheduled period | Leave `NEXT_PUBLIC_RAKSHA_BANDHAN` unset | Renders only during the date window. |
+| Launch early or extend | `NEXT_PUBLIC_RAKSHA_BANDHAN=on` | Always renders after a rebuild and deploy. |
+| Remove immediately | `NEXT_PUBLIC_RAKSHA_BANDHAN=off` | Hidden after a rebuild and deploy. |
 
 `NEXT_PUBLIC_` values are compiled into the bundle, so **neither `on` nor `off` takes effect without a rebuild and deploy.**
 
@@ -166,4 +185,4 @@ Under `prefers-reduced-motion` **the thread stays drawn and the knot stays tied*
 
 ## Validation Completed
 
-`tsc --noEmit` clean, production `next build` succeeds (43/43 static pages). Full suite **231 tests across 18 files** — 191 pre-existing, 40 added here.
+`tsc --noEmit` clean, production `next build` succeeds (43/43 static pages). Full suite **281 tests across 22 files**, all passing after the merge.

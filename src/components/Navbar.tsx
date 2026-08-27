@@ -21,6 +21,7 @@ import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
+import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import InKindMegaMenu from "@/components/InKindMegaMenu";
 import {
@@ -659,8 +660,19 @@ export function SiteHeader() {
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
-        {/* Mobile Header (lg:hidden) - Strict 100% opaque background */}
-        <div className="lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
+        {/* One-day Raksha Bandhan dressing. Renders null on every other day, so
+            the header is back to normal on its own at IST midnight. It sits at
+            z-0 behind the two content rows below, which are lifted to z-[1]. */}
+        <RakshaBandhanNavAdornment />
+
+        {/* Mobile Header (lg:hidden)
+            This row used to be strictly 100% opaque so that page content could
+            never show through it while scrolling. It still cannot: the <header>
+            itself carries the same opaque #faf8f5 / zinc-950 behind this row,
+            so the 90% here reveals only the header's own background — the exact
+            same colour — plus the festive layer on the one day it exists. Off
+            the day, this renders pixel-identical to the opaque version. */}
+        <div className="relative z-[1] lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
           <button
             ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
@@ -680,7 +692,7 @@ export function SiteHeader() {
         </div>
 
         {/* Desktop Header */}
-        <div className="hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between px-10 py-5">
+        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between px-10 py-5">
           <Link href="/" className="flex items-center gap-2">
             <CareNestLogo />
           </Link>

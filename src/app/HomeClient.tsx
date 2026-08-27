@@ -39,6 +39,8 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, ArrowRight } from "lucide-react";
 import { FEATURES } from "@/lib/features";
 import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
+import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
+import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
 
 import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
 import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-bandhan";
@@ -274,7 +276,15 @@ export default function HomeClient({
 
   return (
     <div className="bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+      {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
+          root layout, which is what makes it homepage-only — HomeClient renders
+          on "/" and nowhere else, so login, dashboard, requests, profile and
+          admin never see it. Renders null (and never fetches the video) on
+          every day but 28 August 2026 IST. */}
+      <RakshaBandhanIntro />
+
       <IndependenceDayStrip />
+      <RakshaBandhanStrip />
 
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
