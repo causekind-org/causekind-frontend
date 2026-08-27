@@ -39,8 +39,12 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, ArrowRight } from "lucide-react";
 import { FEATURES } from "@/lib/features";
 import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
+import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
+import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
 
-import type { Campaign, ItemRequest, PlatformStats, RecentActivity } from "@/lib/api";
+import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
+import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-bandhan";
+import { UnclaimedSection } from "@/components/home/UnclaimedSection";
 import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 
 // ── Extracted section components ─────────────────────────────────────────────
@@ -152,11 +156,20 @@ export default function HomeClient({
   initialStats,
   initialActivity,
   initialItemRequests,
+  initialPublicRequests = [],
 }: {
   initialCampaigns:    Campaign[];
   initialStats:        PlatformStats | null;
   initialActivity:     RecentActivity[];
   initialItemRequests: ItemRequest[];
+  /**
+   * The guest-browsable need board. Everything on it is unclaimed by
+   * construction — a request reaches PUBLIC_REQUEST status only after private
+   * matching failed — which is what the Raksha Bandhan surfaces rely on.
+   * Defaults to empty so the prop is additive and every existing caller and
+   * test keeps working untouched.
+   */
+  initialPublicRequests?: PublicItemRequest[];
 }) {
   const t       = useTranslations("landing");
   const tCommon = useTranslations("common");
@@ -239,6 +252,21 @@ export default function HomeClient({
     return out;
   }, [itemRequests, selectedCategory, myProfile]);
 
+  // ── Raksha Bandhan ────────────────────────────────────────────────────────
+  //
+  // One switch, read once here and handed down, so the hero thread, the need at
+  // the end of it and the section below can never disagree about whether the
+  // campaign is on.
+  const rakshaBandhan = isRakshaBandhanCampaignActive();
+
+  // The single need that has gone unclaimed longest. It ends the hero's thread,
+  // and is excluded from the section below so the same request does not appear
+  // twice within one screen of itself.
+  const longestWaitingRequest = useMemo(
+    () => (rakshaBandhan ? longestWaiting(initialPublicRequests, 1)[0] ?? null : null),
+    [rakshaBandhan, initialPublicRequests],
+  );
+
   const statItems = [
     { value: stats ? `₹${formatINR(stats.totalRaised)}` : "—", label: useTranslations("stats")("totalRaised"),    icon: Coins,    color: "text-[#b04a15]" },
     { value: stats ? stats.activeCampaigns               : "—", label: useTranslations("stats")("activeCampaigns"), icon: Heart,    color: "text-[#b04a15]" },
@@ -248,7 +276,15 @@ export default function HomeClient({
 
   return (
     <div className="bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+      {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
+          root layout, which is what makes it homepage-only — HomeClient renders
+          on "/" and nowhere else, so login, dashboard, requests, profile and
+          admin never see it. Renders null (and never fetches the video) on
+          every day but 28 August 2026 IST. */}
+      <RakshaBandhanIntro />
+
       <IndependenceDayStrip />
+      <RakshaBandhanStrip />
 
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
@@ -282,6 +318,7 @@ export default function HomeClient({
           translatedTitle={translatedCampaignTitle ?? null}
           translatedDesc={translatedCampaignDesc ?? null}
           stats={stats}
+          rakshaBandhanRequest={longestWaitingRequest}
         />
 
         {/* Stats bar + live ticker — only when money feature enabled */}
@@ -405,6 +442,16 @@ export default function HomeClient({
           </section>
         )}
 
+        {/* The needs nobody has taken, oldest first. Above "Be the Change" on
+            purpose: that section is the argument for giving, and this one is the
+            specific unmet request the argument is about. */}
+        {rakshaBandhan && (
+          <UnclaimedSection
+            requests={initialPublicRequests}
+            excludeId={longestWaitingRequest?.id ?? null}
+          />
+        )}
+
         {/* "Be the Change" feature cards */}
         <BeTheChangeSection initialStats={stats} />
 
@@ -507,6 +554,18 @@ export default function HomeClient({
               })}
             </div>
           </section>
+        )}
+
+        {/* The needs nobody has taken. Repeated here rather than shared, because
+            HomeClient keeps two separate trees and a component placed in one is
+            simply absent from the other — the mistake the pathways section
+            below records having made. The section's own grid collapses to a
+            single column at this width. */}
+        {rakshaBandhan && (
+          <UnclaimedSection
+            requests={initialPublicRequests}
+            excludeId={longestWaitingRequest?.id ?? null}
+          />
         )}
 
         {/* Be the Change — only here when the Campaigns rail separates it from

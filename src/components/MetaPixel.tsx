@@ -8,6 +8,7 @@ import { useCookieConsent } from "@/hooks/useCookieConsent";
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "123456789";
 
 function MetaPixelInner() {
+  
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
