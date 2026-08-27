@@ -24,6 +24,30 @@ export type InsiderTipTranslation = {
 // collide with a real post slug since blog slugs are plain kebab-case.
 const TIPS_KEY = "__insider_tips__";
 
+// Bump whenever public/blog-translations/*.json is regenerated.
+//
+// The sessionStorage entries below outlive a deploy: a reader who opened the
+// blog before new posts were translated kept being served the pre-deploy JSON
+// for the rest of their browser session, so newly translated articles rendered
+// in English no matter how many times they reloaded. Including a version in the
+// key means a regenerated payload lands under a name the old entry can't
+// satisfy, and the stale one is dropped rather than returned.
+const CACHE_VERSION = "3";
+
+const cacheKey = (locale: string) => `blog-translations:v${CACHE_VERSION}:${locale}`;
+
+/** Clears entries written by earlier CACHE_VERSIONs, which would otherwise sit
+ *  in sessionStorage until the tab closed. */
+function dropStaleCaches(locale: string) {
+  try {
+    const keep = cacheKey(locale);
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const k = sessionStorage.key(i);
+      if (k && k.startsWith("blog-translations:") && k !== keep) sessionStorage.removeItem(k);
+    }
+  } catch {}
+}
+
 type LocaleData = Record<string, BlogTranslation | Record<string, InsiderTipTranslation>>;
 
 const memCache = new Map<string, LocaleData>();
@@ -37,8 +61,10 @@ async function loadLocale(locale: string): Promise<LocaleData | null> {
   if (existing) return existing;
 
   const promise = (async () => {
+    dropStaleCaches(locale);
+
     try {
-      const stored = sessionStorage.getItem(`blog-translations:${locale}`);
+      const stored = sessionStorage.getItem(cacheKey(locale));
       if (stored) {
         const data = JSON.parse(stored) as LocaleData;
         memCache.set(locale, data);
@@ -51,7 +77,7 @@ async function loadLocale(locale: string): Promise<LocaleData | null> {
       if (!res.ok) return null;
       const data = (await res.json()) as LocaleData;
       memCache.set(locale, data);
-      try { sessionStorage.setItem(`blog-translations:${locale}`, JSON.stringify(data)); } catch {}
+      try { sessionStorage.setItem(cacheKey(locale), JSON.stringify(data)); } catch {}
       return data;
     } catch {
       return null;

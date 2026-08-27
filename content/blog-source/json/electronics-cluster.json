@@ -1,0 +1,391 @@
+{
+  "cluster": "Laptop and Electronics Donation",
+  "blogs": [
+    {
+      "id": "electronics-01",
+      "type": "main-guide",
+      "title": "How to Safely Donate Laptops and Electronics in India (2026)",
+      "seo_slug": "how-to-donate-laptops-electronics-india",
+      "category": "Electronics Donation",
+      "publish_priority": 1,
+      "publish_month": "July",
+      "reading_time": "10 minutes",
+      "meta_title": "How to Safely Donate Laptops and Electronics in India (2026) | CauseKind",
+      "meta_description": "Complete guide to donating laptops, smartphones, and electronics in India — how to wipe your data, what condition devices must be in, where to donate, and how CauseKind matches your device with a student who needs it.",
+      "focus_keyword": "donate laptop India",
+      "secondary_keywords": [
+        "donate laptop India",
+        "donate old laptop India",
+        "how to donate laptop India",
+        "donate electronics India",
+        "donate smartphone India",
+        "donate old phone India",
+        "laptop donation India students",
+        "where to donate laptop India",
+        "donate device for education India",
+        "donate computer India",
+        "CauseKind laptop donation",
+        "device donation India NGO",
+        "donate tablet India",
+        "electronics donation India",
+        "digital divide donation India"
+      ],
+      "schema_type": "HowTo + FAQPage",
+      "internal_links": [
+        "how-to-erase-personal-data-before-donation",
+        "donating-laptops-to-students-india",
+        "donating-versus-recycling-electronics-india",
+        "acceptable-condition-donated-devices-india"
+      ],
+      "blog": {
+        "opening": "There is a device in your home right now that still works.\n\nYou are not using it. It was replaced six months ago, or a year ago, or two years ago by something newer. It sits in a drawer, or a shelf, or a box in the store room — functional, forgotten, and collecting dust.\n\nAnd 250 million students in India do not have a device to access their education.\n\nThe arithmetic here is simple. The distance between your unused device and a student who needs it is almost certainly less than 10 kilometres. The only question is how to close that distance safely — protecting your data, ensuring the device is genuinely useful, and confirming it reaches someone who needs it.\n\nThis is the complete guide to donating laptops and electronics in India in 2026.",
+
+        "sections": [
+          {
+            "heading": "Why Device Donation Is the Highest-Impact In-Kind Category in India Today",
+            "content": "India's education system has moved online faster than its students have moved online with it.\n\nGovernment school assignments are distributed via WhatsApp. Board exam preparation resources are hosted on state government e-learning portals. DIKSHA, the national digital learning platform, has millions of educational resources available — for students who have a device to access them.\n\nFor the 250 million students who do not have a personal device:\n- They borrow a parent's phone — if the parent has one — and share screen time with household communication needs\n- They access school computers in 30-minute slots, once a week, if their school has computers at all\n- They miss live online classes because they cannot always borrow at the right time\n- They fall behind in ways that compound — each missed class a gap that makes the next harder to follow\n\nA single donated device — a smartphone that runs apps and connects to Wi-Fi, a laptop that can run a browser and basic software — can change this entirely.\n\nFor one student. Permanently.\n\n**This is why device donation, done correctly, is among the highest-impact per-rupee charitable actions available to any urban Indian today.**"
+          },
+          {
+            "heading": "Step 1 — Assess Your Device: Is It Actually Donatable?",
+            "content": "The first question is honest self-assessment. Not all old devices are donatable — and donating a non-functional device creates a disposal problem for the recipient rather than an educational opportunity.\n\n**Donatable devices must:**\n- Power on and function normally\n- Connect to Wi-Fi reliably\n- Have a battery that holds charge for at least 3 to 4 hours of active use\n- Have a functional screen — no cracks that affect visibility or touch response\n- Have functional speakers and microphone (essential for online classes)\n- Have a working camera (for video lessons and online examination proctoring)\n\n**Devices that need repair before donation:**\n- Screen cracked in a way that affects touch response — repair the screen (₹800 to ₹3,000 depending on device) before donating\n- Battery drains in under 90 minutes — replace the battery (₹300 to ₹800 for most phones) before donating\n- Does not connect to Wi-Fi — if Wi-Fi is broken, the device cannot serve its primary educational purpose\n\n**Devices that should not be donated:**\n- Will not power on\n- Screen completely shattered\n- Cannot connect to any network\n- Overheats significantly during normal use\n- More than 8-10 years old and unable to run current educational apps\n\nA device that cannot perform its basic educational function is not a donation. It is e-waste — and someone else now has to deal with it."
+          },
+          {
+            "heading": "Step 2 — Wipe Your Personal Data Completely",
+            "content": "This is the most critical step — and the one most donors skip or do incompletely.\n\nYour device contains:\n- Bank OTPs and financial app access\n- Personal photographs and videos\n- Contact lists and message history\n- Email accounts and their contents\n- Saved passwords and login sessions\n- Personal documents and files\n\nBefore donating any device, all of this must be completely and irreversibly removed.\n\n**For Android smartphones and tablets:**\n1. Back up everything you want to keep (Google Photos, Google Drive)\n2. Remove your Google Account: Settings → Accounts → Google → Remove Account\n(Critical: removing before reset prevents Google's Factory Reset Protection lock)\n3. Remove SIM card and SD card\n4. If possible, enable encryption: Settings → Security → Encrypt Device\n5. Factory Reset: Settings → General Management → Reset → Factory Data Reset → Delete All\n\n**For Windows laptops:**\n1. Back up all files to external drive or cloud\n2. Sign out of Microsoft Account and all services\n3. Deactivate any software licences (Adobe, antivirus, Office)\n4. Reset: Settings → System → Recovery → Reset this PC → Remove Everything → enable 'Clean the drive' option → Reset\nThe 'Clean the drive' option overwrites the drive — do not skip this, as a standard reset leaves data recoverable\n\n**For MacBooks:**\n1. Back up via Time Machine or iCloud\n2. Sign out of Apple ID: System Preferences → Apple ID → Sign Out\n3. Disable Find My Mac: System Preferences → Apple ID → iCloud → Find My Mac → Off\n4. Erase: Restart → hold Command+R → Disk Utility → Erase drive → Reinstall macOS\n\n**For Chromebooks:**\nCtrl + Alt + Shift + R → Restart → Powerwash → Confirm\n\nSee our detailed data wiping guide for step-by-step instructions with screenshots: [Link to data wiping blog]"
+          },
+          {
+            "heading": "Step 3 — Include the Charger",
+            "content": "This should not need to be said. And yet it is among the most common donation mistakes.\n\nA phone without a charger is significantly less useful.\nA laptop without a charger is essentially useless.\n\nInclude the original charger with every donated device. If you have lost the original charger, invest in a compatible replacement — they cost ₹200 to ₹600 for most devices — before donating. This small addition multiplies the usability of your donation enormously.\n\nAlso include, if available:\n- Earphones or headphones (essential for online classes)\n- A device case or protective cover\n- The original box (if kept)"
+          },
+          {
+            "heading": "Step 4 — Test Thoroughly Before Donating",
+            "content": "After wiping, go through a complete function test:\n\n☐ Device powers on and completes setup\n☐ Connects to Wi-Fi\n☐ Browser opens and loads a page (test educational site: diksha.gov.in)\n☐ Camera works (front and back)\n☐ Speakers work\n☐ Microphone works (test with a voice recording)\n☐ Battery charges when connected\n☐ Battery holds charge for 3+ hours of active use\n☐ All physical buttons functional\n☐ Touch screen / trackpad responsive\n\nDocument what you tested and confirm the device is functional in your CauseKind listing."
+          },
+          {
+            "heading": "Step 5 — Donate Through CauseKind's Verified Platform",
+            "content": "Once your device is wiped, tested, and confirmed functional:\n\n1. Go to causekind.com and create or log in to your account\n2. Browse device requests from students and organisations within 10 km\n3. List your device — model, specs, condition, what's included\n4. Match with a verified recipient request or wait for a request to come to you\n5. Arrange a local handoff — within 10 km, direct, no courier needed\n6. Both parties confirm delivery through the platform\n7. Receive your verified Impact Certificate\n\nFor corporate donors donating multiple decommissioned devices, CauseKind provides bulk matching, coordinated delivery, and consolidated ESG documentation."
+          },
+          {
+            "heading": "The Devices That Are Most Needed",
+            "content": "Not all devices are equally needed. Here is the priority order based on CauseKind's verified request data:\n\n**Highest demand:**\n- Smartphones (Android) — 3 to 5 years old — for secondary school students\n- Laptops (Windows) — 4 to 6 years old — for Class 11-12 and college students\n- Tablets (Android or iPad) — for primary and upper primary students\n\n**Consistently needed:**\n- Desktop computers with monitors — for community learning centres\n- Earphones and headphones — for online class audio\n\n**Lower demand (but accepted):**\n- Older smartphones (6+ years) that still connect to Wi-Fi and run educational apps\n- Printers — for community organisations producing learning materials"
+          }
+        ],
+
+        "faq": [
+          {
+            "question": "Can I donate my old laptop in India?",
+            "answer": "Yes — if it powers on, connects to Wi-Fi, and holds battery charge for 3+ hours. Wipe all personal data with a factory reset before donating, and include the charger. Donate through CauseKind to match with a verified student within 10 km."
+          },
+          {
+            "question": "How do I wipe my phone before donating in India?",
+            "answer": "Remove your Google Account first (Settings → Accounts → Google → Remove Account), remove your SIM and SD card, then factory reset (Settings → General Management → Reset → Factory Data Reset). This removes all personal data completely."
+          },
+          {
+            "question": "Where can I donate my old laptop in India?",
+            "answer": "CauseKind is the most verified option — your device is matched with a specific student within 10 km, delivery is confirmed, and you receive an Impact Certificate. You can also donate through verified NGOs like Pratham, Akshaya Patra digital literacy programmes, or community learning centres in your city."
+          },
+          {
+            "question": "Is my old phone good enough to donate?",
+            "answer": "If it powers on, connects to Wi-Fi, runs a browser and basic apps, and holds charge for 3+ hours, it is worth donating to a student who needs it. A 4-year-old Android that feels slow to you can run DIKSHA, Khan Academy Lite, and WhatsApp — everything most students need."
+          }
+        ],
+
+        "closing": "The device in your drawer is not obsolete.\n\nIt is obsolete for you — because you have something newer. For a student who has never had a device, it is the most advanced piece of technology they have ever been given.\n\nWipe it. Test it. Include the charger.\n\nThen bring it to CauseKind, where a verified student near you is already asking for exactly this.",
+
+        "cta": [
+          "Browse Device Donation Requests Near You → https://www.causekind.com/requests?category=electronics",
+          "List Your Device on CauseKind → https://www.causekind.com/items",
+          "Read: How to Erase Personal Data Before Donating → https://www.causekind.com/blog/how-to-erase-personal-data-before-donation",
+          "Read: What Condition Should Donated Devices Be In? → https://www.causekind.com/blog/acceptable-condition-donated-devices-india"
+        ]
+      }
+    },
+
+    {
+      "id": "electronics-02",
+      "type": "supporting-blog",
+      "title": "How to Erase Personal Data Before Donating Your Phone or Laptop in India",
+      "seo_slug": "how-to-erase-personal-data-before-donation-india",
+      "category": "Electronics Donation",
+      "publish_priority": 2,
+      "publish_month": "July",
+      "reading_time": "8 minutes",
+      "meta_title": "How to Erase Personal Data Before Donating Phone or Laptop India | CauseKind",
+      "meta_description": "Step-by-step guide to completely wiping personal data from Android phones, iPhones, Windows laptops, MacBooks, and Chromebooks before donating in India. Protect your privacy and prepare your device for its next owner.",
+      "focus_keyword": "how to erase data before donating phone India",
+      "secondary_keywords": [
+        "how to erase data before donating phone India",
+        "factory reset phone before donation India",
+        "wipe laptop before donating India",
+        "how to factory reset Android India",
+        "erase personal data laptop India",
+        "how to wipe iPhone before donation",
+        "Windows factory reset before donation",
+        "MacBook erase before donation",
+        "data privacy phone donation India",
+        "secure wipe device India",
+        "CauseKind device donation data",
+        "delete data before selling phone India",
+        "remove personal data phone before giving"
+      ],
+      "schema_type": "HowTo",
+      "blog": {
+        "opening": "Your phone knows everything about you.\n\nYour bank accounts. Your OTPs. Your messages. Your contacts. Your photographs — every one of them, going back years. Your email inbox. Your saved passwords. The apps where you remain logged in. The documents you scanned and stored. The navigation history of every place you have been.\n\nBefore that phone goes to anyone else — even with the best intentions, even through a verified giving platform — all of that must be completely, irreversibly removed.\n\nNot 'deleted.' Not 'cleared.' Completely wiped, so that no data recovery tool can retrieve any of it.\n\nHere is exactly how to do it for every major device type.",
+
+        "sections": [
+          {
+            "heading": "Before You Wipe Anything: Back Up What You Want to Keep",
+            "content": "Spend 15 minutes on this before touching any reset setting.\n\n**Photos and videos:** Upload to Google Photos or transfer to your new device. Google Photos offers free compressed storage — connect to Wi-Fi and let the backup complete before proceeding.\n\n**Contacts:** Ensure your contacts are synced to your Google Account or exported to a VCF file.\n\n**WhatsApp:** Settings → Chats → Chat Backup → Back Up Now. Your chats will be in Google Drive and can be restored on your new device.\n\n**Documents and files:** Check Downloads, Documents, and any other folders where you store files. Transfer to Google Drive, OneDrive, or your new device.\n\n**App-specific data:** Most apps sync automatically to cloud accounts. For any app with local data you care about, check its own backup settings before wiping."
+          },
+          {
+            "heading": "Android Smartphones and Tablets: Step-by-Step",
+            "content": "**Critical first step — Remove your Google Account BEFORE resetting:**\nGo to Settings → Accounts → Google → [Your Email] → Remove Account\n\nWhy this matters: If you factory reset without removing your Google Account first, Google's Factory Reset Protection (FRP) activates. The new user will be unable to set up the device without entering your Google credentials — rendering the donation useless.\n\n**Remove all other accounts:**\n- Samsung Account (Settings → Accounts → Samsung Account → Sign Out)\n- Social media apps — log out from within each app\n- Banking and payment apps — log out and uninstall\n\n**Remove SIM card and SD card physically** before the next step.\n\n**Enable Encryption (strongly recommended):**\nSettings → Security → Encrypt Phone → Follow prompts\nThis ensures that even if any data fragments survive the reset, they are unreadable.\nTime required: 30-60 minutes on older devices. Keep plugged in.\n\n**Factory Reset:**\nSettings → General Management (or System) → Reset → Factory Data Reset → Reset → Delete All\n\n**Post-reset:** The device restarts to the initial setup screen. You can go through basic setup (language, Wi-Fi) to confirm everything works, then leave it at the initial screen or add a basic guest setup for the recipient."
+          },
+          {
+            "heading": "Windows Laptops: Step-by-Step",
+            "content": "**Back up all files first:**\nCheck Desktop, Downloads, Documents, Pictures, Music, and Videos folders. Copy everything you need to an external drive or cloud storage.\n\n**Sign out of all Microsoft services:**\n- Settings → Accounts → Your Info → Sign Out\n- Right-click OneDrive icon in taskbar → Settings → Account → Unlink this PC\n- Sign out of Microsoft Office if installed\n\n**Deactivate software licences:**\nAdobe apps, antivirus software, and other licenced software must be deactivated before wiping. Each has its own 'Deactivate' or 'Deauthorise' option in account settings. If you skip this, your licence may be consumed by the device permanently.\n\n**The Reset — Critical Setting:**\nSettings → System → Recovery → Reset this PC → Remove Everything → Local Reinstall → Change Settings → set 'Clean the drive' to ON → Confirm → Reset\n\n**Why 'Clean the drive' is essential:**\nA standard reset removes your files but leaves them technically recoverable with basic data recovery software. With 'Clean the drive' enabled, the drive is overwritten with zeros — making recovery effectively impossible.\n\nTime required: 1 to 3 hours. Keep plugged in. Do not interrupt.\n\n**After reset:** Windows reinstalls and the device starts at the initial setup screen. This is the ideal state for the recipient — a clean Windows installation ready to be set up."
+          },
+          {
+            "heading": "MacBooks and Apple Laptops: Step-by-Step",
+            "content": "**Back up first:**\nUse Time Machine with an external drive for a full backup. Alternatively, ensure everything important is in iCloud.\n\n**Sign out of Apple ID — do this before anything else:**\nSystem Preferences → Apple ID → Overview → Sign Out\n\nThis single action signs you out of iCloud, iMessage, FaceTime, App Store, and all Apple services simultaneously. It is the most important step for Mac.\n\n**Disable Find My Mac:**\nSystem Preferences → Apple ID → iCloud → Find My Mac → Uncheck\nIf Find My is not disabled, the next user cannot activate the Mac without your Apple ID credentials.\n\n**For Intel Macs (pre-M1):**\nRestart → Hold Command + R at startup → Disk Utility → Select main drive → Erase (APFS or Mac OS Extended) → Quit Disk Utility → Reinstall macOS\n\n**For Apple Silicon Macs (M1, M2, M3):**\nShut down → Hold power button until 'Loading startup options' appears → Options → Continue → Select drive → Erase Mac → Erase Mac\n\nBoth processes require Wi-Fi to download macOS. Time required: 1 to 3 hours. Keep plugged in.\n\n**After reset:** The Mac starts at the 'Hello' setup screen — completely clean, ready for the new user."
+          },
+          {
+            "heading": "Chromebooks: The Simplest Process",
+            "content": "Chromebooks are designed with easy reset in mind.\n\n**Powerwash:**\nPress Ctrl + Alt + Shift + R simultaneously → Select Restart → Select Powerwash → Continue → Sign out\n\nAfter powerwash, the Chromebook starts at the initial Google login screen. All user accounts, files, and settings are removed. The process takes 5 to 10 minutes.\n\nNote: Sign out of your Google Account before initiating Powerwash to ensure your account is fully removed from the device."
+          },
+          {
+            "heading": "After Wiping: The Final Verification",
+            "content": "After completing the wipe process, run through this quick verification:\n\n☐ Device powers on to the initial setup screen (not to your account)\n☐ No personal accounts are accessible\n☐ No personal photos or files are visible\n☐ Wi-Fi connects normally\n☐ All basic functions work (screen, audio, camera)\n☐ Battery charges when connected\n☐ Charger is included with the device\n\nIf the device powers on to your account rather than the setup screen, the wipe was incomplete. Repeat the factory reset process.\n\nOnce verified, your device is ready to donate — your data is gone, completely, and the recipient has a clean device ready to set up as their own."
+          }
+        ],
+
+        "closing": "Data privacy is not a reason to avoid donating your device. It is a step in the donation process — one that takes 30 to 90 minutes and completely protects your privacy while giving a functional device a new, impactful life.\n\nWipe it. Test it. Donate it.\n\nThe student who receives it will not know what was on it before. They will know it works — and that it is theirs.",
+
+        "cta": [
+          "Donate Your Device Through CauseKind → https://www.causekind.com/items",
+          "Browse Student Device Requests Near You → https://www.causekind.com/requests?category=electronics",
+          "Read the Complete Guide to Donating Electronics → https://www.causekind.com/blog/how-to-donate-laptops-electronics-india"
+        ]
+      }
+    },
+
+    {
+      "id": "electronics-03",
+      "type": "supporting-blog",
+      "title": "Donating Laptops to Students in India: What It Enables and How to Do It Right",
+      "seo_slug": "donating-laptops-to-students-india",
+      "category": "Electronics Donation",
+      "publish_priority": 3,
+      "publish_month": "August",
+      "reading_time": "7 minutes",
+      "meta_title": "Donating Laptops to Students in India — Impact and How-To | CauseKind",
+      "meta_description": "How donating your old laptop to a student in India changes their educational trajectory. What a donated laptop enables, who needs one, and how to donate safely through CauseKind's verified platform.",
+      "focus_keyword": "donating laptops to students India",
+      "secondary_keywords": [
+        "donating laptops to students India",
+        "donate laptop for education India",
+        "laptop donation students India",
+        "laptop for underprivileged students India",
+        "donate computer to student India",
+        "digital education India laptop",
+        "student laptop donation programme India",
+        "CauseKind laptop student",
+        "donate refurbished laptop India",
+        "laptop donation NGO India",
+        "education device donation India",
+        "digital divide laptop India"
+      ],
+      "schema_type": "Article",
+      "blog": {
+        "opening": "A laptop is not just a device.\n\nFor a student in a government school in urban India — a student who has been attending online classes by borrowing a parent's phone for 30-minute windows, who has been missing submission deadlines because the phone was needed for household communication, who has been writing programming syntax on paper because there is no device to run it on — a laptop is a fundamental change in what is educationally possible.\n\nThis blog is about what that change looks like. About what a donated laptop specifically enables — not in abstract terms, but in the specific, day-to-day reality of a student's life. And about how to donate one in a way that ensures it actually reaches a student who needs it.",
+
+        "sections": [
+          {
+            "heading": "What a Donated Laptop Actually Enables for an Indian Student",
+            "content": "The list of what a working laptop makes possible for a student without one is long and specific:\n\n**Uninterrupted online class attendance**\nMost government school students who access online classes do so on a shared family phone. When the phone is needed for a call, they miss the class. A dedicated laptop means they attend every class, without interruption, on a stable screen.\n\n**Assignment submission without a queue**\nStudents sharing one device among siblings or family members submit assignments when the device is available — not when the deadline requires. A personal laptop means submitting on time, every time.\n\n**Access to DIKSHA and offline educational content**\nThe Government of India's DIKSHA platform has textbook content, video lessons, and practice exercises for every class and subject. Accessible on a laptop, 24 hours a day, without data limitations.\n\n**Learning to type and use productivity software**\nTyping proficiency, familiarity with document editors, spreadsheet basics — skills that every employer assumes in every job candidate, that students without devices never develop before entering the workforce.\n\n**Board exam online preparation**\nMock tests, online practice papers, timer-based exam simulations — all available free online, all inaccessible without a device.\n\n**Coding and vocational skills**\nPython, HTML, digital design, video editing — the skills that open pathways to employment in India's growing digital economy. None of them can be learned effectively on a shared phone with a 6-inch screen."
+          },
+          {
+            "heading": "Who Needs a Donated Laptop Most",
+            "content": "The students whose educational trajectories change most dramatically with a laptop donation are:\n\n**Class 9 to 12 students in government schools**\nBoard exam preparation, online practicals, and college application processes are increasingly digital. Students in this age range without devices are at a serious disadvantage in competitive academic environments.\n\n**Students in commerce and science streams**\nAccounting software, Python, laboratory data analysis, online resources for competitive exams — the subject requirements of science and commerce students are heavily digital.\n\n**Students in skill development and vocational training programmes**\nITI students, polytechnic students, and participants in government skill training programmes often need devices for coursework that their institutions cannot provide.\n\n**Students in rural or semi-urban areas with poor mobile data connectivity**\nA laptop with offline educational content loaded (DIKSHA offline, Khan Academy Lite, Kolibri) provides educational access even without reliable internet — more practical than a smartphone in areas with poor connectivity."
+          },
+          {
+            "heading": "What Makes a Laptop Good Enough to Donate to a Student",
+            "content": "The standard for a donatable student laptop is simpler than most donors assume.\n\n**Minimum functional requirements:**\n- Powers on and runs Windows 10 or later (or macOS 10.14 or later, or a current ChromeOS version)\n- Connects to Wi-Fi\n- Browser loads educational sites (diksha.gov.in, khanacademy.org)\n- Battery holds charge for 3+ hours of active use\n- Keyboard fully functional\n- Screen displays clearly with no major dead pixels\n- Camera and microphone work for video classes\n\n**A laptop that meets these requirements can:**\n- Attend online classes via Google Meet or Zoom\n- Access DIKSHA, Khan Academy, and all major educational platforms\n- Write and submit assignments in Google Docs\n- Run Python (Mu Editor or Thonny — lightweight, perfect for older devices)\n- Practice typing, spreadsheets, and presentations\n\n**A laptop that is 4 to 6 years old and was mid-range when purchased almost certainly meets all of these requirements.**\n\nThe student does not need a fast laptop. They need a working one."
+          },
+          {
+            "heading": "How to Donate a Laptop to a Student Through CauseKind",
+            "content": "1. **Assess your device** — confirm it meets the minimum functional requirements above\n2. **Wipe all personal data** — follow our complete data wiping guide (factory reset with 'clean the drive' enabled for Windows; Disk Utility erase and macOS reinstall for Mac)\n3. **Include the charger** — a laptop without a charger is not donatable\n4. **Test after wiping** — confirm Wi-Fi, browser, camera, and battery all work\n5. **List on CauseKind** — include the model, operating system, condition, and what's included\n6. **Browse student requests** — filter by 'electronics' to see verified device requests from students within 10 km\n7. **Match and arrange handoff** — direct local delivery, within 10 km, no courier\n8. **Confirm delivery** — mutual confirmation on the platform generates your Impact Certificate"
+          },
+          {
+            "heading": "Optional: Loading Offline Educational Content Before Donating",
+            "content": "For students in areas with unreliable internet, taking 30 extra minutes to load offline educational content before donating can significantly multiply the device's impact.\n\n**Offline apps to install:**\n- **DIKSHA app (offline mode):** Download from diksha.gov.in — contains NCERT textbook content for all classes in text and video, downloadable for offline access\n- **Khan Academy Lite (KA Lite / Kolibri):** Free, runs on any laptop, contains Khan Academy's full curriculum — maths, science, computing — without internet\n- **GCompris:** Educational activities for primary school children — science, maths, memory games — completely offline\n- **LibreOffice:** Free, open-source equivalent of Microsoft Office — word processing, spreadsheets, presentations\n- **Mu Editor or Thonny:** Lightweight Python editors that run on older hardware — essential for students learning to code\n\nNote the installed apps in your CauseKind listing so the recipient knows what is already on the device."
+          }
+        ],
+
+        "closing": "A 5-year-old laptop that feels obsolete to you is a complete educational workstation to a student who has never had one.\n\nIt is the device she will use to attend every class. To submit every assignment. To practice the Python she has been writing on paper. To apply to the college programme she wants, through the online portal that requires a device to access.\n\nThe device in your drawer is not junk.\n\nIt is someone's future, waiting to be handed over.",
+
+        "cta": [
+          "Donate Your Laptop to a Verified Student → https://www.causekind.com/items",
+          "Browse Student Device Requests Near You → https://www.causekind.com/requests?category=electronics",
+          "Read: How to Erase Personal Data Before Donating → https://www.causekind.com/blog/how-to-erase-personal-data-before-donation-india"
+        ]
+      }
+    },
+
+    {
+      "id": "electronics-04",
+      "type": "supporting-blog",
+      "title": "Donating vs. Recycling Electronics in India: Which Creates More Impact?",
+      "seo_slug": "donating-versus-recycling-electronics-india",
+      "category": "Electronics Donation",
+      "publish_priority": 4,
+      "publish_month": "August",
+      "reading_time": "6 minutes",
+      "meta_title": "Donate vs Recycle Electronics India — Which Is Better? | CauseKind",
+      "meta_description": "Should you donate or recycle your old electronics in India? A clear comparison — when to donate a working device to a student, and when responsible e-waste recycling is the right choice for non-functional devices.",
+      "focus_keyword": "donate or recycle electronics India",
+      "secondary_keywords": [
+        "donate or recycle electronics India",
+        "e-waste donation India",
+        "e-waste recycling India",
+        "electronics donation vs recycling India",
+        "what to do with old electronics India",
+        "e-waste responsible disposal India",
+        "donate old electronics India",
+        "recycle old laptop India",
+        "CauseKind electronics",
+        "old phone donate or recycle India",
+        "e-waste management India",
+        "responsible electronics disposal India"
+      ],
+      "schema_type": "Article + FAQPage",
+      "blog": {
+        "opening": "You have an old device.\n\nIt might still work. It might be partially functional. It might be completely dead.\n\nTwo responsible options exist: donate it so someone else can use it, or recycle it responsibly so its materials are recovered rather than becoming hazardous waste.\n\nChoosing the right option depends on one straightforward question: **does this device still work?**\n\nIf yes — donate.\nIf no — recycle.\n\nHere is why, and how to do each correctly.",
+
+        "sections": [
+          {
+            "heading": "When to Donate: The Working Device Decision Tree",
+            "content": "A device should be donated — not recycled — when it meets these criteria:\n\n✅ Powers on and completes startup\n✅ Connects to Wi-Fi\n✅ Battery holds charge for 3+ hours of active use\n✅ Screen displays without major obstruction to visibility\n✅ Basic functions (camera, speaker, microphone, ports) work\n\nIf your device meets all of these, it has remaining useful life. Recycling it removes that useful life permanently. For the 250 million Indian students without a digital learning device, your 'old' but functional device is a meaningful educational tool.\n\nDonation through a verified platform like CauseKind ensures:\n- The device reaches a specific verified student\n- Delivery is confirmed and documented\n- No functional useful life is wasted\n- No carbon cost of recycling is incurred unnecessarily\n\n**The environmental and social calculus is clear:** a working device donated to an education-focused recipient is more valuable than the same device recycled for material recovery."
+          },
+          {
+            "heading": "When to Recycle: The Non-Functional Device Situation",
+            "content": "When a device:\n\n❌ Does not power on\n❌ Has a completely shattered screen\n❌ Cannot connect to any network\n❌ Has severe water damage affecting core functions\n❌ Is so old it cannot run any current educational app\n\n— it is not donatable. Donating a non-functional device to an individual or NGO creates a disposal problem for them, not an educational solution.\n\nThe right choice for non-functional devices is responsible e-waste recycling.\n\nIn India, e-waste contains valuable materials — copper, gold, silver, palladium — as well as hazardous materials — lead, mercury, cadmium — that cause significant environmental and health damage when disposed of in general waste.\n\nResponsible e-waste recycling recovers the valuable materials and safely neutralises the hazardous ones."
+          },
+          {
+            "heading": "How to Recycle Electronics Responsibly in India",
+            "content": "India has a regulated e-waste management system under the E-Waste (Management) Rules, 2022. Responsible disposal options include:\n\n**Manufacturer take-back programmes:**\nMost major electronics manufacturers in India — Samsung, Apple, Lenovo, HP, Dell — have producer responsibility schemes that accept old devices for responsible recycling. Check the manufacturer's India website for current take-back details.\n\n**Authorised e-waste recyclers:**\nIndia has hundreds of CPCB (Central Pollution Control Board) authorised e-waste recyclers. These are certified to handle e-waste safely and are the most responsible disposal option.\n- Attero Recycling: attero.in (accepts devices nationwide)\n- Karo Sambhav: karosambhav.com (producer responsibility network)\n- E-Parisaraa: For Bangalore-based donors\n\n**Retailer collection programmes:**\nMany large electronics retailers — Croma, Reliance Digital — have e-waste collection points. Check in-store for current programmes.\n\n**What not to do with non-functional devices:**\n- Do not throw in general waste\n- Do not give to unregistered scrap dealers who may not handle hazardous materials safely\n- Do not donate to NGOs or individuals — this creates a disposal burden"
+          },
+          {
+            "heading": "The Grey Zone: Devices That Work But Barely",
+            "content": "Some devices sit in a grey zone — they function, but marginally. Battery drains in 90 minutes. Screen has a crack that affects one corner. Wi-Fi connects but drops occasionally.\n\nFor these devices, consider whether a small repair investment is worthwhile:\n\n- **Battery replacement:** ₹300 to ₹800 for most Android phones. Transforms a marginal device into a confidently donatable one.\n- **Screen repair:** ₹800 to ₹3,000 depending on device. Worth it for devices with strong specifications otherwise.\n- **Wi-Fi chip repair:** More complex — if Wi-Fi is fundamentally broken, recycling is likely the right choice unless repair cost is low.\n\nA small repair investment that converts a marginal device into a fully functional educational tool is money extremely well spent relative to the impact produced."
+          },
+          {
+            "heading": "The Environmental Case for Donation Over Recycling",
+            "content": "Recycling is presented as the environmentally responsible choice for old electronics — and it is, for genuinely non-functional devices.\n\nBut for working devices, the environmental argument strongly favours donation:\n\n**Manufacturing a new device** — the device the student would otherwise need to have manufactured — produces approximately 40 to 80 kg of CO2 equivalent in the production process, consumes rare earth materials, and generates production waste.\n\n**Donating a working device** — extending its useful life by 3 to 5 years — avoids that entire manufacturing footprint.\n\nThe carbon avoided by donating one working laptop rather than recycling it is approximately equal to not driving 300 to 600 km in a petrol car.\n\nDonation is the most environmentally responsible choice for working devices."
+          }
+        ],
+
+        "faq": [
+          {
+            "question": "Should I donate or recycle my old phone in India?",
+            "answer": "If your phone powers on, connects to Wi-Fi, and holds battery charge for 3+ hours, donate it through CauseKind to a verified student. If it is non-functional, recycle it through an authorised e-waste recycler. Never throw electronics in general waste."
+          },
+          {
+            "question": "Where can I recycle electronics responsibly in India?",
+            "answer": "Use CPCB-authorised e-waste recyclers such as Attero Recycling, Karo Sambhav, or manufacturer take-back programmes from Samsung, Apple, Lenovo, HP, and Dell. Large retailers like Croma and Reliance Digital also have e-waste collection points."
+          }
+        ],
+
+        "closing": "The decision is simpler than it seems.\n\nDoes it work? Donate it. A student nearby needs it.\n\nDoes it not work? Recycle it responsibly. The materials can still serve a purpose — just not as a device.\n\nNeither option involves the bin. Both options are better than the drawer.",
+
+        "cta": [
+          "Donate Your Working Device Through CauseKind → https://www.causekind.com/items",
+          "Browse Student Device Requests Near You → https://www.causekind.com/requests?category=electronics",
+          "Read: How to Donate Laptops and Electronics in India → https://www.causekind.com/blog/how-to-donate-laptops-electronics-india"
+        ]
+      }
+    },
+
+    {
+      "id": "electronics-05",
+      "type": "supporting-blog",
+      "title": "What Condition Should a Donated Device Be In? The Honest Standard for Electronics Donations in India",
+      "seo_slug": "acceptable-condition-donated-devices-india",
+      "category": "Electronics Donation",
+      "publish_priority": 5,
+      "publish_month": "September",
+      "reading_time": "6 minutes",
+      "meta_title": "What Condition for Donated Devices? Electronics Donation Standards India | CauseKind",
+      "meta_description": "What condition must a phone or laptop be in to donate in India? Clear, honest standards for donating electronics — what is acceptable, what needs repair first, and what should never be donated as a device.",
+      "focus_keyword": "condition for donating electronics India",
+      "secondary_keywords": [
+        "condition for donating electronics India",
+        "what condition laptop to donate India",
+        "acceptable condition donated phone India",
+        "is my old phone good enough to donate India",
+        "phone condition for donation India",
+        "electronics donation standards India",
+        "donate old phone good condition India",
+        "CauseKind device condition",
+        "laptop condition donation India",
+        "refurbished device donation India",
+        "donate cracked phone India"
+      ],
+      "schema_type": "Article + FAQPage",
+      "blog": {
+        "opening": "The most common question CauseKind receives about device donation is a variation of this:\n\n'My old phone/laptop is [description of various imperfections] — is it good enough to donate?'\n\nThe answer requires a specific standard — not a vague 'good condition' that leaves donors guessing, but a clear, functional definition of what makes a device genuinely useful for the student who receives it.\n\nHere is that standard.",
+
+        "sections": [
+          {
+            "heading": "The Core Standard: Educational Functionality",
+            "content": "The condition standard for a donated device is not 'looks nice' or 'feels new' or 'has no cosmetic damage.'\n\nIt is: **can this device function effectively as an educational tool for a student?**\n\nThis means:\n- Can a student attend an online class on it without disconnecting?\n- Can a student submit an assignment on time using it?\n- Can a student access DIKSHA, Khan Academy, or similar platforms on it?\n- Can a student use it for a full school day without the battery dying?\n\nIf the honest answer to all four is yes — the device is donatable, regardless of cosmetic condition.\nIf the honest answer to any one is no — the device needs repair before donating, or should not be donated."
+          },
+          {
+            "heading": "✅ Acceptable Condition: Donate As-Is",
+            "content": "Devices in the following condition are good to donate without any repair:\n\n**Screen:** Minor scratches that do not affect visibility. Small cosmetic marks on the bezel or casing. A tiny dead pixel in a corner that does not obstruct text or image.\n\n**Body:** Dents, scratches, or scuffs on the casing that do not affect function. A slightly loose but functional charging port. A worn-looking keyboard that all keys work on.\n\n**Battery:** Holds charge for 3 or more hours of active use. May not last a full day — but 3+ hours is sufficient for classes, sessions, and study blocks.\n\n**Performance:** May feel slow compared to new devices. Opens apps within 5 to 10 seconds. Runs a browser and educational apps without crashing. Plays educational videos without significant stuttering.\n\n**Summary:** If it works, connects, lasts 3+ hours, and the screen is fully readable — donate it."
+          },
+          {
+            "heading": "⚠️ Repair First, Then Donate",
+            "content": "Some devices are worth repairing before donating — the repair cost is modest relative to the impact produced:\n\n**Battery under 90 minutes of active use:**\nRepair cost: ₹300 to ₹800 for most phones, ₹500 to ₹2,000 for laptops\nImpact: Transforms a marginal device into one that gets through a school day\nRecommendation: Repair and donate\n\n**Screen cracked but touch/display still works:**\nIf the crack does not affect touch sensitivity or text readability, donate as-is. If it significantly affects usability, repair (₹800 to ₹3,000) or do not donate.\n\n**Wi-Fi drops occasionally but connects reliably:**\nTest by running a 20-minute YouTube video without disconnect. If it holds — donate. If it drops repeatedly — investigate repair before donating.\n\n**Older operating system:**\nAndroid 8 or above and Windows 10 or above can run most educational apps. Below these versions, check whether DIKSHA and Khan Academy run acceptably. If they do — donate. If the OS cannot be updated and apps do not run — do not donate."
+          },
+          {
+            "heading": "❌ Do Not Donate: Devices in These Conditions",
+            "content": "These devices should be responsibly recycled, not donated:\n\n**Does not power on:**\nA device that cannot start is not an educational tool. It is e-waste.\n\n**Screen completely shattered:**\nIf the screen is broken to the point where it cannot display content or respond to touch — it is not usable.\n\n**Cannot connect to any network:**\nWi-Fi is the essential function for online education. A device that cannot connect to Wi-Fi cannot serve its educational purpose. If Wi-Fi is broken and repair is not practical, recycle.\n\n**Battery dies in under 30 minutes:**\nA device with effectively no battery capacity is barely portable and cannot support a student through a class session.\n\n**Significant water damage:**\nSome functions may work after water damage, but corrosion is ongoing. A device with water damage history that is not fully functional and stable should not be donated — it may fail days after the student receives it.\n\n**Missing charger with no practical replacement:**\nA device without a charger and with a proprietary charging port for which a replacement is not available is not donatable. Always include the charger or purchase a compatible one."
+          },
+          {
+            "heading": "The Honest Condition Declaration in Your CauseKind Listing",
+            "content": "When listing a device on CauseKind, be specific and honest about its condition.\n\nA good listing:\n'Samsung Galaxy A50, 3 years old. Powers on. Connects to Wi-Fi. Battery lasts approximately 4 hours of active use. Minor scratches on back glass — no effect on function. Screen fully functional, no cracks. Front and rear cameras work. Includes original charger and a case. Factory reset completed.'\n\nA poor listing:\n'Old Samsung phone, good condition.'\n\nThe specific listing allows the recipient to assess whether the device meets their needs — and builds trust that leads to a successful match. Vague listings either fail to match or produce disappointment at the handoff."
+          }
+        ],
+
+        "faq": [
+          {
+            "question": "Can I donate a phone with a cracked screen in India?",
+            "answer": "It depends on the severity. If the crack is cosmetic and does not affect touch sensitivity or screen readability, the device is donatable. If the crack significantly affects usability, repair the screen before donating or do not donate."
+          },
+          {
+            "question": "Is a 5-year-old laptop good enough to donate in India?",
+            "answer": "Yes, in most cases. A 5-year-old mid-range laptop running Windows 10 or later, with Wi-Fi working and battery holding 3+ hours of charge, is fully capable of running educational apps, attending online classes, and supporting a student's academic needs."
+          },
+          {
+            "question": "What is the minimum battery life for a donated device?",
+            "answer": "3 hours of active use is the recommended minimum. This allows a student to attend a class, complete an assignment, or use the device for a study session without the battery dying mid-use."
+          },
+          {
+            "question": "Should I include the charger when donating a device?",
+            "answer": "Yes, always. A device without a charger is significantly less useful. If you have lost the original charger, purchase a compatible replacement before donating."
+          }
+        ],
+
+        "closing": "The condition standard for device donation is simple: does it work educationally?\n\nNot does it look new. Not does it feel fast. Does it connect to Wi-Fi, hold charge for a class, display content clearly, and run the apps a student needs.\n\nIf yes — a student near you is waiting for it.\n\nIf no — a responsible recycler is the right destination.\n\nBoth are better than the drawer.",
+
+        "cta": [
+          "List Your Device on CauseKind → https://www.causekind.com/items",
+          "Browse Student Device Requests Near You → https://www.causekind.com/requests?category=electronics",
+          "Read: Donating vs. Recycling Electronics → https://www.causekind.com/blog/donating-versus-recycling-electronics-india",
+          "Read the Complete Electronics Donation Guide → https://www.causekind.com/blog/how-to-donate-laptops-electronics-india"
+        ]
+      }
+    }
+  ]
+}
