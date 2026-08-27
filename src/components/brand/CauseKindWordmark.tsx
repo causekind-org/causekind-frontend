@@ -1,6 +1,20 @@
 /**
  * The CauseKind wordmark, as a picture element.
  *
+ * <p><b>Currently unused — kept deliberately, not abandoned.</b> The three files
+ * in `public/brand/` are the **Independence Day** artwork: "Cause" in saffron,
+ * "Kind" in green, with the flag-cloth ripple they were built for. The colours
+ * are baked into the images, so there is no way to neutralise them in CSS.
+ *
+ * <p>Because the asset swap was never tied to the campaign's own on/off switch,
+ * it stayed live for ten days after that window closed on 18 August, and the
+ * site was still flying a flag on 27 August. `Navbar.tsx` therefore renders the
+ * styled-text wordmark again, which the stylesheet can theme per season.
+ *
+ * <p>This component and its assets are correct and ready for 15 August 2027.
+ * Wire them back in **behind `isIndependenceDayCampaignActive()`**, not
+ * unconditionally, or the same thing happens again.
+ *
  * <p>One component owns the asset choice so nothing else in the app has to know
  * which file to load, what the aspect ratio is, or how to behave under reduced
  * motion. It is a server component on purpose — plain markup, no client

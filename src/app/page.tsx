@@ -2,6 +2,7 @@ import {
   getCampaigns,
   getItemRequests,
   getPlatformStats,
+  getPublicItemRequests,
   getRecentActivity
 } from "@/lib/api";
 import HomeClient from "./HomeClient";
@@ -11,11 +12,18 @@ export const revalidate = 60; // ISR cache for 60 seconds
 export default async function HomePage() {
   // Fetch initial data concurrently on the server.
   // Listings are private donor inventory (admin-only) — never fetched here.
-  const [campaigns, stats, activity, itemRequests] = await Promise.all([
+  // `getPublicItemRequests` and not `getItemRequests` for the campaign surfaces:
+  // the authenticated board 401s on every server render (there is no session
+  // cookie here — see the backend guide's Known Issues), so it returns [] for a
+  // logged-out visitor and the campaign would silently render nothing. The
+  // public endpoint is permitAll and its projection carries everything these
+  // surfaces need: title, category, city, createdAt and the donee's first name.
+  const [campaigns, stats, activity, itemRequests, publicRequests] = await Promise.all([
     getCampaigns().catch(() => []),
     getPlatformStats().catch(() => null),
     getRecentActivity().catch(() => []),
-    getItemRequests().catch(() => [])
+    getItemRequests().catch(() => []),
+    getPublicItemRequests().catch(() => [])
   ]);
 
   const schemaData = {
@@ -58,6 +66,7 @@ export default async function HomePage() {
         initialStats={stats}
         initialActivity={activity}
         initialItemRequests={itemRequests}
+        initialPublicRequests={publicRequests}
       />
     </>
   );
