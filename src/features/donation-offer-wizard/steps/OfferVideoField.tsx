@@ -1,26 +1,38 @@
 "use client";
 
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Loader2, Trash2, Video } from "lucide-react";
+import { FileVideo, Loader2, Trash2, Video } from "lucide-react";
 import { pressProps } from "@/features/wizard-kit/wizardMotion";
 import type { OfferVideoState } from "../useOfferVideo";
+import { VideoRecorderDialog } from "./VideoRecorderDialog";
 
 /**
  * Containers the server accepts. Mirrors VideoPolicy.allowedContainers — MOV is
  * there only because iPhones produce it, and is always transcoded to MP4.
+ *
+ * <p>Not a security boundary: the server probes the container's own headers and
+ * ignores what the picker claimed. This exists so the picker shows the donor
+ * files that stand a chance, not to keep anything out.
  */
-const VIDEO_ACCEPT = "video/mp4,video/quicktime";
+const VIDEO_ACCEPT = "video/mp4,video/quicktime,video/webm";
 
 /**
  * The optional item video.
  *
- * <p><b>A file input with `capture`, not an in-page recorder.</b> On a phone —
- * where a donor is standing in front of the thing they are giving — that hands
- * off to the real camera app, which is a better recorder than anything built
- * here. It also sidesteps `getUserMedia` entirely, so no camera or microphone
- * permission is involved and the Permissions-Policy header cannot break it the
- * way it broke in-app photo capture.
+ * <p><b>Two separate actions.</b> Record opens an in-page recorder; Choose opens
+ * the ordinary file picker. They were briefly two file inputs differing only in
+ * `capture`, because the pipeline took MP4 and MOV only and Chromium and Firefox
+ * record WebM — a browser recorder would have produced files the probe threw
+ * away. WebM is now accepted end to end and the slot's content type is
+ * negotiated rather than fixed, so recording in the page produces something the
+ * server keeps, and the donor stays on this screen instead of being handed to
+ * the platform camera app.
+ *
+ * <p>The recorder is video-only: `microphone=()` stays closed, and the transcode
+ * drops audio regardless. When it cannot start at all — no `MediaRecorder`, no
+ * camera, permission refused — it says so plainly, and Choose video is still
+ * there, which is why that path never depends on any permission.
  *
  * <p>Nothing renders at all until the server says video is available. A
  * deployment without ffmpeg must never show a control that cannot work.
@@ -33,13 +45,30 @@ export function OfferVideoField({
   onRemove: () => void;
 }) {
   const reduced = !!useReducedMotion();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [recording, setRecording] = useState(false);
+  const chooseInputRef = useRef<HTMLInputElement>(null);
 
   // capability === null means we have not heard back yet; false means no.
   if (!state.capability?.available) return null;
 
   const { video, playbackUrl, busy, phase, error, capability } = state;
   const maxMb = Math.round(capability.maxBytes / (1024 * 1024));
+
+  /**
+   * Resets the input after every change.
+   *
+   * <p>The reset is required, not tidiness: without it, re-selecting the same
+   * file — the common case after a rejection or a removal — sets the same value
+   * and no `change` event is dispatched, so the donor's second attempt appears
+   * to do nothing. Cancelling a picker fires `change` with an empty list, which
+   * must not reach `onPick`.
+   */
+  const handlePick = (ref: React.RefObject<HTMLInputElement | null>) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) onPick(file);
+      if (ref.current) ref.current.value = "";
+    };
 
   return (
     <div className="rounded-xl border border-stone-200 p-3 dark:border-zinc-800">
@@ -64,29 +93,63 @@ export function OfferVideoField({
         )}
       </div>
 
-      {!video && (
-        <motion.button
-          type="button" {...pressProps(reduced)}
-          disabled={busy}
-          onClick={() => inputRef.current?.click()}
-          className="mt-2.5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-bold text-stone-700 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200"
+      {/* While an upload or screening is in flight the two actions are replaced
+          by a single progress line rather than being disabled in place. Two
+          greyed buttons would still read as two things to press, and would need
+          two spinners to say one thing. */}
+      {!video && busy && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="mt-2.5 flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm font-bold text-stone-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-stone-300"
         >
-          {busy
-            ? <><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> {phase === "uploading" ? "Uploading…" : "Checking…"}</>
-            : <><Video className="h-4 w-4" aria-hidden /> Record or choose a video</>}
-        </motion.button>
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
+          {phase === "uploading" ? "Uploading…" : "Checking…"}
+        </p>
       )}
 
+      {!video && !busy && (
+        <div className="mt-2.5 grid grid-cols-2 gap-2">
+          <motion.button
+            type="button" {...pressProps(reduced)}
+            onClick={() => setRecording(true)}
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-soft)] px-3 py-2.5 text-sm font-bold text-[var(--ck-role-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
+          >
+            <Video className="h-4 w-4" aria-hidden /> Record video
+          </motion.button>
+          <motion.button
+            type="button" {...pressProps(reduced)}
+            onClick={() => chooseInputRef.current?.click()}
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-bold text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200"
+          >
+            <FileVideo className="h-4 w-4" aria-hidden /> Choose video
+          </motion.button>
+        </div>
+      )}
+
+      {/* The only file input left. Record no longer needs one — it produces a
+          File from the recorder — and keeping an unused hidden input around
+          would just be something to wonder about later. */}
       <input
-        ref={inputRef} type="file" accept={VIDEO_ACCEPT} capture="environment"
+        ref={chooseInputRef} type="file" accept={VIDEO_ACCEPT}
+        data-testid="video-choose-input"
         className="sr-only" aria-hidden tabIndex={-1}
-        onChange={e => {
-          const file = e.target.files?.[0];
-          if (file) onPick(file);
-          // Reset so re-picking the same file fires change again.
-          if (inputRef.current) inputRef.current.value = "";
-        }}
+        onChange={handlePick(chooseInputRef)}
       />
+
+      {recording && (
+        <VideoRecorderDialog
+          open
+          maxSeconds={capability.maxSeconds}
+          onCancel={() => setRecording(false)}
+          onRecorded={file => {
+            // Close first: the dialog's teardown releases the camera, and the
+            // upload that follows can take a while with the light still on.
+            setRecording(false);
+            onPick(file);
+          }}
+        />
+      )}
 
       {video && <VideoStatusLine state={state} playbackUrl={playbackUrl} />}
 
@@ -127,7 +190,9 @@ function VideoStatusLine({
     );
   }
 
-  if (status === "REJECTED" || status === "QUARANTINED") {
+  // QUARANTINED is not here on purpose: it means the bytes arrived and screening
+  // has not started yet, so it belongs with the in-flight states further down.
+  if (status === "REJECTED") {
     return (
       <p className="mt-2.5 text-3xs font-semibold text-red-600 dark:text-red-400">
         We can&apos;t accept this video. You can remove it and try another, or continue with photos only.
@@ -138,7 +203,7 @@ function VideoStatusLine({
   if (status === "REVIEW_REQUIRED") {
     return (
       <p className="mt-2.5 text-3xs font-semibold text-amber-700 dark:text-amber-400">
-        Someone from our team will check this video. You can carry on — it will not hold up your offer.
+        Someone from our team will check this video. You can carry on — it will not hold up your submission.
       </p>
     );
   }

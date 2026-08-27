@@ -4,9 +4,21 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Package, X, Sparkles, Check } from "lucide-react";
-import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
+import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS, readSelectedDonorCategories } from "@/lib/categoryVisuals";
 
 export const DONOR_CATEGORY_EVENT = "ck-category-changed";
+
+/**
+ * Reopen the picker. Dispatched by surfaces that let a donor revise the
+ * watchlist they already chose — currently the home page's "Watching for you"
+ * band. Without this the modal could only ever appear from its own mount
+ * effect, so a saved selection was unchangeable for the rest of the session.
+ *
+ * Only ever acted on when the viewer is a DONOR: the component returns null for
+ * anyone else, so a stray dispatch is inert rather than wrong.
+ */
+export const DONOR_CATEGORY_OPEN_EVENT = "ck-category-open";
+
 const STORAGE_KEY = "causekind_donor_category";
 
 // Derived from the shared category source — no hardcoded copy here. Adding a
@@ -30,6 +42,21 @@ export function DonorCategoryModal() {
   useEffect(() => {
     if (!isLoading && user?.role === "DONOR") setShow(true);
   }, [isLoading, user?.role]);
+
+  // Reopened from elsewhere. `tempSelected` is seeded from storage here and
+  // nowhere else, and that seeding is load-bearing rather than a nicety: the
+  // state starts empty, the grid renders selection purely from it, and `apply()`
+  // overwrites storage with whatever it holds. Opening a picker that showed
+  // nothing ticked and then applying would silently erase a watchlist the donor
+  // had already chosen.
+  useEffect(() => {
+    function onOpen() {
+      setTempSelected(readSelectedDonorCategories() ?? []);
+      setShow(true);
+    }
+    window.addEventListener(DONOR_CATEGORY_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(DONOR_CATEGORY_OPEN_EVENT, onOpen);
+  }, []);
 
   function apply(cats: string[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cats));

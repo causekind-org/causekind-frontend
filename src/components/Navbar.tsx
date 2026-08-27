@@ -917,7 +917,28 @@ export function SiteHeader() {
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onMouseEnter={handleInKindMouseEnter}
               onMouseLeave={handleInKindMouseLeave}
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5]/98 dark:bg-stone-900/98 backdrop-blur-2xl border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              /*
+                Opaque, and with no backdrop blur — both deliberate.
+
+                This panel used to be `bg-[#faf8f5]/98 backdrop-blur-2xl`, and the
+                page showed through it: the heading behind the menu was legible
+                straight through the cards, unblurred.
+
+                The blur was the reason it looked acceptable in review and never
+                worked in the browser. `backdrop-filter` on an element creates a
+                **backdrop root**, and a descendant's own `backdrop-filter` can
+                only sample inside it. The `<header>` above already carries
+                `lg:backdrop-blur-md`, so this panel's blur samples the header's
+                backdrop — which is empty — and does precisely nothing. It was
+                inert CSS implying a frosted-glass effect that never rendered.
+
+                With the blur genuinely absent, the 2% of transparency left by
+                `/98` is the only thing standing between the menu and the page,
+                and it is not enough for a large high-contrast heading. Opaque is
+                the honest fix; adding the blur back would need the panel moved
+                out of the header, which is a bigger change than this earns.
+              */
+              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <InKindMegaMenu onNavigate={() => setOpenMegaMenu(null)} />
@@ -936,7 +957,28 @@ export function SiteHeader() {
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onMouseEnter={handleAboutMouseEnter}
               onMouseLeave={handleAboutMouseLeave}
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5]/98 dark:bg-stone-900/98 backdrop-blur-2xl border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              /*
+                Opaque, and with no backdrop blur — both deliberate.
+
+                This panel used to be `bg-[#faf8f5]/98 backdrop-blur-2xl`, and the
+                page showed through it: the heading behind the menu was legible
+                straight through the cards, unblurred.
+
+                The blur was the reason it looked acceptable in review and never
+                worked in the browser. `backdrop-filter` on an element creates a
+                **backdrop root**, and a descendant's own `backdrop-filter` can
+                only sample inside it. The `<header>` above already carries
+                `lg:backdrop-blur-md`, so this panel's blur samples the header's
+                backdrop — which is empty — and does precisely nothing. It was
+                inert CSS implying a frosted-glass effect that never rendered.
+
+                With the blur genuinely absent, the 2% of transparency left by
+                `/98` is the only thing standing between the menu and the page,
+                and it is not enough for a large high-contrast heading. Opaque is
+                the honest fix; adding the blur back would need the panel moved
+                out of the header, which is a bigger change than this earns.
+              */
+              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <div className="grid grid-cols-12 gap-6">

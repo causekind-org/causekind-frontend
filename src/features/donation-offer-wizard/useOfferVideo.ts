@@ -11,6 +11,7 @@ import {
   uploadOfferVideoBytes,
   createListingVideoSlot,
   deleteListingVideo,
+  getCurrentListingVideo,
   finalizeListingVideo,
   getListingVideoCapability,
   getListingVideoPlayback,
@@ -19,6 +20,11 @@ import {
   type OfferVideoCapability,
   type OfferVideoStatus,
 } from "@/lib/api";
+
+/** Sizes as the donor sees them next to the button: whole megabytes. */
+function formatMb(bytes: number): string {
+  return `${Math.round(bytes / (1024 * 1024))}MB`;
+}
 
 /** How often to ask the server how screening is going. */
 const POLL_MS = 2500;
@@ -48,11 +54,25 @@ const POLL_CEILING_MS = 3 * 60 * 1000;
  */
 export type VideoEndpoints = {
   capability: () => Promise<OfferVideoCapability>;
-  slot: (ownerId: number, contentLength: number) => Promise<import("@/lib/api").OfferVideoSlot>;
+  slot: (
+    ownerId: number,
+    contentLength: number,
+    contentType?: string,
+  ) => Promise<import("@/lib/api").OfferVideoSlot>;
   finalize: (ownerId: number, mediaId: number) => Promise<OfferVideoStatus>;
   status: (ownerId: number, mediaId: number) => Promise<OfferVideoStatus>;
   playback: (ownerId: number, mediaId: number) => Promise<{ url: string }>;
   remove: (ownerId: number, mediaId: number) => Promise<void>;
+  /**
+   * The owner's current video, without needing a media id.
+   *
+   * <p>Optional because only the listing side has a route for it. Every other
+   * read here is keyed on a media id the client is assumed to still hold, which
+   * a page reload destroys — so without this a donor who refreshed lost sight of
+   * a video that was still being screened while it carried on existing on the
+   * server.
+   */
+  current?: (ownerId: number) => Promise<OfferVideoStatus | null>;
 };
 
 export const OFFER_VIDEO_ENDPOINTS: VideoEndpoints = {
@@ -71,6 +91,7 @@ export const LISTING_VIDEO_ENDPOINTS: VideoEndpoints = {
   status: getListingVideoStatus,
   playback: getListingVideoPlayback,
   remove: deleteListingVideo,
+  current: getCurrentListingVideo,
 };
 
 export type OfferVideoState = {
@@ -125,6 +146,11 @@ export function useOfferVideo(
   // does.
   const ownerIdRef = useRef<number | null>(null);
 
+  // Mirrors state.capability. Read through a ref so the size guard in upload()
+  // does not add state to that callback's dependencies, which would rebuild it
+  // on every poll tick.
+  const capabilityRef = useRef<OfferVideoCapability | null>(null);
+
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -140,14 +166,19 @@ export function useOfferVideo(
     let cancelled = false;
     api.capability()
       .then(cap => {
-        if (!cancelled && alive.current) setState(s => ({ ...s, capability: cap }));
+        if (!cancelled && alive.current) {
+          capabilityRef.current = cap;
+          setState(s => ({ ...s, capability: cap }));
+        }
       })
       .catch(() => {
         // Treat an unreachable capability check as "not available". Hiding the
         // control is the safe failure: the donor loses an optional extra rather
         // than meeting an error they can do nothing about.
         if (!cancelled && alive.current) {
-          setState(s => ({ ...s, capability: { available: false, maxBytes: 0, maxSeconds: 0 } }));
+          const none = { available: false, maxBytes: 0, maxSeconds: 0 };
+          capabilityRef.current = none;
+          setState(s => ({ ...s, capability: none }));
         }
       });
     return () => { cancelled = true; };
@@ -190,12 +221,70 @@ export function useOfferVideo(
     }, POLL_MS);
   }, [api, fetchPlayback]);
 
+  /**
+   * Restores the owner's existing video when the wizard opens.
+   *
+   * <p>The resume path. Without it a donor returning to a draft saw an empty
+   * video block while the media row carried on existing on the server — and,
+   * because the server refuses a second active video, "Record video" would then
+   * fail with "this listing already has a video" about one they could not see.
+   *
+   * <p>A no-op where the endpoint set has no `current` route, so the offer
+   * wizard is unaffected.
+   */
+  const hydrate = useCallback(async (ownerId: number) => {
+    if (!api.current) return;
+    ownerIdRef.current = ownerId;
+    try {
+      const existing = await api.current(ownerId);
+      if (!alive.current || !existing) return;
+      setState(s => ({ ...s, video: existing }));
+
+      if (existing.status === "APPROVED") {
+        void fetchPlayback(existing.mediaId);
+        return;
+      }
+      // Still moving. Pick the poll back up rather than leaving a video frozen
+      // at whatever state it happened to be in when the page was closed.
+      if (!OFFER_VIDEO_TERMINAL.includes(existing.status)) {
+        setState(s => ({ ...s, phase: "screening" }));
+        poll(existing.mediaId, Date.now());
+      }
+    } catch {
+      // No video, or the read failed. Neither is worth interrupting the wizard
+      // for — the block simply shows nothing, which is its empty state anyway.
+    }
+  }, [api, fetchPlayback, poll]);
+
   const upload = useCallback(async (file: Blob) => {
+    // Checked here, before a slot is requested.
+    //
+    // The server enforces the same cap and answers 400 VALIDATION_FAILED, whose
+    // copy is "Some details need fixing. Check the highlighted fields." — which
+    // names no field, never mentions size, and is the only thing an oversized
+    // upload used to produce. The limit is already on screen next to the button,
+    // so the client has everything it needs to say something true instead.
+    const maxBytes = capabilityRef.current?.maxBytes ?? 0;
+    if (maxBytes > 0 && file.size > maxBytes) {
+      setState(s => ({
+        ...s,
+        busy: false,
+        phase: "idle",
+        error: `That video is ${formatMb(file.size)}. The limit is ${formatMb(maxBytes)} — `
+          + "try a shorter clip, or one recorded at a lower quality.",
+      }));
+      return;
+    }
+
     setState(s => ({ ...s, busy: true, phase: "uploading", error: null, playbackUrl: null }));
     try {
       const ownerId = await resolveOwnerId();
       ownerIdRef.current = ownerId;
-      const slot = await api.slot(ownerId, file.size);
+      // A recorded Blob carries the MIME type MediaRecorder chose, which is WebM
+      // on Chrome and Firefox. It is passed through because the server signs it
+      // into the presigned PUT — defaulting to MP4 here would make S3 reject every
+      // recording. A picked File carries its own type for the same reason.
+      const slot = await api.slot(ownerId, file.size, file.type || undefined);
       await uploadOfferVideoBytes(slot, file);
       if (!alive.current) return;
 
@@ -240,5 +329,5 @@ export function useOfferVideo(
     }
   }, [api, state.video?.mediaId]);
 
-  return { ...state, upload, remove };
+  return { ...state, upload, remove, hydrate };
 }

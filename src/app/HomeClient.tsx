@@ -158,7 +158,24 @@ export default function HomeClient({
 }) {
   const t       = useTranslations("landing");
   const tCommon = useTranslations("common");
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+
+  /**
+   * The donor/donee signup pathways are guest-only.
+   *
+   * <p><b>Fails closed while auth is resolving.</b> `useAuth` starts at
+   * `{ user: null, isLoading: true }` and only then hydrates from
+   * `localStorage["ck_user"]` and validates against `/users/me`, so testing
+   * `!user` alone renders "Join as a donor" to someone who is already signed in
+   * and takes it away a moment later. Waiting for `isLoading` costs guests
+   * nothing visible and removes the flash entirely.
+   *
+   * <p>Any authenticated user hides it, not just DONOR and DONEE. Role strings
+   * circulate in both `ROLE_`-prefixed and bare forms (see `normalizeRole`), and
+   * a role-by-role check would quietly start showing signup CTAs to whichever
+   * role is added next.
+   */
+  const showAudiencePathways = !authLoading && user === null;
 
   const [campaigns,    setCampaigns]    = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -295,8 +312,12 @@ export default function HomeClient({
             which side they are on before being told why the platform is worth
             using. ("Why CauseKind" used to follow this and was removed on
             2026-08-21: it advertised fundraising, which FEATURES.money gates
-            off, and repeated three claims the Be the Change band already makes.) */}
-        <AudiencePathwaysSection />
+            off, and repeated three claims the Be the Change band already makes.)
+
+            Guest-only, and gated in both responsive trees — see the mobile copy
+            below. Asking someone who is already signed in to "Join as a donor"
+            is the whole reason for the condition. */}
+        {showAudiencePathways && <AudiencePathwaysSection />}
 
         {/* "What We Provide" — 2-step dark section */}
         <WhatWeProvideSection />
@@ -510,16 +531,24 @@ export default function HomeClient({
             the Hero; otherwise it is rendered above, inside the layered wrapper. */}
         {!heroTouchesBeTheChange && <BeTheChangeSection tourAnchors />}
 
-        {/* Donor / Donee pathways.
+        {/* Donor / Donee pathways — guest-only, same condition as the desktop
+            copy above.
             This was added to the desktop branch only and so never rendered
             below lg — HomeClient keeps two separate trees (hidden lg:block and
             lg:hidden) and a component placed in one is simply absent from the
-            other. Same treatment as ComingSoonMagnets below: one component in
+            other. That cuts both ways: gating one tree leaves the other showing
+            signup CTAs to signed-in users, so both carry the condition.
+            Same treatment as ComingSoonMagnets below: one component in
             both branches, with -mx-4 cancelling this column's px-4 so the
-            section's own full-bleed background and padding apply. */}
-        <div className="-mx-4">
-          <AudiencePathwaysSection tourAnchors />
-        </div>
+            section's own full-bleed background and padding apply.
+
+            The whole -mx-4 wrapper is gated, not just its child, so nothing is
+            left behind contributing gap spacing to this flex column. */}
+        {showAudiencePathways && (
+          <div className="-mx-4">
+            <AudiencePathwaysSection tourAnchors />
+          </div>
+        )}
 
 
         {/* Coming soon magnets — previously desktop-only. The section sizes
