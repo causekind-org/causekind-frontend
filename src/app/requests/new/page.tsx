@@ -856,10 +856,10 @@ function NewRequestForm() {
     try {
       if (docType === "RESIDENCE_PROOF") {
         const r = await analyzeResidenceProof(documentUrl, documentId);
-        applyScreeningResult(docType, r.aiAvailable, r.looksLikeResidenceProof, r.reason, r.documentTypeGuess, r.code);
+        applyScreeningResult(docType, r.aiAvailable, r.looksLikeResidenceProof, r.documentTypeGuess, r.code);
       } else if (docType === "GOVT_ID_ANY") {
         const r = await analyzeIdProof(documentUrl, documentId);
-        applyScreeningResult(docType, r.aiAvailable, r.looksLikeValidIdProof, r.reason, r.documentTypeGuess, r.code);
+        applyScreeningResult(docType, r.aiAvailable, r.looksLikeValidIdProof, r.documentTypeGuess, r.code);
       }
     } catch (e) {
       // Keep the message. Writing `null` here meant a transport failure, a 500
@@ -875,13 +875,21 @@ function NewRequestForm() {
     }
   }
 
+  /**
+   * Record a screening verdict.
+   *
+   * <p>No `reason` parameter: the server no longer sends the model's sentence,
+   * and `DocScreening.reason` is now reserved for OUR own upload errors, which
+   * are specific and worth showing. Mixing the two is what let provider prose
+   * reach a donee in the first place.
+   */
   function applyScreeningResult(
     docType: VerificationDocumentType, aiAvailable: boolean, looksValid: boolean | null,
-    reason: string | null, documentTypeGuess: string | null, code: string | null
+    documentTypeGuess: string | null, code: string | null
   ) {
     const status: DocScreening["status"] =
       !aiAvailable || looksValid === null ? "unavailable" : looksValid ? "valid" : "invalid";
-    setDocScreening((prev) => new Map(prev).set(docType, { status, reason, code, documentTypeGuess }));
+    setDocScreening((prev) => new Map(prev).set(docType, { status, reason: null, code, documentTypeGuess }));
     if (status === "invalid") {
       // The toast said the same thing as the inline line and then appended the
       // model's sentence, so a donee could be shown two different descriptions

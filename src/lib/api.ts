@@ -1099,15 +1099,16 @@ export type ResidenceProofAnalysis = {
   aiAvailable: boolean;
   looksLikeResidenceProof: boolean | null;
   confidence: number | null;
-  /**
-   * The model's own sentence. <b>Diagnostics only — never render this.</b> It is
-   * English regardless of locale, its wording changes between model versions, and
-   * it is written by the provider. Use `code` with documentScreeningCopy.
-   */
-  reason: string | null;
   documentTypeGuess: string | null;
   note: string | null;
-  /** Stable server reason code — see DocumentScreeningCodes on the backend. */
+  /**
+   * Stable server reason code — see DocumentScreeningCodes on the backend, and
+   * documentScreeningCopy for the words.
+   *
+   * <p>There is deliberately no `reason` here. The model's own sentence is kept
+   * server-side for admins and is no longer serialised, so a client cannot render
+   * it even by accident.
+   */
   code: string | null;
 };
 
@@ -1127,15 +1128,16 @@ export type IdProofAnalysis = {
   aiAvailable: boolean;
   looksLikeValidIdProof: boolean | null;
   confidence: number | null;
-  /**
-   * The model's own sentence. <b>Diagnostics only — never render this.</b> It is
-   * English regardless of locale, its wording changes between model versions, and
-   * it is written by the provider. Use `code` with documentScreeningCopy.
-   */
-  reason: string | null;
   documentTypeGuess: string | null;
   note: string | null;
-  /** Stable server reason code — see DocumentScreeningCodes on the backend. */
+  /**
+   * Stable server reason code — see DocumentScreeningCodes on the backend, and
+   * documentScreeningCopy for the words.
+   *
+   * <p>There is deliberately no `reason` here. The model's own sentence is kept
+   * server-side for admins and is no longer serialised, so a client cannot render
+   * it even by accident.
+   */
   code: string | null;
 };
 
