@@ -158,7 +158,11 @@
     "fontOptions": "Font Options",
     "notFoundTitle": "Story Not Found",
     "notFoundBody": "The story you are looking for does not exist.",
-    "goHome": "Go Back Home"
+    "goHome": "Go Back Home",
+    "newsletterConsent": "Email me occasional updates about verified needs and how to give well. Unsubscribe any time.",
+    "newsletterCheckEmail": "Almost there — check your email and confirm to finish subscribing.",
+    "newsletterSending": "Sending…",
+    "newsletterError": "Something went wrong. Please try again in a moment."
   },
   "listings": {
     "title": "Item Listings",
