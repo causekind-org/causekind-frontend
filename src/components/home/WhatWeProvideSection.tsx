@@ -47,6 +47,26 @@ export function dockFactors(travel: number) {
   return { donorDock, doneeDock, docked: Math.max(donorDock, doneeDock) };
 }
 
+/** Where the anticipatory approach begins, as a fraction of belt travel. */
+const ARRIVAL_START = 0.55;
+/** How much travel the approach takes to complete. */
+const ARRIVAL_SPAN = 0.4;
+
+/**
+ * The long approach to the donee end, 0 → 1.
+ *
+ * <p>Deliberately wider and earlier than `dockFactors`' donee window: this is
+ * arrival being *felt* along the belt, where the dock is the merge itself. Two
+ * things read the same value — the donee node and the handover proof card — so
+ * that the proof lands with the parcel instead of on a third timeline.
+ *
+ * <p>Exported for the same reason `dockFactors` is: get the window wrong and
+ * nothing breaks visibly, the proof just drifts out of step with the node.
+ */
+export function arrivalFactor(travel: number) {
+  return clamp01((travel - ARRIVAL_START) / ARRIVAL_SPAN);
+}
+
 /* ─── Scroll-linked colour ────────────────────────────────────────────────
    The section warms at the donor end and cools at the donee end: terracotta
    where the giving starts, ink where it lands. This is not decoration — the
@@ -62,6 +82,30 @@ const GROUND_WARM = [18, 16, 14] as const;    // #12100e
 const GROUND_COOL = [12, 16, 22] as const;    // a cooler near-black
 /** An empty node's rim, which warms toward `accent` as the node fills. */
 const NODE_RIM = [255, 255, 255] as const;
+
+/**
+ * The proof card's QR, as a fixed 9x9 bitmap.
+ *
+ * <p><b>This encodes nothing and must never be replaced by a real encoder.</b>
+ * It is a drawing of a QR code, sized and shaped to read as one at a glance —
+ * three finder squares in the corners, plausible noise between them. A real
+ * code here would be a scannable link on a decorative homepage graphic, which
+ * is either dead (pointing nowhere) or a genuine certificate URL sitting in
+ * marketing copy. Neither is wanted.
+ *
+ * <p>Same reasoning governs the certificate number beside it — see the card.
+ */
+export const PROOF_QR = [
+  "111010111",
+  "101100101",
+  "111011111",
+  "000110010",
+  "011101100",
+  "010011010",
+  "111010011",
+  "101110101",
+  "111001110",
+] as const;
 
 /** Channel-wise interpolation. Good enough at these low chromas, and it keeps
  *  the whole thing dependency-free and cheap enough to run every frame. */
@@ -151,7 +195,7 @@ export function WhatWeProvideSection() {
   // rather than announced. This is the *anticipation*, spanning most of the
   // belt; the merge below is the arrival itself, and the two own different
   // properties so nothing is driven twice.
-  const arrival = clamp01((travel - 0.55) / 0.4);
+  const arrival = arrivalFactor(travel);
 
   // The merge at each end. Under reduced motion `travel` is pinned to 1, which
   // falls out of this as donorDock 0 / doneeDock 1 — the parcel rests fully
@@ -373,6 +417,95 @@ export function WhatWeProvideSection() {
                 </p>
               </div>
             ))}
+          </div>
+
+          {/*
+            ── The handover proof ──
+
+            The right half of the stage was empty: the copy block ends at ~40%
+            of the width and the step numeral starts at ~78%, leaving a band
+            with nothing in it above the belt. More to the point, the belt had
+            no payoff — the parcel arrived, the donee node lit up, and the
+            section never said what either side actually ends up with.
+
+            This is that payoff, and it is the real mechanism rather than a
+            decorative flourish: a handover is confirmed by BOTH parties with an
+            OTP, and only then does a QR-verifiable certificate exist.
+
+            It resolves on `arrival` — the same value the donee node uses — so
+            the proof appears as the parcel lands rather than on a third
+            timeline of its own. Bounded to stay inside the empty band: its
+            bottom stays above the belt stencil at 62%, and its right edge stays
+            inboard of the numeral.
+
+            Desktop only. At narrow widths this column does not exist — the copy
+            uses the full width — which is the same reason the numeral is
+            `hidden lg:flex`.
+          */}
+          <div
+            className="hidden lg:block absolute"
+            style={{
+              left: "44%",
+              right: "24%",
+              top: "8%",
+              opacity: arrival,
+              transform: reduceMotion ? "none" : `translateY(${(1 - arrival) * 12}px)`,
+              willChange: "opacity, transform",
+            }}
+          >
+            <div
+              className="rounded-2xl px-5 py-4 flex items-center gap-4"
+              style={{
+                border: `1px solid ${rgba(mix(NODE_RIM, accent, doneeFill), 0.14 + 0.26 * doneeFill)}`,
+                background: `linear-gradient(180deg, ${rgba(accent, 0.06)}, transparent)`,
+              }}
+            >
+              {/* Decorative only — see PROOF_QR. Never announced. */}
+              <svg
+                viewBox="0 0 9 9"
+                className="w-12 h-12 shrink-0"
+                aria-hidden
+                focusable="false"
+              >
+                {PROOF_QR.map((row, y) =>
+                  row.split("").map((cell, x) =>
+                    cell === "1" ? (
+                      <rect
+                        key={`${x}-${y}`}
+                        x={x}
+                        y={y}
+                        width={1}
+                        height={1}
+                        fill={rgba(mix(NODE_RIM, accent, doneeFill), 0.32 + 0.5 * doneeFill)}
+                      />
+                    ) : null,
+                  ),
+                )}
+              </svg>
+
+              <div className="min-w-0">
+                <p
+                  className="text-[11px] font-extrabold uppercase tracking-[0.18em]"
+                  style={{ color: `rgba(255, 255, 255, ${0.4 + 0.45 * doneeFill})` }}
+                >
+                  Handover confirmed
+                </p>
+                {/* Deliberately incomplete. A real number is CK-IK-{year}-{seq}
+                    plus an HMAC suffix, and the HMAC exists precisely to stop
+                    people guessing valid numbers — so this shows the shape and
+                    withholds the rest rather than printing a plausible one. */}
+                <p
+                  className="text-sm font-extrabold tabular-nums tracking-tight mt-0.5"
+                  style={{ color: `rgba(255, 255, 255, ${0.55 + 0.4 * doneeFill})` }}
+                >
+                  CK-IK-2026-••••
+                </p>
+                <p className="text-xs leading-relaxed text-white/40 mt-1">
+                  Both sides confirm with a one-time code. Only then is the
+                  certificate issued — and anyone can verify it.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/*
