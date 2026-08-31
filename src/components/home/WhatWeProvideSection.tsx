@@ -266,6 +266,45 @@ export function WhatWeProvideSection() {
 
         </div>
 
+        {/* ── The passing numeral. A large outlined step number that drifts up
+             through the frame as its step completes, so scrolling feels like
+             moving past something rather than watching a slideshow.
+
+             Restored after the Conveyor rebuild dropped it, but NOT at its
+             original placement. It used to be vertically centred at the right
+             edge, which in the pre-rebuild layout was empty space — the
+             conveyor now puts the DONEE node exactly there, so centred it sat
+             behind the circle and its label. It is pinned to the upper band
+             instead, and its drift is halved to ±12vh so that even at the
+             extremes of travel it stays above the belt at 62%.
+
+             It also takes a lighter stroke than the marquee's — two stroked
+             layers on one panel only work if one is plainly subordinate.
+
+             No z-index: the content below is `relative z-10`, so this stays
+             behind it. Desktop only — at phone widths it would crowd the copy
+             rather than sit behind it. Outline rather than fill: a solid glyph
+             this size competes with the headline instead of framing it. ── */}
+        <div
+          className="absolute inset-0 pointer-events-none select-none hidden lg:flex items-start justify-end pt-[6vh] pr-[6vw] overflow-hidden"
+          aria-hidden
+        >
+          <span
+            className="font-black leading-none"
+            style={{
+              fontSize: "32vh",
+              color: "transparent",
+              WebkitTextStroke: `1px ${rgba(accent, 0.18)}`,
+              transform: reduceMotion
+                ? "none"
+                : `translate3d(0, ${12 - progress * 24}vh, 0)`,
+              willChange: "transform",
+            }}
+          >
+            {step.step}
+          </span>
+        </div>
+
         {/*
           ── HEADER ──
 
