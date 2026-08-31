@@ -810,7 +810,14 @@ export type ListingImageAnalysis = {
   aiAvailable: boolean;
   prohibited: boolean;
   prohibitedCategory: string | null;
-  prohibitedReason: string | null;
+  /**
+   * Stable rejection code (IMAGE_*), mapped server-side from the category.
+   *
+   * <p>There is deliberately no `prohibitedReason`: the model's sentence is no
+   * longer serialised. Render this through PHOTO_COPY, which already has the
+   * wording translated in every locale from the listing photo pipeline.
+   */
+  prohibitedCode: string | null;
   category: string | null;
   subcategory: string | null;
   title: string | null;

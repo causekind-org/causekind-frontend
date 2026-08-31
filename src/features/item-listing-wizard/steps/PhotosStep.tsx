@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { PHOTO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Camera, ImagePlus, Loader2, RefreshCw, Sparkles, Star, TriangleAlert, X } from "lucide-react";
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
@@ -27,7 +28,7 @@ export function PhotosStep({
   photos: WizardPhoto[];
   error?: string;
   aiState: { running: boolean; note: string | null; canReanalyze: boolean };
-  prohibited: { category: string | null; reason: string | null } | null;
+  prohibited: { category: string | null; code: string | null } | null;
   onAddFiles: (files: File[]) => void;
   onRetryPhoto: (id: string) => void;
   onRemovePhoto: (id: string) => void;
@@ -353,9 +354,11 @@ export function PhotosStep({
             not imply the opposite either.
           */}
           <p className="mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">
-            {prohibited.reason ?? "This may be a category CauseKind cannot accept."}
-            {prohibited.category ? ` (${prohibited.category})` : ""} Each photo is checked
-            separately — anything that can&apos;t be accepted is marked on the photo itself.
+            {t(prohibited.code
+              ? (PHOTO_COPY.reasons[prohibited.code] ?? PHOTO_COPY.genericReason)
+              : PHOTO_COPY.genericReason)}{" "}
+            Each photo is checked separately — anything that can&apos;t be accepted is
+            marked on the photo itself.
           </p>
         </div>
       )}

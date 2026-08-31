@@ -188,7 +188,7 @@ export function DonationOfferWizard({
       if (!res.aiAvailable) {
         setScreening({ kind: "unavailable", note: res.note ?? "We couldn't check your photos just now — you can continue." });
       } else if (res.prohibited) {
-        setScreening({ kind: "prohibited", reason: res.prohibitedReason, category: res.prohibitedCategory });
+        setScreening({ kind: "prohibited", code: res.prohibitedCode, category: res.prohibitedCategory });
       } else {
         setScreening({ kind: "safe" });
       }

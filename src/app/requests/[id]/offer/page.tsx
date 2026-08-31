@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { PHOTO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
 import { useParams, useRouter } from "next/navigation";
 import { OfferResult } from "@/features/donation-offer-wizard/OfferResult";
 import {
@@ -386,6 +388,7 @@ function reducer(state: FormState, action: Action): FormState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function OfferWizardPage() {
+  const t = useTranslations();
   const params = useParams();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -427,7 +430,8 @@ export default function OfferWizardPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [aiUnavailableNote, setAiUnavailableNote] = useState<string | null>(null);
   const [prohibited, setProhibited] = useState(false);
-  const [prohibitedReason, setProhibitedReason] = useState<string | null>(null);
+  // The server sends a stable IMAGE_* code, not the model's sentence.
+  const [prohibitedCode, setProhibitedCode] = useState<string | null>(null);
 
   // Load request data and check for an existing offer
   useEffect(() => {
@@ -627,10 +631,10 @@ export default function OfferWizardPage() {
       setAiUnavailableNote(null);
       if (r.prohibited) {
         setProhibited(true);
-        setProhibitedReason(r.prohibitedReason ?? "This photo isn't accepted on CauseKind.");
+        setProhibitedCode(r.prohibitedCode);
       } else {
         setProhibited(false);
-        setProhibitedReason(null);
+        setProhibitedCode(null);
       }
     } catch {
       setAiUnavailableNote("AI photo screening failed — you can still continue.");
@@ -1108,7 +1112,12 @@ export default function OfferWizardPage() {
               {!analyzing && prohibited && (
                 <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm font-semibold text-red-700 dark:text-red-400">
                   <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{prohibitedReason} Please remove this photo and upload a different one before continuing.</span>
+                  <span>
+                    {t(prohibitedCode
+                      ? (PHOTO_COPY.reasons[prohibitedCode] ?? PHOTO_COPY.genericReason)
+                      : PHOTO_COPY.genericReason)}{" "}
+                    Please remove this photo and upload a different one before continuing.
+                  </span>
                 </div>
               )}
               {!analyzing && aiUnavailableNote && (
