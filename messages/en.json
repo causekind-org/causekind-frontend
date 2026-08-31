@@ -1474,38 +1474,5 @@
         "reviewOk": "Someone from our team will check this video. You can carry on — it will not hold up your submission."
       }
     }
-  },
-  "corporate": {
-    "eyebrow": "For companies",
-    "heading": "Clearing an office? Give the contents to someone who asked for them.",
-    "standfirst": "Needs on CauseKind are posted by the people who have them and verified before they appear, so you are matching real requests rather than guessing what a charity wants. Furniture and electronics are what offices produce most, and what gets asked for most.",
-    "points": {
-      "bulk": {
-        "title": "Bulk is the normal case",
-        "body": "Desks, chairs, monitors, laptops. Listed against needs that already exist, not into a pool."
-      },
-      "wipe": {
-        "title": "Wipe devices first",
-        "body": "A factory reset is not always enough on older hardware. A donated laptop carrying company data is a breach whoever received it."
-      },
-      "handover": {
-        "title": "Both sides confirm",
-        "body": "Giver and receiver each enter a one-time code, so nothing is marked delivered because one party said so."
-      },
-      "certificate": {
-        "title": "Proof you did not write yourself",
-        "body": "Every completed handover produces a certificate with a QR code anyone can verify without an account."
-      }
-    },
-    "form": {
-      "heading": "Get the office clear-out pack",
-      "standfirst": "Five practical steps, including what to do about data on old devices and what to keep for reporting. One email, then only occasional updates.",
-      "emailPlaceholder": "you@company.com",
-      "consent": "Email me the office clear-out pack and occasional updates about verified needs. Unsubscribe any time.",
-      "submit": "Send me the pack",
-      "sending": "Sending…",
-      "success": "Almost there — check your email and confirm, and the pack is on its way.",
-      "error": "Something went wrong. Please try again in a moment."
-    }
   }
 }
