@@ -19,6 +19,7 @@ import { StepErrorSummary } from "@/features/wizard-kit/StepErrorSummary";
 import { StepCardStack } from "@/features/wizard-kit/StepCardStack";
 import { WizardBorderGlow } from "@/features/wizard-kit/WizardBorderGlow";
 import { PhotosStep } from "./steps/PhotosStep";
+import { useOfferVideo, LISTING_VIDEO_ENDPOINTS } from "@/features/donation-offer-wizard/useOfferVideo";
 import { BasicsStep } from "./steps/BasicsStep";
 import { ConditionDetailsStep } from "./steps/ConditionDetailsStep";
 import { LocationStep } from "./steps/LocationStep";
@@ -127,6 +128,54 @@ export function ItemListingWizard({
   });
   const { queueSave, queueSaveNow, flush, ensureDraft, markSavedBaseline } = draft;
 
+  // The optional item video, shared with the offer wizard.
+  //
+  // The draft id can be null here — unlike the offer wizard, this draft is
+  // created lazily — so the hook is given 0 as a placeholder and the FIELD is
+  // only rendered once a real id exists. Capability is a global endpoint and
+  // takes no id, so asking it early is harmless; nothing that needs the id can
+  // be reached while the control is hidden.
+  // ensureDraft creates the listing on demand, so picking a video brings a draft
+  // into being exactly as picking a photo does. Before this the hook took
+  // draft.draftId, which is null on a fresh listing, and the field stayed hidden
+  // until a photo had been added.
+  const videoApi = useOfferVideo(ensureDraft, LISTING_VIDEO_ENDPOINTS);
+
+  /*
+    Restore the server's media when reopening an existing draft.
+
+    Photos and the video both live as rows the server owns, and neither travels
+    in the listing payload — so without this a donor resuming a draft saw an
+    empty Step 1 while the rows carried on existing, the submission gate carried
+    on counting them, and "Record video" answered "this listing already has a
+    video" about one they could not see.
+
+    Keyed on the id and run once: `hydrate` replaces local photo state wholesale,
+    so re-running it would discard anything picked since.
+  */
+  /*
+    Only for a draft that already existed when this wizard opened.
+
+    Keying on `draft.draftId` alone is wrong and was: that id also appears the
+    moment `ensureDraft` creates a listing for the *first photo being uploaded*,
+    so hydration fired mid-upload, fetched a photo list the POST had not landed
+    in yet, and — because it replaces local state wholesale — wiped the very
+    photos it raced. The symptom was a donor picking two photos and watching the
+    grid empty itself back to "0 of 2".
+  */
+  const openedWithId = useRef<number | null>(initialDraftId ?? listing?.id ?? null);
+  const hydratedRef = useRef<number | null>(null);
+  useEffect(() => {
+    const id = draft.draftId;
+    if (id == null || id !== openedWithId.current || hydratedRef.current === id) return;
+    hydratedRef.current = id;
+    void photoApi.hydrate(id).catch(() => { /* an empty step is the safe fallback */ });
+    void videoApi.hydrate(id);
+    // photoApi/videoApi are stable enough for this one-shot; the id guard is
+    // what actually prevents a repeat.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.draftId]);
+
   // Hydrated data is already what the server holds; without this baseline the
   // status chip would claim "Not saved" the instant an edit screen opened.
   const baselineRef = useRef(false);
@@ -206,15 +255,15 @@ export function ItemListingWizard({
   const photoApi = useListingPhotos({
     photos: model.photos,
     setPhotos,
+    // Photos now belong to a listing, so one has to exist before the first
+    // upload rather than alongside it. `ensureDraft` is single-flight, so
+    // several files picked at once still produce one draft.
+    ensureListingId: ensureDraft,
     onUrlsChanged,
     onRejected: msg => toast.error(msg),
   });
 
-  /** Creating the draft on first photo gives the upload something to belong to. */
-  const addFiles = useCallback((files: File[]) => {
-    void ensureDraft().catch(() => { /* uploads still work; save will retry */ });
-    photoApi.addFiles(files);
-  }, [ensureDraft, photoApi]);
+  const addFiles = photoApi.addFiles;
 
   // ── AI analysis ───────────────────────────────────────────────────────────
   const applyAnalysis = useCallback((r: ListingImageAnalysis) => {
@@ -655,6 +704,10 @@ export function ItemListingWizard({
                       onRetryPhoto={photoApi.retryPhoto}
                       onRemovePhoto={photoApi.removePhoto}
                       onMakeMain={photoApi.makeMain}
+                      onRetryScreening={photoApi.retryScreening}
+                      video={videoApi}
+                      onPickVideo={file => void videoApi.upload(file)}
+                      onRemoveVideo={() => void videoApi.remove()}
                       onReanalyze={() => void runAnalysis()}
                     />
                   )}
@@ -669,6 +722,7 @@ export function ItemListingWizard({
                   )}
                   {step === "review" && (
                     <ReviewSubmitStep
+                      video={videoApi}
                       model={model}
                       errors={errors}
                       groupTitles={GROUP_TITLES}

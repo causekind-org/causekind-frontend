@@ -1377,5 +1377,66 @@
       "body": "Share a genuine need, connect with people ready to help, and receive support with clarity and respect.",
       "cta": "Join as a donee"
     }
+  },
+  "listingWizard": {
+    "photo": {
+      "heading": "Photos",
+      "requiredBadge": "2 required",
+      "progress": "{approved} of {required} required photos approved",
+      "ready": "Both required photos are approved.",
+      "takePhoto": "Take photo",
+      "choosePhoto": "Choose photo",
+      "slotMain": "Main photo",
+      "slotMainHint": "The whole item, in good light.",
+      "slotSecond": "Second angle",
+      "slotSecondHint": "A label, a close-up, or any damage.",
+      "optionalExtra": "Optional",
+      "limits": "JPEG, PNG or WebP, up to {maxMb}MB. Up to {max} photos.",
+      "state": {
+        "uploading": "Uploading",
+        "screening": "Checking",
+        "approved": "Approved",
+        "rejected": "Needs replacing",
+        "review": "Needs a second look",
+        "failed": "Couldn't check",
+        "removed": "Removed"
+      },
+      "reason": {
+        "adult": "This photo appears to contain adult content, which CauseKind cannot accept.",
+        "weapons": "This photo appears to contain a weapon, which CauseKind cannot accept.",
+        "drugs": "This photo appears to contain drugs or related items, which CauseKind cannot accept.",
+        "medicines": "This photo appears to show medicines, which CauseKind currently cannot accept.",
+        "food": "This photo appears to show food as the item being offered, which CauseKind currently cannot accept.",
+        "vulgar": "This photo appears to contain offensive content, which CauseKind cannot accept.",
+        "unreadable": "We couldn't read this photo. Please choose another one.",
+        "unavailable": "We couldn't check this photo right now. Retry, or choose another photo.",
+        "review": "Someone needs to look at this photo before it can be used. You can retry or replace it.",
+        "failed": "Something went wrong checking this photo. Retry, or choose another one.",
+        "generic": "This photo can't be used. Please replace it with another one."
+      },
+      "action": {
+        "retry": "Retry",
+        "replace": "Replace",
+        "remove": "Remove",
+        "removeLabel": "Remove photo {n}",
+        "retryLabel": "Retry checking photo {n}",
+        "replaceLabel": "Replace photo {n}",
+        "makeMain": "Make main",
+        "makeMainLabel": "Make photo {n} the main photo"
+      },
+      "blocked": "Every photo has to finish checking. Remove or replace the ones that can't be used.",
+      "duplicate": "You've already added this photo.",
+      "tooMany": "You can add up to {max} photos.",
+      "tooLarge": "That photo is larger than {maxMb}MB. Please choose a smaller one.",
+      "wrongType": "That file isn't a JPEG, PNG or WebP photo.",
+      "slotRequired": "Required"
+    },
+    "video": {
+      "heading": "Short video",
+      "optionalBadge": "Optional",
+      "limits": "Up to {seconds}s, {maxMb}MB. We check it before anyone sees it.",
+      "record": "Record video",
+      "choose": "Choose video"
+    }
   }
 }

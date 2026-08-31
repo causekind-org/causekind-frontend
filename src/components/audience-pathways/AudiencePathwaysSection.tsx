@@ -18,33 +18,63 @@ const LightRays = dynamic(() => import("@/components/LightRays"), { ssr: false }
  * The two-audience introduction: who CauseKind is for, and the one click that
  * puts you on the right side of it.
  *
- * Both panels are fully visible at rest — this is not an accordion or a
+ * Presented as a single split slab rather than two cards. The point of the
+ * section is that these are two halves of one platform, and two separated cards
+ * argued the opposite — they read as two products sitting next to each other.
+ * One surface cut by a diagonal seam says it in the layout itself, so the copy
+ * does not have to.
+ *
+ * Both halves are fully visible at rest — this is not an accordion or a
  * carousel. Emphasis only shifts once a visitor expresses interest by hovering
- * or tabbing, and returns to balanced the moment they stop.
+ * or tabbing, and returns to balanced the moment they stop. The seam is what
+ * moves: it leans away from the side you are interested in, giving it room, and
+ * slides back to centre when you leave. Nothing scales and nothing reflows, so
+ * there is no layout shift.
  *
  * `useInView` on the section is threaded down into both scenes so the orbits,
  * floats and scan lines stop entirely when the section scrolls away. On a long
  * landing page that is the difference between two permanent compositor loops
  * and none.
  */
-export default function AudiencePathwaysSection() {
+export default function AudiencePathwaysSection({
+  /**
+   * Emit the guest tour's `guest-join` anchor on the donor CTA.
+   *
+   * <p>Same rule as BeTheChangeSection: HomeClient mounts this component twice,
+   * once per branch, and `document.querySelector` returns the FIRST match — the
+   * desktop copy, which is `hidden lg:block` and reports a zero rect, collapsing
+   * the tour spotlight. Only the mobile instance may pass this.
+   *
+   * <p>The anchor lives here because the mobile tree drops the duplicate
+   * "Join as Donor" link that used to carry it in the trust-signals block.
+   */
+  tourAnchors = false,
+}: { tourAnchors?: boolean } = {}) {
   const t = useTranslations("audiencePathways");
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { amount: 0.15 });
   const reduceMotion = useReducedMotion();
 
-  // null = balanced. Both panels equal, which is the state the section loads in.
+  // null = balanced. Both halves equal, which is the state the section loads in.
   const [focused, setFocused] = useState<"donor" | "donee" | null>(null);
 
-  // Detected in an effect, never during render — `matchMedia` does not exist on
-  // the server, and reading it while rendering would desync hydration.
+  // Both detected in an effect, never during render — `matchMedia` does not
+  // exist on the server, and reading it while rendering would desync hydration.
   const [spotlightEnabled, setSpotlightEnabled] = useState(false);
+  // The diagonal only exists side by side. Below md the halves stack, and a
+  // stacked diagonal would slice copy off the top and bottom of each wedge.
+  const [split, setSplit] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia("(pointer: fine)");
-    setSpotlightEnabled(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setSpotlightEnabled(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    const watch = (query: string, set: (v: boolean) => void) => {
+      const mq = window.matchMedia(query);
+      set(mq.matches);
+      const onChange = (e: MediaQueryListEvent) => set(e.matches);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    };
+    const offPointer = watch("(pointer: fine)", setSpotlightEnabled);
+    const offSplit = watch("(min-width: 768px)", setSplit);
+    return () => { offPointer(); offSplit(); };
   }, []);
 
   const panels = [
@@ -56,6 +86,10 @@ export default function AudiencePathwaysSection() {
       cta: t("donor.cta"),
       // The signup route is /register, and ?role= preselects the picker there.
       href: "/register?role=DONOR",
+      // Guest tour's final step ("Ready to give?"). It used to sit on the
+      // trust-signals "Join as Donor" link, which the mobile tree no longer
+      // renders; tourSteps.ts still looks this anchor up by name.
+      dataTour: tourAnchors ? "guest-join" : undefined,
       Icon: Gift,
       orbitIcons: [PackageOpen, Boxes, Truck, HandHeart],
     },
@@ -70,6 +104,36 @@ export default function AudiencePathwaysSection() {
       orbitIcons: [Home, Users, ShieldCheck, Sparkles],
     },
   ];
+
+  /*
+    Seam geometry, in percentages of the slab's width.
+
+    `seam` is where the cut crosses the slab's vertical centre; `LEAN` is how far
+    it tilts either side of that, so the cut runs from `seam + LEAN` at the top
+    edge to `seam - LEAN` at the bottom. Balanced is dead centre. Hovering a side
+    pushes the seam 8% toward the other one — enough that the section clearly
+    responded, small enough that the quiet side never looks dismissed.
+
+    Reduced motion holds the seam still. The tilt is the section's identity and
+    stays, but a 450ms slide across a third of the viewport is exactly the kind
+    of large-area movement that setting asks us to drop; emphasis is still
+    carried by the scrim and by the panel's own opacity change.
+  */
+  const LEAN = 7;
+  const seam = reduceMotion || !focused ? 50 : focused === "donor" ? 58 : 42;
+  const top = seam + LEAN;
+  const bottom = seam - LEAN;
+
+  const clip = {
+    // The two wedges share the same pair of seam points, so they meet with no
+    // gap and no overlap however far the seam has travelled.
+    donor: `polygon(0 0, ${top}% 0, ${bottom}% 100%, 0 100%)`,
+    donee: `polygon(${top}% 0, 100% 0, 100% 100%, ${bottom}% 100%)`,
+    // The seam itself: a 2px-wide parallelogram laid along the cut. Clipped from
+    // the same two numbers as the wedges rather than drawn as a rotated bar, so
+    // its angle cannot drift out of alignment with the edge it is marking.
+    line: `polygon(${top}% 0, calc(${top}% + 2px) 0, calc(${bottom}% + 2px) 100%, ${bottom}% 100%)`,
+  };
 
   return (
     <section
@@ -115,10 +179,10 @@ export default function AudiencePathwaysSection() {
       />
 
       {/* Spotlight scrim.
-          Hovering a panel darkens and blurs *everything else in the section* —
-          the heading, the copy, the footnote, the other panel — leaving the
+          Hovering a half darkens and blurs *everything else in the section* —
+          the heading, the copy, the footnote, the other half — leaving the
           chosen side lit. This is a sibling of the content rather than a child
-          of it so that the active panel can raise itself above it (z-30 vs
+          of it so that the active half can raise itself above it (z-30 vs
           z-20); the content wrapper below deliberately carries no z-index,
           because giving it one would create a stacking context and trap its
           children underneath this layer.
@@ -158,23 +222,79 @@ export default function AudiencePathwaysSection() {
           </p>
         </motion.div>
 
-        {/* Stacks on mobile, side by side from md. Both panels keep equal width —
-            the active one grows by 1.5% scale, not by taking the other's space,
-            so nothing reflows and there is no layout shift on hover. */}
-        <div className="mt-5 flex flex-col gap-3 md:flex-row md:gap-4">
-          {panels.map((p) => (
-            <AudiencePathwayPanel
-              key={p.tone}
-              {...p}
-              active={focused === p.tone}
-              dimmed={focused !== null && focused !== p.tone}
-              // Lifted above the scrim so it stays lit while the rest darkens.
-              spotlit={spotlightEnabled && focused === p.tone}
-              inView={inView}
-              onActivate={() => setFocused(p.tone)}
-              onDeactivate={() => setFocused(null)}
+        {/*
+          The slab.
+
+          `md:rtl:-scale-x-100` here, with the matching flip on each half below,
+          is how the diagonal mirrors for Arabic and Urdu. `clip-path`
+          percentages are physical — they measure from the left edge whatever the
+          document direction — so under RTL an unmirrored seam leans the wrong
+          way and puts the donee side, which reads first in RTL, behind the cut.
+          Flipping the slab mirrors the geometry; flipping each half's contents
+          back leaves text, icons and logical spacing upright. Split mode only:
+          stacked, there is no diagonal to mirror.
+        */}
+        <div className="relative mt-5 overflow-hidden rounded-3xl border border-stone-200/80 md:min-h-[19rem] md:rtl:-scale-x-100 dark:border-white/10">
+          {panels.map((p) => {
+            const isActive = focused === p.tone;
+            // Lifted above the scrim so it stays lit while the rest darkens.
+            const spotlit = spotlightEnabled && isActive;
+            return (
+              <div
+                key={p.tone}
+                className={`relative overflow-hidden bg-white/70 md:absolute md:inset-0 md:rtl:-scale-x-100 dark:bg-white/[0.03] ${
+                  p.tone === "donee"
+                    ? "border-t border-stone-200/80 md:border-t-0 dark:border-white/10"
+                    : ""
+                }`}
+                style={{
+                  clipPath: split ? clip[p.tone] : undefined,
+                  // Above the scrim (z-20) while lit, back into the flow
+                  // otherwise. A number rather than a Tailwind class so it can be
+                  // dropped cleanly the moment the spotlight releases.
+                  zIndex: spotlit ? 30 : 10,
+                  transition: reduceMotion
+                    ? undefined
+                    : "clip-path 450ms cubic-bezier(0.16, 1, 0.3, 1)",
+                }}
+                onMouseEnter={() => setFocused(p.tone)}
+                onMouseLeave={() => setFocused(null)}
+                // Focus anywhere inside (the CTA) promotes the side; focus
+                // leaving it releases. `onFocus`/`onBlur` bubble in React, which
+                // is exactly what is wanted here — the wrapper hears its child's
+                // focus.
+                onFocus={() => setFocused(p.tone)}
+                onBlur={() => setFocused(null)}
+              >
+                <AudiencePathwayPanel
+                  {...p}
+                  active={isActive}
+                  dimmed={focused !== null && !isActive}
+                  spotlit={spotlit}
+                  inView={inView}
+                  split={split}
+                />
+              </div>
+            );
+          })}
+
+          {/* The seam. Decorative, above both wedges, and never a pointer target
+              — it sits exactly where the two hover regions meet, and catching
+              the pointer there would flicker the emphasis as it crossed. */}
+          {split && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-[15]"
+              style={{
+                clipPath: clip.line,
+                background:
+                  "linear-gradient(to bottom, rgb(176 74 21 / 0.45), rgb(13 148 136 / 0.45))",
+                transition: reduceMotion
+                  ? undefined
+                  : "clip-path 450ms cubic-bezier(0.16, 1, 0.3, 1)",
+              }}
             />
-          ))}
+          )}
         </div>
 
         <p className="mt-3.5 text-center text-xs text-stone-500 dark:text-stone-400">

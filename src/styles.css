@@ -1171,6 +1171,30 @@ section:focus-within {
   --ck-bottom-chrome: calc(var(--ck-nav-float) + var(--ck-bottom-inset) + var(--ck-nav-h));
 }
 
+/* Bottom padding for the page's main element, so content ends ABOVE the dock
+   instead of sliding under it. The dock is translucent with a backdrop-filter,
+   so anything left underneath is blurred by it — which reads as "the page is
+   blurry" rather than "the page is too long", and hides the last interactive
+   element on a screen (on /login, the Sign up link).
+
+   Driven by --ck-bottom-chrome, never by a pixel guess. layout.tsx previously
+   hardcoded pb-[72px] against a chrome that is 92px at minimum and ~126px once
+   a notched phone's safe-area inset is counted, so every mobile page lost its
+   last 20-54px.
+
+   The +0.5rem is breathing room, so content clears the dock rather than
+   touching it.
+
+   No lg: override needed — at min-width 1024px the block below zeroes
+   --ck-nav-float and --ck-nav-h, so this collapses to the safe-area inset on
+   its own.
+
+   Real CSS, not pb-[var(--ck-bottom-chrome)]: an unemitted Tailwind arbitrary
+   value fails silently, and a layout value is the last place that can happen. */
+.ck-main-bottom-pad {
+  padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
+}
+
 @media (min-width: 1024px) {
   :root {
     --ck-nav-float: 0px;
@@ -1209,6 +1233,59 @@ section:focus-within {
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
+}
+
+/* Self-contained sheen, so the dock reads as glass on every page.
+   GlassSurface's effect is a BACKDROP effect: the displacement filter distorts
+   whatever passes behind the capsule, and mix-blend-mode: screen composites
+   against it. On the landing page the hero and the coloured sections scroll
+   underneath and it reads beautifully; on a flat #faf8f5 page there is nothing
+   to distort, and screen blending against near-white washes out to near-white.
+   Same CSS both times — only the backdrop differs.
+
+   This layer supplies the part that does not need a backdrop: the specular
+   highlight along the top edge, a light falloff down the face, and a faint
+   contact shade at the bottom. That is what makes a real capsule read as glass
+   when it is sitting on a plain surface.
+
+   PAINT ONLY — deliberately no backdrop-filter here. Adding one would be the
+   "double glass" failure described above: a second full-surface pass sampling
+   the first one's already-blurred output, which flattens the refraction it was
+   meant to strengthen. No border and no outer shadow either; GlassSurface
+   already owns both, and repeating them reads as a double rim. */
+.ck-mobile-dock-glass-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.14) 34%,
+      rgba(255, 255, 255, 0) 58%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 76%, rgba(28, 25, 23, 0.05) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(28, 25, 23, 0.05);
+}
+
+/* Dark mode gets a much weaker sheen: the same white at full strength reads as
+   a grey film over the dark capsule rather than a highlight. */
+.dark .ck-mobile-dock-glass-layer::after {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.13) 0%,
+      rgba(255, 255, 255, 0.04) 34%,
+      rgba(255, 255, 255, 0) 58%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 76%, rgba(0, 0, 0, 0.16) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
 }
 
 /* Above the glass. The socket (11) and bead (20) sit higher still. */
@@ -1984,6 +2061,55 @@ body.mobile-menu-open {
   .ck-hero-overlap-panel { padding-top: 0; }
 }
 
+/* ── Desktop hero: size to the viewport, not to a hardcoded px height ──
+   The hero used to be min-h-[520/640/720px]. Those are floors, not caps, so on
+   any window shorter than roughly 880px the card ran past the fold and clipped.
+
+   --ck-nav-h is published by SiteHeader (Navbar.tsx) from the header's measured
+   height, and the measurement is what should win. --ck-nav-fallback only covers
+   first paint before hydration.
+
+   Do NOT reuse layout.tsx's 3.5rem here. That describes the mobile bar only.
+   The lg: bar measures ~118px, and an 88px guess left the hero ~30px too tall —
+   just enough to push the quote, which is bottom-anchored, below the fold.
+
+   --ck-hero-top-pad mirrors the section's sm:pt-8; without subtracting it the
+   hero overshoots by exactly that much.
+
+   Real CSS rather than Tailwind arbitrary values, for the reason given above. */
+.ck-hero-viewport {
+  --ck-hero-top-pad: 0px;
+  --ck-nav-fallback: 56px;  /* mobile bar */
+  height: calc(100svh - var(--ck-nav-h, var(--ck-nav-fallback)) - var(--ck-hero-top-pad));
+  min-height: 480px;  /* very short windows scroll instead of crushing content */
+  max-height: 900px;  /* very tall monitors don't get an absurd letterbox */
+}
+
+@media (min-width: 640px) {
+  .ck-hero-viewport {
+    --ck-hero-top-pad: 2rem;
+    --ck-nav-fallback: 118px;  /* measured desktop bar */
+  }
+}
+
+/* Fluid interior. Everything here previously stepped between fixed Tailwind
+   sizes and never shrank between breakpoints, which is what overflowed the
+   shorter box. clamp() tracks the viewport continuously and closes the hero's
+   missing md: range in one go. */
+.ck-hero-pad {
+  padding-block: clamp(1.25rem, 3.2vh, 4rem);
+}
+.ck-hero-title {
+  font-size: clamp(1.75rem, 1.1rem + 2.6vw, 4rem);
+}
+.ck-hero-quote {
+  min-height: 4.5rem;
+}
+
+@media (min-height: 900px) {
+  .ck-hero-quote { min-height: 5.5rem; }
+}
+
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -2321,55 +2447,6 @@ div:has(.searchable-select-open) {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: ck-kind-shine 4s linear 1.4s infinite;
-}
-
-/* ── CauseKind Independence Day Tricolour ── */
-/* Cau = saffron, seK = white, ind = green. The restrained outline on white
-   keeps the middle band legible against the light navbar without changing the
-   requested Tricolour fill. */
-.ck-logo-tricolour-saffron {
-  color: #FF9933;
-}
-
-.ck-logo-tricolour-white {
-  color: #FFFFFF;
-  -webkit-text-stroke: 0.45px rgba(39, 44, 43, 0.62);
-  paint-order: stroke fill;
-  text-shadow: 0 0 1px rgba(39, 44, 43, 0.18);
-}
-
-.dark .ck-logo-tricolour-white {
-  -webkit-text-stroke: 0;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.38);
-}
-
-.ck-logo-tricolour-green {
-  color: #138808;
-}
-
-/* ── CauseKind wordmark: travelling flag-cloth ripple ── */
-/* The SVG displacement filter in Navbar.tsx creates the fabric folds. This
-   wrapper adds the anchored-left motion of a flag moving out from its pole. */
-.ck-logo-wordmark-cloth {
-  display: inline-flex;
-  transform-origin: left center;
-  will-change: transform, filter;
-  animation: ck-logo-wordmark-cloth-drift 3.1s ease-in-out infinite;
-}
-
-@keyframes ck-logo-wordmark-cloth-drift {
-  0%, 100% { transform: translate3d(0, 0, 0) skewY(0deg); }
-  25%      { transform: translate3d(0, -0.7px, 0) skewY(-0.35deg); }
-  50%      { transform: translate3d(0, 0.55px, 0) skewY(0.25deg); }
-  75%      { transform: translate3d(0, -0.35px, 0) skewY(-0.16deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ck-logo-wordmark-cloth {
-    animation: none;
-    filter: none !important;
-    will-change: auto;
-  }
 }
 
 /* ── CauseKind Logo SVG: all animation handled by Web Animations API in LogoSVG.tsx ── */

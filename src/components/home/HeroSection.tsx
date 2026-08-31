@@ -57,7 +57,7 @@ export function HeroQuoteSlider({
   const q = quotes[idx] ?? quotes[0];
 
   return (
-    <div className="relative h-[96px] sm:h-[76px] overflow-hidden">
+    <div className="ck-hero-quote shrink-0 relative overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={idx}
@@ -151,7 +151,7 @@ export function HeroSection({
 
   return (
     <section className="relative w-full max-w-[1440px] mx-auto px-0 sm:px-10 pt-0 sm:pt-8 pb-0">
-      <div className="relative w-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] rounded-t-[3rem] rounded-b-none overflow-hidden bg-stone-900 shadow-xl border-x border-t border-[#e5e2d5]/60">
+      <div className="ck-hero-viewport relative w-full rounded-t-[3rem] rounded-b-none overflow-hidden bg-stone-900 shadow-xl border-x border-t border-[#e5e2d5]/60">
         <div className="absolute inset-0 w-full h-full pointer-events-none">
           <HeroImageSlider />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
@@ -165,7 +165,9 @@ export function HeroSection({
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
         </div>
 
-        <div className="relative z-10 w-full h-full min-h-[520px] sm:min-h-[640px] lg:min-h-[720px] px-6 sm:px-12 py-10 sm:py-16 flex flex-col justify-between">
+        {/* No min-height here: it used to duplicate the card's three fixed
+            values and fought the parent once the card became viewport-sized. */}
+        <div className="ck-hero-pad relative z-10 w-full h-full px-6 sm:px-12 flex flex-col justify-between overflow-hidden">
           <div className="w-full flex items-start justify-between gap-4 lg:gap-6">
             <motion.div
               className="self-start inline-flex items-center gap-2 bg-white/65 backdrop-blur-md rounded-full px-5 py-2 border border-white/40 shadow-sm"
@@ -201,7 +203,7 @@ export function HeroSection({
                   band was supposed to be sweeping over it, and neither read.
                   One animation, or the other — not both on the same element. */}
               <motion.h1
-                className="text-white font-extrabold leading-[1.08] tracking-tight text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] max-w-2xl font-jakarta"
+                className="ck-hero-title text-white font-extrabold leading-[1.08] tracking-tight max-w-2xl font-jakarta"
                 initial={independenceDay ? false : { opacity: 0, x: -28 }}
                 animate={independenceDay ? undefined : { opacity: 1, x: 0 }}
                 transition={{ type: "spring", stiffness: 75, damping: 20, delay: 0.15 }}

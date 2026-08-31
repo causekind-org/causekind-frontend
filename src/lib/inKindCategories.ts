@@ -335,4 +335,18 @@ export function categoryBySlug(slug: string): InKindCategory | undefined {
   return IN_KIND_CATEGORIES.find((c) => c.slug === slug);
 }
 
+/**
+ * The inverse: canonical name → URL slug. Kept here beside `categoryBySlug` so
+ * the name↔slug mapping has exactly one home — a caller deriving its own with
+ * `toLowerCase().replace(/ /g, "-")` would happen to be right today and would
+ * break silently the first time a category name stops being slug-shaped.
+ *
+ * Returns `undefined` for a name with no editorial entry. The load-time
+ * validation above means that cannot happen for a real request category, so a
+ * caller may treat `undefined` as "do not link" rather than an error.
+ */
+export function slugForCategory(name: string): string | undefined {
+  return IN_KIND_CATEGORIES.find((c) => c.name === name)?.slug;
+}
+
 export const IN_KIND_SLUGS = IN_KIND_CATEGORIES.map((c) => c.slug);

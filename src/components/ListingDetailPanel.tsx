@@ -9,7 +9,7 @@ import {
   Truck, CalendarDays, Box, Info, ChevronRight,
 } from "lucide-react";
 import type { ItemListing, ItemMatch } from "@/lib/api";
-import { displayReason } from "@/lib/rejectionReason";
+import { displayReason, missingInfoLines } from "@/lib/rejectionReason";
 
 // ── Journey phases ────────────────────────────────────────────────────────────
 
@@ -420,10 +420,26 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
                         </div>
                       )}
 
-                      {/* Admin note on the NEEDS_INFORMATION phase */}
+                      {/* What still needs doing, on the NEEDS_INFORMATION phase.
+                          Rendered as lines rather than the raw `missingFlags`
+                          string, which is `|`-joined and mixes internal flags
+                          with the adjudicator's own sentence. */}
                       {isProblem && listing.rejectionReason && (
                         <div className="mt-1.5 text-xs rounded-lg p-2 bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-medium">
-                          Admin note: {displayReason(listing.rejectionReason)}
+                          {(() => {
+                            const lines = missingInfoLines(listing.rejectionReason);
+                            if (lines.length <= 1) {
+                              return <>Still needed: {lines[0] ?? displayReason(listing.rejectionReason)}</>;
+                            }
+                            return (
+                              <>
+                                <p>Still needed:</p>
+                                <ul className="mt-1 list-disc space-y-0.5 ps-4 font-normal">
+                                  {lines.map(line => <li key={line}>{line}</li>)}
+                                </ul>
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>

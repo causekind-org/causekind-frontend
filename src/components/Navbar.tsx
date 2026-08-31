@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
@@ -64,12 +64,11 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   const rakshaBandhan = isRakshaBandhanCampaignActive();
   return (
     <motion.span
-      className={`relative font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
+      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
       aria-label="CauseKind"
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-
       {!hideIcon && (
         <motion.div
           className="shrink-0"
@@ -455,6 +454,32 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Publish the header's real height as --ck-nav-h so full-viewport sections can
+  // size themselves against it. It has to be measured, not assumed: the mobile
+  // bar and the lg: bar have different padding, and layout.tsx's 3.5rem is only
+  // right for the mobile one. Measuring also survives browser zoom and the bar
+  // wrapping to two lines, which a hardcoded value does not.
+  // A callback ref, deliberately, not useRef + useEffect([]): the header is
+  // behind the `hideChrome` early-return below, so on any render where it is
+  // absent a mount-time effect would capture null and never retry. A callback
+  // ref attaches the moment the node exists and detaches when it goes.
+  const roRef = useRef<ResizeObserver | null>(null);
+  const headerRef = useCallback((el: HTMLElement | null) => {
+    roRef.current?.disconnect();
+    roRef.current = null;
+    if (!el) return;
+    const publish = () => {
+      const h = el.getBoundingClientRect().height;
+      // Never publish 0 — a zero here would size the hero to a full 100svh and
+      // overflow far worse than the fallback does.
+      if (h > 0) document.documentElement.style.setProperty("--ck-nav-h", `${h}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    roRef.current = ro;
+  }, []);
+
   useEffect(() => {
     if (user && isSidebarOpen) {
       const savedAvatar = localStorage.getItem(`ck_profile_image_${user.email}`);
@@ -655,7 +680,7 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 transition-shadow duration-300 ease-out ${
+      <header ref={headerRef} className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 transition-shadow duration-300 ease-out ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
@@ -666,29 +691,46 @@ export function SiteHeader() {
         <RakshaBandhanNavAdornment />
 
         {/* Mobile Header (lg:hidden)
+
+            Three equal-sided columns, NOT flex + justify-between. A middle
+            child is only centred when the two flanking it are the same width,
+            and NotificationBell renders null for guests — so under
+            justify-between the logo sat half a button-width right of centre for
+            a visitor and somewhere else again once the bell appeared. With
+            1fr auto 1fr the side columns are equal by definition, so the logo
+            is exactly centred in both auth states.
+
+            Grid rather than absolute centring so everything stays in flow: a
+            side item that grows pushes nothing on top of the logo.
+
+            The menu button sits on the RIGHT because StaggeredMenu is
+            position="right" — the control and the panel it opens now share an
+            edge. This also puts the DOM order (bell, logo, menu) in step with
+            the visual order, so tab order reads left to right.
+
             This row used to be strictly 100% opaque so that page content could
             never show through it while scrolling. It still cannot: the <header>
             itself carries the same opaque #faf8f5 / zinc-950 behind this row,
             so the 90% here reveals only the header's own background — the exact
             same colour — plus the festive layer on the one day it exists. Off
             the day, this renders pixel-identical to the opaque version. */}
-        <div className="relative z-[1] lg:hidden w-full flex items-center justify-between px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
+        <div className="relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
+          <div className="flex items-center gap-2 justify-self-start">
+            <NotificationBell />
+          </div>
+          <Link href="/" className="flex items-center justify-center">
+            <CareNestLogo size="md" hideIcon={true} />
+          </Link>
           <button
             ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
             aria-expanded={isSidebarOpen}
             aria-controls="staggered-menu-panel"
-            className="flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+            className="justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <Link href="/" className="flex items-center justify-center">
-            <CareNestLogo size="md" hideIcon={true} />
-          </Link>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-          </div>
         </div>
 
         {/* Desktop Header */}
@@ -919,7 +961,28 @@ export function SiteHeader() {
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onMouseEnter={handleInKindMouseEnter}
               onMouseLeave={handleInKindMouseLeave}
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5]/98 dark:bg-stone-900/98 backdrop-blur-2xl border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              /*
+                Opaque, and with no backdrop blur — both deliberate.
+
+                This panel used to be `bg-[#faf8f5]/98 backdrop-blur-2xl`, and the
+                page showed through it: the heading behind the menu was legible
+                straight through the cards, unblurred.
+
+                The blur was the reason it looked acceptable in review and never
+                worked in the browser. `backdrop-filter` on an element creates a
+                **backdrop root**, and a descendant's own `backdrop-filter` can
+                only sample inside it. The `<header>` above already carries
+                `lg:backdrop-blur-md`, so this panel's blur samples the header's
+                backdrop — which is empty — and does precisely nothing. It was
+                inert CSS implying a frosted-glass effect that never rendered.
+
+                With the blur genuinely absent, the 2% of transparency left by
+                `/98` is the only thing standing between the menu and the page,
+                and it is not enough for a large high-contrast heading. Opaque is
+                the honest fix; adding the blur back would need the panel moved
+                out of the header, which is a bigger change than this earns.
+              */
+              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <InKindMegaMenu onNavigate={() => setOpenMegaMenu(null)} />
@@ -938,7 +1001,28 @@ export function SiteHeader() {
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onMouseEnter={handleAboutMouseEnter}
               onMouseLeave={handleAboutMouseLeave}
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5]/98 dark:bg-stone-900/98 backdrop-blur-2xl border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              /*
+                Opaque, and with no backdrop blur — both deliberate.
+
+                This panel used to be `bg-[#faf8f5]/98 backdrop-blur-2xl`, and the
+                page showed through it: the heading behind the menu was legible
+                straight through the cards, unblurred.
+
+                The blur was the reason it looked acceptable in review and never
+                worked in the browser. `backdrop-filter` on an element creates a
+                **backdrop root**, and a descendant's own `backdrop-filter` can
+                only sample inside it. The `<header>` above already carries
+                `lg:backdrop-blur-md`, so this panel's blur samples the header's
+                backdrop — which is empty — and does precisely nothing. It was
+                inert CSS implying a frosted-glass effect that never rendered.
+
+                With the blur genuinely absent, the 2% of transparency left by
+                `/98` is the only thing standing between the menu and the page,
+                and it is not enough for a large high-contrast heading. Opaque is
+                the honest fix; adding the blur back would need the panel moved
+                out of the header, which is a bigger change than this earns.
+              */
+              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <div className="grid grid-cols-12 gap-6">
