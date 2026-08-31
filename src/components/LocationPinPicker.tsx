@@ -7,6 +7,16 @@ import {
 import { LocateFixed, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
+declare global {
+  interface Window {
+    /**
+     * Google Maps calls this global — and nothing else — when it rejects the
+     * API key. There is no React-level equivalent.
+     */
+    gm_authFailure?: () => void;
+  }
+}
+
 // India-focused platform default — New Delhi — used whenever no lat/lng has
 // been picked yet (mirrors the "IN" country default used by other GPS
 // location code in this repo).
@@ -40,12 +50,16 @@ function MapUnavailable() {
 
 /**
  * Watches the Maps API's load status from *inside* the provider, which is where
- * the hook's context lives.
+ * the hook's context lives. This catches the script failing to load.
  *
- * <p>Without this, a rejected key still mounted `<Map>` and Google painted its
- * own grey "Oops! Something went wrong" panel inside our container. The absent-key
- * case was already handled; the invalid-key case was not, even though the user
- * experiences them identically.
+ * <p>It does NOT catch a key Google rejects, despite the status enum implying
+ * otherwise. `APILoadingStatus.AUTH_FAILURE` is declared in
+ * @vis.gl/react-google-maps@1.9 but nothing in the package ever assigns it, and
+ * the package never installs Google's `gm_authFailure` hook. A rejected key
+ * loads the script perfectly well, so this sits on LOADED while Google paints
+ * its own grey "Oops! Something went wrong" panel inside our container. That
+ * case is caught by the `gm_authFailure` effect in the component below — if you
+ * are tempted to delete one as redundant, they cover different failures.
  */
 function ApiStatusWatch({ onFailure }: { onFailure: () => void }) {
   const status = useApiLoadingStatus();
@@ -91,6 +105,21 @@ export default function LocationPinPicker({ lat, lng, onChange }: LocationPinPic
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; key: number } | null>(null);
   /** Set when Google refuses the key (InvalidKeyMapError, billing, referrer). */
   const [apiFailed, setApiFailed] = useState(false);
+
+  // The only thing that actually catches a rejected key — see ApiStatusWatch
+  // above for why the library's own status cannot. Chained rather than
+  // replaced, and restored on unmount, so a second picker mounted on the same
+  // page doesn't silently disable the first one's handler.
+  useEffect(() => {
+    const previous = window.gm_authFailure;
+    window.gm_authFailure = () => {
+      previous?.();
+      setApiFailed(true);
+    };
+    return () => {
+      window.gm_authFailure = previous;
+    };
+  }, []);
 
   function useMyLocation() {
     if (!("geolocation" in navigator)) {
