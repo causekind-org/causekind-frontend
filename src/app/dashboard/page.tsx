@@ -35,7 +35,7 @@ import {
 import { canDeleteDraft, canWithdrawRequest, canHideWithdrawnRequest, isRequestActive } from "@/lib/requestActions";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
 import { ClosedOfferCard } from "@/components/ClosedOfferCard";
-import { displayReason } from "@/lib/rejectionReason";
+import { displayReason, missingInfoLines } from "@/lib/rejectionReason";
 import { motion, AnimatePresence } from "framer-motion";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
@@ -1854,8 +1854,24 @@ export default function DashboardPage() {
 
                                 {needsInfo && (
                                   <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 font-semibold bg-amber-100 dark:bg-amber-950/20 rounded-lg p-2">
+                                    {/* Lines, not the raw `|`-joined missingFlags —
+                                        which put an internal identifier and a pipe
+                                        in front of a sentence written for the donor. */}
                                     {l.rejectionReason
-                                      ? <>Admin note: {displayReason(l.rejectionReason)}</>
+                                      ? (() => {
+                                          const lines = missingInfoLines(l.rejectionReason);
+                                          if (lines.length <= 1) {
+                                            return <>Still needed: {lines[0] ?? displayReason(l.rejectionReason)}</>;
+                                          }
+                                          return (
+                                            <>
+                                              <p>Still needed:</p>
+                                              <ul className="mt-1 list-disc space-y-0.5 ps-4 font-normal">
+                                                {lines.map(line => <li key={line}>{line}</li>)}
+                                              </ul>
+                                            </>
+                                          );
+                                        })()
                                       : "Admin has requested more information. Please update your listing."}
                                   </div>
                                 )}

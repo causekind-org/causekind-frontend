@@ -26,13 +26,28 @@ export type PathwayTone = "donor" | "donee";
  * compositor and nothing here can trigger layout.
  */
 export default function PathwayScene({
-  tone, Icon, orbitIcons, active, inView,
+  tone, Icon, orbitIcons, active, inView, frame = true,
+  motif = { x: "calc(100% - 4.5rem)", y: "4.5rem" },
 }: {
   tone: PathwayTone;
   Icon: LucideIcon;
   orbitIcons: LucideIcon[];
   active: boolean;
   inView: boolean;
+  /**
+   * Draw the holographic corner brackets. Off for the split layout, whose
+   * diagonal clip would slice two of the four brackets through the stroke.
+   */
+  frame?: boolean;
+  /**
+   * Where the emblem + orbit motif is centred, as CSS lengths inside the
+   * scene box. The default is the top-end corner, which is where it sits on a
+   * rectangular panel. The split layout overrides it: each half is laid out at
+   * the full width of the slab and only a diagonal wedge of it is visible, so a
+   * corner-anchored motif lands in the *other* side's wedge and is clipped
+   * away entirely.
+   */
+  motif?: { x: string; y: string };
 }) {
   const reduceMotion = useReducedMotion();
   const animate = !reduceMotion && inView;
@@ -92,7 +107,7 @@ export default function PathwayScene({
       />
 
       {/* Holographic frame corners */}
-      {[
+      {frame && [
         "top-3 start-3 border-t-2 border-s-2",
         "top-3 end-3 border-t-2 border-e-2",
         "bottom-3 start-3 border-b-2 border-s-2",
@@ -127,10 +142,18 @@ export default function PathwayScene({
         puts the motif top-LEFT under RTL, where a top-right origin would drag
         it away from its own anchor as it scaled.
       */}
-      <div className="absolute inset-0 origin-top-right scale-[0.62] rtl:origin-top-left sm:scale-100">
+      <div
+        className="absolute inset-0 scale-[0.62] sm:scale-100"
+        // The origin is the motif itself, so shrinking pins it in place
+        // instead of dragging it toward a corner. Physical rather than
+        // logical: the anchor above is a physical `left` now, and under RTL
+        // the split layout mirrors the whole slab, so there is nothing left
+        // here to flip.
+        style={{ transformOrigin: `${motif.x} ${motif.y}` }}
+      >
       <motion.div
-        className="absolute end-[4.5rem] top-[4.5rem] flex h-12 w-12 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl border backdrop-blur-sm"
-        style={{ borderColor: `${ring}66`, background: `${glow}14`, color: ring }}
+        className="absolute flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl border backdrop-blur-sm"
+        style={{ left: motif.x, top: motif.y, borderColor: `${ring}66`, background: `${glow}14`, color: ring }}
         animate={
           animate
             ? { y: active ? [-6, 4, -6] : [-3, 2, -3], scale: active ? 1.06 : 1 }
@@ -147,8 +170,8 @@ export default function PathwayScene({
       {/* Orbiting interface markers. The ring rotates; each marker counter-rotates
           so the glyphs stay upright instead of tumbling. */}
       <motion.div
-        className="absolute end-[4.5rem] top-[4.5rem] h-[6.5rem] w-[6.5rem] translate-x-1/2 -translate-y-1/2 rounded-full border"
-        style={{ borderColor: `${ring}33` }}
+        className="absolute h-[6.5rem] w-[6.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full border"
+        style={{ left: motif.x, top: motif.y, borderColor: `${ring}33` }}
         animate={animate ? { rotate: 360 } : { rotate: 0 }}
         transition={{ duration: active ? 26 : 44, repeat: Infinity, ease: "linear" }}
       >

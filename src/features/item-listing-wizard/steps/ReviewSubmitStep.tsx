@@ -1,9 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { photoStatusCopy, approvedCount, photoView } from "../photoStatusCopy";
+import type { OfferVideoState } from "@/features/donation-offer-wizard/useOfferVideo";
 import { Info } from "lucide-react";
 import { DeclarationsBlock } from "@/features/wizard-kit/DeclarationsBlock";
 import { ReviewRow, ReviewSection } from "@/features/wizard-kit/ReviewSection";
-import { DECLARATION_GROUPS, uploadedUrls, type WizardModel, type WizardStep } from "../wizardModel";
+import { DECLARATION_GROUPS, type WizardModel, type WizardStep } from "../wizardModel";
 import { fieldsFor } from "../wizardFields";
 
 /**
@@ -15,7 +18,7 @@ import { fieldsFor } from "../wizardFields";
  * only honest way to reflect "this no longer applies to your item".
  */
 export function ReviewSubmitStep({
-  model, errors, groupTitles, declarationsInvalidated, onJump, onChange, resubmit,
+  model, errors, groupTitles, declarationsInvalidated, onJump, onChange, resubmit, video,
 }: {
   model: WizardModel;
   errors: Record<string, string>;
@@ -24,28 +27,92 @@ export function ReviewSubmitStep({
   onJump: (step: WizardStep) => void;
   onChange: <K extends keyof WizardModel>(key: K, value: WizardModel[K]) => void;
   resubmit: boolean;
+  /** The optional item video, so review can show its screening state. */
+  video?: OfferVideoState;
 }) {
-  const urls = uploadedUrls(model.photos);
+  const t = useTranslations();
   const fields = fieldsFor(model.category, model.subcategory);
 
   return (
     <div className="space-y-2">
+      {/*
+        Media, as the server has it.
+
+        <p>This used to render `uploadedUrls(model.photos)` — every photo that
+        had finished *transferring*, with no notion of whether any of them had
+        been cleared. A donor reviewing their listing therefore saw a rejected
+        photo sitting in the summary looking exactly like an approved one, and
+        the first they heard of it was Submit failing.
+
+        <p>Now every photo shows its own state, and a photo that is not approved
+        is not shown as an image at all: it has no URL, because the server does
+        not issue one for unapproved media.
+      */}
       <ReviewSection title="Photos" onEdit={() => onJump("photos")}>
         <div className="flex flex-wrap gap-1.5">
-          {urls.length === 0 && <p className="text-2xs text-stone-400">No photos uploaded yet</p>}
-          {urls.map((url, i) => (
-            <div key={url} className="relative h-14 w-14 overflow-hidden rounded-lg border border-stone-200 dark:border-zinc-700">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt={`Item photo ${i + 1}`} className="h-full w-full object-cover" />
-              {i === 0 && (
-                <span className="absolute inset-x-0 bottom-0 bg-[var(--ck-role-accent)] text-center text-5xs font-black uppercase text-white">
-                  Main
-                </span>
-              )}
-            </div>
-          ))}
+          {model.photos.length === 0 && <p className="text-2xs text-stone-400">No photos uploaded yet</p>}
+          {model.photos.map((photo, i) => {
+            const view = photoView(photo);
+            const copy = photoStatusCopy(view);
+            const approved = view.status === "APPROVED";
+            return (
+              <div
+                key={photo.id}
+                className={`relative h-14 w-14 overflow-hidden rounded-lg border ${
+                  copy.blocks
+                    ? "border-red-400 dark:border-red-700"
+                    : "border-stone-200 dark:border-zinc-700"
+                }`}
+                title={t(copy.labelKey)}
+              >
+                {approved && photo.remoteUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photo.remoteUrl} alt={`Item photo ${i + 1}`} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-stone-100 p-0.5 text-center dark:bg-zinc-800">
+                    <span className="text-5xs font-black uppercase leading-tight text-stone-500 dark:text-stone-400">
+                      {t(copy.labelKey)}
+                    </span>
+                  </div>
+                )}
+                {approved && i === 0 && (
+                  <span className="absolute inset-x-0 bottom-0 bg-[var(--ck-role-accent)] text-center text-5xs font-black uppercase text-white">
+                    Main
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
+        <p className="mt-1.5 text-2xs text-stone-500 dark:text-stone-400">
+          {t("listingWizard.photo.progress", { approved: approvedCount(model.photos.map(photoView)), required: 2 })}
+        </p>
       </ReviewSection>
+
+      {/*
+        The optional video, if one is attached.
+
+        <p>Absent entirely when there is none — zero videos is a valid listing
+        and an empty row saying "no video" would imply otherwise. Shown when
+        there is one, because a video still being screened, or one that was
+        rejected, is exactly what a donor needs to see before Submit rather than
+        after it.
+      */}
+      {video?.video && (
+        <ReviewSection title="Short video" onEdit={() => onJump("photos")}>
+          <p className="text-2xs text-stone-600 dark:text-stone-300">
+            {video.video.status === "APPROVED"
+              ? "Checked and ready."
+              : video.video.status === "REJECTED"
+                ? "This video can't be accepted. Remove or replace it before submitting."
+                : video.video.status === "REVIEW_REQUIRED"
+                  ? "Someone needs to look at this video. You can remove it and submit without one."
+                  : video.video.status === "FAILED"
+                    ? "We couldn't check this video. Retry, or remove it and submit without one."
+                    : "Still being checked."}
+          </p>
+        </ReviewSection>
+      )}
 
       {/* Rows follow the same manifest the form used, so review shows exactly
           what was asked — never a row for a field this category never had. */}

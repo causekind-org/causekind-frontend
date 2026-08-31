@@ -26,6 +26,7 @@ import { OfferConditionStep, type CompatState } from "./steps/OfferConditionStep
 import { OfferPickupStep } from "./steps/OfferPickupStep";
 import { OfferReviewStep } from "./steps/OfferReviewStep";
 import { useOfferPhotos } from "./useOfferPhotos";
+import { useOfferVideo } from "./useOfferVideo";
 import {
   OFFER_STEPS, emptyOfferModel, firstIncompleteOfferStep, needsSpecNotes,
   offerModelFrom, offerStepIndex, uploadedOfferPhotos,
@@ -211,6 +212,15 @@ export function DonationOfferWizard({
     onUrlsChanged: onPhotoSetChanged,
     onRejected: msg => toast.error(msg),
   });
+
+  // The optional item video. Held here rather than inside the photos step so it
+  // survives stepping away and back — screening runs on the server and its
+  // verdict should not be lost because the donor moved to Details and returned.
+  // offerId exists for this component’s whole lifetime (the prelude creates the
+  // draft), so the resolver is immediate here. The listing wizard is the one
+  // that needs it lazy.
+  const resolveOfferId = useCallback(async () => offerId, [offerId]);
+  const videoApi = useOfferVideo(resolveOfferId);
 
   // Re-screen once uploads settle, keyed on the uploaded set.
   const uploadedKey = uploadedOfferPhotos(model.photos).map(p => p.remoteUrl).join("|");
@@ -513,6 +523,9 @@ export function DonationOfferWizard({
                           onRetryPhoto={photoApi.retryPhoto}
                           onRemovePhoto={photoApi.removePhoto}
                           onRescreen={() => { screenedKeyRef.current = null; void runScreening(); }}
+                          video={videoApi}
+                          onPickVideo={file => void videoApi.upload(file)}
+                          onRemoveVideo={() => void videoApi.remove()}
                         />
                       )}
                       {step === "details" && (

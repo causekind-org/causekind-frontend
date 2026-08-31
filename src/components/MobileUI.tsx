@@ -63,8 +63,18 @@ export function MobileBottomNav() {
     // at /requests/new, which the Requests tab already covers (isActive() treats
     // /requests/* as Requests, so both entries lit the same tab). Removed for
     // donors too on request, leaving Home / Requests / Profile for both roles.
-    // Logged-out visitors keep it — there it is the sign-up call to action.
-    ...(user?.role === "DONEE" || user?.role === "DONOR"
+    //
+    // Logged-out visitors don't get it either, also on request. It used to be
+    // their sign-up call to action, but the Profile tab already routes a guest
+    // to /login, so the bar keeps a route into auth without spending a quarter
+    // of it on a second one. Guests now see the same Home / Requests / Profile
+    // as everyone else.
+    //
+    // Note for whoever flips FEATURES.money back on: with money enabled this
+    // entry becomes "Donate now" rather than "Sign up", and a guest arguably
+    // should see that. Revisit this condition then rather than assuming it
+    // still says what you want.
+    ...(!user || user.role === "DONEE" || user.role === "DONOR"
       ? []
       : [{ href: centerHref, icon: Plus, label: centerLabel }]),
     // Requests is public now — browsing needs no account, only offering does.

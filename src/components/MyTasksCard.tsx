@@ -280,6 +280,12 @@ function PhotoAnswer({
         open={cameraOpen}
         onOpenChange={setCameraOpen}
         facingMode="environment"
+        // Rear camera here too, so the same un-mirroring applies: a document
+        // photographed through a mirrored preview comes back with every line of
+        // its text reversed.
+        title="Take a photo"
+        instructions="Fill the frame and keep the whole thing readable."
+        filenamePrefix="task-photo"
         onCapture={(file) => { setCameraOpen(false); void store(file); }}
         onChoosePhoto={() => { setCameraOpen(false); fileRef.current?.click(); }}
       />

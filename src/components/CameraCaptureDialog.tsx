@@ -26,6 +26,30 @@ type CameraCaptureDialogProps = {
    * Only ever `ideal`, never `exact` — a device with one camera must still work.
    */
   facingMode?: "user" | "environment";
+  /**
+   * Mirror the preview and the saved frame.
+   *
+   * <p>Defaults to `facingMode === "user"`, which is the only correct default:
+   * a mirrored selfie preview is what everyone expects because it matches a
+   * bathroom mirror, and a mirrored *rear* camera is simply wrong — it shows
+   * the object flipped, and any label, model number or serial in the photo
+   * comes out backwards. Both rear-camera callers were getting the mirrored
+   * treatment, so deriving it here fixes them without either having to know.
+   *
+   * <p>Overridable because "mirror" and "which camera" are not the same
+   * question, and a future caller may want them apart.
+   */
+  mirrored?: boolean;
+  /** Dialog heading. Defaults to the selfie-flow wording. */
+  title?: string;
+  /** One line under the heading, telling the user what to frame. */
+  instructions?: string;
+  /**
+   * Prefix for the captured file's name. Defaults to `donee-photo`, which is
+   * what every caller got before this was a prop — including the item-listing
+   * wizard, whose item photos were all arriving named as donee photos.
+   */
+  filenamePrefix?: string;
 };
 
 function cameraErrorMessage(error: unknown): string {
@@ -56,6 +80,10 @@ export function CameraCaptureDialog({
   onCapture,
   onChoosePhoto,
   facingMode = "user",
+  mirrored = facingMode === "user",
+  title = "Take a photo",
+  instructions = "Keep your face clearly visible in the frame.",
+  filenamePrefix = "donee-photo",
 }: CameraCaptureDialogProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -182,11 +210,16 @@ export function CameraCaptureDialog({
       return;
     }
 
-    // Match the mirrored front-camera preview so the saved frame is exactly what
-    // the donee saw when pressing the shutter.
+    // The saved frame must match the preview the user was looking at when they
+    // pressed the shutter — so the flip is applied under exactly the condition
+    // the preview flips, and not otherwise. Unconditionally mirroring here is
+    // what wrote every rear-camera item photo back to front, labels and serial
+    // numbers included.
     context.save();
-    context.translate(width, 0);
-    context.scale(-1, 1);
+    if (mirrored) {
+      context.translate(width, 0);
+      context.scale(-1, 1);
+    }
     context.drawImage(video, 0, 0, width, height);
     context.restore();
 
@@ -200,7 +233,7 @@ export function CameraCaptureDialog({
           return;
         }
         setCapturedFile(
-          new File([blob], `donee-photo-${Date.now()}.jpg`, { type: "image/jpeg" })
+          new File([blob], `${filenamePrefix}-${Date.now()}.jpg`, { type: "image/jpeg" })
         );
         setStatus("captured");
       },
@@ -240,10 +273,10 @@ export function CameraCaptureDialog({
         <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-zinc-700">
           <div>
             <h2 id="camera-dialog-title" className="text-base font-bold text-stone-900 dark:text-white">
-              Take your photo
+              {title}
             </h2>
             <p className="text-xs text-stone-500 dark:text-stone-400">
-              Keep your face clearly visible in the frame.
+              {instructions}
             </p>
           </div>
           <button
@@ -264,7 +297,7 @@ export function CameraCaptureDialog({
               autoPlay
               muted
               playsInline
-              className={`h-full w-full object-cover [transform:scaleX(-1)] ${
+              className={`h-full w-full object-cover ${mirrored ? "[transform:scaleX(-1)]" : ""} ${
                 status === "captured" || status === "error" ? "hidden" : ""
               }`}
               data-testid="camera-preview"

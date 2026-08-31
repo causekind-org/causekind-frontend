@@ -140,7 +140,7 @@ export default async function RootLayout({
                 >
                   <ScrollProgress />
                   <SiteHeader />
-                  <main className="min-h-[calc(100svh-3.5rem)] pb-[72px] lg:pb-0">{children}</main>
+                  <main className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
                   <SiteFooter />
                   <MobileBottomNav />
                   <FloatingSupportButton />

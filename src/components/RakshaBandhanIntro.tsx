@@ -200,7 +200,11 @@ export function RakshaBandhanIntro() {
 
     // `play()` rejects when autoplay is refused. That is a normal browser
     // decision, not an error to surface — just leave.
-    void video.play().catch(() => dismiss());
+    //
+    // Wrapped in Promise.resolve because play() is only promise-returning in
+    // modern browsers — older ones, and jsdom under test, return undefined,
+    // and calling .catch on that throws before the intro ever renders.
+    void Promise.resolve(video.play()).catch(() => dismiss());
 
     // Nothing playing after this long means blocked, missing or too slow.
     watchdog.current = setTimeout(() => {

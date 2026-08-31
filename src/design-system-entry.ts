@@ -69,7 +69,6 @@ export { DoneeRequestsSection } from "./components/home/DoneeRequestsSection";
 // runtime, so no amount of bundler config makes it resolvable here.
 export { DesktopStatsBar, LiveTicker } from "./components/home/StatsBars";
 export { WhatWeProvideSection } from "./components/home/WhatWeProvideSection";
-export { WhyCauseKindSection } from "./components/home/WhyCauseKindSection";
 
 // ── profile/ ──────────────────────────────────────────────────────
 export { AvatarUpload } from "./components/profile/AvatarUpload";
