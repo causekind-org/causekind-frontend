@@ -267,6 +267,24 @@ export default function HomeClient({
     return out;
   }, [itemRequests, selectedCategory, myProfile]);
 
+  /*
+    What "Watching for you" counts.
+
+    `itemRequests` comes from `/api/v1/item-requests`, which requires a session.
+    It is empty on every server render (there is no cookie there) and stays empty
+    for a logged-out visitor, because the client refetch 401s and is swallowed.
+    That band renders for guests, so keyed off `itemRequests` alone it reported
+    every category "quiet" no matter how many verified needs were open — the
+    exact failure `page.tsx` already avoids for the campaign surfaces by
+    preferring the public endpoint.
+
+    Falls back rather than replaces: a signed-in donor's board is the more
+    specific list (it is theirs, and distance-aware), so it wins whenever it has
+    anything in it. `PublicItemRequest` carries `category`, which is all this
+    band reads.
+  */
+  const watchedRequests = itemRequests.length > 0 ? itemRequests : initialPublicRequests;
+
   // ── Raksha Bandhan ────────────────────────────────────────────────────────
   //
   // One switch, read once here and handed down, so the hero thread, the need at
@@ -473,8 +491,12 @@ export default function HomeClient({
         {/* "Be the Change" feature cards */}
         <BeTheChangeSection />
 
-        {/* Donee requests, filtered by the donor's chosen focus areas — hidden for donees themselves */}
-        {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={itemRequests} />}
+        {/* Donee requests, filtered by the donor's chosen focus areas — hidden for donees themselves.
+
+            `watchedRequests`, not `itemRequests`: this section renders for
+            logged-out visitors too, and the authenticated board is empty for
+            them. See the note beside the definition. */}
+        {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={watchedRequests} />}
 
         {/* Coming soon magnets */}
         <ComingSoonMagnets />

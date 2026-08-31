@@ -9,7 +9,6 @@ import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS, readSelectedDonorCategories }
 import { slugForCategory } from "@/lib/inKindCategories";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, SlidersHorizontal } from "lucide-react";
-import type { ItemRequest } from "@/lib/api";
 
 /* ── Watching for you — the categories a donor follows, sized by how much is
    actually happening in each one. ──
@@ -35,7 +34,19 @@ type Tile = {
   size: "large" | "wide" | "small";
 };
 
-export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemRequest[] }) {
+/**
+ * All this band ever reads off a request is its category, so the prop is typed
+ * to exactly that.
+ *
+ * <p>Not incidental: the caller has to be free to hand over either an
+ * `ItemRequest` from the authenticated board or a `PublicItemRequest` from the
+ * public one, because for a logged-out visitor only the second exists. Widening
+ * here is what lets `HomeClient` fall back without casting between two DTOs
+ * that agree on the one field this component uses.
+ */
+type CountableRequest = { category: string };
+
+export function DoneeRequestsSection({ itemRequests }: { itemRequests: CountableRequest[] }) {
   const { user } = useAuth();
   const [selected, setSelected] = useState<string[] | null>(null);
   const [mounted, setMounted] = useState(false);
