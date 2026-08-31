@@ -11,6 +11,42 @@ const STEP_COUNT = 2;
 const BELT_START = 13;
 const BELT_END = 87;
 
+/* ─── The merge at each end ───────────────────────────────────────────────
+   BELT_START and BELT_END are the *same* percentages the donor and donee
+   circles are placed at, so at rest the parcel is centred dead-on a node and
+   hides it completely. Rather than nudge it aside, the arrival is made to
+   mean something: the parcel rounds off, settles into the circle, and the
+   circle fills with the accent of that moment — warm at the donor, cool at
+   the donee. The item then reads as coming FROM someone and going TO someone,
+   which is the whole point of the Conveyor direction. */
+
+/** How much of the belt, at each end, the parcel spends merging with a node. */
+const DOCK_SPAN = 0.12;
+
+const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+
+/** Smoothstep — the merge should settle, not arrive linearly. */
+const ease = (t: number) => {
+  const k = clamp01(t);
+  return k * k * (3 - 2 * k);
+};
+
+/**
+ * How far the parcel has merged into each end, from its position on the belt.
+ *
+ * <p>Split out and exported because it is the one part of this section that
+ * can break silently: every other value here is visible the moment you look at
+ * the panel, but an off-by-one in these windows just makes the handoff seam
+ * slightly wrong in a way that reads as "fine" until someone stares at it.
+ * Unit-tested at the boundaries instead.
+ */
+export function dockFactors(travel: number) {
+  // Linear 1 → 0 as the parcel leaves the donor; 0 → 1 as it reaches the donee.
+  const donorDock = clamp01(1 - travel / DOCK_SPAN);
+  const doneeDock = clamp01((travel - (1 - DOCK_SPAN)) / DOCK_SPAN);
+  return { donorDock, doneeDock, docked: Math.max(donorDock, doneeDock) };
+}
+
 /* ─── Scroll-linked colour ────────────────────────────────────────────────
    The section warms at the donor end and cools at the donee end: terracotta
    where the giving starts, ink where it lands. This is not decoration — the
@@ -24,6 +60,8 @@ const ACCENT_WARM = [176, 74, 21] as const;   // #b04a15, the brand terracotta
 const ACCENT_COOL = [30, 58, 96] as const;    // #1e3a60, the brand ink
 const GROUND_WARM = [18, 16, 14] as const;    // #12100e
 const GROUND_COOL = [12, 16, 22] as const;    // a cooler near-black
+/** An empty node's rim, which warms toward `accent` as the node fills. */
+const NODE_RIM = [255, 255, 255] as const;
 
 /** Channel-wise interpolation. Good enough at these low chromas, and it keeps
  *  the whole thing dependency-free and cheap enough to run every frame. */
@@ -85,7 +123,7 @@ export function WhatWeProvideSection() {
       const rect = el!.getBoundingClientRect();
       const scrollable = rect.height - window.innerHeight;
       if (scrollable <= 0) return;
-      setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
+      setProgress(clamp01(-rect.top / scrollable));
     }
 
     function onScroll() {
@@ -109,10 +147,34 @@ export function WhatWeProvideSection() {
   // The parcel's journey. Under reduced motion it rests at the far end rather
   // than jumping about as the step changes.
   const travel = reduceMotion ? 1 : progress;
-  const parcelLeft = BELT_START + (BELT_END - BELT_START) * travel;
   // The donee end lights up as the parcel approaches, so arrival is felt
-  // rather than announced.
-  const arrival = Math.max(0, Math.min(1, (travel - 0.55) / 0.4));
+  // rather than announced. This is the *anticipation*, spanning most of the
+  // belt; the merge below is the arrival itself, and the two own different
+  // properties so nothing is driven twice.
+  const arrival = clamp01((travel - 0.55) / 0.4);
+
+  // The merge at each end. Under reduced motion `travel` is pinned to 1, which
+  // falls out of this as donorDock 0 / doneeDock 1 — the parcel rests fully
+  // absorbed into the donee, which is exactly the settled end state that path
+  // has always shown. No special-casing needed.
+  const { donorDock, doneeDock, docked } = dockFactors(travel);
+
+  // The node fills AHEAD of the parcel's arrival (the ÷0.75), so both are the
+  // same colour by the time they coincide and the handoff cannot be seen.
+  const donorFill = ease(clamp01(donorDock / 0.75));
+  const doneeFill = ease(clamp01(doneeDock / 0.75));
+  const merge = ease(docked);
+
+  // Position has to converge too, not just size. Travelling linearly, the parcel
+  // is still ~3% of the panel short of the node for most of the dock — so the
+  // shrunken disc and the node sat side by side as a same-coloured peanut and
+  // only snapped together on the last frame. Pulling the parcel onto the node it
+  // is merging with is what makes the merge actually merge; it also means the
+  // parcel visibly peels out of the donor rather than starting to slide before
+  // it has cleared it.
+  const beltLeft = BELT_START + (BELT_END - BELT_START) * travel;
+  const dockTarget = doneeDock > 0 ? BELT_END : BELT_START;
+  const parcelLeft = beltLeft + (dockTarget - beltLeft) * merge;
 
   // Colour tracks `progress`, NOT `travel`. Under reduced motion `travel` is
   // pinned to 1 so nothing slides — but a colour shift is not motion and causes
@@ -204,14 +266,43 @@ export function WhatWeProvideSection() {
 
         </div>
 
-        {/* ── HEADER ── */}
+        {/*
+          ── HEADER ──
+
+          The section's own name and standfirst, restored after the Conveyor
+          rebuild dropped them: for a while this read only "How it works", and
+          `what.title` / `what.subtitle` sat unused in all fourteen message
+          catalogues while the page no longer said anywhere what the section was.
+
+          Sized deliberately below the step title. That title is the thing that
+          changes as you scroll and is the reason to keep scrolling, so a header
+          at the old 4xl would have two large headings arguing on one screen.
+          This one stays a quiet label for the panel; the step stays the event.
+
+          It is also the section's only `h2` — the step titles are `h3`, so
+          without it the panel jumped a heading level.
+        */}
         <div className="relative z-10 flex-shrink-0 flex items-end justify-between gap-6 px-6 lg:px-12 pt-7 pb-5 border-b border-white/10">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-[#e07b3a]">
-            How it works
-          </p>
-          <p className="text-xs text-white/40 tabular-nums">
-            Step {step.step} of 0{STEP_COUNT}
-          </p>
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-[#e07b3a]">
+              How it works
+            </p>
+            <h2 className="mt-1 text-lg lg:text-xl font-extrabold tracking-tight text-white leading-tight">
+              {t("what.title")}
+            </h2>
+          </div>
+
+          <div className="text-right">
+            {/* Hidden below lg exactly as it was before the rebuild — at phone
+                width it wrapped to three lines and pushed the step counter off
+                its baseline. */}
+            <p className="hidden lg:block max-w-xs text-xs leading-relaxed text-white/40">
+              {t("what.subtitle")}
+            </p>
+            <p className="mt-1 text-xs text-white/40 tabular-nums">
+              Step {step.step} of 0{STEP_COUNT}
+            </p>
+          </div>
         </div>
 
         {/* ── STAGE ── */}
@@ -243,6 +334,68 @@ export function WhatWeProvideSection() {
                 </p>
               </div>
             ))}
+          </div>
+
+          {/*
+            ── Belt stencil ──
+
+            The platform's promise, printed on the belt the way a real conveyor
+            carries its own markings. It runs leftward as you scroll — the same
+            direction as the floor grid and the crates, and the opposite of the
+            parcel, so the belt reads as moving *under* the item rather than
+            carrying it along passively.
+
+            It lives inside the STAGE and above this comment's belt block only
+            in source order, which is what puts it behind the belt line, the
+            parcel and the nodes: everything in here is absolutely positioned,
+            so DOM order is the stacking order. Same reason the belt texture
+            itself is in here rather than in the panel's background layer — 62%
+            is a percentage of the stage, and at 62% of the panel it would miss
+            the line entirely.
+
+            Outlined rather than filled. Filled glyphs at a legible size start
+            competing with the step copy; a hairline stroke reads as something
+            stamped into the surface, which is what it is meant to be. The
+            stroke takes the scroll-linked `accent`, so the wording warms at the
+            donor end and cools at the donee end with everything else.
+
+            English, and not translated — as with DONOR/DONEE, "How it works"
+            and "Keep scrolling", this is chrome rather than content. Worth
+            revisiting if the section's chrome is ever localised as a whole.
+          */}
+          <div
+            className="absolute inset-x-0 overflow-hidden pointer-events-none"
+            style={{ top: "62%", transform: "translateY(-50%)" }}
+            aria-hidden
+          >
+            <div
+              className="flex whitespace-nowrap"
+              style={{
+                // Repeated far wider than the panel, so the strip never runs
+                // out of text before the scroll runs out of travel — cheaper
+                // and steadier than a modulo loop, which visibly jumps at the
+                // wrap and would have to be re-tuned for every panel width.
+                transform: reduceMotion ? "none" : `translate3d(${-progress * 760}px, 0, 0)`,
+                willChange: "transform",
+                marginLeft: "-30%",
+              }}
+            >
+              {Array.from({ length: 8 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="font-black uppercase leading-none"
+                  style={{
+                    fontSize: "clamp(1.5rem, 1rem + 1.6vw, 2.6rem)",
+                    letterSpacing: "0.22em",
+                    paddingInlineEnd: "0.22em",
+                    color: "transparent",
+                    WebkitTextStroke: `1px ${rgba(accent, 0.38)}`,
+                  }}
+                >
+                  Verified · Tracked · Handed over in person ·{" "}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* ── The belt ── */}
@@ -283,34 +436,70 @@ export function WhatWeProvideSection() {
             />
           </div>
 
-          {/* Donor end */}
+          {/* Donor end — holds the item at rest, and empties as it gives.
+
+              The fill is the mirror of the donee's: full at progress 0, gone by
+              the time the parcel has cleared the dock. The empty state is
+              rgb(ground) rather than the old hardcoded #12100e, which also
+              fixes a real (if quiet) bug — the node did not follow the panel's
+              warm-to-cool ground shift, so at high progress it sat warm-black
+              against a cool-black panel. */}
           <div
             className="absolute flex flex-col items-center gap-2.5"
             style={{ left: `${BELT_START}%`, top: "62%", transform: "translate(-50%, -50%)" }}
           >
-            <span className="w-12 h-12 lg:w-14 lg:h-14 rounded-full border-2 border-white/25 bg-[#12100e] flex items-center justify-center">
-              <User className="w-5 h-5 lg:w-6 lg:h-6 text-white/55" strokeWidth={1.7} />
+            <span
+              className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+              style={{
+                backgroundColor: rgb(mix(ground, accent, donorFill)),
+                // Lerps colour AND alpha together, so it is continuous: at
+                // fill 0 this is exactly the old border-white/25.
+                border: `2px solid ${rgba(mix(NODE_RIM, accent, donorFill), 0.25 + 0.75 * donorFill)}`,
+                // A small receiving pulse. Goes on this span, not the wrapper —
+                // the wrapper's translate(-50%,-50%) is doing the centring.
+                transform: `scale(${1 + 0.06 * donorFill})`,
+                boxShadow: `0 0 0 ${6 * donorFill}px ${rgba(accent, 0.1)}, 0 14px 34px ${rgba(accent, 0.45 * donorFill)}`,
+              }}
+            >
+              <User
+                className="w-5 h-5 lg:w-6 lg:h-6"
+                strokeWidth={1.7}
+                style={{ color: `rgba(255,255,255,${0.55 + 0.45 * donorFill})` }}
+              />
             </span>
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/35">
+            <span
+              className="text-[11px] font-extrabold uppercase tracking-[0.18em]"
+              style={{ color: `rgba(255,255,255,${0.35 + 0.5 * donorFill})` }}
+            >
               Donor
             </span>
           </div>
 
-          {/* Donee end — resolves from dashed outline to solid as the parcel nears */}
+          {/* Donee end — resolves from dashed outline to solid as the parcel
+              nears, then fills as it lands.
+
+              Two effects, deliberately kept on separate properties so nothing
+              is driven twice: `arrival` (the long anticipatory approach, from
+              mid-belt) owns the border STYLE and the label, while `doneeFill`
+              (the merge itself, only the last stretch) owns the fill, the
+              border COLOUR, the icon and the glow. */}
           <div
             className="absolute flex flex-col items-center gap-2.5"
             style={{ left: `${BELT_END}%`, top: "62%", transform: "translate(-50%, -50%)" }}
           >
             <span
-              className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-[#12100e] flex items-center justify-center"
+              className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
               style={{
-                border: `2px ${arrival > 0.9 ? "solid" : "dashed"} rgba(255,255,255,${0.18 + arrival * 0.5})`,
+                backgroundColor: rgb(mix(ground, accent, doneeFill)),
+                border: `2px ${arrival > 0.9 ? "solid" : "dashed"} ${rgba(mix(NODE_RIM, accent, doneeFill), 0.18 + arrival * 0.5 + 0.32 * doneeFill)}`,
+                transform: `scale(${1 + 0.06 * doneeFill})`,
+                boxShadow: `0 0 0 ${6 * doneeFill}px ${rgba(accent, 0.1)}, 0 14px 34px ${rgba(accent, 0.45 * doneeFill)}`,
               }}
             >
               <Home
                 className="w-5 h-5 lg:w-6 lg:h-6"
                 strokeWidth={1.7}
-                style={{ color: `rgba(255,255,255,${0.3 + arrival * 0.6})` }}
+                style={{ color: `rgba(255,255,255,${Math.min(1, 0.3 + arrival * 0.6 + 0.4 * doneeFill)})` }}
               />
             </span>
             <span
@@ -321,21 +510,38 @@ export function WhatWeProvideSection() {
             </span>
           </div>
 
-          {/* The parcel — the thing actually being given, mid-journey */}
+          {/* The parcel — the thing actually being given, mid-journey.
+
+              At each end it merges into the node rather than sitting on top of
+              it: it rounds off to a circle, shrinks to the node's diameter, and
+              drops its shadow as it settles into the socket. The fade is the
+              trick — it runs only over the last stretch of the merge, by which
+              point the circle underneath is already `rgb(accent)` too and the
+              same apparent size. Two coincident discs of one colour cross-
+              fading cannot be seen, so it reads as the box having *become* the
+              circle rather than having vanished behind it. */}
           <div
             className="absolute"
             style={{
               left: `${parcelLeft}%`,
               top: "62%",
-              transform: "translate(-50%, -50%)",
+              // 76px × 0.72 ≈ 55px, against a 56px node — they coincide almost
+              // exactly at the moment of the handoff, which is what makes it
+              // invisible.
+              transform: `translate(-50%, -50%) scale(${1 - 0.28 * merge})`,
+              opacity: 1 - clamp01((docked - 0.72) / 0.28),
               willChange: "left",
             }}
           >
             <span
-              className="flex w-[68px] h-[68px] lg:w-[76px] lg:h-[76px] rounded-[18px] items-center justify-center"
+              className="flex w-[68px] h-[68px] lg:w-[76px] lg:h-[76px] items-center justify-center"
               style={{
                 background: rgb(accent),
-                boxShadow: `0 18px 44px ${rgba(accent, 0.55)}`,
+                // 18px → 38px. That is half of the 76px desktop box, so it
+                // lands exactly on a circle; CSS clamps an over-large radius
+                // proportionally, so the 68px mobile box is a circle too.
+                borderRadius: `${18 + 20 * merge}px`,
+                boxShadow: `0 18px 44px ${rgba(accent, 0.55 * (1 - merge))}`,
               }}
             >
               <Package className="w-8 h-8 lg:w-9 lg:h-9 text-white" strokeWidth={1.7} />
