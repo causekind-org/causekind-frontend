@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { WizardPhoto } from "./types";
+import type { MediaModerationStatus, WizardPhoto } from "./types";
 
 /**
  * Photo selection, upload and lifecycle, for any wizard.
@@ -26,7 +26,21 @@ import type { WizardPhoto } from "./types";
  * need a server call before the local row disappears.
  */
 
-export type UploadedPhoto = { remoteUrl: string; mediaId?: number | null };
+export type UploadedPhoto = {
+  remoteUrl: string;
+  mediaId?: number | null;
+  /**
+   * The server's screening state for the row just created, where the flow has
+   * one. Optional and additive: the donation-offer wizard leaves it undefined
+   * and nothing there reads it.
+   *
+   * <p>Note this is normally *not* APPROVED. A successful upload means the bytes
+   * are stored, which is a different claim from "this photo may be used" — the
+   * listing flow returns QUARANTINED here and the status arrives later.
+   */
+  moderationStatus?: MediaModerationStatus | null;
+  moderationCode?: string | null;
+};
 
 export type WizardPhotoLimits = {
   maxPhotos: number;
@@ -150,6 +164,11 @@ export function useWizardPhotos(options: {
         return {
           ...p, status: "uploaded", remoteUrl: result.remoteUrl,
           mediaId: result.mediaId ?? null, localUrl: null, error: null,
+          // Carried through where the flow supplies it. "uploaded" above is the
+          // transfer finishing; this is what the server has decided about the
+          // picture, which at this point is usually "nothing yet".
+          moderationStatus: result.moderationStatus ?? null,
+          moderationCode: result.moderationCode ?? null,
         };
       }));
       onUrlsChangedRef.current?.();

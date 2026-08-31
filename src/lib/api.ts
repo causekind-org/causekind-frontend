@@ -696,6 +696,103 @@ export function adminGetAllAiAssessments() {
   return request<AiAssessmentResponse[]>(`/api/v1/admin/ai-assessments`);
 }
 
+// ── Listing photos — server-owned, screened media ───────────────────────────
+//
+// These replace uploadListingImage() below as the authority on what a listing's
+// photos are. That one is global: it hands back a permanent URL for an image no
+// listing owns and nothing has screened, and the wizard then posted those URLs
+// back as the listing's photos. Here a photo is a row the server created, and
+// its `status` is the only thing that decides whether it counts or is ever
+// given an address.
+
+/** The server's own limits, so the client cannot advertise rules it does not enforce. */
+export type ListingPhotoCapability = {
+  minPhotos: number;
+  maxPhotos: number;
+  maxBytes: number;
+  acceptedMimeTypes: string[];
+};
+
+/**
+ * One photo as the server sees it.
+ *
+ * <p>`url` is present only for APPROVED photos and is short-lived — generated
+ * per request, never stored. A missing url on a non-approved photo is the
+ * contract working, not a loading state.
+ */
+export type ListingPhoto = {
+  id: number;
+  status:
+    | "UPLOADING" | "QUARANTINED" | "MODERATING_VISUAL"
+    | "APPROVED" | "REJECTED" | "REVIEW_REQUIRED" | "FAILED" | "DELETED";
+  moderationCode: string | null;
+  primary: boolean;
+  sortOrder: number;
+  url: string | null;
+};
+
+export function getListingPhotoCapability() {
+  return request<ListingPhotoCapability>("/api/v1/items/photos/capability");
+}
+
+export function getListingPhotos(listingId: number) {
+  return request<ListingPhoto[]>(`/api/v1/items/${listingId}/photos`);
+}
+
+/**
+ * Uploads one photo to one listing and returns the row it created.
+ *
+ * <p>Returns as soon as the bytes are quarantined — the row comes back
+ * QUARANTINED, not APPROVED, and screening runs afterwards. A caller that
+ * treats this resolving as success has misread the contract.
+ */
+export async function uploadListingPhoto(listingId: number, file: File): Promise<ListingPhoto> {
+  const fd = new FormData();
+  fd.append("image", file);
+  const res = await fetch(`${BASE_URL}/api/v1/items/${listingId}/photos`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!res.ok) {
+    // The server's own sentence is used when there is one: it names the actual
+    // cause ("You have already added this photo", "up to 5 photos"), where a
+    // generic "upload failed" was the old behaviour and named nothing.
+    let message = "We couldn't add that photo. Please try again.";
+    try {
+      const body = await res.json();
+      if (typeof body?.message === "string" && body.message) message = body.message;
+    } catch { /* non-JSON error body; keep the default */ }
+    throw new Error(message);
+  }
+  return (await res.json()) as ListingPhoto;
+}
+
+export function retryListingPhoto(listingId: number, mediaId: number) {
+  return request<ListingPhoto>(`/api/v1/items/${listingId}/photos/${mediaId}/retry`, {
+    method: "POST",
+  });
+}
+
+export function deleteListingPhoto(listingId: number, mediaId: number) {
+  return request<void>(`/api/v1/items/${listingId}/photos/${mediaId}`, { method: "DELETE" });
+}
+
+/**
+ * The listing's current video, without needing its media id.
+ *
+ * <p>What the wizard calls on load. Resolves to null on 204 — the video is
+ * optional, and not having one is an ordinary state rather than an error.
+ */
+export async function getCurrentListingVideo(listingId: number) {
+  const res = await fetch(`${BASE_URL}/api/v1/items/${listingId}/video`, {
+    credentials: "include",
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error("Could not load the video status");
+  return (await res.json()) as OfferVideoStatus;
+}
+
 export async function uploadListingImage(file: File): Promise<string> {
   const fd = new FormData();
   fd.append("image", file);
@@ -1845,6 +1942,167 @@ export function submitOffer(offerId: number, declarationsAccepted: boolean) {
     `/api/v1/offers/${offerId}/submit?declarationsAccepted=${declarationsAccepted}`,
     { method: "POST" },
   );
+}
+
+// ── Optional item video ───────────────────────────────────────────────────────
+// Separate from the photo path on the server too: photos are synchronous
+// multipart through the API, video is a presigned direct-to-S3 upload followed
+// by asynchronous screening.
+
+/** Mirrors `MediaProcessingStatus`. Everything after MODERATING_AUDIO is terminal. */
+export type OfferVideoStatusName =
+  | "UPLOADING"
+  | "QUARANTINED"
+  | "VALIDATING"
+  | "TRANSCODING"
+  | "MALWARE_SCANNING"
+  | "MODERATING_VISUAL"
+  | "MODERATING_AUDIO"
+  | "REVIEW_REQUIRED"
+  | "APPROVED"
+  | "REJECTED"
+  | "FAILED";
+
+/** The four states screening can come to rest in. QUARANTINED is deliberately
+ *  NOT one of them: it is the pipeline entry state ("bytes confirmed, nothing
+ *  has read them yet") and is what finalize returns on every successful upload.
+ *  Listing it here stopped the client polling the moment an upload succeeded, so
+ *  it never learned the outcome — and the status line rendered that same state
+ *  as a refusal, reporting every accepted video to the donor as rejected.
+ *  REVIEW_REQUIRED is a normal outcome here, not a failure — a human looks at
+ *  it next. */
+export const OFFER_VIDEO_TERMINAL: readonly OfferVideoStatusName[] = [
+  "REVIEW_REQUIRED", "APPROVED", "REJECTED", "FAILED",
+];
+
+export type OfferVideoCapability = {
+  /** False when the deployment has no ffmpeg, or video is switched off. */
+  available: boolean;
+  maxBytes: number;
+  maxSeconds: number;
+};
+
+export type OfferVideoSlot = {
+  mediaId: number;
+  /** Presigned S3 URL. PUT the bytes here directly — NOT through `request`. */
+  uploadUrl: string;
+  contentType: string;
+  maxBytes: number;
+  expiresAt: string;
+};
+
+export type OfferVideoStatus = {
+  mediaId: number;
+  status: OfferVideoStatusName;
+  moderationCode: string | null;
+  durationMs: number | null;
+  playbackUrl: string | null;
+  available: boolean;
+};
+
+/** Ask before offering the control at all: the limits and the ffmpeg check are
+ *  the server's, so the copy a donor reads cannot drift from the rule enforced. */
+export function getOfferVideoCapability() {
+  return request<OfferVideoCapability>("/api/v1/offers/video/capability");
+}
+
+/**
+ * @param contentType what the bytes will be PUT as. Omit for MP4 — the server
+ *   defaults to it, so an older caller keeps working. A browser recording must
+ *   pass its own type: Chrome and Firefox produce WebM, and the type is signed
+ *   into the presigned PUT, so a wrong one makes S3 refuse the upload.
+ */
+export function createOfferVideoSlot(
+  offerId: number,
+  contentLength: number,
+  contentType?: string,
+) {
+  const type = contentType ? `&contentType=${encodeURIComponent(contentType)}` : "";
+  return request<OfferVideoSlot>(
+    `/api/v1/offers/${offerId}/video/slot?contentLength=${contentLength}${type}`,
+    { method: "POST" },
+  );
+}
+
+export function finalizeOfferVideo(offerId: number, mediaId: number) {
+  return request<OfferVideoStatus>(
+    `/api/v1/offers/${offerId}/video/${mediaId}/finalize`,
+    { method: "POST" },
+  );
+}
+
+export function getOfferVideoStatus(offerId: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/offers/${offerId}/video/${mediaId}`);
+}
+
+/** Short-lived, and only ever issued for approved video. */
+export function getOfferVideoPlayback(offerId: number, mediaId: number) {
+  return request<{ url: string }>(`/api/v1/offers/${offerId}/video/${mediaId}/playback`);
+}
+
+export function deleteOfferVideo(offerId: number, mediaId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/video/${mediaId}`, { method: "DELETE" });
+}
+
+/**
+ * PUT the bytes straight at S3 using the presigned URL.
+ *
+ * <p>Deliberately bare `fetch`, not `request`: the presigned URL already carries
+ * its own authorisation in the query string, and attaching our Authorization
+ * header would make S3 reject the signature. It is also a different origin —
+ * allowed by the CSP's `connect-src https://*.amazonaws.com`.
+ */
+// ── Item-listing video ────────────────────────────────────────────────────────
+// Same six shapes as the offer routes, under the listing controller prefix.
+// Kept as their own functions rather than a parameterised path builder: the two
+// resources are independent, and a shared builder would make a change to one
+// silently change the other.
+
+export function getListingVideoCapability() {
+  return request<OfferVideoCapability>("/api/v1/items/video/capability");
+}
+
+/** @see createOfferVideoSlot — same contract, same optional contentType. */
+export function createListingVideoSlot(
+  listingId: number,
+  contentLength: number,
+  contentType?: string,
+) {
+  const type = contentType ? `&contentType=${encodeURIComponent(contentType)}` : "";
+  return request<OfferVideoSlot>(
+    `/api/v1/items/${listingId}/video/slot?contentLength=${contentLength}${type}`,
+    { method: "POST" },
+  );
+}
+
+export function finalizeListingVideo(listingId: number, mediaId: number) {
+  return request<OfferVideoStatus>(
+    `/api/v1/items/${listingId}/video/${mediaId}/finalize`,
+    { method: "POST" },
+  );
+}
+
+export function getListingVideoStatus(listingId: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/items/${listingId}/video/${mediaId}`);
+}
+
+export function getListingVideoPlayback(listingId: number, mediaId: number) {
+  return request<{ url: string }>(`/api/v1/items/${listingId}/video/${mediaId}/playback`);
+}
+
+export function deleteListingVideo(listingId: number, mediaId: number) {
+  return request<void>(`/api/v1/items/${listingId}/video/${mediaId}`, { method: "DELETE" });
+}
+
+export async function uploadOfferVideoBytes(slot: OfferVideoSlot, file: Blob) {
+  const res = await fetch(slot.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": slot.contentType },
+    body: file,
+  });
+  if (!res.ok) {
+    throw new Error(`Video upload failed (${res.status})`);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -34,7 +34,41 @@ export type WizardPhoto = {
    * offers set it, because their photos are rows with a DELETE endpoint.
    */
   mediaId?: number | null;
+  /**
+   * The server's screening verdict, for flows whose photos are screened media
+   * rows rather than plain uploads.
+   *
+   * <p>Optional and additive on purpose. {@link PhotoStatus} above describes the
+   * *transfer* — picked, sending, sent, failed — and answering "may this photo
+   * be used?" with it is what let two files chosen from a picker satisfy a
+   * two-photo requirement before either had reached the server. The two are
+   * genuinely different questions: a photo can be fully uploaded and rejected.
+   *
+   * <p>Left undefined by the donation-offer wizard, which shares this type and
+   * whose photos are approved on upload. Nothing there reads these.
+   */
+  moderationStatus?: MediaModerationStatus | null;
+  /** Stable reason code behind a non-approved status. Never provider prose. */
+  moderationCode?: string | null;
 };
+
+/**
+ * Server-side media states.
+ *
+ * <p>Mirrors the backend's `MediaProcessingStatus`. Declared here rather than
+ * imported from the API client so the kit does not depend on it, and written
+ * out in full rather than as `string` so a status the client does not handle is
+ * a compile error instead of a silently unhandled card.
+ */
+export type MediaModerationStatus =
+  | "UPLOADING"
+  | "QUARANTINED"
+  | "MODERATING_VISUAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "REVIEW_REQUIRED"
+  | "FAILED"
+  | "DELETED";
 
 /** The uploaded, server-known URLs in display order. */
 export function uploadedPhotoUrls(photos: WizardPhoto[]): string[] {

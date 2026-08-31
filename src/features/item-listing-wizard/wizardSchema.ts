@@ -25,6 +25,12 @@ const photoSchema = z.object({
   status: z.enum(["pending", "uploading", "uploaded", "failed"]),
   file: z.any().nullable(),
   error: z.string().nullable(),
+  mediaId: z.number().nullable().optional(),
+  moderationStatus: z.enum([
+    "UPLOADING", "QUARANTINED", "MODERATING_VISUAL",
+    "APPROVED", "REJECTED", "REVIEW_REQUIRED", "FAILED", "DELETED",
+  ]).nullable().optional(),
+  moderationCode: z.string().nullable().optional(),
 });
 
 export const wizardSchema = z.object({
@@ -60,14 +66,52 @@ export const wizardSchema = z.object({
   declarationsConfirmed: z.boolean(),
 })
   .superRefine((v, ctx) => {
-    // ── Photos ──────────────────────────────────────────────────────────────
-    const usable = v.photos.filter(p => p.status === "uploaded" || p.status === "uploading" || p.status === "pending");
-    if (usable.length < MIN_PHOTOS) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["photos"], message: `Add at least ${MIN_PHOTOS} photos` });
+    /*
+      ── Photos ──────────────────────────────────────────────────────────────
+
+      Only a server-APPROVED photo counts. The rule this replaces counted
+      `uploaded`, `uploading` **and** `pending` — so two files chosen from a
+      picker satisfied a two-photo requirement before either had reached the
+      server, let alone been screened, and the final serialisation then sent
+      whatever URLs happened to exist. Upload state and screening verdict are
+      different questions: a photo can be fully uploaded and rejected.
+
+      The server enforces this independently and is the authority. This exists
+      so the donor is told the truth before pressing a button that would fail,
+      not as the protection itself.
+    */
+    const approved = v.photos.filter(p => p.moderationStatus === "APPROVED");
+    if (approved.length < MIN_PHOTOS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom, path: ["photos"],
+        message: `Add at least ${MIN_PHOTOS} photos and wait for them to be checked`,
+      });
     }
     if (v.photos.length > MAX_PHOTOS) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["photos"], message: `You can add up to ${MAX_PHOTOS} photos` });
     }
+
+    /*
+      Every attached photo must be resolved, not just two of them.
+
+      Without this a donor could leave a rejected third photo attached to a
+      listing that two approved photos had already unlocked. Expressed as
+      "attached and not approved" rather than by listing the blocking states, so
+      a state added later blocks by default instead of quietly becoming
+      submittable.
+    */
+    const unresolved = v.photos.filter(
+      p => p.moderationStatus != null
+        && p.moderationStatus !== "APPROVED"
+        && p.moderationStatus !== "DELETED",
+    );
+    if (unresolved.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom, path: ["photos"],
+        message: "Every photo has to finish checking. Remove or replace the ones that can't be used.",
+      });
+    }
+
     if (v.photos.some(p => p.status === "failed")) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["photos"], message: "Retry or remove the photos that failed to upload" });
     }

@@ -659,11 +659,34 @@ export function ComingSoonMagnets() {
           from { opacity: 1; transform: translate(-50%, -50%) perspective(1100px) rotateY(0deg) scale(1); }
           to   { opacity: 0; transform: translate(-50%, -50%) perspective(1100px) rotateY(-80deg) scale(0.75); }
         }
+        /* Phone-first base: three cards overlapping in one row, hanging at
+           staggered depths. This is the layout the mobile pass introduced, and
+           it is the right one on a narrow screen — three cards cannot go two-up
+           without orphaning the third, so they tuck into each other rather than
+           stacking into three screens of scrolling. */
+        .ck-magnet-row { align-items: flex-start; gap: 0; }
+
+        /* Laptops and up get the original spread back.
+           The overlap-and-stagger fan was collateral from a mobile fix: it
+           replaced "sm:flex-row items-center" plus a clamp gap with an
+           always-on negative margin, so a layout designed to save horizontal
+           room on a 390px phone also applied at 1440px, where there is no room
+           to save and the cards simply covered each other.
+           Zeroing the two vars is enough to undo it — the cards' own inline
+           styles already read overlap and stagger through them, so nothing here
+           has to restate the geometry. 641px, not Tailwind's sm, so this
+           exactly complements the max-width:640px tier below and no width
+           matches both.
+           (No backticks in this comment: the whole block is a JS template
+           literal, and one would end the string.) */
+        @media (min-width: 641px) {
+          .ck-magnets { --ck-magnet-overlap: 0px; --ck-stagger: 0px; }
+          .ck-magnet-row { align-items: center; gap: clamp(48px, 7vw, 110px); }
+        }
+
         /* Every hardcoded px size in this section is expressed as a var so the
            mobile step is defined ONCE here instead of being threaded through a
-           dozen inline styles. Three cards cannot go two-up without orphaning
-           the third, so they shrink to fit three across rather than stacking
-           into three screens of scrolling. */
+           dozen inline styles. */
         @media (max-width: 640px) {
           .ck-magnets {
             --ck-magnets-pad: 40px 16px 48px;
@@ -803,7 +826,11 @@ export function ComingSoonMagnets() {
         </p>
       </div>
 
-      <div className="flex flex-row items-start justify-center">
+      {/* Alignment and gap live in the stylesheet above, so the phone and
+          laptop cases sit next to each other and can be reasoned about
+          together. A sm:items-center here would put half that decision in the
+          markup and half in the stylesheet. */}
+      <div className="ck-magnet-row flex flex-row justify-center">
         {CARDS.map((card, i) => (
           <MagnetCard
             key={card.title}

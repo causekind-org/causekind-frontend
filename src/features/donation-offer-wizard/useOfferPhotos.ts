@@ -28,9 +28,22 @@ import { MAX_OFFER_PHOTOS, MIN_OFFER_PHOTOS } from "./offerModel";
  * revocation) is the kit's unchanged behaviour.
  */
 
-/** Mirrors S3Service.ALLOWED_IMAGE_TYPES. The backend rejects video outright —
- *  DonationOfferService's "VIDEO" branch is unreachable dead code — so the
- *  picker must not offer it. */
+/**
+ * Mirrors S3Service.ALLOWED_IMAGE_TYPES.
+ *
+ * <p><b>Images only, and that is still correct — but not for the reason this
+ * comment used to give.</b> It previously said the backend rejects video
+ * outright and that the VIDEO branch was dead code. That stopped being true on
+ * 2026-08-14, when the offer video pipeline landed: there are now six endpoints
+ * under `/api/v1/offers/{id}/video/…`, with probe, transcode, malware scan and
+ * visual moderation behind them.
+ *
+ * <p>Video does not belong in this list all the same. This governs the
+ * synchronous multipart photo upload; video is a presigned direct-to-S3 upload
+ * followed by asynchronous screening, and it is a separate optional item rather
+ * than a sixth photo. Widening this array would push video through the image
+ * path — exactly what the server-side split exists to prevent.
+ */
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
 const LIMITS: WizardPhotoLimits = {
