@@ -1,0 +1,70 @@
+{
+  "id": 1,
+  "title": "The Fake NGO Problem: How to Verify a Charitable Organisation Before You Donate in India",
+  "category": "Giving Smarter",
+  "seo_slug": "how-to-verify-ngo-before-donating-india",
+  "publish_month": "August",
+  "reading_time": "8 minutes",
+  "meta_description": "Before you donate in India, verify the NGO. A complete step-by-step guide to checking FCRA registration, 80G certification, NITI Aayog Darpan listing, and MCA filings — so every rupee you give reaches a real cause.",
+  "tags": [
+    "how to verify NGO India",
+    "fake NGO India",
+    "FCRA registration check India",
+    "80G verified NGO India",
+    "NITI Aayog Darpan NGO",
+    "donate safely India",
+    "NGO verification India",
+    "check NGO authenticity India",
+    "MCA NGO filing India",
+    "legitimate charity India",
+    "CauseKind verified giving",
+    "charitable donation safety India"
+  ],
+  "blog": {
+    "opening": "Every year, millions of Indians open their hearts and their wallets to causes that move them.\n\nA flood relief appeal shared on WhatsApp. A child's medical campaign forwarded by a college friend. A donation drive organised in the office building lobby. A crowdfunding link that appears on Instagram with photographs that make it impossible not to feel something.\n\nAnd every year, a portion of that generosity — nobody knows exactly how much, but enough to matter — reaches organisations that are not what they say they are.\n\nFake NGOs. Fraudulent campaigns. Organisations that exist on paper and nowhere else. Causes that are real but whose collection accounts are not connected to the cause at all.\n\nThis is not a reason to stop giving. It is a reason to give smarter.\n\nIndia has over 3.1 million registered non-profit organisations — one of the highest concentrations of NGOs per capita in the world. The vast majority of them are run by people of genuine commitment doing vital work with very little. But within that enormous number, there are organisations that exploit the infrastructure of charity — the registration certificates, the receipt books, the photographs of children — to collect money that never reaches a community.\n\nThe tools to distinguish between the two exist. They are public, free, and require no expertise to use.\n\nThis blog walks you through every check, in order, so that the next time you decide to give — to any organisation, through any channel — you can give with certainty.",
+    "sections": [
+      {
+        "heading": "Why Verification Matters More Than It Used To",
+        "content": "The democratisation of online giving has been overwhelmingly positive. Platforms like CauseKind, Milaap, and GiveIndia have made it possible for individuals and families in genuine need to reach donors they would never otherwise have access to.\n\nBut the same infrastructure that enables genuine giving also lowers the barrier for fraud.\n\nA fraudulent NGO in 2026 does not need an office. It needs a registration number, a bank account, a website that takes thirty minutes to build, and photographs borrowed from legitimate campaigns. It needs the language of charity — words like 'impact,' 'beneficiary,' 'transparent,' 'accountable' — and the visual grammar of poverty that triggers emotional giving.\n\nThe sophistication of fraudulent campaigns has increased precisely as the tools available to donors have improved. This means verification cannot be based on how professional an organisation looks or how emotionally compelling its communication is.\n\nIt must be based on documents. And in India, those documents are public."
+      },
+      {
+        "heading": "Step 1 — Check NITI Aayog Darpan Registration",
+        "content": "The first and most fundamental check for any Indian NGO is its listing on NITI Aayog's NGO Darpan portal — darpan.gov.in.\n\nNGO Darpan is the Government of India's official database of non-profit organisations. While registration on Darpan is not mandatory for all NGOs, any organisation seeking central government grants, FCRA registration, or CSR funding must be listed here. The database contains the organisation's registration details, PAN, registered address, stated objectives, and filing history.\n\nHow to check:\n- Go to darpan.gov.in\n- Click 'Search NGOs'\n- Search by name, state, or unique ID\n- Verify that the name, registration number, and address match what the organisation has told you\n\nWhat to look for:\n- Is the registration current and active?\n- Does the registered address match what the organisation publicly claims?\n- Does the stated objective of the organisation match the work they say they do?\n\nAn organisation not listed on Darpan is not automatically fraudulent — small, hyper-local NGOs may not have registered. But any organisation soliciting large donations or claiming government partnerships should be on Darpan without exception."
+      },
+      {
+        "heading": "Step 2 — Verify FCRA Registration for Foreign Contributions",
+        "content": "If you are an NRI donating from abroad, or if an organisation claims to receive international funding, FCRA — Foreign Contribution Regulation Act — registration is mandatory.\n\nAn organisation without valid FCRA registration cannot legally receive foreign donations. An organisation that claims to receive international funding but is not FCRA-registered is either lying or operating illegally.\n\nHow to check:\n- Go to fcraonline.nic.in\n- Click 'Search for FCRA registered associations'\n- Search by organisation name or registration number\n- Verify active registration status and renewal date\n\nFCRA registrations must be renewed every five years. Check that the registration is not expired — an expired FCRA is as problematic as no registration at all.\n\nFor domestic donors, FCRA status is not directly relevant — but an organisation with active FCRA registration has passed a significantly more rigorous government scrutiny process than one without it, which is a positive signal of legitimacy."
+      },
+      {
+        "heading": "Step 3 — Confirm 80G and 12A Tax Exemption Status",
+        "content": "As covered in our earlier Section 80G guide, donations to eligible organisations allow tax deductions for donors. But 80G certification also serves a verification purpose beyond tax savings.\n\nTo receive 80G certification, an organisation must:\n- Be registered under the Income Tax Act\n- Have its objectives verified by the Income Tax Department\n- Maintain proper accounts and file returns\n- Demonstrate that its funds are used for charitable purposes\n\nThe 80G certificate is therefore not just a tax document — it is evidence that the Income Tax Department has examined the organisation and found it legitimate.\n\nHow to check:\n- Ask the organisation for their current 80G certificate with validity dates\n- Verify the certificate number on the Income Tax Department's e-filing portal at incometax.gov.in\n- Check that the certificate has not expired — 80G registrations now require periodic renewal\n\nAlso check for 12A registration — this is the tax exemption status that allows the organisation's own income to be tax-exempt. An organisation with both 12A and 80G has cleared two layers of Income Tax Department review.\n\nAn organisation that cannot produce a current 80G certificate and cannot explain why — if they claim to have one — is a significant red flag."
+      },
+      {
+        "heading": "Step 4 — Check MCA and Registrar of Societies Filing History",
+        "content": "Every registered society, trust, or Section 8 company in India has a filing obligation. Checking whether an organisation files regularly tells you whether it actually functions as a real organisation.\n\nFor Section 8 companies (NGOs registered as companies):\n- Go to mca.gov.in\n- Search the company name under 'MCA Services — View Company/LLP Master Data'\n- Check filing status, registered address, and director details\n- A company with no recent filings or 'struck off' status is a serious red flag\n\nFor trusts and societies:\n- These are registered with the relevant state government — the Charity Commissioner's office in Maharashtra, for example\n- You can request the trust deed and registration details directly from the organisation\n- A legitimate trust will provide these without hesitation\n\nWhat you are looking for: Is the organisation actively filing returns? Are the directors or trustees listed consistent with who the organisation publicly claims to be run by? Is the registered address a real, functioning address?"
+      },
+      {
+        "heading": "Step 5 — Search GuideStar India and Other Independent Databases",
+        "content": "Beyond government portals, several independent databases aggregate and verify NGO information in India.\n\nGuideStar India (now integrated with Darpan) rates organisations on transparency and accountability — organisations that voluntarily share financial statements, annual reports, and audit documents receive higher ratings.\n\nGiveIndia's NGO directory lists organisations that have passed GiveIndia's own due diligence process.\n\nCandid (formerly GuideStar internationally) covers larger Indian NGOs with international operations.\n\nSearching an organisation's name across these databases gives you a sense of how consistently its information appears — a legitimate organisation will have consistent registration numbers, addresses, and leadership across all platforms. Inconsistencies — different registration numbers on different sites, different addresses, different founding dates — are worth investigating before donating."
+      },
+      {
+        "heading": "Step 6 — Ask For the Annual Report and Audited Accounts",
+        "content": "This is the step most donors never take — and the most revealing one.\n\nEvery legitimate NGO above a certain size is required to have its accounts audited annually. The audit report, along with the annual report, should be available on request from any organisation you are considering donating to.\n\nWhat to look for in an annual report:\n- Programme expenditure as a percentage of total expenditure — a well-run NGO typically spends 70 to 85% of its funds on programmes, with 15 to 30% on administration and fundraising. An organisation spending 60% or more on administration relative to programmes is worth questioning.\n- Revenue sources — where does the organisation get its funding? A diverse mix of institutional grants, corporate CSR, and individual donations is a positive sign. Complete dependence on one large donor with no public profile is worth examining.\n- Beneficiary numbers — are the beneficiary counts plausible given the organisation's budget and staff size? An organisation claiming to reach 100,000 beneficiaries annually with a staff of 5 and a budget of ₹20 lakh is mathematically implausible.\n\nAn organisation that refuses to share its annual report or audited accounts when asked by a prospective donor is telling you something important."
+      },
+      {
+        "heading": "The CauseKind Verification Difference",
+        "content": "Every organisation and individual listed on CauseKind's In-Kind platform goes through an admin verification process before their listing goes live.\n\nFor NGO partners, this includes:\n- Confirmation of current registration status\n- Verification of stated objectives against registration documents\n- Review of organisational history and references\n- Ongoing monitoring of delivery confirmation through the platform's QR-tracked Impact Certificate system\n\nFor individual recipients, this includes:\n- Identity verification through the platform's anonymised verification framework\n- Need assessment to confirm the request matches stated circumstances\n- Address confirmation within the platform's local matching radius\n\nWhen you donate through CauseKind, you are not required to run your own verification — CauseKind has done it. But for donations made outside a verified platform — to organisations you discover through WhatsApp, social media, or cold approaches — the six-step checklist above is your protection."
+      },
+      {
+        "heading": "The Two-Minute Check Before Any Donation",
+        "content": "If you do nothing else, do this before donating to any organisation you are not familiar with:\n\n1. Search their name on darpan.gov.in — confirm they exist and are registered\n2. Ask for their 80G certificate — confirm it is current\n3. Search their name on Google with the word 'complaint' or 'fraud' added — see what comes up\n4. Check that they have an audited annual report from the last financial year — confirm they are willing to share it\n\nFour steps. Two minutes. The difference between giving with confidence and giving into a void."
+      }
+    ],
+    "closing": "The existence of fraudulent organisations does not make giving dangerous. It makes verification necessary.\n\nIndia's genuine NGO sector — the organisations run by committed people doing vital, difficult work in communities that need them — deserves donors who give confidently, consistently, and generously. Those donors are best created by giving them the tools to trust what they give to.\n\nVerify before you give. Then give without hesitation.\n\nBecause the organisations that deserve your generosity have nothing to hide — and everything to show you.",
+    "cta": [
+      "Browse Verified Causes on CauseKind → https://www.causekind.com/causes",
+      "See How CauseKind Verifies Every Listing → https://www.causekind.com/how-it-works",
+      "Create Your Free Account → https://www.causekind.com/register"
+    ]
+  }
+}

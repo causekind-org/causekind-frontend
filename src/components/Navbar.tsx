@@ -6,6 +6,8 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
 import SpecularButton from "@/components/SpecularButton";
 import Link from "next/link";
+import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
+import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -19,6 +21,7 @@ import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
+import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import InKindMegaMenu from "@/components/InKindMegaMenu";
 import {
@@ -39,18 +42,26 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-const logoLetterVariants = {
-  hidden: { opacity: 0, y: 6 },
-  visible: { opacity: 1, y: 0 },
-};
+
+/** "Cause" reveals a letter at a time; the container only sets the cadence. */
 const logoStagger = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.15 } },
+  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.08 } },
+};
+
+const logoLetterVariants = {
+  hidden:  { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0 },
 };
 
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
+
+  // Gated on the same switch as every other Raksha Bandhan surface, so the tie
+  // cannot outlive its window — which is exactly how the Independence Day
+  // wordmark ended up still flying a flag on 27 August.
+  const rakshaBandhan = isRakshaBandhanCampaignActive();
   return (
     <motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
@@ -69,35 +80,56 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
         </motion.div>
       )}
 
-      <span className="flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
-        {/* "Cause" — stagger letter reveal */}
-        <motion.span
-          className="text-stone-900 dark:text-stone-100 tracking-tight flex"
-          variants={logoStagger}
-          initial="hidden"
-          animate="visible"
-        >
-          {"Cause".split("").map((l, i) => (
-            <motion.span
-              key={i}
-              variants={logoLetterVariants}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {l}
-            </motion.span>
-          ))}
-        </motion.span>
+      {/* Styled text again, not the shipped asset.
+          `causekind-wordmark-*.webp` is the Independence Day artwork — "Cause"
+          in saffron, "Kind" in green, with the flag-cloth ripple it was built
+          for — and the colours are baked into the file, so there is no way to
+          neutralise it in CSS. It stayed live for ten days after that campaign's
+          window closed on 18 August, because nothing tied the asset swap to the
+          campaign's own on/off switch. Reverting to text restores the year-round
+          brand mark and puts the logo back under the control of the stylesheet.
+          The assets are left in public/brand/ for whenever 15 August comes round
+          again.
 
-        {/* "Kind" — slides in as one word after "Cause", then shimmers */}
-        <motion.span
-          className="ck-logo-kind-shimmer"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.44 }}
-        >
-          Kind
-        </motion.span>
-      </span>
+          During Raksha Bandhan the thread from the hero is tied on it — see
+          RakhiTie. That IS gated on the campaign switch, so it cannot outlive
+          its window the way the flag did. */}
+      {rakshaBandhan ? (
+        /* The supplied rakhi artwork spells the whole word, so it replaces the
+           wordmark outright rather than decorating it. Gated on the campaign
+           switch, unlike the flag asset it is standing in for. */
+        <RakshaBandhanWordmark size={size} />
+      ) : (
+        <span className="relative flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
+          {/* "Cause" — stagger letter reveal */}
+          <motion.span
+            className="text-stone-900 dark:text-stone-100 tracking-tight flex"
+            variants={logoStagger}
+            initial="hidden"
+            animate="visible"
+          >
+            {"Cause".split("").map((l, i) => (
+              <motion.span
+                key={i}
+                variants={logoLetterVariants}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {l}
+              </motion.span>
+            ))}
+          </motion.span>
+
+          {/* "Kind" — slides in as one word after "Cause", then shimmers */}
+          <motion.span
+            className="ck-logo-kind-shimmer"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.44 }}
+          >
+            Kind
+          </motion.span>
+        </span>
+      )}
     </motion.span>
   );
 }
@@ -653,7 +685,12 @@ export function SiteHeader() {
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
-        {/* Mobile Header (lg:hidden) - Strict 100% opaque background.
+        {/* One-day Raksha Bandhan dressing. Renders null on every other day, so
+            the header is back to normal on its own at IST midnight. It sits at
+            z-0 behind the two content rows below, which are lifted to z-[1]. */}
+        <RakshaBandhanNavAdornment />
+
+        {/* Mobile Header (lg:hidden)
 
             Three equal-sided columns, NOT flex + justify-between. A middle
             child is only centred when the two flanking it are the same width,
@@ -669,8 +706,15 @@ export function SiteHeader() {
             The menu button sits on the RIGHT because StaggeredMenu is
             position="right" — the control and the panel it opens now share an
             edge. This also puts the DOM order (bell, logo, menu) in step with
-            the visual order, so tab order reads left to right. */}
-        <div className="lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5] dark:bg-zinc-950">
+            the visual order, so tab order reads left to right.
+
+            This row used to be strictly 100% opaque so that page content could
+            never show through it while scrolling. It still cannot: the <header>
+            itself carries the same opaque #faf8f5 / zinc-950 behind this row,
+            so the 90% here reveals only the header's own background — the exact
+            same colour — plus the festive layer on the one day it exists. Off
+            the day, this renders pixel-identical to the opaque version. */}
+        <div className="relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
           <div className="flex items-center gap-2 justify-self-start">
             <NotificationBell />
           </div>
@@ -690,7 +734,7 @@ export function SiteHeader() {
         </div>
 
         {/* Desktop Header */}
-        <div className="hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between px-10 py-5">
+        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between px-10 py-5">
           <Link href="/" className="flex items-center gap-2">
             <CareNestLogo />
           </Link>

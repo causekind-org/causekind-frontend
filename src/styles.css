@@ -3123,3 +3123,55 @@ div:has(.searchable-select-open) {
   .ck-unfurl > .ck-unfurl-text { animation: none; opacity: 1; transform: none; }
   .ck-count-rise { animation: none; }
 }
+
+/* ── Raksha Bandhan: the waiting-need card ────────────────────────────────
+   A quiet rise, matching the hero's other entrances rather than introducing a
+   third easing.
+
+   This block used to also draw a gold thread across the hero, connecting the
+   headline to this card. It was removed: at real hero sizes the line crossed
+   the headline and the photograph rather than reading as a connection between
+   them, so it looked like a stray rule ruled through the copy. The card carries
+   the idea on its own. */
+@keyframes ck-thread-card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ck-thread-card {
+  animation: ck-thread-card-in .6s cubic-bezier(0.33, 1, 0.68, 1) both;
+  animation-delay: 0.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-thread-card { animation: none; }
+}
+
+
+/* ── Raksha Bandhan: the wordmark video ───────────────────────────────────
+   The still and the video are stacked in one box, and EXACTLY ONE is ever
+   shown. That is the whole rule, and breaking it is not subtle: the first
+   version showed both, so a frozen copy of the wordmark sat under the moving
+   one, and because the animation shifts the letters as it plays the logo
+   rendered as two offset copies of itself.
+
+   The video needs no companion. Its `poster` attribute already covers both
+   states the still was wrongly helping with — before playback begins, and when
+   the codec cannot be decoded at all, where the poster simply stays put.
+
+   Doing the choice in CSS rather than with a `useReducedMotion()` hook keeps the
+   logo in the first HTML response: a hook resolves after the first paint, which
+   would flash the wrong one on every page load. */
+
+/* Motion allowed — the default. The video is the logo; the still stays out. */
+.ck-rb-wordmark-video { display: block; }
+.ck-rb-wordmark-static { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Reduced motion — the still IS the logo. The video is removed from the box
+     rather than merely paused: a paused video still holds a decode buffer, and
+     `display: none` is also the strongest declarative hint available that its
+     320 KB need not be fetched at all. */
+  .ck-rb-wordmark-video { display: none; }
+  .ck-rb-wordmark-static { display: block; }
+}

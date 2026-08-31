@@ -151,7 +151,14 @@
     "emailPlaceholder": "Quel est votre email ?",
     "subscribe": "S'abonner",
     "manifesto": "Nous considérons chaque ordinateur portable inutilisé, chaque cartable devenu trop grand, chaque heure libre, comme une opportunité pour quelqu'un d'autre de prendre un tournant décisif.",
-    "seeMore": "Voir plus d'histoires"
+    "seeMore": "Voir plus d'histoires",
+    "readTime": "{minutes} min de lecture",
+    "readingTools": "Outils de lecture",
+    "boldText": "Texte en gras",
+    "fontOptions": "Options de police",
+    "notFoundTitle": "Article introuvable",
+    "notFoundBody": "L'article que vous recherchez n'existe pas.",
+    "goHome": "Retour à l'accueil"
   },
   "listings": {
     "title": "Listes d'articles",

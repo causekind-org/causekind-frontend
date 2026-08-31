@@ -12,15 +12,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getHeroImages } from "@/app/actions/getHeroImages";
-import type { Campaign, PlatformStats } from "@/lib/api";
+import type { Campaign, PlatformStats, PublicItemRequest } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { isIndependenceDayCampaignActive } from "@/lib/independence-day";
+import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import {
   INDEPENDENCE_QUOTES,
   IndependenceCount,
   TricolourSweep,
   UnfurlReveal,
 } from "@/components/home/IndependenceHero";
+import {
+  RAKSHA_BANDHAN_QUOTES,
+  WaitingLongestCard,
+} from "@/components/home/ThreadOfProtection";
 
 /* ── Quotes cycle ─────────────────────────────────────────────────────────── */
 const HERO_QUOTES = [
@@ -111,18 +116,31 @@ export function HeroSection({
   translatedTitle,
   translatedDesc,
   stats = null,
+  rakshaBandhanRequest = null,
 }: {
   currentCampaign: Campaign | null;
   translatedTitle: string | null;
   translatedDesc: string | null;
   /** Feeds the Independence Day count card. Null until the fetch resolves. */
   stats?: PlatformStats | null;
+  /**
+   * The need that has gone unclaimed longest — the thing at the end of the
+   * Raksha Bandhan thread. Null when the campaign is off, when the board is
+   * empty, or when the fetch failed; the hero then renders exactly as it does
+   * on any other day.
+   */
+  rakshaBandhanRequest?: PublicItemRequest | null;
 }) {
   const tHero = useTranslations("hero");
 
   // One switch for the whole campaign — the same call the strip above the hero
   // makes, so the two can never disagree about whether it is on.
   const independenceDay = isIndependenceDayCampaignActive();
+
+  // The campaign hero turns on only when there is a real need to show in it.
+  // With no request the hero renders exactly as it does on any other day, rather
+  // than marking the occasion with an empty column.
+  const rakshaBandhan = isRakshaBandhanCampaignActive() && rakshaBandhanRequest !== null;
 
   const urgency = currentCampaign?.urgency ?? "NORMAL";
   const urgencyConfig = {
@@ -200,7 +218,15 @@ export function HeroSection({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ type: "spring", stiffness: 75, damping: 20, delay: 0.28 }}
               >
-                <HeroQuoteSlider quotes={independenceDay ? INDEPENDENCE_QUOTES : HERO_QUOTES} />
+                <HeroQuoteSlider
+                  quotes={
+                    rakshaBandhan
+                      ? RAKSHA_BANDHAN_QUOTES
+                      : independenceDay
+                        ? INDEPENDENCE_QUOTES
+                        : HERO_QUOTES
+                  }
+                />
               </motion.div>
             </div>
 
@@ -208,7 +234,19 @@ export function HeroSection({
                 renders while FEATURES.money is false — roughly 40% of the hero
                 is empty every other day of the year. The campaign fills it with
                 the platform's own handover count rather than more decoration. */}
-            {independenceDay && !FEATURES.money && (
+            {/* The end of the thread. Framer's entrance is deliberately not
+                layered on top of this one: the card has its own delayed rise in
+                styles.css, timed to land as the thread reaches it, and two
+                opacity animations on one element multiply into a card that is
+                barely visible while the thread is supposed to be arriving —
+                the same mistake the Independence Day headline made. */}
+            {rakshaBandhan && !FEATURES.money && (
+              <div className="lg:col-span-5 flex justify-end">
+                <WaitingLongestCard request={rakshaBandhanRequest} />
+              </div>
+            )}
+
+            {independenceDay && !rakshaBandhan && !FEATURES.money && (
               <motion.div
                 className="lg:col-span-5 flex justify-end"
                 initial={{ opacity: 0, x: 36, scale: 0.94 }}

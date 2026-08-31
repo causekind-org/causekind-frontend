@@ -10,6 +10,7 @@ import { Reveal } from "@/components/Reveal";
 export const metadata = {
   title: "About Us — CauseKind",
   description: "Learn about CauseKind's mission, story, and how we facilitate verified in-kind donations.",
+  alternates: { canonical: "/about" },
 };
 
 export default async function AboutPage() {
