@@ -1980,6 +1980,15 @@ export type OfferVideoCapability = {
   available: boolean;
   maxBytes: number;
   maxSeconds: number;
+  /**
+   * Limits the browser pre-check reads before uploading. Optional so an older
+   * server that does not send them skips those checks rather than having a guess
+   * imposed on it — the server enforces all of this regardless, and the client
+   * check is a courtesy, never the gate.
+   */
+  allowedContainers?: string[];
+  maxWidth?: number;
+  maxHeight?: number;
 };
 
 export type OfferVideoSlot = {

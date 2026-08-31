@@ -1438,5 +1438,37 @@
       "record": "Record video",
       "choose": "Choose video"
     }
+  },
+  "media": {
+    "video": {
+      "state": {
+        "uploading": "Uploading",
+        "screening": "Checking",
+        "approved": "Approved",
+        "rejected": "Needs replacing",
+        "review": "Needs a second look",
+        "failed": "Couldn't check",
+        "removed": "Removed"
+      },
+      "reason": {
+        "prohibited": "This video appears to contain content CauseKind cannot accept.",
+        "malware": "This file didn't pass our safety scan. Please record or choose a different video.",
+        "format": "This video format isn't supported. Please use MP4, MOV or WebM.",
+        "tooLong": "This video is longer than {maxSeconds} seconds. Please trim it or record a shorter one.",
+        "resolution": "This video's resolution is higher than we can accept. Please record at a lower quality.",
+        "unreadable": "We couldn't read this video. Please choose another one.",
+        "review": "Someone needs to look at this video before it can be used. You can retry or replace it.",
+        "failed": "Something went wrong checking this video. Retry, or choose another one.",
+        "generic": "This video can't be used. Please replace it with another one."
+      },
+      "preflight": {
+        "tooLarge": "This video is larger than {maxMb}MB. Please trim it or record a shorter one."
+      },
+      "hint": {
+        "inFlight": "Your video is still being checked. You can carry on.",
+        "checking": "Checking your video…",
+        "reviewOk": "Someone from our team will check this video. You can carry on — it will not hold up your submission."
+      }
+    }
   }
 }
