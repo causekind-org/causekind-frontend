@@ -1099,9 +1099,16 @@ export type ResidenceProofAnalysis = {
   aiAvailable: boolean;
   looksLikeResidenceProof: boolean | null;
   confidence: number | null;
+  /**
+   * The model's own sentence. <b>Diagnostics only — never render this.</b> It is
+   * English regardless of locale, its wording changes between model versions, and
+   * it is written by the provider. Use `code` with documentScreeningCopy.
+   */
   reason: string | null;
   documentTypeGuess: string | null;
   note: string | null;
+  /** Stable server reason code — see DocumentScreeningCodes on the backend. */
+  code: string | null;
 };
 
 /** Fast, non-blocking AI check on an already-uploaded residence-proof document
@@ -1120,9 +1127,16 @@ export type IdProofAnalysis = {
   aiAvailable: boolean;
   looksLikeValidIdProof: boolean | null;
   confidence: number | null;
+  /**
+   * The model's own sentence. <b>Diagnostics only — never render this.</b> It is
+   * English regardless of locale, its wording changes between model versions, and
+   * it is written by the provider. Use `code` with documentScreeningCopy.
+   */
   reason: string | null;
   documentTypeGuess: string | null;
   note: string | null;
+  /** Stable server reason code — see DocumentScreeningCodes on the backend. */
+  code: string | null;
 };
 
 /** Fast, non-blocking AI check on an already-uploaded government-ID document

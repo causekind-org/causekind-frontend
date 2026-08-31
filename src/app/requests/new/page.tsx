@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { documentScreeningCopy } from "@/features/wizard-kit/documentScreeningCopy";
 import { toast } from "@/lib/toast";
 import {
   getProfile,
@@ -166,7 +167,13 @@ const DEFAULT_ACCEPT = "image/*,.pdf";
 
 type DocScreening = {
   status: "checking" | "valid" | "invalid" | "unavailable";
+  /**
+   * The model's own sentence. Diagnostics only — never rendered. See
+   * documentScreeningCopy for why the provider's prose does not reach a donee.
+   */
   reason: string | null;
+  /** Stable server code, and the only thing the messages below are built from. */
+  code: string | null;
   documentTypeGuess: string | null;
 };
 
@@ -298,8 +305,7 @@ function DocSlot({
           </p>
         ) : invalid ? (
           <p className="text-xs text-red-600 dark:text-red-400 font-semibold mt-0.5">
-            {screening?.reason ?? "This doesn't look valid"}
-            {uploadScreened ? "" : " — please re-upload."}
+            {screening?.code ? documentScreeningCopy(screening.code) : (screening?.reason ?? "This doesn't look valid — please re-upload.")}
           </p>
         ) : unavailable ? (
           // Previously gated on `uploadScreened`, which is only true for the
@@ -312,7 +318,9 @@ function DocSlot({
               Couldn&apos;t check this automatically — an admin will review it.
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {screening?.reason ?? "You can try again, or leave it — it won't block your request."}
+              {screening?.code
+                ? documentScreeningCopy(screening.code)
+                : "You can try again, or leave it — it won't block your request."}
             </p>
           </>
         ) : needsRescreen ? (
@@ -527,7 +535,13 @@ function NewRequestForm() {
                 if (d.aiVerified === null) return;
                 next.set(d.docType, {
                   status: d.aiVerified ? "valid" : "invalid",
-                  reason: d.aiReason, documentTypeGuess: d.aiDocumentTypeGuess,
+                  reason: d.aiReason,
+                  // Derived, because rows stored before codes existed have none.
+                  // Mirrors DocumentScreeningCodes.forOutcome on the server.
+                  code: d.aiVerified
+                    ? "DOC_LOOKS_VALID"
+                    : (d.aiDocumentTypeGuess ? "DOC_WRONG_TYPE" : "DOC_NOT_RECOGNISED"),
+                  documentTypeGuess: d.aiDocumentTypeGuess,
                 });
               });
               return next;
@@ -769,7 +783,7 @@ function NewRequestForm() {
     // For the donee photo the screening happens inside this same request, so show
     // the screening state up front rather than a generic "uploading".
     if (uploadScreened) {
-      setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, documentTypeGuess: null }));
+      setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, code: null, documentTypeGuess: null }));
     }
     try {
       // Gallery photos off a phone routinely exceed the server's 10MB per-file
@@ -780,7 +794,7 @@ function NewRequestForm() {
       if (uploadScreened) {
         // A stored photo has already passed screening server-side — the backend
         // refuses to persist a failing one, so there is nothing left to check.
-        setDocScreening((prev) => new Map(prev).set(docType, { status: "valid", reason: null, documentTypeGuess: null }));
+        setDocScreening((prev) => new Map(prev).set(docType, { status: "valid", reason: null, code: "DOC_LOOKS_VALID", documentTypeGuess: null }));
         toast.success("Photo accepted");
       } else {
         toast.success("Document uploaded");
@@ -802,6 +816,10 @@ function NewRequestForm() {
         setDocScreening((prev) => new Map(prev).set(docType, {
           status: err.retryable ? "unavailable" : "invalid",
           reason: err.retryable ? null : (err.message || null),
+          // No code on the non-retryable branch on purpose: this is our own
+          // upload error ("file too large" and friends), which is specific and
+          // worth showing. Only model-authored prose needs replacing.
+          code: err.retryable ? "DOC_SCREENING_UNAVAILABLE" : null,
           documentTypeGuess: null,
         }));
         toast.error(err.retryable
@@ -834,14 +852,14 @@ function NewRequestForm() {
   // doc comments) — an "invalid" verdict is a strong, immediate warning to
   // re-upload, but a human admin always makes the final call.
   async function screenDocument(docType: VerificationDocumentType, documentUrl: string, documentId: number) {
-    setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, documentTypeGuess: null }));
+    setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, code: null, documentTypeGuess: null }));
     try {
       if (docType === "RESIDENCE_PROOF") {
         const r = await analyzeResidenceProof(documentUrl, documentId);
-        applyScreeningResult(docType, r.aiAvailable, r.looksLikeResidenceProof, r.reason, r.documentTypeGuess);
+        applyScreeningResult(docType, r.aiAvailable, r.looksLikeResidenceProof, r.reason, r.documentTypeGuess, r.code);
       } else if (docType === "GOVT_ID_ANY") {
         const r = await analyzeIdProof(documentUrl, documentId);
-        applyScreeningResult(docType, r.aiAvailable, r.looksLikeValidIdProof, r.reason, r.documentTypeGuess);
+        applyScreeningResult(docType, r.aiAvailable, r.looksLikeValidIdProof, r.reason, r.documentTypeGuess, r.code);
       }
     } catch (e) {
       // Keep the message. Writing `null` here meant a transport failure, a 500
@@ -849,7 +867,9 @@ function NewRequestForm() {
       // and with the reason line now rendered, this is the text they read.
       setDocScreening((prev) => new Map(prev).set(docType, {
         status: "unavailable",
+        // Kept for diagnostics; no longer what the donee reads.
         reason: e instanceof Error && e.message ? e.message : null,
+        code: "DOC_SCREENING_UNAVAILABLE",
         documentTypeGuess: null,
       }));
     }
@@ -857,13 +877,16 @@ function NewRequestForm() {
 
   function applyScreeningResult(
     docType: VerificationDocumentType, aiAvailable: boolean, looksValid: boolean | null,
-    reason: string | null, documentTypeGuess: string | null
+    reason: string | null, documentTypeGuess: string | null, code: string | null
   ) {
     const status: DocScreening["status"] =
       !aiAvailable || looksValid === null ? "unavailable" : looksValid ? "valid" : "invalid";
-    setDocScreening((prev) => new Map(prev).set(docType, { status, reason, documentTypeGuess }));
+    setDocScreening((prev) => new Map(prev).set(docType, { status, reason, code, documentTypeGuess }));
     if (status === "invalid") {
-      toast.error(`This doesn't look valid — ${reason ?? "please check and re-upload"}`);
+      // The toast said the same thing as the inline line and then appended the
+      // model's sentence, so a donee could be shown two different descriptions
+      // of one document. Both now come from the same code.
+      toast.error(documentScreeningCopy(code));
     }
   }
 
