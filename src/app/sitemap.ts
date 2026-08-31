@@ -33,6 +33,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/refund',
     '/faq',
     '/contact',
+    // Indexable, canonical, and a real entry point for companies clearing an
+    // office — omitting it would contradict this file's own rule that every
+    // canonical public route belongs here.
+    '/corporate',
     '/items',
     '/offers',
     '/requests',

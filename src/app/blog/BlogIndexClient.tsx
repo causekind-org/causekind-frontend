@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CategoryDropdown } from "@/components/blog/CategoryDropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { subscribe } from "@/lib/api";
+import { SubscribeForm } from "@/components/SubscribeForm";
 import { blogPosts, insiderTips } from "../../data/blogData";
 import { getBlogTranslation, getInsiderTipTranslation, preloadBlogTranslations } from "@/data/blogTranslations";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
@@ -833,78 +833,30 @@ export default function BlogIndexClient() {
  * refuses to say whether an address is already on the list, so this cannot say
  * either — and "check your email" is true in every case that matters.
  */
+/**
+ * The blog's mailing-list signup.
+ *
+ * <p>A thin binding of copy to the shared {@link SubscribeForm}. The behaviour —
+ * separate unticked consent, stored wording, a success line that reveals nothing
+ * about membership — lives there so this and the magnet landing pages cannot
+ * drift apart on any of it.
+ *
+ * <p>Source is "blog-index", which the magnet catalogue deliberately has no entry
+ * for: this offers ongoing updates, not a document, so confirming here sends
+ * nothing extra.
+ */
 export function NewsletterSignup() {
   const t = useTranslations("blog_page");
-  const locale = useLocale();
-  const [email, setEmail] = useState("");
-  const [consented, setConsented] = useState(false);
-  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
-
-  const consentText = t("newsletterConsent");
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || !consented || state === "sending") return;
-    setState("sending");
-    try {
-      await subscribe({
-        email: email.trim(),
-        audience: "DONOR",
-        source: "blog-index",
-        locale,
-        consentText,
-      });
-      setState("sent");
-      setEmail("");
-    } catch {
-      setState("error");
-    }
-  }
-
-  if (state === "sent") {
-    return (
-      <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 max-w-sm">
-        {t("newsletterCheckEmail")}
-      </p>
-    );
-  }
-
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          className="px-4 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-850 rounded-xl text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] w-full sm:w-64"
-          placeholder={t("emailPlaceholder")}
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          aria-label={t("emailPlaceholder")}
-        />
-        <button
-          type="submit"
-          disabled={!email.trim() || !consented || state === "sending"}
-          className="bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97] cursor-pointer"
-        >
-          {state === "sending" ? t("newsletterSending") : t("subscribe")}
-        </button>
-      </div>
-
-      <label className="flex items-start gap-2 text-xs text-stone-600 dark:text-stone-400 max-w-sm cursor-pointer">
-        <input
-          type="checkbox"
-          checked={consented}
-          onChange={(e) => setConsented(e.target.checked)}
-          className="mt-0.5 accent-[#b04a15]"
-        />
-        <span>{consentText}</span>
-      </label>
-
-      {state === "error" && (
-        <p className="text-xs font-semibold text-red-600 dark:text-red-400">
-          {t("newsletterError")}
-        </p>
-      )}
-    </form>
+    <SubscribeForm
+      audience="DONOR"
+      source="blog-index"
+      consentText={t("newsletterConsent")}
+      submitLabel={t("subscribe")}
+      sendingLabel={t("newsletterSending")}
+      successText={t("newsletterCheckEmail")}
+      errorText={t("newsletterError")}
+      emailPlaceholder={t("emailPlaceholder")}
+    />
   );
 }
