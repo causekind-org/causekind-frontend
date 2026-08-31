@@ -3822,3 +3822,33 @@ export function superAdminSetConfig(key: string, value: string, reason: string) 
     body: JSON.stringify({ key, value, reason }),
   });
 }
+
+// ── Mailing list ─────────────────────────────────────────────────────────────
+
+/**
+ * Ask to join the mailing list.
+ *
+ * <p>Always resolves the same way — new address, already pending, already
+ * confirmed, rate limited — because the endpoint deliberately does not say. Any
+ * difference would let an unauthenticated caller test whether an address is on
+ * the list. So the UI can only ever say "check your email", and that is correct
+ * rather than evasive: an email really is on its way in every case that matters.
+ *
+ * <p>Nothing is sent to the address until it is confirmed from that email.
+ */
+export type SubscribeAudience = "DONOR" | "CORPORATE";
+
+export function subscribe(input: {
+  email: string;
+  audience: SubscribeAudience;
+  /** Which magnet or page produced this signup, for attribution. */
+  source: string;
+  locale: string;
+  /** The exact wording shown beside the checkbox, stored as consent evidence. */
+  consentText: string;
+}) {
+  return request<{ status: string }>("/api/v1/subscribers", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
