@@ -1511,5 +1511,14 @@
       "prefix": "Already know what you want to give?",
       "link": "See verified needs near you"
     }
+  },
+  "heroGive": {
+    "heading": "Find what you can give",
+    "blurb": "Pick what you have spare. We will show you verified needs from people near you — no account needed to look.",
+    "seeAll": "See every verified need"
+  },
+  "nearbyNeeds": {
+    "eyebrow": "Waiting right now",
+    "cta": "See every verified need"
   }
 }

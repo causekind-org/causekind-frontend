@@ -10,6 +10,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { HeroGiveCTA } from "@/components/home/HeroGiveCTA";
+import { NearbyNeedsPanel } from "@/components/home/NearbyNeedsPanel";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { getHeroImages } from "@/app/actions/getHeroImages";
 import type { Campaign, PlatformStats, PublicItemRequest } from "@/lib/api";
@@ -117,6 +119,7 @@ export function HeroSection({
   translatedDesc,
   stats = null,
   rakshaBandhanRequest = null,
+  publicRequests = [],
 }: {
   currentCampaign: Campaign | null;
   translatedTitle: string | null;
@@ -130,6 +133,8 @@ export function HeroSection({
    * on any other day.
    */
   rakshaBandhanRequest?: PublicItemRequest | null;
+  /** Public need board, used only to fill the right column when no campaign runs. */
+  publicRequests?: PublicItemRequest[];
 }) {
   const tHero = useTranslations("hero");
 
@@ -228,6 +233,12 @@ export function HeroSection({
                   }
                 />
               </motion.div>
+
+              {/* The hero previously contained no call to action at all — not one
+                  href — while every route into the need board sat further down the
+                  page. This is the front door: pick a category, land on real
+                  verified needs, no account required. */}
+              <HeroGiveCTA />
             </div>
 
             {/* The right column holds the monetary campaign card, which never
@@ -255,6 +266,17 @@ export function HeroSection({
               >
                 <IndependenceCount stats={stats} />
               </motion.div>
+            )}
+
+            {/* The last fallback, deliberately.
+                A live campaign always wins the column — the ordering above is
+                rakshaBandhan, then independenceDay, then money — so this fills
+                the gap the rest of the year without ever competing with
+                seasonal work. See the Seasonal Campaigns note. */}
+            {!rakshaBandhan && !independenceDay && !FEATURES.money && (
+              <div className="lg:col-span-5 flex justify-end">
+                <NearbyNeedsPanel requests={publicRequests} />
+              </div>
             )}
 
             {FEATURES.money && (

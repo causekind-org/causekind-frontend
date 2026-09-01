@@ -967,6 +967,26 @@ function NewRequestForm() {
   // ── Step 1: Need Details ─────────────────────────────────────────────────
   const step1 = (
     <div className="space-y-4 sm:space-y-6">
+      {/* Said here, at the start, rather than at step 3 where the uploads live.
+          Someone arriving from an ad that promised "request support" is about to
+          be asked for a government ID and proof of address, and finding that out
+          after filling two steps is how people give up — or worse, feel misled at
+          the point they are asking for help. Fewer starts, far less abandonment,
+          and nobody is walked into it. */}
+      <div className="rounded-xl sm:rounded-2xl border border-[#1e3a60]/20 bg-[#1e3a60]/8 p-3 sm:p-4">
+        <p className="text-xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
+          Before you start
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+          To keep every request trustworthy, you will need a <strong>government ID</strong> and{" "}
+          <strong>proof of your address</strong> before this can be published. Photos of the documents
+          are enough. They are only ever seen by our admin team, never by donors.
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+          You can save and come back — nothing is submitted until you finish.
+        </p>
+      </div>
+
       <WizardField label="What do you need?" required error={fieldErrors.title}>
         {({ id, describedBy, invalid }) => (
           <Input id={id} name="title" aria-describedby={describedBy} aria-invalid={invalid}

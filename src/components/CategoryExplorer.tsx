@@ -7,9 +7,14 @@ import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon, { ICON_MOTION_PARENT_PROPS } from "./AnimatedCategoryIcon";
 
 /**
- * The nine categories as a browsable grid. Used on the /requests hub, and as
- * cross-navigation at the foot of each category page — where `exclude` drops the
- * page you are already on.
+ * The nine categories as a browsable grid, used as cross-navigation at the foot
+ * of each category page — where `exclude` drops the page you are already on.
+ *
+ * <p>It previously claimed to be on the /requests hub as well. It is not, and was
+ * not; corrected 2026-09-01. The hero uses its own compact chip row rather than
+ * this grid — these cards are built for a light surface and would need nearly
+ * every class overridden on a dark one. Both derive from IN_KIND_CATEGORIES and
+ * both build /requests/category/<slug>, which is the part that must not drift.
  */
 export default function CategoryExplorer({
   exclude,

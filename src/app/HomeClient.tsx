@@ -352,6 +352,7 @@ export default function HomeClient({
           translatedDesc={translatedCampaignDesc ?? null}
           stats={stats}
           rakshaBandhanRequest={longestWaitingRequest}
+          publicRequests={initialPublicRequests}
         />
 
         {/* Stats bar + live ticker — only when money feature enabled */}
