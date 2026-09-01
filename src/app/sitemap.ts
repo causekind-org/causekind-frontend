@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { blogPosts } from '@/data/blogData';
+import { IN_KIND_CATEGORIES } from '@/lib/inKindCategories';
 
 /**
  * Every URL here must be canonical and final — the same www host the canonical
@@ -45,6 +46,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: route === '' ? 'daily' : 'weekly',
     priority: route === '' ? 1.0 : 0.8,
   }));
+
+  // The nine category pages.
+  //
+  // They were missing while every other indexable route was listed, which was
+  // the odd one out rather than a deliberate exclusion: each is statically
+  // generated, carries its own generateMetadata and declares
+  // `/requests/category/<slug>` as its canonical. A canonical page absent from
+  // the sitemap is a page asking to be indexed and never being offered.
+  //
+  // Derived from IN_KIND_CATEGORIES — the same registry generateStaticParams
+  // uses — so adding a category cannot leave its page unlisted, and the URL here
+  // cannot drift from the canonical the page emits.
+  IN_KIND_CATEGORIES.forEach((category) => {
+    sitemapEntries.push({
+      url: `${baseUrl}/requests/category/${category.slug}`,
+      lastModified: new Date(),
+      // Editorial copy, not the request list beneath it — the page's own content
+      // changes rarely even though what it links to changes constantly.
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    });
+  });
 
   // Add dynamic blog posts
   blogPosts.forEach((post) => {
