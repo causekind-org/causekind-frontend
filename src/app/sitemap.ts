@@ -33,6 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/refund',
     '/faq',
     '/contact',
+    '/give-safely',
     '/items',
     '/offers',
     '/requests',

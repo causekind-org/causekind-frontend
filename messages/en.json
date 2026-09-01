@@ -1474,5 +1474,42 @@
         "reviewOk": "Someone from our team will check this video. You can carry on — it will not hold up your submission."
       }
     }
+  },
+  "giveSafely": {
+    "eyebrow": "Giving safely",
+    "heading": "How to check a charity before you hand anything over.",
+    "standfirst": "Most giving goes exactly where it should. The checks below are for the small share that does not, and none of them take more than a few minutes. They apply wherever you give — including somewhere that is not us.",
+    "points": {
+      "registration": {
+        "title": "Ask for the registration",
+        "body": "A legitimate organisation gives you its registration number without being pressed, and does not treat the question as an insult."
+      },
+      "destination": {
+        "title": "Ask where this item goes",
+        "body": "Which programme, which people, roughly when. A specific answer is a good sign; a vague one is worth pausing on."
+      },
+      "proof": {
+        "title": "Get proof it arrived",
+        "body": "Not proof you sent it — proof it was received, ideally something you did not write yourself."
+      },
+      "urgency": {
+        "title": "Be wary of urgency",
+        "body": "Pressure to decide immediately is common in donation scams and rare in real need, which is usually patient because it is ongoing."
+      }
+    },
+    "form": {
+      "heading": "Get the full checklist by email",
+      "standfirst": "Five checks, with what to ask and what a good answer sounds like. One email, then only occasional updates about verified needs.",
+      "emailPlaceholder": "you@example.com",
+      "consent": "Email me the checklist and occasional updates about verified needs. Unsubscribe any time.",
+      "submit": "Send me the checklist",
+      "sending": "Sending…",
+      "success": "Almost there — check your email and confirm, and the checklist is on its way.",
+      "error": "Something went wrong. Please try again in a moment."
+    },
+    "browse": {
+      "prefix": "Already know what you want to give?",
+      "link": "See verified needs near you"
+    }
   }
 }
