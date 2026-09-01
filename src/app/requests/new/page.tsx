@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { documentScreeningCopy } from "@/features/wizard-kit/documentScreeningCopy";
+import { RequestGuidance } from "@/components/requests/RequestGuidance";
 import { toast } from "@/lib/toast";
 import {
   getProfile,
@@ -66,6 +67,19 @@ const EMERGENCY_NATURES = ["FLOOD", "FIRE", "EARTHQUAKE", "ACCIDENT", "EVICTION"
 const HOUSING_TYPES = ["OWNED", "RENTED", "SHELTER", "TEMPORARY"];
 
 type Tier = "TIER_1_BASIC" | "TIER_2_MODERATE" | "TIER_3_HIGH_VALUE" | "TIER_4_EMERGENCY";
+
+/**
+ * Tiers that can complete without an admin ever seeing the request.
+ *
+ * <p>Mirrors AUTO_APPROVE_ELIGIBLE_TIERS in NeedAssessmentService by hand, like
+ * mapCategoryToTier above it — the same hand-mirrored pair this file already
+ * carries, and the same warning applies: change both together or the donee is
+ * told the wrong thing about their own request.
+ *
+ * <p>Only used to choose which sentence the guidance shows, so drift is
+ * misleading rather than dangerous.
+ */
+const AUTO_APPROVAL_TIERS: Tier[] = ["TIER_1_BASIC", "TIER_2_MODERATE"];
 
 // Mirrors backend TierService.mapCategoryToTier() — client-side preview only;
 // the backend re-derives (and can be overridden by admin) at submit time.
@@ -1360,6 +1374,10 @@ function NewRequestForm() {
 
   const step3 = (
     <div className="space-y-4 sm:space-y-6">
+      {/* Donees already have accounts, so the useful thing here is not capture —
+          it is helping them avoid the delay that actually happens: a required
+          document a machine could not read. */}
+      <RequestGuidance autoApprovalPossible={AUTO_APPROVAL_TIERS.includes(tier)} />
       <div className="rounded-xl sm:rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-3 sm:p-4 flex items-start gap-3">
         <Lock className="w-4 h-4 text-[#1e3a60] mt-0.5 shrink-0" />
         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
@@ -1389,7 +1407,17 @@ function NewRequestForm() {
             <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Strengthens your case</p>
             <span className="text-xs font-bold text-stone-400">{optionalDoneCount} of {optionalDocList.length}</span>
           </div>
-          <p className="text-xs text-stone-400 -mt-1">Optional, but each one helps our team verify and approve your request faster.</p>
+          {/* This used to read "each one helps our team verify and approve your
+              request faster". That is not how the gate works: auto-approval
+              needs tier 1-2, both MANDATORY documents AI-verified, and no hard
+              escalation — optional documents are not part of it. Telling people
+              in difficulty that more private documents mean faster approval is
+              pressure toward disclosure that changes nothing, and it reverses
+              the backend's own "never a penalty" anti-coercion rule. */}
+          <p className="text-xs text-stone-400 -mt-1">
+            Optional. Your request is assessed on the required documents above — these do not
+            change what is needed. If it goes to a person for review, they may find them useful.
+          </p>
           {optionalDocList.map((d) => renderDocSlot(d, false))}
         </div>
       )}
