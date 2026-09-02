@@ -139,15 +139,18 @@ export default function AudiencePathwaysSection({
     <section
       ref={ref}
       aria-labelledby="audience-pathways-heading"
-      className="relative w-full overflow-hidden bg-[#f7f4f0] py-9 sm:py-12 dark:bg-zinc-950"
+      className="relative w-full overflow-hidden bg-[#1e3a60] py-9 sm:py-12 dark:bg-zinc-950"
     >
       {/* Light rays, behind everything.
           `absolute inset-0` rather than the documented fixed-height wrapper —
           this section is deliberately compact and a 600px block would undo that.
 
-          `multiply` because the ground is cream. The shader inverts its output
-          in that mode (white where there is no ray), so multiply tints only the
-          shafts instead of painting the section black around them. */}
+          `screen` because the ground is now brand ink, not cream. Multiply was
+          correct while this section was `#f7f4f0` — it tinted only the shafts
+          instead of painting the section black around them. On a dark ground
+          multiply has nothing to darken toward and the rays disappear entirely,
+          so the blend has to add light rather than subtract it. If this section
+          ever goes back to a light ground, this must go back to `multiply`. */}
       <LightRays
         raysOrigin="top-center"
         raysColor="#ff7700"
@@ -161,7 +164,7 @@ export default function AudiencePathwaysSection({
         pulsating
         fadeDistance={2}
         saturation={1.5}
-        blendMode="multiply"
+        blendMode="screen"
         opacity={0.5}
         className="z-0"
       />
@@ -213,11 +216,11 @@ export default function AudiencePathwaysSection({
           </p>
           <h2
             id="audience-pathways-heading"
-            className="mt-1.5 text-[clamp(1.3rem,1.1rem+1vw,1.85rem)] font-bold leading-tight text-stone-900 dark:text-stone-50"
+            className="mt-1.5 text-[clamp(1.3rem,1.1rem+1vw,1.85rem)] font-bold leading-tight text-stone-50 dark:text-stone-50"
           >
             {t("heading")}
           </h2>
-          <p className="mt-2 text-[clamp(0.85rem,0.83rem+0.12vw,0.95rem)] leading-relaxed text-stone-600 dark:text-stone-300">
+          <p className="mt-2 text-[clamp(0.85rem,0.83rem+0.12vw,0.95rem)] leading-relaxed text-stone-200 dark:text-stone-300">
             {t("subheading")}
           </p>
         </motion.div>
@@ -297,7 +300,7 @@ export default function AudiencePathwaysSection({
           )}
         </div>
 
-        <p className="mt-3.5 text-center text-xs text-stone-500 dark:text-stone-400">
+        <p className="mt-3.5 text-center text-xs text-stone-300 dark:text-stone-400">
           {t("footnote")}
         </p>
       </div>

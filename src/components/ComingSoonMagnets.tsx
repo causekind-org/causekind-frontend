@@ -624,7 +624,7 @@ export function ComingSoonMagnets() {
   return (
     <section
       ref={sectionRef}
-      className="ck-magnets relative w-full bg-[#faf8f5] dark:bg-zinc-950 overflow-hidden"
+      className="ck-magnets relative w-full bg-[#1e3a60] dark:bg-zinc-950 overflow-hidden"
       style={{ padding: "var(--ck-magnets-pad, 80px 24px 96px)" }}
     >
       <style dangerouslySetInnerHTML={{ __html: `
@@ -814,13 +814,13 @@ export function ComingSoonMagnets() {
           On the way
         </span>
         <h2
-          className="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100"
+          className="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-50 dark:text-stone-100"
           style={{ lineHeight: 1.2 }}
         >
           More ways to give —{" "}
           <span style={{ color: TERRACOTTA }}>coming soon</span>
         </h2>
-        <p className="mt-3 text-stone-500 dark:text-stone-400 text-base max-w-md mx-auto leading-relaxed">
+        <p className="mt-3 text-stone-300 dark:text-stone-400 text-base max-w-md mx-auto leading-relaxed">
           CauseKind launches with verified in-kind giving. Monetary features
           arrive next — grab a card and hold on.
         </p>
