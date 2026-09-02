@@ -306,6 +306,35 @@ body {
   }
 }
 
+/* One quiet handover completing somewhere else, seen from very far away.
+   Used by WhatWeProvideSection as an ambient ground texture behind the ring.
+
+   Only the keyframes live here. Every position, size, opacity and delay stays
+   an inline style on the element: that component records in its own header that
+   an earlier version moved its layout into an unlayered rule in this file and
+   shipped a white screen nobody could explain. Keyframes cannot collide with
+   anything, so this is the safe half of that boundary.
+
+   No prefers-reduced-motion block guarding it on purpose — the guards in this
+   file are scoped to named class lists, not a global rule, so the component
+   gates on useReducedMotion() in JS instead and simply does not apply the
+   animation. */
+@keyframes ck-quiet-handover {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

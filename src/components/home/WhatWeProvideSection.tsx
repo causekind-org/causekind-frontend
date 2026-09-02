@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { useReducedMotion } from "framer-motion";
+import { useInView, useReducedMotion } from "framer-motion";
 
 /** Six beats: the whole path a donation takes, one per scroll window. */
 const STEP_COUNT = 6;
@@ -20,6 +20,30 @@ const CENTRE_Y = 300;
 const RING_R = 238;
 const DONOR_X = 628;
 const DONOR_Y = 196;
+
+/**
+ * Other handovers, completing quietly somewhere else.
+ *
+ * <p>Percentages of the panel, chosen to sit clear of the copy column on the
+ * left and of the ring on the right, so nothing here ever competes with the
+ * beat text or the drawing. Durations and delays are deliberately unequal and
+ * share no common factor — equal spacing would let them fall into step and
+ * read as a pulse, which is the opposite of "quietly".
+ *
+ * <p>This is the one idea worth keeping from the background furniture that was
+ * stripped out of this section: the crates existed to say "one handover among
+ * many, not a diagram of a single parcel". They were freight on a conveyor
+ * that no longer exists; a ring on a map of radii says the same thing and
+ * belongs to the drawing that is actually here.
+ */
+const QUIET_HANDOVERS = [
+  { left: "8%",  top: "22%", size: 190, dur: 13, delay: 0 },
+  { left: "31%", top: "78%", size: 140, dur: 17, delay: 3.5 },
+  { left: "63%", top: "12%", size: 165, dur: 11, delay: 7 },
+  { left: "88%", top: "62%", size: 210, dur: 16, delay: 1.5 },
+  { left: "46%", top: "44%", size: 120, dur: 14, delay: 9.5 },
+  { left: "74%", top: "88%", size: 175, dur: 12, delay: 5.5 },
+] as const;
 
 /**
  * How much of the parcel's journey, at each end, is spent merging with a node.
@@ -136,6 +160,11 @@ export function WhatWeProvideSection() {
   // information survives and only the movement goes.
   const reduceMotion = useReducedMotion() ?? false;
   const sectionRef = useRef<HTMLElement>(null);
+  /* The ambient layer is the only thing in this section that moves without
+     being scrolled, so it must stop existing when the section does not. Same
+     reasoning as AudiencePathwaysSection: on a long landing page this is the
+     difference between a permanent compositor loop and none. */
+  const inView = useInView(sectionRef, { amount: 0.05 });
   const [progress, setProgress] = useState(0);
 
   const steps = [
@@ -257,11 +286,50 @@ export function WhatWeProvideSection() {
           borderBottom: "1px solid rgba(28,25,23,0.14)",
         }}
       >
+        {/* ── Ambient ground: other handovers, completing elsewhere ──
+             Not rendered at all when the section is off screen, and not
+             animated under reduced motion — the guards in styles.css are
+             scoped to named class lists rather than a global rule, so this
+             cannot rely on the stylesheet to stop it.
+
+             Deliberately faint. If it ever reads as something to look at
+             rather than texture in the ground, it has become the decoration
+             this section had removed. */}
+        {inView && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+            {QUIET_HANDOVERS.map((h, i) => (
+              <span
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  left: h.left,
+                  top: h.top,
+                  width: h.size,
+                  height: h.size,
+                  marginLeft: -h.size / 2,
+                  marginTop: -h.size / 2,
+                  border: `1px solid ${rgba(NODE_RIM, 0.05)}`,
+                  // Under reduced motion they simply sit there, part-grown and
+                  // still, so the ground keeps its texture without moving.
+                  opacity: reduceMotion ? 0.5 : 0,
+                  transform: reduceMotion ? "scale(0.7)" : undefined,
+                  animationName: reduceMotion ? undefined : "ck-quiet-handover",
+                  animationDuration: `${h.dur}s`,
+                  animationDelay: `-${h.delay}s`,
+                  animationIterationCount: "infinite",
+                  animationTimingFunction: "cubic-bezier(0.33, 0, 0.2, 1)",
+                  willChange: reduceMotion ? undefined : "transform, opacity",
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* One two-column composition, vertically centred in the panel. The
             section's own title, the beat, the rail and the footnote all live in
             the left column rather than in a full-width header — the beat is the
             thing that changes, so everything that frames it sits with it. */}
-        <div className="h-full grid grid-cols-1 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-10 px-6 lg:px-14 py-8">
+        <div className="relative z-10 h-full grid grid-cols-1 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-10 px-6 lg:px-14 py-8">
 
           <div className="flex flex-col gap-5 min-w-0">
             <div>
