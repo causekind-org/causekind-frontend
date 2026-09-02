@@ -78,10 +78,28 @@ export function arrivalFactor(travel: number) {
    changes temperature rather than just the accent sitting on top of it. */
 const ACCENT_WARM = [176, 74, 21] as const;   // #b04a15, the brand terracotta
 const ACCENT_COOL = [30, 58, 96] as const;    // #1e3a60, the brand ink
-const GROUND_WARM = [18, 16, 14] as const;    // #12100e
-const GROUND_COOL = [12, 16, 22] as const;    // a cooler near-black
-/** An empty node's rim, which warms toward `accent` as the node fills. */
-const NODE_RIM = [255, 255, 255] as const;
+const GROUND_WARM = [250, 248, 245] as const; // #faf8f5, the site cream
+const GROUND_COOL = [241, 244, 248] as const; // a cooler cream
+/**
+ * An empty node's rim, which warms toward `accent` as the node fills.
+ *
+ * <p>Dark, because the room is lit now. This was white while the ground was
+ * near-black: a rim reads by contrasting with the floor it sits on, so it has
+ * to change sides when the floor does, or every empty node disappears.
+ */
+const NODE_RIM = [41, 37, 36] as const;
+
+/**
+ * What a node's icon becomes once the node is full.
+ *
+ * <p>The node's own background is `mix(ground, accent, fill)` — cream when
+ * empty, accent when full — so its icon has to travel with it. A fixed white
+ * icon was right while empty meant near-black; on a cream ground it is
+ * invisible at rest and only appears as the node fills, which is precisely
+ * backwards. Interpolating `NODE_RIM` → this keeps it legible at every point,
+ * the same trick the rim border already uses.
+ */
+const NODE_ICON_LIT = [255, 255, 255] as const;
 
 /**
  * The proof card's QR, as a fixed 9x9 bitmap.
@@ -239,11 +257,11 @@ export function WhatWeProvideSection() {
           utilities and an unlayered rule. The fallback is the old 4.5rem, so
           before hydration this behaves exactly as it did. */}
       <div
-        className="sticky overflow-hidden bg-[#12100e] border-b border-stone-800/60 flex flex-col"
+        className="sticky overflow-hidden bg-[#faf8f5] border-b border-stone-300/60 flex flex-col"
         style={{
           top: "var(--ck-nav-h, 4.5rem)",
           height: "calc(100vh - var(--ck-nav-h, 4.5rem))",
-          // The bg-[#12100e] class stays as the pre-hydration ground; this
+          // The bg-[#faf8f5] class stays as the pre-hydration ground; this
           // inline value wins once React runs and carries the warm-to-cool
           // shift.
           backgroundColor: rgb(ground),
@@ -274,7 +292,7 @@ export function WhatWeProvideSection() {
             className="absolute inset-y-0 -left-[20%] -right-[20%]"
             style={{
               backgroundImage:
-                "repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 88px)",
+                "repeating-linear-gradient(90deg, rgba(28,25,23,0.055) 0 1px, transparent 1px 88px)",
               transform: reduceMotion ? "none" : `translate3d(${-progress * 120}px, 0, 0)`,
               willChange: "transform",
             }}
@@ -298,7 +316,7 @@ export function WhatWeProvideSection() {
                 left: `${12 + i * 26}%`,
                 width: c.size,
                 height: c.size,
-                border: `2px solid rgba(255,255,255,${c.alpha})`,
+                border: `2px solid rgba(41,37,36,${c.alpha})`,
                 borderRadius: 18,
                 transform: reduceMotion
                   ? `rotate(${c.tilt}deg)`
@@ -338,7 +356,7 @@ export function WhatWeProvideSection() {
             style={{
               fontSize: "32vh",
               color: "transparent",
-              WebkitTextStroke: `1px ${rgba(accent, 0.18)}`,
+              WebkitTextStroke: `1px ${rgba(accent, 0.28)}`,
               transform: reduceMotion
                 ? "none"
                 : `translate3d(0, ${12 - progress * 24}vh, 0)`,
@@ -365,12 +383,12 @@ export function WhatWeProvideSection() {
           It is also the section's only `h2` — the step titles are `h3`, so
           without it the panel jumped a heading level.
         */}
-        <div className="relative z-10 flex-shrink-0 flex items-end justify-between gap-6 px-6 lg:px-12 pt-7 pb-5 border-b border-white/10">
+        <div className="relative z-10 flex-shrink-0 flex items-end justify-between gap-6 px-6 lg:px-12 pt-7 pb-5 border-b border-stone-900/10">
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-[#e07b3a]">
               How it works
             </p>
-            <h2 className="mt-1 text-lg lg:text-xl font-extrabold tracking-tight text-white leading-tight">
+            <h2 className="mt-1 text-lg lg:text-xl font-extrabold tracking-tight text-stone-900 leading-tight">
               {t("what.title")}
             </h2>
           </div>
@@ -379,10 +397,10 @@ export function WhatWeProvideSection() {
             {/* Hidden below lg exactly as it was before the rebuild — at phone
                 width it wrapped to three lines and pushed the step counter off
                 its baseline. */}
-            <p className="hidden lg:block max-w-xs text-xs leading-relaxed text-white/40">
+            <p className="hidden lg:block max-w-xs text-xs leading-relaxed text-stone-600">
               {t("what.subtitle")}
             </p>
-            <p className="mt-1 text-xs text-white/40 tabular-nums">
+            <p className="mt-1 text-xs text-stone-600 tabular-nums">
               Step {step.step} of 0{STEP_COUNT}
             </p>
           </div>
@@ -407,12 +425,12 @@ export function WhatWeProvideSection() {
                 }}
               >
                 <h3
-                  className="font-extrabold text-white leading-[1.02] tracking-[-0.035em] mb-3"
+                  className="font-extrabold text-stone-900 leading-[1.02] tracking-[-0.035em] mb-3"
                   style={{ fontSize: "clamp(2rem, 1.2rem + 3.4vw, 3.4rem)" }}
                 >
                   {s.title}
                 </h3>
-                <p className="text-sm lg:text-[17px] leading-relaxed text-white/55 max-w-[460px]">
+                <p className="text-sm lg:text-[17px] leading-relaxed text-stone-700 max-w-[460px]">
                   {s.desc}
                 </p>
               </div>
@@ -486,7 +504,7 @@ export function WhatWeProvideSection() {
               <div className="min-w-0">
                 <p
                   className="text-[11px] font-extrabold uppercase tracking-[0.18em]"
-                  style={{ color: `rgba(255, 255, 255, ${0.4 + 0.45 * doneeFill})` }}
+                  style={{ color: `rgba(41, 37, 36, ${0.4 + 0.45 * doneeFill})` }}
                 >
                   Handover confirmed
                 </p>
@@ -496,11 +514,11 @@ export function WhatWeProvideSection() {
                     withholds the rest rather than printing a plausible one. */}
                 <p
                   className="text-sm font-extrabold tabular-nums tracking-tight mt-0.5"
-                  style={{ color: `rgba(255, 255, 255, ${0.55 + 0.4 * doneeFill})` }}
+                  style={{ color: `rgba(41, 37, 36, ${0.55 + 0.4 * doneeFill})` }}
                 >
                   CK-IK-2026-••••
                 </p>
-                <p className="text-xs leading-relaxed text-white/40 mt-1">
+                <p className="text-xs leading-relaxed text-stone-600 mt-1">
                   Both sides confirm with a one-time code. Only then is the
                   certificate issued — and anyone can verify it.
                 </p>
@@ -592,7 +610,7 @@ export function WhatWeProvideSection() {
                 }}
               />
             </div>
-            <div className="relative h-px bg-white/10">
+            <div className="relative h-px bg-stone-900/12">
               {/* The travelled part, drawn behind the parcel. */}
               <div
                 className="absolute left-0 top-0 h-px"
@@ -625,7 +643,7 @@ export function WhatWeProvideSection() {
               style={{
                 backgroundColor: rgb(mix(ground, accent, donorFill)),
                 // Lerps colour AND alpha together, so it is continuous: at
-                // fill 0 this is exactly the old border-white/25.
+                // fill 0 this is the empty rim at 25%, now dark on cream.
                 border: `2px solid ${rgba(mix(NODE_RIM, accent, donorFill), 0.25 + 0.75 * donorFill)}`,
                 // A small receiving pulse. Goes on this span, not the wrapper —
                 // the wrapper's translate(-50%,-50%) is doing the centring.
@@ -636,12 +654,12 @@ export function WhatWeProvideSection() {
               <User
                 className="w-5 h-5 lg:w-6 lg:h-6"
                 strokeWidth={1.7}
-                style={{ color: `rgba(255,255,255,${0.55 + 0.45 * donorFill})` }}
+                style={{ color: rgba(mix(NODE_RIM, NODE_ICON_LIT, donorFill), 0.55 + 0.45 * donorFill) }}
               />
             </span>
             <span
               className="text-[11px] font-extrabold uppercase tracking-[0.18em]"
-              style={{ color: `rgba(255,255,255,${0.35 + 0.5 * donorFill})` }}
+              style={{ color: rgba([...NODE_RIM], 0.35 + 0.5 * donorFill) }}
             >
               Donor
             </span>
@@ -671,12 +689,12 @@ export function WhatWeProvideSection() {
               <Home
                 className="w-5 h-5 lg:w-6 lg:h-6"
                 strokeWidth={1.7}
-                style={{ color: `rgba(255,255,255,${Math.min(1, 0.3 + arrival * 0.6 + 0.4 * doneeFill)})` }}
+                style={{ color: rgba(mix(NODE_RIM, NODE_ICON_LIT, doneeFill), Math.min(1, 0.3 + arrival * 0.6 + 0.4 * doneeFill)) }}
               />
             </span>
             <span
               className="text-[11px] font-extrabold uppercase tracking-[0.18em]"
-              style={{ color: `rgba(255,255,255,${0.35 + arrival * 0.5})` }}
+              style={{ color: rgba([...NODE_RIM], 0.35 + arrival * 0.5) }}
             >
               Donee
             </span>
@@ -724,7 +742,7 @@ export function WhatWeProvideSection() {
 
         {/* ── BOTTOM ── */}
         <div className="relative z-10 flex-shrink-0 flex items-center gap-4 px-6 lg:px-12 pb-7">
-          <div className="flex-1 h-[2px] bg-white/10">
+          <div className="flex-1 h-[2px] bg-stone-900/12">
             <div
               className="h-full origin-left"
               style={{
@@ -734,7 +752,7 @@ export function WhatWeProvideSection() {
               }}
             />
           </div>
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/30 whitespace-nowrap">
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-stone-600 whitespace-nowrap">
             {progress > 0.92 ? "That’s how it works" : "Keep scrolling"}
           </span>
         </div>
