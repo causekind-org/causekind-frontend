@@ -24,12 +24,7 @@ export function CTASection() {
         <div className="relative rounded-3xl overflow-hidden border border-stone-800 shadow-2xl grid lg:grid-cols-[3fr_2fr] min-h-[280px]">
 
           {/* Left panel */}
-          {/* Brand ink (--brand-ink #1e3a60), not the near-black it was. The navy is one
-              of the three brand colours and was carrying ~12% of the landing page; this
-              band and the terra panel beside it put the two side by side. Every foreground
-              here was contrast-checked against the navy: white 11.5, the peach label 6.5,
-              stone-400 4.55 — all clear of AA. */}
-          <div className="relative bg-[#1e3a60] px-10 py-14 flex flex-col justify-between z-10">
+          <div className="relative bg-[#120c04] px-10 py-14 flex flex-col justify-between z-10">
             <div className="pointer-events-none absolute -top-20 -left-20 w-[320px] h-[320px] rounded-full bg-[#b04a15]/10 blur-3xl" />
             <div className="relative">
               <span className="text-2xs font-black uppercase tracking-widest text-[#f0b97a] mb-4 block">Get started</span>
@@ -38,11 +33,7 @@ export function CTASection() {
             </div>
             <div className="flex flex-wrap gap-3 mt-8">
               <Link href="/register">
-                {/* The ring is doing accessibility work, not decoration: terra on this navy
-                    is only 2.1:1 as a surface, under the 3:1 WCAG wants for a component
-                    boundary. White text on terra is 5.5 and fine — it is the button's edge
-                    that needed defining, not its label. */}
-                <Button size="lg" className="btn-3d btn-shine bg-[#b04a15] hover:bg-[#963c0d] text-white ring-1 ring-white/30 shadow-md shadow-black/30 rounded-xl font-bold px-6">
+                <Button size="lg" className="btn-3d btn-shine bg-[#b04a15] hover:bg-[#963c0d] text-white shadow-md shadow-orange-900/25 rounded-xl font-bold px-6">
                   {t("ctaSection.createAccount")}
                 </Button>
               </Link>
