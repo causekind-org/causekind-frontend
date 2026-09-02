@@ -244,7 +244,7 @@ export function WhatWeProvideSection() {
           utilities and an unlayered rule. The fallback is the old 4.5rem, so
           before hydration this behaves exactly as it did. */}
       <div
-        className="sticky overflow-hidden bg-[#faf8f5] border-b border-stone-300/60 flex flex-col"
+        className="sticky overflow-hidden bg-[#faf8f5]"
         style={{
           top: "var(--ck-nav-h, 4.5rem)",
           height: "calc(100vh - var(--ck-nav-h, 4.5rem))",
@@ -252,62 +252,91 @@ export function WhatWeProvideSection() {
           // inline value wins once React runs and carries the warm-to-cool
           // shift.
           backgroundColor: rgb(ground),
+          // Same reason as the rule above: an unlayered global would win over
+          // a border-colour utility here too.
+          borderBottom: "1px solid rgba(28,25,23,0.14)",
         }}
       >
-        {/* ── HEADER ──
-             Sized deliberately below the beat title: that title is the thing
-             that changes as you scroll and is the reason to keep going, so a
-             header at the same weight would leave two large headings arguing
-             on one screen. */}
-        <div className="relative z-10 flex-shrink-0 flex items-end justify-between gap-6 px-6 lg:px-12 pt-7 pb-5 border-b border-stone-900/10">
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-[#b04a15]">
-              How it works
-            </p>
-            <h2 className="mt-1 text-lg lg:text-xl font-extrabold tracking-tight text-stone-900 leading-tight">
-              {t("what.title")}
-            </h2>
-          </div>
-          <div className="text-right">
-            <p className="hidden lg:block max-w-xs text-xs leading-relaxed text-stone-600">
-              {t("what.subtitle")}
-            </p>
-            <p className="mt-1 text-xs text-stone-600 tabular-nums">
-              Beat {step.step} of 0{STEP_COUNT}
-            </p>
-          </div>
-        </div>
+        {/* One two-column composition, vertically centred in the panel. The
+            section's own title, the beat, the rail and the footnote all live in
+            the left column rather than in a full-width header — the beat is the
+            thing that changes, so everything that frames it sits with it. */}
+        <div className="h-full grid grid-cols-1 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-center gap-8 lg:gap-10 px-6 lg:px-14 py-8">
 
-        {/* ── STAGE ── copy on the left, the ring on the right. */}
-        <div className="relative z-10 flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-center gap-6 lg:gap-10 px-6 lg:px-12 py-2">
-          {/* All six beats occupy the same grid cell, so the panel never
-              reflows as they change — only one is rendered at a time. */}
-          <div className="min-w-0 grid">
-            {steps.map((s, i) => (
-              <div
-                key={s.step}
-                style={{
-                  gridArea: "1 / 1",
-                  visibility: i === activeStep ? "visible" : "hidden",
-                  opacity: i === activeStep ? 1 : 0,
-                  transition: reduceMotion ? "none" : "opacity 0.4s ease",
-                }}
+          <div className="flex flex-col gap-5 min-w-0">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#b04a15]">
+                How it works
+              </p>
+              <h2
+                className="mt-1.5 text-stone-900"
+                style={{ fontFamily: "var(--font-source-serif-4), Georgia, serif", fontSize: "27px", fontWeight: 600, letterSpacing: "-0.015em" }}
               >
-                <h3
-                  className="font-extrabold text-stone-900 leading-[1.04] tracking-[-0.03em] mb-3"
-                  style={{ fontSize: "clamp(1.9rem, 1.2rem + 2.4vw, 3rem)" }}
+                {t("what.title")}
+              </h2>
+            </div>
+
+            {/* All six beats share one grid cell, so the column never reflows
+                as they change — only the active one is visible. */}
+            {/* Rule set inline, not with border-stone-900: styles.css has an
+                UNLAYERED `* { border-color: var(--color-border) }` at :209, and
+                unlayered CSS beats Tailwind utilities, so every border-colour
+                utility in this app silently resolves to the light warm token.
+                Verified in the browser — the class was applied and still came
+                back as lab(88.3 …). */}
+            <div className="grid pt-4" style={{ borderTop: "2px solid #1c1917" }}>
+              {steps.map((s, i) => (
+                <div
+                  key={s.step}
+                  style={{
+                    gridArea: "1 / 1",
+                    visibility: i === activeStep ? "visible" : "hidden",
+                    opacity: i === activeStep ? 1 : 0,
+                    transition: reduceMotion ? "none" : "opacity 0.4s ease",
+                  }}
                 >
-                  {s.title}
-                </h3>
-                <p className="text-sm lg:text-[17px] leading-relaxed text-stone-700 max-w-[460px]">
-                  {s.desc}
-                </p>
-              </div>
-            ))}
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-stone-600 mb-2.5 tabular-nums">
+                    Beat {s.step} of 0{STEP_COUNT}
+                  </p>
+                  <h3
+                    className="text-stone-900 mb-3"
+                    style={{
+                      fontFamily: "var(--font-source-serif-4), Georgia, serif",
+                      fontSize: "clamp(1.75rem, 1.1rem + 1.6vw, 2.5rem)",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.05,
+                    }}
+                  >
+                    {s.title}
+                  </h3>
+                  <p
+                    className="text-stone-700 max-w-[46ch]"
+                    style={{ fontFamily: "var(--font-source-serif-4), Georgia, serif", fontSize: "17px", lineHeight: 1.55 }}
+                  >
+                    {s.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="h-[3px] bg-stone-900/12">
+              <div
+                className="h-full origin-left"
+                style={{
+                  backgroundColor: rgb(accent),
+                  transform: `scaleX(${progress})`,
+                  willChange: "transform",
+                }}
+              />
+            </div>
+
+            <p className="text-[13px] leading-relaxed text-stone-600 font-medium max-w-[52ch]">
+              Ten kilometres is the actual limit the matcher enforces, not a figure of
+              speech — a listing further out is refused with the distance in the message.
+            </p>
           </div>
 
-          {/* The ring. One drawing, every position a constant in user units, so
-              it scales with the viewBox rather than being re-derived per width. */}
           <div className="min-w-0">
             <svg
               viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
@@ -455,20 +484,6 @@ export function WhatWeProvideSection() {
                 </text>
               </g>
             </svg>
-          </div>
-        </div>
-
-        {/* ── BOTTOM ── */}
-        <div className="relative z-10 flex-shrink-0 flex items-center gap-4 px-6 lg:px-12 pb-7">
-          <div className="flex-1 h-[2px] bg-stone-900/12">
-            <div
-              className="h-full origin-left"
-              style={{
-                backgroundColor: rgb(accent),
-                transform: `scaleX(${progress})`,
-                willChange: "transform",
-              }}
-            />
           </div>
         </div>
       </div>
