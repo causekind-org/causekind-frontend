@@ -626,7 +626,19 @@
       "moneyOrItems": "Give Items",
       "moneyOrItemsDesc": "Give physical items like books, clothes, or a laptop to someone nearby. Cash donations to campaigns are coming soon.",
       "localDropoffs": "Local Drop-offs",
-      "localDropoffsDesc": "Item donations are matched within 10 km. No couriers, no shipping fees — just direct giving to a neighbour."
+      "localDropoffsDesc": "Item donations are matched within 10 km. No couriers, no shipping fees — just direct giving to a neighbour.",
+      "posted": "A need is posted",
+      "postedDesc": "Someone nearby describes what they need. What the form asks for scales with the value of the request.",
+      "checked": "A person checks it",
+      "checkedDesc": "Screening assists; an admin decides. Nothing reaches a donor unreviewed.",
+      "searched": "Searched, quietly",
+      "searchedDesc": "Inside ten kilometres, against private donor inventory — before the request is published anywhere.",
+      "asked": "One donor is asked",
+      "askedDesc": "Not broadcast. Asked. Decline and nobody is disappointed, because nobody was told.",
+      "handedOver": "Handed over in person",
+      "handedOverDesc": "The two meet. One six-digit code, confirmed by both, or it does not close.",
+      "certified": "A record that holds up",
+      "certifiedDesc": "The certificate carries its own number, checkable against the register later."
     }
   },
   "adminAnalytics": {
