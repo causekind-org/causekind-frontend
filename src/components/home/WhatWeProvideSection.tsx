@@ -101,30 +101,6 @@ const NODE_RIM = [41, 37, 36] as const;
  */
 const NODE_ICON_LIT = [255, 255, 255] as const;
 
-/**
- * The proof card's QR, as a fixed 9x9 bitmap.
- *
- * <p><b>This encodes nothing and must never be replaced by a real encoder.</b>
- * It is a drawing of a QR code, sized and shaped to read as one at a glance —
- * three finder squares in the corners, plausible noise between them. A real
- * code here would be a scannable link on a decorative homepage graphic, which
- * is either dead (pointing nowhere) or a genuine certificate URL sitting in
- * marketing copy. Neither is wanted.
- *
- * <p>Same reasoning governs the certificate number beside it — see the card.
- */
-export const PROOF_QR = [
-  "111010111",
-  "101100101",
-  "111011111",
-  "000110010",
-  "011101100",
-  "010011010",
-  "111010011",
-  "101110101",
-  "111001110",
-] as const;
-
 /** Channel-wise interpolation. Good enough at these low chromas, and it keeps
  *  the whole thing dependency-free and cheap enough to run every frame. */
 function mix(a: readonly number[], b: readonly number[], t: number) {
@@ -328,44 +304,6 @@ export function WhatWeProvideSection() {
 
         </div>
 
-        {/* ── The passing numeral. A large outlined step number that drifts up
-             through the frame as its step completes, so scrolling feels like
-             moving past something rather than watching a slideshow.
-
-             Restored after the Conveyor rebuild dropped it, but NOT at its
-             original placement. It used to be vertically centred at the right
-             edge, which in the pre-rebuild layout was empty space — the
-             conveyor now puts the DONEE node exactly there, so centred it sat
-             behind the circle and its label. It is pinned to the upper band
-             instead, and its drift is halved to ±12vh so that even at the
-             extremes of travel it stays above the belt at 62%.
-
-             It also takes a lighter stroke than the marquee's — two stroked
-             layers on one panel only work if one is plainly subordinate.
-
-             No z-index: the content below is `relative z-10`, so this stays
-             behind it. Desktop only — at phone widths it would crowd the copy
-             rather than sit behind it. Outline rather than fill: a solid glyph
-             this size competes with the headline instead of framing it. ── */}
-        <div
-          className="absolute inset-0 pointer-events-none select-none hidden lg:flex items-start justify-end pt-[6vh] pr-[6vw] overflow-hidden"
-          aria-hidden
-        >
-          <span
-            className="font-black leading-none"
-            style={{
-              fontSize: "32vh",
-              color: "transparent",
-              WebkitTextStroke: `1px ${rgba(accent, 0.28)}`,
-              transform: reduceMotion
-                ? "none"
-                : `translate3d(0, ${12 - progress * 24}vh, 0)`,
-              willChange: "transform",
-            }}
-          >
-            {step.step}
-          </span>
-        </div>
 
         {/*
           ── HEADER ──
@@ -478,28 +416,6 @@ export function WhatWeProvideSection() {
                 background: `linear-gradient(180deg, ${rgba(accent, 0.06)}, transparent)`,
               }}
             >
-              {/* Decorative only — see PROOF_QR. Never announced. */}
-              <svg
-                viewBox="0 0 9 9"
-                className="w-12 h-12 shrink-0"
-                aria-hidden
-                focusable="false"
-              >
-                {PROOF_QR.map((row, y) =>
-                  row.split("").map((cell, x) =>
-                    cell === "1" ? (
-                      <rect
-                        key={`${x}-${y}`}
-                        x={x}
-                        y={y}
-                        width={1}
-                        height={1}
-                        fill={rgba(mix(NODE_RIM, accent, doneeFill), 0.32 + 0.5 * doneeFill)}
-                      />
-                    ) : null,
-                  ),
-                )}
-              </svg>
 
               <div className="min-w-0">
                 <p
@@ -526,67 +442,6 @@ export function WhatWeProvideSection() {
             </div>
           </div>
 
-          {/*
-            ── Belt stencil ──
-
-            The platform's promise, printed on the belt the way a real conveyor
-            carries its own markings. It runs leftward as you scroll — the same
-            direction as the floor grid and the crates, and the opposite of the
-            parcel, so the belt reads as moving *under* the item rather than
-            carrying it along passively.
-
-            It lives inside the STAGE and above this comment's belt block only
-            in source order, which is what puts it behind the belt line, the
-            parcel and the nodes: everything in here is absolutely positioned,
-            so DOM order is the stacking order. Same reason the belt texture
-            itself is in here rather than in the panel's background layer — 62%
-            is a percentage of the stage, and at 62% of the panel it would miss
-            the line entirely.
-
-            Outlined rather than filled. Filled glyphs at a legible size start
-            competing with the step copy; a hairline stroke reads as something
-            stamped into the surface, which is what it is meant to be. The
-            stroke takes the scroll-linked `accent`, so the wording warms at the
-            donor end and cools at the donee end with everything else.
-
-            English, and not translated — as with DONOR/DONEE, "How it works"
-            and "Keep scrolling", this is chrome rather than content. Worth
-            revisiting if the section's chrome is ever localised as a whole.
-          */}
-          <div
-            className="absolute inset-x-0 overflow-hidden pointer-events-none"
-            style={{ top: "62%", transform: "translateY(-50%)" }}
-            aria-hidden
-          >
-            <div
-              className="flex whitespace-nowrap"
-              style={{
-                // Repeated far wider than the panel, so the strip never runs
-                // out of text before the scroll runs out of travel — cheaper
-                // and steadier than a modulo loop, which visibly jumps at the
-                // wrap and would have to be re-tuned for every panel width.
-                transform: reduceMotion ? "none" : `translate3d(${-progress * 760}px, 0, 0)`,
-                willChange: "transform",
-                marginLeft: "-30%",
-              }}
-            >
-              {Array.from({ length: 8 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="font-black uppercase leading-none"
-                  style={{
-                    fontSize: "clamp(1.5rem, 1rem + 1.6vw, 2.6rem)",
-                    letterSpacing: "0.22em",
-                    paddingInlineEnd: "0.22em",
-                    color: "transparent",
-                    WebkitTextStroke: `1px ${rgba(accent, 0.38)}`,
-                  }}
-                >
-                  Verified · Tracked · Handed over in person ·{" "}
-                </span>
-              ))}
-            </div>
-          </div>
 
           {/* ── The belt ── */}
           <div className="absolute inset-x-0" style={{ top: "62%" }}>
@@ -752,9 +607,6 @@ export function WhatWeProvideSection() {
               }}
             />
           </div>
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-stone-600 whitespace-nowrap">
-            {progress > 0.92 ? "That’s how it works" : "Keep scrolling"}
-          </span>
         </div>
 
       </div>
