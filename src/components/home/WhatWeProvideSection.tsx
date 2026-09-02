@@ -308,7 +308,11 @@ export function WhatWeProvideSection() {
                   height: h.size,
                   marginLeft: -h.size / 2,
                   marginTop: -h.size / 2,
-                  border: `1px solid ${rgba(NODE_RIM, 0.05)}`,
+                  // 0.11 at 1.5px, up from 0.05 at 1px: at the original weight
+                  // these were subliminal — technically present, not actually
+                  // seen. Still under the foreground: the dashed ten-kilometre
+                  // ring is 0.16 and the pins 0.18, so the hierarchy holds.
+                  border: `1.5px solid ${rgba(NODE_RIM, 0.11)}`,
                   // Under reduced motion they simply sit there, part-grown and
                   // still, so the ground keeps its texture without moving.
                   opacity: reduceMotion ? 0.5 : 0,
