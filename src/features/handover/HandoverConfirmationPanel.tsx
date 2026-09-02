@@ -210,18 +210,23 @@ function DoneeConfirm({ vm, onConfirm }: {
 
   const qtyNum = Number(qty);
   const qtyValid = qty.trim() !== "" && Number.isInteger(qtyNum) && qtyNum > 0;
+  // The code is required, not optional. It used to be sent as undefined when blank,
+  // and the server skipped its check entirely on a missing OTP — so the fastest way
+  // to complete a handover was to not enter the code at all.
+  const otpComplete = /^\d{6}$/.test(otp.trim());
   const lockedOut = failedAttempts >= OTP_LOCKOUT_ATTEMPTS;
   const otpInvalid = error != null && /otp|code/i.test(error);
 
   async function confirm() {
-    if (busy || !qtyValid || lockedOut) return;
+    if (busy || !qtyValid || !otpComplete || lockedOut) return;
     setBusy(true); setError(null);
     try {
-      await onConfirm({ otp: otp.trim() || undefined, quantity: qtyNum, conditionRating: condition });
+      await onConfirm({ otp: otp.trim(), quantity: qtyNum, conditionRating: condition });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Couldn't record your confirmation.";
-      // Track locally only to warn ahead of the lockout — the server holds the
-      // real count, and this resets on reload, which is the safe direction.
+      // Track locally only to warn ahead of the lockout. The server holds the real
+      // count — it genuinely does now; the increment used to be rolled back with the
+      // rejecting transaction, so the server-side lockout never actually fired.
       if (/otp|code/i.test(message)) setFailedAttempts((n) => n + 1);
       setError(message);
     } finally {
@@ -314,7 +319,7 @@ function DoneeConfirm({ vm, onConfirm }: {
             ? "Once you both confirm, there's a short window to report a problem before this closes."
             : "Once you both confirm, this handover closes and a delivery record is created."}
         </p>
-        <Button onClick={confirm} disabled={!qtyValid || busy || lockedOut} className={`${handoverPrimary} w-full`}>
+        <Button onClick={confirm} disabled={!qtyValid || !otpComplete || busy || lockedOut} className={`${handoverPrimary} w-full`}>
           {busy
             ? <><Loader2 className="animate-spin" aria-hidden /> Recording</>
             : <><ShieldCheck aria-hidden /> I received it</>}
