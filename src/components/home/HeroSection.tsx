@@ -131,7 +131,7 @@ function ConnectionPins() {
           // vertically — they are on opposite sides of the column, so the
           // separation that matters is horizontal and does not move with the
           // stage height.
-          { ...need, pos: "right-[18%] top-[35%]", ring: "-right-7 -bottom-6" },
+          { ...need, pos: "right-[6%] top-[35%]", ring: "-right-7 -bottom-6" },
         ].map(({ lead, rest, pos, ring }) => (
           <motion.div
             key={lead}
