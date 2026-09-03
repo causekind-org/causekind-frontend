@@ -135,7 +135,12 @@ function ConnectionPins() {
         ].map(({ lead, rest, pos, ring }) => (
           <motion.div
             key={lead}
-            className={`absolute w-[8.75rem] ${pos}`}
+            // Hugs its label rather than sitting at a fixed width. The
+            // reference cards are content-sized, and a fixed one either
+            // strands whitespace after "Someone" or pushes a long translation
+            // out past the white — Malayalam’s lead is three times the length
+            // of English’s.
+            className={`absolute w-max max-w-[10.5rem] ${pos}`}
             initial={{ opacity: 0, y: 14, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 82, damping: 19, delay: 0.34 }}
@@ -161,10 +166,10 @@ function ConnectionPins() {
                 <circle cx="12" cy="9.8" r="2.7" fill="#fff" />
               </svg>
 
-              <p className="text-[0.82rem] font-extrabold leading-[1.22] text-[#b04a15] dark:text-[#f1a475]">
+              <p className="text-[0.82rem] font-extrabold leading-[1.22] text-[#b04a15] [overflow-wrap:anywhere] dark:text-[#f1a475]">
                 {lead}
               </p>
-              <p className="text-[0.82rem] font-bold leading-[1.22] text-stone-800 dark:text-stone-200">
+              <p className="text-[0.82rem] font-bold leading-[1.22] text-stone-800 [overflow-wrap:anywhere] dark:text-stone-200">
                 {rest}
               </p>
             </div>
