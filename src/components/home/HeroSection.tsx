@@ -7,10 +7,8 @@ import { MotionConfig, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
   ArrowRight,
-  Check,
   HeartHandshake,
   PackageOpen,
-  ShieldCheck,
 } from "lucide-react";
 
 import { CategoryStrip } from "@/components/home/CategoryStrip";
@@ -182,48 +180,6 @@ function ConnectionPins() {
 }
 
 /**
- * The two assurances, in the copy column rather than floating on the
- * photograph.
- *
- * <p>It reads in the same downward pass as the headline and the buttons, and it
- * cannot collide with anything — which the floating card managed twice. It also
- * gives the photograph back: nothing of ours sits on it now.
- */
-function AssuranceList() {
-  const t = useTranslations("hero");
-  const assurances = [
-    {
-      Icon: ShieldCheck,
-      title: t("assuranceVerifiedTitle"),
-      body: t("assuranceVerifiedBody"),
-    },
-    {
-      Icon: Check,
-      title: t("assuranceHandoverTitle"),
-      body: t("assuranceHandoverBody"),
-    },
-  ];
-
-  return (
-    <ul aria-label={t("assuranceLabel")} className="flex list-none flex-col gap-3">
-      {assurances.map(({ Icon, title, body }) => (
-        <li key={title} className="flex items-start gap-[11px]">
-          <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-[#f8eee7] text-[#b04a15] dark:bg-[#b04a15]/18 dark:text-[#e98d55]">
-            <Icon className="size-[15px]" strokeWidth={1.8} aria-hidden />
-          </span>
-          <span className="block pt-px">
-            <span className="block text-sm font-bold leading-tight">{title}</span>
-            <span className="mt-0.5 block text-xs leading-relaxed text-stone-600 dark:text-stone-400">
-              {body}
-            </span>
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/**
  * The shared, responsive homepage front door.
  *
  * One DOM tree serves every viewport so the tour anchor, CTA logic and image
@@ -283,15 +239,6 @@ export function HeroSection() {
               >
                 {t("subtext")}
               </motion.p>
-
-              <motion.div
-                className="mt-[22px] lg:mt-[clamp(0.6rem,1.9vh,1.375rem)]"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.42, ease: [0.2, 0, 0, 1], delay: 0.18 }}
-              >
-                <AssuranceList />
-              </motion.div>
 
               <motion.div
                 className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row lg:mt-[clamp(0.7rem,2.2vh,1.75rem)]"
