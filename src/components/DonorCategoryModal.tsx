@@ -1,7 +1,7 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Package,
   X,
@@ -105,8 +105,8 @@ const BACKDROP_EMBERS = [
 
 export function DonorCategoryModal() {
   const router = useRouter();
-
-  const [show, setShow] = useState(true);
+  const { user, isLoading } = useAuth();
+  const [show, setShow] = useState(false);
 
   const [tempSelected, setTempSelected] = useState<string[]>(
     []
@@ -135,7 +135,16 @@ export function DonorCategoryModal() {
   */
   const [rippleKeys, setRippleKeys] =
     useState<Record<string, number>>({});
+  
+    /* =======================================================
+   AUTHENTICATION / DONOR CHECK
+======================================================= */
 
+useEffect(() => {
+  if (!isLoading && user?.role === "DONOR") {
+    setShow(true);
+  }
+}, [isLoading, user?.role]);
   /* =======================================================
      LOAD EXISTING SELECTION
   ======================================================= */
@@ -154,6 +163,9 @@ export function DonorCategoryModal() {
 
   useEffect(() => {
     function handleOpen() {
+      if (isLoading || user?.role !== "DONOR") {
+      return;
+    }
       const saved = readSelectedDonorCategories();
 
       setTempSelected(
@@ -177,7 +189,7 @@ export function DonorCategoryModal() {
         handleOpen
       );
     };
-  }, []);
+  }, [isLoading, user?.role]);
 
   /* =======================================================
      ESCAPE KEY
@@ -269,10 +281,10 @@ export function DonorCategoryModal() {
   }
 
   /* =======================================================
-     DON'T RENDER
+    RENDER
   ======================================================= */
 
-  if (!show) {
+  if (!show || !user || user.role !== "DONOR" ) {
     return null;
   }
 
