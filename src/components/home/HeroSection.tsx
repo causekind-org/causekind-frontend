@@ -308,12 +308,15 @@ export function HeroSection() {
                 fill
                 priority
                 sizes="(max-width: 1023px) 100vw, (max-width: 1535px) 56vw, 806px"
-                // The subject sits at ~72% across the source. object-right lands her
-                // in the middle of the crop; biasing to 80% carries her to the
-                // middle-right and frees the plain sunlit wall on the left, which
-                // is where the message popups go. Past ~85% her right arm starts
-                // leaving the frame.
-                className="object-cover object-[80%_center]"
+                // The subject sits at ~72% across the source, and the crop is
+                // narrower than the source, so object-position picks which slice
+                // shows. **A LOWER percentage moves her RIGHT in the frame**, not
+                // left: it slides the crop window leftwards while she stays put.
+                // I got that backwards once — 80% pushed her to the far edge.
+                // 100% (object-right) lands her dead centre; 90% is centre and a
+                // little right, which is what was asked for, and it leaves the
+                // plain sunlit wall free on the left for the message popups.
+                className="object-cover object-[90%_center]"
               />
               {/* The reference has no hard edge on the photograph — it dissolves
                   into the ground on every side. Overlay gradients rather than a
