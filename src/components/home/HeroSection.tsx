@@ -80,6 +80,8 @@ function ConnectionPins() {
     rest: t("connectionItemRest"),
     chip: "bg-[#f8eee7] text-[#b04a15] dark:bg-[#b04a15]/18 dark:text-[#e98d55]",
     text: "text-[#a34417] dark:text-[#f1a475]",
+    // Sits left of the subject, so its beak faces right, at her.
+    tail: "-right-[9px] border-y-[9px] border-l-[10px] border-y-transparent border-l-white dark:border-l-stone-900",
   };
   const need = {
     Icon: HeartHandshake,
@@ -87,6 +89,8 @@ function ConnectionPins() {
     rest: t("connectionNeedRest"),
     chip: "bg-[#edf2f7] text-[#1e3a60] dark:bg-[#1e3a60]/35 dark:text-[#8db1da]",
     text: "text-[#1e3a60] dark:text-[#a9c5e4]",
+    // Sits right of the subject, so its beak faces left, at her.
+    tail: "-left-[9px] border-y-[9px] border-r-[10px] border-y-transparent border-r-white dark:border-r-stone-900",
   };
 
   return (
@@ -132,7 +136,7 @@ function ConnectionPins() {
           // separation that matters is horizontal and does not move with the
           // stage height.
           { ...need, pos: "right-[5%] top-[35%]", ring: "-right-7 -bottom-6" },
-        ].map(({ lead, rest, pos, ring }) => (
+        ].map(({ lead, rest, pos, ring, tail }) => (
           <motion.div
             key={lead}
             // Narrow on purpose. In the reference the label WRAPS — "Something
@@ -152,6 +156,15 @@ function ConnectionPins() {
             />
 
             <div className="relative rounded-[0.85rem] bg-white px-3 pb-2.5 pt-3 shadow-[0_0_0_1px_rgba(0,0,0,0.05),0_10px_26px_rgba(73,42,20,0.16)] dark:bg-stone-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_10px_26px_rgba(0,0,0,0.3)]">
+              {/* The beak that makes it a message rather than a label. Built
+                  from borders, not a rotated square: a rotated square would
+                  carry the card’s 1px ring round with it and show a seam
+                  against the photograph. */}
+              <span
+                className={`absolute top-1/2 size-0 -translate-y-1/2 ${tail}`}
+                aria-hidden
+              />
+
               {/* Drawn rather than lucide’s MapPin: the reference marker is a
                   solid terra teardrop with a punched-out dot, and filling the
                   lucide path fills the hole too. */}
