@@ -308,7 +308,12 @@ export function HeroSection() {
                 fill
                 priority
                 sizes="(max-width: 1023px) 100vw, (max-width: 1535px) 56vw, 806px"
-                className="object-cover object-right"
+                // The subject sits at ~72% across the source. object-right lands her
+                // in the middle of the crop; biasing to 80% carries her to the
+                // middle-right and frees the plain sunlit wall on the left, which
+                // is where the message popups go. Past ~85% her right arm starts
+                // leaving the frame.
+                className="object-cover object-[80%_center]"
               />
               {/* The reference has no hard edge on the photograph — it dissolves
                   into the ground on every side. Overlay gradients rather than a
