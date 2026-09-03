@@ -126,12 +126,12 @@ function ConnectionPins() {
         role="group"
       >
         {[
-          { ...item, pos: "left-[2%] top-[17%]", ring: "-left-7 -top-6" },
+          { ...item, pos: "left-[18%] top-[17%]", ring: "-left-7 -top-6" },
           // A top percentage on both, and they can only ever converge
           // vertically — they are on opposite sides of the column, so the
           // separation that matters is horizontal and does not move with the
           // stage height.
-          { ...need, pos: "right-[5%] top-[35%]", ring: "-right-7 -bottom-6" },
+          { ...need, pos: "right-[18%] top-[35%]", ring: "-right-7 -bottom-6" },
         ].map(({ lead, rest, pos, ring }) => (
           <motion.div
             key={lead}
