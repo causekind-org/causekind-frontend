@@ -121,17 +121,14 @@ function ConnectionPins() {
         role="group"
       >
         {[
-          { ...item, pos: "left-[2%] top-[8%]", ring: "-left-6 -top-7" },
-          // Anchored to the bottom, not to a top percentage. The stage height is
-          // a clamp that bottoms out at 27rem on a short laptop, and a top
-          // percentage walks straight up into the proof card there — which is
-          // exactly how the previous attempt collided at one width only.
-          // Bottom-left of centre, not the right edge. The proof card is now
-          // vertically centred on the right, and on a short stage a
-          // bottom-right pin sits straight underneath it — they only cleared
-          // each other at tall viewport heights. Separating them horizontally
-          // makes that structural instead of height-dependent.
-          { ...need, pos: "left-[34%] bottom-[10%]", ring: "-right-7 -bottom-6" },
+          // Both pins keep off the photo column’s left quarter. That strip is
+          // the middle of the stage, and the proof card now sits there.
+          { ...item, pos: "right-[10%] top-[7%]", ring: "-left-6 -top-7" },
+          // Anchored to the bottom, not to a top percentage. The stage height
+          // is a clamp that bottoms out on a short laptop, and a top percentage
+          // walks up into whatever is above it there — which is exactly how an
+          // earlier version collided at one width and not the others.
+          { ...need, pos: "left-[38%] bottom-[10%]", ring: "-right-7 -bottom-6" },
         ].map(({ Icon, label, chip, text, pos, ring }) => (
           <motion.div
             key={label}
@@ -183,30 +180,36 @@ function AssurancePanel() {
   ];
 
   return (
-    <motion.aside
-      className="absolute right-5 top-1/2 z-10 hidden w-[13.5rem] -translate-y-1/2 rounded-[1.35rem] bg-white/94 p-4 text-stone-950 shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_18px_45px_rgba(62,35,18,0.18)] backdrop-blur-sm lg:block dark:bg-stone-950/90 dark:text-stone-100 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_18px_45px_rgba(0,0,0,0.3)]"
-      initial={{ opacity: 0, x: 18 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ type: "spring", stiffness: 72, damping: 20, delay: 0.42 }}
-      aria-label={t("assuranceLabel")}
-    >
-      {assurances.map(({ Icon, title, body }, index) => (
-        <div
-          key={title}
-          className={index === 0 ? "pb-3.5" : "border-t border-stone-200 pt-3.5 dark:border-white/10"}
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#f8eee7] text-[#b04a15] dark:bg-[#b04a15]/18 dark:text-[#e98d55]">
-              <Icon className="size-4" strokeWidth={1.8} aria-hidden />
-            </span>
-            <p className="text-sm font-bold leading-tight">{title}</p>
+    // Two elements on purpose. The centring is a transform, and so is
+    // framer-motion’s x/y — motion writes the element’s transform outright, so
+    // a -translate-x-1/2 on the animated node is simply discarded and the card
+    // lands off-centre. The wrapper positions, the inner node animates.
+    <div className="pointer-events-none absolute left-1/2 top-1/2 z-30 hidden w-[13.5rem] -translate-x-1/2 -translate-y-1/2 lg:block">
+      <motion.aside
+        className="pointer-events-auto rounded-[1.35rem] bg-white/94 p-4 text-stone-950 shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_18px_45px_rgba(62,35,18,0.18)] backdrop-blur-sm dark:bg-stone-950/90 dark:text-stone-100 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_18px_45px_rgba(0,0,0,0.3)]"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 72, damping: 20, delay: 0.42 }}
+        aria-label={t("assuranceLabel")}
+      >
+        {assurances.map(({ Icon, title, body }, index) => (
+          <div
+            key={title}
+            className={index === 0 ? "pb-3.5" : "border-t border-stone-200 pt-3.5 dark:border-white/10"}
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#f8eee7] text-[#b04a15] dark:bg-[#b04a15]/18 dark:text-[#e98d55]">
+                <Icon className="size-4" strokeWidth={1.8} aria-hidden />
+              </span>
+              <p className="text-sm font-bold leading-tight">{title}</p>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-stone-600 dark:text-stone-400">
+              {body}
+            </p>
           </div>
-          <p className="mt-2 text-xs leading-relaxed text-stone-600 dark:text-stone-400">
-            {body}
-          </p>
-        </div>
-      ))}
-    </motion.aside>
+        ))}
+      </motion.aside>
+    </div>
   );
 }
 
@@ -348,8 +351,11 @@ export function HeroSection() {
                 aria-hidden
               />
               <ConnectionPins />
-              <AssurancePanel />
             </div>
+
+            {/* A child of the stage, not of the photo column: it is centred on
+                the hero as a whole, so it has to measure against the hero. */}
+            <AssurancePanel />
           </div>
 
           <div className="relative z-30 -mt-1 pt-7 lg:-mt-7 lg:pt-0">
