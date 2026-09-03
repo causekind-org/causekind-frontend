@@ -28,13 +28,28 @@
   },
   "hero": {
     "badge": "Rendre la vie meilleure",
-    "headline": "Ensemble, nous soutenons, éduquons et guérissons",
-    "subtext": "Chaque don aide une famille à devenir plus forte, en meilleure santé et plus en sécurité. Ensemble, nous construisons un avenir plein de possibilités.",
+    "eyebrow": "Don local, de personne à personne",
+    "headline": "Ce que vous avez peut répondre à un vrai besoin",
+    "subtext": "Parcourez des demandes vérifiées d'objets utiles, dans le respect de la vie privée. Donnez directement, avec CauseKind qui encadre la remise.",
     "donateNow": "Faites un don maintenant",
     "howWeWork": "Comment nous travaillons",
     "transparent": "Dons 100% transparents",
     "fastDistribution": "Distribution rapide et efficace",
-    "localCampaign": "Campagne locale"
+    "localCampaign": "Campagne locale",
+    "ctaBrowse": "Voir les besoins vérifiés",
+    "ctaStartGiving": "Commencer à donner",
+    "ctaListItem": "Proposer un objet",
+    "ctaRequestItem": "Demander un objet",
+    "ctaOpenDashboard": "Ouvrir le tableau de bord",
+    "connectionLabel": "Un objet utile peut répondre à un besoin vérifié",
+    "connectionItem": "Un objet utile",
+    "connectionNeed": "Un besoin vérifié",
+    "assuranceLabel": "Comment CauseKind protège chaque remise",
+    "assuranceVerifiedTitle": "Vérifié avant la mise en relation",
+    "assuranceVerifiedBody": "Les demandes sont contrôlées avant d'arriver sur le tableau public.",
+    "assuranceHandoverTitle": "Remise suivie",
+    "assuranceHandoverBody": "Les deux parties confirment lorsque l'objet change de mains.",
+    "photoAlt": "Une enfant souriante serrant un ours en peluche dans un quartier ensoleillé."
   },
   "stats": {
     "totalRaised": "Total des fonds collectés",
@@ -1208,5 +1223,26 @@
       "body": "Partagez un besoin réel, entrez en contact avec des personnes prêtes à aider, et recevez un soutien clair et respectueux.",
       "cta": "Rejoindre comme bénéficiaire"
     }
+  },
+  "categoryStrip": {
+    "heading": "Parcourir par catégorie",
+    "ariaLabel": "Parcourir les besoins vérifiés par catégorie",
+    "categories": {
+      "education": "Éducation",
+      "clothing": "Vêtements",
+      "household": "Maison",
+      "furniture": "Mobilier",
+      "medicalAid": "Aide médicale",
+      "livelihood": "Moyens de subsistance",
+      "relief": "Aide d'urgence",
+      "electronics": "Électronique",
+      "sports": "Sport"
+    }
+  },
+  "trustBar": {
+    "label": "Les garanties CauseKind",
+    "verified": "Demandes vérifiées",
+    "fee": "0% de frais",
+    "handover": "Remise encadrée"
   }
 }

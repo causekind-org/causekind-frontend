@@ -28,13 +28,28 @@
   },
   "hero": {
     "badge": "Mejorando la vida",
-    "headline": "Juntos apoyamos, educamos y sanamos",
-    "subtext": "Cada donación ayuda a una familia a crecer más fuerte, más saludable y más segura. Juntos construimos un futuro lleno de posibilidades.",
+    "eyebrow": "Donación local, de persona a persona",
+    "headline": "Lo que tienes puede cubrir una necesidad real",
+    "subtext": "Explora solicitudes verificadas de artículos útiles, con la privacidad protegida. Dona directamente, con CauseKind guiando la entrega.",
     "donateNow": "Donar ahora",
     "howWeWork": "como trabajamos",
     "transparent": "Donaciones 100% transparentes",
     "fastDistribution": "Distribución rápida y efectiva",
-    "localCampaign": "Campaña Local"
+    "localCampaign": "Campaña Local",
+    "ctaBrowse": "Ver necesidades verificadas",
+    "ctaStartGiving": "Empezar a donar",
+    "ctaListItem": "Publicar un artículo",
+    "ctaRequestItem": "Solicitar un artículo",
+    "ctaOpenDashboard": "Abrir el panel",
+    "connectionLabel": "Un artículo útil puede cubrir una necesidad verificada",
+    "connectionItem": "Un artículo útil",
+    "connectionNeed": "Una necesidad verificada",
+    "assuranceLabel": "Cómo CauseKind protege cada entrega",
+    "assuranceVerifiedTitle": "Verificado antes de emparejar",
+    "assuranceVerifiedBody": "Las solicitudes se revisan antes de llegar al tablero público.",
+    "assuranceHandoverTitle": "Entrega con seguimiento",
+    "assuranceHandoverBody": "Ambas partes confirman cuando el artículo cambia de manos.",
+    "photoAlt": "Una niña sonriente abrazando un osito de peluche en un barrio soleado."
   },
   "stats": {
     "totalRaised": "Fondos totales recaudados",
@@ -1208,5 +1223,26 @@
       "body": "Comparte una necesidad genuina, conecta con personas dispuestas a ayudar y recibe apoyo con claridad y respeto.",
       "cta": "Únete como beneficiario"
     }
+  },
+  "categoryStrip": {
+    "heading": "Explorar por categoría",
+    "ariaLabel": "Explorar necesidades verificadas por categoría",
+    "categories": {
+      "education": "Educación",
+      "clothing": "Ropa",
+      "household": "Hogar",
+      "furniture": "Muebles",
+      "medicalAid": "Ayuda médica",
+      "livelihood": "Medios de vida",
+      "relief": "Ayuda humanitaria",
+      "electronics": "Electrónica",
+      "sports": "Deportes"
+    }
+  },
+  "trustBar": {
+    "label": "Garantías de CauseKind",
+    "verified": "Solicitudes verificadas",
+    "fee": "0% de comisión",
+    "handover": "Entrega guiada"
   }
 }

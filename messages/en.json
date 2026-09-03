@@ -28,13 +28,28 @@
   },
   "hero": {
     "badge": "Making Lives Better",
-    "headline": "Together We Support, Educate and Heal",
-    "subtext": "Every donation helps a family grow stronger, healthier, and more secure. Together, we build a future full of possibilities.",
+    "eyebrow": "Local giving, person to person",
+    "headline": "What you have can meet a real need",
+    "subtext": "Browse privacy-safe, verified requests for useful items. Give directly, with CauseKind guiding the handover.",
     "donateNow": "Donate Now",
     "howWeWork": "How we work",
     "transparent": "100% transparent donations",
     "fastDistribution": "Fast, effective distribution",
-    "localCampaign": "Local Campaign"
+    "localCampaign": "Local Campaign",
+    "ctaBrowse": "Browse verified needs",
+    "ctaStartGiving": "Start giving",
+    "ctaListItem": "List an item",
+    "ctaRequestItem": "Request an item",
+    "ctaOpenDashboard": "Open dashboard",
+    "connectionLabel": "A useful item can meet a verified need",
+    "connectionItem": "A useful item",
+    "connectionNeed": "A verified need",
+    "assuranceLabel": "How CauseKind protects each handover",
+    "assuranceVerifiedTitle": "Verified before matching",
+    "assuranceVerifiedBody": "Requests are checked before they reach the public board.",
+    "assuranceHandoverTitle": "Tracked handover",
+    "assuranceHandoverBody": "Both sides confirm when the item changes hands.",
+    "photoAlt": "A smiling child holding a teddy bear in a sunlit neighbourhood."
   },
   "stats": {
     "totalRaised": "Total Funds Raised",
@@ -1532,5 +1547,26 @@
   "nearbyNeeds": {
     "eyebrow": "Waiting right now",
     "cta": "See every verified need"
+  },
+  "categoryStrip": {
+    "heading": "Browse by category",
+    "ariaLabel": "Browse verified needs by category",
+    "categories": {
+      "education": "Education",
+      "clothing": "Clothing",
+      "household": "Household",
+      "furniture": "Furniture",
+      "medicalAid": "Medical aid",
+      "livelihood": "Livelihood",
+      "relief": "Relief",
+      "electronics": "Electronics",
+      "sports": "Sports"
+    }
+  },
+  "trustBar": {
+    "label": "CauseKind safeguards",
+    "verified": "Verified requests",
+    "fee": "0% platform fee",
+    "handover": "Guided handover"
   }
 }
