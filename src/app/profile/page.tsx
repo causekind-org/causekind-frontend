@@ -28,6 +28,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   Loader2,
   User,
   Phone,
@@ -52,7 +62,7 @@ import Image from "next/image";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
-import { Reveal } from "@/components/Reveal";
+import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -114,10 +124,55 @@ function formatINR(n: number) {
   }).format(n);
 }
 
-function getDialCode(isoCode: string, dialCodes: any[]): string {
-  const country = dialCodes.find((c) => c.value === isoCode);
-  if (!country?.phonecode) return "";
-  return `+${country.phonecode}`;
+/**
+ * Splits a stored phone number into its dial code and the national number.
+ *
+ * <p>Matches the longest dial code that actually exists in the list rather than
+ * guessing at the prefix length. A greedy `^(\+\d{1,4})` regex reads
+ * "+911236547890" as dial code "+9112", finds no country with that code, and
+ * falls back to putting the whole string — leading "+91" and all — into the
+ * number field, which then renders as "+91 | +911236547890".
+ *
+ * <p>Whitespace is ignored while matching, so both "+91 1236547890" (what
+ * `handleSave` writes) and "+911236547890" (older rows, or anything saved
+ * elsewhere) parse the same way.
+ *
+ * <p>`preferredIso` disambiguates countries sharing a code (+1 is US, CA and a
+ * dozen more); without a hint the longest matching code wins.
+ */
+function splitPhone(
+  stored: string,
+  dialCodes: any[],
+  preferredIso?: string
+): { iso: string | null; number: string } {
+  const raw = stored.trim();
+  if (!raw.startsWith("+")) {
+    const digits = raw.replace(/\D/g, "");
+    return { iso: null, number: digits.slice(0, 10) };
+  }
+
+  const rest = raw.slice(1).replace(/[\s()-]/g, "");
+
+  let best: { iso: string; len: number; preferred: boolean } | null = null;
+
+  for (const c of dialCodes) {
+    const code = String(c?.phonecode ?? "").replace(/^\+/, "");
+    if (!code || !rest.startsWith(code)) continue;
+    const preferred = c.value === preferredIso;
+    // A hit on the country we already expect outranks a merely longer code:
+    // "+1 242…" is a US number far more often than it is a Bahamian one when
+    // the rest of the profile says US. Otherwise the longest code wins.
+    const better =
+      !best ||
+      (preferred && !best.preferred) ||
+      (preferred === best.preferred && code.length > best.len);
+    if (better) best = { iso: c.value, len: code.length, preferred };
+  }
+
+  if (!best) return { iso: null, number: raw.replace(/\D/g, "").slice(0, 10) };
+  const digits = rest.slice(best.len);
+  const maxLen = PHONE_LENGTHS[best.iso] ?? 10;
+  return { iso: best.iso, number: digits.slice(0, maxLen) };
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
@@ -126,6 +181,7 @@ export default function ProfilePage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const t = useTranslations("profile");
+  const tCommon = useTranslations("common");
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -170,7 +226,9 @@ export default function ProfilePage() {
   const [activityLoadFailed, setActivityLoadFailed] = useState(false);
   const [activityRetrying, setActivityRetrying] = useState(false);
 
-  // Settings panel toggle
+  // Settings panel toggle. The form lives in a modal rather than a section at
+  // the foot of the page: opening it there put the fields a screen or two below
+  // the button, so the click read as doing nothing.
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storyExpanded, setStoryExpanded] = useState(false);
 
@@ -179,6 +237,7 @@ export default function ProfilePage() {
 
   // Derived option lists (memoized to avoid re-building every render)
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
+  const maxPhoneLength = PHONE_LENGTHS[dialCountry] ?? 10;
 
   // Whether we fall back to free-text for city
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
@@ -229,22 +288,12 @@ export default function ProfilePage() {
         setMyListings(listings);
         setMyMatches(matches);
 
-        // Parse phone: if stored with dial code prefix "+XX …" split it out
+        // Parse phone: if stored with a dial-code prefix, split it back out so
+        // the dropdown and the input each hold their own half.
         if (p.phone) {
-          const match = p.phone.match(/^(\+\d{1,4})\s*(.*)$/);
-          if (match) {
-            const foundCountry = serverDialCodes.find(
-              (c) => `+${c.phonecode}` === match[1]
-            );
-            if (foundCountry) {
-              setDialCountry(foundCountry.value);
-              setPhoneNumber(match[2]);
-            } else {
-              setPhoneNumber(p.phone);
-            }
-          } else {
-            setPhoneNumber(p.phone);
-          }
+          const { iso, number } = splitPhone(p.phone, serverDialCodes, detectedCountry);
+          if (iso) setDialCountry(iso);
+          setPhoneNumber(number);
         }
 
         // Location: try to parse city as "city, stateIso, countryIso"
@@ -428,9 +477,10 @@ export default function ProfilePage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
 
-    const rawPhone = phoneNumber.trim();
+    const rawPhone = phoneNumber.replace(/\D/g, "");
     const dialCode = getDialCode(dialCountry, dialCodeOptions);
-    const fullPhone = dialCode ? `${dialCode} ${rawPhone}` : rawPhone;
+    // Backend requires phone formatted without spaces (e.g. "+919876543210")
+    const fullPhone = dialCode && rawPhone ? `${dialCode}${rawPhone}` : rawPhone;
     const cityStr = buildCityString();
 
     if (!fullName.trim()) {
@@ -439,6 +489,11 @@ export default function ProfilePage() {
     }
     if (!rawPhone) {
       toast.error(t("errorNoPhone"));
+      return;
+    }
+    const expectedPhoneLength = PHONE_LENGTHS[dialCountry] ?? 10;
+    if (rawPhone.length !== expectedPhoneLength) {
+      toast.error(`Phone number must be exactly ${expectedPhoneLength} digits`);
       return;
     }
     if (!cityStr) {
@@ -455,6 +510,7 @@ export default function ProfilePage() {
       });
       setProfile(updated);
       toast.success(t("successProfileUpdated"));
+      setSettingsOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("errorUpdateFailed"));
     } finally {
@@ -634,7 +690,8 @@ export default function ProfilePage() {
               {profile?.city && <span className="flex items-center gap-1.5"><MapPin className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.city}</span>}
             </div>
             <button
-              onClick={() => setSettingsOpen((v) => !v)}
+              type="button"
+              onClick={() => setSettingsOpen(true)}
               data-tour="account-settings"
               className={`mt-4 sm:mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br px-4 py-2.5 sm:px-5 sm:py-3 text-2xs sm:text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl hover:-translate-y-0.5 ${
                 isDonee
@@ -642,8 +699,8 @@ export default function ProfilePage() {
                   : "from-[var(--ck-role-secondary)] to-[var(--ck-role-accent)] hover:from-[#e8894c] hover:to-[#c25620] shadow-[var(--ck-role-accent)]/40 hover:shadow-[var(--ck-role-accent)]/50"
               }`}
             >
-              {settingsOpen ? "Close account settings" : "Edit account details"}
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${settingsOpen ? "rotate-180" : ""}`} />
+              Edit account details
+              <ChevronDown className="w-3.5 h-3.5" />
             </button>
           </motion.div>
         </div>
@@ -778,13 +835,20 @@ export default function ProfilePage() {
         </aside>
       </div>
 
-      {/* Account settings: same working form, new shell */}
-      {settingsOpen && (
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-12">
-          <Reveal>
-            <div className={`border-t-2 ${acc.rule} pt-5 sm:pt-6`}>
-              <p className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow} mb-4 sm:mb-6`}>Account settings</p>
-              <form onSubmit={handleSave} className="space-y-4 sm:space-y-5">
+      {/* Account settings, in a modal. `display: contents` on the form lets the
+          dialog's own column layout (fixed header, scrolling body, pinned
+          footer) apply to its children while the submit button stays a real
+          form submit. */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>
+              Account settings
+            </DialogTitle>
+            <DialogDescription>Update your name, phone number and location.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSave} className="contents">
+            <DialogBody className="space-y-4 sm:space-y-5">
                     {/* Avatar Upload */}
                     <div className="flex justify-center">
                       <AvatarUpload
@@ -840,7 +904,11 @@ export default function ProfilePage() {
                           <SearchableSelect
                             options={dialCodeOptions}
                             value={dialCountry}
-                            onChange={setDialCountry}
+                            onChange={(iso) => {
+                              setDialCountry(iso);
+                              const maxLen = PHONE_LENGTHS[iso] ?? 10;
+                              setPhoneNumber((prev) => prev.slice(0, maxLen));
+                            }}
                             placeholder="+–"
                             searchPlaceholder="Search country…"
                             renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
@@ -850,10 +918,14 @@ export default function ProfilePage() {
                           id="phone"
                           type="tel"
                           inputMode="numeric"
+                          maxLength={maxPhoneLength}
                           className={`flex-1 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium ${acc.focusRing}`}
                           placeholder={t("phonePlaceholder")}
                           value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength);
+                            setPhoneNumber(digits);
+                          }}
                         />
                       </div>
                     </div>
@@ -965,27 +1037,36 @@ export default function ProfilePage() {
                       </p>
                     </div>
 
-                    {/* Save button */}
-                    <div className="pt-2">
-                      <Button
-                        type="submit"
-                        className={`w-full ${acc.solidBtn} text-white rounded-xl py-4 sm:py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors`}
-                        disabled={saving}
-                      >
-                        {saving ? (
-                          <>
-                            <Loader2 className="size-4 animate-spin" /> {t("saving")}
-                          </>
-                        ) : (
-                          t("saveProfileChanges")
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-            </div>
-          </Reveal>
-        </div>
-      )}
+            </DialogBody>
+
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl py-4 font-bold text-sm"
+                  disabled={saving}
+                >
+                  {tCommon("cancel")}
+                </Button>
+              </DialogClose>
+              <Button
+                type="submit"
+                className={`${acc.solidBtn} text-white rounded-xl py-4 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors`}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" /> {t("saving")}
+                  </>
+                ) : (
+                  t("saveProfileChanges")
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

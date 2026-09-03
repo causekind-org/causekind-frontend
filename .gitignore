@@ -50,3 +50,7 @@ content/blog-source/images/
 # public/rakhi-intro-*.mp4; this 53MB source is kept out of git and out of
 # public/ so it is never shipped to a visitor.
 video-master/
+
+# Obsidian dev log — local-only notes about changes made in this repo.
+# Never pushed: it is a personal working record, not project source.
+Dev Log/

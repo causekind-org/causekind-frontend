@@ -13,7 +13,14 @@
 
 .magic-bento-card {
   --glow-color: 132, 0, 255;
+
+  /* Surface, border and ink as tokens rather than literals, so the dark
+     override below is a few declarations instead of a second copy of the whole
+     card. The dark values match the skeleton's pair (#1c1917 / #292524), which
+     is what these cards cross-fade from. */
   --border-color: #ece7df;
+  --card-surface: #ffffff;
+  --card-ink: #1c1917;
 
   display: flex;
   flex-direction: column;
@@ -25,7 +32,7 @@
   padding: 1.25em;
   border-radius: 20px;
   border: 1px solid var(--border-color);
-  background: #ffffff;
+  background: var(--card-surface);
   font-weight: 300;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -41,6 +48,30 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
+/* Dark theme. Only the tokens change — plus a deeper hover shadow, since a
+   15%-black drop shadow is invisible against a near-black page. */
+.dark .magic-bento-card {
+  --border-color: #292524;
+  --card-surface: #1c1917;
+  --card-ink: #e7e5e4;
+  --card-media-bg: #262220;
+}
+
+.dark .magic-bento-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Dimmed text needs a little more of itself back on a dark surface: the same
+   opacity reads noticeably fainter against #1c1917 than against white. */
+.dark .magic-bento-card__label,
+.dark .magic-bento-card__description {
+  opacity: 0.8;
+}
+
+.dark .magic-bento-card__meta {
+  opacity: 0.7;
+}
+
 .magic-bento-card--clickable {
   cursor: pointer;
 }
@@ -49,7 +80,7 @@
 .magic-bento-card__content {
   display: flex;
   position: relative;
-  color: #1c1917;
+  color: var(--card-ink);
 }
 
 .magic-bento-card__header {
@@ -129,7 +160,7 @@
   padding-top: 0.75em;
   border-top: 1px solid var(--border-color);
   font-size: var(--text-2xs);
-  color: #1c1917;
+  color: var(--card-ink);
   opacity: 0.55;
 }
 
@@ -294,7 +325,9 @@
   position: relative;
   margin: -1.25em -1.25em 0.85em;
   overflow: hidden;
-  background: #f5f2ed;
+  /* The placeholder behind a still-loading image; tracks the theme so it
+     doesn't flash a bright band on a dark card. */
+  background: var(--card-media-bg, #f5f2ed);
   flex: none;
 }
 .magic-bento-card__media img {

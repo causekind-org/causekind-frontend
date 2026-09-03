@@ -1075,7 +1075,8 @@ export default function RequestsClient() {
                     const variant = requestCardVariant(i);
                     const showsMedia = variant === "featured" || variant === "tall";
                     return {
-                      color: "#ffffff",
+                      // No `color`: the card surface comes from MagicBento.css
+                      // so it follows the light/dark theme.
                       className: `bento--${variant}`,
                       // Only the two roomiest footprints carry an image, and only
                       // when the need actually has one — an empty media band on a

@@ -484,7 +484,11 @@ const MagicBento = ({
           const cardProps = {
             className: baseClassName,
             style: {
-              backgroundColor: card.color,
+              // Only an explicit per-card color goes inline. Left unset, the
+              // card takes its surface from the stylesheet, which is what lets
+              // the theme switch it — an inline `#ffffff` would win over any
+              // `.dark` rule and strand the card white on a dark page.
+              ...(card.color ? { backgroundColor: card.color } : null),
               '--glow-color': glowColor
             }
           };

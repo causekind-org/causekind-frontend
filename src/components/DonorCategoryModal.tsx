@@ -21,6 +21,27 @@ export const DONOR_CATEGORY_OPEN_EVENT = "ck-category-open";
 
 const STORAGE_KEY = "causekind_donor_category";
 
+/**
+ * Marks the picker as dismissed without an answer (the X, or a click on the
+ * backdrop).
+ *
+ * <p>Deliberately `sessionStorage`, where an actual choice goes to
+ * `localStorage`: applying a selection is an answer and should stick for good,
+ * while closing the dialog only means "not now". Re-prompting on the next visit
+ * is reasonable; re-prompting on every refresh of the same visit is not.
+ */
+const DISMISS_KEY = "causekind_donor_category_dismissed";
+
+function wasDismissedThisSession(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === "1";
+  } catch {
+    // Private-mode or blocked storage — fall back to prompting.
+    return false;
+  }
+}
+
 // Derived from the shared category source — no hardcoded copy here. Adding a
 // category to ALL_REQUEST_CATEGORIES/CATEGORY_VISUALS updates this grid too.
 const CATEGORIES = [
@@ -39,8 +60,15 @@ export function DonorCategoryModal() {
   const [show, setShow]               = useState(false);
   const [tempSelected, setTempSelected] = useState<string[]>([]);
 
+  // Auto-open only for a donor who has never answered. `readSelectedDonorCategories`
+  // returns null only when the key was never written — `apply()` stores `[]` for
+  // "Show all needs instead", so that counts as an answer too and the picker
+  // stays shut. Revising a saved watchlist goes through DONOR_CATEGORY_OPEN_EVENT.
   useEffect(() => {
-    if (!isLoading && user?.role === "DONOR") setShow(true);
+    if (isLoading || user?.role !== "DONOR") return;
+    if (readSelectedDonorCategories() !== null) return;
+    if (wasDismissedThisSession()) return;
+    setShow(true);
   }, [isLoading, user?.role]);
 
   // Reopened from elsewhere. `tempSelected` is seeded from storage here and
@@ -61,6 +89,16 @@ export function DonorCategoryModal() {
   function apply(cats: string[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cats));
     window.dispatchEvent(new CustomEvent(DONOR_CATEGORY_EVENT, { detail: cats }));
+    setShow(false);
+  }
+
+  /** Closed without answering — see DISMISS_KEY. */
+  function dismiss() {
+    try {
+      sessionStorage.setItem(DISMISS_KEY, "1");
+    } catch {
+      // Nothing to do: the picker simply reappears on the next mount.
+    }
     setShow(false);
   }
 
@@ -147,7 +185,7 @@ export function DonorCategoryModal() {
           background: "linear-gradient(135deg, rgba(176,74,21,0.14) 0%, rgba(8,5,2,0.82) 55%, rgba(30,58,96,0.14) 100%)",
           backdropFilter: "blur(22px) saturate(1.3)",
         }}
-        onClick={() => setShow(false)}
+        onClick={dismiss}
       >
         {/* Ambient glows */}
         <div
@@ -192,7 +230,7 @@ export function DonorCategoryModal() {
         >
           {/* Close button */}
           <button
-            onClick={() => setShow(false)}
+            onClick={dismiss}
             className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white/35 hover:text-white/80 hover:bg-white/10 transition-all duration-200"
           >
             <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -234,7 +272,10 @@ export function DonorCategoryModal() {
                   key={name}
                   onClick={() => {
                     if (isAction) {
-                      setShow(false);
+                      // Not an answer to "which categories", so nothing is
+                      // stored — but the donor did act, and re-prompting when
+                      // they come back from the listing form would be noise.
+                      dismiss();
                       router.push("/items/new");
                       return;
                     }
