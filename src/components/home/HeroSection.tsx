@@ -6,11 +6,9 @@ import Link from "next/link";
 import { MotionConfig, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
-  ArrowDown,
   ArrowRight,
   Check,
   HeartHandshake,
-  MapPin,
   PackageOpen,
   ShieldCheck,
 } from "lucide-react";
@@ -78,13 +76,15 @@ function ConnectionPins() {
 
   const item = {
     Icon: PackageOpen,
-    label: t("connectionItem"),
+    lead: t("connectionItemLead"),
+    rest: t("connectionItemRest"),
     chip: "bg-[#f8eee7] text-[#b04a15] dark:bg-[#b04a15]/18 dark:text-[#e98d55]",
     text: "text-[#a34417] dark:text-[#f1a475]",
   };
   const need = {
     Icon: HeartHandshake,
-    label: t("connectionNeed"),
+    lead: t("connectionNeedLead"),
+    rest: t("connectionNeedRest"),
     chip: "bg-[#edf2f7] text-[#1e3a60] dark:bg-[#1e3a60]/35 dark:text-[#8db1da]",
     text: "text-[#1e3a60] dark:text-[#a9c5e4]",
   };
@@ -99,8 +99,8 @@ function ConnectionPins() {
         transition={{ type: "spring", stiffness: 82, damping: 19, delay: 0.34 }}
         aria-label={t("connectionLabel")}
       >
-        {[item, need].map(({ Icon, label, chip, text }, index) => (
-          <Fragment key={label}>
+        {[item, need].map(({ Icon, lead, rest, chip, text }, index) => (
+          <Fragment key={lead}>
             {index > 0 ? (
               <ArrowRight className="size-5 shrink-0 text-[#b04a15]" strokeWidth={1.7} aria-hidden />
             ) : null}
@@ -108,28 +108,33 @@ function ConnectionPins() {
               <span className={`flex size-9 items-center justify-center rounded-full ${chip}`}>
                 <Icon className="size-4.5" strokeWidth={1.7} aria-hidden />
               </span>
-              <span className={`font-semibold leading-tight ${text}`}>{label}</span>
+              <span className={`font-semibold leading-tight ${text}`}>
+                {lead} {rest}
+              </span>
             </span>
           </Fragment>
         ))}
       </motion.div>
 
-      {/* Desktop: the reference composition. */}
+      {/* Desktop: the reference composition — a filled marker overlapping the
+          top-left corner of a plain white card, its first line in terra and the
+          rest in ink. No icon inside the card: the reference has none, and the
+          marker already says "here". */}
       <div
         className="pointer-events-none absolute inset-0 z-20 hidden lg:block"
         aria-label={t("connectionLabel")}
         role="group"
       >
         {[
-          { ...item, pos: "left-[2%] top-[8%]", ring: "-left-6 -top-7" },
-          // Anchored to the bottom, not to a top percentage. The stage height
-          // is a clamp that bottoms out on a short laptop, and a top percentage
-          // walks up into whatever is above it there — which is exactly how an
-          // earlier version collided at one width and not the others.
-          { ...need, pos: "right-[6%] bottom-[12%]", ring: "-right-7 -bottom-6" },
-        ].map(({ Icon, label, chip, text, pos, ring }) => (
+          { ...item, pos: "left-[2%] top-[17%]", ring: "-left-7 -top-6" },
+          // A top percentage on both, and they can only ever converge
+          // vertically — they are on opposite sides of the column, so the
+          // separation that matters is horizontal and does not move with the
+          // stage height.
+          { ...need, pos: "right-[5%] top-[35%]", ring: "-right-7 -bottom-6" },
+        ].map(({ lead, rest, pos, ring }) => (
           <motion.div
-            key={label}
+            key={lead}
             className={`absolute w-[8.75rem] ${pos}`}
             initial={{ opacity: 0, y: 14, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -140,20 +145,29 @@ function ConnectionPins() {
               aria-hidden
             />
 
-            <span className="relative flex flex-col items-center">
-              <span className="flex size-9 items-center justify-center rounded-full bg-[#b04a15] text-white shadow-[0_6px_14px_rgba(176,74,21,0.32)]">
-                <MapPin className="size-5" strokeWidth={2} aria-hidden />
-              </span>
+            <div className="relative rounded-[0.95rem] bg-white py-2.5 pl-4 pr-3.5 pt-4 shadow-[0_0_0_1px_rgba(0,0,0,0.05),0_10px_26px_rgba(73,42,20,0.16)] dark:bg-stone-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_10px_26px_rgba(0,0,0,0.3)]">
+              {/* Drawn rather than lucide’s MapPin: the reference marker is a
+                  solid terra teardrop with a punched-out dot, and filling the
+                  lucide path fills the hole too. */}
+              <svg
+                viewBox="0 0 24 24"
+                className="absolute -left-2 -top-5 size-8 drop-shadow-[0_3px_6px_rgba(176,74,21,0.32)]"
+                aria-hidden
+              >
+                <path
+                  d="M12 22.5s7.2-6.6 7.2-12.4a7.2 7.2 0 1 0-14.4 0C4.8 15.9 12 22.5 12 22.5Z"
+                  fill="#b04a15"
+                />
+                <circle cx="12" cy="9.8" r="2.7" fill="#fff" />
+              </svg>
 
-              <span className="-mt-1.5 flex w-full flex-col items-center gap-1.5 rounded-2xl bg-white px-3 py-2.5 text-center shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_10px_26px_rgba(73,42,20,0.16)] dark:bg-stone-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_10px_26px_rgba(0,0,0,0.3)]">
-                <span className={`flex size-8 items-center justify-center rounded-full ${chip}`}>
-                  <Icon className="size-4" strokeWidth={1.7} aria-hidden />
-                </span>
-                <span className={`text-[0.8rem] font-semibold leading-tight ${text}`}>
-                  {label}
-                </span>
-              </span>
-            </span>
+              <p className="text-[0.82rem] font-extrabold leading-[1.22] text-[#b04a15] dark:text-[#f1a475]">
+                {lead}
+              </p>
+              <p className="text-[0.82rem] font-bold leading-[1.22] text-stone-800 dark:text-stone-200">
+                {rest}
+              </p>
+            </div>
           </motion.div>
         ))}
       </div>
