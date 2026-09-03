@@ -135,12 +135,13 @@ function ConnectionPins() {
         ].map(({ lead, rest, pos, ring }) => (
           <motion.div
             key={lead}
-            // Hugs its label rather than sitting at a fixed width. The
-            // reference cards are content-sized, and a fixed one either
-            // strands whitespace after "Someone" or pushes a long translation
-            // out past the white — Malayalam’s lead is three times the length
-            // of English’s.
-            className={`absolute w-max max-w-[10.5rem] ${pos}`}
+            // Narrow on purpose. In the reference the label WRAPS — "Something
+            // Useful" and "Nearby Needs It" each break over two lines — so the
+            // card is sized so the lead holds one line and the rest breaks
+            // between its two words, and it grows downwards. A
+            // long translation adds lines rather than width, which is why the
+            // paragraphs below break anywhere.
+            className={`absolute w-[6.25rem] ${pos}`}
             initial={{ opacity: 0, y: 14, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 82, damping: 19, delay: 0.34 }}
@@ -150,13 +151,13 @@ function ConnectionPins() {
               aria-hidden
             />
 
-            <div className="relative rounded-[0.95rem] bg-white py-2.5 pl-4 pr-3.5 pt-4 shadow-[0_0_0_1px_rgba(0,0,0,0.05),0_10px_26px_rgba(73,42,20,0.16)] dark:bg-stone-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_10px_26px_rgba(0,0,0,0.3)]">
+            <div className="relative rounded-[0.85rem] bg-white px-3 pb-2.5 pt-3 shadow-[0_0_0_1px_rgba(0,0,0,0.05),0_10px_26px_rgba(73,42,20,0.16)] dark:bg-stone-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_10px_26px_rgba(0,0,0,0.3)]">
               {/* Drawn rather than lucide’s MapPin: the reference marker is a
                   solid terra teardrop with a punched-out dot, and filling the
                   lucide path fills the hole too. */}
               <svg
                 viewBox="0 0 24 24"
-                className="absolute -left-2 -top-5 size-8 drop-shadow-[0_3px_6px_rgba(176,74,21,0.32)]"
+                className="absolute -top-6 left-[22%] size-8 drop-shadow-[0_3px_6px_rgba(176,74,21,0.32)]"
                 aria-hidden
               >
                 <path
@@ -169,7 +170,7 @@ function ConnectionPins() {
               <p className="text-[0.82rem] font-extrabold leading-[1.22] text-[#b04a15] [overflow-wrap:anywhere] dark:text-[#f1a475]">
                 {lead}
               </p>
-              <p className="text-[0.82rem] font-bold leading-[1.22] text-stone-800 [overflow-wrap:anywhere] dark:text-stone-200">
+              <p className="mt-0.5 text-[0.82rem] font-bold leading-[1.22] text-stone-800 [overflow-wrap:anywhere] dark:text-stone-200">
                 {rest}
               </p>
             </div>
