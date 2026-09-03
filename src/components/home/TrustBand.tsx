@@ -29,7 +29,7 @@ export function TrustBand() {
       // The peach ground is the brand terra at a tenth, not a new literal: the
       // hero palette is one token by decision, and a second warm colour here
       // would be exactly the drift that decision exists to prevent.
-      className="rounded-[1.5rem] bg-[rgba(176,74,21,0.10)] px-4 py-4 dark:bg-[rgba(176,74,21,0.16)] sm:px-6 lg:px-7 lg:py-5"
+      className="rounded-[1.5rem] bg-[rgba(176,74,21,0.10)] px-4 py-4 dark:bg-[rgba(176,74,21,0.16)] sm:px-6 lg:px-7 lg:py-[clamp(0.45rem,1.2vh,1.25rem)]"
     >
       <ul className="grid gap-4 sm:gap-5 lg:grid-cols-3 lg:gap-0">
         {items.map(({ Icon, title, body }, index) => (

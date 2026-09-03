@@ -2123,6 +2123,25 @@ body.mobile-menu-open {
    laptop the minimum is what binds, and at 27rem the band cleared the fold by
    -5px. Measured, not reasoned about. */
 @media (min-width: 1024px) {
+  /* The headline answers to viewport HEIGHT as well as width: the copy column
+     decides whether the hero fits one screen, and the headline is the largest
+     thing in it.
+
+     One vh factor cannot serve both ends — 6vh fits a 720px laptop but shrinks
+     the headline to 65px on a 1080p monitor, where it should be 80px — so this
+     is the line through the two anchors that matter:
+
+       720px tall  -> 38px  (measured: 43px fits 1280x720 by exactly one pixel,
+                             which is not a margin — 38px leaves ~15)
+       1080px tall -> 80px  (the 5rem cap this hero has always used)
+
+     slope (80-38)/(1080-720) = 0.1167 -> 11.67vh, intercept -46px. The width
+     term still caps it on a wide, short window, and the clamp's own bounds stop
+     it running away at either extreme. */
+  .ck-hero-headline {
+    font-size: clamp(2.15rem, min(4.45vw, 11.67vh - 46px), 5rem);
+  }
+
   .ck-lead-hero-stage {
     /* min-height, never height. A fixed height here is a trap: the copy column
        is text, and text grows — a longer headline, a translated subtext, a

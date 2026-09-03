@@ -239,7 +239,7 @@ export function HeroSection() {
       <section
         data-tour="guest-hero"
         aria-labelledby="causekind-hero-title"
-        className="relative isolate overflow-hidden bg-[#f7f1e7] px-4 pb-9 pt-4 text-[#171714] dark:bg-[#15110f] dark:text-stone-100 sm:px-6 sm:pb-11 sm:pt-6 lg:px-10 lg:pb-10 lg:pt-5"
+        className="relative isolate overflow-hidden bg-[#f7f1e7] px-4 pb-9 pt-4 text-[#171714] dark:bg-[#15110f] dark:text-stone-100 sm:px-6 sm:pb-11 sm:pt-6 lg:px-10 lg:pb-[clamp(0.5rem,2vh,2.5rem)] lg:pt-[clamp(0.6rem,1.6vh,1.25rem)]"
       >
         <div
           className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-20"
@@ -252,7 +252,7 @@ export function HeroSection() {
 
         <div className="relative mx-auto max-w-[1440px]">
           <div className="ck-lead-hero-stage relative grid overflow-hidden rounded-[1.75rem] bg-[#f8f2e8] shadow-[0_0_0_1px_rgba(63,39,23,0.06),0_24px_70px_rgba(105,62,30,0.09)] dark:bg-[#1a1512] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_24px_70px_rgba(0,0,0,0.28)] lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
-            <div className="relative z-10 flex flex-col justify-center px-6 pb-8 pt-9 sm:px-9 sm:pb-10 sm:pt-11 lg:px-[clamp(2.5rem,4vw,4.5rem)] lg:py-[clamp(2rem,4vh,4rem)]">
+            <div className="relative z-10 flex flex-col justify-center px-6 pb-8 pt-9 sm:px-9 sm:pb-10 sm:pt-11 lg:px-[clamp(2.5rem,4vw,4.5rem)] lg:pb-[calc(clamp(1.1rem,3vh,3.25rem)+1.75rem)] lg:pt-[clamp(1.1rem,3vh,3.25rem)]">
               <motion.p
                 className="text-[0.65rem] font-bold uppercase tracking-[0.21em] text-[#a84417] sm:text-xs dark:text-[#ef9a67]"
                 initial={{ opacity: 0, y: 10 }}
@@ -264,7 +264,7 @@ export function HeroSection() {
 
               <motion.h1
                 id="causekind-hero-title"
-                className="font-hero-display mt-4 max-w-[11ch] text-[clamp(2.65rem,11.8vw,4rem)] font-bold leading-[0.96] tracking-[-0.045em] [text-wrap:balance] sm:max-w-[13ch] lg:mt-5 lg:max-w-[11.5ch] lg:text-[clamp(3.25rem,4.45vw,5rem)]"
+                className="font-hero-display mt-4 max-w-[11ch] text-[clamp(2.65rem,11.8vw,4rem)] font-bold leading-[0.96] tracking-[-0.045em] [text-wrap:balance] sm:max-w-[13ch] lg:mt-[clamp(0.5rem,1.7vh,1.25rem)] lg:max-w-[11.5ch] ck-hero-headline"
                 initial={{ opacity: 0, y: 14, filter: "blur(4px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.52, ease: [0.2, 0, 0, 1], delay: 0.05 }}
@@ -276,7 +276,7 @@ export function HeroSection() {
               </motion.h1>
 
               <motion.p
-                className="mt-5 max-w-[34rem] text-sm font-medium leading-relaxed text-stone-600 [text-wrap:pretty] dark:text-stone-300 sm:text-base lg:mt-6 lg:text-[1.02rem]"
+                className="mt-5 max-w-[34rem] text-sm font-medium leading-relaxed text-stone-600 [text-wrap:pretty] dark:text-stone-300 sm:text-base lg:mt-[clamp(0.6rem,2vh,1.5rem)] lg:leading-snug lg:text-[1.02rem]"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.42, ease: [0.2, 0, 0, 1], delay: 0.13 }}
@@ -285,7 +285,7 @@ export function HeroSection() {
               </motion.p>
 
               <motion.div
-                className="mt-[22px]"
+                className="mt-[22px] lg:mt-[clamp(0.6rem,1.9vh,1.375rem)]"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.42, ease: [0.2, 0, 0, 1], delay: 0.18 }}
@@ -294,7 +294,7 @@ export function HeroSection() {
               </motion.div>
 
               <motion.div
-                className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row lg:mt-7"
+                className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row lg:mt-[clamp(0.7rem,2.2vh,1.75rem)]"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.42, ease: [0.2, 0, 0, 1], delay: 0.21 }}
@@ -376,7 +376,7 @@ export function HeroSection() {
             <CategoryStrip />
           </div>
 
-          <div className="relative z-20 mt-3.5 lg:mt-4">
+          <div className="relative z-20 mt-3.5 lg:mt-[clamp(0.5rem,1.4vh,1rem)]">
             <TrustBand />
           </div>
         </div>
