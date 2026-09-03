@@ -126,7 +126,12 @@ function ConnectionPins() {
           // a clamp that bottoms out at 27rem on a short laptop, and a top
           // percentage walks straight up into the proof card there — which is
           // exactly how the previous attempt collided at one width only.
-          { ...need, pos: "right-[6%] bottom-[12%]", ring: "-right-7 -bottom-6" },
+          // Bottom-left of centre, not the right edge. The proof card is now
+          // vertically centred on the right, and on a short stage a
+          // bottom-right pin sits straight underneath it — they only cleared
+          // each other at tall viewport heights. Separating them horizontally
+          // makes that structural instead of height-dependent.
+          { ...need, pos: "left-[34%] bottom-[10%]", ring: "-right-7 -bottom-6" },
         ].map(({ Icon, label, chip, text, pos, ring }) => (
           <motion.div
             key={label}
@@ -179,7 +184,7 @@ function AssurancePanel() {
 
   return (
     <motion.aside
-      className="absolute right-5 top-5 z-10 hidden w-[13.5rem] rounded-[1.35rem] bg-white/94 p-4 text-stone-950 shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_18px_45px_rgba(62,35,18,0.18)] backdrop-blur-sm lg:block dark:bg-stone-950/90 dark:text-stone-100 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_18px_45px_rgba(0,0,0,0.3)]"
+      className="absolute right-5 top-1/2 z-10 hidden w-[13.5rem] -translate-y-1/2 rounded-[1.35rem] bg-white/94 p-4 text-stone-950 shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_18px_45px_rgba(62,35,18,0.18)] backdrop-blur-sm lg:block dark:bg-stone-950/90 dark:text-stone-100 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_18px_45px_rgba(0,0,0,0.3)]"
       initial={{ opacity: 0, x: 18 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ type: "spring", stiffness: 72, damping: 20, delay: 0.42 }}
