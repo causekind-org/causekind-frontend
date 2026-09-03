@@ -152,16 +152,6 @@ function ConnectionPins() {
             />
 
             <div className="relative rounded-[0.85rem] bg-white px-3 pb-2.5 pt-3 shadow-[0_0_0_1px_rgba(0,0,0,0.05),0_10px_26px_rgba(73,42,20,0.16)] dark:bg-stone-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_10px_26px_rgba(0,0,0,0.3)]">
-              {/* The beak that makes it a message rather than a label: bottom
-                  left, pointing down, the same on both cards. Built from
-                  borders, not a rotated square — a rotated square would carry
-                  the card’s 1px ring round with it and seam against the
-                  photograph. */}
-              <span
-                className="absolute -bottom-[9px] left-[16%] size-0 border-x-[9px] border-t-[10px] border-x-transparent border-t-white dark:border-t-stone-900"
-                aria-hidden
-              />
-
               {/* Drawn rather than lucide’s MapPin: the reference marker is a
                   solid terra teardrop with a punched-out dot, and filling the
                   lucide path fills the hole too. */}
