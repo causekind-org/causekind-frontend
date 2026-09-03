@@ -1239,10 +1239,13 @@
       "sports": "ಕ್ರೀಡೆ"
     }
   },
-  "trustBar": {
-    "label": "CauseKind ಸುರಕ್ಷತೆಗಳು",
-    "verified": "ಪರಿಶೀಲಿಸಿದ ಕೋರಿಕೆಗಳು",
-    "fee": "0% ವೇದಿಕೆ ಶುಲ್ಕ",
-    "handover": "ಮಾರ್ಗದರ್ಶಿತ ಹಸ್ತಾಂತರ"
+  "trustBand": {
+    "label": "CauseKind ಏಕೆ ಸುರಕ್ಷಿತ",
+    "trustedTitle": "ವಿಶ್ವಾಸಾರ್ಹ ಸಮುದಾಯ",
+    "trustedBody": "ಸುರಕ್ಷಿತ. ಪರಿಶೀಲಿತ. ನಂಬಿಕಾರ್ಹ.",
+    "impactTitle": "ಸ್ಥಳೀಯ ಪರಿಣಾಮ",
+    "impactBody": "ನಿಮ್ಮ ಸುತ್ತಮುತ್ತಲಿನ ಜನರಿಗೇ ನೆರವು.",
+    "togetherTitle": "ಜೊತೆಗೂಡಿ ಬಲಿಷ್ಠ",
+    "togetherBody": "ಉತ್ತಮ ಸಮುದಾಯ. ಉತ್ತಮ ನಾಳೆ."
   }
 }

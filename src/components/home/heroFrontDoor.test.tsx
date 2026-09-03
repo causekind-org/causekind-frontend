@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, within } from "@testing-library/react";
 
 import enMessages from "../../../messages/en.json";
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
@@ -13,6 +13,11 @@ import type { PublicItemRequest } from "@/lib/api";
  * that make the fix worth having, and the one that stops it doing harm.
  */
 
+const authState = vi.hoisted(() => ({
+  user: null as { email: string; role: string } | null,
+  isLoading: false,
+}));
+
 vi.mock("next-intl", () => ({
   useTranslations: (namespace: string) => (key: string) => {
     let node: unknown = enMessages;
@@ -23,8 +28,18 @@ vi.mock("next-intl", () => ({
   },
 }));
 
-const { HeroGiveCTA } = await import("./HeroGiveCTA");
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => authState,
+}));
+
+const { CategoryStrip } = await import("./CategoryStrip");
+const { HeroSection } = await import("./HeroSection");
 const { NearbyNeedsPanel } = await import("./NearbyNeedsPanel");
+
+beforeEach(() => {
+  authState.user = null;
+  authState.isLoading = false;
+});
 
 function need(over: Partial<PublicItemRequest> = {}): PublicItemRequest {
   return {
@@ -43,26 +58,77 @@ function need(over: Partial<PublicItemRequest> = {}): PublicItemRequest {
   };
 }
 
-describe("hero give CTA", () => {
+describe("category strip", () => {
   it("routes every category into its own public page", () => {
-    render(<HeroGiveCTA />);
+    render(<CategoryStrip />);
+
+    const categoryNav = screen.getByRole("navigation", {
+      name: enMessages.categoryStrip.ariaLabel,
+    });
+
+    expect(IN_KIND_CATEGORIES).toHaveLength(9);
+    expect(within(categoryNav).getAllByRole("link")).toHaveLength(9);
+
+    // The anti-drift guard. A category added to the registry must also appear
+    // in this discoverable public rail with its canonical destination.
     for (const cat of IN_KIND_CATEGORIES) {
-      expect(screen.getByRole("link", { name: cat.name }))
+      expect(within(categoryNav).getByRole("link", { name: cat.name }))
         .toHaveAttribute("href", `/requests/category/${cat.slug}`);
     }
   });
 
-  it("offers a way in without choosing a category", () => {
-    // The chips are a shortcut, not a gate.
-    render(<HeroGiveCTA />);
-    expect(screen.getByRole("link", { name: enMessages.heroGive.seeAll }))
+  it("asks for nothing", () => {
+    // Someone can see the real thing in one click. A form here would undo that.
+    const { container } = render(<CategoryStrip />);
+    expect(container.querySelector("input")).toBeNull();
+    expect(container.querySelector("form")).toBeNull();
+  });
+});
+
+describe("hero", () => {
+  it("uses the dedicated warm, right-weighted hero photograph", () => {
+    render(<HeroSection />);
+    expect(screen.getByRole("img", { name: enMessages.hero.photoAlt }))
+      .toHaveAttribute("src", expect.stringContaining("causekind-hero-warm-v2.webp"));
+  });
+
+  it("opens the verified public board without requiring a category choice", () => {
+    // The category strip is a shortcut, not a gate.
+    render(<HeroSection />);
+    expect(screen.getByRole("link", { name: enMessages.hero.ctaBrowse }))
       .toHaveAttribute("href", "/requests");
   });
 
+  it("carries a guest into donor registration without losing the listing intent", () => {
+    render(<HeroSection />);
+    expect(screen.getByRole("link", { name: enMessages.hero.ctaStartGiving }))
+      .toHaveAttribute("href", "/register?role=DONOR&next=%2Fitems%2Fnew");
+  });
+
+  it("takes a signed-in donor straight to item listing", () => {
+    authState.user = { email: "donor@example.com", role: "ROLE_DONOR" };
+
+    render(<HeroSection />);
+
+    expect(screen.getByRole("link", { name: enMessages.hero.ctaListItem }))
+      .toHaveAttribute("href", "/items/new");
+    expect(screen.queryByRole("link", { name: enMessages.hero.ctaStartGiving }))
+      .not.toBeInTheDocument();
+  });
+
+  it("takes a signed-in donee straight to a new request", () => {
+    authState.user = { email: "donee@example.com", role: "DONEE" };
+
+    render(<HeroSection />);
+
+    expect(screen.getByRole("link", { name: enMessages.hero.ctaRequestItem }))
+      .toHaveAttribute("href", "/requests/new");
+    expect(screen.queryByRole("link", { name: enMessages.hero.ctaStartGiving }))
+      .not.toBeInTheDocument();
+  });
+
   it("asks for nothing", () => {
-    // The whole argument against a downloadable magnet here is that someone can
-    // see the real thing in one click. A form in the hero would undo that.
-    const { container } = render(<HeroGiveCTA />);
+    const { container } = render(<HeroSection />);
     expect(container.querySelector("input")).toBeNull();
     expect(container.querySelector("form")).toBeNull();
   });

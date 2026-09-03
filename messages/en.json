@@ -1563,10 +1563,13 @@
       "sports": "Sports"
     }
   },
-  "trustBar": {
-    "label": "CauseKind safeguards",
-    "verified": "Verified requests",
-    "fee": "0% platform fee",
-    "handover": "Guided handover"
+  "trustBand": {
+    "label": "Why CauseKind is safe to use",
+    "trustedTitle": "Trusted Community",
+    "trustedBody": "Safe. Verified. Reliable.",
+    "impactTitle": "Local Impact",
+    "impactBody": "Helping people in your neighbourhood.",
+    "togetherTitle": "Stronger Together",
+    "togetherBody": "Better community. Better tomorrow."
   }
 }

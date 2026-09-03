@@ -22,28 +22,51 @@ const DONOR_X = 628;
 const DONOR_Y = 196;
 
 /**
- * Other handovers, completing quietly somewhere else.
+ * The instrument face: range marks turning slowly inside the ten-kilometre ring.
  *
- * <p>Percentages of the panel, chosen to sit clear of the copy column on the
- * left and of the ring on the right, so nothing here ever competes with the
- * beat text or the drawing. Durations and delays are deliberately unequal and
- * share no common factor — equal spacing would let them fall into step and
- * read as a pulse, which is the opposite of "quietly".
+ * <p>Replaces the expanding rings that used to sit behind the whole panel. The
+ * section is about a measured distance, and this is a thing that measures — so
+ * unlike the rings it says something true about the drawing it sits on rather
+ * than being texture borrowed from elsewhere.
  *
- * <p>This is the one idea worth keeping from the background furniture that was
- * stripped out of this section: the crates existed to say "one handover among
- * many, not a diagram of a single parcel". They were freight on a conveyor
- * that no longer exists; a ring on a map of radii says the same thing and
- * belongs to the drawing that is actually here.
+ * <p>Everything here is in SVG user units and lives *inside* the ring's own
+ * `viewBox`, not in panel percentages. That is the load-bearing detail: the
+ * first pass of this idea was laid out in panel pixels, which meant guessing
+ * the scale the 840-unit drawing lands at, and it guessed wrong — the dial
+ * ended up orbiting outside the very limit the section is about. In user units
+ * the geometry is exact at every width and there is no scale to get wrong.
+ *
+ * <p>Ticks stay inside {@link RING_R} and the spokes stop well short of the
+ * centre so the donee node and its label are never crossed.
  */
-const QUIET_HANDOVERS = [
-  { left: "8%",  top: "22%", size: 190, dur: 13, delay: 0 },
-  { left: "31%", top: "78%", size: 140, dur: 17, delay: 3.5 },
-  { left: "63%", top: "12%", size: 165, dur: 11, delay: 7 },
-  { left: "88%", top: "62%", size: 210, dur: 16, delay: 1.5 },
-  { left: "46%", top: "44%", size: 120, dur: 14, delay: 9.5 },
-  { left: "74%", top: "88%", size: 175, dur: 12, delay: 5.5 },
-] as const;
+const TICK_OUTER = RING_R - 5;
+const TICK_INNER_MINOR = RING_R - 18;
+const TICK_INNER_MAJOR = RING_R - 34;
+const SPOKE_INNER = 60;
+const SPOKE_OUTER = RING_R - 39;
+
+const RANGE_TICKS = Array.from({ length: 60 }, (_, i) => {
+  const a = (i / 60) * Math.PI * 2;
+  const major = i % 5 === 0;
+  const r1 = major ? TICK_INNER_MAJOR : TICK_INNER_MINOR;
+  return {
+    x1: CENTRE_X + Math.cos(a) * r1,
+    y1: CENTRE_Y + Math.sin(a) * r1,
+    x2: CENTRE_X + Math.cos(a) * TICK_OUTER,
+    y2: CENTRE_Y + Math.sin(a) * TICK_OUTER,
+    major,
+  };
+});
+
+const RANGE_SPOKES = Array.from({ length: 6 }, (_, i) => {
+  const a = (i / 6) * Math.PI * 2;
+  return {
+    x1: CENTRE_X + Math.cos(a) * SPOKE_INNER,
+    y1: CENTRE_Y + Math.sin(a) * SPOKE_INNER,
+    x2: CENTRE_X + Math.cos(a) * SPOKE_OUTER,
+    y2: CENTRE_Y + Math.sin(a) * SPOKE_OUTER,
+  };
+});
 
 /**
  * How much of the parcel's journey, at each end, is spent merging with a node.
@@ -286,49 +309,6 @@ export function WhatWeProvideSection() {
           borderBottom: "1px solid rgba(28,25,23,0.14)",
         }}
       >
-        {/* ── Ambient ground: other handovers, completing elsewhere ──
-             Not rendered at all when the section is off screen, and not
-             animated under reduced motion — the guards in styles.css are
-             scoped to named class lists rather than a global rule, so this
-             cannot rely on the stylesheet to stop it.
-
-             Deliberately faint. If it ever reads as something to look at
-             rather than texture in the ground, it has become the decoration
-             this section had removed. */}
-        {inView && (
-          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-            {QUIET_HANDOVERS.map((h, i) => (
-              <span
-                key={i}
-                className="absolute rounded-full"
-                style={{
-                  left: h.left,
-                  top: h.top,
-                  width: h.size,
-                  height: h.size,
-                  marginLeft: -h.size / 2,
-                  marginTop: -h.size / 2,
-                  // 0.11 at 1.5px, up from 0.05 at 1px: at the original weight
-                  // these were subliminal — technically present, not actually
-                  // seen. Still under the foreground: the dashed ten-kilometre
-                  // ring is 0.16 and the pins 0.18, so the hierarchy holds.
-                  border: `1.5px solid ${rgba(NODE_RIM, 0.11)}`,
-                  // Under reduced motion they simply sit there, part-grown and
-                  // still, so the ground keeps its texture without moving.
-                  opacity: reduceMotion ? 0.5 : 0,
-                  transform: reduceMotion ? "scale(0.7)" : undefined,
-                  animationName: reduceMotion ? undefined : "ck-quiet-handover",
-                  animationDuration: `${h.dur}s`,
-                  animationDelay: `-${h.delay}s`,
-                  animationIterationCount: "infinite",
-                  animationTimingFunction: "cubic-bezier(0.33, 0, 0.2, 1)",
-                  willChange: reduceMotion ? undefined : "transform, opacity",
-                }}
-              />
-            ))}
-          </div>
-        )}
-
         {/* One two-column composition, vertically centred in the panel. The
             section's own title, the beat, the rail and the footnote all live in
             the left column rather than in a full-width header — the beat is the
@@ -417,6 +397,101 @@ export function WhatWeProvideSection() {
               aria-hidden
               focusable="false"
             >
+              {/* ── Ambient: the instrument face ──
+                   First child, so it is behind every part of the drawing.
+                   Not rendered at all when the section is off screen, and
+                   static under reduced motion — the guards in styles.css are
+                   scoped to named class lists rather than a global rule, so
+                   this cannot rely on the stylesheet to stop it.
+
+                   `transformBox: "view-box"` is what makes the origin below
+                   mean user units rather than the group's own bounding box.
+                   Without it the two groups spin about different centres and
+                   the dial visibly wobbles. */}
+              {inView && (
+                /* The whole face breathes, very slowly, as one object.
+
+                   It is a *separate wrapper* rather than another animation on
+                   the turning groups because both would be animating
+                   `transform`: the last animation named on an element wins that
+                   property outright, so a scale declared alongside the spin
+                   would silently replace it and the dial would simply stop
+                   turning. Nesting composes them instead.
+
+                   It breathes DOWN from full size, never up. The marks already
+                   reach RING_R - 5, so scaling above 1 would push them back
+                   outside the ten-kilometre ring — the one defect this layout
+                   was rebuilt to fix. The widest state is therefore the static
+                   one, and the movement only ever takes size away. */
+                <g
+                  style={{
+                    transformBox: "view-box",
+                    transformOrigin: `${CENTRE_X}px ${CENTRE_Y}px`,
+                    animationName: reduceMotion ? undefined : "ck-range-breathe",
+                    // Long enough that you cannot watch it happen — you only
+                    // notice the face is not quite where it was.
+                    animationDuration: "34s",
+                    animationTimingFunction: "ease-in-out",
+                    animationIterationCount: "infinite",
+                    animationDirection: "alternate",
+                    willChange: reduceMotion ? undefined : "transform",
+                  }}
+                >
+                  <g
+                    style={{
+                      transformBox: "view-box",
+                      transformOrigin: `${CENTRE_X}px ${CENTRE_Y}px`,
+                      animationName: reduceMotion ? undefined : "ck-range-dial",
+                      animationDuration: "260s",
+                      animationTimingFunction: "linear",
+                      animationIterationCount: "infinite",
+                      willChange: reduceMotion ? undefined : "transform",
+                    }}
+                  >
+                    {RANGE_TICKS.map((t, i) => (
+                      <line
+                        key={i}
+                        x1={t.x1}
+                        y1={t.y1}
+                        x2={t.x2}
+                        y2={t.y2}
+                        // Both weights stay under the dashed limit ring at 0.16
+                        // and the pins at 0.18, so the drawing keeps the eye.
+                        stroke={rgba(NODE_RIM, t.major ? 0.12 : 0.06)}
+                        strokeWidth={t.major ? 1.4 : 1}
+                      />
+                    ))}
+                  </g>
+                  {/* Counter-turning, and much slower: two rates that share no
+                      factor never fall into step and read as a single rotating
+                      object. */}
+                  <g
+                    style={{
+                      transformBox: "view-box",
+                      transformOrigin: `${CENTRE_X}px ${CENTRE_Y}px`,
+                      animationName: reduceMotion ? undefined : "ck-range-dial",
+                      animationDuration: "420s",
+                      animationTimingFunction: "linear",
+                      animationIterationCount: "infinite",
+                      animationDirection: "reverse",
+                      willChange: reduceMotion ? undefined : "transform",
+                    }}
+                  >
+                    {RANGE_SPOKES.map((s, i) => (
+                      <line
+                        key={i}
+                        x1={s.x1}
+                        y1={s.y1}
+                        x2={s.x2}
+                        y2={s.y2}
+                        stroke={rgba(NODE_RIM, 0.045)}
+                        strokeWidth={1}
+                      />
+                    ))}
+                  </g>
+                </g>
+              )}
+
               {/* The limit itself, and a quieter inner ring for depth. */}
               <circle
                 cx={CENTRE_X}

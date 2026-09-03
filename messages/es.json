@@ -1239,10 +1239,13 @@
       "sports": "Deportes"
     }
   },
-  "trustBar": {
-    "label": "Garantías de CauseKind",
-    "verified": "Solicitudes verificadas",
-    "fee": "0% de comisión",
-    "handover": "Entrega guiada"
+  "trustBand": {
+    "label": "Por qué CauseKind es seguro",
+    "trustedTitle": "Comunidad de confianza",
+    "trustedBody": "Seguro. Verificado. Fiable.",
+    "impactTitle": "Impacto local",
+    "impactBody": "Ayudando a personas de tu barrio.",
+    "togetherTitle": "Más fuertes juntos",
+    "togetherBody": "Mejor comunidad. Mejor mañana."
   }
 }

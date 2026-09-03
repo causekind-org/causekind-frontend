@@ -1239,10 +1239,13 @@
       "sports": "ਖੇਡਾਂ"
     }
   },
-  "trustBar": {
-    "label": "CauseKind ਸੁਰੱਖਿਆ ਉਪਾਅ",
-    "verified": "ਪ੍ਰਮਾਣਿਤ ਬੇਨਤੀਆਂ",
-    "fee": "0% ਪਲੇਟਫਾਰਮ ਫੀਸ",
-    "handover": "ਅਗਵਾਈ ਹੇਠ ਸੌਂਪਣੀ"
+  "trustBand": {
+    "label": "CauseKind ਸੁਰੱਖਿਅਤ ਕਿਉਂ ਹੈ",
+    "trustedTitle": "ਭਰੋਸੇਯੋਗ ਭਾਈਚਾਰਾ",
+    "trustedBody": "ਸੁਰੱਖਿਅਤ। ਪ੍ਰਮਾਣਿਤ। ਭਰੋਸੇਯੋਗ।",
+    "impactTitle": "ਸਥਾਨਕ ਅਸਰ",
+    "impactBody": "ਤੁਹਾਡੇ ਆਪਣੇ ਮੁਹੱਲੇ ਦੇ ਲੋਕਾਂ ਦੀ ਮਦਦ।",
+    "togetherTitle": "ਇਕੱਠੇ ਹੋਰ ਮਜ਼ਬੂਤ",
+    "togetherBody": "ਬਿਹਤਰ ਭਾਈਚਾਰਾ। ਬਿਹਤਰ ਕੱਲ੍ਹ।"
   }
 }

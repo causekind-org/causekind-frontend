@@ -216,6 +216,10 @@ body {
   color: var(--color-foreground);
 }
 
+.font-hero-display {
+  font-family: var(--font-plus-jakarta-sans), sans-serif;
+}
+
 /* ── Brand Text ── */
 .brand-cause {
   color: #b04a15;
@@ -306,10 +310,11 @@ body {
   }
 }
 
-/* One quiet handover completing somewhere else, seen from very far away.
-   Used by WhatWeProvideSection as an ambient ground texture behind the ring.
+/* The instrument face turning inside the ten-kilometre ring. Used by
+   WhatWeProvideSection, which drives two groups from this one rule at
+   different durations and directions.
 
-   Only the keyframes live here. Every position, size, opacity and delay stays
+   Only the keyframes live here. Every rate, direction, colour and origin stays
    an inline style on the element: that component records in its own header that
    an earlier version moved its layout into an unlayered rule in this file and
    shipped a white screen nobody could explain. Keyframes cannot collide with
@@ -318,20 +323,34 @@ body {
    No prefers-reduced-motion block guarding it on purpose — the guards in this
    file are scoped to named class lists, not a global rule, so the component
    gates on useReducedMotion() in JS instead and simply does not apply the
-   animation. */
-@keyframes ck-quiet-handover {
-  0% {
-    opacity: 0;
-    transform: scale(0.35);
+   animation. Static, the face is still a face: the marks stay where they are. */
+@keyframes ck-range-dial {
+  from {
+    transform: rotate(0deg);
   }
 
-  35% {
-    opacity: 1;
+  to {
+    transform: rotate(360deg);
   }
+}
 
-  100% {
-    opacity: 0;
+/* The face breathing. Applied to a wrapper around the turning groups, never
+   alongside them: two animations on one element both writing `transform` do not
+   compose — the last one named wins the property outright and the rotation just
+   stops.
+
+   Deliberately one-directional. It only ever scales DOWN from full size,
+   because the marks already reach RING_R - 5 and anything above 1 would push
+   them outside the ten-kilometre ring the section is about. 3.2% is chosen to
+   sit just at the edge of noticing: enough that the panel is never quite still,
+   not enough to pull the eye off the beat copy. */
+@keyframes ck-range-breathe {
+  from {
     transform: scale(1);
+  }
+
+  to {
+    transform: scale(0.968);
   }
 }
 
@@ -2090,53 +2109,27 @@ body.mobile-menu-open {
   .ck-hero-overlap-panel { padding-top: 0; }
 }
 
-/* ── Desktop hero: size to the viewport, not to a hardcoded px height ──
-   The hero used to be min-h-[520/640/720px]. Those are floors, not caps, so on
-   any window shorter than roughly 880px the card ran past the fold and clipped.
+/* The category rail AND the trust band share the opening viewport with the
+   stage. SiteHeader publishes its measured height through --ck-nav-h; the clamp
+   keeps a 720px laptop useful without turning a tall monitor into a letterbox.
+   Mobile stays content-sized because translated copy must be allowed to grow.
 
-   --ck-nav-h is published by SiteHeader (Navbar.tsx) from the header's measured
-   height, and the measurement is what should win. --ck-nav-fallback only covers
-   first paint before hydration.
-
-   Do NOT reuse layout.tsx's 3.5rem here. That describes the mobile bar only.
-   The lg: bar measures ~118px, and an 88px guess left the hero ~30px too tall —
-   just enough to push the quote, which is bottom-anchored, below the fold.
-
-   --ck-hero-top-pad mirrors the section's sm:pt-8; without subtracting it the
-   hero overshoots by exactly that much.
-
-   Real CSS rather than Tailwind arbitrary values, for the reason given above. */
-.ck-hero-viewport {
-  --ck-hero-top-pad: 0px;
-  --ck-nav-fallback: 56px;  /* mobile bar */
-  height: calc(100svh - var(--ck-nav-h, var(--ck-nav-fallback)) - var(--ck-hero-top-pad));
-  min-height: 480px;  /* very short windows scroll instead of crushing content */
-  max-height: 900px;  /* very tall monitors don't get an absurd letterbox */
-}
-
-@media (min-width: 640px) {
-  .ck-hero-viewport {
-    --ck-hero-top-pad: 2rem;
-    --ck-nav-fallback: 118px;  /* measured desktop bar */
+   The allowance is 17rem, not 10.5rem: the band added a third panel below the
+   rail. And the maximum came down from 38rem, because on a 900px screen the
+   formula is not what binds — the maximum is — so raising the allowance alone
+   left the band one pixel below the fold. Both numbers are measured, not
+   guessed; the last two constants here were guessed and both were wrong. The
+   minimum is 26.5rem rather than 27rem for the same reason: on a 1280x720
+   laptop the minimum is what binds, and at 27rem the band cleared the fold by
+   -5px. Measured, not reasoned about. */
+@media (min-width: 1024px) {
+  .ck-lead-hero-stage {
+    height: clamp(
+      26.5rem,
+      calc(100svh - var(--ck-nav-h, 118px) - 17rem),
+      35rem
+    );
   }
-}
-
-/* Fluid interior. Everything here previously stepped between fixed Tailwind
-   sizes and never shrank between breakpoints, which is what overflowed the
-   shorter box. clamp() tracks the viewport continuously and closes the hero's
-   missing md: range in one go. */
-.ck-hero-pad {
-  padding-block: clamp(1.25rem, 3.2vh, 4rem);
-}
-.ck-hero-title {
-  font-size: clamp(1.75rem, 1.1rem + 2.6vw, 4rem);
-}
-.ck-hero-quote {
-  min-height: 4.5rem;
-}
-
-@media (min-height: 900px) {
-  .ck-hero-quote { min-height: 5.5rem; }
 }
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }

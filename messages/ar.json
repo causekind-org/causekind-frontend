@@ -1239,10 +1239,13 @@
       "sports": "الرياضة"
     }
   },
-  "trustBar": {
-    "label": "ضمانات CauseKind",
-    "verified": "طلبات موثّقة",
-    "fee": "0% رسوم المنصة",
-    "handover": "تسليم موجَّه"
+  "trustBand": {
+    "label": "لماذا CauseKind آمنة",
+    "trustedTitle": "مجتمع موثوق",
+    "trustedBody": "آمن. موثّق. جدير بالثقة.",
+    "impactTitle": "أثر محلي",
+    "impactBody": "مساعدة الناس في حيّك نفسه.",
+    "togetherTitle": "معًا أقوى",
+    "togetherBody": "مجتمع أفضل. غد أفضل."
   }
 }

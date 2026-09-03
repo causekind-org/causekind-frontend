@@ -1239,10 +1239,13 @@
       "sports": "খেলাধুলা"
     }
   },
-  "trustBar": {
-    "label": "CauseKind-এর সুরক্ষা",
-    "verified": "যাচাই করা অনুরোধ",
-    "fee": "0% প্ল্যাটফর্ম ফি",
-    "handover": "পরিচালিত হস্তান্তর"
+  "trustBand": {
+    "label": "CauseKind কেন নিরাপদ",
+    "trustedTitle": "নির্ভরযোগ্য সম্প্রদায়",
+    "trustedBody": "নিরাপদ। যাচাই করা। নির্ভরযোগ্য।",
+    "impactTitle": "স্থানীয় প্রভাব",
+    "impactBody": "আপনার নিজের পাড়ার মানুষের পাশে।",
+    "togetherTitle": "একসাথে আরও শক্ত",
+    "togetherBody": "ভালো সমাজ। ভালো আগামী।"
   }
 }

@@ -1239,10 +1239,13 @@
       "sports": "کھیل"
     }
   },
-  "trustBar": {
-    "label": "CauseKind کی ضمانتیں",
-    "verified": "تصدیق شدہ درخواستیں",
-    "fee": "0% پلیٹ فارم فیس",
-    "handover": "رہنمائی کے ساتھ حوالگی"
+  "trustBand": {
+    "label": "CauseKind کیوں محفوظ ہے",
+    "trustedTitle": "قابلِ اعتماد برادری",
+    "trustedBody": "محفوظ۔ تصدیق شدہ۔ قابلِ بھروسا۔",
+    "impactTitle": "مقامی اثر",
+    "impactBody": "آپ کے اپنے محلے کے لوگوں کی مدد۔",
+    "togetherTitle": "مل کر زیادہ مضبوط",
+    "togetherBody": "بہتر برادری۔ بہتر کل۔"
   }
 }
