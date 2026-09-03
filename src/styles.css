@@ -2124,7 +2124,13 @@ body.mobile-menu-open {
    -5px. Measured, not reasoned about. */
 @media (min-width: 1024px) {
   .ck-lead-hero-stage {
-    height: clamp(
+    /* min-height, never height. A fixed height here is a trap: the copy column
+       is text, and text grows — a longer headline, a translated subtext, a
+       larger font setting. When it outgrew the stage the stage did not grow, it
+       CLIPPED, and both CTAs were sliced in half behind the category rail.
+       Nothing measured it either: a clipped element still reports its full
+       rect, so an overlap check reads clean while the button is visibly cut. */
+    min-height: clamp(
       26.5rem,
       calc(100svh - var(--ck-nav-h, 118px) - 17rem),
       35rem
