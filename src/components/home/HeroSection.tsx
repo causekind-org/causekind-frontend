@@ -126,7 +126,7 @@ function ConnectionPins() {
         role="group"
       >
         {[
-          { ...item, pos: "left-[18%] top-[17%]", ring: "-left-7 -top-6" },
+          { ...item, pos: "left-[25%] top-[17%]", ring: "-left-7 -top-6" },
           // A top percentage on both, and they can only ever converge
           // vertically — they are on opposite sides of the column, so the
           // separation that matters is horizontal and does not move with the
