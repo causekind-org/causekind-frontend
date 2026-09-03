@@ -2135,11 +2135,32 @@ body.mobile-menu-open {
                              which is not a margin — 38px leaves ~15)
        1080px tall -> 80px  (the 5rem cap this hero has always used)
 
-     slope (80-38)/(1080-720) = 0.1167 -> 11.67vh, intercept -46px. The width
-     term still caps it on a wide, short window, and the clamp's own bounds stop
-     it running away at either extreme. */
+     slope (80-38)/(1080-720) = 0.1167 -> 11.67vh, intercept -46px.
+
+     The WIDTH term is 2.2vw, not the 4.45vw this hero used with its old
+     one-sentence headline. The headline is two deliberate lines now, and the
+     longer of them -- "Who Needs What You Have" -- has to stay unbroken or
+     the two-line shape the board is built on becomes four.
+
+     Measured, not estimated: at 1920 that line's natural width is 673px at
+     56px, and the copy column offers it 490px. So the largest size that
+     keeps it unbroken is 43px at 1920 -- 2.24vw -- once the horizontal
+     padding below is taken into account. 2.2vw sits just under it.
+
+     Three earlier attempts at this number (4.45vw, 2.9vw, 2.35vw) all wrapped,
+     every one of them because the column width was estimated rather than read.
+     If this copy changes again, measure it: put the string in a hidden
+     white-space:nowrap span in the same font and divide the available width by
+     its natural width per px.
+
+     The headline is smaller than the marketing board's as a result. The real
+     lever is the column: it is 44% of the stage against the board's ~52%.
+     Widening it would move the photograph and the two bubbles on it, so it
+     is a separate decision, not a side effect of a copy change.
+
+     The clamp's own bounds stop it running away at either extreme. */
   .ck-hero-headline {
-    font-size: clamp(2.15rem, min(4.45vw, 11.67vh - 46px), 5rem);
+    font-size: clamp(1.85rem, min(2.2vw, 11.67vh - 46px), 5rem);
   }
 
   .ck-lead-hero-stage {

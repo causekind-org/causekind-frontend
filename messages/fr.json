@@ -29,7 +29,8 @@
   "hero": {
     "badge": "Rendre la vie meilleure",
     "eyebrow": "Don local, de personne à personne",
-    "headline": "Ce que vous avez peut répondre à un vrai besoin",
+    "headlineTop": "Trouvez quelqu'un près de chez vous",
+    "headlineAccent": "Qui a besoin de ce que vous avez",
     "subtext": "Parcourez des demandes vérifiées d'objets utiles, dans le respect de la vie privée. Donnez directement, avec CauseKind qui encadre la remise.",
     "donateNow": "Faites un don maintenant",
     "howWeWork": "Comment nous travaillons",

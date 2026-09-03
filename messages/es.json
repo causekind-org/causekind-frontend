@@ -29,7 +29,8 @@
   "hero": {
     "badge": "Mejorando la vida",
     "eyebrow": "Donación local, de persona a persona",
-    "headline": "Lo que tienes puede cubrir una necesidad real",
+    "headlineTop": "Encuentra a alguien cerca",
+    "headlineAccent": "Que necesita lo que tienes",
     "subtext": "Explora solicitudes verificadas de artículos útiles, con la privacidad protegida. Dona directamente, con CauseKind guiando la entrega.",
     "donateNow": "Donar ahora",
     "howWeWork": "como trabajamos",

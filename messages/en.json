@@ -29,7 +29,8 @@
   "hero": {
     "badge": "Making Lives Better",
     "eyebrow": "Local giving, person to person",
-    "headline": "What you have can meet a real need",
+    "headlineTop": "Find Someone Near You",
+    "headlineAccent": "Who Needs What You Have",
     "subtext": "Browse privacy-safe, verified requests for useful items. Give directly, with CauseKind guiding the handover.",
     "donateNow": "Donate Now",
     "howWeWork": "How we work",
