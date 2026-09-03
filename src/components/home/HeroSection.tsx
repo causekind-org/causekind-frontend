@@ -121,14 +121,12 @@ function ConnectionPins() {
         role="group"
       >
         {[
-          // Both pins keep off the photo column’s left quarter. That strip is
-          // the middle of the stage, and the proof card now sits there.
-          { ...item, pos: "right-[10%] top-[7%]", ring: "-left-6 -top-7" },
+          { ...item, pos: "left-[2%] top-[8%]", ring: "-left-6 -top-7" },
           // Anchored to the bottom, not to a top percentage. The stage height
           // is a clamp that bottoms out on a short laptop, and a top percentage
           // walks up into whatever is above it there — which is exactly how an
           // earlier version collided at one width and not the others.
-          { ...need, pos: "left-[38%] bottom-[10%]", ring: "-right-7 -bottom-6" },
+          { ...need, pos: "right-[6%] bottom-[12%]", ring: "-right-7 -bottom-6" },
         ].map(({ Icon, label, chip, text, pos, ring }) => (
           <motion.div
             key={label}
@@ -163,8 +161,15 @@ function ConnectionPins() {
   );
 }
 
-/** The reference's floating proof card, top-right of the photograph. */
-function AssurancePanel() {
+/**
+ * The two assurances, in the copy column rather than floating on the
+ * photograph.
+ *
+ * <p>It reads in the same downward pass as the headline and the buttons, and it
+ * cannot collide with anything — which the floating card managed twice. It also
+ * gives the photograph back: nothing of ours sits on it now.
+ */
+function AssuranceList() {
   const t = useTranslations("hero");
   const assurances = [
     {
@@ -180,36 +185,21 @@ function AssurancePanel() {
   ];
 
   return (
-    // Two elements on purpose. The centring is a transform, and so is
-    // framer-motion’s x/y — motion writes the element’s transform outright, so
-    // a -translate-x-1/2 on the animated node is simply discarded and the card
-    // lands off-centre. The wrapper positions, the inner node animates.
-    <div className="pointer-events-none absolute left-1/2 top-1/2 z-30 hidden w-[13.5rem] -translate-x-1/2 -translate-y-1/2 lg:block">
-      <motion.aside
-        className="pointer-events-auto rounded-[1.35rem] bg-white/94 p-4 text-stone-950 shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_18px_45px_rgba(62,35,18,0.18)] backdrop-blur-sm dark:bg-stone-950/90 dark:text-stone-100 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_18px_45px_rgba(0,0,0,0.3)]"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 72, damping: 20, delay: 0.42 }}
-        aria-label={t("assuranceLabel")}
-      >
-        {assurances.map(({ Icon, title, body }, index) => (
-          <div
-            key={title}
-            className={index === 0 ? "pb-3.5" : "border-t border-stone-200 pt-3.5 dark:border-white/10"}
-          >
-            <div className="flex items-center gap-2.5">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#f8eee7] text-[#b04a15] dark:bg-[#b04a15]/18 dark:text-[#e98d55]">
-                <Icon className="size-4" strokeWidth={1.8} aria-hidden />
-              </span>
-              <p className="text-sm font-bold leading-tight">{title}</p>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-stone-600 dark:text-stone-400">
+    <ul aria-label={t("assuranceLabel")} className="flex list-none flex-col gap-3">
+      {assurances.map(({ Icon, title, body }) => (
+        <li key={title} className="flex items-start gap-[11px]">
+          <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-[#f8eee7] text-[#b04a15] dark:bg-[#b04a15]/18 dark:text-[#e98d55]">
+            <Icon className="size-[15px]" strokeWidth={1.8} aria-hidden />
+          </span>
+          <span className="block pt-px">
+            <span className="block text-sm font-bold leading-tight">{title}</span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-stone-600 dark:text-stone-400">
               {body}
-            </p>
-          </div>
-        ))}
-      </motion.aside>
-    </div>
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -275,6 +265,15 @@ export function HeroSection() {
               </motion.p>
 
               <motion.div
+                className="mt-[22px]"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.42, ease: [0.2, 0, 0, 1], delay: 0.18 }}
+              >
+                <AssuranceList />
+              </motion.div>
+
+              <motion.div
                 className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row lg:mt-7"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -306,7 +305,6 @@ export function HeroSection() {
                   </span>
                 )}
               </motion.div>
-
             </div>
 
             <div className="relative min-h-[19.5rem] overflow-visible sm:min-h-[23rem] lg:min-h-0">
@@ -352,10 +350,6 @@ export function HeroSection() {
               />
               <ConnectionPins />
             </div>
-
-            {/* A child of the stage, not of the photo column: it is centred on
-                the hero as a whole, so it has to measure against the hero. */}
-            <AssurancePanel />
           </div>
 
           <div className="relative z-30 -mt-1 pt-7 lg:-mt-7 lg:pt-0">
