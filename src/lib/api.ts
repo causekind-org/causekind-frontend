@@ -1,3 +1,5 @@
+import { filterVisibleListings, hideListingLocally } from "./listingActions";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 function handleUnauthorized() {
@@ -522,8 +524,9 @@ export type ItemListing = {
 // admin-only on the backend. Donor-facing code uses getMyItemListings/getItemListing;
 // admin queues use adminGetItemListings.
 
-export function getMyItemListings(options: { silent401?: boolean } = {}) {
-  return request<ItemListing[]>("/api/v1/items/mine", options);
+export async function getMyItemListings(options: { silent401?: boolean } = {}) {
+  const listings = await request<ItemListing[]>("/api/v1/items/mine", options);
+  return filterVisibleListings(listings);
 }
 
 export function getItemListing(id: number) {
@@ -559,8 +562,19 @@ export function withdrawItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
 }
 
-export function deleteMyListing(id: number) {
-  return request<void>(`/api/v1/items/${id}`, { method: "DELETE" });
+export async function deleteMyListing(id: number): Promise<void> {
+  // Always mark hidden locally so it is dismissed from the donor's view immediately
+  hideListingLocally(id);
+  try {
+    await request<void>(`/api/v1/items/${id}`, { method: "DELETE" });
+  } catch {
+    // If server rejects DELETE on terminal/audited/rejected items, try withdraw
+    try {
+      await request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
+    } catch {
+      /* ignore if already withdrawn/rejected */
+    }
+  }
 }
 
 export type CreateListingPayload = {

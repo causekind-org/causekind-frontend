@@ -33,6 +33,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { canDeleteDraft, canWithdrawRequest, canHideWithdrawnRequest, isRequestActive } from "@/lib/requestActions";
+import { canDeleteListing, canWithdrawListing, canPauseListing, canResumeListing } from "@/lib/listingActions";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
 import { ClosedOfferCard } from "@/components/ClosedOfferCard";
 import { displayReason, missingInfoLines } from "@/lib/rejectionReason";
@@ -1591,9 +1592,10 @@ export default function DashboardPage() {
     try {
       await deleteMyListing(id);
       setItemListings(prev => prev.filter(l => l.id !== id));
+      setSelectedListing(prev => (prev?.id === id ? null : prev));
       toast.success("Listing deleted");
-    } catch {
-      toast.error("Failed to delete listing");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete listing");
     } finally {
       setListingActionLoading(null);
     }
@@ -1905,7 +1907,7 @@ export default function DashboardPage() {
                                       </span>
                                     </Link>
                                   )}
-                                  {l.status === "ELIGIBLE_FOR_MATCHING" || l.status === "AVAILABLE" ? (
+                                  {canPauseListing(l.status) && (
                                     <button
                                       onClick={() => handleListingAction(l.id, "pause")}
                                       disabled={listingActionLoading === l.id}
@@ -1913,8 +1915,8 @@ export default function DashboardPage() {
                                     >
                                       {listingActionLoading === l.id ? "…" : "Pause"}
                                     </button>
-                                  ) : null}
-                                  {l.status === "PAUSED" && (
+                                  )}
+                                  {canResumeListing(l.status) && (
                                     <button
                                       onClick={() => handleListingAction(l.id, "resume")}
                                       disabled={listingActionLoading === l.id}
@@ -1923,7 +1925,7 @@ export default function DashboardPage() {
                                       {listingActionLoading === l.id ? "…" : "Resume"}
                                     </button>
                                   )}
-                                  {!["DONATED", "FULFILLED", "REJECTED", "WITHDRAWN"].includes(l.status) && (
+                                  {canWithdrawListing(l.status) && (
                                     <button
                                       onClick={() => { if (confirm("Withdraw this listing? This cannot be undone.")) handleListingAction(l.id, "withdraw"); }}
                                       disabled={listingActionLoading === l.id}
@@ -1932,13 +1934,13 @@ export default function DashboardPage() {
                                       Withdraw
                                     </button>
                                   )}
-                                  {["REJECTED", "WITHDRAWN", "EXPIRED"].includes(l.status) && (
+                                  {canDeleteListing(l.status) && (
                                     <button
                                       onClick={() => handleDeleteListing(l.id)}
                                       disabled={listingActionLoading === l.id}
                                       className="text-xs text-red-600 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 font-semibold"
                                     >
-                                      {listingActionLoading === l.id ? "…" : "Delete"}
+                                      {listingActionLoading === l.id ? "…" : isDraft ? "Discard draft" : "Delete"}
                                     </button>
                                   )}
                                 </div>
@@ -2276,6 +2278,7 @@ export default function DashboardPage() {
           await handleListingAction(id, action);
           setSelectedListing(null);
         }}
+        onDelete={handleDeleteListing}
         actionLoading={listingActionLoading}
       />
     </div>

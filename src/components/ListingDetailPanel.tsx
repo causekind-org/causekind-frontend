@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { ItemListing, ItemMatch } from "@/lib/api";
 import { displayReason, missingInfoLines } from "@/lib/rejectionReason";
+import { canWithdrawListing, canDeleteListing } from "@/lib/listingActions";
 
 // ── Journey phases ────────────────────────────────────────────────────────────
 
@@ -222,10 +223,11 @@ interface Props {
   match?: ItemMatch | null;
   onClose: () => void;
   onAction: (id: number, action: "pause" | "resume" | "withdraw") => Promise<void>;
+  onDelete?: (id: number) => Promise<void>;
   actionLoading: number | null;
 }
 
-export function ListingDetailPanel({ listing, match, onClose, onAction, actionLoading }: Props) {
+export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete, actionLoading }: Props) {
   // Lock body scroll while open
   useEffect(() => {
     if (listing) {
@@ -539,12 +541,19 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
             could not be tapped. The extra pb clears it; the row's own background
             extends behind the dock so there is no gap. --ck-bottom-chrome is 0
             at lg, where this resolves to the py-4 it has always had. */}
-        {!isTerminal && (
+        {(canWithdrawListing(listing.status) || canDeleteListing(listing.status) || isNeedsInfo || isEligible || isPaused) && (
           <div className="border-t border-stone-100 dark:border-zinc-800 px-5 py-4 pb-[calc(var(--ck-bottom-chrome)+1rem)] flex flex-wrap gap-2 bg-white dark:bg-zinc-950">
+            {listing.status === "DRAFT" && (
+              <Link href={`/items/new?draft=${listing.id}`} className="flex-1">
+                <button className="w-full bg-[var(--ck-role-accent)] hover:brightness-110 text-white text-sm font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-all">
+                  Continue Listing <ChevronRight className="w-4 h-4" />
+                </button>
+              </Link>
+            )}
             {isNeedsInfo && (
               <Link href={`/items/${listing.id}/edit`} className="flex-1">
                 <button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-colors">
-                  Edit & Resubmit <ChevronRight className="w-4 h-4" />
+                  Edit &amp; Resubmit <ChevronRight className="w-4 h-4" />
                 </button>
               </Link>
             )}
@@ -566,13 +575,24 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, actionLo
                 {actionLoading === listing.id ? "Resuming…" : "Resume Listing"}
               </button>
             )}
-            <button
-              onClick={() => { if (confirm("Withdraw this listing? This cannot be undone.")) onAction(listing.id, "withdraw"); }}
-              disabled={actionLoading === listing.id}
-              className="text-sm font-semibold py-2.5 px-4 rounded-xl border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors disabled:opacity-50"
-            >
-              Withdraw
-            </button>
+            {canWithdrawListing(listing.status) && (
+              <button
+                onClick={() => { if (confirm("Withdraw this listing? This cannot be undone.")) onAction(listing.id, "withdraw"); }}
+                disabled={actionLoading === listing.id}
+                className="text-sm font-semibold py-2.5 px-4 rounded-xl border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors disabled:opacity-50"
+              >
+                Withdraw
+              </button>
+            )}
+            {canDeleteListing(listing.status) && onDelete && (
+              <button
+                onClick={() => onDelete(listing.id)}
+                disabled={actionLoading === listing.id}
+                className="text-sm font-semibold py-2.5 px-4 rounded-xl border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors disabled:opacity-50"
+              >
+                {listing.status === "DRAFT" ? "Discard Draft" : "Delete Listing"}
+              </button>
+            )}
           </div>
         )}
       </div>
