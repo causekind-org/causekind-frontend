@@ -138,6 +138,26 @@
   --text-8xl: clamp(3.375rem, 2.3333rem + 5.2083vw, 6.5rem);
   --text-9xl: clamp(4rem, 2.4167rem + 7.9167vw, 8.75rem);
 
+  /* ── Terracotta brand ramp ────────────────────────────────────────────────
+     A full 50–900 scale around --brand-terra, so `bg-brand-500`,
+     `text-brand-700`, `border-brand-100` and friends exist as ordinary
+     utilities. `--color-brand-500` is #b04a15 exactly — the same value
+     --brand-terra carries — so the ramp and the token can never disagree
+     about what the brand colour is.
+
+     Added 2026-09-04 with the money donation page, which was authored against
+     this ramp. Additive only: no existing utility changes meaning. */
+  --color-brand-50: #f7ebe4;
+  --color-brand-100: #eed3c3;
+  --color-brand-200: #e2b39b;
+  --color-brand-300: #d48f6c;
+  --color-brand-400: #c66e44;
+  --color-brand-500: #b04a15;
+  --color-brand-600: #933c10;
+  --color-brand-700: #762f0c;
+  --color-brand-800: #5c2409;
+  --color-brand-900: #451b06;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
