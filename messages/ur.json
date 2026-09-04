@@ -18,7 +18,9 @@
     "signOut": "سائن آؤٹ کریں۔",
     "openMenu": "مینو کھولیں۔",
     "profileMenu": "پروفائل مینو",
-    "toggleTheme": "تھیم کو ٹوگل کریں۔"
+    "toggleTheme": "تھیم کو ٹوگل کریں۔",
+    "moneyDonation": "نقد عطیہ",
+    "inKindDonation": "اشیاء کا عطیہ"
   },
   "logout": {
     "title": "سائن آؤٹ کریں؟",

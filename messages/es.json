@@ -18,7 +18,9 @@
     "signOut": "desconectar",
     "openMenu": "abrir menú",
     "profileMenu": "Menú de perfil",
-    "toggleTheme": "Alternar tema"
+    "toggleTheme": "Alternar tema",
+    "moneyDonation": "Donación monetaria",
+    "inKindDonation": "Donación en especie"
   },
   "logout": {
     "title": "¿Desconectar?",

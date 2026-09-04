@@ -18,7 +18,9 @@
     "signOut": "Sign out",
     "openMenu": "Open menu",
     "profileMenu": "Profile menu",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "moneyDonation": "Money Donation",
+    "inKindDonation": "In-Kind Donation"
   },
   "logout": {
     "title": "Sign out?",

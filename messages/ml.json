@@ -18,7 +18,9 @@
     "signOut": "സൈൻ ഔട്ട്",
     "openMenu": "മെനു തുറക്കുക",
     "profileMenu": "പ്രൊഫൈൽ മെനു",
-    "toggleTheme": "തീം ടോഗിൾ ചെയ്യുക"
+    "toggleTheme": "തീം ടോഗിൾ ചെയ്യുക",
+    "moneyDonation": "പണ ദാനം",
+    "inKindDonation": "വസ്തു ദാനം"
   },
   "logout": {
     "title": "സൈൻ ഔട്ട്?",

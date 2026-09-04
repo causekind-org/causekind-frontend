@@ -18,7 +18,9 @@
     "signOut": "लॉग आउट",
     "openMenu": "मेनू खोलें",
     "profileMenu": "प्रोफ़ाइल मेनू",
-    "toggleTheme": "थीम बदलें"
+    "toggleTheme": "थीम बदलें",
+    "moneyDonation": "धन दान",
+    "inKindDonation": "वस्तु दान"
   },
   "logout": {
     "title": "लॉग आउट करें?",

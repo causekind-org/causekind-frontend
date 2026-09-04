@@ -18,7 +18,9 @@
     "signOut": "ਸਾਇਨ ਆਉਟ",
     "openMenu": "ਮੀਨੂ ਖੋਲ੍ਹੋ",
     "profileMenu": "ਪ੍ਰੋਫਾਈਲ ਮੀਨੂ",
-    "toggleTheme": "ਥੀਮ ਨੂੰ ਟੌਗਲ ਕਰੋ"
+    "toggleTheme": "ਥੀਮ ਨੂੰ ਟੌਗਲ ਕਰੋ",
+    "moneyDonation": "ਪੈਸੇ ਦਾ ਦਾਨ",
+    "inKindDonation": "ਵਸਤੂ ਦਾਨ"
   },
   "logout": {
     "title": "ਸਾਇਨ ਆਉਟ?",

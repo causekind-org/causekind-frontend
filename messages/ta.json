@@ -18,7 +18,9 @@
     "signOut": "வெளியேறு",
     "openMenu": "மெனுவைத் திற",
     "profileMenu": "சுயவிவர மெனு",
-    "toggleTheme": "தீம் மாறு"
+    "toggleTheme": "தீம் மாறு",
+    "moneyDonation": "பண நன்கொடை",
+    "inKindDonation": "பொருள் நன்கொடை"
   },
   "logout": {
     "title": "வெளியேறவா?",

@@ -18,7 +18,9 @@
     "signOut": "সাইন আউট করুন",
     "openMenu": "মেনু খুলুন",
     "profileMenu": "প্রোফাইল মেনু",
-    "toggleTheme": "থিম টগল করুন"
+    "toggleTheme": "থিম টগল করুন",
+    "moneyDonation": "আর্থিক দান",
+    "inKindDonation": "সামগ্রী দান"
   },
   "logout": {
     "title": "সাইন আউট করবেন?",

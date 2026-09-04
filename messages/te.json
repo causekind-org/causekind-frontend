@@ -18,7 +18,9 @@
     "signOut": "సైన్ అవుట్ చేయండి",
     "openMenu": "మెనుని తెరవండి",
     "profileMenu": "ప్రొఫైల్ మెను",
-    "toggleTheme": "థీమ్‌ను టోగుల్ చేయండి"
+    "toggleTheme": "థీమ్‌ను టోగుల్ చేయండి",
+    "moneyDonation": "నగదు దానం",
+    "inKindDonation": "వస్తు దానం"
   },
   "logout": {
     "title": "సైన్ అవుట్ చేయాలా?",

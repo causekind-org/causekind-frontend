@@ -18,7 +18,9 @@
     "signOut": "تسجيل الخروج",
     "openMenu": "فتح القائمة",
     "profileMenu": "قائمة الملف الشخصي",
-    "toggleTheme": "تبديل الموضوع"
+    "toggleTheme": "تبديل الموضوع",
+    "moneyDonation": "تبرع نقدي",
+    "inKindDonation": "تبرع عيني"
   },
   "logout": {
     "title": "تسجيل الخروج؟",

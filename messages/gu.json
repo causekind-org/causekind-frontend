@@ -18,7 +18,9 @@
     "signOut": "સાઇન આઉટ કરો",
     "openMenu": "મેનુ ખોલો",
     "profileMenu": "પ્રોફાઇલ મેનૂ",
-    "toggleTheme": "થીમ ટૉગલ કરો"
+    "toggleTheme": "થીમ ટૉગલ કરો",
+    "moneyDonation": "નાણાકીય દાન",
+    "inKindDonation": "વસ્તુ દાન"
   },
   "logout": {
     "title": "સાઇન આઉટ કરીએ?",

@@ -18,7 +18,9 @@
     "signOut": "ಸೈನ್ ಔಟ್ ಮಾಡಿ",
     "openMenu": "ಮೆನು ತೆರೆಯಿರಿ",
     "profileMenu": "ಪ್ರೊಫೈಲ್ ಮೆನು",
-    "toggleTheme": "ಥೀಮ್ ಅನ್ನು ಟಾಗಲ್ ಮಾಡಿ"
+    "toggleTheme": "ಥೀಮ್ ಅನ್ನು ಟಾಗಲ್ ಮಾಡಿ",
+    "moneyDonation": "ಹಣದ ದಾನ",
+    "inKindDonation": "ವಸ್ತು ದಾನ"
   },
   "logout": {
     "title": "ಸೈನ್ ಔಟ್ ಮಾಡುವುದೇ?",

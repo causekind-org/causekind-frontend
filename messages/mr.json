@@ -18,7 +18,9 @@
     "signOut": "साइन आउट करा",
     "openMenu": "मेनू उघडा",
     "profileMenu": "प्रोफाइल मेनू",
-    "toggleTheme": "थीम टॉगल करा"
+    "toggleTheme": "थीम टॉगल करा",
+    "moneyDonation": "आर्थिक दान",
+    "inKindDonation": "वस्तू दान"
   },
   "logout": {
     "title": "साइन आउट करायचे?",
