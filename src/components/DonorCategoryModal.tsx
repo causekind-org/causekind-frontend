@@ -204,6 +204,30 @@ useEffect(() => {
   }, [isLoading, user?.role]);
 
   /* =======================================================
+     SCROLL LOCK
+
+     The backdrop is `fixed inset-0 overflow-hidden`, so nothing
+     inside it scrolls — without this, a wheel over the picker
+     scrolls the landing page behind it instead, and the donor
+     watches the hero slide around under the scrim.
+
+     Same pattern as CameraCaptureDialog: keep the previous value
+     rather than assuming "", so closing the picker cannot clear a
+     lock some other open overlay is relying on.
+  ======================================================= */
+
+  useEffect(() => {
+    if (!show) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [show]);
+
+  /* =======================================================
      ESCAPE KEY
   ======================================================= */
 
