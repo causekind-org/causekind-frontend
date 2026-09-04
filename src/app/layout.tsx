@@ -22,7 +22,7 @@ import { DoneeListingPrompt } from "@/components/DoneeListingPrompt";
 import { DonorCategoryModal } from "@/components/DonorCategoryModal";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
-import { GoogleTagManager } from "@next/third-parties/google";
+import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
 import MetaPixel from "@/components/MetaPixel";
 import { SiteBottomBlur } from "@/components/SiteBottomBlur";
 import { RoleClickSpark } from "@/components/RoleClickSpark";
@@ -94,11 +94,8 @@ export default async function RootLayout({
 }) {
   const messages = await getMessages();
 
-  const gtmId = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P7693M56";
-
   return (
     <html lang="en" suppressHydrationWarning>
-      <GoogleTagManager gtmId={gtmId} />
       <head>
         {/* Sets data-ck-role-theme BEFORE first paint. Without it a recipient
             sees a terracotta flash: useAuth hydrates from localStorage in a
@@ -112,6 +109,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
+        <GoogleTagManagerGated />
         <MetaPixel />
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>
