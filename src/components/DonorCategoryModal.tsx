@@ -21,37 +21,6 @@ export const DONOR_CATEGORY_OPEN_EVENT = "ck-category-open";
 
 const STORAGE_KEY = "causekind_donor_category";
 
-/*
-   Marks the picker as dismissed without an answer (the X, or a
-   click on the backdrop).
-
-   Deliberately sessionStorage, where an actual choice goes to
-   localStorage: applying a selection is an answer and should
-   stick for good, while closing the dialog only means "not now".
-   Re-prompting on the next visit is reasonable; re-prompting on
-   every refresh of the same visit is not.
-*/
-const DISMISS_KEY = "causekind_donor_category_dismissed";
-
-function wasDismissedThisSession(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return sessionStorage.getItem(DISMISS_KEY) === "1";
-  } catch {
-    // Private-mode or blocked storage — fall back to prompting.
-    return false;
-  }
-}
-
-function markDismissedThisSession(): void {
-  if (typeof window === "undefined") return;
-  try {
-    sessionStorage.setItem(DISMISS_KEY, "1");
-  } catch {
-    // Nothing to do: the picker simply reappears on the next mount.
-  }
-}
-
 /* =========================================================
    CATEGORY DATA
 ========================================================= */
@@ -172,17 +141,21 @@ export function DonorCategoryModal() {
 ======================================================= */
 
 /*
-  Auto-open only for a donor who has never answered.
-  `readSelectedDonorCategories` returns null only when the key was
-  never written — `apply()` stores [] for "Show all needs instead",
-  so that counts as an answer too and the picker stays shut.
-  Revising a saved watchlist goes through DONOR_CATEGORY_OPEN_EVENT.
+  Opens for every DONOR on every page load, by the owner's explicit
+  product decision (2026-09-04) — the picker is the donor's front
+  door and he wants it in front of them each time, not once ever.
+
+  This deliberately reverts the gating that shipped with
+  `fix/bugs-fixed`: a saved watchlist no longer suppresses the
+  prompt. If that ever needs to change back, the check is
+  `readSelectedDonorCategories() !== null` — it returns null only
+  when the key was never written, and `apply()` stores [] for
+  "Show all needs instead", so that counts as an answer too.
 */
 useEffect(() => {
-  if (isLoading || user?.role !== "DONOR") return;
-  if (readSelectedDonorCategories() !== null) return;
-  if (wasDismissedThisSession()) return;
-  setShow(true);
+  if (!isLoading && user?.role === "DONOR") {
+    setShow(true);
+  }
 }, [isLoading, user?.role]);
   /* =======================================================
      LOAD EXISTING SELECTION
@@ -237,8 +210,6 @@ useEffect(() => {
   useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        // Escape is a dismissal, not an answer — see DISMISS_KEY.
-        markDismissedThisSession();
         setHoveredCategory(null);
         setShow(false);
       }
@@ -291,10 +262,6 @@ useEffect(() => {
     */
 
     if (name === "List Item") {
-      // Not an answer to "which categories", so nothing is stored —
-      // but the donor did act, and re-prompting when they come back
-      // from the listing form would be noise.
-      markDismissedThisSession();
       setShow(false);
       router.push("/items/new");
       return;
@@ -320,14 +287,7 @@ useEffect(() => {
      CLOSE
   ======================================================= */
 
-  /*
-    Closed without answering — see DISMISS_KEY. Every path that
-    shuts the picker without storing a choice goes through here,
-    so the donor is not re-prompted on the next page load of the
-    same visit.
-  */
   function closePicker() {
-    markDismissedThisSession();
     setHoveredCategory(null);
     setShow(false);
   }
