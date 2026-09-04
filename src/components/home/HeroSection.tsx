@@ -70,19 +70,25 @@ function ConnectionPins() {
     {
       lead: t("connectionItemLead"),
       rest: t("connectionItemRest"),
-      // Both cards sit on the flat front face of the cardboard box, never on
-      // either person. Measured against the photo at 1440px: the box face runs
-      // from ~34% to ~67% across and ~66% to ~91% down, bounded by the man's
-      // forearm on the start side and the woman's hand on the end side. The two
-      // cards span 36–47% and 52–63%, so both stay inside that band with room
-      // to spare, and neither lands on a body at any width the hero renders at.
-      className: "bottom-[15%] left-[36%]",
+      // Both cards float in the open background between the two people, above
+      // the box — the composition in the approved reference board.
+      //
+      // Measured against the reframed photo at 1536×776: at this height the gap
+      // runs from the man's shoulder (~34%) to the woman's shawl (~70%). The
+      // cards are ~10% of the photo wide, so 38–48% and 57–67% leaves roughly
+      // 4% of clearance on the outside of each and a 9% channel between them
+      // for the connector to arc through. Neither lands on a person.
+      //
+      // Positioned from the TOP, not the bottom: the reference places them
+      // against the heads and shoulders, which sit at a fixed fraction down the
+      // frame, while the bottom edge moves with the clip box's aspect ratio.
+      className: "top-[30%] left-[38%]",
       delay: 0,
     },
     {
       lead: t("connectionNeedLead"),
       rest: t("connectionNeedRest"),
-      className: "bottom-[15%] left-[52%]",
+      className: "top-[30%] left-[57%]",
       delay: 0.45,
     },
   ];
@@ -101,13 +107,19 @@ function ConnectionPins() {
       >
         <path
           className="ck-hero-route"
-          /* Follows the markers. Both cards now sit on the box, so this is a
-             short swoosh between two adjacent pins rather than the long arc
-             that spanned the full photo when they sat over each person.
-             Endpoints track the 36%/52% card positions: marker centres land at
-             41.6% and 57.6% across, which is x=416 and x=576 in this 1000-wide
-             viewBox. */
-          d="M416 336 C462 368 530 368 576 336"
+          /* Arcs up and over the channel between the two cards, as the
+             reference board draws it.
+
+             HAND-DERIVED FROM THE CARD POSITIONS ABOVE — nothing links the two.
+             The cards sit at left 38% and 57% and are ~10% wide, so their
+             marker centres are at 43% and 62% across. `preserveAspectRatio` is
+             `none` on a 1000×520 viewBox, so x is simply percent×10: 430 and
+             620. The control points lift the curve to y≈82, clear of both card
+             tops, so it reads as a connection between them rather than a line
+             through them.
+
+             If the cards move again, move these endpoints with them. */
+          d="M430 125 C472 82 578 82 620 125"
           fill="none"
           stroke="#d75a17"
           strokeLinecap="round"

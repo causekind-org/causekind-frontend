@@ -2260,9 +2260,14 @@ body.mobile-menu-open {
   animation: ck-hero-cta-icon-lift 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Gentler than it was (1.025→1.055). That zoom cost ~5% of the frame on top of
+   the ~7% the clip box's 1.92:1 already crops from a 1.78:1 source, which is
+   what pushed the subjects toward the edges and left no headroom. Backing it
+   off shows more of the photograph — the reference composition is close to the
+   full frame — while keeping the slow breathing motion the hero is built on. */
 @keyframes ck-hero-image-drift {
-  from { transform: scale(1.025) translate3d(-0.25%, 0, 0); }
-  to { transform: scale(1.055) translate3d(0.35%, -0.45%, 0); }
+  from { transform: scale(1.008) translate3d(-0.2%, 0, 0); }
+  to   { transform: scale(1.026) translate3d(0.28%, -0.35%, 0); }
 }
 
 @keyframes ck-hero-route-flow {
@@ -2322,7 +2327,18 @@ body.mobile-menu-open {
 
   .ck-hero-photo-clip {
     border-radius: 0;
-    clip-path: ellipse(88% 115% at 100% 45%);
+    /* The curve must clear the donor, not cut through him.
+
+       Measured at 1536×776: the clip box is 980×511 (1.92:1) against a 1672×940
+       source (1.78:1), and `ck-hero-image-drift` scales it a further ~1.048.
+       That puts the man's back — 14.4% across the source — at 10.6% of the clip
+       box. At `88%` the ellipse started biting at 12%, so it took a slice out of
+       his shoulder. `96%` moves the bite to 4% and leaves him ~7% of clearance,
+       which holds at every width the hero renders at.
+
+       If the drift scale below is ever increased, re-check this number: the two
+       together decide whether the subject survives the curve. */
+    clip-path: ellipse(96% 122% at 100% 45%);
   }
 }
 
