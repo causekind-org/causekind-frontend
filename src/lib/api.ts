@@ -428,6 +428,30 @@ export function getMyDonations() {
   return request<Donation[]>("/api/v1/donations/mine", { silent401: true });
 }
 
+export type TrustDonationPayload = {
+  amount: number;
+  fullName: string;
+  email: string;
+  mobileNumber?: string;
+  /** Optional. "" is sent as-is and understood by the backend as "no 80G receipt wanted". */
+  panNumber?: string;
+};
+
+/**
+ * Starts a general money donation to Sahas Charitable Trust — no campaign, and
+ * no login required.
+ *
+ * <p>The only donation endpoint that accepts guests. When the caller happens to
+ * be signed in the backend prefers their account's name and email over whatever
+ * is passed here, so the receipt always names the account holder.
+ */
+export function initiateTrustDonation(payload: TrustDonationPayload) {
+  return request<DonationOrder>("/api/v1/donations/trust", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 // ── Platform Tips & Handover Feedback ───────────────────────────────────────
 
 export type PlatformTipOrder = {

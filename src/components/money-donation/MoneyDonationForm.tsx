@@ -3,9 +3,32 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Lock, ShieldCheck, Heart } from 'lucide-react';
+import { initiateTrustDonation } from '@/lib/api';
+
+/**
+ * Loads Razorpay's checkout script on demand.
+ *
+ * Same shape as the one in `DonateButton` rather than a shared helper: the two
+ * live in different feature areas and a shared module here would be one import
+ * cycle away from pulling the campaign donate flow into this page's bundle.
+ */
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export function MoneyDonationForm() {
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
   const predefinedAmounts = [500, 1000, 2500, 5000];
   const [amount, setAmount] = useState<number | ''>(1000);
   const [customAmount, setCustomAmount] = useState<string>('');
@@ -42,33 +65,77 @@ export function MoneyDonationForm() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!amount || amount < 1) {
-      alert('Please select or enter a valid donation amount.');
+      toast.error('Please select or enter a valid donation amount.');
       return;
     }
     if (!formData.fullName || !formData.email) {
-      alert('Please fill out all required fields.');
+      toast.error('Please fill out your name and email.');
       return;
     }
-    // ─────────────────────────────────────────────────────────────────────
-    // PLACEHOLDER — nothing is submitted anywhere. This is the source
-    // project's original handler, kept only so the form is reviewable.
-    //
-    // It must NOT reach a real visitor: it tells the donor their donation
-    // intent was received while discarding their name, email, mobile and PAN.
-    // The page is gated on FEATURES.money precisely so this cannot happen.
-    //
-    // Phase 3 replaces this with a real call once the backend can represent a
-    // trust donation: today `Donation` requires a non-null donor User and a
-    // non-null Campaign, and has no PAN column, so there is nothing to POST to.
-    // See the 2026-09-04 Progress Log entry.
-    // ─────────────────────────────────────────────────────────────────────
-    alert(
-      `Payments are not connected yet. Nothing was submitted or stored.\n\n` +
-        `(Would have been ₹${amount} from ${formData.fullName}.)`
-    );
+    // Mirrors the server's @Pattern so a typo is caught before an order is
+    // created at Razorpay, rather than coming back as a 400 afterwards. Blank
+    // stays legal — it means "no 80G receipt wanted".
+    if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
+      toast.error('PAN must be five letters, four digits and one letter, e.g. ABCDE1234F.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Script first: an order created against a checkout that then fails to
+      // load leaves a stranded INITIATED row and a donor with no way to pay it.
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        toast.error('Could not load Razorpay. Check your connection and try again.');
+        return;
+      }
+
+      const order = await initiateTrustDonation({
+        amount: Number(amount),
+        fullName: formData.fullName,
+        email: formData.email,
+        mobileNumber: formData.mobileNumber || undefined,
+        panNumber: formData.panNumber || undefined,
+      });
+
+      const rzp = new window.Razorpay({
+        key: order.razorpayKeyId,
+        amount: order.amountInPaise,
+        currency: order.currency,
+        name: 'CauseKind',
+        description: 'Donation to Sahas Charitable Trust',
+        order_id: order.razorpayOrderId,
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.mobileNumber || undefined,
+        },
+        theme: { color: '#b04a15' },
+        handler: () => {
+          // The donation is only COMPLETED when Razorpay's webhook reaches the
+          // backend, which is why nothing here marks it paid — this is purely
+          // the donor's confirmation that checkout closed successfully.
+          // Reuses /thank-you unchanged: it reads `campaign` as a display label
+          // and falls back to a generic one when absent, so passing the trust's
+          // name here makes the confirmation read correctly with no branch
+          // added there for a second kind of donation.
+          router.push(
+            `/thank-you?campaign=${encodeURIComponent('Sahas Charitable Trust')}` +
+              `&amount=${encodeURIComponent(String(amount))}`
+          );
+        },
+        modal: { ondismiss: () => toast.info('Payment cancelled. Nothing was charged.') },
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputClasses = "w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-white/15 bg-white dark:bg-zinc-900 text-foreground placeholder:text-stone-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-colors text-sm";
@@ -260,9 +327,14 @@ export function MoneyDonationForm() {
                 <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <button
                     type="submit"
-                    className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-brand-500 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-brand-500/20 transition-all duration-200 ease-out hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.98]"
+                    disabled={submitting}
+                    className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-brand-500 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-brand-500/20 transition-all duration-200 ease-out hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-brand-500"
                   >
-                    Proceed to Donate <span className="ml-2">&rarr;</span>
+                    {submitting ? 'Opening secure checkout…' : (
+                      <>
+                        Proceed to Donate <span className="ml-2">&rarr;</span>
+                      </>
+                    )}
                   </button>
                 </motion.div>
 
