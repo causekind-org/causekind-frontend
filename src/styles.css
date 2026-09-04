@@ -2157,7 +2157,12 @@ body.mobile-menu-open {
   font-family: Impact, Haettenschweiler, "Arial Narrow Bold", "Arial Narrow", sans-serif;
   font-size: clamp(1.55rem, 7.2vw, 3rem);
   font-stretch: condensed;
-  font-weight: 700;
+  /* 400, not 700. Impact ships exactly one weight — measured in the browser,
+     `400 48px Impact` and `700 48px Impact` set to the same 454.8px, so the 700
+     was never selecting a bold face. It was asking the rasteriser to SYNTHESISE
+     one, smearing every stem thicker on a display face that is already heavy.
+     Dropping to 400 renders Impact as drawn. */
+  font-weight: 400;
   letter-spacing: -0.018em;
   line-height: 0.98;
   /* No `-webkit-text-stroke`. It used to paint a background-coloured hairline
@@ -2318,7 +2323,21 @@ body.mobile-menu-open {
   }
 
   .ck-hero-photo-shell {
-    --ck-hero-photo-overlap: clamp(3.5rem, 6vw, 7.5rem);
+    /* How far the photo slides left, under the copy column.
+
+       Cut back from clamp(3.5rem, 6vw, 7.5rem) when the ellipse widened to 96%.
+       The old value was safe only because the narrower ellipse threw away the
+       photo's left edge: with the curve opened up to stop cutting the donor,
+       that same tuck put HIM behind the "Explore needs near you" button —
+       measured at 1280, his back landed at x=536 against a button ending at
+       x=579, showing his shoulder through a transparent outline button.
+
+       At this value the tuck is a few dozen pixels of blurred background behind
+       the button's tip, which is the effect the overlap was for, and the
+       subject clears the copy column entirely.
+
+       Tied to the ellipse: widen one and re-check the other. */
+    --ck-hero-photo-overlap: clamp(0rem, 0.8vw, 1rem);
     width: calc(100% + var(--ck-hero-photo-overlap) + var(--ck-hero-side-gutter));
     min-height: 0;
     margin-inline: 0;
