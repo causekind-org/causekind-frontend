@@ -2167,9 +2167,20 @@ body.mobile-menu-open {
   filter: drop-shadow(0 1px 1px rgb(255 250 244 / 0.7));
 }
 
-.ck-hero-primary-cta {
-  animation: ck-hero-cta-breathe 3.8s ease-in-out infinite;
-}
+/* ── Hero CTAs: motion answers the pointer, it does not run on its own ──────
+   These two buttons used to carry two infinite loops: `ck-hero-cta-breathe`
+   pulsing the primary's drop-shadow every 3.8s, and `ck-hero-cta-sheen`
+   sweeping a highlight across both every 5.2s, staggered 0.7s apart. Ambient
+   loops on the page's main action work against it — the eye is pulled to a
+   movement that means nothing, the two cycles drift in and out of phase with
+   each other, and the pair reads as a rendering glitch rather than an
+   invitation. Both are gone; the sheen is kept but now fires once, on hover or
+   keyboard focus, as a response to the user.
+
+   The sheen also had a real bug: `clip-path: inset(0 round 0.9rem)` hardcoded
+   the sm: radius, so below sm — where the buttons are 0.8rem — the highlight
+   spilled past the rounded corners. `border-radius: inherit` on the layer does
+   the clipping correctly at every breakpoint, so the clip-path is dropped. */
 
 .ck-hero-primary-cta::after,
 .ck-hero-secondary-cta::after {
@@ -2185,11 +2196,9 @@ body.mobile-menu-open {
     rgb(255 255 255 / 0.04) 61%,
     transparent 78%
   );
-  clip-path: inset(0 round 0.9rem);
   content: "";
   pointer-events: none;
   transform: translateX(-135%);
-  animation: ck-hero-cta-sheen 5.2s cubic-bezier(0.2, 0, 0, 1) infinite;
 }
 
 .ck-hero-secondary-cta::after {
@@ -2197,11 +2206,29 @@ body.mobile-menu-open {
     108deg,
     transparent 22%,
     rgb(207 70 0 / 0.02) 39%,
-    rgb(207 70 0 / 0.18) 50%,
+    rgb(207 70 0 / 0.2) 50%,
     rgb(207 70 0 / 0.02) 61%,
     transparent 78%
   );
-  animation-delay: 0.7s;
+}
+
+/* One pass, on intent. `forwards` is deliberately absent: the layer returns to
+   its parked -135% so a second hover sweeps again rather than sitting lit. */
+.ck-hero-primary-cta:hover::after,
+.ck-hero-primary-cta:focus-visible::after,
+.ck-hero-secondary-cta:hover::after,
+.ck-hero-secondary-cta:focus-visible::after {
+  animation: ck-hero-cta-sheen 0.72s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* The leading icon lifts and settles as the sheen crosses under it — a short
+   overshoot, not a bounce, so it agrees with the button's own -translate-y-0.5
+   hover lift instead of competing with it. */
+.ck-hero-primary-cta:hover .ck-hero-cta-icon,
+.ck-hero-primary-cta:focus-visible .ck-hero-cta-icon,
+.ck-hero-secondary-cta:hover .ck-hero-cta-icon,
+.ck-hero-secondary-cta:focus-visible .ck-hero-cta-icon {
+  animation: ck-hero-cta-icon-lift 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes ck-hero-image-drift {
@@ -2213,14 +2240,15 @@ body.mobile-menu-open {
   to { stroke-dashoffset: -108; }
 }
 
-@keyframes ck-hero-cta-breathe {
-  0%, 100% { filter: drop-shadow(0 7px 12px rgb(207 70 0 / 0.08)); }
-  50% { filter: drop-shadow(0 11px 18px rgb(207 70 0 / 0.3)); }
+@keyframes ck-hero-cta-sheen {
+  from { transform: translateX(-135%); }
+  to   { transform: translateX(135%); }
 }
 
-@keyframes ck-hero-cta-sheen {
-  0%, 62% { transform: translateX(-135%); }
-  82%, 100% { transform: translateX(135%); }
+@keyframes ck-hero-cta-icon-lift {
+  0%   { transform: translateY(0) scale(1); }
+  55%  { transform: translateY(-2.5px) scale(1.09); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 /* Keep the trust proof above the fixed mobile dock on very short screens. */
@@ -2284,9 +2312,13 @@ body.mobile-menu-open {
 @media (prefers-reduced-motion: reduce) {
   .ck-hero-photo-image,
   .ck-hero-route,
-  .ck-hero-primary-cta,
   .ck-hero-primary-cta::after,
-  .ck-hero-secondary-cta::after {
+  .ck-hero-secondary-cta::after,
+  .ck-hero-primary-cta:hover::after,
+  .ck-hero-primary-cta:focus-visible::after,
+  .ck-hero-secondary-cta:hover::after,
+  .ck-hero-secondary-cta:focus-visible::after,
+  .ck-hero-cta-icon {
     animation: none;
   }
 }

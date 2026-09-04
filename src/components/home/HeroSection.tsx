@@ -194,7 +194,7 @@ export function HeroSection() {
                     href={primaryAction.href}
                     className="ck-hero-primary-cta group relative isolate inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#cf4600] px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white shadow-[0_11px_25px_rgba(207,70,0,0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#b93f00] hover:shadow-[0_15px_30px_rgba(207,70,0,0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a60] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[#f29a65] dark:focus-visible:ring-offset-[#1a1512] sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
-                    <MapPin className="relative z-[1] size-4 shrink-0 sm:size-5" strokeWidth={2} aria-hidden />
+                    <MapPin className="ck-hero-cta-icon relative z-[1] size-4 shrink-0 sm:size-5" strokeWidth={2} aria-hidden />
                     <span className="relative z-[1] min-w-0 text-center">{primaryAction.label}</span>
                     <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                   </Link>
@@ -213,7 +213,7 @@ export function HeroSection() {
                   href="/requests"
                   className="ck-hero-secondary-cta group relative isolate inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] px-2 text-[0.56rem] font-extrabold uppercase leading-tight tracking-[0.02em] text-[#c65729] shadow-[inset_0_0_0_1.5px_rgba(197,84,43,0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(197,84,43,0.82),0_10px_22px_rgba(145,70,32,0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c54805] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:text-[#f0a06e] dark:hover:bg-white/5 dark:focus-visible:ring-offset-[#1a1512] sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.04em]"
                 >
-                  <UsersRound className="relative z-[1] size-4 shrink-0 sm:size-5" strokeWidth={2} aria-hidden />
+                  <UsersRound className="ck-hero-cta-icon relative z-[1] size-4 shrink-0 sm:size-5" strokeWidth={2} aria-hidden />
                   <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
                   <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                 </Link>
