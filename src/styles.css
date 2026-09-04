@@ -2199,6 +2199,15 @@ body.mobile-menu-open {
   content: "";
   pointer-events: none;
   transform: translateX(-135%);
+  /* Parked at -135% the layer sits entirely OUTSIDE the button, to its left,
+     and the button has no overflow clip (it cannot have one — the focus ring is
+     drawn outside the border box and would be cut off). So the parked sheen
+     renders as a pale vertical band beside the CTA. The old infinite animation
+     hid this by accident, spending only part of its cycle parked; hover-only
+     motion leaves it parked ~always, which made the band permanent.
+     `opacity: 0` is the actual fix: the keyframes below light it up only while
+     the sweep is running, so there is nothing to see at rest. */
+  opacity: 0;
 }
 
 .ck-hero-secondary-cta::after {
@@ -2241,8 +2250,8 @@ body.mobile-menu-open {
 }
 
 @keyframes ck-hero-cta-sheen {
-  from { transform: translateX(-135%); }
-  to   { transform: translateX(135%); }
+  from { opacity: 1; transform: translateX(-135%); }
+  to   { opacity: 1; transform: translateX(135%); }
 }
 
 @keyframes ck-hero-cta-icon-lift {
