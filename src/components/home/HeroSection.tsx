@@ -70,13 +70,19 @@ function ConnectionPins() {
     {
       lead: t("connectionItemLead"),
       rest: t("connectionItemRest"),
-      className: "bottom-[20%] left-[33%]",
+      // Both cards sit on the flat front face of the cardboard box, never on
+      // either person. Measured against the photo at 1440px: the box face runs
+      // from ~34% to ~67% across and ~66% to ~91% down, bounded by the man's
+      // forearm on the start side and the woman's hand on the end side. The two
+      // cards span 36–47% and 52–63%, so both stay inside that band with room
+      // to spare, and neither lands on a body at any width the hero renders at.
+      className: "bottom-[15%] left-[36%]",
       delay: 0,
     },
     {
       lead: t("connectionNeedLead"),
       rest: t("connectionNeedRest"),
-      className: "bottom-[20%] right-[12%]",
+      className: "bottom-[15%] left-[52%]",
       delay: 0.45,
     },
   ];
@@ -95,7 +101,13 @@ function ConnectionPins() {
       >
         <path
           className="ck-hero-route"
-          d="M395 294 C500 374 666 374 818 294"
+          /* Follows the markers. Both cards now sit on the box, so this is a
+             short swoosh between two adjacent pins rather than the long arc
+             that spanned the full photo when they sat over each person.
+             Endpoints track the 36%/52% card positions: marker centres land at
+             41.6% and 57.6% across, which is x=416 and x=576 in this 1000-wide
+             viewBox. */
+          d="M416 336 C462 368 530 368 576 336"
           fill="none"
           stroke="#d75a17"
           strokeLinecap="round"
@@ -107,22 +119,22 @@ function ConnectionPins() {
       {callouts.map(({ lead, rest, className, delay }) => (
         <motion.div
           key={lead}
-          className={`ck-hero-callout absolute hidden w-[clamp(7rem,8vw,8.4rem)] text-center lg:block ${className}`}
+          className={`ck-hero-callout absolute hidden w-[clamp(5.6rem,6.4vw,6.9rem)] text-center lg:block ${className}`}
           initial={false}
           animate={{ y: [0, -4, 0] }}
           transition={{ duration: 3.8, ease: "easeInOut", repeat: Infinity, delay }}
         >
-          <span className="absolute -top-8 left-1/2 z-10 -translate-x-1/2 drop-shadow-[0_5px_8px_rgba(114,43,8,0.25)]">
+          <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 drop-shadow-[0_5px_8px_rgba(114,43,8,0.25)]">
             <LocationMarker />
           </span>
-          <div className="relative rounded-[1.05rem] bg-[#fffdf9]/96 px-3 py-4 shadow-[0_10px_26px_rgba(75,42,19,0.18),0_0_0_1px_rgba(103,58,27,0.05)] backdrop-blur-[2px] dark:bg-stone-900/96">
-            <p className="text-[clamp(0.73rem,0.92vw,0.94rem)] font-extrabold leading-tight text-[#c54805] dark:text-[#f29a65]">
+          <div className="relative rounded-[0.9rem] bg-[#fffdf9]/96 px-2.5 py-3 shadow-[0_10px_26px_rgba(75,42,19,0.18),0_0_0_1px_rgba(103,58,27,0.05)] backdrop-blur-[2px] dark:bg-stone-900/96">
+            <p className="text-[clamp(0.64rem,0.8vw,0.82rem)] font-extrabold leading-tight text-[#c54805] dark:text-[#f29a65]">
               {lead}
             </p>
-            <p className="mt-1 text-[clamp(0.7rem,0.88vw,0.9rem)] font-bold leading-[1.3] text-[#231d18] dark:text-stone-100">
+            <p className="mt-0.5 text-[clamp(0.61rem,0.76vw,0.78rem)] font-bold leading-[1.28] text-[#231d18] dark:text-stone-100">
               {rest}
             </p>
-            <span className="absolute -bottom-2 left-1/2 size-4 -translate-x-1/2 rotate-45 bg-[#fffdf9] dark:bg-stone-900" aria-hidden />
+            <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-[#fffdf9] dark:bg-stone-900" aria-hidden />
           </div>
         </motion.div>
       ))}
