@@ -2109,72 +2109,185 @@ body.mobile-menu-open {
   .ck-hero-overlap-panel { padding-top: 0; }
 }
 
-/* The category rail AND the trust band share the opening viewport with the
-   stage. SiteHeader publishes its measured height through --ck-nav-h; the clamp
-   keeps a 720px laptop useful without turning a tall monitor into a letterbox.
-   Mobile stays content-sized because translated copy must be allowed to grow.
+/* Reference-matched hero ---------------------------------------------------
+   The header publishes its measured height via --ck-nav-h. The hero uses that
+   measurement only to size its own opening viewport; it never changes the
+   shared token or the navigation geometry. Content remains a min-height so
+   translated copy and browser text zoom can grow without being clipped. */
+.ck-showcase-hero {
+  min-height: calc(100svh - max(var(--ck-nav-h, 0px), 3.5rem));
+  min-height: calc(100dvh - max(var(--ck-nav-h, 0px), 3.5rem));
+  display: flex;
+}
 
-   The allowance is 17rem, not 10.5rem: the band added a third panel below the
-   rail. And the maximum came down from 38rem, because on a 900px screen the
-   formula is not what binds — the maximum is — so raising the allowance alone
-   left the band one pixel below the fold. Both numbers are measured, not
-   guessed; the last two constants here were guessed and both were wrong. The
-   minimum is 26.5rem rather than 27rem for the same reason: on a 1280x720
-   laptop the minimum is what binds, and at 27rem the band cleared the fold by
-   -5px. Measured, not reasoned about. */
+.ck-hero-frame {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: var(--ck-hero-frame-justify, center);
+}
+
+.ck-hero-dot-field {
+  background-image: radial-gradient(circle, rgb(197 72 5 / 0.12) 1px, transparent 1.25px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(to top, #000, transparent 82%);
+}
+
+.ck-hero-headline {
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", "Arial Narrow", sans-serif;
+  font-size: clamp(1.55rem, 7.2vw, 3rem);
+  font-stretch: condensed;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  line-height: 0.98;
+  -webkit-text-stroke: clamp(0.2px, 0.04vw, 0.6px) #fdf5ed;
+}
+
+.dark .ck-hero-headline {
+  -webkit-text-stroke-color: #1a1512;
+}
+
+.ck-hero-photo-shell {
+  margin-inline: 0.75rem;
+}
+
+.ck-hero-photo-clip {
+  border-radius: 1.25rem;
+}
+
+.ck-hero-photo-image {
+  animation: ck-hero-image-drift 14s ease-in-out infinite alternate;
+  transform-origin: 52% 48%;
+  will-change: transform;
+}
+
+.ck-hero-route {
+  stroke-dasharray: 7 11;
+  animation: ck-hero-route-flow 7s linear infinite;
+  filter: drop-shadow(0 1px 1px rgb(255 250 244 / 0.7));
+}
+
+.ck-hero-primary-cta {
+  animation: ck-hero-cta-breathe 3.8s ease-in-out infinite;
+}
+
+.ck-hero-primary-cta::after,
+.ck-hero-secondary-cta::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    108deg,
+    transparent 22%,
+    rgb(255 255 255 / 0.04) 39%,
+    rgb(255 255 255 / 0.42) 50%,
+    rgb(255 255 255 / 0.04) 61%,
+    transparent 78%
+  );
+  clip-path: inset(0 round 0.9rem);
+  content: "";
+  pointer-events: none;
+  transform: translateX(-135%);
+  animation: ck-hero-cta-sheen 5.2s cubic-bezier(0.2, 0, 0, 1) infinite;
+}
+
+.ck-hero-secondary-cta::after {
+  background: linear-gradient(
+    108deg,
+    transparent 22%,
+    rgb(207 70 0 / 0.02) 39%,
+    rgb(207 70 0 / 0.18) 50%,
+    rgb(207 70 0 / 0.02) 61%,
+    transparent 78%
+  );
+  animation-delay: 0.7s;
+}
+
+@keyframes ck-hero-image-drift {
+  from { transform: scale(1.025) translate3d(-0.25%, 0, 0); }
+  to { transform: scale(1.055) translate3d(0.35%, -0.45%, 0); }
+}
+
+@keyframes ck-hero-route-flow {
+  to { stroke-dashoffset: -108; }
+}
+
+@keyframes ck-hero-cta-breathe {
+  0%, 100% { filter: drop-shadow(0 7px 12px rgb(207 70 0 / 0.08)); }
+  50% { filter: drop-shadow(0 11px 18px rgb(207 70 0 / 0.3)); }
+}
+
+@keyframes ck-hero-cta-sheen {
+  0%, 62% { transform: translateX(-135%); }
+  82%, 100% { transform: translateX(135%); }
+}
+
+/* Keep the trust proof above the fixed mobile dock on very short screens. */
+@media (max-width: 1023px) and (max-height: 700px) {
+  .ck-showcase-hero {
+    --ck-hero-frame-justify: flex-start;
+  }
+
+  .ck-showcase-hero .ck-hero-photo-shell {
+    min-height: 6.5rem;
+  }
+}
+
 @media (min-width: 1024px) {
-  /* The headline answers to viewport HEIGHT as well as width: the copy column
-     decides whether the hero fits one screen, and the headline is the largest
-     thing in it.
+  .ck-showcase-hero {
+    --ck-hero-frame-justify: flex-start;
+    --ck-hero-side-gutter: clamp(2rem, 3.4vw, 5.5rem);
+    min-height: calc(100svh - max(var(--ck-nav-h, 0px), 5.5rem));
+    min-height: calc(100dvh - max(var(--ck-nav-h, 0px), 5.5rem));
+  }
 
-     One vh factor cannot serve both ends — 6vh fits a 720px laptop but shrinks
-     the headline to 65px on a 1080p monitor, where it should be 80px — so this
-     is the line through the two anchors that matter:
-
-       720px tall  -> 38px  (measured: 43px fits 1280x720 by exactly one pixel,
-                             which is not a margin — 38px leaves ~15)
-       1080px tall -> 80px  (the 5rem cap this hero has always used)
-
-     slope (80-38)/(1080-720) = 0.1167 -> 11.67vh, intercept -46px.
-
-     The WIDTH term is 2.2vw, not the 4.45vw this hero used with its old
-     one-sentence headline. The headline is two deliberate lines now, and the
-     longer of them -- "Who Needs What You Have" -- has to stay unbroken or
-     the two-line shape the board is built on becomes four.
-
-     Measured, not estimated: at 1920 that line's natural width is 673px at
-     56px, and the copy column offers it 490px. So the largest size that
-     keeps it unbroken is 43px at 1920 -- 2.24vw -- once the horizontal
-     padding below is taken into account. 2.2vw sits just under it.
-
-     Three earlier attempts at this number (4.45vw, 2.9vw, 2.35vw) all wrapped,
-     every one of them because the column width was estimated rather than read.
-     If this copy changes again, measure it: put the string in a hidden
-     white-space:nowrap span in the same font and divide the available width by
-     its natural width per px.
-
-     The headline is smaller than the marketing board's as a result. The real
-     lever is the column: it is 44% of the stage against the board's ~52%.
-     Widening it would move the photograph and the two bubbles on it, so it
-     is a separate decision, not a side effect of a copy change.
-
-     The clamp's own bounds stop it running away at either extreme. */
   .ck-hero-headline {
-    font-size: clamp(1.85rem, min(2.2vw, 11.67vh - 46px), 5rem);
+    font-size: clamp(2.65rem, min(3.9vw, 7.2vh), 6.5rem);
   }
 
   .ck-lead-hero-stage {
-    /* min-height, never height. A fixed height here is a trap: the copy column
-       is text, and text grows — a longer headline, a translated subtext, a
-       larger font setting. When it outgrew the stage the stage did not grow, it
-       CLIPPED, and both CTAs were sliced in half behind the category rail.
-       Nothing measured it either: a clipped element still reports its full
-       rect, so an overlap check reads clean while the button is visibly cut. */
+    flex: 1 1 auto;
     min-height: clamp(
-      26.5rem,
-      calc(100svh - var(--ck-nav-h, 118px) - 17rem),
-      35rem
+      25rem,
+      calc(100svh - max(var(--ck-nav-h, 0px), 5.5rem) - 14.5rem),
+      68rem
     );
+  }
+
+  .ck-hero-photo-shell {
+    --ck-hero-photo-overlap: clamp(3.5rem, 6vw, 7.5rem);
+    width: calc(100% + var(--ck-hero-photo-overlap) + var(--ck-hero-side-gutter));
+    min-height: 0;
+    margin-inline: 0;
+    margin-left: calc(-1 * var(--ck-hero-photo-overlap));
+  }
+
+  .ck-hero-photo-clip {
+    border-radius: 0;
+    clip-path: ellipse(88% 115% at 100% 45%);
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 680px) {
+  .ck-lead-hero-stage {
+    min-height: 22.5rem;
+  }
+}
+
+@media (max-width: 359px) {
+  .ck-hero-action-arrow {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-hero-photo-image,
+  .ck-hero-route,
+  .ck-hero-primary-cta,
+  .ck-hero-primary-cta::after,
+  .ck-hero-secondary-cta::after {
+    animation: none;
   }
 }
 

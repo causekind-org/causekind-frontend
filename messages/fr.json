@@ -28,17 +28,17 @@
   },
   "hero": {
     "badge": "Rendre la vie meilleure",
-    "eyebrow": "Don local, de personne à personne",
+    "eyebrow": "Rendre la vie meilleure",
     "headlineTop": "Trouvez quelqu'un près de chez vous",
     "headlineAccent": "Qui a besoin de ce que vous avez",
-    "subtext": "Parcourez des demandes vérifiées d'objets utiles, dans le respect de la vie privée. Donnez directement, avec CauseKind qui encadre la remise.",
+    "subtext": "Ce qui est superflu pour vous pourrait être essentiel pour quelqu’un d’autre.",
     "donateNow": "Faites un don maintenant",
     "howWeWork": "Comment nous travaillons",
     "transparent": "Dons 100% transparents",
     "fastDistribution": "Distribution rapide et efficace",
     "localCampaign": "Campagne locale",
-    "ctaBrowse": "Voir les besoins vérifiés",
-    "ctaStartGiving": "Commencer à donner",
+    "ctaBrowse": "Découvrez les besoins près de chez vous",
+    "ctaStartGiving": "Inscrivez-vous maintenant",
     "ctaListItem": "Proposer un objet",
     "ctaRequestItem": "Demander un objet",
     "ctaOpenDashboard": "Ouvrir le tableau de bord",
@@ -52,7 +52,7 @@
     "assuranceVerifiedBody": "Les demandes sont contrôlées avant d'arriver sur le tableau public.",
     "assuranceHandoverTitle": "Remise suivie",
     "assuranceHandoverBody": "Les deux parties confirment lorsque l'objet change de mains.",
-    "photoAlt": "Une enfant souriante serrant un ours en peluche dans un quartier ensoleillé."
+    "photoAlt": "Un jeune homme souriant remet une boîte d’objets utiles à une femme âgée dans un quartier baigné de soleil."
   },
   "stats": {
     "totalRaised": "Total des fonds collectés",

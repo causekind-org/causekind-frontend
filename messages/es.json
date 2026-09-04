@@ -28,17 +28,17 @@
   },
   "hero": {
     "badge": "Mejorando la vida",
-    "eyebrow": "Donación local, de persona a persona",
+    "eyebrow": "Mejorando vidas",
     "headlineTop": "Encuentra a alguien cerca",
     "headlineAccent": "Que necesita lo que tienes",
-    "subtext": "Explora solicitudes verificadas de artículos útiles, con la privacidad protegida. Dona directamente, con CauseKind guiando la entrega.",
+    "subtext": "Lo que te sobra podría ser esencial para otra persona.",
     "donateNow": "Donar ahora",
     "howWeWork": "como trabajamos",
     "transparent": "Donaciones 100% transparentes",
     "fastDistribution": "Distribución rápida y efectiva",
     "localCampaign": "Campaña Local",
-    "ctaBrowse": "Ver necesidades verificadas",
-    "ctaStartGiving": "Empezar a donar",
+    "ctaBrowse": "Explora las necesidades cerca de ti",
+    "ctaStartGiving": "Regístrate ahora",
     "ctaListItem": "Publicar un artículo",
     "ctaRequestItem": "Solicitar un artículo",
     "ctaOpenDashboard": "Abrir el panel",
@@ -52,7 +52,7 @@
     "assuranceVerifiedBody": "Las solicitudes se revisan antes de llegar al tablero público.",
     "assuranceHandoverTitle": "Entrega con seguimiento",
     "assuranceHandoverBody": "Ambas partes confirman cuando el artículo cambia de manos.",
-    "photoAlt": "Una niña sonriente abrazando un osito de peluche en un barrio soleado."
+    "photoAlt": "Un joven sonriente entrega una caja de artículos útiles a una mujer mayor en un barrio iluminado por el sol."
   },
   "stats": {
     "totalRaised": "Fondos totales recaudados",

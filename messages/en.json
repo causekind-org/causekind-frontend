@@ -28,17 +28,17 @@
   },
   "hero": {
     "badge": "Making Lives Better",
-    "eyebrow": "Local giving, person to person",
+    "eyebrow": "Making lives better",
     "headlineTop": "Find Someone Near You",
     "headlineAccent": "Who Needs What You Have",
-    "subtext": "Browse privacy-safe, verified requests for useful items. Give directly, with CauseKind guiding the handover.",
+    "subtext": "What’s extra for you could be essential to someone else.",
     "donateNow": "Donate Now",
     "howWeWork": "How we work",
     "transparent": "100% transparent donations",
     "fastDistribution": "Fast, effective distribution",
     "localCampaign": "Local Campaign",
-    "ctaBrowse": "Browse verified needs",
-    "ctaStartGiving": "Start giving",
+    "ctaBrowse": "Explore needs near you",
+    "ctaStartGiving": "Sign up now",
     "ctaListItem": "List an item",
     "ctaRequestItem": "Request an item",
     "ctaOpenDashboard": "Open dashboard",
@@ -52,7 +52,7 @@
     "assuranceVerifiedBody": "Requests are checked before they reach the public board.",
     "assuranceHandoverTitle": "Tracked handover",
     "assuranceHandoverBody": "Both sides confirm when the item changes hands.",
-    "photoAlt": "A smiling child holding a teddy bear in a sunlit neighbourhood."
+    "photoAlt": "A smiling young man hands a box of useful items to an older woman in a sunlit neighbourhood."
   },
   "stats": {
     "totalRaised": "Total Funds Raised",
@@ -1571,7 +1571,7 @@
     "trustedTitle": "Trusted Community",
     "trustedBody": "Safe. Verified. Reliable.",
     "impactTitle": "Local Impact",
-    "impactBody": "Helping people in your neighbourhood.",
+    "impactBody": "Helping people in your neighborhood.",
     "togetherTitle": "Stronger Together",
     "togetherBody": "Better community. Better tomorrow."
   }

@@ -75,6 +75,20 @@ describe("category strip", () => {
       expect(within(categoryNav).getByRole("link", { name: cat.name }))
         .toHaveAttribute("href", `/requests/category/${cat.slug}`);
     }
+
+    expect(
+      within(categoryNav).getAllByRole("link").map((link) => link.getAttribute("aria-label")),
+    ).toEqual([
+      "Medical aid",
+      "Education",
+      "Livelihood",
+      "Clothing",
+      "Household",
+      "Relief",
+      "Electronics",
+      "Furniture",
+      "Sports",
+    ]);
   });
 
   it("asks for nothing", () => {
@@ -86,10 +100,10 @@ describe("category strip", () => {
 });
 
 describe("hero", () => {
-  it("uses the dedicated warm, right-weighted hero photograph", () => {
+  it("uses the dedicated donation handoff photograph", () => {
     render(<HeroSection />);
     expect(screen.getByRole("img", { name: enMessages.hero.photoAlt }))
-      .toHaveAttribute("src", expect.stringContaining("causekind-hero-warm-v2.webp"));
+      .toHaveAttribute("src", expect.stringContaining("causekind-hero-handoff.webp"));
   });
 
   it("opens the verified public board without requiring a category choice", () => {
@@ -125,6 +139,29 @@ describe("hero", () => {
       .toHaveAttribute("href", "/requests/new");
     expect(screen.queryByRole("link", { name: enMessages.hero.ctaStartGiving }))
       .not.toBeInTheDocument();
+  });
+
+  it("keeps the auth-aware action inert while auth is resolving", () => {
+    authState.isLoading = true;
+
+    render(<HeroSection />);
+
+    expect(screen.queryByRole("link", { name: enMessages.hero.ctaStartGiving }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: enMessages.hero.ctaBrowse }))
+      .toHaveAttribute("href", "/requests");
+  });
+
+  it.each([
+    ["ROLE_ADMIN", "/admin/dashboard"],
+    ["SUPER_ADMIN", "/super-admin"],
+  ])("takes %s to its own dashboard", (role, href) => {
+    authState.user = { email: "staff@example.com", role };
+
+    render(<HeroSection />);
+
+    expect(screen.getByRole("link", { name: enMessages.hero.ctaOpenDashboard }))
+      .toHaveAttribute("href", href);
   });
 
   it("asks for nothing", () => {
