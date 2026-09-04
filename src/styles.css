@@ -2160,11 +2160,11 @@ body.mobile-menu-open {
   font-weight: 700;
   letter-spacing: -0.018em;
   line-height: 0.98;
-  -webkit-text-stroke: clamp(0.2px, 0.04vw, 0.6px) #fdf5ed;
-}
-
-.dark .ck-hero-headline {
-  -webkit-text-stroke-color: #1a1512;
+  /* No `-webkit-text-stroke`. It used to paint a background-coloured hairline
+     around every glyph (cream on light, #1a1512 on dark) to shave weight off
+     Impact, but at these sizes it read as a white outline traced around the
+     letters rather than as thinner type. The `.dark` rule that recoloured the
+     stroke went with it — with no stroke to colour it was dead weight. */
 }
 
 .ck-hero-photo-shell {
