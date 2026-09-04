@@ -2214,9 +2214,9 @@ body.mobile-menu-open {
   background: linear-gradient(
     108deg,
     transparent 22%,
-    rgb(207 70 0 / 0.02) 39%,
-    rgb(207 70 0 / 0.2) 50%,
-    rgb(207 70 0 / 0.02) 61%,
+    rgb(176 74 21 / 0.02) 39%,
+    rgb(176 74 21 / 0.2) 50%,
+    rgb(176 74 21 / 0.02) 61%,
     transparent 78%
   );
 }
