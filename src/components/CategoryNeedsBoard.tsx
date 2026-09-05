@@ -24,87 +24,6 @@ import { loginUrlFor } from "@/lib/safeRedirect";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon from "./AnimatedCategoryIcon";
 
-// ── Realistic fallback items when backend API is offline in local dev ──────
-const FALLBACK_CATEGORY_NEEDS: Record<string, Array<{
-  id: number;
-  title: string;
-  category: string;
-  city: string;
-  quantity: number;
-  urgent: boolean;
-}>> = {
-  Household: [
-    { id: 101, title: "Stainless steel cookware & pots for newly relocated family", category: "Household", city: "Pune", quantity: 3, urgent: true },
-    { id: 102, title: "Warm bedding sets & blankets for community shelter", category: "Household", city: "Mumbai", quantity: 5, urgent: false },
-    { id: 103, title: "Daily kitchen utensils, dining thali plates & cutlery", category: "Household", city: "Delhi", quantity: 4, urgent: false },
-    { id: 104, title: "Water storage container & gravity filter unit", category: "Household", city: "Bengaluru", quantity: 2, urgent: true },
-  ],
-  Electronics: [
-    { id: 201, title: "Working laptop for underprivileged engineering student", category: "Electronics", city: "Bengaluru", quantity: 1, urgent: true },
-    { id: 202, title: "Android smartphones for digital vocational literacy", category: "Electronics", city: "Delhi", quantity: 3, urgent: false },
-    { id: 203, title: "Desktop monitor & keyboard for evening coaching center", category: "Electronics", city: "Hyderabad", quantity: 2, urgent: false },
-    { id: 204, title: "Tablet for interactive preschool foundational learning", category: "Electronics", city: "Chennai", quantity: 2, urgent: true },
-  ],
-  Sports: [
-    { id: 301, title: "Cricket kit & bats for neighborhood youth coaching club", category: "Sports", city: "Chennai", quantity: 2, urgent: true },
-    { id: 302, title: "Standard footballs / soccer balls for children's home", category: "Sports", city: "Kolkata", quantity: 5, urgent: false },
-    { id: 303, title: "Commuter sports bicycle for high school student", category: "Sports", city: "Pune", quantity: 1, urgent: false },
-    { id: 304, title: "Badminton rackets & nylon shuttles for community center", category: "Sports", city: "Mumbai", quantity: 4, urgent: false },
-  ],
-  Clothing: [
-    { id: 401, title: "Warm woollen sweaters & shawls for elderly day center", category: "Clothing", city: "Shimla", quantity: 8, urgent: true },
-    { id: 402, title: "Clean school uniforms (boys & girls, sizes 28-34)", category: "Clothing", city: "Jaipur", quantity: 6, urgent: false },
-    { id: 403, title: "Sturdy daily walking & sports shoes (sizes 6-9)", category: "Clothing", city: "Lucknow", quantity: 4, urgent: false },
-    { id: 404, title: "Children's winter jackets & thermal wear", category: "Clothing", city: "Delhi", quantity: 5, urgent: true },
-  ],
-  Furniture: [
-    { id: 501, title: "Wooden study table and chair for children studying at home", category: "Furniture", city: "Ahmedabad", quantity: 2, urgent: true },
-    { id: 502, title: "Single bed frame & mattress for independent youth", category: "Furniture", city: "Bengaluru", quantity: 1, urgent: false },
-    { id: 503, title: "Storage almirah / steel cupboard for shelter records", category: "Furniture", city: "Mumbai", quantity: 1, urgent: false },
-    { id: 504, title: "Stackable plastic chairs for community tutorial space", category: "Furniture", city: "Pune", quantity: 6, urgent: false },
-  ],
-  "Medical aid": [
-    { id: 601, title: "Manual wheelchair for senior citizen with restricted mobility", category: "Medical aid", city: "Mumbai", quantity: 1, urgent: true },
-    { id: 602, title: "Adjustable aluminium walking crutches & walker frame", category: "Medical aid", city: "Delhi", quantity: 2, urgent: false },
-    { id: 603, title: "Digital blood pressure monitor & pulse oximeters", category: "Medical aid", city: "Pune", quantity: 2, urgent: false },
-    { id: 604, title: "Hospital bed with side railings for home patient care", category: "Medical aid", city: "Hyderabad", quantity: 1, urgent: true },
-  ],
-  Education: [
-    { id: 701, title: "School bags & complete geometry stationery kits", category: "Education", city: "Jaipur", quantity: 10, urgent: true },
-    { id: 702, title: "CBSE Class 10 & 12 reference books & question banks", category: "Education", city: "Delhi", quantity: 4, urgent: false },
-    { id: 703, title: "Storybooks and bilingual dictionaries for library", category: "Education", city: "Bengaluru", quantity: 8, urgent: false },
-    { id: 704, title: "Art & craft supplies, drawing notebooks & color kits", category: "Education", city: "Kolkata", quantity: 6, urgent: false },
-    { id: 705, title: "Laptops for high school programming curriculum", category: "Education", city: "Pune", quantity: 5, urgent: true },
-    { id: 706, title: "Scientific calculators for senior secondary students", category: "Education", city: "Mumbai", quantity: 15, urgent: false },
-    { id: 707, title: "Whiteboards and markers for evening coaching classes", category: "Education", city: "Hyderabad", quantity: 3, urgent: false },
-    { id: 708, title: "English grammar workbooks for primary students", category: "Education", city: "Chennai", quantity: 20, urgent: true },
-    { id: 709, title: "Wooden desks and benches for rural school", category: "Education", city: "Ahmedabad", quantity: 12, urgent: true },
-    { id: 710, title: "Globes and physical maps for geography lessons", category: "Education", city: "Lucknow", quantity: 4, urgent: false },
-    { id: 711, title: "Chemistry lab glass equipment and test tubes", category: "Education", city: "Bhopal", quantity: 2, urgent: true },
-    { id: 712, title: "Tablets with pre-loaded educational content", category: "Education", city: "Indore", quantity: 8, urgent: false },
-    { id: 713, title: "Braille textbooks for visually impaired students", category: "Education", city: "Nagpur", quantity: 5, urgent: true },
-    { id: 714, title: "Musical instruments for school band", category: "Education", city: "Patna", quantity: 6, urgent: false },
-    { id: 715, title: "Sports equipment for physical education period", category: "Education", city: "Surat", quantity: 10, urgent: false },
-    { id: 716, title: "Projector and screen for digital smart classroom", category: "Education", city: "Vadodara", quantity: 1, urgent: true },
-    { id: 717, title: "Notebooks, pens, and pencils for orphans", category: "Education", city: "Ludhiana", quantity: 50, urgent: true },
-    { id: 718, title: "Encyclopedias and general knowledge books", category: "Education", city: "Agra", quantity: 5, urgent: false },
-    { id: 719, title: "Uniforms and winter sweaters for students", category: "Education", city: "Shimla", quantity: 25, urgent: true },
-    { id: 720, title: "Microscopes for middle school biology lab", category: "Education", city: "Chandigarh", quantity: 3, urgent: false },
-  ],
-  Livelihood: [
-    { id: 801, title: "Manual sewing machine for home tailoring business", category: "Livelihood", city: "Bhopal", quantity: 1, urgent: true },
-    { id: 802, title: "Carpentry toolkit with hand saw, chisels & hammer", category: "Livelihood", city: "Indore", quantity: 2, urgent: false },
-    { id: 803, title: "Ironing cart & commercial steam iron setup", category: "Livelihood", city: "Nagpur", quantity: 1, urgent: false },
-    { id: 804, title: "Barber styling kit and hair trimmers for apprentice", category: "Livelihood", city: "Patna", quantity: 1, urgent: true },
-  ],
-  Relief: [
-    { id: 901, title: "Emergency grocery ration kits (rice, pulses, oil, spices)", category: "Relief", city: "Assam", quantity: 15, urgent: true },
-    { id: 902, title: "Water purification tablets & halogen packets", category: "Relief", city: "Uttarakhand", quantity: 20, urgent: true },
-    { id: 903, title: "Emergency solar lanterns & rechargeable lights", category: "Relief", city: "Odisha", quantity: 6, urgent: false },
-    { id: 904, title: "Tarpaulin sheets & ground mats for temporary cover", category: "Relief", city: "Kerala", quantity: 8, urgent: true },
-  ],
-};
-
 /**
  * Live needs for one category, GPS-scoped, presented with interactive 3D cards
  * and a smooth horizontal sliding carousel track.
@@ -146,20 +65,10 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
     getItemRequests(undefined, coords.lat, coords.lng)
       .then((all) => {
         const filtered = all.filter((r) => r.category === categoryName);
-        if (filtered.length > 0) {
-          setRequests(filtered);
-        } else if (FALLBACK_CATEGORY_NEEDS[categoryName]) {
-          setRequests(FALLBACK_CATEGORY_NEEDS[categoryName] as any);
-        } else {
-          setRequests([]);
-        }
+        setRequests(filtered);
       })
       .catch(() => {
-        if (FALLBACK_CATEGORY_NEEDS[categoryName]) {
-          setRequests(FALLBACK_CATEGORY_NEEDS[categoryName] as any);
-        } else {
-          setFailed(true);
-        }
+        setFailed(true);
       })
       .finally(() => setLoading(false));
   }, [isDonor, coords, categoryName]);
@@ -287,20 +196,10 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
     getPublicItemRequests()
       .then((all) => {
         const filtered = all.filter((r) => r.category === categoryName);
-        if (filtered.length > 0) {
-          setRequests(filtered);
-        } else if (FALLBACK_CATEGORY_NEEDS[categoryName]) {
-          setRequests(FALLBACK_CATEGORY_NEEDS[categoryName] as any);
-        } else {
-          setRequests([]);
-        }
+        setRequests(filtered);
       })
       .catch(() => {
-        if (FALLBACK_CATEGORY_NEEDS[categoryName]) {
-          setRequests(FALLBACK_CATEGORY_NEEDS[categoryName] as any);
-        } else {
-          setFailed(true);
-        }
+        setFailed(true);
       })
       .finally(() => setLoading(false));
   }, [categoryName]);
