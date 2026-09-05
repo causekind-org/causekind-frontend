@@ -49,6 +49,7 @@ import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
+import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
 import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
 import { CTASection }            from "@/components/home/CTASection";
@@ -344,6 +345,9 @@ export default function HomeClient({
           </>
         )}
 
+        {/* Live Needs section — real verified needs across multiple categories */}
+        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+
         {/* Donor / Donee pathways — the two sides of the platform, each with a
             role-preselecting signup CTA. Placed high so the visitor is told
             which side they are on before being told why the platform is worth
@@ -589,6 +593,11 @@ export default function HomeClient({
         {/* Be the Change — only here when the Campaigns rail separates it from
             the Hero; otherwise it is rendered above, inside the layered wrapper. */}
         {!heroTouchesBeTheChange && <BeTheChangeSection tourAnchors />}
+
+        {/* Live Needs section — real verified needs across multiple categories */}
+        <div className="-mx-4">
+          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+        </div>
 
         {/* Donor / Donee pathways — guest-only, same condition as the desktop
             copy above.

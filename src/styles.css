@@ -388,6 +388,29 @@ body {
   }
 }
 
+/* ── Live Needs section: fluid vertical rhythm ────────────────────────────
+   Padding/gaps/height scale with viewport height (clamped), not fixed
+   Tailwind breakpoints, so the whole section — header, stats, filters,
+   carousel, footer strip — settles into whatever height is available at
+   any zoom level instead of overflowing past one screen. */
+.ck-live-needs-section {
+  padding-block: clamp(1.5rem, 4vh, 3.5rem);
+}
+.ck-live-needs-header-gap {
+  padding-bottom: clamp(1rem, 3vh, 2rem);
+}
+.ck-live-needs-filters {
+  padding-top: clamp(0.25rem, 1vh, 0.5rem);
+  padding-bottom: clamp(0.75rem, 2vh, 1.5rem);
+}
+.ck-live-needs-carousel {
+  height: clamp(220px, 30vh, 300px);
+}
+.ck-live-needs-footer-gap {
+  margin-top: clamp(1.5rem, 3vh, 3rem);
+}
+
+
 /* ── Scroll-reveal — 3D pop-up linked to scroll ── */
 .reveal-hidden {
   opacity: 0;
