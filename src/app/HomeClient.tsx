@@ -50,6 +50,7 @@ import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
+import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
 import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
 import { CTASection }            from "@/components/home/CTASection";
@@ -263,6 +264,9 @@ export default function HomeClient({
             <LiveTicker activity={activity} />
           </>
         )}
+
+        {/* Live Needs section — real verified needs across multiple categories */}
+        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
 
         {/* Donor / Donee pathways — the two sides of the platform, each with a
             role-preselecting signup CTA. Placed high so the visitor is told
@@ -497,6 +501,11 @@ export default function HomeClient({
 
         {/* Be the Change follows the complete hero composition. */}
         <BeTheChangeSection tourAnchors />
+
+        {/* Live Needs section — real verified needs across multiple categories */}
+        <div className="-mx-4">
+          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+        </div>
 
         {/* Donor / Donee pathways — guest-only, same condition as the desktop
             copy above.
