@@ -13,6 +13,8 @@ type StaggerContainerProps = {
   staggerDelay?: number;
   /** trigger when scrolled into view */
   inView?: boolean;
+  /** amount of element visible before triggering (0–1) */
+  threshold?: number | "some" | "all";
 };
 
 const containerVariants = (delayStart: number, staggerDelay: number): Variants => ({
@@ -44,6 +46,7 @@ export const StaggerContainer: React.FC<StaggerContainerProps> = ({
   delayStart = 0,
   staggerDelay = 0.1,
   inView = false,
+  threshold = 0.1,
 }) => {
   const prefersReducedMotion = useReducedMotion();
   const cv = containerVariants(delayStart, staggerDelay);
@@ -58,7 +61,7 @@ export const StaggerContainer: React.FC<StaggerContainerProps> = ({
         className={className}
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
+        viewport={{ once: true, amount: threshold }}
         variants={cv}
       >
         {children}

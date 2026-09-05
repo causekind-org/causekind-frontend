@@ -445,7 +445,7 @@ function BlogListingContent() {
               phone's width once split in two, hence the smaller mobile gap. */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-12 md:gap-8">
             {/* Large Featured Card */}
-            <AnimatedWrapper inView delay={0} duration={0.6} direction="up" className="min-w-0 md:col-span-8">
+            <AnimatedWrapper inView delay={0} duration={0.6} direction="up" className="min-w-0 md:col-span-8" threshold="some">
               {filteredPosts.length > 0 ? (
                 (() => {
                   const featured = filteredPosts[0];
@@ -580,6 +580,7 @@ function BlogListingContent() {
               inView
               delayStart={0.05}
               staggerDelay={0.1}
+              threshold="some"
               className="relative z-10 mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 grid-flow-dense gap-6"
             >
             {remainingPosts.map((post, idx) => {
