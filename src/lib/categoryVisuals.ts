@@ -1,4 +1,5 @@
 import type { IconType } from "react-icons";
+import type { LucideIcon } from "lucide-react";
 
 import { FaTruckMedical } from "react-icons/fa6";
 import { FaGraduationCap } from "react-icons/fa6";
@@ -8,7 +9,11 @@ import { FaHouseChimney } from "react-icons/fa6";
 import { FaCouch } from "react-icons/fa";
 import { FaTshirt } from "react-icons/fa";
 import { FaLaptop } from "react-icons/fa";
-import { MdOutlineSportsSoccer } from "react-icons/md";
+// Volleyball comes from lucide, not react-icons/md, deliberately. That one
+// import pulled in the whole `md` family: 4.4 MB decoded in dev, more than
+// react-icons/fa and /fa6 combined, for a single glyph. lucide is already a
+// dependency used by 158 files, so this costs nothing extra.
+import { Volleyball } from "lucide-react";
 
 /* =========================================================
    ALL REQUEST CATEGORIES
@@ -123,7 +128,9 @@ export const ITEM_SUBCATEGORIES: Record<
  */
 
 export type CategoryVisual = {
-  Icon: IconType;
+  // Widened from IconType: eight of the nine glyphs are react-icons, Sports is
+  // lucide. Both are components taking className, so call sites are unaffected.
+  Icon: IconType | LucideIcon;
 
   text: string;
 
@@ -166,7 +173,7 @@ export const CATEGORY_VISUALS: Record<
       "text-sky-700 dark:text-sky-400",
 
     fallbackImage:
-      "/images/categories/medical-aid-v2.jpg",
+      "/images/categories/medical-aid-v2.webp",
 
     col:
       "text-sky-300",
@@ -201,7 +208,7 @@ export const CATEGORY_VISUALS: Record<
       "text-amber-700 dark:text-amber-400",
 
     fallbackImage:
-      "/images/categories/education-v2.jpg",
+      "/images/categories/education-v2.webp",
 
     col:
       "text-amber-300",
@@ -236,7 +243,7 @@ export const CATEGORY_VISUALS: Record<
       "text-emerald-700 dark:text-emerald-400",
 
     fallbackImage:
-      "/images/categories/livelihood-v2.jpg",
+      "/images/categories/livelihood-v2.webp",
 
     col:
       "text-emerald-300",
@@ -271,7 +278,7 @@ export const CATEGORY_VISUALS: Record<
       "text-violet-700 dark:text-violet-400",
 
     fallbackImage:
-      "/images/categories/relief-v2.jpg",
+      "/images/categories/relief-v2.webp",
 
     col:
       "text-violet-300",
@@ -435,12 +442,12 @@ export const CATEGORY_VISUALS: Record<
   /* =======================================================
      SPORTS
 
-     React Icon:
-     md/MdOutlineSportsSoccer
+     Icon:
+     lucide/Volleyball
   ======================================================= */
 
   Sports: {
-    Icon: MdOutlineSportsSoccer,
+    Icon: Volleyball,
 
     text:
       "text-cyan-700 dark:text-cyan-400",

@@ -92,7 +92,7 @@ export default function CategoryPageClient({ cat }: Props) {
   const getImg = (offset: number) => {
     const idx = catIndex === -1 ? 0 : catIndex;
     const mappedIdx = (idx + offset) % ALL_IMAGES.length;
-    return `/images/stories/${ALL_IMAGES[mappedIdx]}.jpg`;
+    return `/images/stories/${ALL_IMAGES[mappedIdx]}.webp`;
   };
 
   const IMPACT_STORIES = [

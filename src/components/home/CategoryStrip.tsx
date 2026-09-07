@@ -1,43 +1,10 @@
 "use client";
 
-import type { ComponentProps, ComponentType } from "react";
 import Link from "next/link";
-import {
-  Armchair,
-  BookOpen,
-  BriefcaseBusiness,
-  HandHeart,
-  House,
-  Monitor,
-  Shirt,
-  Stethoscope,
-} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
-
-type CategoryIconProps = ComponentProps<"svg"> & { strokeWidth?: number };
-
-function BasketballIcon({ className, strokeWidth = 1.7, ...props }: CategoryIconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      {...props}
-    >
-      <circle cx="12" cy="12" r="9.25" />
-      <path d="M8.2 3.6c1.3 2.1 1.7 4.2 1.2 6.4-.6 2.6-2.4 4.7-5.4 6.2" />
-      <path d="M15.8 20.4c-1.3-2.1-1.7-4.2-1.2-6.4.6-2.6 2.4-4.7 5.4-6.2" />
-      <path d="M3.1 9.8c2.6.2 4.8 1.2 6.6 3 1.7 1.7 2.7 4.4 3 8" />
-      <path d="M20.9 14.2c-2.6-.2-4.8-1.2-6.6-3-1.7-1.7-2.7-4.4-3-8" />
-    </svg>
-  );
-}
+import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 
 /** Exact visual order from the supplied marketing reference. */
 const DISPLAY_ORDER = [
@@ -68,18 +35,6 @@ const CATEGORY_LABEL_KEYS: Record<string, string> = {
   Sports: "sports",
 };
 
-const HERO_CATEGORY_ICONS: Record<string, ComponentType<CategoryIconProps>> = {
-  "Medical aid": Stethoscope,
-  Education: BookOpen,
-  Livelihood: BriefcaseBusiness,
-  Clothing: Shirt,
-  Household: House,
-  Relief: HandHeart,
-  Electronics: Monitor,
-  Furniture: Armchair,
-  Sports: BasketballIcon,
-};
-
 const DISPLAY_CATEGORIES = [...IN_KIND_CATEGORIES].sort((a, b) => {
   const aIndex = ORDER_INDEX.get(a.name) ?? DISPLAY_ORDER.length;
   const bIndex = ORDER_INDEX.get(b.name) ?? DISPLAY_ORDER.length;
@@ -100,7 +55,11 @@ export function CategoryStrip() {
       <div className="min-w-0 w-full max-w-full overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-visible">
         <ul className="flex w-max snap-x snap-mandatory lg:grid lg:w-full lg:grid-cols-9 lg:snap-none">
           {DISPLAY_CATEGORIES.map((cat, index) => {
-            const Icon = HERO_CATEGORY_ICONS[cat.name];
+            // Same registry the Live Needs filter pills draw from, so the two
+            // surfaces cannot disagree about what a category looks like.
+            // Optional: an unknown category degrades to a label-only tile
+            // rather than throwing on visual.Icon.
+            const visual = CATEGORY_VISUALS[cat.name];
             const labelKey = CATEGORY_LABEL_KEYS[cat.name];
             const label = labelKey ? t(`categories.${labelKey}`) : cat.name;
 
@@ -121,8 +80,17 @@ export function CategoryStrip() {
                   aria-label={label}
                   className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-center transition-[transform,background-color] duration-200 ease-out hover:-translate-y-1 hover:bg-[#c54805]/5 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c54805] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fffdf9] dark:hover:bg-white/5 dark:focus-visible:ring-offset-stone-950 sm:gap-1.5 lg:min-h-[clamp(4.8rem,9.7vh,6.6rem)] lg:gap-2"
                 >
-                  <span className="flex size-8 items-center justify-center text-[#bd4c20] transition-transform duration-200 ease-out group-hover:-translate-y-0.5 dark:text-[#f09a67] lg:size-10">
-                    <Icon className="size-6 lg:size-7" strokeWidth={1.7} aria-hidden />
+                  <span
+                    className={`flex size-8 items-center justify-center ${
+                      visual?.text ?? "text-[#bd4c20] dark:text-[#f09a67]"
+                    } transition-transform duration-200 ease-out group-hover:-translate-y-0.5 lg:size-10`}
+                  >
+                    {/* react-icons are solid fills, so there is no strokeWidth to
+                        set — the glyphs read heavier than the outlines they
+                        replace. Stepped down one size to compensate; the wrapper
+                        keeps size-8/lg:size-10 so hit target, row height and the
+                        label baseline are unchanged. */}
+                    {visual ? <visual.Icon className="size-5 lg:size-6" aria-hidden /> : null}
                   </span>
                   <span className="max-w-full text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.04em] text-[#27221e] dark:text-stone-200 sm:text-[0.62rem] lg:text-[clamp(0.58rem,0.63vw,0.76rem)]">
                     {label}
