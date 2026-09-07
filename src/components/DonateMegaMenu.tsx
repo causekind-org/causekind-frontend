@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, HandCoins, Clock } from "lucide-react";
+import { ArrowRight, HandCoins } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { FEATURES } from "@/lib/features";
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon, { ICON_MOTION_PARENT_PROPS } from "./AnimatedCategoryIcon";
@@ -21,14 +20,7 @@ import AnimatedCategoryIcon, { ICON_MOTION_PARENT_PROPS } from "./AnimatedCatego
  * categories are unchanged in content and order; they are simply rendered
  * tighter, since they are now one section of two rather than the whole panel.
  *
- * <p><b>Why the money section shows even while `FEATURES.money` is false.</b>
- * The rest of the site drops money entries entirely when the flag is off — the
- * `/campaigns` nav link is filtered out of the array in Navbar, for instance.
- * This one is kept and badged "coming soon" instead: a visitor asking "can I
- * give money?" is better served by a visible, honest answer than by a menu that
- * silently omits the option. The link still resolves to `/donate/money`, which
- * is itself gated and renders the branded ComingSoon screen, so nothing
- * half-built is reachable. Flip the flag and the badge disappears on its own.
+ * The trust donation page is public, independently of campaign fundraising.
  */
 export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations();
@@ -57,13 +49,6 @@ export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void
             Give money to Sahas Charitable Trust — 12AA and 80G certified, funding
             education, healthcare and social welfare. Every rupee is accounted for.
           </span>
-
-          {!FEATURES.money && (
-            <span className="mt-3 inline-flex w-max items-center gap-1.5 rounded-full bg-[var(--ck-role-accent)]/10 px-2.5 py-1 text-3xs font-bold uppercase tracking-wider text-[var(--ck-role-accent)]">
-              <Clock className="h-3 w-3" aria-hidden />
-              Coming soon
-            </span>
-          )}
 
           <span className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-semibold text-[var(--ck-role-accent)]">
             Donate money

@@ -1,4 +1,5 @@
 import React from 'react';
+import { SahasLogo } from './SahasLogo';
 import { BookOpen, Stethoscope, HelpingHand, HeartHandshake } from 'lucide-react';
 
 export function AboutSahas() {
@@ -26,8 +27,8 @@ export function AboutSahas() {
   ];
 
   return (
-    <section id="about-sahas" className="py-14 bg-stone-50 dark:bg-zinc-900/60 border-t border-stone-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="about-sahas" className="min-h-[calc(100svh-3.5rem)] py-12 lg:py-16 bg-stone-50 dark:bg-zinc-900/60 border-t border-stone-100 flex items-center">
+      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
           
           {/* Left Column: Context */}
@@ -36,6 +37,7 @@ export function AboutSahas() {
               About the organization
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground mb-6 leading-tight">
+              <SahasLogo size={64} className="mb-4" />
               Who is Sahas Charitable Trust?
             </h2>
             <p className="text-lg text-stone-600 dark:text-stone-300 leading-relaxed mb-8">

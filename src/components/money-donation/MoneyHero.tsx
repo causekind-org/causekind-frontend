@@ -34,7 +34,7 @@ export function MoneyHero() {
   }, []);
 
   return (
-    <section className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden pt-20 pb-16">
+    <section className="relative min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center overflow-hidden pt-16 pb-12 lg:pt-20 lg:pb-16">
 
       {/* Background Image Carousel */}
       <div className="absolute inset-0 z-0">
@@ -60,7 +60,7 @@ export function MoneyHero() {
         </AnimatePresence>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col items-center mt-12">
+      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col items-center mt-8 lg:mt-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -75,7 +75,7 @@ export function MoneyHero() {
             className="inline-flex items-center gap-3 text-xs font-bold tracking-widest uppercase text-brand-200 mb-8 bg-brand-900/60 border border-brand-500/30 pl-2 pr-5 py-2 rounded-full backdrop-blur-md shadow-[0_0_30px_rgba(176,74,21,0.3)]"
           >
             <Image 
-              src="/images/money-donation/sahas-logo.webp" 
+              src="/images/money-donation/sahas-logo-transparent.png"
               alt="Sahas Logo" 
               width={28} 
               height={28}

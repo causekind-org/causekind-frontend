@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
 const HERO_IMAGE = "/images/causekind-hero-handoff.webp";
+const HERO_FOREGROUND = "/images/causekind-hero-foreground.png";
 
 /**
  * Keep the reference's primary orange CTA useful for every auth state. During
@@ -256,6 +257,18 @@ export function HeroSection() {
                 />
                 <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[12%] bg-gradient-to-r from-[#fdf5ed]/65 to-transparent lg:block dark:from-[#1a1512]/78" aria-hidden />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[17%] bg-gradient-to-t from-[#5d2608]/18 to-transparent" aria-hidden />
+              </div>
+              <div
+                className="ck-hero-photo-breakout pointer-events-none absolute inset-0 z-[5] hidden lg:block"
+                aria-hidden
+              >
+                <Image
+                  src={HERO_FOREGROUND}
+                  alt=""
+                  fill
+                  sizes="(min-width: 1920px) 1180px, 62vw"
+                  className="ck-hero-photo-image object-cover object-center"
+                />
               </div>
               <ConnectionPins />
             </div>

@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
-import { Heart, Building2, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
+import { motion, useScroll, useTransform, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
+import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
+import { SahasLogo } from './SahasLogo';
+import Link from 'next/link';
 
 /* ─── Step Data ─── */
 const steps = [
@@ -16,9 +18,9 @@ const steps = [
     detail: 'UPI · Cards · Net Banking',
   },
   {
-    icon: <Building2 className="w-7 h-7" />,
-    iconBg: 'from-blue-400 to-blue-600',
-    glowColor: 'rgba(59,130,246,0.25)',
+    icon: <SahasLogo size={44} />,
+    iconBg: 'from-[#fff7ed] to-[#f0dfca] dark:from-[#403027] dark:to-[#2a201b]',
+    glowColor: 'rgba(185,133,67,0.20)',
     label: 'Sahas Charitable Trust',
     headline: 'Managed with full transparency.',
     description: 'Sahas Charitable Trust — registered with 12AA and 80G certifications — manages every rupee with accountability.',
@@ -26,8 +28,8 @@ const steps = [
   },
   {
     icon: <Banknote className="w-7 h-7" />,
-    iconBg: 'from-green-400 to-green-600',
-    glowColor: 'rgba(22,163,74,0.25)',
+    iconBg: 'from-[#b98543] to-[#95602b]',
+    glowColor: 'rgba(185,133,67,0.25)',
     label: 'Funds Are Allocated',
     headline: 'Every rupee is accounted for.',
     description: 'Funds are allocated across verified programs in education, healthcare, and community welfare.',
@@ -35,8 +37,8 @@ const steps = [
   },
   {
     icon: <HandHeart className="w-7 h-7" />,
-    iconBg: 'from-purple-400 to-purple-600',
-    glowColor: 'rgba(147,51,234,0.25)',
+    iconBg: 'from-[#c4774e] to-[#9c4824]',
+    glowColor: 'rgba(196,119,78,0.25)',
     label: 'Direct Impact',
     headline: 'Real people. Real change.',
     description: 'Your contribution directly reaches families, students, and communities — no middlemen.',
@@ -45,14 +47,17 @@ const steps = [
 ];
 
 const impactAreas = [
-  { icon: <GraduationCap className="w-6 h-6" />, label: 'Education & Scholarships', color: 'from-amber-400 to-brand-500', bgAccent: 'bg-amber-50 dark:bg-amber-500/10' },
-  { icon: <Stethoscope className="w-6 h-6" />, label: 'Healthcare & Medical Aid', color: 'from-rose-400 to-rose-600', bgAccent: 'bg-rose-50 dark:bg-rose-500/10' },
-  { icon: <Home className="w-6 h-6" />, label: 'Community Welfare', color: 'from-teal-400 to-teal-600', bgAccent: 'bg-teal-50 dark:bg-teal-500/10' },
-  { icon: <Users className="w-6 h-6" />, label: 'Women & Youth Empowerment', color: 'from-violet-400 to-violet-600', bgAccent: 'bg-violet-50 dark:bg-violet-500/10' },
+  { icon: <GraduationCap className="w-6 h-6" />, label: 'Education & Scholarships', slug: 'education', color: 'from-[#b98543] to-[#95602b]', bgAccent: 'bg-[#fff4df] dark:bg-[#b98543]/10' },
+  { icon: <Stethoscope className="w-6 h-6" />, label: 'Healthcare & Medical Aid', slug: 'healthcare', color: 'from-[#c4774e] to-[#9c4824]', bgAccent: 'bg-[#fbe8df] dark:bg-[#c4774e]/10' },
+  { icon: <Home className="w-6 h-6" />, label: 'Community Welfare', slug: 'community-welfare', color: 'from-brand-400 to-brand-600', bgAccent: 'bg-brand-50 dark:bg-brand-500/10' },
+  { icon: <Users className="w-6 h-6" />, label: 'Women & Youth Empowerment', slug: 'empowerment', color: 'from-[#a66e4b] to-[#795039]', bgAccent: 'bg-[#f1e5dc] dark:bg-[#a66e4b]/10' },
 ];
 
 /* ─── 3D Tilt Card ─── */
 function TiltCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  // ?? false because framer's hook returns boolean | null — same coercion as
+  // WhatWeProvideSection and BeTheChangeSection.
+  const reduceMotion = useReducedMotion() ?? false;
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -74,9 +79,11 @@ function TiltCard({ children, className = '' }: { children: React.ReactNode; cla
 
   return (
     <motion.div
-      onMouseMove={handleMouse}
-      onMouseLeave={handleLeave}
-      style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+      onMouseMove={reduceMotion ? undefined : handleMouse}
+      onMouseLeave={reduceMotion ? undefined : handleLeave}
+      // Dropping the style entirely, not zeroing it: an identity rotate still
+      // creates a 3D rendering context and can soften text on some GPUs.
+      style={reduceMotion ? undefined : { rotateX, rotateY, transformStyle: 'preserve-3d' }}
       className={className}
     >
       {children}
@@ -122,7 +129,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
             whileInView={{ scaleY: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.5, delay: index * 0.18 + 0.25 }}
-            className="w-px h-20 md:hidden bg-gradient-to-b from-stone-300 to-transparent origin-top mt-3"
+            className="w-px h-20 md:hidden bg-gradient-to-b from-brand-300 to-transparent origin-top mt-3"
           />
         )}
       </div>
@@ -179,7 +186,7 @@ export function MoneyFlowStory() {
   const bgX = useTransform(scrollYProgress, [0, 1], ['0%', '-15%']);
 
   return (
-    <section ref={containerRef} className="relative py-14 sm:py-20 bg-background overflow-hidden border-t border-stone-100">
+    <section ref={containerRef} className="relative min-h-[calc(100svh-3.5rem)] py-10 sm:py-14 lg:py-16 bg-background overflow-hidden border-t border-stone-100 flex items-center">
       {/* Decorative background blobs */}
       <motion.div
         style={{ y: bgY }}
@@ -190,14 +197,14 @@ export function MoneyFlowStory() {
         className="absolute -left-40 bottom-1/4 w-[400px] h-[400px] rounded-full bg-blue-50/30 blur-3xl pointer-events-none"
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6 }}
-          className="mb-12 sm:mb-14 text-center max-w-3xl mx-auto"
+          className="mb-8 sm:mb-10 text-center max-w-3xl mx-auto"
         >
           <span className="inline-block text-xs font-bold tracking-wider uppercase text-brand-500 mb-4 bg-brand-50 dark:bg-brand-500/10 px-3 py-1 rounded-full">
             Where Your Money Goes
@@ -211,7 +218,7 @@ export function MoneyFlowStory() {
         </motion.div>
 
         {/* ── Horizontal Timeline ── */}
-        <div className="relative mb-12">
+          <div className="relative mb-8">
           {/* Desktop connecting line with animated progress */}
           <div className="hidden md:block absolute top-8 left-[8%] right-[8%] h-0.5 bg-stone-100 dark:bg-white/10 z-0">
             <motion.div
@@ -219,7 +226,7 @@ export function MoneyFlowStory() {
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 1.8, ease: 'easeInOut' }}
-              className="h-full bg-gradient-to-r from-brand-300 via-blue-300 via-green-300 to-purple-300 origin-left rounded-full"
+              className="h-full bg-gradient-to-r from-brand-300 via-[#d8bb91] to-[#c4774e] origin-left rounded-full"
             />
             {/* Animated pulse dot traveling along the line */}
             <motion.div
@@ -249,7 +256,7 @@ export function MoneyFlowStory() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="max-w-4xl mx-auto"
+          className="w-full"
         >
           <h4 className="text-sm font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 text-center mb-8">
             Supporting Core Initiatives
@@ -263,8 +270,8 @@ export function MoneyFlowStory() {
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.4, delay: 0.5 + i * 0.1 }}
               >
-                <TiltCard className="cursor-pointer">
-                  <div className="relative overflow-hidden flex flex-col items-center text-center gap-4 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-white/10 shadow-sm hover:shadow-xl transition-shadow duration-300 group">
+                <TiltCard className="cursor-pointer h-full">
+                  <Link href={`/initiatives/${area.slug}`} aria-label={`Explore ${area.label}`} className="card-shimmer relative overflow-hidden flex h-full flex-col items-center justify-center text-center gap-4 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-white/10 shadow-sm hover:shadow-xl transition-[box-shadow,transform] duration-300 group active:scale-[0.98]">
                     {/* Gradient accent bg on hover */}
                     <div className={`absolute inset-0 ${area.bgAccent} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`} />
                     
@@ -276,7 +283,7 @@ export function MoneyFlowStory() {
                     <span className="relative z-10 text-sm font-semibold text-foreground leading-tight group-hover:text-foreground transition-colors">
                       {area.label}
                     </span>
-                  </div>
+                  </Link>
                 </TiltCard>
               </motion.div>
             ))}

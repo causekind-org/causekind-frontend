@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, FileText, ExternalLink, Award, GraduationCap, Stethoscope, Home, Users } from 'lucide-react';
 import { CertificateCard } from './CertificateCard';
+import { SahasLogo } from './SahasLogo';
 
 const allocationAreas = [
   {
@@ -42,8 +43,8 @@ const allocationAreas = [
 
 export function TrustCredibility() {
   return (
-    <section className="py-14 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="min-h-[calc(100svh-3.5rem)] py-12 lg:py-16 bg-background flex items-center">
+      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -53,6 +54,7 @@ export function TrustCredibility() {
         >
           {/* Section header */}
           <div className="max-w-2xl mb-14">
+            <SahasLogo size={48} className="mb-4" />
             <span className="block text-xs font-bold tracking-wider uppercase text-brand-500 mb-4">
               Trust &amp; Credibility
             </span>
@@ -67,7 +69,7 @@ export function TrustCredibility() {
               title="12AA Registration Certificate"
               description="Confirms our status as a charitable institution under the Income Tax Act, 1961."
               icon={<Award className="w-7 h-7" />}
-              iconBgColor="bg-green-50 dark:bg-green-500/100"
+              iconBgColor="bg-[#f4e1cc] dark:bg-[#6f3a1f] text-brand-700"
               benefits={[
                 'Tax exemption on income',
                 'Charitable status recognition',
@@ -82,7 +84,7 @@ export function TrustCredibility() {
               title="80G Tax Exemption Certificate"
               description="Allows our donors to claim 50% tax deductions on their contributions."
               icon={<FileText className="w-7 h-7" />}
-              iconBgColor="bg-blue-500"
+              iconBgColor="bg-[#ead8c3] dark:bg-[#55402f] text-brand-700"
               benefits={[
                 '50% tax deduction for donors',
                 'Valid across India',
@@ -97,7 +99,7 @@ export function TrustCredibility() {
               title="Trust Registration Certificate"
               description="The foundational legal document establishing Sahas Charitable Trust."
               icon={<Shield className="w-7 h-7" />}
-              iconBgColor="bg-purple-500"
+              iconBgColor="bg-[#e8d3c4] dark:bg-[#52392c] text-brand-700"
               benefits={[
                 'Legal entity status',
                 'Operational authorization',
@@ -188,4 +190,3 @@ export function TrustCredibility() {
     </section>
   );
 }
-

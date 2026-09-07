@@ -141,9 +141,9 @@ export function MoneyDonationForm() {
   const inputClasses = "w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-white/15 bg-white dark:bg-zinc-900 text-foreground placeholder:text-stone-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-colors text-sm";
 
   return (
-    <section id="donate-form" className="py-14 lg:py-20 bg-stone-50 dark:bg-zinc-900/60 border-t border-stone-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+    <section id="donate-form" className="scroll-mt-24 py-10 sm:py-12 lg:py-14 bg-stone-50 dark:bg-zinc-900/60 border-t border-stone-100">
+      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
 
           {/* Left Column: Supporting Visual & Message */}
           <motion.div
@@ -155,7 +155,7 @@ export function MoneyDonationForm() {
           >
             <div className="inline-flex items-center gap-3 text-xs font-bold tracking-wider uppercase text-brand-500 mb-4 bg-brand-50 dark:bg-brand-500/10 pr-4 pl-3 py-1.5 rounded-full w-max border border-brand-100">
               <Image 
-                src="/images/money-donation/sahas-logo.webp" 
+                src="/images/money-donation/sahas-logo-transparent.png"
                 alt="Sahas Logo" 
                 width={24} 
                 height={24}
@@ -170,7 +170,7 @@ export function MoneyDonationForm() {
               Your contribution goes directly toward critical initiatives in education, healthcare, and community welfare managed by Sahas Charitable Trust.
             </p>
 
-            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-stone-100 dark:border-white/10 shadow-sm max-w-md">
+            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-stone-100 dark:border-white/10 shadow-sm">
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center text-green-600 flex-shrink-0">
                   <ShieldCheck className="w-5 h-5" />
@@ -199,9 +199,9 @@ export function MoneyDonationForm() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, type: 'spring', bounce: 0.4 }}
-            className="bg-white dark:bg-zinc-900 p-8 sm:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-stone-100"
+            className="bg-white dark:bg-zinc-900 p-6 sm:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-stone-100"
           >
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Amount Selection */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-3">Select Amount (₹)</label>
