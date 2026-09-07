@@ -26,6 +26,14 @@ import { blogPosts } from "../../../data/blogData";
 // component just receives the resolved value.
 interface BlogPostClientProps {
   slug: string;
+  /**
+   * The article body, passed down from the server component.
+   *
+   * <p>Not read from `blogPosts` any more: that array carried every article's
+   * HTML, so rendering one post pulled all 28 into the client bundle. The
+   * bodies now live in src/data/blogContent.ts, which only the server imports.
+   */
+  content: string;
 }
 
 const FONT_OPTIONS = [
@@ -119,7 +127,7 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-export default function BlogPostClient({ slug }: BlogPostClientProps) {
+export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const post = blogPosts.find((p) => p.slug === slug);
 
   const [boldMode, setBoldMode] = useState(false);
@@ -160,7 +168,10 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
   const displayTitle = translation?.title || post?.title || "";
   const displayDescription = translation?.description || post?.description || "";
   const displayCategory = translation?.category || post?.category || "";
-  const rawContentForLocale = translation?.content || post?.content || "";
+  // `content` arrives as a prop from the server component. It used to come
+  // from post.content, which meant importing every article's body into the
+  // client bundle to render one of them.
+  const rawContentForLocale = translation?.content || content || "";
 
   // Derived during render rather than set from an effect, so there is no window
   // in which the component has content to show but has not yet sanitized it.
