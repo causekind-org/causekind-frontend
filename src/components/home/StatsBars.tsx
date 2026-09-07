@@ -25,7 +25,7 @@ export function DesktopStatsBar({ stats }: { stats: PlatformStats | null }) {
   ];
 
   return (
-    <div className="hidden sm:block border-y border-orange-100/50 dark:border-stone-850 bg-white dark:bg-zinc-950 shadow-xs">
+    <div className="hidden sm:block bg-white dark:bg-zinc-950 shadow-xs">
       <div className="flex items-stretch divide-x divide-orange-50 dark:divide-zinc-800 justify-around py-5">
         {items.map(s => (
           <div key={s.label} className="flex items-center gap-3 px-10">
@@ -45,7 +45,7 @@ export function LiveTicker({ activity }: { activity: RecentActivity[] }) {
   if (!activity.length) return null;
 
   return (
-    <div className="border-b border-orange-100/40 dark:border-stone-850/40 bg-orange-50/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
+    <div className="bg-orange-50/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
       <span className="shrink-0 ml-6 rounded-full bg-[#963c0d] px-3 py-1 text-3xs font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
         <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#f0b97a]" />
         LIVE

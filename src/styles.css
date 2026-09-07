@@ -461,21 +461,26 @@ body {
    Tailwind breakpoints, so the whole section — header, stats, filters,
    carousel, footer strip — settles into whatever height is available at
    any zoom level instead of overflowing past one screen. */
+/* svh, not vh: on mobile `vh` is measured against the viewport with browser
+   chrome HIDDEN, so a section sized in vh is taller than the space actually on
+   screen the moment the URL bar shows — which is one way a section ends up cut
+   at the top. svh is the small-viewport value, so it fits either way.
+   Spacing budget also trimmed from ~47vh to ~39svh. */
 .ck-live-needs-section {
-  padding-block: clamp(1.5rem, 4vh, 3.5rem);
+  padding-block: clamp(1.25rem, 3svh, 2.75rem);
 }
 .ck-live-needs-header-gap {
-  padding-bottom: clamp(1rem, 3vh, 2rem);
+  padding-bottom: clamp(0.875rem, 2.5svh, 1.75rem);
 }
 .ck-live-needs-filters {
-  padding-top: clamp(0.25rem, 1vh, 0.5rem);
-  padding-bottom: clamp(0.75rem, 2vh, 1.5rem);
+  padding-top: clamp(0.25rem, 0.75svh, 0.5rem);
+  padding-bottom: clamp(0.625rem, 1.5svh, 1.25rem);
 }
 .ck-live-needs-carousel {
-  height: clamp(220px, 30vh, 300px);
+  height: clamp(200px, 26svh, 280px);
 }
 .ck-live-needs-footer-gap {
-  margin-top: clamp(1.5rem, 3vh, 3rem);
+  margin-top: clamp(1.25rem, 2.5svh, 2.5rem);
 }
 
 
@@ -2346,20 +2351,8 @@ body.mobile-menu-open {
   }
 
   .ck-hero-photo-shell {
-    /* How far the photo slides left, under the copy column.
-
-       Cut back from clamp(3.5rem, 6vw, 7.5rem) when the ellipse widened to 96%.
-       The old value was safe only because the narrower ellipse threw away the
-       photo's left edge: with the curve opened up to stop cutting the donor,
-       that same tuck put HIM behind the "Explore needs near you" button —
-       measured at 1280, his back landed at x=536 against a button ending at
-       x=579, showing his shoulder through a transparent outline button.
-
-       At this value the tuck is a few dozen pixels of blurred background behind
-       the button's tip, which is the effect the overlap was for, and the
-       subject clears the copy column entirely.
-
-       Tied to the ellipse: widen one and re-check the other. */
+    /* Keep the media safely clear of the copy; object-position below retains
+       the donor's silhouette without pushing the photo under the CTAs. */
     --ck-hero-photo-overlap: clamp(0rem, 0.8vw, 1rem);
     width: calc(100% + var(--ck-hero-photo-overlap) + var(--ck-hero-side-gutter));
     min-height: 0;
@@ -2367,20 +2360,36 @@ body.mobile-menu-open {
     margin-left: calc(-1 * var(--ck-hero-photo-overlap));
   }
 
+  /* Offset the same ellipse behind the photo to reveal a warm grey rim.
+     The foreground alpha layer stays above both surfaces. */
+  .ck-hero-photo-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: #e8dfd3;
+    clip-path: ellipse(87% 122% at 100% 45%);
+    transform: translateX(calc(-1 * clamp(18px, 2vw, 36px)));
+  }
+
+  .dark .ck-hero-photo-shell::before {
+    background: #39322b;
+  }
+
   .ck-hero-photo-clip {
     border-radius: 0;
-    /* The curve must clear the donor, not cut through him.
+    /* The curve intentionally passes behind the foreground donor. His
+       registered duplicate restores the silhouette above this mask, creating
+       the reference's dimensional cutout without changing the photograph. */
+    clip-path: ellipse(87% 122% at 100% 45%);
+  }
 
-       Measured at 1536×776: the clip box is 980×511 (1.92:1) against a 1672×940
-       source (1.78:1), and `ck-hero-image-drift` scales it a further ~1.048.
-       That puts the man's back — 14.4% across the source — at 10.6% of the clip
-       box. At `88%` the ellipse started biting at 12%, so it took a slice out of
-       his shoulder. `96%` moves the bite to 4% and leaves him ~7% of clearance,
-       which holds at every width the hero renders at.
+  .ck-hero-photo-image {
+    object-position: 35% center;
+  }
 
-       If the drift scale below is ever increased, re-check this number: the two
-       together decide whether the subject survives the curve. */
-    clip-path: ellipse(96% 122% at 100% 45%);
+  .ck-hero-photo-breakout {
+    filter: drop-shadow(-5px 5px 8px rgb(87 43 18 / 0.14));
   }
 }
 
@@ -2695,6 +2704,88 @@ div:has(.searchable-select-open) {
   background: linear-gradient(110deg, #1e3a60, #b04a15, #f0b97a, #1e3a60);
   background-size: 300% 300%;
   animation: ck-aurora-sweep 6s ease infinite;
+}
+
+/* .card-shimmer needs its own reduced-motion rule rather than a slot in the
+   shared list above. That list ends with `transform: none !important`, which
+   for .card-3d:hover correctly cancels the tilt — but for this ::after it would
+   park the sweep at inset:0 and leave a permanent 42%-white diagonal wash over
+   the card on hover. Worse than the animation it was meant to remove.
+   Removing the element is the honest no-motion state: the card still has its
+   shadow, border and accent wash, none of which move. */
+@media (prefers-reduced-motion: reduce) {
+  .card-shimmer::after {
+    display: none !important;
+  }
+}
+
+/* ── Section divider: brand gradient shimmer sweep ─────────────────────────
+   The rule that separates one page section from the next.
+
+   Two background layers on one 1px box. Layer 2 is the static tinted rule;
+   layer 1 is a narrow highlight that travels across it by moving
+   background-position — the same idiom as ck-aurora-sweep just above and
+   ck-kind-shine below, rather than a translating ::after, which would need
+   position/overflow on a one-pixel box and composite a second layer for
+   nothing.
+
+   Only the highlight moves. Stop the animation and a fully drawn, fully
+   coloured rule remains — which is what makes the reduced-motion case below
+   an honest static frame rather than a disappearing act.
+
+   Colour is var(--rust-action): #b04a15 in light, #e07b3a in dark. That one
+   token is why this needs no dark: variant anywhere. Do NOT swap it for
+   --color-brand-500 — that ramp is fixed in both themes and goes muddy
+   against zinc-950.
+
+   Geometry (1px, symmetric transparent ends, 2.75rem rhythm) is lifted from
+   .ck-cat-divider in CategoryPageClient.css so the two agree. */
+@keyframes ck-divider-sweep {
+  0%   { background-position: -60% 0, 0 0; }
+  100% { background-position: 160% 0, 0 0; }
+}
+
+@layer components {
+.ck-section-divider {
+  /* 2px, not 1px. At a hairline the line was measurably painted and still
+     unreadable on the page — the section background changes across most of
+     these seams and did more visual work than the rule did. */
+  height: 2px;
+  border: 0;
+  /* No spacing of its own. The sections butt directly against each other and
+     this sits exactly on the seam — it is a join, not a gap with a line in it.
+     Each section already owns generous internal padding, so any margin here
+     just reads as the page falling apart. */
+  margin: 0;
+  background-repeat: no-repeat;
+  background-size: 45% 100%, 100% 100%;
+  background-position: -60% 0, 0 0;
+  background-image:
+    linear-gradient(90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--rust-action) 30%, transparent) 30%,
+      color-mix(in srgb, var(--rust-action) 60%, white) 50%,
+      color-mix(in srgb, var(--rust-action) 30%, transparent) 70%,
+      transparent 100%),
+    linear-gradient(90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--rust-action) 55%, transparent) 20%,
+      color-mix(in srgb, var(--rust-action) 90%, transparent) 50%,
+      color-mix(in srgb, var(--rust-action) 55%, transparent) 80%,
+      transparent 100%);
+  animation: ck-divider-sweep 6s linear infinite;
+}
+}
+
+/* The line stays drawn and stays tinted; only the highlight stops travelling,
+   parked at centre. The colour is the point, the movement is not.
+   Scoped to named classes, per the convention stated at the top of this file. */
+@media (prefers-reduced-motion: reduce) {
+  .ck-section-divider,
+  .ck-cat-divider {
+    animation: none !important;
+    background-position: 50% 0, 0 0 !important;
+  }
 }
 
 /* Admin welcome: cards fan in (use inline animation-delay) */

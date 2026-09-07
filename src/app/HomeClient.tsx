@@ -51,6 +51,7 @@ import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
+import SectionDivider            from "@/components/SectionDivider";
 import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
 import { CTASection }            from "@/components/home/CTASection";
@@ -265,6 +266,8 @@ export default function HomeClient({
           </>
         )}
 
+        <SectionDivider />
+
         {/* Live Needs section — real verified needs across multiple categories */}
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
 
@@ -278,14 +281,24 @@ export default function HomeClient({
             Guest-only, and gated in both responsive trees — see the mobile copy
             below. Asking someone who is already signed in to "Join as a donor"
             is the whole reason for the condition. */}
-        {showAudiencePathways && <AudiencePathwaysSection />}
+        {showAudiencePathways && (
+          <>
+            <SectionDivider />
+            <AudiencePathwaysSection />
+          </>
+        )}
+
+        <SectionDivider />
 
         {/* "What We Provide" — 2-step dark section */}
         <WhatWeProvideSection />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
-          <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
+          <>
+            <SectionDivider />
+            <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
+          </>
         )}
 
         {/* In-Kind Requests section — hidden from landing page; shown only via WelcomeOverlay filter */}
@@ -394,6 +407,8 @@ export default function HomeClient({
           />
         )}
 
+        <SectionDivider />
+
         {/* "Be the Change" feature cards */}
         <BeTheChangeSection />
 
@@ -402,10 +417,17 @@ export default function HomeClient({
             `watchedRequests`, not `itemRequests`: this section renders for
             logged-out visitors too, and the authenticated board is empty for
             them. See the note beside the definition. */}
+        {/* No <SectionDivider/> here: DoneeRequestsSection self-nulls (two early
+            returns), so a divider gated on this condition outlives it and
+            stacks against the next one. It owns its own divider instead. */}
         {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={watchedRequests} />}
+
+        <SectionDivider />
 
         {/* Coming soon magnets */}
         <ComingSoonMagnets />
+
+        <SectionDivider />
 
         {/* Bottom CTA — hidden when logged in */}
         <CTASection />
@@ -502,6 +524,8 @@ export default function HomeClient({
         {/* Be the Change follows the complete hero composition. */}
         <BeTheChangeSection tourAnchors />
 
+        <SectionDivider bleed className="-my-5" />
+
         {/* Live Needs section — real verified needs across multiple categories */}
         <div className="-mx-4">
           <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
@@ -521,9 +545,12 @@ export default function HomeClient({
             The whole -mx-4 wrapper is gated, not just its child, so nothing is
             left behind contributing gap spacing to this flex column. */}
         {showAudiencePathways && (
-          <div className="-mx-4">
-            <AudiencePathwaysSection tourAnchors />
-          </div>
+          <>
+            <SectionDivider bleed className="-my-5" />
+            <div className="-mx-4">
+              <AudiencePathwaysSection tourAnchors />
+            </div>
+          </>
         )}
 
 
@@ -531,6 +558,8 @@ export default function HomeClient({
             itself down through its own CSS vars, so the same component serves
             both branches rather than a mobile-specific copy. The negative
             margins cancel this column's px-4 so it can use its own padding. */}
+        <SectionDivider bleed className="-my-5" />
+
         <div className="-mx-4">
           <ComingSoonMagnets />
         </div>

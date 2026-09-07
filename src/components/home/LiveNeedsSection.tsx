@@ -18,6 +18,7 @@ import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals"
 import { loginUrlFor } from "@/lib/safeRedirect";
 import type { PlatformStats, PublicItemRequest } from "@/lib/api";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
+import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 
 /**
@@ -101,6 +102,31 @@ export function LiveNeedsSection({
   const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
   const reduceMotion = useReducedMotion();
 
+  /*
+   * Who, if anyone, is offered the "post a need" action in the empty state.
+   *
+   * A need (ItemRequest, /requests/new) is a DONEE's to create; a DONOR creates
+   * listings at /items/new instead. This CTA previously rendered for everyone
+   * and was mislabelled "Add new listing" while pointing at the donee wizard,
+   * so a donor was being offered an action that is not theirs.
+   *
+   * Fails closed while auth resolves: useAuth starts { user: null,
+   * isLoading: true } and only then hydrates from localStorage["ck_user"], so
+   * testing !user alone flashes the guest CTA at a signed-in donor for a frame.
+   *
+   * Role is normalised because the string circulates both bare and ROLE_-
+   * prefixed; comparing it raw misreads ROLE_DONEE as a donor.
+   */
+  const { user, isLoading: authLoading } = useAuth();
+  const role = (user?.role ?? "").toUpperCase().replace(/^ROLE_/, "");
+  const emptyStateCta = authLoading
+    ? null
+    : user === null
+      ? { href: loginUrlFor("/requests/new"), label: "Post a need" }
+      : role === "DONEE"
+        ? { href: "/requests/new", label: "Post a need" }
+        : null;
+
   // Purely backend-driven now — whatever the API returns (including an empty
   // array) is what renders. No local fallback/dummy data masking a real empty state.
   const allNeeds = initialRequests ?? [];
@@ -172,7 +198,7 @@ export function LiveNeedsSection({
       ref={sectionRef}
       id="live-needs-section"
       aria-labelledby="live-needs-heading"
-      className="relative w-full bg-[#fbf9f4] dark:bg-zinc-950 ck-live-needs-section border-b border-stone-200/70 dark:border-zinc-800/80 overflow-hidden transition-colors"
+      className="relative w-full bg-[#fbf9f4] dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
     >
       {/* Soft warm ambient lighting glow matching brand palette */}
       <div
@@ -187,7 +213,7 @@ export function LiveNeedsSection({
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
-          <div className="max-w-2xl">
+          <div className="max-w-2xl min-w-0">
             {/* Live Indicator Pill */}
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-50/80 dark:bg-emerald-950/40 px-3.5 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 shadow-xs mb-3">
               <span className="relative flex h-2 w-2">
@@ -317,15 +343,19 @@ export function LiveNeedsSection({
               No open requests in {selectedCategory} right now
             </p>
             <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 max-w-sm">
-              Be the first to post one, or check back soon — new needs are added regularly.
+              {emptyStateCta
+                ? "Be the first to post one, or check back soon — new needs are added regularly."
+                : "Check back soon — new needs are added regularly. Try another category in the meantime."}
             </p>
-            <Link
-              href="/requests/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-orange-950/20 active:scale-95"
-            >
-              <span>Add new listing</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            {emptyStateCta ? (
+              <Link
+                href={emptyStateCta.href}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-orange-950/20 active:scale-95"
+              >
+                <span>{emptyStateCta.label}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : null}
           </div>
         ) : (
           <div className="relative ck-live-needs-carousel">
@@ -352,7 +382,7 @@ export function LiveNeedsSection({
                     position: "absolute",
                     left: "50%",
                     top: 0,
-                    width: "min(92vw, 980px)",
+                    width: "min(92%, 980px)",
                     transitionProperty: "transform, filter, opacity",
                     transitionDuration: "0.6s",
                     transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",

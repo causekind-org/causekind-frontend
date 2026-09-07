@@ -54,3 +54,7 @@ video-master/
 # Obsidian dev log — local-only notes about changes made in this repo.
 # Never pushed: it is a personal working record, not project source.
 Dev Log/
+
+# Playwright/Chrome profile directories left behind by QA runs.
+# 77 MB of Crashpad dumps, GPU caches and leveldb — test artifacts, not source.
+.qa-alpha-cutout/
