@@ -45,6 +45,31 @@ const inFlightGetRequests = new Map<string, Promise<any>>();
 const getCacheMap = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL_MS = 3000;
 
+/**
+ * Whether the per-path GET cache and in-flight map above may be used.
+ *
+ * <p><b>Browser only, and this is a correctness boundary rather than an
+ * optimisation.</b> Both are module-level Maps, and a module-level Map on the
+ * Next server is process-global — shared by every concurrent visitor, not
+ * scoped to one request. They are keyed by `path` alone while every request
+ * goes out with `credentials: "include"`, so identity is part of the response
+ * but no part of the key.
+ *
+ * <p>That combination is a cross-user cache waiting to happen: the first
+ * caller's response for a user-scoped path such as `/api/v1/users/me` would be
+ * handed to whoever asked for the same path within the 3s window — a different
+ * person's data, served from memory, with no request to the backend to notice.
+ *
+ * <p>No such leak exists today, because the only server-side callers are the
+ * homepage's public endpoints. The point is that it is one innocuous-looking
+ * server-side call away, and the call that triggers it would not look like a
+ * security change to anyone reviewing it.
+ *
+ * <p>In the browser the cache is correct and useful: one user, one session, and
+ * a 3s window whose whole job is collapsing render cascades.
+ */
+const canUseRequestCache = () => typeof window !== "undefined";
+
 /*
  * Request timeout.
  *
@@ -108,7 +133,7 @@ async function request<T>(
   // Invalidate cache on mutations
   if (!isGet) {
     getCacheMap.clear();
-  } else {
+  } else if (canUseRequestCache()) {
     const cached = getCacheMap.get(path);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       return Promise.resolve(cached.data as T);
@@ -199,13 +224,16 @@ async function request<T>(
     // browser error with no useful meaning, which is exactly what an admin saw on
     // the Re-run AI button. Check for a body before trying to parse one.
     const data = (await readJsonBody(res)) as T;
-    if (isGet && data !== undefined) {
+    if (isGet && data !== undefined && canUseRequestCache()) {
       getCacheMap.set(path, { data, timestamp: Date.now() });
     }
     return data;
   };
 
-  if (isGet) {
+  // Same reasoning as the cache above: two concurrent server-side requests
+  // from different users must never be handed the same promise for a path whose
+  // response depends on who is asking.
+  if (isGet && canUseRequestCache()) {
     const promise = execute().finally(() => {
       inFlightGetRequests.delete(path);
     });
