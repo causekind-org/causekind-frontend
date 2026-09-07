@@ -45,6 +45,29 @@ const inFlightGetRequests = new Map<string, Promise<any>>();
 const getCacheMap = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL_MS = 3000;
 
+/*
+ * Request timeout.
+ *
+ * There was none at all: no signal, no AbortController, no retry. The backend
+ * runs on Neon with a deliberately cold connection pool (minimum-idle=0, no
+ * keepalive — see causekind-backend/docs/db-connection-policy.md), so the
+ * compute is suspended most of the time and the first request after idle pays
+ * a resume. With no timeout, a server-side render awaiting that request had
+ * nothing to bound it but the host's own function timeout, and the user waited
+ * out the whole thing on a blank page.
+ *
+ * The server budget is the tighter one on purpose: a slow SSR fetch blocks HTML
+ * for everyone hitting that route, and every server-side caller already
+ * degrades to a fallback rather than failing the page. The browser gets longer
+ * because a user-initiated action failing early is worse than one that is
+ * merely slow, and by then the compute is usually already awake.
+ *
+ * Deliberately generous enough to survive a normal cold start (documented as a
+ * few hundred ms to ~2s) — this is a backstop against hanging, not an SLA.
+ */
+const IS_SERVER = typeof window === "undefined";
+const REQUEST_TIMEOUT_MS = IS_SERVER ? 8000 : 20000;
+
 /**
  * Reads a successful response's body, tolerating the several legitimate ways a
  * backend says "nothing to return".
@@ -106,10 +129,13 @@ async function request<T>(
       ...(fetchOptions.headers as Record<string, string>),
     };
 
+    // Caller-supplied signals win: a component aborting on unmount must not be
+    // overridden by the backstop.
     const res = await fetch(`${BASE_URL}${path}`, {
       ...fetchOptions,
       headers,
       credentials: "include",
+      signal: fetchOptions.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     if (!res.ok) {

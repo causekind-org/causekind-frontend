@@ -12,14 +12,6 @@ import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
-import { LocationGate } from "@/components/LocationGate";
-import { CookieConsent } from "@/components/CookieConsent";
-import { WelcomeOverlay } from "@/components/WelcomeOverlay";
-import TourController from "@/components/tour/TourController";
-import { DonorListingPrompt } from "@/components/DonorListingPrompt";
-import { DoneeRequestPrompt } from "@/components/DoneeRequestPrompt";
-import { DoneeListingPrompt } from "@/components/DoneeListingPrompt";
-import { DonorCategoryModal } from "@/components/DonorCategoryModal";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
 import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
@@ -28,6 +20,10 @@ import { SiteBottomBlur } from "@/components/SiteBottomBlur";
 import { RoleClickSpark } from "@/components/RoleClickSpark";
 import { RoleThemeBridge } from "@/components/RoleThemeBridge";
 import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
+// Client boundary holding the deferred, client-only overlays and prompts.
+// They live behind their own `"use client"` file because `next/dynamic` with
+// `ssr: false` is rejected inside a Server Component, and this layout is one.
+import { DeferredOverlays } from "@/components/DeferredOverlays";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -103,9 +99,27 @@ export default async function RootLayout({
             {email, role} metadata the app already caches, and whitelists the
             role to donor|donee — see lib/roleTheme.ts. */}
         <script dangerouslySetInnerHTML={{ __html: ROLE_THEME_BOOT_SCRIPT }} />
+        {/* Material Symbols, subset and pinned.
+
+            This was requesting the FULL variable axis range
+            (opsz 20-48, wght 100-700, FILL 0-1, GRAD -50..200) — the entire
+            icon font — as a render-blocking third-party stylesheet on EVERY
+            route, while the font is used on exactly one: /blog/[slug].
+
+            `icon_names` narrows it to the eight glyphs actually referenced
+            there (grep `material-symbols-outlined` in BlogPostClient.tsx —
+            all eight are string literals, so this list is verifiable, not a
+            guess). The axes are pinned to the single instance used rather
+            than a range. `display=swap` stops it blocking text paint, and
+            the preconnect saves a connection setup on the gstatic origin the
+            stylesheet then pulls the font file from.
+
+            If a new Material Symbol is added to the blog, it must be added to
+            icon_names or it renders as its literal ligature text. */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=check,expand_more,format_bold,link,mail,pause,play_arrow,replay&display=swap"
         />
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
@@ -156,14 +170,7 @@ export default async function RootLayout({
                     duration={4500}
                     style={{ zIndex: 2147483647 }}
                   />
-                  <LocationGate />
-                  <CookieConsent />
-                  <WelcomeOverlay />
-                  <TourController />
-                  <DonorCategoryModal />
-                  <DoneeListingPrompt />
-                  <DonorListingPrompt />
-                  <DoneeRequestPrompt />
+                  <DeferredOverlays />
                 </RoleClickSpark>
               </NotificationsProvider>
             </AuthProvider>
