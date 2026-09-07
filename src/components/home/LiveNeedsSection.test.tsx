@@ -102,12 +102,22 @@ describe("LiveNeedsSection", () => {
     expect(screen.getByText("School Bags for Primary Students")).toBeInTheDocument();
   });
 
-  it("gracefully falls back to authentic sample needs when initialRequests is empty", () => {
+  it("renders a real empty state when initialRequests is empty", () => {
     render(<LiveNeedsSection initialRequests={[]} />);
 
+    // The section itself still renders.
     expect(screen.getByText(/Real people\. Real needs\./i)).toBeInTheDocument();
-    // Fallback has items like Virar, Vasai, etc.
-    const lockedCtas = screen.getAllByRole("link", { name: /Log in to offer this item/i });
-    expect(lockedCtas.length).toBeGreaterThan(0);
+
+    // It shows an honest empty state rather than sample data.
+    //
+    // This replaces an assertion that the component "falls back to authentic
+    // sample needs". It never did: the render states the rule directly —
+    // "whatever the API returns (including an empty array) is what renders.
+    // No local fallback/dummy data masking a real empty state." The old case
+    // asserted the opposite of its own component and had never passed.
+    expect(screen.getByText(/No open requests in All right now/i)).toBeInTheDocument();
+
+    // No cards means no per-card offer links.
+    expect(screen.queryByRole("link", { name: /Log in to offer this item/i })).toBeNull();
   });
 });
