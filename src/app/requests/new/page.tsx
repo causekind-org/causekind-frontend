@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { documentScreeningCopy } from "@/features/wizard-kit/documentScreeningCopy";
+import { RequestGuidance } from "@/components/requests/RequestGuidance";
 import { toast } from "@/lib/toast";
 import {
   getProfile,
@@ -65,6 +67,19 @@ const EMERGENCY_NATURES = ["FLOOD", "FIRE", "EARTHQUAKE", "ACCIDENT", "EVICTION"
 const HOUSING_TYPES = ["OWNED", "RENTED", "SHELTER", "TEMPORARY"];
 
 type Tier = "TIER_1_BASIC" | "TIER_2_MODERATE" | "TIER_3_HIGH_VALUE" | "TIER_4_EMERGENCY";
+
+/**
+ * Tiers that can complete without an admin ever seeing the request.
+ *
+ * <p>Mirrors AUTO_APPROVE_ELIGIBLE_TIERS in NeedAssessmentService by hand, like
+ * mapCategoryToTier above it — the same hand-mirrored pair this file already
+ * carries, and the same warning applies: change both together or the donee is
+ * told the wrong thing about their own request.
+ *
+ * <p>Only used to choose which sentence the guidance shows, so drift is
+ * misleading rather than dangerous.
+ */
+const AUTO_APPROVAL_TIERS: Tier[] = ["TIER_1_BASIC", "TIER_2_MODERATE"];
 
 // Mirrors backend TierService.mapCategoryToTier() — client-side preview only;
 // the backend re-derives (and can be overridden by admin) at submit time.
@@ -166,7 +181,13 @@ const DEFAULT_ACCEPT = "image/*,.pdf";
 
 type DocScreening = {
   status: "checking" | "valid" | "invalid" | "unavailable";
+  /**
+   * The model's own sentence. Diagnostics only — never rendered. See
+   * documentScreeningCopy for why the provider's prose does not reach a donee.
+   */
   reason: string | null;
+  /** Stable server code, and the only thing the messages below are built from. */
+  code: string | null;
   documentTypeGuess: string | null;
 };
 
@@ -298,8 +319,7 @@ function DocSlot({
           </p>
         ) : invalid ? (
           <p className="text-xs text-red-600 dark:text-red-400 font-semibold mt-0.5">
-            {screening?.reason ?? "This doesn't look valid"}
-            {uploadScreened ? "" : " — please re-upload."}
+            {screening?.code ? documentScreeningCopy(screening.code) : (screening?.reason ?? "This doesn't look valid — please re-upload.")}
           </p>
         ) : unavailable ? (
           // Previously gated on `uploadScreened`, which is only true for the
@@ -312,7 +332,9 @@ function DocSlot({
               Couldn&apos;t check this automatically — an admin will review it.
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {screening?.reason ?? "You can try again, or leave it — it won't block your request."}
+              {screening?.code
+                ? documentScreeningCopy(screening.code)
+                : "You can try again, or leave it — it won't block your request."}
             </p>
           </>
         ) : needsRescreen ? (
@@ -527,7 +549,13 @@ function NewRequestForm() {
                 if (d.aiVerified === null) return;
                 next.set(d.docType, {
                   status: d.aiVerified ? "valid" : "invalid",
-                  reason: d.aiReason, documentTypeGuess: d.aiDocumentTypeGuess,
+                  reason: d.aiReason,
+                  // Derived, because rows stored before codes existed have none.
+                  // Mirrors DocumentScreeningCodes.forOutcome on the server.
+                  code: d.aiVerified
+                    ? "DOC_LOOKS_VALID"
+                    : (d.aiDocumentTypeGuess ? "DOC_WRONG_TYPE" : "DOC_NOT_RECOGNISED"),
+                  documentTypeGuess: d.aiDocumentTypeGuess,
                 });
               });
               return next;
@@ -769,7 +797,7 @@ function NewRequestForm() {
     // For the donee photo the screening happens inside this same request, so show
     // the screening state up front rather than a generic "uploading".
     if (uploadScreened) {
-      setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, documentTypeGuess: null }));
+      setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, code: null, documentTypeGuess: null }));
     }
     try {
       // Gallery photos off a phone routinely exceed the server's 10MB per-file
@@ -780,7 +808,7 @@ function NewRequestForm() {
       if (uploadScreened) {
         // A stored photo has already passed screening server-side — the backend
         // refuses to persist a failing one, so there is nothing left to check.
-        setDocScreening((prev) => new Map(prev).set(docType, { status: "valid", reason: null, documentTypeGuess: null }));
+        setDocScreening((prev) => new Map(prev).set(docType, { status: "valid", reason: null, code: "DOC_LOOKS_VALID", documentTypeGuess: null }));
         toast.success("Photo accepted");
       } else {
         toast.success("Document uploaded");
@@ -802,6 +830,10 @@ function NewRequestForm() {
         setDocScreening((prev) => new Map(prev).set(docType, {
           status: err.retryable ? "unavailable" : "invalid",
           reason: err.retryable ? null : (err.message || null),
+          // No code on the non-retryable branch on purpose: this is our own
+          // upload error ("file too large" and friends), which is specific and
+          // worth showing. Only model-authored prose needs replacing.
+          code: err.retryable ? "DOC_SCREENING_UNAVAILABLE" : null,
           documentTypeGuess: null,
         }));
         toast.error(err.retryable
@@ -834,14 +866,14 @@ function NewRequestForm() {
   // doc comments) — an "invalid" verdict is a strong, immediate warning to
   // re-upload, but a human admin always makes the final call.
   async function screenDocument(docType: VerificationDocumentType, documentUrl: string, documentId: number) {
-    setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, documentTypeGuess: null }));
+    setDocScreening((prev) => new Map(prev).set(docType, { status: "checking", reason: null, code: null, documentTypeGuess: null }));
     try {
       if (docType === "RESIDENCE_PROOF") {
         const r = await analyzeResidenceProof(documentUrl, documentId);
-        applyScreeningResult(docType, r.aiAvailable, r.looksLikeResidenceProof, r.reason, r.documentTypeGuess);
+        applyScreeningResult(docType, r.aiAvailable, r.looksLikeResidenceProof, r.documentTypeGuess, r.code);
       } else if (docType === "GOVT_ID_ANY") {
         const r = await analyzeIdProof(documentUrl, documentId);
-        applyScreeningResult(docType, r.aiAvailable, r.looksLikeValidIdProof, r.reason, r.documentTypeGuess);
+        applyScreeningResult(docType, r.aiAvailable, r.looksLikeValidIdProof, r.documentTypeGuess, r.code);
       }
     } catch (e) {
       // Keep the message. Writing `null` here meant a transport failure, a 500
@@ -849,21 +881,34 @@ function NewRequestForm() {
       // and with the reason line now rendered, this is the text they read.
       setDocScreening((prev) => new Map(prev).set(docType, {
         status: "unavailable",
+        // Kept for diagnostics; no longer what the donee reads.
         reason: e instanceof Error && e.message ? e.message : null,
+        code: "DOC_SCREENING_UNAVAILABLE",
         documentTypeGuess: null,
       }));
     }
   }
 
+  /**
+   * Record a screening verdict.
+   *
+   * <p>No `reason` parameter: the server no longer sends the model's sentence,
+   * and `DocScreening.reason` is now reserved for OUR own upload errors, which
+   * are specific and worth showing. Mixing the two is what let provider prose
+   * reach a donee in the first place.
+   */
   function applyScreeningResult(
     docType: VerificationDocumentType, aiAvailable: boolean, looksValid: boolean | null,
-    reason: string | null, documentTypeGuess: string | null
+    documentTypeGuess: string | null, code: string | null
   ) {
     const status: DocScreening["status"] =
       !aiAvailable || looksValid === null ? "unavailable" : looksValid ? "valid" : "invalid";
-    setDocScreening((prev) => new Map(prev).set(docType, { status, reason, documentTypeGuess }));
+    setDocScreening((prev) => new Map(prev).set(docType, { status, reason: null, code, documentTypeGuess }));
     if (status === "invalid") {
-      toast.error(`This doesn't look valid — ${reason ?? "please check and re-upload"}`);
+      // The toast said the same thing as the inline line and then appended the
+      // model's sentence, so a donee could be shown two different descriptions
+      // of one document. Both now come from the same code.
+      toast.error(documentScreeningCopy(code));
     }
   }
 
@@ -922,6 +967,26 @@ function NewRequestForm() {
   // ── Step 1: Need Details ─────────────────────────────────────────────────
   const step1 = (
     <div className="space-y-4 sm:space-y-6">
+      {/* Said here, at the start, rather than at step 3 where the uploads live.
+          Someone arriving from an ad that promised "request support" is about to
+          be asked for a government ID and proof of address, and finding that out
+          after filling two steps is how people give up — or worse, feel misled at
+          the point they are asking for help. Fewer starts, far less abandonment,
+          and nobody is walked into it. */}
+      <div className="rounded-xl sm:rounded-2xl border border-[#1e3a60]/20 bg-[#1e3a60]/8 p-3 sm:p-4">
+        <p className="text-xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
+          Before you start
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+          To keep every request trustworthy, you will need a <strong>government ID</strong> and{" "}
+          <strong>proof of your address</strong> before this can be published. Photos of the documents
+          are enough. They are only ever seen by our admin team, never by donors.
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+          You can save and come back — nothing is submitted until you finish.
+        </p>
+      </div>
+
       <WizardField label="What do you need?" required error={fieldErrors.title}>
         {({ id, describedBy, invalid }) => (
           <Input id={id} name="title" aria-describedby={describedBy} aria-invalid={invalid}
@@ -1329,6 +1394,10 @@ function NewRequestForm() {
 
   const step3 = (
     <div className="space-y-4 sm:space-y-6">
+      {/* Donees already have accounts, so the useful thing here is not capture —
+          it is helping them avoid the delay that actually happens: a required
+          document a machine could not read. */}
+      <RequestGuidance autoApprovalPossible={AUTO_APPROVAL_TIERS.includes(tier)} />
       <div className="rounded-xl sm:rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-3 sm:p-4 flex items-start gap-3">
         <Lock className="w-4 h-4 text-[#1e3a60] mt-0.5 shrink-0" />
         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
@@ -1358,7 +1427,17 @@ function NewRequestForm() {
             <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Strengthens your case</p>
             <span className="text-xs font-bold text-stone-400">{optionalDoneCount} of {optionalDocList.length}</span>
           </div>
-          <p className="text-xs text-stone-400 -mt-1">Optional, but each one helps our team verify and approve your request faster.</p>
+          {/* This used to read "each one helps our team verify and approve your
+              request faster". That is not how the gate works: auto-approval
+              needs tier 1-2, both MANDATORY documents AI-verified, and no hard
+              escalation — optional documents are not part of it. Telling people
+              in difficulty that more private documents mean faster approval is
+              pressure toward disclosure that changes nothing, and it reverses
+              the backend's own "never a penalty" anti-coercion rule. */}
+          <p className="text-xs text-stone-400 -mt-1">
+            Optional. Your request is assessed on the required documents above — these do not
+            change what is needed. If it goes to a person for review, they may find them useful.
+          </p>
           {optionalDocList.map((d) => renderDocSlot(d, false))}
         </div>
       )}

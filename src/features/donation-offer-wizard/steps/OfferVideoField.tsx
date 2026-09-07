@@ -3,19 +3,34 @@
 import { useState, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FileVideo, Loader2, Trash2, Video } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { pressProps } from "@/features/wizard-kit/wizardMotion";
+import { mediaStatusCopy, VIDEO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
 import type { OfferVideoState } from "../useOfferVideo";
 import { VideoRecorderDialog } from "./VideoRecorderDialog";
 
 /**
- * Containers the server accepts. Mirrors VideoPolicy.allowedContainers — MOV is
- * there only because iPhones produce it, and is always transcoded to MP4.
+ * Containers the server accepts, as an `accept` attribute.
  *
- * <p>Not a security boundary: the server probes the container's own headers and
- * ignores what the picker claimed. This exists so the picker shows the donor
- * files that stand a chance, not to keep anything out.
+ * <p><b>Derived from the capability payload, not hardcoded.</b> This used to be
+ * a literal that its own comment admitted "mirrors VideoPolicy.allowedContainers"
+ * — a hand-maintained pair that goes stale the first time the property changes.
+ * The server now sends its list, so the picker offers exactly what the server
+ * will keep.
+ *
+ * <p>Still not a security boundary: the server probes the container's own headers
+ * and ignores what the picker claimed. This exists so the picker shows files that
+ * stand a chance, not to keep anything out. The fallback is used only when talking
+ * to a server too old to send the list.
  */
-const VIDEO_ACCEPT = "video/mp4,video/quicktime,video/webm";
+const FALLBACK_ACCEPT = "video/mp4,video/quicktime,video/webm";
+
+function acceptFor(containers: readonly string[] | undefined): string {
+  if (!containers || containers.length === 0) return FALLBACK_ACCEPT;
+  return containers
+    .map((c) => (c === "mov" ? "video/quicktime" : `video/${c}`))
+    .join(",");
+}
 
 /**
  * The optional item video.
@@ -131,7 +146,7 @@ export function OfferVideoField({
           File from the recorder — and keeping an unused hidden input around
           would just be something to wonder about later. */}
       <input
-        ref={chooseInputRef} type="file" accept={VIDEO_ACCEPT}
+        ref={chooseInputRef} type="file" accept={acceptFor(capability?.allowedContainers)}
         data-testid="video-choose-input"
         className="sr-only" aria-hidden tabIndex={-1}
         onChange={handlePick(chooseInputRef)}
@@ -174,12 +189,19 @@ function VideoStatusLine({
   state: OfferVideoState;
   playbackUrl: string | null;
 }) {
-  const status = state.video?.status;
+  const t = useTranslations();
+  const video = state.video;
 
-  if (status === "APPROVED") {
+  // No video yet — nothing to say about one.
+  if (!video) return null;
+
+  const copy = mediaStatusCopy(video, VIDEO_COPY);
+  const detail = copy.detailKey ? t(copy.detailKey, { maxSeconds: state.capability?.maxSeconds ?? 0 }) : null;
+
+  if (video.status === "APPROVED") {
     return (
       <div className="mt-2.5">
-        <p className="text-3xs font-bold text-emerald-700 dark:text-emerald-400">Video added.</p>
+        <p className="text-3xs font-bold text-emerald-700 dark:text-emerald-400">{t(copy.labelKey)}</p>
         {playbackUrl && (
           <video
             src={playbackUrl} controls playsInline
@@ -190,40 +212,42 @@ function VideoStatusLine({
     );
   }
 
-  // QUARANTINED is not here on purpose: it means the bytes arrived and screening
-  // has not started yet, so it belongs with the in-flight states further down.
-  if (status === "REJECTED") {
+  // The reason is the whole point of this line. Before, every rejection read
+  // "We can't accept this video" with no cause, so a donor had nothing to act
+  // on — the server knew it was too long, or the wrong format, and never said.
+  if (video.status === "REJECTED" || video.status === "FAILED") {
     return (
-      <p className="mt-2.5 text-3xs font-semibold text-red-600 dark:text-red-400">
-        We can&apos;t accept this video. You can remove it and try another, or continue with photos only.
-      </p>
+      <div className="mt-2.5">
+        <p className="text-3xs font-bold text-red-600 dark:text-red-400">{t(copy.labelKey)}</p>
+        {detail && <p className="mt-0.5 text-3xs font-semibold text-red-600/90 dark:text-red-400/90">{detail}</p>}
+      </div>
     );
   }
 
-  if (status === "REVIEW_REQUIRED") {
+  if (video.status === "REVIEW_REQUIRED") {
     return (
-      <p className="mt-2.5 text-3xs font-semibold text-amber-700 dark:text-amber-400">
-        Someone from our team will check this video. You can carry on — it will not hold up your submission.
-      </p>
+      <div className="mt-2.5">
+        <p className="text-3xs font-bold text-amber-700 dark:text-amber-400">{t(copy.labelKey)}</p>
+        {/* Reassurance, not a reason: a human looking at this is a normal outcome
+            and must not read as a failure. Shown alongside the code's detail. */}
+        <p className="mt-0.5 text-3xs font-semibold text-amber-700/90 dark:text-amber-400/90">
+          {t("media.video.hint.reviewOk")}
+        </p>
+        {detail && <p className="mt-0.5 text-3xs font-medium text-amber-700/80 dark:text-amber-400/80">{detail}</p>}
+      </div>
     );
   }
 
-  if (status === "FAILED") {
-    return (
-      <p className="mt-2.5 text-3xs font-semibold text-red-600 dark:text-red-400">
-        We couldn&apos;t process that video. Remove it and try another, or continue with photos only.
-      </p>
-    );
-  }
-
-  // Everything else is still moving: UPLOADING, VALIDATING, TRANSCODING,
-  // MALWARE_SCANNING, MODERATING_VISUAL, MODERATING_AUDIO — or the poll gave up
-  // and left it mid-flight, which is why this says "still" rather than a spinner
-  // that would imply we are watching.
+  // Everything else is still moving: UPLOADING, QUARANTINED, VALIDATING,
+  // TRANSCODING, MALWARE_SCANNING, MODERATING_VISUAL, MODERATING_AUDIO — or the
+  // poll gave up and left it mid-flight, which is why this says "still" rather
+  // than a spinner that would imply we are watching.
   return (
     <p className="mt-2.5 flex items-center gap-1.5 text-3xs font-semibold text-stone-500 dark:text-stone-400">
       {state.busy && <Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" aria-hidden />}
-      {state.busy ? "Checking your video…" : "Your video is still being checked. You can carry on."}
+      {/* The full sentence, not the bare badge label. Someone waiting needs to
+          know they are not blocked, which "Checking" alone does not say. */}
+      {state.busy ? t("media.video.hint.checking") : t("media.video.hint.inFlight")}
     </p>
   );
 }

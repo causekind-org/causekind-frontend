@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
+import { RAKSHA_BANDHAN_INTRO_FADE_MS } from "@/lib/raksha-bandhan";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The gate is date-driven; hold it open for the behavioural tests and exercise
@@ -63,6 +64,32 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
+
+/**
+ * Wait for the intro to be gone <b>and</b> to have let go of the page.
+ *
+ * <p><b>Why both, and why this was flaky.</b> The scroll lock lives in an effect
+ * keyed on `phase`. When the phase reaches "done" React commits the render that
+ * removes the overlay, and only *then* flushes the passive cleanup that restores
+ * `document.body.style.overflow`. A `waitFor` that only checks the DOM node
+ * returns on that commit — before the cleanup has run — so an assertion on
+ * overflow immediately afterwards reads the still-locked "hidden".
+ *
+ * <p>On an idle machine the flush follows within a tick and nobody notices. Under
+ * the full suite the gap widens, which is why this file failed roughly one run in
+ * two under load while passing every time in isolation.
+ *
+ * <p>The component is right; the test was reading between two commits. Waiting on
+ * the observable consequence rather than a duration is what makes this
+ * deterministic — a longer timeout would not have fixed it, because the wait was
+ * ending early rather than timing out.
+ */
+async function waitForIntroToLeave() {
+  await waitFor(() => {
+    expect(screen.queryByTestId("rakhi-intro")).toBeNull();
+    expect(document.body.style.overflow).toBe("");
+  });
+}
 
 describe("pickRakshaBandhanIntroSource", () => {
   const setDisplay = (width: number, dpr = 1) => {
@@ -287,7 +314,7 @@ describe("RakshaBandhanIntro", () => {
     const skip = screen.getByRole("button", { name: /skip/i });
     act(() => skip.click());
 
-    await waitFor(() => expect(screen.queryByTestId("rakhi-intro")).toBeNull());
+    await waitForIntroToLeave();
     expect(document.body.style.overflow).toBe("");
   });
 
@@ -300,7 +327,7 @@ describe("RakshaBandhanIntro", () => {
     act(() => {
       first.container.querySelector("video")!.dispatchEvent(new Event("error"));
     });
-    await waitFor(() => expect(screen.queryByTestId("rakhi-intro")).toBeNull());
+    await waitForIntroToLeave();
     first.unmount();
 
     vi.resetModules();
@@ -339,7 +366,7 @@ describe("RakshaBandhanIntro", () => {
       container.querySelector("video")!.dispatchEvent(new Event("error"));
     });
 
-    await waitFor(() => expect(screen.queryByTestId("rakhi-intro")).toBeNull());
+    await waitForIntroToLeave();
     expect(document.body.style.overflow).toBe("");
   });
 
@@ -350,7 +377,7 @@ describe("RakshaBandhanIntro", () => {
 
     render(<Intro />);
 
-    await waitFor(() => expect(screen.queryByTestId("rakhi-intro")).toBeNull());
+    await waitForIntroToLeave();
     expect(document.body.style.overflow).toBe("");
   });
 

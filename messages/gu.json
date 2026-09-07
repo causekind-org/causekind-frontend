@@ -18,7 +18,9 @@
     "signOut": "સાઇન આઉટ કરો",
     "openMenu": "મેનુ ખોલો",
     "profileMenu": "પ્રોફાઇલ મેનૂ",
-    "toggleTheme": "થીમ ટૉગલ કરો"
+    "toggleTheme": "થીમ ટૉગલ કરો",
+    "moneyDonation": "નાણાકીય દાન",
+    "inKindDonation": "વસ્તુ દાન"
   },
   "logout": {
     "title": "સાઇન આઉટ કરીએ?",
@@ -28,13 +30,31 @@
   },
   "hero": {
     "badge": "જીવનને વધુ સારું બનાવવું",
-    "headline": "સાથે મળીને અમે સમર્થન, શિક્ષિત અને સાજા કરીએ છીએ",
-    "subtext": "દરેક દાન કુટુંબને મજબૂત, સ્વસ્થ અને વધુ સુરક્ષિત બનવામાં મદદ કરે છે. સાથે મળીને, અમે શક્યતાઓથી ભરપૂર ભવિષ્યનું નિર્માણ કરીએ છીએ.",
+    "eyebrow": "જીવનને વધુ સારું બનાવવું",
+    "headlineTop": "તમારી નજીક કોઈને શોધો",
+    "headlineAccent": "જેને એ જ જોઈએ જે તમારી પાસે છે",
+    "subtext": "તમારા માટે વધારાની વસ્તુ કોઈ બીજા માટે આવશ્યક હોઈ શકે છે.",
     "donateNow": "હવે દાન કરો",
     "howWeWork": "અમે કેવી રીતે કામ કરીએ છીએ",
     "transparent": "100% પારદર્શક દાન",
     "fastDistribution": "ઝડપી, અસરકારક વિતરણ",
-    "localCampaign": "સ્થાનિક ઝુંબેશ"
+    "localCampaign": "સ્થાનિક ઝુંબેશ",
+    "ctaBrowse": "તમારી નજીકની જરૂરિયાતો શોધો",
+    "ctaStartGiving": "હમણાં જ સાઇન અપ કરો",
+    "ctaListItem": "વસ્તુ સૂચિબદ્ધ કરો",
+    "ctaRequestItem": "વસ્તુની વિનંતી કરો",
+    "ctaOpenDashboard": "ડૅશબોર્ડ ખોલો",
+    "connectionLabel": "એક ઉપયોગી વસ્તુ ચકાસાયેલ જરૂરિયાત પૂરી કરી શકે છે",
+    "connectionItemLead": "તમારી પાસે છે",
+    "connectionItemRest": "કંઈક ઉપયોગી",
+    "connectionNeedLead": "નજીકમાં કોઈક",
+    "connectionNeedRest": "જેને જરૂર છે",
+    "assuranceLabel": "CauseKind દરેક સોંપણીને કેવી રીતે સુરક્ષિત રાખે છે",
+    "assuranceVerifiedTitle": "મેળવણી પહેલાં ચકાસાયેલ",
+    "assuranceVerifiedBody": "જાહેર બોર્ડ પર પહોંચે તે પહેલાં વિનંતીઓ તપાસવામાં આવે છે.",
+    "assuranceHandoverTitle": "ટ્રૅક કરેલી સોંપણી",
+    "assuranceHandoverBody": "વસ્તુ સોંપાય ત્યારે બંને પક્ષો પુષ્ટિ કરે છે.",
+    "photoAlt": "સૂર્યપ્રકાશથી ઝળહળતા પડોશમાં એક હસતો યુવાન ઉપયોગી વસ્તુઓનું બોક્સ એક વૃદ્ધ મહિલાને આપે છે."
   },
   "stats": {
     "totalRaised": "કુલ ભંડોળ ઊભું કર્યું",
@@ -1191,6 +1211,21 @@
     "browseCampaigns": "વધુ ઝુંબેશ બ્રાઉઝ કરો",
     "toastSuccess": "દાનની પુષ્ટિ થઈ! તફાવત લાવવા બદલ આભાર."
   },
+  "categoryStrip": {
+    "heading": "શ્રેણી પ્રમાણે જુઓ",
+    "ariaLabel": "શ્રેણી પ્રમાણે ચકાસાયેલ જરૂરિયાતો જુઓ",
+    "categories": {
+      "education": "શિક્ષણ",
+      "clothing": "કપડાં",
+      "household": "ઘરવખરી",
+      "furniture": "ફર્નિચર",
+      "medicalAid": "તબીબી સહાય",
+      "livelihood": "આજીવિકા",
+      "relief": "રાહત",
+      "electronics": "ઇલેક્ટ્રોનિક્સ",
+      "sports": "રમતગમત"
+    }
+  },
   "audiencePathways": {
     "eyebrow": "બે બાજુ, એક મંચ",
     "heading": "તમે કોઈપણ બાજુ હો, CauseKind તમને જોડે છે.",
@@ -1208,5 +1243,14 @@
       "body": "સાચી જરૂરિયાત જણાવો, મદદ માટે તૈયાર લોકો સાથે જોડાઓ, અને સ્પષ્ટતા તથા સન્માન સાથે સહાય મેળવો.",
       "cta": "લાભાર્થી તરીકે જોડાઓ"
     }
+  },
+  "trustBand": {
+    "label": "CauseKind સુરક્ષિત કેમ છે",
+    "trustedTitle": "વિશ્વસનીય સમુદાય",
+    "trustedBody": "સુરક્ષિત. ચકાસાયેલ. ભરોસાપાત્ર.",
+    "impactTitle": "સ્થાનિક અસર",
+    "impactBody": "તમારા જ વિસ્તારના લોકોને મદદ.",
+    "togetherTitle": "સાથે મળીને મજબૂત",
+    "togetherBody": "સારો સમુદાય. સારી આવતીકાલ."
   }
 }

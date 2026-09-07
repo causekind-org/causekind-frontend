@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { superAdminOverview, type SuperAdminOverview } from "@/lib/api";
@@ -244,18 +244,38 @@ function useCountUp(target: number, ms = 900) {
   return val;
 }
 
+/**
+ * A count from the overview, optionally a way into the panel behind it.
+ *
+ * <p>Given `onOpen` the root renders as a real `<button>` rather than a div
+ * carrying `role="button"` and a hand-written key handler. The sidebar nav below
+ * is already built from real buttons and is keyboard-operable for free; the one
+ * click-handler-on-a-`<li>` elsewhere in this console (`GlobalSearchPanel`) is
+ * not reachable by keyboard at all, and is not a pattern to copy.
+ *
+ * <p>Without `onOpen` this is exactly the static tile it has always been, so it
+ * stays usable for any count that has nothing to open.
+ */
 function StatTile({
-  label, value, icon: Icon, delay, tone, th,
+  label, value, icon: Icon, delay, tone, th, onOpen,
 }: {
   label: string; value: number; icon: React.ElementType; delay: number; tone: StatTone; th: Th;
+  onOpen?: () => void;
 }) {
   const v = useCountUp(value);
   const accent = th.tone[tone];
-  return (
-    <div
-      className={`sa-count-glow relative rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 overflow-hidden ${th.card}`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
+
+  const shell = `sa-count-glow relative rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 overflow-hidden ${th.card}`;
+  // `text-left` and `w-full` only matter on the button: a <button> centres its
+  // content and shrink-wraps by default, which would silently re-layout the
+  // whole grid.
+  const interactive =
+    " w-full text-left cursor-pointer transition-transform transition-shadow duration-200" +
+    " hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none" +
+    " focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent";
+
+  const body = (
+    <>
       <div
         className="absolute -bottom-8 -right-8 w-28 h-28 rounded-full blur-2xl pointer-events-none"
         style={{ background: `${accent}22` }}
@@ -274,11 +294,35 @@ function StatTile({
       <p className={`text-3xs sm:text-2xs font-bold uppercase tracking-wider mt-1 sm:mt-1.5 relative z-10 ${th.textDim}`}>
         {label}
       </p>
-    </div>
+    </>
+  );
+
+  if (!onOpen) {
+    return (
+      <div className={shell} style={{ animationDelay: `${delay}ms` }}>
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      // The visible text is a bare number and a noun; on its own that reads as
+      // "5 Users", which says nothing about what pressing it does.
+      aria-label={`Open ${label}`}
+      className={shell + interactive}
+      // The ring colour is per-tile rather than a utility class so it tracks the
+      // tone accent and stays visible against both themes' card backgrounds.
+      style={{ animationDelay: `${delay}ms`, ["--tw-ring-color" as string]: accent }}
+    >
+      {body}
+    </button>
   );
 }
 
-function OverviewSection({ th }: { th: Th }) {
+function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => void }) {
   const [data, setData] = useState<SuperAdminOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -302,12 +346,15 @@ function OverviewSection({ th }: { th: Th }) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
-        <StatTile label="Users"     value={c["users"] ?? 0}         icon={Users}        delay={0}   tone="users"     th={th} />
-        <StatTile label="Campaigns" value={c["campaigns"] ?? 0}     icon={Megaphone}    delay={60}  tone="campaigns" th={th} />
-        <StatTile label="Donations" value={c["donations"] ?? 0}     icon={CreditCard}   delay={120} tone="donations" th={th} />
-        <StatTile label="Requests"  value={c["item-requests"] ?? 0} icon={ClipboardList} delay={180} tone="requests"  th={th} />
-        <StatTile label="Listings"  value={c["item-listings"] ?? 0} icon={Package}      delay={240} tone="listings"  th={th} />
-        <StatTile label="Matches"   value={c["matches"] ?? 0}       icon={Handshake}    delay={300} tone="matches"   th={th} />
+        {/* Users is the one card that does not open the raw table: it lands on
+            the User 360 workspace, which is where this console actually does
+            user work. The other five open the table for the number shown. */}
+        <StatTile label="Users"     value={c["users"] ?? 0}         icon={Users}        delay={0}   tone="users"     th={th} onOpen={() => onOpen("directory")} />
+        <StatTile label="Campaigns" value={c["campaigns"] ?? 0}     icon={Megaphone}    delay={60}  tone="campaigns" th={th} onOpen={() => onOpen("campaigns")} />
+        <StatTile label="Donations" value={c["donations"] ?? 0}     icon={CreditCard}   delay={120} tone="donations" th={th} onOpen={() => onOpen("donations")} />
+        <StatTile label="Requests"  value={c["item-requests"] ?? 0} icon={ClipboardList} delay={180} tone="requests"  th={th} onOpen={() => onOpen("item-requests")} />
+        <StatTile label="Listings"  value={c["item-listings"] ?? 0} icon={Package}      delay={240} tone="listings"  th={th} onOpen={() => onOpen("item-listings")} />
+        <StatTile label="Matches"   value={c["matches"] ?? 0}       icon={Handshake}    delay={300} tone="matches"   th={th} onOpen={() => onOpen("matches")} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-3 sm:gap-4">
@@ -411,6 +458,29 @@ export default function SuperAdminPage() {
     setSection(key);
   }
 
+  /**
+   * Opening a panel from a Database Overview count.
+   *
+   * <p>Must be a useCallback: the `content` memo below has a hand-pinned dep
+   * array with an eslint-disable over it, so a fresh identity each render would
+   * be stale-captured there and the cards would silently stop working.
+   *
+   * <p>The Users card cannot go through handleNavClick, which deliberately
+   * *preserves* focusUserId for the directory (see there). A card reading
+   * “5 USERS” means “show me the five”, not “reopen whoever I last inspected”,
+   * so this clears the focus first.
+   */
+  const openFromOverview = useCallback((key: SectionKey) => {
+    if (key === "directory") {
+      setFocusUserId(undefined);
+      setSection("directory");
+      return;
+    }
+    setFocusUserId(undefined);
+    setFocusIntervention(undefined);
+    setSection(key);
+  }, []);
+
   /** Search and ⌘K both land on the same User 360 workspace. */
   function openUser(id: number) {
     setFocusUserId(id);
@@ -431,7 +501,7 @@ export default function SuperAdminPage() {
 
   const content = useMemo(() => {
     switch (section) {
-      case "overview":      return <OverviewSection th={th} />;
+      case "overview":      return <OverviewSection th={th} onOpen={openFromOverview} />;
       case "search":        return <GlobalSearchPanel onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} />;
       case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} isDark={isDark} />;
       case "cases":         return <CasesPanel isDark={isDark} />;
@@ -453,7 +523,7 @@ export default function SuperAdminPage() {
       case "sql":           return <SqlConsole isDark={isDark} />;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, isDark, focusUserId, focusIntervention]);
+  }, [section, isDark, focusUserId, focusIntervention, openFromOverview]);
 
   // Theme toggle button (reused in sidebar + topbar)
   const ThemeToggle = (

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { videoPreflight } from "@/features/wizard-kit/videoPreflight";
+import { VIDEO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createOfferVideoSlot,
@@ -120,6 +123,7 @@ export function useOfferVideo(
   resolveOwnerId: () => Promise<number>,
   api: VideoEndpoints = OFFER_VIDEO_ENDPOINTS,
 ) {
+  const t = useTranslations();
   const [state, setState] = useState<OfferVideoState>({
     capability: null,
     video: null,
@@ -264,14 +268,29 @@ export function useOfferVideo(
     // names no field, never mentions size, and is the only thing an oversized
     // upload used to produce. The limit is already on screen next to the button,
     // so the client has everything it needs to say something true instead.
-    const maxBytes = capabilityRef.current?.maxBytes ?? 0;
-    if (maxBytes > 0 && file.size > maxBytes) {
+    const cap = capabilityRef.current;
+    const maxBytes = cap?.maxBytes ?? 0;
+
+    // Format, duration and resolution are knowable here too, and finding them
+    // now costs nothing and saves a doomed upload. The codes returned are the
+    // server's own, so the donor reads the same words either way.
+    const pre = await videoPreflight(file, {
+      maxBytes,
+      maxSeconds: cap?.maxSeconds ?? 0,
+      allowedContainers: cap?.allowedContainers,
+      maxWidth: cap?.maxWidth,
+      maxHeight: cap?.maxHeight,
+    });
+
+    if (!pre.ok) {
       setState(s => ({
         ...s,
         busy: false,
         phase: "idle",
-        error: `That video is ${formatMb(file.size)}. The limit is ${formatMb(maxBytes)} — `
-          + "try a shorter clip, or one recorded at a lower quality.",
+        error: "code" in pre
+          ? t(VIDEO_COPY.reasons[pre.code] ?? VIDEO_COPY.genericReason,
+              { maxSeconds: cap?.maxSeconds ?? 0 })
+          : t(pre.messageKey, { maxMb: Math.floor(maxBytes / (1024 * 1024)) }),
       }));
       return;
     }

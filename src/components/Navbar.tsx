@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
-import InKindMegaMenu from "@/components/InKindMegaMenu";
+import DonateMegaMenu from "@/components/DonateMegaMenu";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -637,7 +637,14 @@ export function SiteHeader() {
     // (reduced-field endpoint, no GPS) and only the act of offering needs an
     // account. Hiding it from logged-out visitors meant nobody could see what
     // CauseKind is actually for before signing up.
-    { href: "/requests", label: t("nav.requests") },
+    // Labelled "Donate", not "In-Kind Requests": the panel behind it now offers
+    // money and in-kind side by side, so naming it after one of the two would
+    // hide the other. `nav.donate` is reused rather than a new key added — it
+    // already carries exactly this word, correctly translated in all fourteen
+    // locales, and a second key for the same string is a second thing to keep
+    // in step. The href is unchanged: clicking still goes to the in-kind hub,
+    // which is the destination for everyone the panel is open to.
+    { href: "/requests", label: t("nav.donate") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -985,7 +992,7 @@ export function SiteHeader() {
               className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
-                <InKindMegaMenu onNavigate={() => setOpenMegaMenu(null)} />
+                <DonateMegaMenu onNavigate={() => setOpenMegaMenu(null)} />
               </div>
             </motion.div>
           )}

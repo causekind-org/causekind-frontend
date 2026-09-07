@@ -63,10 +63,11 @@ export { WelcomeOverlay } from "./components/WelcomeOverlay";
 // ── home/ ─────────────────────────────────────────────────────────
 export { CTASection } from "./components/home/CTASection";
 export { DoneeRequestsSection } from "./components/home/DoneeRequestsSection";
-// HeroQuoteSlider/HeroImageSlider/HeroSection excluded: HeroSection calls a
-// Next.js Server Action (getHeroImages, "use server") that reads the
-// filesystem — it cannot run in a browser-only bundle outside Next's server
-// runtime, so no amount of bundler config makes it resolvable here.
+// HeroSection excluded. The original reason — it called the getHeroImages
+// Server Action, which reads the filesystem and cannot run in a browser-only
+// bundle — no longer applies: the rebuilt hero has no server action and no
+// cycling background. It stays out because nothing here needs it yet, not
+// because it cannot be bundled. HeroQuoteSlider/HeroImageSlider are gone.
 export { DesktopStatsBar, LiveTicker } from "./components/home/StatsBars";
 export { WhatWeProvideSection } from "./components/home/WhatWeProvideSection";
 

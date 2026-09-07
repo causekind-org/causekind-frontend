@@ -244,3 +244,52 @@ describe("the all-quiet state", () => {
     expect(within(container).getByText(/first to know/i)).toBeInTheDocument();
   });
 });
+
+/**
+ * The guest case, which is what the band gets wrong most easily.
+ *
+ * <p>`/api/v1/item-requests` needs a session: it is empty on every server render
+ * and 401s for a logged-out visitor, so keying this band off it alone reported
+ * every category "quiet" while verified needs were open. `HomeClient` now falls
+ * back to the public board, whose DTO shares only `category` with the
+ * authenticated one — hence the widened prop.
+ *
+ * <p>These pin the component's half of that: it must count anything with a
+ * `category`, not just a full `ItemRequest`.
+ */
+describe("counting a public-board request list", () => {
+  /** The public DTO's shape — deliberately not an ItemRequest. */
+  function publicRequests(counts: Record<string, number>) {
+    return Object.entries(counts).flatMap(([category, n]) =>
+      Array.from({ length: n }, (_, i) => ({
+        id: i,
+        title: `${category} need`,
+        category,
+        quantity: 1,
+        urgency: "NORMAL",
+        city: "Pune",
+        description: null,
+        createdAt: "2026-08-01T00:00:00Z",
+        imageUrl: null,
+        emergency: false,
+        doneeFirstName: "A",
+      })),
+    );
+  }
+
+  it("counts public-board requests, so a guest does not see a falsely quiet grid", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    render(<DoneeRequestsSection itemRequests={publicRequests({ Education: 1 })} />);
+
+    // The one open need must be reported, and Education must no longer be quiet.
+    expect(screen.getAllByText("Quiet")).toHaveLength(8);
+    expect(screen.getByText("Education")).toBeInTheDocument();
+  });
+
+  it("still reports every category quiet when the board really is empty", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    render(<DoneeRequestsSection itemRequests={publicRequests({})} />);
+
+    expect(screen.getAllByText("Quiet")).toHaveLength(9);
+  });
+});

@@ -1,304 +1,288 @@
 "use client";
 
-/**
- * HeroSection — Desktop hero with cycling background images + quote slideshow.
- * Extracted from HomeClient.tsx for maintainability.
- */
-
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
+import { ArrowRight, Heart, MapPin, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { TranslatedText } from "@/hooks/useDynamicTranslation";
-import { getHeroImages } from "@/app/actions/getHeroImages";
-import type { Campaign, PlatformStats, PublicItemRequest } from "@/lib/api";
-import { FEATURES } from "@/lib/features";
-import { isIndependenceDayCampaignActive } from "@/lib/independence-day";
-import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
-import {
-  INDEPENDENCE_QUOTES,
-  IndependenceCount,
-  TricolourSweep,
-  UnfurlReveal,
-} from "@/components/home/IndependenceHero";
-import {
-  RAKSHA_BANDHAN_QUOTES,
-  WaitingLongestCard,
-} from "@/components/home/ThreadOfProtection";
 
-/* ── Quotes cycle ─────────────────────────────────────────────────────────── */
-const HERO_QUOTES = [
-  { text: "The smallest act of kindness is worth more than the grandest intention.", author: "Oscar Wilde" },
-  { text: "We make a living by what we get, but we make a life by what we give.", author: "Winston Churchill" },
-  { text: "No one has ever become poor by giving.", author: "Anne Frank" },
-  { text: "Give, but give until it hurts.", author: "Mother Teresa" },
-  { text: "The purpose of life is not to be happy — it is to be useful.", author: "Ralph Waldo Emerson" },
-  { text: "Alone we can do so little; together we can do so much.", author: "Helen Keller" },
-];
+import { CategoryStrip } from "@/components/home/CategoryStrip";
+import { TrustBand } from "@/components/home/TrustBand";
+import { useAuth } from "@/hooks/useAuth";
+import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
-export function HeroQuoteSlider({
-  quotes = HERO_QUOTES,
-}: {
-  /** Swapped for the Independence Day set during the campaign window. */
-  quotes?: readonly { text: string; author: string }[];
-} = {}) {
-  const [idx, setIdx] = useState(0);
+const HERO_IMAGE = "/images/causekind-hero-handoff.webp";
+const HERO_FOREGROUND = "/images/causekind-hero-foreground.png";
 
-  // Reset when the set changes, so a shorter list cannot leave the index out of
-  // range and render `undefined`.
-  useEffect(() => setIdx(0), [quotes]);
+/**
+ * Keep the reference's primary orange CTA useful for every auth state. During
+ * hydration it keeps its space but is deliberately inert, preventing a guest
+ * registration link from flashing for someone who is already signed in.
+ */
+function usePrimaryAction() {
+  const t = useTranslations("hero");
+  const { user, isLoading } = useAuth();
+  const role = user?.role.replace(/^ROLE_/, "");
 
-  useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % quotes.length), 6000);
-    return () => clearInterval(t);
-  }, [quotes.length]);
+  if (isLoading) {
+    return { href: null, label: t("ctaStartGiving") };
+  }
 
-  const q = quotes[idx] ?? quotes[0];
+  if (role === "DONOR") {
+    return { href: "/items/new", label: t("ctaListItem") };
+  }
+
+  if (role === "DONEE") {
+    return { href: "/requests/new", label: t("ctaRequestItem") };
+  }
+
+  if (role === "ADMIN") {
+    return { href: "/admin/dashboard", label: t("ctaOpenDashboard") };
+  }
+
+  if (role === "SUPER_ADMIN") {
+    return { href: "/super-admin", label: t("ctaOpenDashboard") };
+  }
+
+  return {
+    href: registerUrlPreserving("/items/new"),
+    label: t("ctaStartGiving"),
+  };
+}
+
+function LocationMarker() {
+  return (
+    <svg viewBox="0 0 36 44" className="h-10 w-9" aria-hidden>
+      <path
+        d="M18 42S33 28.2 33 15.8C33 7.6 26.3 1 18 1S3 7.6 3 15.8C3 28.2 18 42 18 42Z"
+        fill="#c54805"
+        stroke="#fff"
+        strokeWidth="2"
+      />
+      <circle cx="18" cy="15.5" r="6" fill="#fff" />
+    </svg>
+  );
+}
+
+/** The two live callouts and their animated dotted connection over the photo. */
+function ConnectionPins() {
+  const t = useTranslations("hero");
+  const callouts = [
+    {
+      lead: t("connectionItemLead"),
+      rest: t("connectionItemRest"),
+      // Both cards float in the open background between the two people, above
+      // the box — the composition in the approved reference board.
+      //
+      // Measured against the reframed photo at 1536×776: at this height the gap
+      // runs from the man's shoulder (~34%) to the woman's shawl (~70%). The
+      // cards are ~10% of the photo wide, so 38–48% and 57–67% leaves roughly
+      // 4% of clearance on the outside of each and a 9% channel between them
+      // for the connector to arc through. Neither lands on a person.
+      //
+      // Positioned from the TOP, not the bottom: the reference places them
+      // against the heads and shoulders, which sit at a fixed fraction down the
+      // frame, while the bottom edge moves with the clip box's aspect ratio.
+      className: "top-[30%] left-[38%]",
+      delay: 0,
+    },
+    {
+      lead: t("connectionNeedLead"),
+      rest: t("connectionNeedRest"),
+      className: "top-[30%] left-[57%]",
+      delay: 0.45,
+    },
+  ];
 
   return (
-    <div className="ck-hero-quote shrink-0 relative overflow-hidden">
-      <AnimatePresence mode="wait">
+    <div
+      className="pointer-events-none absolute inset-0 z-20"
+      aria-label={t("connectionLabel")}
+      role="group"
+    >
+      <svg
+        viewBox="0 0 1000 520"
+        preserveAspectRatio="none"
+        className="absolute inset-0 hidden size-full overflow-visible lg:block"
+        aria-hidden
+      >
+        <path
+          className="ck-hero-route"
+          /* Arcs up and over the channel between the two cards, as the
+             reference board draws it.
+
+             HAND-DERIVED FROM THE CARD POSITIONS ABOVE — nothing links the two.
+             The cards sit at left 38% and 57% and are ~10% wide, so their
+             marker centres are at 43% and 62% across. `preserveAspectRatio` is
+             `none` on a 1000×520 viewBox, so x is simply percent×10: 430 and
+             620. The control points lift the curve to y≈82, clear of both card
+             tops, so it reads as a connection between them rather than a line
+             through them.
+
+             If the cards move again, move these endpoints with them. */
+          d="M430 125 C472 82 578 82 620 125"
+          fill="none"
+          stroke="#d75a17"
+          strokeLinecap="round"
+          strokeWidth="3"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+
+      {callouts.map(({ lead, rest, className, delay }) => (
         <motion.div
-          key={idx}
-          className="absolute inset-0 flex flex-col justify-center"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.45, ease: [0.36, 0.66, 0.04, 1] }}
+          key={lead}
+          className={`ck-hero-callout absolute hidden w-[clamp(5.6rem,6.4vw,6.9rem)] text-center lg:block ${className}`}
+          initial={false}
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 3.8, ease: "easeInOut", repeat: Infinity, delay }}
         >
-          <p className="text-white/70 text-sm sm:text-base leading-relaxed font-medium italic line-clamp-3">
-            &ldquo;{q.text}&rdquo;
-          </p>
-          <span className="mt-1 flex items-center gap-2 text-[#f0b97a] text-2xs font-black uppercase tracking-wider">
-            <span className="block h-px w-5 bg-[#e07b3a]" />
-            {q.author}
+          <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 drop-shadow-[0_5px_8px_rgba(114,43,8,0.25)]">
+            <LocationMarker />
           </span>
+          <div className="relative rounded-[0.9rem] bg-[#fffdf9]/96 px-2.5 py-3 shadow-[0_10px_26px_rgba(75,42,19,0.18),0_0_0_1px_rgba(103,58,27,0.05)] backdrop-blur-[2px] dark:bg-stone-900/96">
+            <p className="text-[clamp(0.64rem,0.8vw,0.82rem)] font-extrabold leading-tight text-[#c54805] dark:text-[#f29a65]">
+              {lead}
+            </p>
+            <p className="mt-0.5 text-[clamp(0.61rem,0.76vw,0.78rem)] font-bold leading-[1.28] text-[#231d18] dark:text-stone-100">
+              {rest}
+            </p>
+            <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-[#fffdf9] dark:bg-stone-900" aria-hidden />
+          </div>
         </motion.div>
-      </AnimatePresence>
-    </div>
-  );
-}
-
-/* ── Background image slider ─────────────────────────────────────────────── */
-export function HeroImageSlider() {
-  const [images, setImages]   = useState<string[]>(["/images/hero-1.webp"]);
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    getHeroImages().then(imgs => {
-      if (imgs?.length) setImages(imgs);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!images.length) return;
-    const t = setInterval(() => setCurrent(p => (p + 1) % images.length), 6000);
-    return () => clearInterval(t);
-  }, [images.length]);
-
-  return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {images.map((src, i) => (
-        <div key={src} className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out" style={{ opacity: i === current ? 0.95 : 0 }}>
-          <div className={i === current ? (i % 2 === 0 ? "hero-slide-active" : "hero-slide-active-alt") : ""} style={{ position: "absolute", inset: 0 }}>
-            <Image src={src} alt="" fill className="object-cover brightness-[0.85] contrast-[1.05]" style={{ objectPosition: "center 30%" }} priority={i === 0} sizes="100vw" />
-          </div>
-        </div>
       ))}
+
+      <div className="absolute inset-x-3 bottom-3 flex items-end justify-between gap-3 lg:hidden">
+        {callouts.map(({ lead, rest }) => (
+          <div
+            key={lead}
+            className="relative w-[8.2rem] rounded-xl bg-[#fffdf9]/94 px-3 py-2.5 text-center shadow-[0_8px_22px_rgba(75,42,19,0.18)] backdrop-blur-[2px] dark:bg-stone-900/94"
+          >
+            <MapPin className="absolute -top-3 left-1/2 size-5 -translate-x-1/2 fill-[#c54805] text-white" aria-hidden />
+            <p className="text-[0.65rem] font-extrabold leading-tight text-[#c54805] dark:text-[#f29a65]">{lead}</p>
+            <p className="mt-0.5 text-[0.62rem] font-bold leading-tight text-stone-800 dark:text-stone-100">{rest}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-/* ── Desktop hero section ────────────────────────────────────────────────── */
-export function HeroSection({
-  currentCampaign,
-  translatedTitle,
-  translatedDesc,
-  stats = null,
-  rakshaBandhanRequest = null,
-}: {
-  currentCampaign: Campaign | null;
-  translatedTitle: string | null;
-  translatedDesc: string | null;
-  /** Feeds the Independence Day count card. Null until the fetch resolves. */
-  stats?: PlatformStats | null;
-  /**
-   * The need that has gone unclaimed longest — the thing at the end of the
-   * Raksha Bandhan thread. Null when the campaign is off, when the board is
-   * empty, or when the fetch failed; the hero then renders exactly as it does
-   * on any other day.
-   */
-  rakshaBandhanRequest?: PublicItemRequest | null;
-}) {
-  const tHero = useTranslations("hero");
-
-  // One switch for the whole campaign — the same call the strip above the hero
-  // makes, so the two can never disagree about whether it is on.
-  const independenceDay = isIndependenceDayCampaignActive();
-
-  // The campaign hero turns on only when there is a real need to show in it.
-  // With no request the hero renders exactly as it does on any other day, rather
-  // than marking the occasion with an empty column.
-  const rakshaBandhan = isRakshaBandhanCampaignActive() && rakshaBandhanRequest !== null;
-
-  const urgency = currentCampaign?.urgency ?? "NORMAL";
-  const urgencyConfig = {
-    CRITICAL: { label: "Critical — Urgent Action Needed", dot: "urgency-dot-critical", badge: "bg-red-500/15 border-red-400/40 text-red-300" },
-    HIGH:     { label: "High Priority", dot: "urgency-dot-high", badge: "bg-amber-500/15 border-amber-400/40 text-amber-300" },
-    NORMAL:   { label: "Active Campaign", dot: "", badge: "bg-white/10 border-white/20 text-white/70" },
-  }[urgency] ?? { label: "Active Campaign", dot: "", badge: "bg-white/10 border-white/20 text-white/70" };
+/** One responsive DOM tree keeps routes, tour anchors and auth behavior aligned. */
+export function HeroSection() {
+  const t = useTranslations("hero");
+  const primaryAction = usePrimaryAction();
 
   return (
-    <section className="relative w-full max-w-[1440px] mx-auto px-0 sm:px-10 pt-0 sm:pt-8 pb-0">
-      <div className="ck-hero-viewport relative w-full rounded-t-[3rem] rounded-b-none overflow-hidden bg-stone-900 shadow-xl border-x border-t border-[#e5e2d5]/60">
-        <div className="absolute inset-0 w-full h-full pointer-events-none">
-          <HeroImageSlider />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
-          {/* Between the two gradients, deliberately. Below both, the sweep sat
-              under 60% black twice over and the colour vanished. Above both, it
-              would wash across the headline. Here it clears the horizontal
-              darkening — the one that was killing it — while the bottom-up
-              gradient still goes over the top of it, which is what protects the
-              text sitting in that corner. */}
-          {independenceDay && <TricolourSweep />}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
-        </div>
+    <MotionConfig reducedMotion="user">
+      <section
+        data-tour="guest-hero"
+        aria-labelledby="causekind-hero-title"
+        className="ck-showcase-hero relative isolate overflow-hidden bg-[#fdf5ed] px-3 pb-3 pt-3 text-[#100c06] dark:bg-[#15110f] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
+      >
+        <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
 
-        {/* No min-height here: it used to duplicate the card's three fixed
-            values and fought the parent once the card became viewport-sized. */}
-        <div className="ck-hero-pad relative z-10 w-full h-full px-6 sm:px-12 flex flex-col justify-between overflow-hidden">
-          <div className="w-full flex items-start justify-between gap-4 lg:gap-6">
-            <motion.div
-              className="self-start inline-flex items-center gap-2 bg-white/65 backdrop-blur-md rounded-full px-5 py-2 border border-white/40 shadow-sm"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 90, damping: 20 }}
-            >
-              <span className="w-2 h-2 rounded-full bg-[#f0b97a] animate-pulse shrink-0" />
-              <span className="text-[#b04a15] text-xs font-extrabold uppercase tracking-wider">{tHero("badge")}</span>
-            </motion.div>
-            <div className="hidden lg:flex flex-col items-end gap-2">
-              {[tHero("transparent"), tHero("fastDistribution")].map((label, i) => (
-                <motion.div
-                  key={label}
-                  className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 shadow-xs"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.1 + i * 0.1 }}
-                >
-                  <span className="w-2 h-2 rounded-full bg-[#f0b97a]" />
-                  <span className="text-white text-sm font-semibold">{label}</span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mt-auto">
-            <div className="lg:col-span-7 flex flex-col items-start gap-5 relative">
-              {/* During the campaign the unfurl owns the headline's entrance
-                  outright. Layering it inside framer's spring was tried and
-                  looked wrong: two opacity animations multiply, so the headline
-                  sat at roughly a fifth of full strength while the tricolour
-                  band was supposed to be sweeping over it, and neither read.
-                  One animation, or the other — not both on the same element. */}
-              <motion.h1
-                className="ck-hero-title text-white font-extrabold leading-[1.08] tracking-tight max-w-2xl font-jakarta"
-                initial={independenceDay ? false : { opacity: 0, x: -28 }}
-                animate={independenceDay ? undefined : { opacity: 1, x: 0 }}
-                transition={{ type: "spring", stiffness: 75, damping: 20, delay: 0.15 }}
-              >
-                {independenceDay
-                  ? <UnfurlReveal>{tHero("headline")}</UnfurlReveal>
-                  : tHero("headline")}
-              </motion.h1>
-              <motion.div
-                className="max-w-lg w-full"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ type: "spring", stiffness: 75, damping: 20, delay: 0.28 }}
-              >
-                <HeroQuoteSlider
-                  quotes={
-                    rakshaBandhan
-                      ? RAKSHA_BANDHAN_QUOTES
-                      : independenceDay
-                        ? INDEPENDENCE_QUOTES
-                        : HERO_QUOTES
-                  }
-                />
-              </motion.div>
-            </div>
-
-            {/* The right column holds the monetary campaign card, which never
-                renders while FEATURES.money is false — roughly 40% of the hero
-                is empty every other day of the year. The campaign fills it with
-                the platform's own handover count rather than more decoration. */}
-            {/* The end of the thread. Framer's entrance is deliberately not
-                layered on top of this one: the card has its own delayed rise in
-                styles.css, timed to land as the thread reaches it, and two
-                opacity animations on one element multiply into a card that is
-                barely visible while the thread is supposed to be arriving —
-                the same mistake the Independence Day headline made. */}
-            {rakshaBandhan && !FEATURES.money && (
-              <div className="lg:col-span-5 flex justify-end">
-                <WaitingLongestCard request={rakshaBandhanRequest} />
+        <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full max-w-[1920px]">
+          <div className="ck-lead-hero-stage relative grid min-w-0 bg-[#fdf5ed] dark:bg-[#1a1512] lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
+            <div className="ck-hero-copy relative z-10 flex min-w-0 flex-col justify-center px-3 pb-5 pt-4 sm:px-7 sm:pb-7 sm:pt-6 lg:px-0 lg:pb-[clamp(2.6rem,5vh,5.5rem)] lg:pl-[clamp(0.75rem,1.2vw,1.75rem)] lg:pr-[clamp(3rem,6vw,8rem)] lg:pt-[clamp(1.2rem,2.4vh,2.5rem)]">
+              <div className="flex items-center gap-3 text-[#c54805] dark:text-[#f29a65]">
+                <span className="h-px w-8 bg-current opacity-55 sm:w-12" aria-hidden />
+                <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] sm:text-xs lg:text-[clamp(0.68rem,0.78vw,0.92rem)]">
+                  {t("eyebrow")}
+                </p>
+                <span className="h-px w-8 bg-current opacity-55 sm:w-12" aria-hidden />
               </div>
-            )}
 
-            {independenceDay && !rakshaBandhan && !FEATURES.money && (
-              <motion.div
-                className="lg:col-span-5 flex justify-end"
-                initial={{ opacity: 0, x: 36, scale: 0.94 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ type: "spring", stiffness: 65, damping: 18, delay: 0.22 }}
+              <h1
+                id="causekind-hero-title"
+                className="ck-hero-headline mt-[clamp(0.8rem,2vh,1.65rem)] text-[#100c06] dark:text-stone-50"
               >
-                <IndependenceCount stats={stats} />
-              </motion.div>
-            )}
+                <span className="block whitespace-nowrap">{t("headlineTop")}</span>
+                <span className="block whitespace-nowrap text-[#c54805] dark:text-[#ef8f54]">
+                  {t("headlineAccent")}
+                </span>
+              </h1>
 
-            {FEATURES.money && (
-              <motion.div
-                className="lg:col-span-5 flex justify-end"
-                initial={{ opacity: 0, x: 36, scale: 0.94 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ type: "spring", stiffness: 65, damping: 18, delay: 0.22 }}
-              >
-                <div className="bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem] p-6 shadow-2xl w-full max-w-[320px] border border-white/50 dark:border-white/10 sm:min-h-[350px] flex flex-col justify-between transition-all duration-500">
-                  <div>
-                    <div className="mb-0 lg:mb-4">
-                      <div className={`lg:hidden inline-flex items-center gap-1.5 rounded-full border px-3 py-1 mb-3 ${urgencyConfig.badge}`}>
-                        {urgencyConfig.dot && <span className={`w-1.5 h-1.5 rounded-full bg-current ${urgencyConfig.dot}`} />}
-                        <span className="text-3xs font-black uppercase tracking-wider">{urgencyConfig.label}</span>
-                      </div>
-                      <div className="hidden lg:flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center shadow-sm shrink-0">
-                            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4"><path d="M12 21.5C7.5 18 4.5 14.5 4.5 10.5C4.5 7.5 6.5 5.5 9.5 5.5C10.8 5.5 11.6 6 12 6.5C12.4 6 13.2 5.5 14.5 5.5C17.5 5.5 19.5 7.5 19.5 10.5C19.5 14.5 16.5 18 12 21.5Z" stroke="white" strokeWidth="1.8" /></svg>
-                          </div>
-                          <span className="text-sm font-extrabold text-stone-900 dark:text-stone-100">CauseKind</span>
-                        </div>
-                        <span className="text-xs text-stone-400 font-bold">· {currentCampaign ? <TranslatedText text={currentCampaign.city} /> : "2026"}</span>
-                      </div>
-                    </div>
-                    <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white leading-snug mb-2 font-jakarta line-clamp-2 transition-all duration-300">
-                      {translatedTitle ?? "Make an Immediate Impact"}
-                    </h3>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 mb-4 leading-relaxed font-medium line-clamp-2 transition-all duration-300">
-                      {translatedDesc ?? "Every donation directly supports frontline community programs."}
-                    </p>
-                  </div>
-                  <Link href={currentCampaign ? `/campaigns/${currentCampaign.id}` : "/campaigns"} className="block w-full">
-                    <button className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold py-3.5 rounded-xl text-xs tracking-wide uppercase transition-all duration-300 shadow-md shadow-orange-900/20 active:scale-95">
-                      {tHero("donateNow")}
-                    </button>
+              <div className="mt-[clamp(0.75rem,2.1vh,1.55rem)] flex items-center gap-3 text-[#c54805] dark:text-[#f29a65]" aria-hidden>
+                <span className="h-px w-[clamp(3.5rem,8vw,8.5rem)] bg-current opacity-55" />
+                <Heart className="size-4 fill-current sm:size-5" strokeWidth={0} />
+                <span className="h-px w-[clamp(3.5rem,8vw,8.5rem)] bg-current opacity-55" />
+              </div>
+
+              <p className="mt-[clamp(0.7rem,1.8vh,1.4rem)] max-w-[34rem] text-sm font-medium leading-relaxed text-[#34322f] [text-wrap:pretty] dark:text-stone-300 sm:text-base lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
+                {t("subtext")}
+              </p>
+
+              <div className="ck-hero-actions mt-[clamp(1rem,2.6vh,2.2rem)] grid w-full grid-cols-[minmax(0,0.82fr)_minmax(0,1.35fr)] gap-2 sm:flex sm:w-max sm:flex-row sm:flex-nowrap sm:gap-3">
+                {primaryAction.href ? (
+                  <Link
+                    href={primaryAction.href}
+                    className="ck-hero-primary-cta group relative isolate inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#b04a15] px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white shadow-[0_11px_25px_rgba(176,74,21,0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#c45520] hover:shadow-[0_15px_30px_rgba(176,74,21,0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a60] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[#f29a65] dark:focus-visible:ring-offset-[#1a1512] sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.045em]"
+                  >
+                    <MapPin className="ck-hero-cta-icon relative z-[1] size-4 shrink-0 sm:size-5" strokeWidth={2} aria-hidden />
+                    <span className="relative z-[1] min-w-0 text-center">{primaryAction.label}</span>
+                    <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                   </Link>
-                </div>
-              </motion.div>
-            )}
+                ) : (
+                  <span
+                    aria-hidden
+                    className="inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#b04a15]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.045em]"
+                  >
+                    <MapPin className="size-4 shrink-0 sm:size-5" />
+                    <span className="min-w-0 text-center">{primaryAction.label}</span>
+                    <ArrowRight className="ck-hero-action-arrow size-4 shrink-0 sm:size-5" />
+                  </span>
+                )}
+
+                <Link
+                  href="/requests"
+                  className="ck-hero-secondary-cta group relative isolate inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] px-2 text-[0.56rem] font-extrabold uppercase leading-tight tracking-[0.02em] text-[#b04a15] shadow-[inset_0_0_0_1.5px_rgba(176,74,21,0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(176,74,21,0.82),0_10px_22px_rgba(176,74,21,0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:text-[#e07b3a] dark:hover:bg-white/5 dark:focus-visible:ring-offset-[#1a1512] sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.04em]"
+                >
+                  <UsersRound className="ck-hero-cta-icon relative z-[1] size-4 shrink-0 sm:size-5" strokeWidth={2} aria-hidden />
+                  <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
+                  <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
+                </Link>
+              </div>
+            </div>
+
+            <div className="ck-hero-photo-shell relative min-h-[clamp(10.5rem,24vh,14rem)] min-w-0">
+              <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[#e9c69d]">
+                <Image
+                  src={HERO_IMAGE}
+                  alt={t("photoAlt")}
+                  fill
+                  priority
+                  sizes="(max-width: 1023px) 100vw, (max-width: 1919px) 62vw, 1180px"
+                  className="ck-hero-photo-image object-cover object-center"
+                />
+                <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[12%] bg-gradient-to-r from-[#fdf5ed]/65 to-transparent lg:block dark:from-[#1a1512]/78" aria-hidden />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[17%] bg-gradient-to-t from-[#5d2608]/18 to-transparent" aria-hidden />
+              </div>
+              <div
+                className="ck-hero-photo-breakout pointer-events-none absolute inset-0 z-[5] hidden lg:block"
+                aria-hidden
+              >
+                <Image
+                  src={HERO_FOREGROUND}
+                  alt=""
+                  fill
+                  sizes="(min-width: 1920px) 1180px, 62vw"
+                  className="ck-hero-photo-image object-cover object-center"
+                />
+              </div>
+              <ConnectionPins />
+            </div>
+          </div>
+
+          <div className="relative z-30 -mt-3 lg:-mt-[clamp(1.75rem,3.7vh,2.75rem)]">
+            <CategoryStrip />
+          </div>
+
+          <div className="relative z-20 mt-2 lg:mt-[clamp(1.25rem,2.4vh,1.65rem)]">
+            <TrustBand />
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </MotionConfig>
   );
 }

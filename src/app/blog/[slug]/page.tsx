@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { blogPosts } from "@/data/blogData";
+// Article bodies live apart from the metadata so they never reach the client
+// bundle wholesale — see src/data/blogContent.ts. This is a server component,
+// so importing the map here costs the browser nothing; only the one article
+// being read is serialised into the payload below.
+import { blogContent } from "@/data/blogContent";
 import BlogPostClient from "./BlogPostClient";
 
 interface PageProps {
@@ -96,7 +101,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       )}
-      <BlogPostClient slug={slug} />
+      <BlogPostClient slug={slug} content={blogContent[slug] ?? ""} />
     </>
   );
 }

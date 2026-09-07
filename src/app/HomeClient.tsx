@@ -10,22 +10,23 @@
  *
  * HOW IT'S NOW STRUCTURED:
  *   src/components/home/
- *     HeroSection.tsx         — desktop hero: cycling images + quote slider + campaign card
+ *     HeroSection.tsx         — shared responsive front door + category rail
  *     StatsBars.tsx           — desktop stats row + live activity ticker
  *     WhatWeProvideSection.tsx — "How it works" 2-step dark section
  *     CTASection.tsx          — bottom "Get started" CTA (hidden when logged in)
  *
  * This file keeps only:
  *   1. State (campaigns, stats, requests, listings, activity)
- *   2. Desktop layout wrapper (imports the sections above)
- *   3. Mobile layout (still inline — ~200 lines — a future task can extract it too)
+ *   2. Shared responsive hero (rendered once before both legacy branches)
+ *   3. Desktop layout wrapper (imports the sections above)
+ *   4. Mobile layout (still inline — ~200 lines — a future task can extract it too)
  */
 
 import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
+import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
 import { BeTheChangeSection } from "@/components/BeTheChangeSection";
@@ -35,7 +36,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Sparkles, Heart, HandCoins, MapPin, Coins, Users, ArrowRight } from "lucide-react";
+import { Sparkles, Heart, HandCoins, Coins, Users, ArrowRight } from "lucide-react";
 import { FEATURES } from "@/lib/features";
 import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
 import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
@@ -49,6 +50,8 @@ import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
+import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
+import SectionDivider            from "@/components/SectionDivider";
 import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
 import { CTASection }            from "@/components/home/CTASection";
@@ -74,77 +77,6 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371, dLat = ((lat2 - lat1) * Math.PI) / 180, dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// ── Mobile hero — cycling background images (same 6s rhythm as desktop) ──────
-
-const MOBILE_HERO_IMAGES = [
-  "/images/hero-1.webp",
-  "/images/hero-2.webp",
-  "/images/hero-3.webp",
-  "/images/hero-5.webp",
-  "/images/hero-6.webp",
-  "/images/hero-7.webp",
-];
-
-function MobileHeroSlider() {
-  const [idx, setIdx] = useState(0);
-  const [fading, setFading] = useState(false);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setFading(true);
-      setTimeout(() => {
-        setIdx(i => (i + 1) % MOBILE_HERO_IMAGES.length);
-        setFading(false);
-      }, 500);
-    }, 6000);
-    return () => clearInterval(id);
-  }, []);
-
-  // 16/11 rather than 16/10 is exactly 10% taller for the same width
-  // (1.6 / 1.4545 = 1.1), so the Hero grows downward without touching its
-  // left/right alignment with the Be the Change panel beneath it.
-  return (
-    <section data-tour="guest-hero" className="relative w-full aspect-[16/11] min-h-[231px] rounded-[2rem] overflow-hidden shadow-[0_14px_30px_-16px_rgba(0,0,0,0.45)] mt-1">
-      <div className="absolute inset-0 w-full h-full">
-        <Image
-          key={idx}
-          src={MOBILE_HERO_IMAGES[idx]}
-          alt="Together We Support"
-          fill
-          className="object-cover brightness-[0.75] contrast-[1.05] transition-opacity duration-500"
-          style={{ objectPosition: "center 25%", opacity: fading ? 0 : 1 }}
-          priority={idx === 0}
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/25 pointer-events-none" />
-      </div>
-      <div className="relative z-10 w-full h-full p-6 flex flex-col justify-between items-start">
-        <div className="bg-[#faf8f3]/85 dark:bg-zinc-900/85 backdrop-blur-xs border border-[#e5e2d5]/30 rounded-full px-3.5 py-1 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse" />
-          <span className="text-[#b04a15] text-3xs font-extrabold uppercase tracking-wider">
-            <TranslatedText text="Making Lives Better" />
-          </span>
-        </div>
-        <div className="space-y-2.5 max-w-sm">
-          <h1 className="text-white text-xl sm:text-2xl font-black leading-tight tracking-tight">
-            <TranslatedText text="Together We Support, Educate and Heal" />
-          </h1>
-          <p className="text-white/80 text-2xs sm:text-xs font-semibold leading-relaxed">
-            <TranslatedText text="Every donation helps a family grow stronger, healthier, and more secure." />
-          </p>
-          {FEATURES.money && (
-            <Link href="/campaigns" className="inline-block mt-1">
-              <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 rounded-xl text-3xs uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-950/20">
-                <TranslatedText text="Explore Campaigns" />
-              </button>
-            </Link>
-          )}
-        </div>
-      </div>
-    </section>
-  );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -196,21 +128,8 @@ export default function HomeClient({
   const [activity,     setActivity]     = useState<RecentActivity[]>(initialActivity);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState("");
-  const [activeCampaignIndex, setActiveCampaignIndex] = useState(0);
-
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
-
-  const currentCampaign      = campaigns[activeCampaignIndex] ?? null;
-  const translatedCampaignTitle = useDynamicTranslation(currentCampaign?.title ?? null);
-  const translatedCampaignDesc  = useDynamicTranslation(currentCampaign?.description ?? null);
-
-  // Auto-advance campaign card every 5 s
-  useEffect(() => {
-    if (campaigns.length <= 1) return;
-    const id = setInterval(() => setActiveCampaignIndex(p => (p + 1) % campaigns.length), 5000);
-    return () => clearInterval(id);
-  }, [campaigns.length]);
 
   // Item requests are private inventory (auth required) — the server-side render
   // above can't attach the httpOnly cookie, so `initialItemRequests` is always
@@ -240,16 +159,6 @@ export default function HomeClient({
     return () => window.removeEventListener("filter-home-requests", handleFilter);
   }, []);
 
-  /**
-   * Are the Hero and "Be the Change" direct visual neighbours on mobile?
-   *
-   * <p>Only then may the white panel tuck under the Hero. With FEATURES.money
-   * on, the Campaigns rail sits between them, and an overlap would cut into it.
-   * Derived from the flag explicitly rather than from render order, so moving
-   * sections around later cannot silently re-enable it in the wrong place.
-   */
-  const heroTouchesBeTheChange = !FEATURES.money;
-
   const displayedRequests = useMemo(() => {
     let out = itemRequests;
     if (selectedCategory) {
@@ -266,6 +175,24 @@ export default function HomeClient({
     }
     return out;
   }, [itemRequests, selectedCategory, myProfile]);
+
+  /*
+    What "Watching for you" counts.
+
+    `itemRequests` comes from `/api/v1/item-requests`, which requires a session.
+    It is empty on every server render (there is no cookie there) and stays empty
+    for a logged-out visitor, because the client refetch 401s and is swallowed.
+    That band renders for guests, so keyed off `itemRequests` alone it reported
+    every category "quiet" no matter how many verified needs were open — the
+    exact failure `page.tsx` already avoids for the campaign surfaces by
+    preferring the public endpoint.
+
+    Falls back rather than replaces: a signed-in donor's board is the more
+    specific list (it is theirs, and distance-aware), so it wins whenever it has
+    anything in it. `PublicItemRequest` carries `category`, which is all this
+    band reads.
+  */
+  const watchedRequests = itemRequests.length > 0 ? itemRequests : initialPublicRequests;
 
   // ── Raksha Bandhan ────────────────────────────────────────────────────────
   //
@@ -301,6 +228,10 @@ export default function HomeClient({
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
 
+      {/* One responsive front door. Keeping it outside the two legacy layout
+          trees prevents CTA, image and tour-anchor drift between breakpoints. */}
+      <HeroSection />
+
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
           Each section is its own extracted component — edit the
@@ -327,15 +258,6 @@ export default function HomeClient({
           </div>
         )}
 
-        {/* Hero — cycling background images + quote slider */}
-        <HeroSection
-          currentCampaign={currentCampaign}
-          translatedTitle={translatedCampaignTitle ?? null}
-          translatedDesc={translatedCampaignDesc ?? null}
-          stats={stats}
-          rakshaBandhanRequest={longestWaitingRequest}
-        />
-
         {/* Stats bar + live ticker — only when money feature enabled */}
         {FEATURES.money && (
           <>
@@ -343,6 +265,11 @@ export default function HomeClient({
             <LiveTicker activity={activity} />
           </>
         )}
+
+        <SectionDivider />
+
+        {/* Live Needs section — real verified needs across multiple categories */}
+        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
 
         {/* Donor / Donee pathways — the two sides of the platform, each with a
             role-preselecting signup CTA. Placed high so the visitor is told
@@ -354,14 +281,24 @@ export default function HomeClient({
             Guest-only, and gated in both responsive trees — see the mobile copy
             below. Asking someone who is already signed in to "Join as a donor"
             is the whole reason for the condition. */}
-        {showAudiencePathways && <AudiencePathwaysSection />}
+        {showAudiencePathways && (
+          <>
+            <SectionDivider />
+            <AudiencePathwaysSection />
+          </>
+        )}
+
+        <SectionDivider />
 
         {/* "What We Provide" — 2-step dark section */}
         <WhatWeProvideSection />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
-          <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
+          <>
+            <SectionDivider />
+            <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
+          </>
         )}
 
         {/* In-Kind Requests section — hidden from landing page; shown only via WelcomeOverlay filter */}
@@ -470,14 +407,27 @@ export default function HomeClient({
           />
         )}
 
+        <SectionDivider />
+
         {/* "Be the Change" feature cards */}
         <BeTheChangeSection />
 
-        {/* Donee requests, filtered by the donor's chosen focus areas — hidden for donees themselves */}
-        {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={itemRequests} />}
+        {/* Donee requests, filtered by the donor's chosen focus areas — hidden for donees themselves.
+
+            `watchedRequests`, not `itemRequests`: this section renders for
+            logged-out visitors too, and the authenticated board is empty for
+            them. See the note beside the definition. */}
+        {/* No <SectionDivider/> here: DoneeRequestsSection self-nulls (two early
+            returns), so a divider gated on this condition outlives it and
+            stacks against the next one. It owns its own divider instead. */}
+        {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={watchedRequests} />}
+
+        <SectionDivider />
 
         {/* Coming soon magnets */}
         <ComingSoonMagnets />
+
+        <SectionDivider />
 
         {/* Bottom CTA — hidden when logged in */}
         <CTASection />
@@ -508,21 +458,6 @@ export default function HomeClient({
             </div>
           </div>
         )}
-
-        {/* Mobile Hero + "Be the Change" — one layered composition.
-            They share a `relative isolate` wrapper (so they are a SINGLE flex
-            child and the parent's gap-5 no longer separates them), and the white
-            panel is pulled up under the Hero's rounded lower edge.
-            Gated on FEATURES.money, not on sibling order: with money enabled the
-            Campaigns rail sits between them and must not be overlapped. */}
-        <div className={heroTouchesBeTheChange ? "relative isolate ck-hero-overlap-wrap" : undefined}>
-          <div className={heroTouchesBeTheChange ? "relative z-20" : undefined}>
-            <MobileHeroSlider />
-          </div>
-          {heroTouchesBeTheChange && (
-            <BeTheChangeSection overlapHero tourAnchors />
-          )}
-        </div>
 
         {/* Mobile Campaigns horizontal scroll */}
         {FEATURES.money && (
@@ -586,9 +521,15 @@ export default function HomeClient({
           />
         )}
 
-        {/* Be the Change — only here when the Campaigns rail separates it from
-            the Hero; otherwise it is rendered above, inside the layered wrapper. */}
-        {!heroTouchesBeTheChange && <BeTheChangeSection tourAnchors />}
+        {/* Be the Change follows the complete hero composition. */}
+        <BeTheChangeSection tourAnchors />
+
+        <SectionDivider bleed className="-my-5" />
+
+        {/* Live Needs section — real verified needs across multiple categories */}
+        <div className="-mx-4">
+          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+        </div>
 
         {/* Donor / Donee pathways — guest-only, same condition as the desktop
             copy above.
@@ -604,9 +545,12 @@ export default function HomeClient({
             The whole -mx-4 wrapper is gated, not just its child, so nothing is
             left behind contributing gap spacing to this flex column. */}
         {showAudiencePathways && (
-          <div className="-mx-4">
-            <AudiencePathwaysSection tourAnchors />
-          </div>
+          <>
+            <SectionDivider bleed className="-my-5" />
+            <div className="-mx-4">
+              <AudiencePathwaysSection tourAnchors />
+            </div>
+          </>
         )}
 
 
@@ -614,6 +558,8 @@ export default function HomeClient({
             itself down through its own CSS vars, so the same component serves
             both branches rather than a mobile-specific copy. The negative
             margins cancel this column's px-4 so it can use its own padding. */}
+        <SectionDivider bleed className="-my-5" />
+
         <div className="-mx-4">
           <ComingSoonMagnets />
         </div>
