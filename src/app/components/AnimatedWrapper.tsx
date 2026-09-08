@@ -18,8 +18,9 @@ type AnimatedWrapperProps = {
   direction?: Direction;
   /** use scroll-triggered animation instead of mount animation */
   inView?: boolean;
-  /** amount of element visible before triggering (0–1) */
-  threshold?: number;
+  /** amount of element visible before triggering: a fraction 0–1, or the
+   *  framer-motion keywords "some" (any part visible) / "all" (fully visible) */
+  threshold?: number | "some" | "all";
 };
 
 function buildVariants(direction: Direction, duration: number, delay: number): Variants {
