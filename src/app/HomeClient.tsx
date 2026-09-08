@@ -12,7 +12,7 @@
  *   src/components/home/
  *     HeroSection.tsx         — shared responsive front door + category rail
  *     StatsBars.tsx           — desktop stats row + live activity ticker
- *     WhatWeProvideSection.tsx — "How it works" 2-step dark section
+ *     ItemDonationScrolly.tsx — scroll-scrubbed film hero ("How it works")
  *     CTASection.tsx          — bottom "Get started" CTA (hidden when logged in)
  *
  * This file keeps only:
@@ -53,7 +53,7 @@ import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
 import SectionDivider            from "@/components/SectionDivider";
 import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
-import { WhatWeProvideSection }  from "@/components/home/WhatWeProvideSection";
+import { ItemDonationScrolly }   from "@/components/home/ItemDonationScrolly";
 import { CTASection }            from "@/components/home/CTASection";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -291,7 +291,7 @@ export default function HomeClient({
         <SectionDivider />
 
         {/* "What We Provide" — 2-step dark section */}
-        <WhatWeProvideSection />
+        <ItemDonationScrolly />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
