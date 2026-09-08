@@ -1,4 +1,9 @@
 import type { ListingPhoto } from "@/lib/api";
+import {
+  mediaStatusCopy,
+  PHOTO_COPY,
+  type MediaStatusCopy,
+} from "@/features/wizard-kit/mediaStatusCopy";
 
 /**
  * What a donor is told about one photo.
@@ -44,92 +49,18 @@ export function photoView(p: {
 }
 
 /** i18n message keys. English lives in `messages/en.json` under `listingWizard.photo`. */
-export type PhotoStatusCopy = {
-  /** Short label for the card's badge. */
-  labelKey: string;
-  /** One sentence explaining the state, or null when the label says it all. */
-  detailKey: string | null;
-  /** How the donor gets out of this state. */
-  actions: ReadonlyArray<"retry" | "replace" | "remove">;
-  /** Whether this photo counts toward the two required. */
-  counts: boolean;
-  /** Whether this photo must be dealt with before submitting. */
-  blocks: boolean;
-};
+export type PhotoStatusCopy = MediaStatusCopy;
 
-const REJECTION_DETAIL: Record<string, string> = {
-  IMAGE_ADULT_CONTENT: "listingWizard.photo.reason.adult",
-  IMAGE_WEAPONS: "listingWizard.photo.reason.weapons",
-  IMAGE_DRUGS: "listingWizard.photo.reason.drugs",
-  IMAGE_MEDICINES: "listingWizard.photo.reason.medicines",
-  IMAGE_FOOD: "listingWizard.photo.reason.food",
-  IMAGE_VULGAR_CONTENT: "listingWizard.photo.reason.vulgar",
-  IMAGE_UNREADABLE: "listingWizard.photo.reason.unreadable",
-  IMAGE_SCREENING_UNAVAILABLE: "listingWizard.photo.reason.unavailable",
-  IMAGE_REVIEW_REQUIRED: "listingWizard.photo.reason.review",
-  IMAGE_PROCESSING_FAILED: "listingWizard.photo.reason.failed",
-};
-
-/** The line shown for a code this build has never heard of. */
-const UNKNOWN_REASON = "listingWizard.photo.reason.generic";
-
+/**
+ * The photo table and state machine now live in the shared media contract, so
+ * a video and a photo cannot describe the same situation differently. The key
+ * names are unchanged — they are already translated in every locale, and
+ * renaming them for tidiness would drop thirteen files back to English.
+ */
 export function photoStatusCopy(photo: Pick<ListingPhoto, "status" | "moderationCode">): PhotoStatusCopy {
-  switch (photo.status) {
-    case "UPLOADING":
-      return { labelKey: "listingWizard.photo.state.uploading", detailKey: null, actions: [], counts: false, blocks: true };
-
-    case "QUARANTINED":
-    case "MODERATING_VISUAL":
-      // One donor-facing state for both. The distinction between "stored, not
-      // yet read" and "being read" is real on the server and means nothing to
-      // the person waiting.
-      return { labelKey: "listingWizard.photo.state.screening", detailKey: null, actions: ["remove"], counts: false, blocks: true };
-
-    case "APPROVED":
-      return { labelKey: "listingWizard.photo.state.approved", detailKey: null, actions: ["replace", "remove"], counts: true, blocks: false };
-
-    case "REJECTED":
-      return {
-        labelKey: "listingWizard.photo.state.rejected",
-        detailKey: reasonKey(photo.moderationCode),
-        // No retry: a rejection is a judgement about the picture, and asking
-        // again spends another screening call to reach the same answer.
-        actions: ["replace", "remove"],
-        counts: false,
-        blocks: true,
-      };
-
-    case "REVIEW_REQUIRED":
-      return {
-        labelKey: "listingWizard.photo.state.review",
-        detailKey: reasonKey(photo.moderationCode),
-        // Retry is offered because most of what lands here is our side being
-        // unsure or unavailable, not the photo being wrong.
-        actions: ["retry", "replace", "remove"],
-        counts: false,
-        blocks: true,
-      };
-
-    case "FAILED":
-      return {
-        labelKey: "listingWizard.photo.state.failed",
-        detailKey: reasonKey(photo.moderationCode),
-        actions: ["retry", "replace", "remove"],
-        counts: false,
-        blocks: true,
-      };
-
-    case "DELETED":
-      // Should not reach a card; the list excludes it. Handled so a future
-      // server change cannot render an empty badge.
-      return { labelKey: "listingWizard.photo.state.removed", detailKey: null, actions: [], counts: false, blocks: false };
-  }
+  return mediaStatusCopy(photo, PHOTO_COPY);
 }
 
-function reasonKey(code: string | null): string {
-  if (!code) return UNKNOWN_REASON;
-  return REJECTION_DETAIL[code] ?? UNKNOWN_REASON;
-}
 
 /**
  * How many of the photos on screen actually satisfy the requirement.

@@ -18,7 +18,9 @@
     "signOut": "سائن آؤٹ کریں۔",
     "openMenu": "مینو کھولیں۔",
     "profileMenu": "پروفائل مینو",
-    "toggleTheme": "تھیم کو ٹوگل کریں۔"
+    "toggleTheme": "تھیم کو ٹوگل کریں۔",
+    "moneyDonation": "نقد عطیہ",
+    "inKindDonation": "اشیاء کا عطیہ"
   },
   "logout": {
     "title": "سائن آؤٹ کریں؟",
@@ -28,13 +30,31 @@
   },
   "hero": {
     "badge": "زندگیوں کو بہتر بنانا",
-    "headline": "ہم ایک ساتھ مل کر سپورٹ کرتے ہیں، تعلیم دیتے ہیں اور شفا دیتے ہیں۔",
-    "subtext": "ہر عطیہ ایک خاندان کو مضبوط، صحت مند، اور زیادہ محفوظ بننے میں مدد کرتا ہے۔ ایک ساتھ مل کر، ہم امکانات سے بھرا ہوا مستقبل بناتے ہیں۔",
+    "eyebrow": "زندگیاں بہتر بنانا",
+    "headlineTop": "اپنے قریب کسی کو تلاش کریں",
+    "headlineAccent": "جسے وہی چاہیے جو آپ کے پاس ہے",
+    "subtext": "جو چیز آپ کے لیے اضافی ہے، وہ کسی اور کے لیے ضروری ہو سکتی ہے۔",
     "donateNow": "ابھی عطیہ کریں۔",
     "howWeWork": "ہم کیسے کام کرتے ہیں۔",
     "transparent": "100% شفاف عطیات",
     "fastDistribution": "تیز، موثر تقسیم",
-    "localCampaign": "مقامی مہم"
+    "localCampaign": "مقامی مہم",
+    "ctaBrowse": "اپنے قریب کی ضروریات تلاش کریں",
+    "ctaStartGiving": "ابھی سائن اپ کریں",
+    "ctaListItem": "چیز درج کریں",
+    "ctaRequestItem": "چیز کی درخواست کریں",
+    "ctaOpenDashboard": "ڈیش بورڈ کھولیں",
+    "connectionLabel": "ایک مفید چیز کسی تصدیق شدہ ضرورت کو پورا کر سکتی ہے",
+    "connectionItemLead": "آپ کے پاس ہے",
+    "connectionItemRest": "کچھ مفید",
+    "connectionNeedLead": "قریب کوئی",
+    "connectionNeedRest": "جسے ضرورت ہے",
+    "assuranceLabel": "CauseKind ہر حوالگی کی حفاظت کیسے کرتا ہے",
+    "assuranceVerifiedTitle": "ملاپ سے پہلے تصدیق",
+    "assuranceVerifiedBody": "درخواستیں عوامی بورڈ پر آنے سے پہلے جانچی جاتی ہیں۔",
+    "assuranceHandoverTitle": "زیرِ نگرانی حوالگی",
+    "assuranceHandoverBody": "چیز سونپے جانے پر دونوں فریق تصدیق کرتے ہیں۔",
+    "photoAlt": "دھوپ سے بھرے محلے میں ایک مسکراتا نوجوان مفید اشیا کا ڈبہ ایک بزرگ خاتون کو دے رہا ہے۔"
   },
   "stats": {
     "totalRaised": "کل فنڈز اکٹھے کیے گئے۔",
@@ -1208,5 +1228,29 @@
       "body": "اپنی حقیقی ضرورت بتائیں، مدد کے لیے تیار لوگوں سے جڑیں، اور وضاحت اور احترام کے ساتھ مدد پائیں۔",
       "cta": "ضرورت مند کے طور پر شامل ہوں"
     }
+  },
+  "categoryStrip": {
+    "heading": "زمرے کے مطابق دیکھیں",
+    "ariaLabel": "زمرے کے مطابق تصدیق شدہ ضرورتیں دیکھیں",
+    "categories": {
+      "education": "تعلیم",
+      "clothing": "کپڑے",
+      "household": "گھریلو سامان",
+      "furniture": "فرنیچر",
+      "medicalAid": "طبی امداد",
+      "livelihood": "ذریعۂ معاش",
+      "relief": "امدادی سامان",
+      "electronics": "الیکٹرانکس",
+      "sports": "کھیل"
+    }
+  },
+  "trustBand": {
+    "label": "CauseKind کیوں محفوظ ہے",
+    "trustedTitle": "قابلِ اعتماد برادری",
+    "trustedBody": "محفوظ۔ تصدیق شدہ۔ قابلِ بھروسا۔",
+    "impactTitle": "مقامی اثر",
+    "impactBody": "آپ کے اپنے محلے کے لوگوں کی مدد۔",
+    "togetherTitle": "مل کر زیادہ مضبوط",
+    "togetherBody": "بہتر برادری۔ بہتر کل۔"
   }
 }

@@ -46,6 +46,54 @@ const getCacheMap = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL_MS = 3000;
 
 /**
+ * Whether the per-path GET cache and in-flight map above may be used.
+ *
+ * <p><b>Browser only, and this is a correctness boundary rather than an
+ * optimisation.</b> Both are module-level Maps, and a module-level Map on the
+ * Next server is process-global — shared by every concurrent visitor, not
+ * scoped to one request. They are keyed by `path` alone while every request
+ * goes out with `credentials: "include"`, so identity is part of the response
+ * but no part of the key.
+ *
+ * <p>That combination is a cross-user cache waiting to happen: the first
+ * caller's response for a user-scoped path such as `/api/v1/users/me` would be
+ * handed to whoever asked for the same path within the 3s window — a different
+ * person's data, served from memory, with no request to the backend to notice.
+ *
+ * <p>No such leak exists today, because the only server-side callers are the
+ * homepage's public endpoints. The point is that it is one innocuous-looking
+ * server-side call away, and the call that triggers it would not look like a
+ * security change to anyone reviewing it.
+ *
+ * <p>In the browser the cache is correct and useful: one user, one session, and
+ * a 3s window whose whole job is collapsing render cascades.
+ */
+const canUseRequestCache = () => typeof window !== "undefined";
+
+/*
+ * Request timeout.
+ *
+ * There was none at all: no signal, no AbortController, no retry. The backend
+ * runs on Neon with a deliberately cold connection pool (minimum-idle=0, no
+ * keepalive — see causekind-backend/docs/db-connection-policy.md), so the
+ * compute is suspended most of the time and the first request after idle pays
+ * a resume. With no timeout, a server-side render awaiting that request had
+ * nothing to bound it but the host's own function timeout, and the user waited
+ * out the whole thing on a blank page.
+ *
+ * The server budget is the tighter one on purpose: a slow SSR fetch blocks HTML
+ * for everyone hitting that route, and every server-side caller already
+ * degrades to a fallback rather than failing the page. The browser gets longer
+ * because a user-initiated action failing early is worse than one that is
+ * merely slow, and by then the compute is usually already awake.
+ *
+ * Deliberately generous enough to survive a normal cold start (documented as a
+ * few hundred ms to ~2s) — this is a backstop against hanging, not an SLA.
+ */
+const IS_SERVER = typeof window === "undefined";
+const REQUEST_TIMEOUT_MS = IS_SERVER ? 8000 : 20000;
+
+/**
  * Reads a successful response's body, tolerating the several legitimate ways a
  * backend says "nothing to return".
  *
@@ -85,7 +133,7 @@ async function request<T>(
   // Invalidate cache on mutations
   if (!isGet) {
     getCacheMap.clear();
-  } else {
+  } else if (canUseRequestCache()) {
     const cached = getCacheMap.get(path);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       return Promise.resolve(cached.data as T);
@@ -106,10 +154,13 @@ async function request<T>(
       ...(fetchOptions.headers as Record<string, string>),
     };
 
+    // Caller-supplied signals win: a component aborting on unmount must not be
+    // overridden by the backstop.
     const res = await fetch(`${BASE_URL}${path}`, {
       ...fetchOptions,
       headers,
       credentials: "include",
+      signal: fetchOptions.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     if (!res.ok) {
@@ -173,13 +224,16 @@ async function request<T>(
     // browser error with no useful meaning, which is exactly what an admin saw on
     // the Re-run AI button. Check for a body before trying to parse one.
     const data = (await readJsonBody(res)) as T;
-    if (isGet && data !== undefined) {
+    if (isGet && data !== undefined && canUseRequestCache()) {
       getCacheMap.set(path, { data, timestamp: Date.now() });
     }
     return data;
   };
 
-  if (isGet) {
+  // Same reasoning as the cache above: two concurrent server-side requests
+  // from different users must never be handed the same promise for a path whose
+  // response depends on who is asking.
+  if (isGet && canUseRequestCache()) {
     const promise = execute().finally(() => {
       inFlightGetRequests.delete(path);
     });
@@ -426,6 +480,30 @@ export function initiateDonation(campaignId: number, amount: number) {
 
 export function getMyDonations() {
   return request<Donation[]>("/api/v1/donations/mine", { silent401: true });
+}
+
+export type TrustDonationPayload = {
+  amount: number;
+  fullName: string;
+  email: string;
+  mobileNumber?: string;
+  /** Optional. "" is sent as-is and understood by the backend as "no 80G receipt wanted". */
+  panNumber?: string;
+};
+
+/**
+ * Starts a general money donation to Sahas Charitable Trust — no campaign, and
+ * no login required.
+ *
+ * <p>The only donation endpoint that accepts guests. When the caller happens to
+ * be signed in the backend prefers their account's name and email over whatever
+ * is passed here, so the receipt always names the account holder.
+ */
+export function initiateTrustDonation(payload: TrustDonationPayload) {
+  return request<DonationOrder>("/api/v1/donations/trust", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 // ── Platform Tips & Handover Feedback ───────────────────────────────────────
@@ -824,7 +902,14 @@ export type ListingImageAnalysis = {
   aiAvailable: boolean;
   prohibited: boolean;
   prohibitedCategory: string | null;
-  prohibitedReason: string | null;
+  /**
+   * Stable rejection code (IMAGE_*), mapped server-side from the category.
+   *
+   * <p>There is deliberately no `prohibitedReason`: the model's sentence is no
+   * longer serialised. Render this through PHOTO_COPY, which already has the
+   * wording translated in every locale from the listing photo pipeline.
+   */
+  prohibitedCode: string | null;
   category: string | null;
   subcategory: string | null;
   title: string | null;
@@ -1113,9 +1198,17 @@ export type ResidenceProofAnalysis = {
   aiAvailable: boolean;
   looksLikeResidenceProof: boolean | null;
   confidence: number | null;
-  reason: string | null;
   documentTypeGuess: string | null;
   note: string | null;
+  /**
+   * Stable server reason code — see DocumentScreeningCodes on the backend, and
+   * documentScreeningCopy for the words.
+   *
+   * <p>There is deliberately no `reason` here. The model's own sentence is kept
+   * server-side for admins and is no longer serialised, so a client cannot render
+   * it even by accident.
+   */
+  code: string | null;
 };
 
 /** Fast, non-blocking AI check on an already-uploaded residence-proof document
@@ -1134,9 +1227,17 @@ export type IdProofAnalysis = {
   aiAvailable: boolean;
   looksLikeValidIdProof: boolean | null;
   confidence: number | null;
-  reason: string | null;
   documentTypeGuess: string | null;
   note: string | null;
+  /**
+   * Stable server reason code — see DocumentScreeningCodes on the backend, and
+   * documentScreeningCopy for the words.
+   *
+   * <p>There is deliberately no `reason` here. The model's own sentence is kept
+   * server-side for admins and is no longer serialised, so a client cannot render
+   * it even by accident.
+   */
+  code: string | null;
 };
 
 /** Fast, non-blocking AI check on an already-uploaded government-ID document
@@ -1994,6 +2095,15 @@ export type OfferVideoCapability = {
   available: boolean;
   maxBytes: number;
   maxSeconds: number;
+  /**
+   * Limits the browser pre-check reads before uploading. Optional so an older
+   * server that does not send them skips those checks rather than having a guess
+   * imposed on it — the server enforces all of this regardless, and the client
+   * check is a courtesy, never the gate.
+   */
+  allowedContainers?: string[];
+  maxWidth?: number;
+  maxHeight?: number;
 };
 
 export type OfferVideoSlot = {
@@ -3825,5 +3935,35 @@ export function superAdminSetConfig(key: string, value: string, reason: string) 
   return request<SaPlatformConfig>("/api/v1/super-admin/operations/config", {
     method: "PUT",
     body: JSON.stringify({ key, value, reason }),
+  });
+}
+
+// ── Mailing list ─────────────────────────────────────────────────────────────
+
+/**
+ * Ask to join the mailing list.
+ *
+ * <p>Always resolves the same way — new address, already pending, already
+ * confirmed, rate limited — because the endpoint deliberately does not say. Any
+ * difference would let an unauthenticated caller test whether an address is on
+ * the list. So the UI can only ever say "check your email", and that is correct
+ * rather than evasive: an email really is on its way in every case that matters.
+ *
+ * <p>Nothing is sent to the address until it is confirmed from that email.
+ */
+export type SubscribeAudience = "DONOR" | "CORPORATE";
+
+export function subscribe(input: {
+  email: string;
+  audience: SubscribeAudience;
+  /** Which magnet or page produced this signup, for attribution. */
+  source: string;
+  locale: string;
+  /** The exact wording shown beside the checkbox, stored as consent evidence. */
+  consentText: string;
+}) {
+  return request<{ status: string }>("/api/v1/subscribers", {
+    method: "POST",
+    body: JSON.stringify(input),
   });
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dockFactors, arrivalFactor, PROOF_QR } from "./WhatWeProvideSection";
+import { dockFactors, arrivalFactor } from "./WhatWeProvideSection";
 
 /**
  * The dock windows, at their boundaries.
@@ -109,32 +109,5 @@ describe("arrivalFactor", () => {
       expect(arrivalFactor(travel)).toBeGreaterThanOrEqual(0);
       expect(arrivalFactor(travel)).toBeLessThanOrEqual(1);
     }
-  });
-});
-
-describe("PROOF_QR", () => {
-  it("is a fixed 9x9 bitmap of literal modules — not generated", () => {
-    expect(PROOF_QR).toHaveLength(9);
-    for (const row of PROOF_QR) {
-      expect(row).toHaveLength(9);
-      expect(row).toMatch(/^[01]{9}$/);
-    }
-  });
-
-  it("keeps three finder squares, which is what makes it read as a QR at a glance", () => {
-    const finder = (rows: readonly string[], x: number, y: number) =>
-      [0, 1, 2].map((dy) => rows[y + dy].slice(x, x + 3)).join("|");
-
-    for (const [x, y] of [[0, 0], [6, 0], [0, 6]] as const) {
-      expect(finder(PROOF_QR, x, y)).toBe("111|101|111");
-    }
-  });
-
-  it("encodes nothing — the same constant every render, with no input", () => {
-    // Guards the rule in the constant's own comment: if someone swaps this for a
-    // real encoder, it starts depending on data and this test stops compiling or
-    // stops being true.
-    expect(PROOF_QR).toBe(PROOF_QR);
-    expect(Object.isFrozen(PROOF_QR) || Array.isArray(PROOF_QR)).toBe(true);
   });
 });

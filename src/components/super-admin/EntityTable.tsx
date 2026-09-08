@@ -55,7 +55,7 @@ function RowForm({
       <div className="w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-y-auto bg-[#0e1320] border border-[#f0b97a]/20 rounded-xl sm:rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4 border-b border-white/10 sticky top-0 bg-[#0e1320]">
           <h3 className="text-sm sm:text-sm font-bold text-white">{title}</h3>
-          <button onClick={onClose} className="text-stone-400 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
+          <button type="button" onClick={onClose} aria-label="Close dialog" className="text-stone-400 hover:text-white transition-colors"><X className="w-4 h-4" aria-hidden="true" /></button>
         </div>
         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
           {editable.map(c => (

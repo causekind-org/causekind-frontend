@@ -18,7 +18,9 @@
     "signOut": "Sign out",
     "openMenu": "Open menu",
     "profileMenu": "Profile menu",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "moneyDonation": "Money Donation",
+    "inKindDonation": "In-Kind Donation"
   },
   "logout": {
     "title": "Sign out?",
@@ -28,13 +30,31 @@
   },
   "hero": {
     "badge": "Making Lives Better",
-    "headline": "Together We Support, Educate and Heal",
-    "subtext": "Every donation helps a family grow stronger, healthier, and more secure. Together, we build a future full of possibilities.",
+    "eyebrow": "Making lives better",
+    "headlineTop": "Find Someone Near You",
+    "headlineAccent": "Who Needs What You Have",
+    "subtext": "What’s extra for you could be essential to someone else.",
     "donateNow": "Donate Now",
     "howWeWork": "How we work",
     "transparent": "100% transparent donations",
     "fastDistribution": "Fast, effective distribution",
-    "localCampaign": "Local Campaign"
+    "localCampaign": "Local Campaign",
+    "ctaBrowse": "Explore needs near you",
+    "ctaStartGiving": "Sign up now",
+    "ctaListItem": "List an item",
+    "ctaRequestItem": "Request an item",
+    "ctaOpenDashboard": "Open dashboard",
+    "connectionLabel": "A useful item can meet a verified need",
+    "connectionItemLead": "You Have",
+    "connectionItemRest": "Something Useful",
+    "connectionNeedLead": "Someone",
+    "connectionNeedRest": "Nearby Needs It",
+    "assuranceLabel": "How CauseKind protects each handover",
+    "assuranceVerifiedTitle": "Verified before matching",
+    "assuranceVerifiedBody": "Requests are checked before they reach the public board.",
+    "assuranceHandoverTitle": "Tracked handover",
+    "assuranceHandoverBody": "Both sides confirm when the item changes hands.",
+    "photoAlt": "A smiling young man hands a box of useful items to an older woman in a sunlit neighbourhood."
   },
   "stats": {
     "totalRaised": "Total Funds Raised",
@@ -158,7 +178,11 @@
     "fontOptions": "Font Options",
     "notFoundTitle": "Story Not Found",
     "notFoundBody": "The story you are looking for does not exist.",
-    "goHome": "Go Back Home"
+    "goHome": "Go Back Home",
+    "newsletterConsent": "Email me occasional updates about verified needs and how to give well. Unsubscribe any time.",
+    "newsletterCheckEmail": "Almost there — check your email and confirm to finish subscribing.",
+    "newsletterSending": "Sending…",
+    "newsletterError": "Something went wrong. Please try again in a moment."
   },
   "listings": {
     "title": "Item Listings",
@@ -622,7 +646,19 @@
       "moneyOrItems": "Give Items",
       "moneyOrItemsDesc": "Give physical items like books, clothes, or a laptop to someone nearby. Cash donations to campaigns are coming soon.",
       "localDropoffs": "Local Drop-offs",
-      "localDropoffsDesc": "Item donations are matched within 10 km. No couriers, no shipping fees — just direct giving to a neighbour."
+      "localDropoffsDesc": "Item donations are matched within 10 km. No couriers, no shipping fees — just direct giving to a neighbour.",
+      "posted": "A need is posted",
+      "postedDesc": "Someone nearby describes what they need. What the form asks for scales with the value of the request.",
+      "checked": "A person checks it",
+      "checkedDesc": "Screening assists; an admin decides. Nothing reaches a donor unreviewed.",
+      "searched": "Searched, quietly",
+      "searchedDesc": "Inside ten kilometres, against private donor inventory — before the request is published anywhere.",
+      "asked": "One donor is asked",
+      "askedDesc": "Not broadcast. Asked. Decline and nobody is disappointed, because nobody was told.",
+      "handedOver": "Handed over in person",
+      "handedOverDesc": "The two meet. One six-digit code, confirmed by both, or it does not close.",
+      "certified": "A record that holds up",
+      "certifiedDesc": "The certificate carries its own number, checkable against the register later."
     }
   },
   "adminAnalytics": {
@@ -1438,5 +1474,107 @@
       "record": "Record video",
       "choose": "Choose video"
     }
+  },
+  "media": {
+    "video": {
+      "state": {
+        "uploading": "Uploading",
+        "screening": "Checking",
+        "approved": "Approved",
+        "rejected": "Needs replacing",
+        "review": "Needs a second look",
+        "failed": "Couldn't check",
+        "removed": "Removed"
+      },
+      "reason": {
+        "prohibited": "This video appears to contain content CauseKind cannot accept.",
+        "malware": "This file didn't pass our safety scan. Please record or choose a different video.",
+        "format": "This video format isn't supported. Please use MP4, MOV or WebM.",
+        "tooLong": "This video is longer than {maxSeconds} seconds. Please trim it or record a shorter one.",
+        "resolution": "This video's resolution is higher than we can accept. Please record at a lower quality.",
+        "unreadable": "We couldn't read this video. Please choose another one.",
+        "review": "Someone needs to look at this video before it can be used. You can retry or replace it.",
+        "failed": "Something went wrong checking this video. Retry, or choose another one.",
+        "generic": "This video can't be used. Please replace it with another one."
+      },
+      "preflight": {
+        "tooLarge": "This video is larger than {maxMb}MB. Please trim it or record a shorter one."
+      },
+      "hint": {
+        "inFlight": "Your video is still being checked. You can carry on.",
+        "checking": "Checking your video…",
+        "reviewOk": "Someone from our team will check this video. You can carry on — it will not hold up your submission."
+      }
+    }
+  },
+  "giveSafely": {
+    "eyebrow": "Giving safely",
+    "heading": "How to check a charity before you hand anything over.",
+    "standfirst": "Most giving goes exactly where it should. The checks below are for the small share that does not, and none of them take more than a few minutes. They apply wherever you give — including somewhere that is not us.",
+    "points": {
+      "registration": {
+        "title": "Ask for the registration",
+        "body": "A legitimate organisation gives you its registration number without being pressed, and does not treat the question as an insult."
+      },
+      "destination": {
+        "title": "Ask where this item goes",
+        "body": "Which programme, which people, roughly when. A specific answer is a good sign; a vague one is worth pausing on."
+      },
+      "proof": {
+        "title": "Get proof it arrived",
+        "body": "Not proof you sent it — proof it was received, ideally something you did not write yourself."
+      },
+      "urgency": {
+        "title": "Be wary of urgency",
+        "body": "Pressure to decide immediately is common in donation scams and rare in real need, which is usually patient because it is ongoing."
+      }
+    },
+    "form": {
+      "heading": "Get the full checklist by email",
+      "standfirst": "Five checks, with what to ask and what a good answer sounds like. One email, then only occasional updates about verified needs.",
+      "emailPlaceholder": "you@example.com",
+      "consent": "Email me the checklist and occasional updates about verified needs. Unsubscribe any time.",
+      "submit": "Send me the checklist",
+      "sending": "Sending…",
+      "success": "Almost there — check your email and confirm, and the checklist is on its way.",
+      "error": "Something went wrong. Please try again in a moment."
+    },
+    "browse": {
+      "prefix": "Already know what you want to give?",
+      "link": "See verified needs near you"
+    }
+  },
+  "heroGive": {
+    "heading": "Find what you can give",
+    "blurb": "Pick what you have spare. We will show you verified needs from people near you — no account needed to look.",
+    "seeAll": "See every verified need"
+  },
+  "nearbyNeeds": {
+    "eyebrow": "Waiting right now",
+    "cta": "See every verified need"
+  },
+  "categoryStrip": {
+    "heading": "Browse by category",
+    "ariaLabel": "Browse verified needs by category",
+    "categories": {
+      "education": "Education",
+      "clothing": "Clothing",
+      "household": "Household",
+      "furniture": "Furniture",
+      "medicalAid": "Medical aid",
+      "livelihood": "Livelihood",
+      "relief": "Relief",
+      "electronics": "Electronics",
+      "sports": "Sports"
+    }
+  },
+  "trustBand": {
+    "label": "Why CauseKind is safe to use",
+    "trustedTitle": "Trusted Community",
+    "trustedBody": "Safe. Verified. Reliable.",
+    "impactTitle": "Local Impact",
+    "impactBody": "Helping people in your neighborhood.",
+    "togetherTitle": "Stronger Together",
+    "togetherBody": "Better community. Better tomorrow."
   }
 }

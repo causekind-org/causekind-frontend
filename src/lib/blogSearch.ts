@@ -10,6 +10,17 @@ export function getBlogSearchScore(post: BlogPost, query: string): number {
   const title = post.title.toLowerCase();
   const desc = post.description.toLowerCase();
   const cat = post.category.toLowerCase();
+  // Almost always "" now, and deliberately so. Article bodies were split into
+  // src/data/blogContent.ts (2026-09-07) because carrying them on every post
+  // shipped 362 KB of HTML to the browser. `content` is left in the scoring
+  // rather than deleted: the field is still optional on BlogPost, and any
+  // caller that does have a body (a server-side search, say) should still get
+  // the extra weight.
+  //
+  // The behavioural cost, stated plainly: a post whose ONLY match is in the
+  // body no longer surfaces. That is the weakest signal here by an order of
+  // magnitude — 20 points against 500 for a title hit and 250 for a
+  // description hit — so what is lost is the tail, not the ranking.
   const content = (post.content || "").toLowerCase();
 
   if (title === cleanQuery) score += 1000;

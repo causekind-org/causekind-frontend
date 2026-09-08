@@ -2,6 +2,25 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import enMessages from "../../../../messages/en.json";
+
+/**
+ * Same intl mock as reviewMedia.test.tsx, and for the same reason: resolving
+ * against the real `en.json` means a message key that does not exist fails here
+ * rather than shipping as a blank line where a rejection reason should be.
+ */
+vi.mock("next-intl", () => ({
+  useTranslations: () => {
+    const t = (key: string, values?: Record<string, unknown>) => {
+      let node: unknown = enMessages;
+      for (const part of key.split(".")) node = (node as Record<string, unknown>)?.[part];
+      if (typeof node !== "string") return key;
+      return node.replace(/{(w+)}/g, (_, name) => String(values?.[name] ?? `{${name}}`));
+    };
+    return t;
+  },
+}));
+
 vi.mock("./VideoRecorderDialog", () => ({
   // A stand-in with the two exits that matter, so the field's own wiring is
   // what gets exercised rather than jsdom's absent media stack.
@@ -241,7 +260,7 @@ describe("an existing video", () => {
 
   it("shows the approved state and hides the pickers", () => {
     renderField(approved);
-    expect(screen.getByText(/video added/i)).toBeInTheDocument();
+    expect(screen.getByText(/approved/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /record video/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /choose video/i })).not.toBeInTheDocument();
   });

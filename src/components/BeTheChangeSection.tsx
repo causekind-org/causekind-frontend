@@ -10,10 +10,14 @@ import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { MATCH_RADIUS_KM } from "@/lib/constants";
 
 /* ─── Brand tokens ───────────────────────────────────────────────────
-   The ink (#1e3a60) is the band's flood fill and has to vary by breakpoint,
-   so it lives in the `lg:bg-[#1e3a60]` class rather than here — a style
-   attribute cannot be breakpoint-conditional. Both values are the logo's, and
-   are the only things this band still shares with the rest of the site. */
+   This band used to flood the logo's ink (#1e3a60) at `lg` while keeping a
+   light ground below it. It is cream at every width now, so the breakpoint
+   split is gone and with it every `lg:` colour override that existed to put
+   white text on that ink — the dark-on-light treatment underneath was already
+   shipping on mobile, and is simply what shows at all widths.
+
+   The flood is `lg:bg-surface-cream`, the token rather than a literal, so dark
+   mode resolves on its own (#faf8f5 light, #1c1917 dark). */
 const TERRACOTTA = "#b04a15";
 
 /** How many category pills to show before collapsing the rest into "+N more". */
@@ -74,9 +78,7 @@ function CategoryPill({
                    hover:text-[#b04a15] hover:underline
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]
                    focus-visible:ring-offset-2
-                   dark:text-stone-400 dark:focus-visible:ring-offset-zinc-950
-                   lg:text-white/45 lg:hover:text-white lg:focus-visible:ring-offset-[#1e3a60]
-                   dark:lg:text-white/45"
+                   dark:text-stone-400 dark:focus-visible:ring-offset-zinc-950"
       >
         {label}
       </Link>
@@ -138,10 +140,10 @@ function MoreCategoriesToggle({
 function MarqueeStat({ value, label }: { value: string; label: string }) {
   return (
     <div className="border-l-[3px] pl-3.5" style={{ borderColor: TERRACOTTA }}>
-      <b className="block text-3xl font-extrabold leading-none tracking-[-0.03em] text-stone-900 lg:text-[40px] lg:text-white dark:text-stone-100 dark:lg:text-white">
+      <b className="block text-3xl font-extrabold leading-none tracking-[-0.03em] text-stone-900 lg:text-[40px] dark:text-stone-100">
         {value}
       </b>
-      <span className="mt-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500 dark:text-stone-400 lg:text-white/60 dark:lg:text-white/60">
+      <span className="mt-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500 dark:text-stone-400">
         {label}
       </span>
     </div>
@@ -226,7 +228,7 @@ export function BeTheChangeSection({
       // The ink flood is `lg:` only. Below that the band keeps the light ground
       // so the hero overlap panel still tucks under the Hero's rounded edge;
       // an ink panel there would read as a dark seam across the composition.
-      className={`relative w-full overflow-hidden pb-6 lg:bg-[#1e3a60] lg:py-14 ${
+      className={`relative w-full overflow-hidden pb-6 lg:bg-surface-cream lg:py-14 ${
         overlapHero ? "ck-hero-overlap isolate z-10" : "pt-6"
       }`}
     >
@@ -257,7 +259,7 @@ export function BeTheChangeSection({
                 Be the change
               </p>
               <h2
-                className="font-extrabold uppercase text-stone-900 dark:text-stone-100 lg:text-white dark:lg:text-white"
+                className="font-extrabold uppercase text-stone-900 dark:text-stone-100"
                 style={{
                   // Fluid rather than stepped: the display size has to survive
                   // every width between a 360px phone and the 86px the design
@@ -291,11 +293,11 @@ export function BeTheChangeSection({
 
           {/* ── The one supporting line. Everything the removed six-check rail
                said, in a sentence. ── */}
-          <p className="mt-10 max-w-3xl text-base font-medium leading-relaxed text-stone-600 dark:text-stone-300 lg:mt-14 lg:text-xl lg:text-white/80 dark:lg:text-white/80">
+          <p className="mt-10 max-w-3xl text-base font-medium leading-relaxed text-stone-600 dark:text-stone-300 lg:mt-14 lg:text-xl">
             Real things, not cash. Handed over in person. Every handover issues an impact certificate.
           </p>
 
-          <div className="mt-6 h-px bg-stone-200 dark:bg-stone-800 lg:mt-8 lg:bg-white/15" />
+          <div className="mt-6 h-px bg-stone-200 dark:bg-stone-800 lg:mt-8" />
 
           {/* ── Category links — every one goes to its own In-Kind page ──
                A <nav> with a list: this is a set of navigation choices, and a
@@ -392,8 +394,8 @@ export function BeTheChangeSection({
                 className="hidden min-h-11 lg:inline-flex items-center gap-1.5 px-5 text-sm font-extrabold uppercase
                            tracking-[0.08em] text-white transition-opacity duration-200
                            hover:opacity-90 active:scale-95
-                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
-                           focus-visible:ring-offset-2 focus-visible:ring-offset-[#1e3a60]"
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]
+                           focus-visible:ring-offset-2"
                 style={{ background: TERRACOTTA }}
               >
                 Join as donor <ArrowRight className="h-3.5 w-3.5" />
@@ -405,9 +407,7 @@ export function BeTheChangeSection({
                            border-stone-300 text-stone-700 hover:border-[#b04a15] hover:text-[#b04a15]
                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]
                            focus-visible:ring-offset-2
-                           dark:border-stone-700 dark:text-stone-300
-                           lg:border-white/30 lg:text-white lg:hover:border-white lg:hover:text-white
-                           lg:focus-visible:ring-white lg:focus-visible:ring-offset-[#1e3a60]"
+                           dark:border-stone-700 dark:text-stone-300"
               >
                 Browse requests <ArrowRight className="h-3.5 w-3.5" />
               </Link>

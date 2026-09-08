@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SectionDivider from "@/components/SectionDivider";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Reveal } from "@/components/Reveal";
@@ -9,7 +10,6 @@ import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS, readSelectedDonorCategories }
 import { slugForCategory } from "@/lib/inKindCategories";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, SlidersHorizontal } from "lucide-react";
-import type { ItemRequest } from "@/lib/api";
 
 /* ── Watching for you — the categories a donor follows, sized by how much is
    actually happening in each one. ──
@@ -35,7 +35,19 @@ type Tile = {
   size: "large" | "wide" | "small";
 };
 
-export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemRequest[] }) {
+/**
+ * All this band ever reads off a request is its category, so the prop is typed
+ * to exactly that.
+ *
+ * <p>Not incidental: the caller has to be free to hand over either an
+ * `ItemRequest` from the authenticated board or a `PublicItemRequest` from the
+ * public one, because for a logged-out visitor only the second exists. Widening
+ * here is what lets `HomeClient` fall back without casting between two DTOs
+ * that agree on the one field this component uses.
+ */
+type CountableRequest = { category: string };
+
+export function DoneeRequestsSection({ itemRequests }: { itemRequests: CountableRequest[] }) {
   const { user } = useAuth();
   const [selected, setSelected] = useState<string[] | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -101,7 +113,12 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
   ];
 
   return (
-    <section className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 py-20 border-t border-stone-200/60 dark:border-stone-800 overflow-hidden">
+    <>
+      {/* Owned here, not by HomeClient: both `return null` guards above run
+          before this point, so the divider can only ever exist when the
+          section does. */}
+      <SectionDivider />
+    <section className="relative w-full bg-[#faf8f5] dark:bg-zinc-950 py-20 overflow-hidden">
       {/* Warm ambient glow behind the board */}
       <div className="pointer-events-none absolute -top-32 right-[10%] w-[480px] h-[480px] rounded-full bg-[#e07b3a]/8 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 left-[5%] w-72 h-72 rounded-full bg-[#f0b97a]/10 blur-3xl" />
@@ -157,6 +174,7 @@ export function DoneeRequestsSection({ itemRequests }: { itemRequests: ItemReque
         </Reveal>
       </div>
     </section>
+    </>
   );
 }
 

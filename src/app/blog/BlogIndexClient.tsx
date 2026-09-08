@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CategoryDropdown } from "@/components/blog/CategoryDropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
+import { SubscribeForm } from "@/components/SubscribeForm";
 import { blogPosts, insiderTips } from "../../data/blogData";
 import { getBlogTranslation, getInsiderTipTranslation, preloadBlogTranslations } from "@/data/blogTranslations";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
@@ -799,16 +800,7 @@ function BlogListingContent() {
                 <p className="text-xs font-bold text-stone-600 dark:text-stone-400 mb-2 uppercase tracking-wider">
                   {t("newsletterLabel")}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    className="px-4 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-850 rounded-xl text-sm text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#b04a15] w-full sm:w-64"
-                    placeholder={t("emailPlaceholder")}
-                    type="email"
-                  />
-                  <button className="bg-[#b04a15] hover:bg-[#963c0d] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97] cursor-pointer">
-                    {t("subscribe")}
-                  </button>
-                </div>
+                <NewsletterSignup />
               </div>
             </div>
           </AnimatedWrapper>
@@ -823,5 +815,49 @@ export default function BlogIndexClient() {
     <Suspense fallback={null}>
       <BlogListingContent />
     </Suspense>
+  );
+}
+
+/**
+ * The blog's mailing-list signup.
+ *
+ * <p>This markup existed before and did nothing: an input with no state and a
+ * button with no handler. Every address anyone ever typed into it was discarded
+ * silently, which is worse than having no form — it looks like it worked.
+ *
+ * <p><b>Consent is a separate, unticked box.</b> Not bundled into the act of
+ * pressing Subscribe, because the privacy policy promises newsletters go out
+ * "only with Your consent" and the wording shown here is stored with the signup
+ * as the evidence of what was agreed to.
+ *
+ * <p>The success line is the same whatever happened server-side. The endpoint
+ * refuses to say whether an address is already on the list, so this cannot say
+ * either — and "check your email" is true in every case that matters.
+ */
+/**
+ * The blog's mailing-list signup.
+ *
+ * <p>A thin binding of copy to the shared {@link SubscribeForm}. The behaviour —
+ * separate unticked consent, stored wording, a success line that reveals nothing
+ * about membership — lives there so this and the magnet landing pages cannot
+ * drift apart on any of it.
+ *
+ * <p>Source is "blog-index", which the magnet catalogue deliberately has no entry
+ * for: this offers ongoing updates, not a document, so confirming here sends
+ * nothing extra.
+ */
+export function NewsletterSignup() {
+  const t = useTranslations("blog_page");
+  return (
+    <SubscribeForm
+      audience="DONOR"
+      source="blog-index"
+      consentText={t("newsletterConsent")}
+      submitLabel={t("subscribe")}
+      sendingLabel={t("newsletterSending")}
+      successText={t("newsletterCheckEmail")}
+      errorText={t("newsletterError")}
+      emailPlaceholder={t("emailPlaceholder")}
+    />
   );
 }

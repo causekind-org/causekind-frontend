@@ -18,7 +18,9 @@
     "signOut": "desconectar",
     "openMenu": "abrir menú",
     "profileMenu": "Menú de perfil",
-    "toggleTheme": "Alternar tema"
+    "toggleTheme": "Alternar tema",
+    "moneyDonation": "Donación monetaria",
+    "inKindDonation": "Donación en especie"
   },
   "logout": {
     "title": "¿Desconectar?",
@@ -28,13 +30,31 @@
   },
   "hero": {
     "badge": "Mejorando la vida",
-    "headline": "Juntos apoyamos, educamos y sanamos",
-    "subtext": "Cada donación ayuda a una familia a crecer más fuerte, más saludable y más segura. Juntos construimos un futuro lleno de posibilidades.",
+    "eyebrow": "Mejorando vidas",
+    "headlineTop": "Encuentra a alguien cerca",
+    "headlineAccent": "Que necesita lo que tienes",
+    "subtext": "Lo que te sobra podría ser esencial para otra persona.",
     "donateNow": "Donar ahora",
     "howWeWork": "como trabajamos",
     "transparent": "Donaciones 100% transparentes",
     "fastDistribution": "Distribución rápida y efectiva",
-    "localCampaign": "Campaña Local"
+    "localCampaign": "Campaña Local",
+    "ctaBrowse": "Explora las necesidades cerca de ti",
+    "ctaStartGiving": "Regístrate ahora",
+    "ctaListItem": "Publicar un artículo",
+    "ctaRequestItem": "Solicitar un artículo",
+    "ctaOpenDashboard": "Abrir el panel",
+    "connectionLabel": "Un artículo útil puede cubrir una necesidad verificada",
+    "connectionItemLead": "Tienes",
+    "connectionItemRest": "Algo útil",
+    "connectionNeedLead": "Alguien cerca",
+    "connectionNeedRest": "Lo necesita",
+    "assuranceLabel": "Cómo CauseKind protege cada entrega",
+    "assuranceVerifiedTitle": "Verificado antes de emparejar",
+    "assuranceVerifiedBody": "Las solicitudes se revisan antes de llegar al tablero público.",
+    "assuranceHandoverTitle": "Entrega con seguimiento",
+    "assuranceHandoverBody": "Ambas partes confirman cuando el artículo cambia de manos.",
+    "photoAlt": "Un joven sonriente entrega una caja de artículos útiles a una mujer mayor en un barrio iluminado por el sol."
   },
   "stats": {
     "totalRaised": "Fondos totales recaudados",
@@ -1208,5 +1228,29 @@
       "body": "Comparte una necesidad genuina, conecta con personas dispuestas a ayudar y recibe apoyo con claridad y respeto.",
       "cta": "Únete como beneficiario"
     }
+  },
+  "categoryStrip": {
+    "heading": "Explorar por categoría",
+    "ariaLabel": "Explorar necesidades verificadas por categoría",
+    "categories": {
+      "education": "Educación",
+      "clothing": "Ropa",
+      "household": "Hogar",
+      "furniture": "Muebles",
+      "medicalAid": "Ayuda médica",
+      "livelihood": "Medios de vida",
+      "relief": "Ayuda humanitaria",
+      "electronics": "Electrónica",
+      "sports": "Deportes"
+    }
+  },
+  "trustBand": {
+    "label": "Por qué CauseKind es seguro",
+    "trustedTitle": "Comunidad de confianza",
+    "trustedBody": "Seguro. Verificado. Fiable.",
+    "impactTitle": "Impacto local",
+    "impactBody": "Ayudando a personas de tu barrio.",
+    "togetherTitle": "Más fuertes juntos",
+    "togetherBody": "Mejor comunidad. Mejor mañana."
   }
 }

@@ -18,7 +18,9 @@
     "signOut": "se déconnecter",
     "openMenu": "Ouvrir le menu",
     "profileMenu": "Menu Profil",
-    "toggleTheme": "Changer de thème"
+    "toggleTheme": "Changer de thème",
+    "moneyDonation": "Don en argent",
+    "inKindDonation": "Don en nature"
   },
   "logout": {
     "title": "Se déconnecter?",
@@ -28,13 +30,31 @@
   },
   "hero": {
     "badge": "Rendre la vie meilleure",
-    "headline": "Ensemble, nous soutenons, éduquons et guérissons",
-    "subtext": "Chaque don aide une famille à devenir plus forte, en meilleure santé et plus en sécurité. Ensemble, nous construisons un avenir plein de possibilités.",
+    "eyebrow": "Rendre la vie meilleure",
+    "headlineTop": "Trouvez quelqu'un près de chez vous",
+    "headlineAccent": "Qui a besoin de ce que vous avez",
+    "subtext": "Ce qui est superflu pour vous pourrait être essentiel pour quelqu’un d’autre.",
     "donateNow": "Faites un don maintenant",
     "howWeWork": "Comment nous travaillons",
     "transparent": "Dons 100% transparents",
     "fastDistribution": "Distribution rapide et efficace",
-    "localCampaign": "Campagne locale"
+    "localCampaign": "Campagne locale",
+    "ctaBrowse": "Découvrez les besoins près de chez vous",
+    "ctaStartGiving": "Inscrivez-vous maintenant",
+    "ctaListItem": "Proposer un objet",
+    "ctaRequestItem": "Demander un objet",
+    "ctaOpenDashboard": "Ouvrir le tableau de bord",
+    "connectionLabel": "Un objet utile peut répondre à un besoin vérifié",
+    "connectionItemLead": "Vous avez",
+    "connectionItemRest": "Quelque chose d'utile",
+    "connectionNeedLead": "Quelqu'un près",
+    "connectionNeedRest": "En a besoin",
+    "assuranceLabel": "Comment CauseKind protège chaque remise",
+    "assuranceVerifiedTitle": "Vérifié avant la mise en relation",
+    "assuranceVerifiedBody": "Les demandes sont contrôlées avant d'arriver sur le tableau public.",
+    "assuranceHandoverTitle": "Remise suivie",
+    "assuranceHandoverBody": "Les deux parties confirment lorsque l'objet change de mains.",
+    "photoAlt": "Un jeune homme souriant remet une boîte d’objets utiles à une femme âgée dans un quartier baigné de soleil."
   },
   "stats": {
     "totalRaised": "Total des fonds collectés",
@@ -1208,5 +1228,29 @@
       "body": "Partagez un besoin réel, entrez en contact avec des personnes prêtes à aider, et recevez un soutien clair et respectueux.",
       "cta": "Rejoindre comme bénéficiaire"
     }
+  },
+  "categoryStrip": {
+    "heading": "Parcourir par catégorie",
+    "ariaLabel": "Parcourir les besoins vérifiés par catégorie",
+    "categories": {
+      "education": "Éducation",
+      "clothing": "Vêtements",
+      "household": "Maison",
+      "furniture": "Mobilier",
+      "medicalAid": "Aide médicale",
+      "livelihood": "Moyens de subsistance",
+      "relief": "Aide d'urgence",
+      "electronics": "Électronique",
+      "sports": "Sport"
+    }
+  },
+  "trustBand": {
+    "label": "Pourquoi CauseKind est sûr",
+    "trustedTitle": "Communauté de confiance",
+    "trustedBody": "Sûr. Vérifié. Fiable.",
+    "impactTitle": "Impact local",
+    "impactBody": "Aider les gens de votre quartier.",
+    "togetherTitle": "Plus forts ensemble",
+    "togetherBody": "Meilleure communauté. Meilleur demain."
   }
 }

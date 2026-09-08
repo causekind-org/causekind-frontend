@@ -161,8 +161,8 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
           ))}
         </div>
 
-        <button onClick={dismiss} className="absolute top-6 right-6 text-white/40 hover:text-white hover:rotate-90 transition-all duration-300 p-2">
-          <X className="w-7 h-7" />
+        <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-6 right-6 text-white/40 hover:text-white hover:rotate-90 transition-all duration-300 p-2">
+          <X className="w-7 h-7" aria-hidden="true" />
         </button>
 
         <div className="ck-donor-card relative w-full max-w-sm text-center" onClick={e => e.stopPropagation()}>
@@ -218,8 +218,8 @@ function DefaultWelcomeView({ user, exiting, dismiss }: { user: any; exiting: bo
         <div className={`relative w-full max-w-sm bg-[#faf8f5] dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-stone-900/20 dark:shadow-black/50 overflow-hidden ${exiting ? "ck-card-exit" : "ck-card-enter"}`} onClick={(e) => e.stopPropagation()}>
           <Sparkles12 color={cfg.confettiColor} />
           <div className={`${cfg.accentBg} h-1.5 w-full`} />
-          <button onClick={dismiss} className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-all active:scale-95">
-            <X className="w-4 h-4" />
+          <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-all active:scale-95">
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
           <div className="px-8 pt-8 pb-9 flex flex-col items-center text-center gap-5">
             <span className={`flex items-center justify-center w-16 h-16 rounded-2xl ${cfg.iconWrapBg} ${cfg.iconColor}`}>{cfg.icon}</span>
@@ -261,8 +261,8 @@ function SuperAdminWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss
       {/* Scanline sweep */}
       <div className="absolute left-0 right-0 top-0 h-12 bg-gradient-to-b from-[#f0b97a]/25 to-transparent sa-boot-scanline pointer-events-none" />
 
-      <button onClick={dismiss} className="absolute top-6 right-6 text-white/30 hover:text-white hover:rotate-90 transition-all duration-300 p-2 z-10">
-        <X className="w-7 h-7" />
+      <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-6 right-6 text-white/30 hover:text-white hover:rotate-90 transition-all duration-300 p-2 z-10">
+        <X className="w-7 h-7" aria-hidden="true" />
       </button>
 
       <div className="relative z-10 w-full max-w-lg" onClick={e => e.stopPropagation()}>

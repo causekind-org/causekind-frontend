@@ -51,6 +51,27 @@ window.IntersectionObserver = class {
 } as unknown as typeof IntersectionObserver;
 
 /**
+ * jsdom has no ResizeObserver either. `input-otp` constructs one on mount, so any
+ * test rendering the handover code field threw before this existed. Same contract
+ * as the stub above: it lets components mount, it does not simulate resizes.
+ */
+window.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;
+
+/**
+ * `input-otp` also probes `document.elementFromPoint` from a timer, to detect a
+ * password manager badge overlapping the field. jsdom has no layout engine and so
+ * no such method, and because the call happens on a timeout it surfaces as an
+ * uncaught exception after the test body has finished rather than a failed
+ * assertion. Returning null means "nothing is overlapping", which is the right
+ * answer for a headless environment.
+ */
+document.elementFromPoint = (() => null) as unknown as typeof document.elementFromPoint;
+
+/**
  * jsdom ships no SVG geometry engine, so `getTotalLength`/`getPointAtLength`
  * simply do not exist. The landing page's trust-journey path calls both from a
  * requestAnimationFrame loop, which throws asynchronously — outside any test's

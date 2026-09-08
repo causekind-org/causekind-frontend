@@ -311,10 +311,12 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close listing details"
             className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors mt-0.5"
           >
-            <X className="w-4 h-4 text-stone-500" />
+            <X className="w-4 h-4 text-stone-500" aria-hidden="true" />
           </button>
         </div>
 

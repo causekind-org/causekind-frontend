@@ -99,7 +99,7 @@ export function ItemListingWizard({
   const [aiNote, setAiNote] = useState<string | null>(null);
   const [aiFilled, setAiFilled] = useState<Set<string>>(new Set());
   const [uncertain, setUncertain] = useState<Set<string>>(new Set());
-  const [prohibited, setProhibited] = useState<{ category: string | null; reason: string | null } | null>(null);
+  const [prohibited, setProhibited] = useState<{ category: string | null; code: string | null } | null>(null);
 
   /** Fields the donor has touched — the AI may never overwrite these. */
   const dirtyRef = useRef<Set<string>>(new Set());
@@ -272,7 +272,7 @@ export function ItemListingWizard({
       return;
     }
     if (r.prohibited) {
-      setProhibited({ category: r.prohibitedCategory, reason: r.prohibitedReason });
+      setProhibited({ category: r.prohibitedCategory, code: r.prohibitedCode });
     }
 
     const filled = new Set<string>();

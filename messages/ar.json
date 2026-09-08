@@ -18,7 +18,9 @@
     "signOut": "تسجيل الخروج",
     "openMenu": "فتح القائمة",
     "profileMenu": "قائمة الملف الشخصي",
-    "toggleTheme": "تبديل الموضوع"
+    "toggleTheme": "تبديل الموضوع",
+    "moneyDonation": "تبرع نقدي",
+    "inKindDonation": "تبرع عيني"
   },
   "logout": {
     "title": "تسجيل الخروج؟",
@@ -28,13 +30,31 @@
   },
   "hero": {
     "badge": "جعل الحياة أفضل",
-    "headline": "معًا ندعم ونعلم ونعالج",
-    "subtext": "كل تبرع يساعد الأسرة على النمو بشكل أقوى وأكثر صحة وأمانًا. معًا نبني مستقبلًا مليئًا بالإمكانيات.",
+    "eyebrow": "نجعل الحياة أفضل",
+    "headlineTop": "اعثر على شخص قريب منك",
+    "headlineAccent": "يحتاج إلى ما لديك",
+    "subtext": "ما هو زائد عن حاجتك قد يكون ضروريًا لشخص آخر.",
     "donateNow": "تبرع الآن",
     "howWeWork": "كيف نعمل",
     "transparent": "تبرعات شفافة بنسبة 100%",
     "fastDistribution": "توزيع سريع وفعال",
-    "localCampaign": "الحملة المحلية"
+    "localCampaign": "الحملة المحلية",
+    "ctaBrowse": "استكشف الاحتياجات القريبة منك",
+    "ctaStartGiving": "سجّل الآن",
+    "ctaListItem": "أضف غرضًا",
+    "ctaRequestItem": "اطلب غرضًا",
+    "ctaOpenDashboard": "افتح لوحة التحكم",
+    "connectionLabel": "غرض مفيد يمكن أن يلبي حاجة موثّقة",
+    "connectionItemLead": "لديك",
+    "connectionItemRest": "شيء مفيد",
+    "connectionNeedLead": "شخص قريب",
+    "connectionNeedRest": "يحتاج إليه",
+    "assuranceLabel": "كيف تحمي CauseKind كل عملية تسليم",
+    "assuranceVerifiedTitle": "التحقق قبل المطابقة",
+    "assuranceVerifiedBody": "تُراجع الطلبات قبل ظهورها على اللوحة العامة.",
+    "assuranceHandoverTitle": "تسليم متتبَّع",
+    "assuranceHandoverBody": "يؤكد الطرفان عند تسليم الغرض.",
+    "photoAlt": "شاب مبتسم يسلّم صندوقًا من الأغراض المفيدة إلى امرأة مسنّة في حي تغمره أشعة الشمس."
   },
   "stats": {
     "totalRaised": "إجمالي الأموال التي تم جمعها",
@@ -1208,5 +1228,29 @@
       "body": "شارك حاجة حقيقية، وتواصل مع أشخاص مستعدين للمساعدة، واحصل على الدعم بوضوح واحترام.",
       "cta": "انضم كمستفيد"
     }
+  },
+  "categoryStrip": {
+    "heading": "تصفّح حسب الفئة",
+    "ariaLabel": "تصفّح الاحتياجات الموثّقة حسب الفئة",
+    "categories": {
+      "education": "التعليم",
+      "clothing": "الملابس",
+      "household": "المنزل",
+      "furniture": "الأثاث",
+      "medicalAid": "المساعدة الطبية",
+      "livelihood": "سبل العيش",
+      "relief": "الإغاثة",
+      "electronics": "الإلكترونيات",
+      "sports": "الرياضة"
+    }
+  },
+  "trustBand": {
+    "label": "لماذا CauseKind آمنة",
+    "trustedTitle": "مجتمع موثوق",
+    "trustedBody": "آمن. موثّق. جدير بالثقة.",
+    "impactTitle": "أثر محلي",
+    "impactBody": "مساعدة الناس في حيّك نفسه.",
+    "togetherTitle": "معًا أقوى",
+    "togetherBody": "مجتمع أفضل. غد أفضل."
   }
 }

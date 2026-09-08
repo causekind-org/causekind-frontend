@@ -18,7 +18,9 @@
     "signOut": "लॉग आउट",
     "openMenu": "मेनू खोलें",
     "profileMenu": "प्रोफ़ाइल मेनू",
-    "toggleTheme": "थीम बदलें"
+    "toggleTheme": "थीम बदलें",
+    "moneyDonation": "धन दान",
+    "inKindDonation": "वस्तु दान"
   },
   "logout": {
     "title": "लॉग आउट करें?",
@@ -28,13 +30,31 @@
   },
   "hero": {
     "badge": "जीवन बेहतर बना रहे हैं",
-    "headline": "मिलकर हम सहारा देते, शिक्षित करते और स्वस्थ करते हैं",
-    "subtext": "हर दान एक परिवार को मजबूत, स्वस्थ और सुरक्षित बनाता है। मिलकर हम संभावनाओं से भरा भविष्य बनाते हैं।",
+    "eyebrow": "ज़िंदगियाँ बेहतर बनाना",
+    "headlineTop": "अपने आस-पास किसी को खोजें",
+    "headlineAccent": "जिसे वही चाहिए जो आपके पास है",
+    "subtext": "जो आपके लिए अतिरिक्त है, वह किसी और के लिए ज़रूरी हो सकता है।",
     "donateNow": "अभी दान करें",
     "howWeWork": "हम कैसे काम करते हैं",
     "transparent": "100% पारदर्शी दान",
     "fastDistribution": "तेज़, प्रभावी वितरण",
-    "localCampaign": "स्थानीय अभियान"
+    "localCampaign": "स्थानीय अभियान",
+    "ctaBrowse": "अपने आस-पास की ज़रूरतें खोजें",
+    "ctaStartGiving": "अभी साइन अप करें",
+    "ctaListItem": "वस्तु सूचीबद्ध करें",
+    "ctaRequestItem": "वस्तु का अनुरोध करें",
+    "ctaOpenDashboard": "डैशबोर्ड खोलें",
+    "connectionLabel": "एक उपयोगी वस्तु किसी सत्यापित ज़रूरत को पूरा कर सकती है",
+    "connectionItemLead": "आपके पास है",
+    "connectionItemRest": "कुछ उपयोगी",
+    "connectionNeedLead": "पास में कोई",
+    "connectionNeedRest": "जिसे ज़रूरत है",
+    "assuranceLabel": "CauseKind हर हस्तांतरण को कैसे सुरक्षित रखता है",
+    "assuranceVerifiedTitle": "मिलान से पहले सत्यापित",
+    "assuranceVerifiedBody": "सार्वजनिक बोर्ड पर आने से पहले अनुरोधों की जाँच की जाती है।",
+    "assuranceHandoverTitle": "निगरानी में हस्तांतरण",
+    "assuranceHandoverBody": "वस्तु सौंपे जाने पर दोनों पक्ष पुष्टि करते हैं।",
+    "photoAlt": "धूप से भरे मोहल्ले में एक मुस्कुराता हुआ युवक उपयोगी सामान का डिब्बा एक बुज़ुर्ग महिला को सौंप रहा है।"
   },
   "stats": {
     "totalRaised": "कुल राशि जुटाई",
@@ -1191,6 +1211,21 @@
     "browseCampaigns": "अधिक अभियान ब्राउज़ करें",
     "toastSuccess": "दान की पुष्टि! अंतर करने के लिए आपका धन्यवाद।"
   },
+  "categoryStrip": {
+    "heading": "श्रेणी के अनुसार देखें",
+    "ariaLabel": "श्रेणी के अनुसार सत्यापित ज़रूरतें देखें",
+    "categories": {
+      "education": "शिक्षा",
+      "clothing": "कपड़े",
+      "household": "घरेलू सामान",
+      "furniture": "फर्नीचर",
+      "medicalAid": "चिकित्सा सहायता",
+      "livelihood": "आजीविका",
+      "relief": "राहत",
+      "electronics": "इलेक्ट्रॉनिक्स",
+      "sports": "खेल"
+    }
+  },
   "audiencePathways": {
     "eyebrow": "दो पहलू, एक मंच",
     "heading": "आप किसी भी ओर हों, CauseKind आपको जोड़ता है।",
@@ -1208,5 +1243,14 @@
       "body": "अपनी सच्ची ज़रूरत बताइए, मदद को तैयार लोगों से जुड़िए, और स्पष्टता व सम्मान के साथ सहायता पाइए।",
       "cta": "ज़रूरतमंद के रूप में जुड़ें"
     }
+  },
+  "trustBand": {
+    "label": "CauseKind सुरक्षित क्यों है",
+    "trustedTitle": "भरोसेमंद समुदाय",
+    "trustedBody": "सुरक्षित। सत्यापित। विश्वसनीय।",
+    "impactTitle": "स्थानीय असर",
+    "impactBody": "आपके अपने मोहल्ले के लोगों की मदद।",
+    "togetherTitle": "साथ मिलकर मज़बूत",
+    "togetherBody": "बेहतर समुदाय। बेहतर कल।"
   }
 }

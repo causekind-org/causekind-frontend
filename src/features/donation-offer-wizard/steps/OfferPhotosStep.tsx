@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
+import { PHOTO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Camera, ImagePlus, Loader2, RefreshCw, ShieldAlert, Sparkles, X } from "lucide-react";
@@ -16,7 +18,12 @@ export type ScreeningState =
   | { kind: "running" }
   | { kind: "safe" }
   | { kind: "unavailable"; note: string }
-  | { kind: "prohibited"; reason: string | null; category: string | null };
+  /**
+   * `code` rather than a sentence: the server stopped sending the model's
+   * wording, and the IMAGE_* codes already have translated copy from the
+   * listing photo pipeline.
+   */
+  | { kind: "prohibited"; code: string | null; category: string | null };
 
 /**
  * Photos, and the only AI this flow runs: a prohibited-content check.
@@ -47,6 +54,7 @@ export function OfferPhotosStep({
   onPickVideo?: (file: File) => void;
   onRemoveVideo?: () => void;
 }) {
+  const t = useTranslations();
   const reduced = !!useReducedMotion();
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -190,8 +198,12 @@ export function OfferPhotosStep({
                 We cannot accept this
               </p>
               <p className="mt-1 text-2xs text-red-800 dark:text-red-300">
-                {screening.reason ?? "One of these photos shows something CauseKind cannot accept."}
-                {screening.category ? ` (${screening.category})` : ""}
+                {/* The raw category used to be appended in brackets — "(WEAPONS)" —
+                    which showed a donor our internal enum. The code's own sentence
+                    already names the category in words. */}
+                {t(screening.code
+                  ? (PHOTO_COPY.reasons[screening.code] ?? PHOTO_COPY.genericReason)
+                  : PHOTO_COPY.genericReason)}
               </p>
               <p className="mt-1 text-2xs text-red-700/80 dark:text-red-400/80">
                 Remove or replace that photo to continue.
