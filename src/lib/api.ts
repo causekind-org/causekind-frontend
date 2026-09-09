@@ -285,6 +285,28 @@ export function resendRegistrationOtp(email: string) {
   });
 }
 
+export type NgoSignupData = {
+  organizationName: string;
+  officialEmail: string;
+  phoneNumber: string;
+  panNumber: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  password: string;
+  website?: string;
+};
+
+export function registerNgo(data: NgoSignupData) {
+  return request<{ token: null; email: string; role: string; userId: number }>(
+    "/api/v1/auth/register/ngo",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+}
+
 export function serverLogout() {
   return request<void>("/api/v1/auth/logout", { method: "POST" });
 }
@@ -3967,3 +3989,165 @@ export function subscribe(input: {
     body: JSON.stringify(input),
   });
 }
+
+// ── NGO Registration ───────────────────────────────────────────────────────────
+
+export interface NgoSubmitResponse {
+  /** Canonical application ID, e.g. "CK-NGO-2026-A1B2C3D4". Issued by the backend. */
+  applicationId: string;
+  status: string;
+  officialEmail: string;
+  submittedAt: string;
+}
+
+export interface NgoStatusResponse {
+  applicationId: string;
+  organizationName: string;
+  status: string;
+  submittedAt: string;
+  verifiedAt: string | null;
+  updatedAt: string | null;
+  rejectionReason: string | null;
+  needsInformationDetails: string | null;
+}
+
+export interface NgoDocumentUploadResult {
+  documentId: number;
+  applicationId?: string | null;
+  documentType: string;
+  fileName?: string;
+  s3Key: string;
+  fileUrl?: string | null;
+  uploadedAt: string;
+}
+
+export interface NgoPhotoUploadResult {
+  photoId: number;
+  applicationId?: string | null;
+  photoType: string;
+  s3Url: string;
+  s3Key: string;
+  fileName?: string;
+  uploadedAt: string;
+}
+
+/**
+ * Step 2: Upload a legal document (PDF, PNG, JPG).
+ * Validates, scans, and stores under ngo-documents/ prefix in draft state.
+ */
+export async function uploadNgoDocument(file: File, documentType: string, category?: string): Promise<NgoDocumentUploadResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("documentType", documentType);
+  if (category) fd.append("category", category);
+
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/documents/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    let message = "Document upload failed. Please check the file and try again.";
+    try {
+      const body = await res.json();
+      if (typeof body?.message === "string" && body.message) message = body.message;
+    } catch {}
+    throw new Error(message);
+  }
+
+  return (await res.json()) as NgoDocumentUploadResult;
+}
+
+/**
+ * Step 4: Upload an organization photo (Logo, Office, Activity).
+ * Validates, sanitizes, moderates, and stores under ngo-photos/ prefix in draft state.
+ */
+export async function uploadNgoPhoto(file: File, photoType: string): Promise<NgoPhotoUploadResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("photoType", photoType);
+
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/photos/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    let message = "Photo upload failed. Please check the image and try again.";
+    try {
+      const body = await res.json();
+      if (typeof body?.message === "string" && body.message) message = body.message;
+    } catch {}
+    throw new Error(message);
+  }
+
+  return (await res.json()) as NgoPhotoUploadResult;
+}
+
+/**
+ * Step 5: Submit the NGO registration application.
+ * Returns the canonical backend-issued applicationId and current status.
+ * This endpoint is public (no JWT required).
+ */
+export function submitNgoApplication(payload: {
+  organizationName: string;
+  legalStructure: string;
+  registrationNumber: string;
+  registeredOfficeAddress: string;
+  yearOfEstablishment: string;
+  representativeName: string;
+  designation: string;
+  mobileNumber: string;
+  officialEmail: string;
+  confirmationChecked: boolean;
+  authorizationLetter: { documentId?: number | null; photoId?: number | null; name: string; key: string | null; url: string | null; size: number | null; mimeType: string | null; demo: boolean } | null;
+  documents: Record<string, { documentId?: number | null; photoId?: number | null; name: string; key: string | null; url: string | null; size: number | null; mimeType: string | null; demo: boolean } | null>;
+  logo: { documentId?: number | null; photoId?: number | null; name: string; key: string | null; url: string | null; size: number | null; mimeType: string | null; demo: boolean } | null;
+  officePhoto: { documentId?: number | null; photoId?: number | null; name: string; key: string | null; url: string | null; size: number | null; mimeType: string | null; demo: boolean } | null;
+  activityPhotos: ({ documentId?: number | null; photoId?: number | null; name: string; key: string | null; url: string | null; size: number | null; mimeType: string | null; demo: boolean } | null)[];
+}) {
+  return request<NgoSubmitResponse>("/api/v1/ngo-registration/submit", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Step 6: Verify the 6-digit OTP.
+ * On success the application transitions to UNDER_REVIEW.
+ */
+export function verifyNgoOtp(applicationId: string, otp: string) {
+  return request<{ message: string }>("/api/v1/ngo-registration/verify", {
+    method: "POST",
+    body: JSON.stringify({ applicationId, otp }),
+  });
+}
+
+/**
+ * Step 6: Resend the OTP. Enforces a 60-second cooldown server-side.
+ */
+export function resendNgoOtp(applicationId: string) {
+  return request<{ message: string }>("/api/v1/ngo-registration/resend-otp", {
+    method: "POST",
+    body: JSON.stringify({ applicationId }),
+  });
+}
+
+/**
+ * Poll current status of an NGO application.
+ */
+export function getNgoApplicationStatus(applicationId: string) {
+  return request<{
+    applicationId: string;
+    organizationName: string;
+    status: string;
+    submittedAt: string | null;
+    verifiedAt: string | null;
+    updatedAt: string | null;
+    rejectionReason: string | null;
+    needsInformationDetails: string | null;
+  }>(`/api/v1/ngo-registration/${applicationId}/status`);
+}
+
