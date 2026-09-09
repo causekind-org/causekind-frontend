@@ -4,9 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useReducedMotion } from "framer-motion";
+import {
+  PackageOpen,
+  Smartphone,
+  MapPin,
+  HeartHandshake,
+  HandHeart,
+  ShieldCheck,
+  type LucideIcon,
+} from "lucide-react";
 
 /* ─── The film ─────────────────────────────────────────────────────────────
-   A 10-second, 24fps clip (240 frames) exported to still WebPs and scrubbed by
+   A ~10-second, 60fps clip (598 frames) exported to still WebPs and scrubbed by
    scroll. We draw stills onto a <canvas> instead of scrubbing a <video> because
    seeking a 45 Mbps 4K MP4 on every scroll tick stutters badly; pre-decoded
    images swap instantly. The frames live in /public/scrolly/desktop.
@@ -15,11 +24,11 @@ import { useReducedMotion } from "framer-motion";
    `frame_${String(N).padStart(3,"0")}.webp`. One set only: the whole section
    lives in the homepage's `hidden lg:block` desktop tree, so it never mounts
    below the lg breakpoint and a smaller phone set would be dead weight. */
-const FRAME_COUNT = 240;
+const FRAME_COUNT = 598;
 const framePath = (n: number) =>
   `/scrolly/desktop/frame_${String(n).padStart(3, "0")}.webp`;
 
-/** Six screen-heights of scroll to move through 240 frames — slow enough that
+/** Six screen-heights of scroll to move through the frames — slow enough that
     the scrub reads as motion, not a slideshow. */
 const SECTION_VH = 600;
 
@@ -51,13 +60,17 @@ interface Caption {
   from: number;
   to: number;
   side: Side;
+  /** The floating, glowing glyph for this beat — it changes with the sentence. */
+  icon: LucideIcon;
+  /** Step index shown as a small kicker above the line. */
+  step: string;
 }
 const CAPTIONS: Caption[] = [
-  { key: "p1", from: 0.0, to: 0.15, side: "right" }, // packing the box
-  { key: "p2", from: 0.18, to: 0.32, side: "right" }, // the listing card appears
-  { key: "p3", from: 0.35, to: 0.5, side: "left" }, // the matching network
-  { key: "p4", from: 0.52, to: 0.64, side: "left" }, // matched nearby
-  { key: "p5", from: 0.66, to: 0.78, side: "left" }, // handover / opening
+  { key: "p1", from: 0.0, to: 0.15, side: "right", icon: PackageOpen, step: "01" }, // packing the box
+  { key: "p2", from: 0.18, to: 0.32, side: "right", icon: Smartphone, step: "02" }, // the listing card appears
+  { key: "p3", from: 0.35, to: 0.5, side: "left", icon: MapPin, step: "03" }, // the matching network
+  { key: "p4", from: 0.52, to: 0.64, side: "left", icon: HeartHandshake, step: "04" }, // matched nearby
+  { key: "p5", from: 0.66, to: 0.78, side: "left", icon: HandHeart, step: "05" }, // handover / opening
 ];
 
 /** The brand + CTA block, held on the dark left space of the closing frames. */
@@ -281,6 +294,23 @@ export function ItemDonationScrolly() {
           hidden (see the `ck:immersive-nav` dispatch below), so the film really
           does own the whole screen. */}
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#0e0f10]">
+        {/* Scoped keyframes for the caption chrome. Kept local (unique ck-scrolly-*
+            names) rather than in the global sheet so nothing here can collide with
+            it — the same reason the animations in the old dial section were named. */}
+        <style>{`
+          @keyframes ck-scrolly-float {
+            from { transform: translateY(0); }
+            to   { transform: translateY(-9px); }
+          }
+          @keyframes ck-scrolly-glow {
+            from { box-shadow: 0 0 18px rgba(176,74,21,0.35), inset 0 0 12px rgba(176,74,21,0.14); }
+            to   { box-shadow: 0 0 36px rgba(176,74,21,0.62), inset 0 0 18px rgba(176,74,21,0.30); }
+          }
+          @keyframes ck-scrolly-line {
+            from { transform: scaleX(0.2); opacity: 0.4; }
+            to   { transform: scaleX(1);   opacity: 1;   }
+          }
+        `}</style>
         <canvas ref={canvasRef} aria-hidden className="absolute inset-0 block h-full w-full" />
 
         {/* Legibility scrims. Left and right darken independently so the words
@@ -309,36 +339,96 @@ export function ItemDonationScrolly() {
         />
 
         {/* Phase captions. Decorative/transient, so hidden from assistive tech —
-            the accessible summary is on the <section> and the brand block. */}
+            the accessible summary is on the <section> and the brand block. Each
+            beat carries a glowing, gently-floating icon that changes with the
+            sentence, a step kicker, and an accent line — so the copy reads as a
+            designed moment, not a plain caption dropped on the video. */}
         {CAPTIONS.map((c) => {
           const o = captionOpacity(progress, c);
           const slide = (1 - o) * (c.side === "right" ? 24 : -24);
+          const Icon = c.icon;
+          const alignEnd = c.side === "right";
           return (
             <div
               key={c.key}
               aria-hidden
-              className="pointer-events-none absolute inset-y-0 flex max-w-[min(46ch,42vw)] flex-col justify-center px-6 sm:px-10 lg:px-16"
+              className={`pointer-events-none absolute inset-y-0 flex max-w-[min(48ch,44vw)] flex-col justify-center gap-4 px-6 sm:px-10 lg:px-16 ${
+                alignEnd ? "items-end text-right" : "items-start text-left"
+              }`}
               style={{
                 [c.side]: 0,
-                textAlign: c.side === "right" ? "right" : "left",
                 opacity: o,
                 transform: `translateX(${slide}px)`,
                 transition: "opacity 0.15s linear, transform 0.15s linear",
               }}
             >
-              <p
-                className="text-white"
+              {/* Floating wrapper (transform) holds the glowing badge (box-shadow)
+                  — split across two elements so the two animations don't fight for
+                  the same property. */}
+              <span
                 style={{
-                  fontFamily: "var(--font-source-serif-4), Georgia, serif",
-                  fontSize: "clamp(1.8rem, 1.1rem + 2.4vw, 3.4rem)",
-                  fontWeight: 600,
-                  lineHeight: 1.08,
-                  letterSpacing: "-0.02em",
-                  textShadow: "0 2px 24px rgba(0,0,0,0.55)",
+                  display: "inline-block",
+                  animation: "ck-scrolly-float 3.4s ease-in-out infinite alternate",
+                  willChange: "transform",
                 }}
               >
-                {t(c.key)}
-              </p>
+                <span
+                  className="flex items-center justify-center rounded-2xl backdrop-blur-sm"
+                  style={{
+                    width: "clamp(48px, 3.4vw, 68px)",
+                    height: "clamp(48px, 3.4vw, 68px)",
+                    background:
+                      "radial-gradient(120% 120% at 30% 20%, rgba(176,74,21,0.42) 0%, rgba(176,74,21,0.14) 55%, rgba(12,12,14,0.35) 100%)",
+                    border: "1px solid rgba(255,222,196,0.32)",
+                    animation: "ck-scrolly-glow 2.8s ease-in-out infinite alternate",
+                  }}
+                >
+                  <Icon
+                    strokeWidth={1.75}
+                    style={{ width: "48%", height: "48%", color: "#ffd9bf" }}
+                  />
+                </span>
+              </span>
+
+              <div className={`flex flex-col gap-3 ${alignEnd ? "items-end" : "items-start"}`}>
+                <span
+                  className="text-[11px] font-extrabold uppercase"
+                  style={{ letterSpacing: "0.22em", color: "#e88a4e" }}
+                >
+                  {c.step} <span style={{ opacity: 0.5 }}>/ 05</span>
+                </span>
+
+                <p
+                  className="text-white"
+                  style={{
+                    fontFamily: "var(--font-source-serif-4), Georgia, serif",
+                    fontSize: "clamp(1.9rem, 1.1rem + 2.6vw, 3.6rem)",
+                    fontWeight: 600,
+                    lineHeight: 1.06,
+                    letterSpacing: "-0.02em",
+                    // A soft terracotta halo under the usual dark legibility shadow.
+                    textShadow:
+                      "0 2px 24px rgba(0,0,0,0.6), 0 0 42px rgba(176,74,21,0.28)",
+                  }}
+                >
+                  {t(c.key)}
+                </p>
+
+                {/* Accent line — grows from the text side, glowing terracotta. */}
+                <span
+                  style={{
+                    height: "3px",
+                    width: "clamp(64px, 8vw, 128px)",
+                    borderRadius: "999px",
+                    transformOrigin: alignEnd ? "right" : "left",
+                    background: alignEnd
+                      ? "linear-gradient(270deg, #b04a15 0%, rgba(176,74,21,0) 100%)"
+                      : "linear-gradient(90deg, #b04a15 0%, rgba(176,74,21,0) 100%)",
+                    boxShadow: "0 0 16px rgba(176,74,21,0.5)",
+                    animation: "ck-scrolly-line 0.6s ease-out both",
+                  }}
+                />
+              </div>
             </div>
           );
         })}
@@ -384,14 +474,21 @@ function BrandBlock({ t }: { t: ReturnType<typeof useTranslations> }) {
           fontWeight: 600,
           lineHeight: 1.04,
           letterSpacing: "-0.025em",
-          textShadow: "0 2px 28px rgba(0,0,0,0.6)",
+          // Same terracotta halo the phase captions carry, so the close matches.
+          textShadow: "0 2px 28px rgba(0,0,0,0.6), 0 0 48px rgba(176,74,21,0.3)",
         }}
       >
         {t("brandLine1")}
         <br />
         {t("brandLine2")}
       </h2>
-      <p className="mt-4 text-[13px] font-bold uppercase tracking-[0.18em] text-white/80">
+      <p className="mt-4 inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.18em] text-white/85">
+        <ShieldCheck
+          className="shrink-0"
+          strokeWidth={2}
+          style={{ width: 17, height: 17, color: "#e88a4e" }}
+          aria-hidden
+        />
         {t("badges")}
       </p>
       <Link
