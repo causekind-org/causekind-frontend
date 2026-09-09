@@ -23,6 +23,17 @@ const framePath = (n: number) =>
     the scrub reads as motion, not a slideshow. */
 const SECTION_VH = 600;
 
+/**
+ * How quickly the drawn frame catches up to the scroll position, per animation
+ * frame (0–1). The displayed progress eases toward the scroll target by this
+ * fraction each frame, so when scrolling stops the film keeps gliding and
+ * decelerates to rest instead of snapping — the "slows down, then stops" feel.
+ *
+ * <p>Lower = more glide/inertia (and more lag behind the cursor); higher = tighter
+ * tracking. ~0.15 settles in roughly a quarter-second at 60fps.
+ */
+const SCRUB_EASE = 0.15;
+
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 /* ─── The copy, tied to scroll ─────────────────────────────────────────────
@@ -103,6 +114,14 @@ export function ItemDonationScrolly() {
     let raf = 0;
     let disposed = false;
 
+    // Eased scrub: `target` is where the scroll currently is; `rendered` is the
+    // frame actually on screen, which chases `target` by SCRUB_EASE each frame.
+    // When scrolling stops, `target` holds still and `rendered` keeps closing
+    // the gap — decelerating — so the film glides to rest instead of snapping.
+    let target = 0;
+    let rendered = 0;
+    let running = false;
+
     for (let i = 0; i < FRAME_COUNT; i++) {
       const img = new Image();
       img.decoding = "async";
@@ -114,7 +133,7 @@ export function ItemDonationScrolly() {
         // scrub begin; the rest stream in behind it.
         if (i === 0 || loadedCount === FRAME_COUNT) {
           if (!disposed) setReady(true);
-          draw();
+          draw(rendered);
         }
       };
       imagesRef.current[i] = img;
@@ -129,7 +148,7 @@ export function ItemDonationScrolly() {
       return null;
     }
 
-    function draw() {
+    function draw(p: number) {
       const cv = canvasRef.current;
       if (!cv) return;
       const ctx = cv.getContext("2d");
@@ -143,7 +162,7 @@ export function ItemDonationScrolly() {
         cv.height = Math.round(cssH * dpr);
       }
 
-      const idx = Math.min(FRAME_COUNT - 1, Math.round(progressRef.current * (FRAME_COUNT - 1)));
+      const idx = Math.min(FRAME_COUNT - 1, Math.round(p * (FRAME_COUNT - 1)));
       const img = nearestLoaded(idx);
       if (!img) return;
 
@@ -162,9 +181,6 @@ export function ItemDonationScrolly() {
       ctx.drawImage(img, dx, dy, dw, dh);
     }
 
-    // Scroll → progress, coalesced to one paint per frame (same pattern the
-    // old dial section used and proved out here).
-    let ticking = false;
     // Whether the pinned panel currently fills the viewport. While it does, we
     // ask the site header to slide away (it listens for `ck:immersive-nav`), so
     // the film owns the whole screen; the nav returns the moment the section
@@ -175,34 +191,56 @@ export function ItemDonationScrolly() {
       immersive = active;
       window.dispatchEvent(new CustomEvent("ck:immersive-nav", { detail: active }));
     }
-    function apply() {
-      ticking = false;
+
+    /**
+     * One animation frame. Reads the live scroll position into `target`, eases
+     * `rendered` toward it, paints, and — crucially — keeps requesting frames
+     * until the two converge. So a scroll that has already stopped still runs a
+     * few more frames, each moving less than the last, which is the deceleration.
+     */
+    function frame() {
       const el = sectionRef.current;
-      if (!el) return;
+      if (!el) {
+        running = false;
+        return;
+      }
       const rect = el.getBoundingClientRect();
       const scrollable = rect.height - window.innerHeight;
-      if (scrollable <= 0) return;
-      const p = clamp01(-rect.top / scrollable);
-      progressRef.current = p;
-      setProgress(p);
-      setImmersive(rect.top <= 0 && rect.bottom >= window.innerHeight);
-      draw();
+      if (scrollable > 0) {
+        target = clamp01(-rect.top / scrollable);
+        progressRef.current = target;
+        setImmersive(rect.top <= 0 && rect.bottom >= window.innerHeight);
+      }
+
+      rendered += (target - rendered) * SCRUB_EASE;
+      // Snap the last sub-frame sliver so the loop can actually stop.
+      if (Math.abs(target - rendered) < 0.0004) rendered = target;
+
+      draw(rendered);
+      setProgress(rendered);
+
+      if (rendered !== target) {
+        raf = requestAnimationFrame(frame);
+      } else {
+        running = false;
+      }
     }
-    function onScroll() {
-      if (ticking) return;
-      ticking = true;
-      raf = requestAnimationFrame(apply);
+    // Any scroll/resize re-arms the loop if it had settled and gone idle.
+    function kick() {
+      if (running || disposed) return;
+      running = true;
+      raf = requestAnimationFrame(frame);
     }
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    apply();
+    window.addEventListener("scroll", kick, { passive: true });
+    window.addEventListener("resize", kick, { passive: true });
+    kick();
 
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("scroll", kick);
+      window.removeEventListener("resize", kick);
       // Never leave the header hidden if the section unmounts while pinned.
       setImmersive(false);
     };
