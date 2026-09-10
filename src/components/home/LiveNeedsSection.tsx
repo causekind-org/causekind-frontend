@@ -93,7 +93,6 @@ export function LiveNeedsSection({
   const displayedNeeds = filteredNeeds.slice(0, NEEDS_SHOWN);
   const hiddenCount = filteredNeeds.length - displayedNeeds.length;
 
-  const totalOpenCount = allNeeds.length;
   const cardCount = displayedNeeds.length;
 
   /*
@@ -117,37 +116,18 @@ export function LiveNeedsSection({
       ref={sectionRef}
       id="live-needs-section"
       aria-labelledby="live-needs-heading"
-      className="relative w-full bg-[#fbf9f4] dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
+      // Was #fbf9f4 — a shade off the sections either side. Same one cream.
+      className="relative w-full bg-[var(--surface-cream,#faf8f5)] dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
     >
-      {/* Soft warm ambient lighting glow matching brand palette */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-24 -left-20 w-[420px] h-[420px] rounded-full bg-[var(--ck-home-accent,#b04a15)]/6 dark:bg-[var(--ck-home-accent,#b04a15)]/10 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 -right-24 w-[380px] h-[380px] rounded-full bg-[var(--ck-home-accent,#e07b3a)]/7 dark:bg-[var(--ck-home-accent,#e07b3a)]/12 blur-3xl"
-      />
+      {/* The two warm ambient blurs are gone — see the note in
+          ComingSoonMagnets. Every section was tinting its own background a
+          slightly different warm colour, which is most of why the page read as
+          a stack of separate pages rather than one surface. */}
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
           <div className="max-w-2xl min-w-0">
-            {/* Live Indicator Pill */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-50/80 dark:bg-emerald-950/40 px-3.5 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 shadow-xs mb-3">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              <span className="tracking-wide uppercase text-3xs font-black text-emerald-700 dark:text-emerald-400">
-                Live Open Needs
-              </span>
-              <span className="text-stone-300 dark:text-stone-600">·</span>
-              <span className="tabular-nums font-bold">
-                {totalOpenCount} verified {totalOpenCount === 1 ? "need" : "needs"} awaiting items
-              </span>
-            </div>
-
             <h2
               id="live-needs-heading"
               className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-[1.12]"

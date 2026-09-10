@@ -738,18 +738,7 @@ export function ComingSoonMagnets() {
           .ck-modal-illo  { height: 68px !important; }
           .ck-modal-right { padding: 18px 15px 20px !important; }
         }
-        @keyframes ck-blob-a {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50%      { transform: translate(70px, -45px) scale(1.18); }
-        }
-        @keyframes ck-blob-b {
-          0%, 100% { transform: translate(0, 0) scale(1.1); }
-          50%      { transform: translate(-60px, 50px) scale(0.92); }
-        }
-        @keyframes ck-blob-c {
-          0%, 100% { transform: translate(0, 0) scale(0.95); }
-          50%      { transform: translate(45px, 60px) scale(1.15); }
-        }
+        /* ck-blob-a/b/c went with the three drifting glows they drove. */
         @keyframes ck-spark-rise {
           0%   { transform: translateY(0) scale(1);        opacity: 0;   }
           12%  { opacity: 0.55; }
@@ -772,24 +761,12 @@ export function ComingSoonMagnets() {
 
       {/* Ambient background — soft drifting glows + slow rising sparks */}
       <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        <div style={{
-          position: "absolute", top: "-140px", left: "-100px", width: "440px", height: "440px",
-          borderRadius: "50%", background: `radial-gradient(circle, color-mix(in srgb, ${COPPER} 19%, transparent) 0%, transparent 70%)`,
-          filter: "blur(48px)", willChange: "transform",
-          animation: reducedMotion ? "none" : "ck-blob-a 22s ease-in-out infinite",
-        }} />
-        <div style={{
-          position: "absolute", top: "20%", right: "-140px", width: "480px", height: "480px",
-          borderRadius: "50%", background: `radial-gradient(circle, color-mix(in srgb, ${GOLD} 18%, transparent) 0%, transparent 70%)`,
-          filter: "blur(52px)", willChange: "transform",
-          animation: reducedMotion ? "none" : "ck-blob-b 26s ease-in-out infinite",
-        }} />
-        <div style={{
-          position: "absolute", bottom: "-160px", left: "30%", width: "420px", height: "420px",
-          borderRadius: "50%", background: `radial-gradient(circle, ${INK}22 0%, transparent 70%)`,
-          filter: "blur(48px)", willChange: "transform",
-          animation: reducedMotion ? "none" : "ck-blob-c 24s ease-in-out infinite",
-        }} />
+        {/* All three drifting glows are gone — copper top-left, gold right and
+            the navy one under the cards. Each tinted the band a colour nothing
+            else on the page carries, so the section read as its own surface
+            rather than part of one page. The cards supply the colour; the paper
+            stays the same paper as every other section. Only the rising sparks
+            remain. */}
         {!reducedMotion && [
           { left: "10%", size: 6, delay: "0s",  dur: "13s", color: GOLD },
           { left: "24%", size: 4, delay: "4s",  dur: "16s", color: "var(--ck-home-ink,#b04a15)" },
