@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
 import { useInView, useReducedMotion } from "framer-motion";
 
@@ -177,6 +178,8 @@ const rgba = (c: readonly number[], alpha: number) => `rgba(${c[0]}, ${c[1]}, ${
  */
 export function WhatWeProvideSection() {
   const t = useTranslations("landing");
+  const { user } = useAuth();
+  const isDonee = user?.role.replace(/^ROLE_/, "") === "DONEE";
   // The section is built almost entirely of motion. Under reduced motion the
   // journey collapses to its settled position: the parcel rests at the centre,
   // nothing sweeps or slides, and the beats still change with scroll — so the
@@ -281,7 +284,7 @@ export function WhatWeProvideSection() {
   // Colour tracks `progress`, NOT `travel`. Under reduced motion `travel` is
   // pinned to 1 so nothing slides — but a colour shift is not motion and causes
   // nobody any trouble, so it should still follow the scroll.
-  const accent = mix(ACCENT_WARM, ACCENT_COOL, progress);
+  const accent = mix(isDonee ? ACCENT_COOL : ACCENT_WARM, ACCENT_COOL, progress);
   const ground = mix(GROUND_WARM, GROUND_COOL, progress);
 
   const donorNode = mix(ground, accent, donorFill);
@@ -317,7 +320,7 @@ export function WhatWeProvideSection() {
 
           <div className="flex flex-col gap-5 min-w-0">
             <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#b04a15]">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[var(--ck-home-ink,#b04a15)]">
                 How it works
               </p>
               <h2

@@ -37,6 +37,14 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => authState,
 }));
 
+// HomeClient renders NewRequestLink CTAs, which need the gate provider the root
+// layout supplies. These cases are about which pathways appear, not the gate.
+vi.mock("@/hooks/useNeedProfileGate", () => ({
+  useNeedProfileGate: () => ({ requestAccess: async () => true, checking: false }),
+}));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 // ── next-intl, resolved against the real message catalogue ───────────────────
 
 vi.mock("next-intl", () => ({
@@ -73,7 +81,6 @@ vi.mock("@/components/Reveal", () => ({
 }));
 vi.mock("@/components/CampaignCarousel", () => ({ LatestActiveCampaignsSection: () => null }));
 vi.mock("@/components/BeTheChangeSection", () => ({ BeTheChangeSection: () => null }));
-vi.mock("@/components/home/DoneeRequestsSection", () => ({ DoneeRequestsSection: () => null }));
 vi.mock("@/components/ComingSoonMagnets", () => ({ ComingSoonMagnets: () => null }));
 vi.mock("@/components/IndependenceDayStrip", () => ({ IndependenceDayStrip: () => null }));
 vi.mock("@/components/home/HeroSection", () => ({ HeroSection: () => null }));

@@ -26,6 +26,7 @@ import {
   Armchair, Shirt, Smartphone, Dumbbell,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { DoneeRequestsPage } from "./donee-view";
 import { ALL_REQUEST_CATEGORIES as ITEM_REQ_CATEGORIES } from "@/lib/categoryVisuals";
 // @ts-expect-error — MagicBento is the JS/CSS React Bits variant (no types shipped)
@@ -1082,8 +1083,7 @@ export default function RequestsClient() {
                       // when the need actually has one — an empty media band on a
                       // small card is the "meaningless empty space" to avoid.
                       media: showsMedia && r.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={r.imageUrl} alt="" loading="lazy" />
+                        <Image src={r.imageUrl} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                       ) : undefined,
                       label: <TranslatedText text={r.category} />,
                       badge: r.isEmergency ? "Emergency" : isCrit ? "Urgent" : isHigh ? "High" : undefined,

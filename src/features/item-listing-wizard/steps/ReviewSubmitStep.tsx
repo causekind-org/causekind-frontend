@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { photoStatusCopy, approvedCount, photoView } from "../photoStatusCopy";
 import type { OfferVideoState } from "@/features/donation-offer-wizard/useOfferVideo";
 import { Info } from "lucide-react";
+import Image from "next/image";
 import { DeclarationsBlock } from "@/features/wizard-kit/DeclarationsBlock";
 import { ReviewRow, ReviewSection } from "@/features/wizard-kit/ReviewSection";
 import { DECLARATION_GROUPS, type WizardModel, type WizardStep } from "../wizardModel";
@@ -66,8 +67,7 @@ export function ReviewSubmitStep({
                 title={t(copy.labelKey)}
               >
                 {approved && photo.remoteUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photo.remoteUrl} alt={`Item photo ${i + 1}`} className="h-full w-full object-cover" />
+                  <Image src={photo.remoteUrl} alt={`Item photo ${i + 1}`} fill className="object-cover" />
                 ) : (
                   <div className="grid h-full w-full place-items-center bg-stone-100 p-0.5 text-center dark:bg-zinc-800">
                     <span className="text-5xs font-black uppercase leading-tight text-stone-500 dark:text-stone-400">

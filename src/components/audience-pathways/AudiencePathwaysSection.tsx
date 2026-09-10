@@ -7,12 +7,7 @@ import {
   HeartHandshake, Home, Users, ShieldCheck, Sparkles,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import dynamic from "next/dynamic";
 import AudiencePathwayPanel from "./AudiencePathwayPanel";
-
-// WebGL touches `window`, so it cannot server-render. `ssr: false` also keeps
-// `ogl` out of the initial bundle — same pattern as HandoverMapPinField.
-const LightRays = dynamic(() => import("@/components/LightRays"), { ssr: false });
 
 /**
  * The two-audience introduction: who CauseKind is for, and the one click that
@@ -139,44 +134,20 @@ export default function AudiencePathwaysSection({
     <section
       ref={ref}
       aria-labelledby="audience-pathways-heading"
-      className="relative w-full overflow-hidden bg-[#f7f4f0] py-9 sm:py-12 dark:bg-zinc-950"
+      // #f7f4f0 was a shade darker and greyer than its neighbours, which read
+      // as a black wash across this band. One cream — --surface-cream, the
+      // value styles.css already names — so it matches the sections either side.
+      className="relative w-full overflow-hidden bg-[var(--surface-cream,#faf8f5)] py-9 sm:py-12 dark:bg-zinc-950"
     >
-      {/* Light rays, behind everything.
-          `absolute inset-0` rather than the documented fixed-height wrapper —
-          this section is deliberately compact and a 600px block would undo that.
+      {/* The mouse-following light rays are gone. They were a WebGL shader
+          painting orange shafts from the top of this section and nowhere else
+          on the page, so the band read as its own surface — the same reason the
+          drifting glows came out of the Coming Soon section. */}
 
-          `multiply` because the ground is cream. The shader inverts its output
-          in that mode (white where there is no ray), so multiply tints only the
-          shafts instead of painting the section black around them. */}
-      <LightRays
-        raysOrigin="top-center"
-        raysColor="#ff7700"
-        raysSpeed={1.2}
-        lightSpread={1.5}
-        rayLength={1.2}
-        followMouse
-        mouseInfluence={0.5}
-        noiseAmount={0.1}
-        distortion={0.05}
-        pulsating
-        fadeDistance={2}
-        saturation={1.5}
-        blendMode="multiply"
-        opacity={0.5}
-        className="z-0"
-      />
-
-      {/* Section-level ambience. Decorative, and the only thing bridging the two
-          palettes so the shell still reads as one product rather than two. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-70"
-        style={{
-          background:
-            "radial-gradient(60% 50% at 20% 30%, rgb(176 74 21 / 0.07) 0%, transparent 60%)," +
-            "radial-gradient(60% 50% at 80% 70%, rgb(13 148 136 / 0.07) 0%, transparent 60%)",
-        }}
-      />
+      {/* The section-level ambience wash is gone. It was one element carrying
+          both a terracotta and a teal radial, so removing only the orange half
+          would have left a lopsided teal cast; the two panels already carry
+          their own palettes, which is where that colour belongs. */}
 
       {/* Spotlight scrim.
           Hovering a half darkens and blurs *everything else in the section* —

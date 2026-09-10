@@ -62,7 +62,6 @@ export { WelcomeOverlay } from "./components/WelcomeOverlay";
 
 // ── home/ ─────────────────────────────────────────────────────────
 export { CTASection } from "./components/home/CTASection";
-export { DoneeRequestsSection } from "./components/home/DoneeRequestsSection";
 // HeroSection excluded. The original reason — it called the getHeroImages
 // Server Action, which reads the filesystem and cannot run in a browser-only
 // bundle — no longer applies: the rebuilt hero has no server action and no

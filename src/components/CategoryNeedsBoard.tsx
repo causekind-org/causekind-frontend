@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { NewRequestLink } from "./NewRequestLink";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -105,7 +106,7 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
             icon={<Inbox className="w-5 h-5" />}
             title="You're signed in as a donee"
             body={`If you need something in ${categoryName}, post it as a request and nearby donors will see it.`}
-            action={<PrimaryLink href="/requests/new">Post a need</PrimaryLink>}
+            action={<PrimaryNewRequestLink>Post a need</PrimaryNewRequestLink>}
           />
         </BoardShell>
       );
@@ -679,6 +680,11 @@ const CTA_CLS =
 
 function PrimaryLink({ href, children }: { href: string; children: React.ReactNode }) {
   return <Link href={href} className={CTA_CLS}>{children}</Link>;
+}
+
+/** Same styling as PrimaryLink, but checks the donee's need-profile first. */
+function PrimaryNewRequestLink({ children }: { children: React.ReactNode }) {
+  return <NewRequestLink href="/requests/new" className={CTA_CLS}>{children}</NewRequestLink>;
 }
 
 function PrimaryButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {

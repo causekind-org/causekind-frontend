@@ -607,7 +607,7 @@ export function ItemListingWizard({
           column had no height context, `flex-1` collapsed to content height and
           the footer sat directly under the form — leaving the rest of the
           100dvh as dead space beneath it. */}
-      <div className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] -mb-[72px] lg:mb-0 dark:bg-zinc-950 lg:min-h-[100dvh] lg:flex-row">
+      <div className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] lg:mb-0 dark:bg-zinc-950 lg:min-h-[100dvh] lg:flex-row">
         {/* Desktop sidebar — preserved concept, now carrying the journey rail. */}
         <aside className="hidden w-[300px] shrink-0 flex-col justify-between bg-gradient-to-b from-[#1c0905] via-[#3a1d0e] to-[#241206] p-7 text-white lg:flex">
           <div>

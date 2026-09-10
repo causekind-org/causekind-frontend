@@ -32,6 +32,15 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => authState,
 }));
 
+// The hero's primary CTA is a NewRequestLink, which needs the gate provider the
+// root layout supplies. These cases assert where the href points, not whether
+// the need-profile check fires — that is covered in NeedProfileGateModal.test.
+vi.mock("@/hooks/useNeedProfileGate", () => ({
+  useNeedProfileGate: () => ({ requestAccess: async () => true, checking: false }),
+}));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 const { CategoryStrip } = await import("./CategoryStrip");
 const { HeroSection } = await import("./HeroSection");
 const { NearbyNeedsPanel } = await import("./NearbyNeedsPanel");

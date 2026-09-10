@@ -1144,7 +1144,7 @@ export function SiteHeader() {
                   </div>
 
                   {/* Right Column: Featured Direct-Giving Impact Card (4 cols) */}
-                  <div className="col-span-4 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-[#b04a15]/10 via-amber-500/5 to-stone-100/50 dark:from-orange-500/15 dark:via-stone-850 dark:to-stone-900 border border-[#b04a15]/20 dark:border-orange-500/20 shadow-2xs flex flex-col justify-between">
+                  <div className="col-span-4 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-[var(--ck-home-accent,#b04a15)]/10 via-amber-500/5 to-stone-100/50 dark:from-orange-500/15 dark:via-stone-850 dark:to-stone-900 border border-[var(--ck-home-accent,#b04a15)]/20 dark:border-orange-500/20 shadow-2xs flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-3">
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-[var(--ck-role-accent)] text-white shadow-2xs">

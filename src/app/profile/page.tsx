@@ -21,6 +21,8 @@ import {
   type ItemRequest,
   type ItemListing,
   type ItemMatch,
+  getDoneeNeedProfile,
+  type DoneeNeedProfile,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
@@ -58,6 +60,9 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
+import { NewRequestLink } from "@/components/NewRequestLink";
+import { RequestReadinessRail } from "@/components/RequestReadinessRail";
+import { progressOf, needProfileItemLabel } from "@/lib/needProfileDocs";
 import Image from "next/image";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
@@ -247,6 +252,12 @@ export default function ProfilePage() {
    * fact, that they had achieved nothing. Unknown has to look unknown.
    */
   const [activityLoadFailed, setActivityLoadFailed] = useState(false);
+
+  // Deliberately separate from activityLoadFailed: that flag drives the ledger
+  // and Milestones, and retryActivity() refetches three unrelated endpoints.
+  const [needProfile, setNeedProfile] = useState<DoneeNeedProfile | null>(null);
+  const [needProfileLoadFailed, setNeedProfileLoadFailed] = useState(false);
+  const [needProfileRetrying, setNeedProfileRetrying] = useState(false);
   const [activityRetrying, setActivityRetrying] = useState(false);
 
   // Settings panel toggle. The form lives in a modal rather than a section at
@@ -400,6 +411,30 @@ export default function ProfilePage() {
     }
     setActivityLoadFailed(failed);
     setActivityRetrying(false);
+  }, []);
+
+  // Kept out of the main Promise.all: the role is only known once getProfile()
+  // resolves, and firing this for a donor would 403 on every donor page view.
+  const doneeRole = (profile?.role ?? "").toUpperCase().replace(/^ROLE_/, "") === "DONEE";
+  useEffect(() => {
+    if (!doneeRole) return;
+    let cancelled = false;
+    getDoneeNeedProfile()
+      .then((np) => { if (!cancelled) { setNeedProfile(np); setNeedProfileLoadFailed(false); } })
+      .catch(() => { if (!cancelled) setNeedProfileLoadFailed(true); });
+    return () => { cancelled = true; };
+  }, [doneeRole]);
+
+  const retryNeedProfile = useCallback(async () => {
+    setNeedProfileRetrying(true);
+    try {
+      setNeedProfile(await getDoneeNeedProfile());
+      setNeedProfileLoadFailed(false);
+    } catch {
+      setNeedProfileLoadFailed(true);
+    } finally {
+      setNeedProfileRetrying(false);
+    }
   }, []);
 
   // Avatar persistence
@@ -642,6 +677,11 @@ export default function ProfilePage() {
         { label: "Donation Completed", desc: "Delivered a donation",       icon: CheckCircle2, earned: myMatches.some((m) => ["FULFILLED", "COMPLETED"].includes(m.status)) || myListings.some((l) => ["DONATED", "FULFILLED", "PARTIALLY_DONATED"].includes(l.status)) },
       ];
 
+  const readiness = needProfile ? progressOf(needProfile.missing) : null;
+  const nextMissingLabel = needProfile?.missing[0]
+    ? needProfileItemLabel(needProfile.missing[0])
+    : undefined;
+
   const ledger = isDonee
     ? [
         { n: myRequests.length, label: "needs posted"   },
@@ -766,6 +806,24 @@ export default function ProfilePage() {
               </motion.div>
             ))}
           </div>
+
+          {/* A sibling of the ledger, not a child: the tour spotlights
+              data-tour="profile-ledger" by querySelector, and nesting this
+              inside would grow the highlight past what the tour copy describes.
+              Nothing renders while the check is in flight — a meter that sweeps
+              in a beat later is a second entrance, not a skeleton, and it never
+              flashes "0 items left". */}
+          {isDonee && (needProfile || needProfileLoadFailed) && (
+            <RequestReadinessRail
+              pct={readiness?.pct ?? 0}
+              remaining={needProfile?.missing.length ?? 0}
+              complete={needProfile?.complete ?? false}
+              nextLabel={nextMissingLabel}
+              failed={needProfileLoadFailed}
+              retrying={needProfileRetrying}
+              onRetry={() => void retryNeedProfile()}
+            />
+          )}
         </div>
       </div>
 
@@ -787,11 +845,11 @@ export default function ProfilePage() {
               <p className="text-xs text-stone-400 max-w-[260px] mx-auto">
                 {isDonee ? "Post your first need and this page will chronicle every step of it." : "List your first item and this page will chronicle every donation."}
               </p>
-              <Link href={isDonee ? "/requests/new" : "/items/new"} className="inline-block">
+              <NewRequestLink href={isDonee ? "/requests/new" : "/items/new"} className="inline-block">
                 <Button size="sm" className={`${acc.solidBtn} text-white mt-2`}>
                   {isDonee ? "Post a need" : "List an item"}
                 </Button>
-              </Link>
+              </NewRequestLink>
             </div>
           ) : (
             <>

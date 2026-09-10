@@ -18,7 +18,7 @@ import { MATCH_RADIUS_KM } from "@/lib/constants";
 
    The flood is `lg:bg-surface-cream`, the token rather than a literal, so dark
    mode resolves on its own (#faf8f5 light, #1c1917 dark). */
-const TERRACOTTA = "#b04a15";
+const TERRACOTTA = "var(--ck-home-accent,#b04a15)";
 
 /** How many category pills to show before collapsing the rest into "+N more". */
 const PILL_LIMIT = 6;
@@ -75,8 +75,8 @@ function CategoryPill({
         aria-label={`Browse ${label} requests`}
         className="flex min-h-11 items-center px-3 text-xs font-extrabold uppercase tracking-[0.1em]
                    text-stone-500 underline-offset-4 transition-colors duration-150
-                   hover:text-[#b04a15] hover:underline
-                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]
+                   hover:text-[var(--ck-home-ink,#b04a15)] hover:underline
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)]
                    focus-visible:ring-offset-2
                    dark:text-stone-400 dark:focus-visible:ring-offset-zinc-950"
       >
@@ -113,9 +113,9 @@ function MoreCategoriesToggle({
       aria-expanded={expanded}
       aria-controls={controls}
       className="inline-flex min-h-11 items-center gap-1.5 px-3 text-xs font-extrabold uppercase
-                 tracking-[0.1em] text-[#b04a15] transition-colors
+                 tracking-[0.1em] text-[var(--ck-home-ink,#b04a15)] transition-colors
                  hover:underline underline-offset-4
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)]
                  focus-visible:ring-offset-2
                  dark:focus-visible:ring-offset-zinc-950"
     >
@@ -254,7 +254,7 @@ export function BeTheChangeSection({
             <div>
               <p
                 className="mb-4 text-[11px] font-extrabold uppercase tracking-[0.24em]"
-                style={{ color: TERRACOTTA }}
+                style={{ color: "var(--ck-home-ink,#b04a15)" }}
               >
                 Be the change
               </p>
@@ -270,7 +270,7 @@ export function BeTheChangeSection({
                 }}
               >
                 Verified.<br />
-                <span style={{ color: TERRACOTTA }}>Local.</span><br />
+                <span style={{ color: "var(--ck-home-ink,#b04a15)" }}>Local.</span><br />
                 In your hands.
               </h2>
             </div>
@@ -394,7 +394,7 @@ export function BeTheChangeSection({
                 className="hidden min-h-11 lg:inline-flex items-center gap-1.5 px-5 text-sm font-extrabold uppercase
                            tracking-[0.08em] text-white transition-opacity duration-200
                            hover:opacity-90 active:scale-95
-                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)]
                            focus-visible:ring-offset-2"
                 style={{ background: TERRACOTTA }}
               >
@@ -404,8 +404,8 @@ export function BeTheChangeSection({
                 href="/requests"
                 className="inline-flex min-h-11 items-center gap-1.5 border px-5 text-sm font-extrabold
                            uppercase tracking-[0.08em] transition-colors duration-200
-                           border-stone-300 text-stone-700 hover:border-[#b04a15] hover:text-[#b04a15]
-                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]
+                           border-stone-300 text-stone-700 hover:border-[var(--ck-home-accent,#b04a15)] hover:text-[var(--ck-home-ink,#b04a15)]
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)]
                            focus-visible:ring-offset-2
                            dark:border-stone-700 dark:text-stone-300"
               >

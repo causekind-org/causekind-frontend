@@ -66,7 +66,7 @@ function HorizontalCampaignCard({
     <div
       aria-hidden={peek || undefined}
       className={[
-        "border border-orange-100 dark:border-zinc-800 p-5 md:p-6 lg:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 md:gap-8 items-stretch w-full h-full bg-white dark:bg-zinc-900 transition-shadow duration-300 hover:shadow-2xl",
+        "border border-[var(--ck-home-surface,#ffedd5)] dark:border-zinc-800 p-5 md:p-6 lg:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 md:gap-8 items-stretch w-full h-full bg-white dark:bg-zinc-900 transition-shadow duration-300 hover:shadow-2xl",
         peek ? "select-none" : "",
         className,
       ].join(" ")}
@@ -113,7 +113,7 @@ function HorizontalCampaignCard({
         {/* Floating Bottom Info & Engagement Bar (Horizontal layout for 16:9) */}
         <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 text-white">
           <div className="flex items-center gap-1.5 min-w-0 max-w-[65%]">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center font-bold text-5xs border border-white/20 uppercase shrink-0">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[var(--ck-home-accent,#b04a15)] to-[var(--ck-home-accent,#e07b3a)] flex items-center justify-center font-bold text-5xs border border-white/20 uppercase shrink-0">
               {campaign.doneeName[0]}
             </div>
             <span className="text-3xs font-black drop-shadow-md truncate">
@@ -136,7 +136,7 @@ function HorizontalCampaignCard({
         {/* Sync seek tracker bar at the bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20 z-20">
           <div
-            className="h-full bg-gradient-to-r from-[#b04a15] to-[#e07b3a]"
+            className="h-full bg-gradient-to-r from-[var(--ck-home-accent,#b04a15)] to-[var(--ck-home-accent,#e07b3a)]"
             style={{ animation: "timer-bar-fill 3000ms linear forwards" }}
           />
         </div>
@@ -147,17 +147,17 @@ function HorizontalCampaignCard({
         <div>
           {/* Category & City badges */}
           <div className="flex items-center gap-3 text-xs mb-4">
-            <Badge className="bg-[#b04a15]/10 dark:bg-[#b04a15]/20 text-[#b04a15] dark:text-[#e07b3a] border-0 font-extrabold uppercase tracking-wider text-3xs px-3 py-1 rounded-full">
+            <Badge className="bg-[var(--ck-home-accent,#b04a15)]/10 dark:bg-[var(--ck-home-accent,#b04a15)]/20 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] border-0 font-extrabold uppercase tracking-wider text-3xs px-3 py-1 rounded-full">
               <TranslatedText text={campaign.category} />
             </Badge>
             <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500 font-bold">
-              <MapPin className="h-3.5 w-3.5 text-[#b04a15] dark:text-[#e07b3a]" />
+              <MapPin className="h-3.5 w-3.5 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]" />
               <TranslatedText text={campaign.city} />
             </span>
           </div>
 
           {/* Heading (Campaign Title) */}
-          <h3 className="text-xl md:text-2xl lg:text-3xl font-black text-stone-900 dark:text-white leading-tight mb-3 hover:text-[#b04a15] dark:hover:text-[#e07b3a] transition-colors duration-200">
+          <h3 className="text-xl md:text-2xl lg:text-3xl font-black text-stone-900 dark:text-white leading-tight mb-3 hover:text-[var(--ck-home-ink,#b04a15)] dark:hover:text-[var(--ck-home-ink,#e07b3a)] transition-colors duration-200">
             <TranslatedText text={campaign.title} />
           </h3>
 
@@ -172,14 +172,14 @@ function HorizontalCampaignCard({
           <div className="space-y-2">
             <div className="flex justify-between text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">
               <span>Fundraising Progress</span>
-              <span className="text-[#b04a15] dark:text-[#e07b3a] font-extrabold">
+              <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] font-extrabold">
                 {pct}%
               </span>
             </div>
             {/* Thick Progress Bar track */}
             <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-3 overflow-hidden border border-stone-200/40 dark:border-zinc-800/40 shadow-inner">
               <div
-                className="bg-gradient-to-r from-[#b04a15] via-[#e07b3a] to-[#f59e0b] h-full rounded-full transition-all duration-700"
+                className="bg-gradient-to-r from-[var(--ck-home-accent,#b04a15)] via-[var(--ck-home-accent,#e07b3a)] to-[var(--ck-home-accent,#f59e0b)] h-full rounded-full transition-all duration-700"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -190,12 +190,12 @@ function HorizontalCampaignCard({
               <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5">
                 Amount Raised
               </span>
-              <span className="font-extrabold text-[#b04a15] dark:text-[#e07b3a] text-lg tabular-nums">
+              <span className="font-extrabold text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] text-lg tabular-nums">
                 {formatINR(campaign.amountRaised)}
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-[#b04a15]/10 dark:bg-[#e07b3a]/10 text-[#b04a15] dark:text-[#e07b3a] font-black px-3 py-1 rounded-full text-3xs tracking-wider uppercase border border-[#b04a15]/20 dark:border-[#e07b3a]/20">
+            <div className="flex items-center gap-1.5 bg-[var(--ck-home-accent,#b04a15)]/10 dark:bg-[var(--ck-home-accent,#e07b3a)]/10 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] font-black px-3 py-1 rounded-full text-3xs tracking-wider uppercase border border-[var(--ck-home-accent,#b04a15)]/20 dark:border-[var(--ck-home-accent,#e07b3a)]/20">
               {pct}% Funded
             </div>
 
@@ -211,7 +211,7 @@ function HorizontalCampaignCard({
 
           <div className="pt-2">
             <Button
-              className="btn-3d btn-donate-interactive w-full bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2"
+              className="btn-3d btn-donate-interactive w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2"
               asChild
             >
               <Link href={`/campaigns/${campaign.id}`}>
@@ -317,7 +317,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
               onClick={prev}
               aria-label="Previous"
               className="glass-pill glass-pill-hover pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
-                         text-[#b04a15] dark:text-[#e07b3a]
+                         text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]
                          transition-all duration-300 ease-out"
             >
               <ChevronLeft className="h-6 w-6" />
@@ -326,7 +326,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
               onClick={next}
               aria-label="Next"
               className="glass-pill glass-pill-hover pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
-                         text-[#b04a15] dark:text-[#e07b3a]
+                         text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]
                          transition-all duration-300 ease-out"
             >
               <ChevronRight className="h-6 w-6" />
@@ -346,8 +346,8 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
               className={[
                 "rounded-full transition-all duration-300",
                 i === idx
-                  ? "w-8 h-2 bg-[#b04a15]"
-                  : "w-2 h-2 bg-stone-300 dark:bg-zinc-700 hover:bg-[#e07b3a]",
+                  ? "w-8 h-2 bg-[var(--ck-home-accent,#b04a15)]"
+                  : "w-2 h-2 bg-stone-300 dark:bg-zinc-700 hover:bg-[var(--ck-home-hover,#e07b3a)]",
               ].join(" ")}
             />
           ))}
@@ -383,7 +383,7 @@ export function LatestActiveCampaignsSection({
         <Link href="/campaigns" className="shrink-0 inline-flex">
           <Button
             variant="outline"
-            className="btn-3d border-orange-200 dark:border-stone-850 hover:bg-orange-50 dark:hover:bg-zinc-900 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200"
+            className="btn-3d border-[var(--ck-home-soft,#fed7aa)] dark:border-stone-850 hover:bg-[var(--ck-home-surface,#fff7ed)] dark:hover:bg-zinc-900 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200"
           >
             Browse All Campaigns <ArrowRight className="h-4 w-4" />
           </Button>
@@ -392,14 +392,14 @@ export function LatestActiveCampaignsSection({
 
       {loading && (
         <div className="flex justify-center py-20 px-10">
-          <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#b04a15]/20 border-t-[#b04a15]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" />
         </div>
       )}
       {error && (
         <p className="text-center text-red-500 py-20 px-10 font-semibold">{error}</p>
       )}
       {!loading && !error && latestCampaigns.length === 0 && (
-        <p className="text-center text-stone-400 py-20 mx-10 font-medium bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-stone-850 shadow-xs">
+        <p className="text-center text-stone-400 py-20 mx-10 font-medium bg-white dark:bg-zinc-900 rounded-2xl border border-[var(--ck-home-surface,#ffedd5)] dark:border-stone-850 shadow-xs">
           No approved campaigns yet — check back soon!
         </p>
       )}
