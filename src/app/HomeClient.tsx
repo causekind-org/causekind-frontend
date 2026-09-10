@@ -255,17 +255,12 @@ export default function HomeClient({
             to look at open needs. */}
         <ItemDonationScrolly />
 
-        <SectionDivider />
-
-        {/* Live Needs section — real verified needs across multiple categories */}
-        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
-
         {/* Donor / Donee pathways — the two sides of the platform, each with a
-            role-preselecting signup CTA. Placed high so the visitor is told
-            which side they are on before being told why the platform is worth
-            using. ("Why CauseKind" used to follow this and was removed on
-            2026-08-21: it advertised fundraising, which FEATURES.money gates
-            off, and repeated three claims the Be the Change band already makes.)
+            role-preselecting signup CTA. Third on the page, so the visitor is
+            told which side they are on before being shown the board.
+            ("Why CauseKind" used to follow this and was removed on 2026-08-21:
+            it advertised fundraising, which FEATURES.money gates off, and
+            repeated three claims the Be the Change band already makes.)
 
             Guest-only, and gated in both responsive trees — see the mobile copy
             below. Asking someone who is already signed in to "Join as a donor"
@@ -276,6 +271,11 @@ export default function HomeClient({
             <AudiencePathwaysSection />
           </>
         )}
+
+        <SectionDivider />
+
+        {/* Live Needs section — real verified needs across multiple categories */}
+        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
