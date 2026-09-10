@@ -47,7 +47,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
        inert) before the user had scrolled at all. --ck-bottom-chrome is the single
        source of truth for that height and is already 0 at lg:, where the dock is
        lg:hidden, so desktop needs no override. */
-    <div className="min-h-[calc(100svh-4rem)] pb-[var(--ck-bottom-chrome)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
+    <div className="min-h-[calc(100svh-4rem)] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
       {/* ── Illustration panel — one persistent element, reorders across the row ── */}
       <motion.div
         layout
@@ -128,7 +128,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         layout="position"
         transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 140, damping: 22 }}
         style={{ order: variant === "register" ? 1 : 2 }}
-        className="flex flex-1 min-w-0 flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 px-4 py-5 sm:px-6 sm:py-8 lg:px-12 overflow-y-auto relative overflow-hidden"
+        className="flex flex-1 min-w-0 flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 px-4 pt-5 pb-[calc(var(--ck-bottom-chrome)+1.25rem)] sm:px-6 sm:pt-8 sm:pb-[calc(var(--ck-bottom-chrome)+2rem)] lg:px-12 lg:pb-8 overflow-y-auto relative overflow-hidden"
       >
         {/* Interactive dot-grid — subtle texture behind the form card */}
         <AuthDotGrid />

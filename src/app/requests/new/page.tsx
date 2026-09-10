@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { documentScreeningCopy } from "@/features/wizard-kit/documentScreeningCopy";
 import { RequestGuidance } from "@/components/requests/RequestGuidance";
 import { toast } from "@/lib/toast";
 import {
-  getProfile,
+  getProfile, getDoneeNeedProfile, type DoneeNeedProfile,
   getMyItemRequests,
   getMyVerificationDocuments,
   getMyRequestVerificationDetails,
@@ -32,7 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Loader2, ChevronLeft, CheckCircle2, Circle, MapPin,
   Shield, Award, Lock, UploadCloud, X, FileCheck2, AlertTriangle, Trash2,
-  Camera, Upload, Info,
+  Camera, Upload, Info, House, Wallet, UsersRound, FileText, ArrowLeft, ArrowRight, Download,
 } from "lucide-react";
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { useLocations } from "@/hooks/useLocations";
@@ -406,11 +407,17 @@ export default function NewRequestPage() {
   );
 }
 
+const REUSABLE_PROFILE_DOCS: VerificationDocumentType[] = ["GOVT_ID_ANY","RESIDENCE_PROOF","SELFIE_WITH_ID","RATION_CARD","VOTER_ID","BPL_CARD","INCOME_CERT","BANK_PASSBOOK"];
+
 function NewRequestForm() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const resumeDraftId = searchParams.get("draftId");
+  const [needProfile,setNeedProfile] = useState<DoneeNeedProfile | null>(null);
+  const [profileError,setProfileError] = useState("");
+  const profileLink = "/profile/need-details?next=" + encodeURIComponent("/requests/new" + (resumeDraftId && /^\d+$/.test(resumeDraftId) ? "?draftId=" + resumeDraftId : ""));
+  useEffect(() => { if (!user) return; let active = true; getDoneeNeedProfile().then(p => {if(active)setNeedProfile(p);}).catch(e => {if(active)setProfileError(e instanceof Error && e.message && e.message !== "Failed to fetch" ? e.message : "We could not reach CauseKind to check your profile. Please check your connection and try again.");}); return () => {active=false;}; }, [user]);
 
   const [step, setStep] = useState<DoneeRequestStep>("need-details");
   // +1 forward, -1 back. Drives the card's travel direction so going Back reads
@@ -536,7 +543,7 @@ function NewRequestForm() {
           setRejectionNote(r.rejectionReason);
           // Jump straight to the step the rejection points at — everything else
           // is prefilled and already saved server-side; Back still works.
-          setStep(stepFromNumber(stepForRejection(r.rejectionReason)));
+          setStep(stepForRejection(r.rejectionReason) === 1 ? "need-details" : "household-situation");
         }
         getMyVerificationDocuments(idNum)
           .then((docs) => {
@@ -591,9 +598,9 @@ function NewRequestForm() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) handleGPSLocation(true);
+    if (user && needProfile?.complete) handleGPSLocation(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, needProfile?.complete]);
 
   function handleGPSLocation(isAuto = false) {
     if (!navigator.geolocation) { toast.error("Your browser doesn't support GPS location"); setGpsBlocked(true); return; }
@@ -659,6 +666,7 @@ function NewRequestForm() {
   }), [title, category, quantity, urgency, pincode, description, gpsCoords, isEmergency, emergencyNature, incidentDate, cityValue, cityFreeText, stateIso, countryIso, showCityFreeText]);
 
   async function ensureDraft(): Promise<number> {
+    if (!needProfile?.complete) throw new Error("Complete your Donee profile before starting a request");
     if (draftId) return draftId;
     const d = await createItemRequestDraft();
     setDraftId(d.id);
@@ -677,14 +685,9 @@ function NewRequestForm() {
       if (!gpsCoords) e.gps = "GPS location is required";
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
-    if (s === 2 && tier === "TIER_3_HIGH_VALUE" && refPhone.length > 0) {
-      if (PHONE_LENGTHS[refDialCountry] && refPhone.length !== PHONE_LENGTHS[refDialCountry])
-        e.referrerContact = `Reference number must be exactly ${PHONE_LENGTHS[refDialCountry]} digits for ${refDialCode || refDialCountry}`;
-      else if (isSelfReference)
-        e.referrerContact = "Reference number cannot be your own phone number — give an independent reference";
-    }
-    if (s === 3) {
-      const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !isDocComplete(t));
+    if (s === 2 && verification.requestingForSomeoneElse && !verification.beneficiaryDetails?.trim()) e.beneficiaryDetails = "Describe the person you are requesting for";
+    if (s === 2) {
+      const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !REUSABLE_PROFILE_DOCS.includes(t) && !isDocComplete(t));
       if (missing.length > 0) {
         // Call out an unscreened photo specifically — "1 document still missing"
         // is baffling when the donee can plainly see a photo sitting there.
@@ -694,7 +697,7 @@ function NewRequestForm() {
           : `${missing.length} required document(s) still missing`;
       }
     }
-    if (s === 4) {
+    if (s === 3) {
       if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted";
     }
     setFieldErrors(e);
@@ -913,7 +916,7 @@ function NewRequestForm() {
   }
 
   async function handleSubmit() {
-    if (!validateStep(4)) { toast.error("Please fix the highlighted fields"); return; }
+    if (!validateStep(3)) { toast.error("Please fix the highlighted fields"); return; }
     if (!draftId) return;
     setSubmitting(true);
     try {
@@ -942,6 +945,8 @@ function NewRequestForm() {
 
   if (authLoading || !user) return null;
 
+  if (!needProfile?.complete) return <div className="mx-auto max-w-xl px-5 py-16"><h1 className="text-2xl font-bold text-[#1e3a60] dark:text-blue-200">{profileError ? "Could not check your profile" : !needProfile ? "Checking your profile…" : "Complete your profile first"}</h1><p className="mt-3 text-sm text-slate-500">{profileError || "Save your household details and identity documents once in your profile. You can then request items without entering them again."}</p>{needProfile && <Link href={profileLink} className="mt-6 inline-flex rounded-lg bg-[#1e3a60] px-5 py-3 text-sm font-bold text-white">Complete profile →</Link>}{profileError && <button onClick={() => window.location.reload()} className="mt-5 underline">Retry</button>}</div>;
+
   if (gpsBlocked) {
     return (
       <div className="min-h-[calc(100vh-4rem)] bg-[#faf8f5] dark:bg-zinc-950 flex items-center justify-center p-3 sm:p-4">
@@ -966,28 +971,24 @@ function NewRequestForm() {
 
   // ── Step 1: Need Details ─────────────────────────────────────────────────
   const step1 = (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Said here, at the start, rather than at step 3 where the uploads live.
-          Someone arriving from an ad that promised "request support" is about to
-          be asked for a government ID and proof of address, and finding that out
-          after filling two steps is how people give up — or worse, feel misled at
-          the point they are asking for help. Fewer starts, far less abandonment,
-          and nobody is walked into it. */}
-      <div className="rounded-xl sm:rounded-2xl border border-[#1e3a60]/20 bg-[#1e3a60]/8 p-3 sm:p-4">
-        <p className="text-xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
-          Before you start
+    <div className="space-y-6">
+      <div className="rounded-xl border border-blue-100 bg-[#eef4fc] p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/60">
+        <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200">
+          <span className="size-2.5 rounded-full bg-[#1e3a60] dark:bg-blue-200" aria-hidden /> Before you start
         </p>
         <p className="mt-1.5 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-          To keep every request trustworthy, you will need a <strong>government ID</strong> and{" "}
-          <strong>proof of your address</strong> before this can be published. Photos of the documents
-          are enough. They are only ever seen by our admin team, never by donors.
+          Your household information and identity documents are saved in your profile. New requests use a copy of those details.{" "}
+          Documents remain private to our admin team.
         </p>
         <p className="mt-1.5 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
           You can save and come back — nothing is submitted until you finish.
         </p>
       </div>
-
-      <WizardField label="What do you need?" required error={fieldErrors.title}>
+      <div className="grid items-start gap-5 md:grid-cols-2">
+        <div className="min-w-0 space-y-5">
+          <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="request-parameters-heading">
+            <h3 id="request-parameters-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200">1. Request Parameters</h3>
+            <WizardField label="What do you need?" required error={fieldErrors.title}>
         {({ id, describedBy, invalid }) => (
           <Input id={id} name="title" aria-describedby={describedBy} aria-invalid={invalid}
             placeholder="e.g. Wheelchair for elderly family member" value={title} onChange={(e) => setTitle(e.target.value)}
@@ -1016,17 +1017,30 @@ function NewRequestForm() {
           )}
         </WizardField>
       </div>
-
-      {/* Urgency is a button group, not a labelled control — a fieldset/legend
-          is the correct pairing, and WizardField's htmlFor would point at
-          nothing. */}
-      <fieldset className="space-y-1">
-        <legend className="text-xs font-bold text-stone-700 dark:text-stone-200">Urgency</legend>
-        <div className="flex gap-2">
+          </section>
+          <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900" aria-labelledby="impact-story-heading">
+            <h3 id="impact-story-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200">2. Impact Story</h3>
+            <WizardField label="Describe your need" required error={fieldErrors.description}
+        hint={`${description.length}/2000 — be specific: who it's for, why, and any relevant context`}>
+        {({ id, describedBy, invalid }) => (
+          <Textarea id={id} name="description" rows={7} aria-describedby={describedBy} aria-invalid={invalid}
+            placeholder="e.g. My father is 68 and cannot walk unassisted after a stroke last month. A wheelchair would let him move around the house safely."
+              value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000}
+              className={`placeholder:text-xs ${invalid ? "border-[var(--ck-role-accent)]" : ""}`} />
+        )}
+      </WizardField>
+          </section>
+        </div>
+        <div className="min-w-0 space-y-5">
+          <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="urgency-heading">
+            <h3 id="urgency-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200">3. Urgency Classification</h3>
+            <fieldset className="space-y-1">
+        <legend className="text-xs font-bold text-stone-700 dark:text-stone-200">Urgency Level</legend>
+        <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
           {URGENCIES.map((u) => (
             <button key={u.value} type="button" onClick={() => setUrgency(u.value)}
               aria-pressed={urgency === u.value}
-              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${urgency === u.value ? "bg-[var(--ck-role-accent)] text-white border-[var(--ck-role-accent)]" : "border-stone-300 text-stone-500 hover:border-[var(--ck-role-accent)]"}`}>
+              className={`min-h-10 flex-1 rounded-md px-2 py-2 text-xs font-semibold transition-colors ${urgency === u.value ? "bg-white text-[#1e3a60] shadow-sm dark:bg-slate-700 dark:text-blue-200" : "text-slate-500 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-slate-700"}`}>
               {u.label}
             </button>
           ))}
@@ -1036,32 +1050,17 @@ function NewRequestForm() {
       {/* Live tier preview */}
       {category && (
         <div className="rounded-xl sm:rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-3 sm:p-4 flex items-start gap-3">
-          <Shield className="w-4 h-4 text-[#1e3a60] mt-0.5 shrink-0" />
+          <Shield className="w-4 h-4 text-[#1e3a60] dark:text-blue-200 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-black text-[#1e3a60]">{TIER_LABELS[tier]}</p>
-            <p className="text-xs text-stone-500 mt-0.5">{TIER_TAT[tier]} — you'll upload {REQUIRED_DOCS[tier].length} verification document(s) in a later step.</p>
+            <p className="text-xs font-bold text-[#1e3a60] dark:text-blue-200">{TIER_LABELS[tier]}</p>
+            <p className="text-xs text-stone-500 mt-0.5">{TIER_TAT[tier]} — your saved profile documents are included automatically. Any evidence specific to this need comes next.</p>
           </div>
         </div>
       )}
-
-      <WizardField label="Describe your need" required error={fieldErrors.description}
-        hint={`${description.length}/2000 — be specific: who it's for, why, and any relevant context`}>
-        {({ id, describedBy, invalid }) => (
-          <Textarea id={id} name="description" rows={5} aria-describedby={describedBy} aria-invalid={invalid}
-            placeholder="e.g. My father is 68 and cannot walk unassisted after a stroke last month. A wheelchair would let him move around the house safely."
-            value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000}
-            className={invalid ? "border-[var(--ck-role-accent)]" : ""} />
-        )}
-      </WizardField>
-
-      {/* Emergency toggle */}
-      <div className="rounded-xl sm:rounded-2xl border border-stone-200 dark:border-zinc-700 p-3.5 sm:p-5 space-y-3 sm:space-y-4">
+            <div className="rounded-lg border border-red-200 bg-red-50/60 p-3 space-y-3 dark:border-red-900 dark:bg-red-950/20">
         <label className="flex items-center gap-3 cursor-pointer">
-          <div onClick={() => setIsEmergency(!isEmergency)}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${isEmergency ? "bg-red-600 border-red-600" : "border-stone-300 hover:border-red-500"}`}>
-            {isEmergency && <CheckCircle2 className="w-3 h-3 text-white" />}
-          </div>
-          <span className="text-sm font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1.5">
+          <input type="checkbox" checked={isEmergency} onChange={(e) => setIsEmergency(e.target.checked)} className="size-4 shrink-0 accent-red-600" />
+          <span className="text-xs font-medium text-red-700 dark:text-red-300 flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-red-500" /> This is an emergency (flood, fire, accident, displacement)
           </span>
         </label>
@@ -1087,12 +1086,12 @@ function NewRequestForm() {
           </div>
         )}
       </div>
-
-      {/* Location */}
-      <div className="space-y-3 sm:space-y-4">
+          </section>
+          <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900" aria-label="Location details">
+            <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-[var(--ck-role-accent)]" /> Location
+            <MapPin className="w-3.5 h-3.5 text-[var(--ck-role-accent)]" /> 4. Location Details
           </p>
           {/* `data-field="gps"` is the summary link's target. There is no input
               to focus for this error — GPS is a button plus derived state — so
@@ -1104,15 +1103,15 @@ function NewRequestForm() {
             {gpsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "📍"} {gpsLoading ? "Detecting…" : "Use GPS"}
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs text-stone-500 dark:text-stone-400">Country</label>
+            <label htmlFor="country" className="text-xs text-stone-500 dark:text-stone-400">Country</label>
             <SearchableSelect id="country" options={countryOptions} value={countryIso}
               onChange={(iso) => { setCountryIso(iso); setStateIso(""); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); }}
               placeholder="Select country" searchPlaceholder="Search…" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-stone-500 dark:text-stone-400">State</label>
+            <label htmlFor="state" className="text-xs text-stone-500 dark:text-stone-400">State</label>
             {noStateOptions ? <p className="text-xs text-stone-400 italic py-2">No states listed</p> : (
               <SearchableSelect id="state" options={stateOptions} value={stateIso}
                 onChange={(iso) => { setStateIso(iso); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); }}
@@ -1120,12 +1119,12 @@ function NewRequestForm() {
             )}
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-stone-500 dark:text-stone-400">City</label>
+            <label htmlFor="city" className="text-xs text-stone-500 dark:text-stone-400">City</label>
             {/* Both branches carry data-field="city": which one renders depends
                 on whether the country has a city list, and the summary link has
                 to work either way. */}
             {showCityFreeText ? (
-              <Input placeholder="Enter city" data-field="city" value={cityFreeText}
+              <Input id="city" placeholder="Enter city" data-field="city" value={cityFreeText}
                 aria-describedby={fieldErrors.city ? "city-error" : undefined}
                 aria-invalid={!!fieldErrors.city}
                 onChange={(e) => setCityFreeText(e.target.value)}
@@ -1141,306 +1140,38 @@ function NewRequestForm() {
               </div>
             )}
           </div>
+        <WizardField label="PIN Code">
+          {({ id, describedBy }) => (
+            <Input id={id} name="pincode" aria-describedby={describedBy} placeholder="e.g. 411001"
+              value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} className="h-11 w-full" />
+          )}
+        </WizardField>
         </div>
         {fieldErrors.city && <p id="city-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.city}</p>}
         {/* The GPS error had no display at all — validateStep could set it and
             the donee would only see "Please fix the highlighted fields" with
             nothing highlighted. */}
         {fieldErrors.gps && <p id="gps-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.gps}</p>}
-        <WizardField label="PIN Code">
-          {({ id, describedBy }) => (
-            <Input id={id} name="pincode" aria-describedby={describedBy} placeholder="e.g. 411001"
-              value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} className="h-11 w-40" />
-          )}
-        </WizardField>
+
+      </div>
+          </section>
+        </div>
       </div>
     </div>
   );
 
-  // ── Step 2: Household & Situation (tier-driven) ──────────────────────────
+  const isDetailsLayout = step === "need-details" || step === "household-situation";
+
   const step2 = (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="rounded-xl sm:rounded-2xl bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/40 p-3 sm:p-4">
-        <p className="text-sm font-black text-[var(--ck-role-accent)]">{TIER_LABELS[tier]}</p>
-        <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5">These questions help our admin team verify and prioritize your request fairly.</p>
-      </div>
-
-      {tier === "TIER_4_EMERGENCY" ? (
-        <>
-          <div className="grid grid-cols-2 gap-4 sm:gap-5">
-            <WizardField label="People affected">
-              {({ id, describedBy }) => (
-                <Input id={id} aria-describedby={describedBy} type="number" min={1} value={verification.peopleAffected ?? ""} onChange={(e) => setV("peopleAffected", Number(e.target.value))} className="h-11" />
-              )}
-            </WizardField>
-          </div>
-          <WizardField label="What was lost or damaged" hint="Be specific: house, belongings, documents, etc.">
-            {({ id, describedBy }) => (
-              <Textarea id={id} aria-describedby={describedBy} rows={3} value={verification.lostDamagedDescription ?? ""} onChange={(e) => setV("lostDamagedDescription", e.target.value)} />
-            )}
-          </WizardField>
-          <WizardField label="Priority items needed" hint="An ordered list — most urgent first">
-            {({ id, describedBy }) => (
-              <Textarea id={id} aria-describedby={describedBy} rows={3} value={verification.priorityItems ?? ""} onChange={(e) => setV("priorityItems", e.target.value)} />
-            )}
-          </WizardField>
-        </>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-4 sm:gap-5">
-            <WizardField label="How many people live in your home?" hint="Count everyone — yourself, children, parents, grandparents">
-              {({ id, describedBy }) => (
-                <Input id={id} aria-describedby={describedBy} type="number" min={1} value={verification.householdSize ?? ""} onChange={(e) => {
-                const n = Number(e.target.value);
-                setV("householdSize", n);
-                // "Family size" (below, Tier 3 only) asks the exact same thing — kept in
-                // sync automatically instead of asking the donee the same question twice.
-                setV("familySize", n);
-                // "Number of earners" (Tier 3) is derived from this minus dependents below
-                // rather than asked separately — see the dependents onChange too.
-                setV("numberOfEarners", Math.max(0, n - (verification.dependents ?? 0)));
-              }} className="h-11" />
-              )}
-            </WizardField>
-            <WizardField label="How many of them cannot earn?" hint="Children, elderly, or sick members who depend on the family. Write 0 if none">
-              {({ id, describedBy }) => (
-                <Input id={id} aria-describedby={describedBy} type="number" min={0} value={verification.dependents ?? ""} onChange={(e) => {
-                const d = Number(e.target.value);
-                setV("dependents", d);
-                setV("numberOfEarners", Math.max(0, (verification.householdSize ?? 0) - d));
-              }} className="h-11" />
-              )}
-            </WizardField>
-          </div>
-
-          {(tier === "TIER_2_MODERATE" || tier === "TIER_3_HIGH_VALUE") && (
-            <>
-              <div className="grid grid-cols-2 gap-4 sm:gap-5">
-                <WizardField label="Your age">
-                  {({ id, describedBy }) => (
-                    <Input id={id} aria-describedby={describedBy} type="number" min={1} value={verification.age ?? ""} onChange={(e) => setV("age", Number(e.target.value))} className="h-11" />
-                  )}
-                </WizardField>
-                <WizardField label="Housing type">
-                  {({ id, describedBy }) => (
-                    <Select value={verification.housingType ?? ""} onValueChange={(v) => setV("housingType", v as RequestVerification["housingType"])}>
-                      <SelectTrigger id={id} aria-describedby={describedBy} className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{HOUSING_TYPES.map((h) => <SelectItem key={h} value={h}>{h.charAt(0) + h.slice(1).toLowerCase()}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )}
-                </WizardField>
-              </div>
-              <WizardField label="Who is this item for, and their condition?" hint="e.g. 'for my father, cannot stand properly due to a knee injury' or 'for my 10-year-old daughter studying in Class 5'">
-                {({ id, describedBy }) => (
-                  <Textarea id={id} aria-describedby={describedBy} rows={2} value={verification.beneficiaryDetails ?? ""} onChange={(e) => setV("beneficiaryDetails", e.target.value)} />
-                )}
-              </WizardField>
-              <WizardField label="Why can't you buy this yourself?">
-                {({ id, describedBy }) => (
-                  <Textarea id={id} aria-describedby={describedBy} rows={3} value={verification.reasonCannotBuy ?? ""} onChange={(e) => setV("reasonCannotBuy", e.target.value)} />
-                )}
-              </WizardField>
-              <div className="grid grid-cols-2 gap-4 sm:gap-5">
-                <WizardField label="Supporting institution" hint="School, hospital, NGO, or doctor whose document you're submitting">
-                  {({ id, describedBy }) => (
-                    <Input id={id} aria-describedby={describedBy} value={verification.supportingInstitution ?? ""} onChange={(e) => setV("supportingInstitution", e.target.value)} className="h-11" />
-                  )}
-                </WizardField>
-                <WizardField label="Approx. monthly household income (₹)">
-                  {({ id, describedBy }) => (
-                    <Input id={id} aria-describedby={describedBy} type="number" min={0} value={verification.monthlyIncome ?? ""} onChange={(e) => setV("monthlyIncome", Number(e.target.value))} className="h-11" />
-                  )}
-                </WizardField>
-              </div>
-            </>
-          )}
-
-          {tier === "TIER_3_HIGH_VALUE" && (
-            <>
-              {/* "Family size" removed — same question as "How many people live in your
-                  home?" above, kept in sync automatically there. "Number of earners" also
-                  removed — derived from household size minus dependents above, rather than
-                  asked separately (donees could otherwise enter numbers that don't add up).
-                  "Medical condition / disability" folded into "Who is this item for?" above
-                  — donees were repeating the same detail across both fields. */}
-              <WizardField label="Income source" hint="e.g. 'daily labour — ₹300/day'">
-                {({ id, describedBy }) => (
-                  <Input id={id} aria-describedby={describedBy} value={verification.incomeSource ?? ""} onChange={(e) => setV("incomeSource", e.target.value)} className="h-11" />
-                )}
-              </WizardField>
-              <div className="grid grid-cols-2 gap-4 sm:gap-5">
-                <WizardField label="Reference person name" hint="Doctor / NGO worker / social worker who wrote your reference letter">
-                  {({ id, describedBy }) => (
-                    <Input id={id} aria-describedby={describedBy} value={verification.referrerName ?? ""} onChange={(e) => setV("referrerName", e.target.value)} className="h-11" />
-                  )}
-                </WizardField>
-                <WizardField
-                  label="Reference contact number"
-                  error={fieldErrors.referrerContact || refLiveError}
-                  hint={refComplete && !isSelfReference ? undefined : `${PHONE_LENGTHS[refDialCountry] ?? "Up to 15"} digits for ${refDialCode || refDialCountry}`}
-                >
-                  {({ id, describedBy, invalid }) => (
-                  // Two controls under one label: the dial-code picker and the
-                  // number. `id` and `data-field` go on the number input — that
-                  // is what the label names and what the error is about.
-                  <div className="flex gap-2">
-                    <div className="w-[104px] shrink-0">
-                      <SearchableSelect
-                        options={dialCodeOptions}
-                        value={refDialCountry}
-                        onChange={(iso) => {
-                          setRefDialCountry(iso);
-                          const max = PHONE_LENGTHS[iso] ?? 15;
-                          setRefPhone((p) => p.slice(0, max));
-                        }}
-                        placeholder="+–"
-                        searchPlaceholder="Search country"
-                        renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
-                      />
-                    </div>
-                    <div className="relative flex-1">
-                      <Input
-                        id={id}
-                        data-field="referrerContact"
-                        aria-describedby={describedBy}
-                        aria-invalid={invalid}
-                        type="tel"
-                        inputMode="numeric"
-                        value={refPhone}
-                        maxLength={refMaxLength}
-                        onChange={(e) => setRefPhone(digitsOnly(e.target.value).slice(0, refMaxLength))}
-                        className={`h-11 pr-9 ${refLiveError ? "border-red-500 focus-visible:ring-red-500/30" : ""}`}
-                      />
-                      {refComplete && !isSelfReference && (
-                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500 pointer-events-none" />
-                      )}
-                    </div>
-                  </div>
-                  )}
-                </WizardField>
-              </div>
-              <div className="grid grid-cols-2 gap-4 sm:gap-5">
-                <WizardField label="Alternate contact name" hint="A family member we can call to verify your story">
-                  {({ id, describedBy }) => (
-                    <Input id={id} aria-describedby={describedBy} value={verification.altContactName ?? ""} onChange={(e) => setV("altContactName", e.target.value)} className="h-11" />
-                  )}
-                </WizardField>
-                <WizardField label="Alternate contact phone">
-                  {({ id, describedBy }) => (
-                    <Input id={id} aria-describedby={describedBy} value={verification.altContactPhone ?? ""} onChange={(e) => setV("altContactPhone", e.target.value)} className="h-11" />
-                  )}
-                </WizardField>
-              </div>
-              <WizardField label="Your detailed story" hint="What happened, when, and why this specific item is your priority need">
-                {({ id, describedBy }) => (
-                  <Textarea id={id} aria-describedby={describedBy} rows={4} value={verification.detailedStory ?? ""} onChange={(e) => setV("detailedStory", e.target.value)} />
-                )}
-              </WizardField>
-              <WizardField label="Google Maps location pin" hint="Optional — paste a Google Maps link if you can share one">
-                {({ id, describedBy }) => (
-                  <Input id={id} aria-describedby={describedBy} value={verification.mapsPin ?? ""} onChange={(e) => setV("mapsPin", e.target.value)} className="h-11" />
-                )}
-              </WizardField>
-            </>
-          )}
-        </>
-      )}
-    </div>
-  );
-
-  // ── Step 3: Verification Documents ────────────────────────────────────────
-  const mandatoryTypes = MANDATORY_DOC_TYPES[tier];
-  const requiredDocList = REQUIRED_DOCS[tier].filter((d) => mandatoryTypes.includes(d.type));
-  const optionalDocList = REQUIRED_DOCS[tier].filter((d) => !mandatoryTypes.includes(d.type));
-  const requiredDoneCount = requiredDocList.filter((d) => isDocComplete(d.type)).length;
-  const optionalDoneCount = optionalDocList.filter((d) => uploadedDocs.has(d.type)).length;
-
-  function renderDocSlot(d: { type: VerificationDocumentType; label: string }, required: boolean) {
-    return (
-      <div key={d.type} className="space-y-2">
-        <DocSlot
-          label={d.label}
-          required={required}
-          doc={uploadedDocs.get(d.type)}
-          uploading={uploadingDoc === d.type}
-          screening={docScreening.get(d.type)}
-          uploadScreened={UPLOAD_SCREENED_DOC_TYPES.includes(d.type)}
-          complete={isDocComplete(d.type)}
-          allowCamera={CAMERA_CAPTURE_DOC_TYPES.includes(d.type)}
-          accept={UPLOAD_SCREENED_DOC_TYPES.includes(d.type) ? PHOTO_ACCEPT : DEFAULT_ACCEPT}
-          onUpload={(f) => handleDocUpload(d.type, f)}
-          onRemove={() => handleDocRemove(d.type)}
-        />
-        {d.type === "RESIDENCE_PROOF" && !uploadedDocs.has(d.type) && (
-          <p className="text-xs text-stone-400 pl-1">
-            Anything works as long as it shows your residential address — a utility bill, rental agreement, ration card, voter ID, or bank statement are all fine.
-          </p>
-        )}
-        {d.type === "SELFIE_WITH_ID" && !uploadedDocs.has(d.type) && (
-          <p className="text-xs text-stone-400 pl-1">
-            A simple photo of your face — no need to hold anything up. Take it somewhere well-lit and make sure
-            your face isn&apos;t covered. JPG or PNG, up to 5 MB. We check it automatically as soon as you upload.
-          </p>
-        )}
-        {d.type === "GOVT_ID_ANY" && !uploadedDocs.has(d.type) && (
-          <p className="text-xs text-stone-400 pl-1">
-            Any one government photo ID works — Aadhaar card, PAN card, Voter ID, driving licence, or passport.
-            We check it automatically as soon as you upload.
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  const step3 = (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Donees already have accounts, so the useful thing here is not capture —
-          it is helping them avoid the delay that actually happens: a required
-          document a machine could not read. */}
-      <RequestGuidance autoApprovalPossible={AUTO_APPROVAL_TIERS.includes(tier)} />
-      <div className="rounded-xl sm:rounded-2xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 p-3 sm:p-4 flex items-start gap-3">
-        <Lock className="w-4 h-4 text-[#1e3a60] mt-0.5 shrink-0" />
-        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
-          Your residence and government ID proofs remain visible only to CauseKind admins. Your checked profile photo
-          may be shown to signed-in donors viewing your approved request — only if you choose to allow it on the next step.
-        </p>
-      </div>
-
-      {/* `documents` is a list of upload slots, not one control, so the summary
-          link targets the section. tabIndex={-1} makes it a valid focus() target
-          without adding a Tab stop; the first upload button is then one Tab
-          away. */}
-      <div className="space-y-3" data-field="documents" tabIndex={-1}>
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Required to submit</p>
-          <span className={`text-xs font-bold ${requiredDoneCount === requiredDocList.length ? "text-green-600" : "text-[var(--ck-role-accent)]"}`}>
-            {requiredDoneCount} of {requiredDocList.length}
-          </span>
-        </div>
-        {requiredDocList.map((d) => renderDocSlot(d, true))}
-        {fieldErrors.documents && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.documents}</p>}
-      </div>
-
-      {optionalDocList.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-black text-stone-500 uppercase tracking-widest">Strengthens your case</p>
-            <span className="text-xs font-bold text-stone-400">{optionalDoneCount} of {optionalDocList.length}</span>
-          </div>
-          {/* This used to read "each one helps our team verify and approve your
-              request faster". That is not how the gate works: auto-approval
-              needs tier 1-2, both MANDATORY documents AI-verified, and no hard
-              escalation — optional documents are not part of it. Telling people
-              in difficulty that more private documents mean faster approval is
-              pressure toward disclosure that changes nothing, and it reverses
-              the backend's own "never a penalty" anti-coercion rule. */}
-          <p className="text-xs text-stone-400 -mt-1">
-            Optional. Your request is assessed on the required documents above — these do not
-            change what is needed. If it goes to a person for review, they may find them useful.
-          </p>
-          {optionalDocList.map((d) => renderDocSlot(d, false))}
-        </div>
-      )}
+    <div className="space-y-5">
+      <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-[#1e3a60] dark:border-slate-700 dark:bg-slate-900 dark:text-blue-200">Your household details and identity documents are ready in your profile. <button type="button" className="font-bold underline" onClick={async () => { try { const id = await ensureDraft(); await saveRequestVerificationDetails(id, verification); router.push(`/profile/need-details?next=${encodeURIComponent(`/requests/new?draftId=${id}`)}`); } catch { toast.error("Could not save your request. Please try again."); } }}>Review profile</button></div>
+      <fieldset className="space-y-3"><legend className="text-sm font-bold">Who is this request for?</legend><div className="flex flex-wrap gap-4">{[{value:false,label:"Myself"},{value:true,label:"Someone else"}].map(o => <label key={o.label} className="flex items-center gap-2 text-sm"><input type="radio" name="beneficiary" checked={Boolean(verification.requestingForSomeoneElse) === o.value} onChange={() => setVerification(v => ({...v, requestingForSomeoneElse:o.value, beneficiaryDetails:"",reasonCannotBuy:"",detailedStory:""}))} />{o.label}</label>)}</div></fieldset>
+      {verification.requestingForSomeoneElse && <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+        <WizardField label="Who is this item for, and what is their situation?" required error={fieldErrors.beneficiaryDetails}>{({id,describedBy,invalid}) => <Textarea id={id} name="beneficiaryDetails" aria-describedby={describedBy} aria-invalid={invalid} value={verification.beneficiaryDetails || ""} maxLength={500} onChange={e => setV("beneficiaryDetails",e.target.value)} />}</WizardField>
+        <WizardField label="Why can they not buy this item?">{({id}) => <Textarea id={id} value={verification.reasonCannotBuy || ""} maxLength={10000} onChange={e => setV("reasonCannotBuy",e.target.value)} />}</WizardField>
+        <WizardField label="Additional details about this person's need">{({id}) => <Textarea id={id} value={verification.detailedStory || ""} maxLength={10000} onChange={e => setV("detailedStory",e.target.value)} />}</WizardField>
+      </div>}
+      {isEmergency && <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:bg-slate-900"><h3 className="font-bold">This emergency</h3><WizardField label="People affected">{({id}) => <Input id={id} type="number" min={1} value={verification.peopleAffected ?? ""} onChange={e => setV("peopleAffected",Number(e.target.value))} />}</WizardField><WizardField label="What was lost or damaged?">{({id}) => <Textarea id={id} value={verification.lostDamagedDescription || ""} onChange={e => setV("lostDamagedDescription",e.target.value)} />}</WizardField><WizardField label="Priority items needed">{({id}) => <Textarea id={id} value={verification.priorityItems || ""} onChange={e => setV("priorityItems",e.target.value)} />}</WizardField></div>}
     </div>
   );
 
@@ -1453,6 +1184,17 @@ function NewRequestForm() {
    * step two — so the donee could reach Declarations with nothing persisted and
    * submit a request the server has never seen the details of.
    */
+  const step3 = (
+    <section className="mt-5 space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+      <h3 className="font-bold">Supporting evidence for this request</h3>
+      <p className="text-sm text-slate-500">Your identity documents will be included from your profile. Add evidence specific to this need below.</p>
+      {REQUIRED_DOCS[tier].filter(d => !REUSABLE_PROFILE_DOCS.includes(d.type)).map(d => (
+        <DocSlot key={d.type} label={d.label} required={MANDATORY_DOC_TYPES[tier].includes(d.type)} doc={uploadedDocs.get(d.type)} uploading={uploadingDoc === d.type} screening={docScreening.get(d.type)} complete={isDocComplete(d.type)} onUpload={file => void handleDocUpload(d.type, file)} onRemove={() => void handleDocRemove(d.type)} />
+      ))}
+      {REQUIRED_DOCS[tier].every(d => REUSABLE_PROFILE_DOCS.includes(d.type)) && <p className="text-sm">No additional documents are required for this need.</p>}
+    </section>
+  );
+
   const availability = DONEE_REQUEST_STEPS.reduce((acc, s) => {
     const i = doneeStepIndex(s);
     const current = doneeStepIndex(step);
@@ -1604,7 +1346,7 @@ function NewRequestForm() {
       </aside>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 min-w-0 relative flex flex-col">
+      <div className={`flex-1 min-w-0 relative flex flex-col ${isDetailsLayout ? "bg-[#f8fafc] dark:bg-slate-950" : ""}`}>
         {/* Compact mobile progress. Sticky, and never rendered next to the
             desktop rail — both components carry their own breakpoint. */}
         <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5] dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
@@ -1628,7 +1370,7 @@ function NewRequestForm() {
           />
         </div>
 
-        <div className="relative z-10 w-full max-w-[860px] mx-auto px-4 sm:px-10 lg:px-16 py-6 sm:py-10 lg:py-14">
+        <div className={`relative z-10 w-full mx-auto ${isDetailsLayout ? "max-w-[1040px] px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10" : "max-w-[860px] px-4 sm:px-10 lg:px-16 py-6 sm:py-10 lg:py-14"}`}>
 
           <div className="mb-4 hidden items-center justify-between lg:flex">
             <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
@@ -1652,30 +1394,31 @@ function NewRequestForm() {
               siblings of the card, never ancestors — a transformed ancestor
               would break the sticky progress header above and shrink every
               input below the 44px touch target. */}
-          <StepCardStack depth={doneeStepIndex(step)}>
+          <StepCardStack depth={isDetailsLayout ? 0 : doneeStepIndex(step)}>
             <AnimatePresence mode="wait" initial={false} custom={direction}>
               <motion.section
                 key={step}
                 custom={direction}
                 variants={cardVariants(reduced)}
                 initial="enter" animate="center" exit="exit"
-                className="ck-wizard-step-card rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-16px_rgba(28,25,23,0.25)] sm:p-6 dark:border-zinc-800 dark:bg-zinc-900"
+                className={isDetailsLayout ? "relative" : "ck-wizard-step-card rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-16px_rgba(28,25,23,0.25)] sm:p-6 dark:border-zinc-800 dark:bg-zinc-900"}
               >
                 {/* Inside the keyed section on purpose: it must enter, travel
                     and exit with the card. Outside AnimatePresence it would sit
                     still while the card moved, and would disturb mode="wait"
                     exit sequencing. */}
-                <WizardBorderGlow />
+                {!isDetailsLayout && <WizardBorderGlow />}
 
                 <div className="ck-wizard-step-card-content">
                   <h2
                     ref={headingRef} tabIndex={-1}
                     className="text-lg font-bold text-stone-900 outline-none sm:text-xl dark:text-stone-100"
-                    style={{ fontFamily: "var(--font-source-serif-4), serif" }}
+                    style={step === "household-situation" ? undefined : { fontFamily: "var(--font-source-serif-4), serif" }}
                   >
-                    {STEP_LABELS[step]}
+                    {step === "household-situation" ? "Request context & evidence" : STEP_LABELS[step]}
+                    {step === "household-situation" && <span className="ml-3 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-1 align-middle text-[10px] font-semibold text-[#1e3a60] dark:border-slate-700 dark:bg-slate-800 dark:text-blue-200">{TIER_LABELS[tier]}</span>}
                   </h2>
-                  <p className="mb-3 mt-0.5 text-xs text-stone-500 dark:text-stone-400">{STEP_INTROS[step]}</p>
+                  <p className="mb-6 mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{step === "household-situation" ? "Step 2 of 3 · Only details about this request" : STEP_INTROS[step]}</p>
 
                   <div className="mb-3 empty:hidden">
                     <StepErrorSummary
@@ -1685,8 +1428,8 @@ function NewRequestForm() {
                   </div>
 
                   {step === "need-details" && step1}
-                  {step === "household-situation" && step2}
-                  {step === "verification-documents" && step3}
+                  {step === "household-situation" && <div className="space-y-6">{step2}{step3}</div>}
+
                   {step === "declarations" && step4}
                 </div>
               </motion.section>
@@ -1700,7 +1443,24 @@ function NewRequestForm() {
             listing flow. Save & exit is a real handler now, not the bare Link
             it replaces: that Link navigated away without persisting anything
             typed on the open step. */}
-        <WizardNavigation
+        {step === "need-details" ? (
+          <div className="mx-auto w-full max-w-[1040px] px-4 sm:px-8 lg:px-10 pb-6">
+            <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
+              <button type="button" onClick={() => void retrySave()} disabled={saveStatus === "saving"} className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                {saveStatus === "saving" ? "Saving…" : "Save Draft"}
+              </button>
+              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-[#1e3a60] px-5 text-xs font-bold text-white transition-colors hover:bg-[#2d5a96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50">{saving ? "Saving…" : "Continue to Step 2 →"}</button>
+            </div>
+          </div>
+        ) : step === "household-situation" ? (
+          <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10">
+            <button type="button" onClick={handleBack} disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 1</button>
+            <div className="flex flex-wrap gap-2">
+
+              <button type="button" onClick={() => void handleNext()} disabled={saving || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{saving ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
+            </div>
+          </div>
+        ) : <WizardNavigation
           canGoBack={doneeStepIndex(step) > 0}
           onBack={handleBack}
           onContinue={() => void (isLast ? handleSubmit() : handleNext())}
@@ -1711,7 +1471,7 @@ function NewRequestForm() {
           submitted={submitted}
           savingExit={savingExit}
           variant="bar"
-        />
+        />}
       </div>
     </div>
   );

@@ -1,24 +1,8 @@
-/**
- * Step model for the donee "Request an Item" wizard.
- *
- * <p>The four business stages are fixed and ordered: a need is described, the
- * household context is given, documents are supplied, and only then are the
- * legal declarations accepted. Reordering or merging them would change what a
- * donee agrees to and when, so the order here is not a presentational choice.
- *
- * <p>Semantic ids rather than 1..4. The page previously threaded a bare number
- * through validation, rejection routing and the progress UI, where `step === 3`
- * told a reader nothing and an off-by-one would be silent. The numeric form
- * still exists — `stepNumber` / `stepFromNumber` — because two pieces of
- * behaviour genuinely are ordinal (the rejection-reason heuristic, and the
- * server's own notion of progress), and those conversions are now the only
- * places the number appears.
- */
+/** Three request stages; reusable household facts and identity documents live in the profile. */
 
 export const DONEE_REQUEST_STEPS = [
   "need-details",
   "household-situation",
-  "verification-documents",
   "declarations",
 ] as const;
 
@@ -26,15 +10,13 @@ export type DoneeRequestStep = (typeof DONEE_REQUEST_STEPS)[number];
 
 export const STEP_LABELS: Record<DoneeRequestStep, string> = {
   "need-details": "Need Details",
-  "household-situation": "Household & Situation",
-  "verification-documents": "Verification Documents",
+  "household-situation": "Request context & evidence",
   "declarations": "Declarations",
 };
 
 export const STEP_INTROS: Record<DoneeRequestStep, string> = {
   "need-details": "What do you need, and why?",
-  "household-situation": "Help us understand your situation",
-  "verification-documents": "Required for admin verification",
+  "household-situation": "Tell us who needs the item and add evidence specific to this request",
   "declarations": "Final confirmation",
 };
 

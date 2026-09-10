@@ -669,6 +669,7 @@ function VerificationFormGrid({ v, isEmergency }: { v: NonNullable<AdminRequestV
     ["What was lost/damaged", v.lostDamagedDescription],
     ["Priority items", v.priorityItems],
   ] : [
+    ["Requesting for", v.requestingForSomeoneElse === true ? "Someone else (household details belong to the requester)" : v.requestingForSomeoneElse === false ? "Self" : "Not specified"],
     ["Household size", v.householdSize],
     ["Dependents", v.dependents],
     ["Age", v.age],
