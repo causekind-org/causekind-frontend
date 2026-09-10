@@ -16,13 +16,13 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
-import { useTilt } from "@/hooks/useTilt";
-import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
+import { getMyProfile, getMyMatches, getMyNgoApplication, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
+import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import {
   AlertDialog,
@@ -544,7 +544,9 @@ export function SiteHeader() {
   const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
   const dashHref = user?.role === "SUPER_ADMIN" ? "/super-admin"
-    : user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
+    : user?.role === "ADMIN" ? "/admin/dashboard"
+    : (user?.role === "NGO" || user?.role === "NGO_PARTNER") ? "/"
+    : "/dashboard";
 
   /** Opens the confirmation dialog — actual logout happens only on confirm. */
   function requestLogout() { setLogoutDialogOpen(true); }
@@ -622,8 +624,63 @@ export function SiteHeader() {
     pathname?.startsWith("/admin/dashboard") ||
     user?.role === "SUPER_ADMIN";
 
-  // Mobile drawer lists everything flat; desktop groups these three under
-  // an "About Us" dropdown instead of three separate pills (see render below).
+  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const isNgoDashboard =
+    isNgo ||
+    pathname?.startsWith("/dashboard/ngo") ||
+    pathname?.startsWith("/ngo");
+
+  const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(false);
+
+  useEffect(() => {
+    if (!isNgoDashboard) {
+      setIsNgoProfileIncomplete(false);
+      return;
+    }
+
+    const userIdentifier =
+      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
+    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
+    const realAppKey = `ngo-application-${userIdentifier}`;
+
+    const cachedDemo = typeof window !== "undefined" ? localStorage.getItem(demoAppKey) : null;
+    const cachedReal = typeof window !== "undefined" ? localStorage.getItem(realAppKey) : null;
+    if (cachedDemo || cachedReal) {
+      try {
+        const parsed = JSON.parse((cachedDemo || cachedReal)!);
+        if (
+          parsed?.status === "UNDER_REVIEW" ||
+          parsed?.status === "APPROVED" ||
+          parsed?.status === "PENDING_VERIFICATION"
+        ) {
+          setIsNgoProfileIncomplete(false);
+          return;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (user) {
+      getMyNgoApplication()
+        .then((app) => {
+          const isComplete =
+            (app as any)?.submissionStatus === "UNDER_REVIEW" ||
+            (app as any)?.submissionStatus === "APPROVED" ||
+            (app as any)?.submissionStatus === "PENDING_VERIFICATION" ||
+            app?.status === "UNDER_REVIEW" ||
+            app?.status === "APPROVED" ||
+            app?.status === "PENDING_VERIFICATION";
+          setIsNgoProfileIncomplete(!isComplete);
+        })
+        .catch(() => {
+          setIsNgoProfileIncomplete(true);
+        });
+    } else {
+      setIsNgoProfileIncomplete(true);
+    }
+  }, [isNgoDashboard, user]);
+
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
@@ -633,18 +690,7 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    // Visible to everyone, including guests: the board itself is public
-    // (reduced-field endpoint, no GPS) and only the act of offering needs an
-    // account. Hiding it from logged-out visitors meant nobody could see what
-    // CauseKind is actually for before signing up.
-    // Labelled "Donate", not "In-Kind Requests": the panel behind it now offers
-    // money and in-kind side by side, so naming it after one of the two would
-    // hide the other. `nav.donate` is reused rather than a new key added — it
-    // already carries exactly this word, correctly translated in all fourteen
-    // locales, and a second key for the same string is a second thing to keep
-    // in step. The href is unchanged: clicking still goes to the in-kind hub,
-    // which is the destination for everyone the panel is open to.
-    { href: "/requests", label: t("nav.donate") },
+    ...(!isNgoDashboard ? [{ href: "/requests", label: t("nav.donate") }] : []),
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -926,7 +972,18 @@ export function SiteHeader() {
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
             </button>
 
-            {FEATURES.money && <Donate3DButton />}
+            {FEATURES.money && !isNgoDashboard && <Donate3DButton />}
+
+            {isNgoDashboard && isNgoProfileIncomplete && (
+              <Link href="/dashboard/ngo/profile">
+                <Button
+                  size="sm"
+                  className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
+                >
+                  Complete Profile
+                </Button>
+              </Link>
+            )}
 
             {/* Auth action — login/logout, top-right */}
             <div className="relative">
@@ -1198,8 +1255,12 @@ export function SiteHeader() {
           ...navLinks.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
           ...(user
             ? [
-                { label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" },
-                { label: "My Profile", link: "/profile", ariaLabel: "View profile" },
+                ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
+                {
+                  label: "My Profile",
+                  link: isNgo ? "/dashboard/ngo/profile" : "/profile",
+                  ariaLabel: "View profile"
+                },
               ]
             : [
                 { label: t("nav.logIn"), link: "/login", ariaLabel: "Log in" },

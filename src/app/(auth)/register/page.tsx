@@ -504,9 +504,9 @@ function RegisterContent() {
           password: form.password,
           website: ngoWebsite.trim() || undefined,
         });
-        setUser({ email: res.email, role: res.role });
+        setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role });
         toast.success("NGO account created! Welcome to CauseKind.");
-        router.replace("/dashboard/ngo");
+        router.replace("/");
       } else if (isSocialFlow && googleToken) {
         const res = await googleComplete(googleToken, fullPhone, cityStr, form.role);
         if (!res.needsCompletion) {

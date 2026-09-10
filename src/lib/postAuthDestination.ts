@@ -19,7 +19,7 @@ import { safeInternalPath } from "./safeRedirect";
 export function homeForRole(role: string | null | undefined): string {
   if (role === "SUPER_ADMIN") return "/super-admin";
   if (role === "ADMIN") return "/admin/dashboard";
-  if (role === "NGO" || role === "NGO_PARTNER") return "/dashboard/ngo";
+  if (role === "NGO" || role === "NGO_PARTNER") return "/";
   return "/";
 }
 

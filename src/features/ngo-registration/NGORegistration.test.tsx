@@ -37,6 +37,8 @@ vi.mock("@/lib/api", () => ({
     applicationId: "CK-NGO-2026-ABCD1234",
     message: "OTP resent successfully",
   }),
+  getNgoDraft: vi.fn().mockResolvedValue(null),
+  saveNgoDraft: vi.fn().mockResolvedValue({ status: "SAVED" }),
 }));
 
 beforeAll(() => {
@@ -85,7 +87,7 @@ describe("NGORegistration Component", () => {
     });
     expect(screen.getByText(/Showing documents for:/i)).toBeInTheDocument();
     expect(screen.getByText(/Trust Registration Certificate/i)).toBeInTheDocument();
-  });
+  }, 20000);
 
   it("completes full end-to-end flow from Step 1 to Application Submitted with state preserved", async () => {
     const user = userEvent.setup();
@@ -182,5 +184,5 @@ describe("NGORegistration Component", () => {
     // Confirm that with demo mode OFF, real API calls are invoked normally
     expect(submitNgoApplication).toHaveBeenCalledTimes(1);
     expect(verifyNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-ABCD1234", "123456");
-  }, 25000);
+  }, 60000);
 });

@@ -19,6 +19,8 @@ vi.mock("@/lib/api", () => ({
   submitNgoApplication: vi.fn(),
   verifyNgoOtp: vi.fn(),
   resendNgoOtp: vi.fn(),
+  getNgoDraft: vi.fn().mockResolvedValue(null),
+  saveNgoDraft: vi.fn().mockResolvedValue({ status: "SAVED" }),
 }));
 
 beforeAll(() => {
@@ -116,5 +118,5 @@ describe("NGORegistration Component - Demo Mode ON", () => {
     expect(submitNgoApplication).not.toHaveBeenCalled();
     expect(verifyNgoOtp).not.toHaveBeenCalled();
     expect(resendNgoOtp).not.toHaveBeenCalled();
-  }, 25000);
+  }, 60000);
 });

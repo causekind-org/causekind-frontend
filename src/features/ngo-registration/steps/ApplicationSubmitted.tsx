@@ -215,10 +215,10 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
 
         <div className="flex items-center gap-2">
           <Link
-            href="/dashboard/ngo"
+            href="/"
             className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#b04a15] hover:bg-[#963c0d] py-3 text-xs font-bold text-white transition-colors shadow-sm text-center"
           >
-            Go to NGO Dashboard
+            Return to Home
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
           <Link

@@ -29,7 +29,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
     if (!data.registrationNumber.trim()) next.registrationNumber = "Registration number is required.";
     if (!data.registeredOfficeAddress.trim()) next.registeredOfficeAddress = "Registered office address is required.";
     setErrors(next);
-    return true;
+    return Object.keys(next).length === 0;
   }
 
   function handleContinue() {

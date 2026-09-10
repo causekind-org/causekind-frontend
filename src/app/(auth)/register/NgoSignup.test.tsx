@@ -179,6 +179,6 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
       { timeout: 8000 }
     );
 
-    expect(mockReplace).toHaveBeenCalledWith("/dashboard/ngo");
+    expect(mockReplace).toHaveBeenCalledWith("/");
   }, 15000);
 });

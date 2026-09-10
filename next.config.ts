@@ -42,6 +42,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/ngo",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/dashboard/ngo/complete-profile",
+        destination: "/dashboard/ngo/profile",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

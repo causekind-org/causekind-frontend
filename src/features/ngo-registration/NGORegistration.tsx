@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   INITIAL_NGO_FORM,
   IS_NGO_DEMO_MODE,
+  NGO_STEPS,
   formatSubmissionTime,
   type NGOFormState,
   type NGOStep,
@@ -18,19 +19,228 @@ import { OrgPhotos } from "@/features/ngo-registration/steps/OrgPhotos";
 import { ReviewSubmit } from "@/features/ngo-registration/steps/ReviewSubmit";
 import { EmailVerification } from "@/features/ngo-registration/steps/EmailVerification";
 import { ApplicationSubmitted } from "@/features/ngo-registration/steps/ApplicationSubmitted";
-import { submitNgoApplication } from "@/lib/api";
+import { submitNgoApplication, getNgoDraft, saveNgoDraft, type UploadedFileDto } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+
+export interface NGOProgressInfo {
+  completedCount: number;
+  totalSteps: number;
+  percent: number;
+  currentStep: NGOStep | "submitted";
+}
 
 interface NGORegistrationProps {
   onCancelToDonor?: () => void;
+  onProgressChange?: (info: NGOProgressInfo) => void;
 }
 
-export function NGORegistration({ onCancelToDonor }: NGORegistrationProps) {
+function toDto(file: UploadedFile | null): UploadedFileDto | null {
+  if (!file) return null;
+  return {
+    documentId: file.documentId ?? null,
+    photoId: file.photoId ?? null,
+    name: file.name,
+    key: file.s3Key ?? null,
+    url: file.s3Url ?? null,
+    size: file.size ?? null,
+    mimeType: file.mimeType ?? null,
+    demo: file.demo ?? false,
+  };
+}
+
+function fromDto(dto: UploadedFileDto | null | undefined): UploadedFile | null {
+  if (!dto) return null;
+  return {
+    name: dto.name || "Uploaded document",
+    documentId: dto.documentId ?? undefined,
+    photoId: dto.photoId ?? undefined,
+    s3Key: dto.key ?? undefined,
+    s3Url: dto.url ?? undefined,
+    size: dto.size ?? undefined,
+    mimeType: dto.mimeType ?? undefined,
+    demo: dto.demo ?? false,
+  };
+}
+
+export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegistrationProps) {
+  const { user } = useAuth();
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
   const [completedSteps, setCompletedSteps] = useState<Set<NGOStep>>(new Set());
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const reduced = !!useReducedMotion();
+
+  const userIdentifier =
+    user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
+
+  const onProgressChangeRef = useRef(onProgressChange);
+  useEffect(() => {
+    onProgressChangeRef.current = onProgressChange;
+  }, [onProgressChange]);
+
+  // Report progress to parent whenever completedSteps or currentStep updates
+  useEffect(() => {
+    const totalSteps = NGO_STEPS.length;
+    const count = currentStep === "submitted" ? totalSteps : completedSteps.size;
+    const percent = Math.min(100, Math.round((count / totalSteps) * 100));
+    onProgressChangeRef.current?.({
+      completedCount: count,
+      totalSteps,
+      percent,
+      currentStep,
+    });
+  }, [completedSteps, currentStep]);
+
+  // Load draft on mount (Real backend draft or account-scoped demo localStorage draft)
+  useEffect(() => {
+    let cancelled = false;
+
+    if (IS_NGO_DEMO_MODE) {
+      if (typeof window === "undefined") return;
+      try {
+        const saved = localStorage.getItem(`ngo-demo-draft-${userIdentifier}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") {
+            setData((prev) => ({ ...prev, ...parsed }));
+            const savedStep = parsed.currentStep as string;
+            if (savedStep && (NGO_STEPS as readonly string[]).includes(savedStep)) {
+              const typedStep = savedStep as NGOStep;
+              setCurrentStep(typedStep);
+              const stepIdx = NGO_STEPS.indexOf(typedStep);
+              if (stepIdx > 0) {
+                const prevSteps = new Set<NGOStep>();
+                for (let i = 0; i < stepIdx; i++) {
+                  prevSteps.add(NGO_STEPS[i]);
+                }
+                setCompletedSteps(prevSteps);
+              } else {
+                setCompletedSteps(new Set());
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load demo draft:", err);
+      }
+      return;
+    }
+
+    if (!user) return;
+
+    getNgoDraft()
+      .then((draft) => {
+        if (cancelled || !draft) return;
+
+        const restoredDocs: Record<string, UploadedFile | null> = {};
+        if (draft.documents) {
+          for (const [docKey, fileDto] of Object.entries(draft.documents)) {
+            restoredDocs[docKey] = fromDto(fileDto);
+          }
+        }
+
+        const restoredActivity: (UploadedFile | null)[] = [null, null, null];
+        if (draft.activityPhotos && Array.isArray(draft.activityPhotos)) {
+          draft.activityPhotos.forEach((photoDto, idx) => {
+            if (idx < 3) {
+              restoredActivity[idx] = fromDto(photoDto);
+            }
+          });
+        }
+
+        setData((prev) => ({
+          ...prev,
+          organizationName: draft.organizationName ?? prev.organizationName,
+          legalStructure: (draft.legalStructure as any) ?? prev.legalStructure,
+          registrationNumber: draft.registrationNumber ?? prev.registrationNumber,
+          registeredOfficeAddress: draft.registeredOfficeAddress ?? prev.registeredOfficeAddress,
+          yearOfEstablishment: draft.yearOfEstablishment ?? prev.yearOfEstablishment,
+          representativeName: draft.representativeName ?? prev.representativeName,
+          designation: draft.designation ?? prev.designation,
+          mobileNumber: draft.mobileNumber ?? prev.mobileNumber,
+          officialEmail: draft.officialEmail ?? prev.officialEmail,
+          confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
+          authorizationLetter: draft.authorizationLetter ? fromDto(draft.authorizationLetter) : prev.authorizationLetter,
+          documents: Object.keys(restoredDocs).length > 0 ? restoredDocs : prev.documents,
+          logo: draft.logo ? fromDto(draft.logo) : prev.logo,
+          officePhoto: draft.officePhoto ? fromDto(draft.officePhoto) : prev.officePhoto,
+          activityPhotos: restoredActivity,
+        }));
+
+        const savedStep = draft.currentStep as string;
+        if (savedStep && (NGO_STEPS as readonly string[]).includes(savedStep)) {
+          const typedStep = savedStep as NGOStep;
+          setCurrentStep(typedStep);
+          const stepIdx = NGO_STEPS.indexOf(typedStep);
+          if (stepIdx > 0) {
+            const prevSteps = new Set<NGOStep>();
+            for (let i = 0; i < stepIdx; i++) {
+              prevSteps.add(NGO_STEPS[i]);
+            }
+            setCompletedSteps(prevSteps);
+          } else {
+            setCompletedSteps(new Set());
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("No active NGO draft found or error retrieving draft:", err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, userIdentifier]);
+
+  async function saveDraftProgress(targetStep: NGOStep, updatedForm: NGOFormState) {
+    if (IS_NGO_DEMO_MODE) {
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            `ngo-demo-draft-${userIdentifier}`,
+            JSON.stringify({
+              ...updatedForm,
+              currentStep: targetStep,
+            })
+          );
+        } catch {
+          // ignore
+        }
+      }
+      return;
+    }
+
+    if (!user) return;
+
+    try {
+      const documentsDto: Record<string, UploadedFileDto | null> = {};
+      for (const [id, file] of Object.entries(updatedForm.documents)) {
+        documentsDto[id] = toDto(file);
+      }
+
+      await saveNgoDraft({
+        currentStep: targetStep,
+        organizationName: updatedForm.organizationName,
+        legalStructure: updatedForm.legalStructure,
+        registrationNumber: updatedForm.registrationNumber,
+        registeredOfficeAddress: updatedForm.registeredOfficeAddress,
+        yearOfEstablishment: updatedForm.yearOfEstablishment,
+        representativeName: updatedForm.representativeName,
+        designation: updatedForm.designation,
+        mobileNumber: updatedForm.mobileNumber,
+        officialEmail: updatedForm.officialEmail,
+        confirmationChecked: updatedForm.confirmationChecked,
+        authorizationLetter: toDto(updatedForm.authorizationLetter),
+        documents: documentsDto,
+        logo: toDto(updatedForm.logo),
+        officePhoto: toDto(updatedForm.officePhoto),
+        activityPhotos: updatedForm.activityPhotos.map(toDto),
+      });
+    } catch (err) {
+      console.warn("Failed to persist NGO draft:", err);
+    }
+  }
 
   function updateData(patch: Partial<NGOFormState>) {
     setData((prev) => ({ ...prev, ...patch }));
@@ -56,24 +266,28 @@ export function NGORegistration({ onCancelToDonor }: NGORegistrationProps) {
   function handleContinueFromOrgDetails() {
     markStepComplete("org-details");
     goToStep("legal-documents");
+    saveDraftProgress("legal-documents", data);
   }
 
   // Step 2 -> 3
   function handleContinueFromLegalDocs() {
     markStepComplete("legal-documents");
     goToStep("authorized-rep");
+    saveDraftProgress("authorized-rep", data);
   }
 
   // Step 3 -> 4
   function handleContinueFromAuthorizedRep() {
     markStepComplete("authorized-rep");
     goToStep("org-photos");
+    saveDraftProgress("org-photos", data);
   }
 
   // Step 4 -> 5
   function handleContinueFromOrgPhotos() {
     markStepComplete("org-photos");
     goToStep("review-submit");
+    saveDraftProgress("review-submit", data);
   }
 
   // Step 5 -> 6: call the real backend /submit endpoint (or simulate in demo mode)
@@ -101,22 +315,6 @@ export function NGORegistration({ onCancelToDonor }: NGORegistrationProps) {
     }
 
     try {
-      // Build the UploadedFileDto shape the backend expects for each file.
-      // Propagates real backend documentId / photoId and S3 metadata when uploaded.
-      function toDto(file: UploadedFile | null) {
-        if (!file) return null;
-        return {
-          documentId: file.documentId ?? null,
-          photoId: file.photoId ?? null,
-          name: file.name,
-          key: file.s3Key ?? null,
-          url: file.s3Url ?? null,
-          size: file.size ?? null,
-          mimeType: file.mimeType ?? null,
-          demo: file.demo ?? false,
-        };
-      }
-
       // Convert documents map (Record<string, UploadedFile | null>)
       const documentsDto: Record<
         string,
@@ -171,9 +369,22 @@ export function NGORegistration({ onCancelToDonor }: NGORegistrationProps) {
     markStepComplete("email-verification");
     if (typeof window !== "undefined" && data.applicationId) {
       try {
-        localStorage.setItem("ck_ngo_application_id", data.applicationId);
-        localStorage.setItem("ck_ngo_status", "UNDER_REVIEW");
-        localStorage.setItem("ck_ngo_submitted_at", data.submittedAt || new Date().toLocaleDateString());
+        const userIdentifier = user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
+        const payload = JSON.stringify({
+          applicationId: data.applicationId,
+          status: "UNDER_REVIEW",
+          submittedAt: data.submittedAt || new Date().toLocaleDateString(),
+        });
+        if (IS_NGO_DEMO_MODE) {
+          localStorage.setItem(`ngo-demo-application-${userIdentifier}`, payload);
+        } else {
+          localStorage.setItem(`ngo-application-${userIdentifier}`, payload);
+        }
+        // Purge legacy unscoped global keys so they never leak across accounts
+        localStorage.removeItem("ck_ngo_application_id");
+        localStorage.removeItem("ck_ngo_status");
+        localStorage.removeItem("ck_ngo_submitted_at");
+        localStorage.removeItem(`ngo-demo-draft-${userIdentifier}`);
       } catch {
         // ignore
       }
@@ -182,6 +393,13 @@ export function NGORegistration({ onCancelToDonor }: NGORegistrationProps) {
   }
 
   function handleReset() {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(`ngo-demo-draft-${userIdentifier}`);
+      } catch {
+        // ignore
+      }
+    }
     setData(INITIAL_NGO_FORM);
     setCompletedSteps(new Set());
     setSubmitError(null);
