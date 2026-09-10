@@ -305,6 +305,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
         updateData({
           applicationId: demoAppId,
           submittedAt: subTime,
+          officialEmail: user?.email || data.officialEmail,
         });
         markStepComplete("review-submit");
         goToStep("email-verification");
@@ -348,6 +349,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
       updateData({
         applicationId: response.applicationId,
         submittedAt: subTime,
+        officialEmail: response.officialEmail || user?.email || data.officialEmail,
       });
 
       markStepComplete("review-submit");
@@ -385,6 +387,16 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
         localStorage.removeItem("ck_ngo_status");
         localStorage.removeItem("ck_ngo_submitted_at");
         localStorage.removeItem(`ngo-demo-draft-${userIdentifier}`);
+
+        // Notify Navbar and other mounted listeners immediately
+        window.dispatchEvent(
+          new CustomEvent("ngo-application-submitted", {
+            detail: {
+              applicationId: data.applicationId,
+              status: "UNDER_REVIEW",
+            },
+          })
+        );
       } catch {
         // ignore
       }

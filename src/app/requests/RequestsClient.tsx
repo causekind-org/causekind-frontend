@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DoneeRequestsPage } from "./donee-view";
+import { NgoRequestsPage } from "./ngo-view";
 import { ALL_REQUEST_CATEGORIES as ITEM_REQ_CATEGORIES } from "@/lib/categoryVisuals";
 // @ts-expect-error — MagicBento is the JS/CSS React Bits variant (no types shipped)
 import MagicBento from "@/components/MagicBento";
@@ -847,6 +848,9 @@ export default function RequestsClient() {
 
   // Dedicated donee portal
   if (user.role === "DONEE") return <DoneeRequestsPage />;
+
+  // Dedicated NGO portal
+  if (user.role === "NGO" || user.role === "NGO_PARTNER") return <NgoRequestsPage />;
 
   if (gpsBlocked) {
     return (

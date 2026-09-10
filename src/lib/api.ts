@@ -642,6 +642,15 @@ export async function getMyItemListings(options: { silent401?: boolean } = {}) {
   return filterVisibleListings(listings);
 }
 
+export async function getAvailableDonorListings(options: { silent401?: boolean } = {}) {
+  try {
+    const listings = await request<ItemListing[]>("/api/v1/items", options);
+    return filterVisibleListings(listings);
+  } catch {
+    return [];
+  }
+}
+
 export function getItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}`);
 }

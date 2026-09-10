@@ -216,6 +216,15 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
         <div className="flex items-center gap-2">
           <Link
             href="/"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("ngo-application-submitted", {
+                    detail: { status: "UNDER_REVIEW" },
+                  })
+                );
+              }
+            }}
             className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#b04a15] hover:bg-[#963c0d] py-3 text-xs font-bold text-white transition-colors shadow-sm text-center"
           >
             Return to Home
@@ -223,6 +232,15 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
           </Link>
           <Link
             href="/"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("ngo-application-submitted", {
+                    detail: { status: "UNDER_REVIEW" },
+                  })
+                );
+              }
+            }}
             className="rounded-xl border border-stone-200 dark:border-zinc-700 px-3.5 py-3 text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors"
           >
             Home

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { X, Sparkles } from "lucide-react";
 
@@ -10,9 +10,9 @@ interface NgoProfileToastProps {
   userId?: string;
 }
 
-const VISIBLE_MS = 4000;
+const VISIBLE_MS = 5000;
+const REPEAT_INTERVAL_MS = 15000;
 const EXIT_MS = 380;
-const DELAY_AFTER_MODAL_MS = 1200;
 
 export function NgoProfileToast({
   isProfileComplete,
@@ -22,69 +22,80 @@ export function NgoProfileToast({
   const [visible, setVisible] = useState(false);
   const [entered, setEntered] = useState(false);
   const [barKey, setBarKey] = useState(0);
-  const [dismissed, setDismissed] = useState(false);
 
-  const t1 = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const t2 = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const t3 = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const t4 = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const sessionKey = userId
-    ? `ck_ngo_profile_toast_shown_${userId}`
-    : "ck_ngo_profile_toast_shown";
+  const clearAllTimers = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+    hideTimerRef.current = null;
+    exitTimerRef.current = null;
+    loopTimerRef.current = null;
+  }, []);
+
+  const showToast = useCallback(() => {
+    clearAllTimers();
+    setVisible(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setEntered(true);
+        setBarKey((k) => k + 1);
+      });
+    });
+
+    hideTimerRef.current = setTimeout(() => {
+      setEntered(false);
+      exitTimerRef.current = setTimeout(() => {
+        setVisible(false);
+        loopTimerRef.current = setTimeout(() => {
+          showToast();
+        }, REPEAT_INTERVAL_MS);
+      }, EXIT_MS);
+    }, VISIBLE_MS);
+  }, [clearAllTimers]);
 
   useEffect(() => {
-    if (isProfileComplete || isModalOpen || dismissed) return;
+    if (isProfileComplete) {
+      clearAllTimers();
+      setVisible(false);
+      setEntered(false);
+      return;
+    }
 
-    // Show once per dashboard visit / session
-    try {
-      if (sessionStorage.getItem(sessionKey)) return;
-    } catch {}
+    if (isModalOpen) {
+      clearAllTimers();
+      setVisible(false);
+      setEntered(false);
+      return;
+    }
 
-    t1.current = setTimeout(() => {
-      setVisible(true);
-      try {
-        sessionStorage.setItem(sessionKey, "true");
-      } catch {}
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setEntered(true);
-          setBarKey((k) => k + 1);
-        });
-      });
-
-      // Auto-dismiss after 4 seconds (within 3-5 seconds requirement)
-      t2.current = setTimeout(() => {
-        setEntered(false);
-        t3.current = setTimeout(() => {
-          setVisible(false);
-        }, EXIT_MS);
-      }, VISIBLE_MS);
-    }, DELAY_AFTER_MODAL_MS);
+    // Modal is closed (auto-dismissed or manual dismiss) and profile is incomplete:
+    // show toast immediately
+    showToast();
 
     return () => {
-      [t1, t2, t3, t4].forEach((r) => {
-        if (r.current) clearTimeout(r.current);
-      });
+      clearAllTimers();
     };
-  }, [isProfileComplete, isModalOpen, dismissed, sessionKey]);
+  }, [isProfileComplete, isModalOpen, showToast, clearAllTimers]);
 
   function dismiss() {
-    setDismissed(true);
-    [t1, t2, t3, t4].forEach((r) => {
-      if (r.current) clearTimeout(r.current);
-    });
+    clearAllTimers();
     setEntered(false);
-    t4.current = setTimeout(() => setVisible(false), EXIT_MS);
+    exitTimerRef.current = setTimeout(() => {
+      setVisible(false);
+      loopTimerRef.current = setTimeout(() => {
+        showToast();
+      }, REPEAT_INTERVAL_MS);
+    }, EXIT_MS);
   }
 
   function handleAction() {
-    setDismissed(true);
-    [t1, t2, t3, t4].forEach((r) => {
-      if (r.current) clearTimeout(r.current);
-    });
+    clearAllTimers();
     setVisible(false);
+    setEntered(false);
   }
 
   if (isProfileComplete || !visible) return null;

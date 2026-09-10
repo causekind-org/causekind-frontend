@@ -29,7 +29,7 @@ describe("NgoProfileToast", () => {
     expect(screen.queryByText(/Complete your profile/i)).not.toBeInTheDocument();
   });
 
-  it("renders toast after modal is dismissed and auto-dismisses after 4 seconds", () => {
+  it("renders toast immediately after modal is dismissed, stays 5s, disappears, reappears every 15s", () => {
     const { rerender } = render(
       <NgoProfileToast isProfileComplete={false} isModalOpen={true} userId="101" />
     );
@@ -43,31 +43,53 @@ describe("NgoProfileToast", () => {
     // Modal is dismissed -> isModalOpen becomes false
     rerender(<NgoProfileToast isProfileComplete={false} isModalOpen={false} userId="101" />);
 
-    // After 1200ms delay, toast appears
-    act(() => {
-      vi.advanceTimersByTime(1300);
-    });
-
+    // Immediately appears (no delay)
     expect(screen.getByText("Complete your profile")).toBeInTheDocument();
     expect(screen.getByText("Unlock verification and campaigns")).toBeInTheDocument();
 
     const link = screen.getByRole("link", { name: /Complete Now/i });
     expect(link).toHaveAttribute("href", "/dashboard/ngo/profile");
 
-    // After 4000ms + 380ms exit animation, toast auto-dismisses
+    // After 4900ms, it is still visible
     act(() => {
-      vi.advanceTimersByTime(4500);
+      vi.advanceTimersByTime(4900);
     });
+    expect(screen.getByText("Complete your profile")).toBeInTheDocument();
 
+    // After 5000ms + 380ms exit animation, toast disappears
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(screen.queryByText("Complete your profile")).not.toBeInTheDocument();
+
+    // After 14.5s since disappearing, still not reappeared yet
+    act(() => {
+      vi.advanceTimersByTime(14500);
+    });
+    expect(screen.queryByText("Complete your profile")).not.toBeInTheDocument();
+
+    // At 15s mark (advance 600ms), it reappears!
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.getByText("Complete your profile")).toBeInTheDocument();
+
+    // Stays for 5s, then disappears again
+    act(() => {
+      vi.advanceTimersByTime(5400);
+    });
+    expect(screen.queryByText("Complete your profile")).not.toBeInTheDocument();
+
+    // If profile becomes complete, loop stops permanently
+    rerender(<NgoProfileToast isProfileComplete={true} isModalOpen={false} userId="101" />);
+    act(() => {
+      vi.advanceTimersByTime(30000);
+    });
     expect(screen.queryByText("Complete your profile")).not.toBeInTheDocument();
   });
 
-  it("clicking dismiss button immediately hides the toast", () => {
+  it("clicking dismiss button hides the toast and restarts the 15s interval", () => {
     render(<NgoProfileToast isProfileComplete={false} isModalOpen={false} userId="102" />);
-
-    act(() => {
-      vi.advanceTimersByTime(1300);
-    });
 
     expect(screen.getByText("Complete your profile")).toBeInTheDocument();
 
@@ -78,5 +100,11 @@ describe("NgoProfileToast", () => {
     });
 
     expect(screen.queryByText("Complete your profile")).not.toBeInTheDocument();
+
+    // After 15 seconds, it reappears
+    act(() => {
+      vi.advanceTimersByTime(15100);
+    });
+    expect(screen.getByText("Complete your profile")).toBeInTheDocument();
   });
 });

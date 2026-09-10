@@ -642,9 +642,29 @@ export function SiteHeader() {
     pathname?.startsWith("/dashboard/ngo") ||
     pathname?.startsWith("/ngo");
 
-  const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(false);
+  const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(() => {
+    if (typeof window === "undefined" || !user) return true;
+    const userIdentifier =
+      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
+    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
+    const realAppKey = `ngo-application-${userIdentifier}`;
+    const cached = localStorage.getItem(demoAppKey) || localStorage.getItem(realAppKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (
+          parsed?.status === "UNDER_REVIEW" ||
+          parsed?.status === "APPROVED" ||
+          parsed?.status === "PENDING_VERIFICATION"
+        ) {
+          return false;
+        }
+      } catch {}
+    }
+    return true;
+  });
 
-  useEffect(() => {
+  const checkNgoApplicationStatus = useCallback(() => {
     if (!isNgoDashboard) {
       setIsNgoProfileIncomplete(false);
       return;
@@ -693,6 +713,32 @@ export function SiteHeader() {
     }
   }, [isNgoDashboard, user]);
 
+  useEffect(() => {
+    checkNgoApplicationStatus();
+
+    const handleUpdate = (e?: Event) => {
+      const customEvent = e as CustomEvent;
+      if (
+        customEvent?.detail?.status === "UNDER_REVIEW" ||
+        customEvent?.detail?.status === "APPROVED" ||
+        customEvent?.detail?.status === "PENDING_VERIFICATION"
+      ) {
+        setIsNgoProfileIncomplete(false);
+        return;
+      }
+      checkNgoApplicationStatus();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("ngo-application-submitted", handleUpdate);
+      window.addEventListener("storage", handleUpdate);
+      return () => {
+        window.removeEventListener("ngo-application-submitted", handleUpdate);
+        window.removeEventListener("storage", handleUpdate);
+      };
+    }
+  }, [checkNgoApplicationStatus, pathname]);
+
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
@@ -702,7 +748,7 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    ...(!isNgoDashboard ? [{ href: "/requests", label: t("nav.donate") }] : []),
+    { href: "/requests", label: t("nav.donate") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -995,14 +1041,24 @@ export function SiteHeader() {
 
             {FEATURES.money && !isNgoDashboard && <Donate3DButton />}
 
-            {isNgoDashboard && isNgoProfileIncomplete && (
+            {isNgoDashboard && (
               <Link href="/dashboard/ngo/profile">
-                <Button
-                  size="sm"
-                  className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
-                >
-                  Complete Profile
-                </Button>
+                {isNgoProfileIncomplete ? (
+                  <Button
+                    size="sm"
+                    className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
+                  >
+                    Complete Profile
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                  >
+                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                    Application Under Review
+                  </Button>
+                )}
               </Link>
             )}
 

@@ -46,8 +46,6 @@ import {
   ShieldCheck,
   Check,
   Clock,
-  Copy,
-  PhoneCall,
 } from "lucide-react";
 import { FEATURES } from "@/lib/features";
 import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
@@ -150,6 +148,14 @@ export default function HomeClient({
   const [activity,     setActivity]     = useState<RecentActivity[]>(initialActivity);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState("");
+
+  const tStats = useTranslations("stats");
+  const statItems = useMemo(() => [
+    { value: stats ? `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(stats.totalRaised)}` : "₹5,652", label: tStats("totalRaised"), icon: Coins, color: "text-[#b04a15]" },
+    { value: stats ? stats.activeCampaigns : "3", label: tStats("activeCampaigns"), icon: Heart, color: "text-[#c2660a]" },
+    { value: stats ? stats.totalDonations : "24", label: tStats("donations"), icon: Sparkles, color: "text-[#1e3a60]" },
+    { value: stats ? stats.uniqueDonors : "18", label: tStats("donors"), icon: Users, color: "text-amber-700" },
+  ], [stats, tStats]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
 
@@ -232,9 +238,47 @@ export default function HomeClient({
   );
 
   const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
-  const [ngoAppStatus, setNgoAppStatus] = useState<"LOADING" | "NOT_SUBMITTED" | "SUBMITTED">("NOT_SUBMITTED");
+  const [ngoAppStatus, setNgoAppStatus] = useState<"LOADING" | "NOT_SUBMITTED" | "SUBMITTED">(() => {
+    if (typeof window === "undefined" || !user) return "NOT_SUBMITTED";
+    const userIdentifier =
+      user.id ?? user.userId ?? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    try {
+      const demo = localStorage.getItem(`ngo-demo-application-${userIdentifier}`);
+      const real = localStorage.getItem(`ngo-application-${userIdentifier}`);
+      const raw = demo || real;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed?.status === "UNDER_REVIEW" ||
+          parsed?.status === "APPROVED" ||
+          parsed?.status === "PENDING_VERIFICATION"
+        ) {
+          return "SUBMITTED";
+        }
+      }
+    } catch {}
+    return "NOT_SUBMITTED";
+  });
   const [ngoApplication, setNgoApplication] = useState<NgoApplicationStatusResponse | null>(null);
-  const [copiedAppId, setCopiedAppId] = useState(false);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(true);
+
+  const handleModalDismiss = React.useCallback(() => {
+    setIsWelcomeModalOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const handleSubmitted = () => {
+      setNgoAppStatus("SUBMITTED");
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("ngo-application-submitted", handleSubmitted);
+      window.addEventListener("storage", handleSubmitted);
+      return () => {
+        window.removeEventListener("ngo-application-submitted", handleSubmitted);
+        window.removeEventListener("storage", handleSubmitted);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     if (!user || (user.role !== "NGO" && user.role !== "NGO_PARTNER")) {
@@ -290,202 +334,24 @@ export default function HomeClient({
       });
   }, [user]);
 
-  function copyNgoAppId() {
-    if (!ngoApplication?.applicationId) return;
-    navigator.clipboard.writeText(ngoApplication.applicationId);
-    setCopiedAppId(true);
-    toast.success("Application ID copied to clipboard!");
-    setTimeout(() => setCopiedAppId(false), 2500);
-  }
-
-  function formatNgoSubmissionDate(dateStr?: string | null) {
-    if (!dateStr) return "Recently submitted";
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-    } catch {
-      return dateStr;
-    }
-  }
-
   const userIdentifier = user
     ? String(user.id ?? user.userId ?? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_"))
     : "";
 
-  // BUG 4: Logged-in NGO with submitted application sees "Application Under Review" state
-  if (isNgo && ngoAppStatus === "SUBMITTED" && ngoApplication) {
-    return (
-      <div className="bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[85vh] py-10 px-4 sm:px-6 flex items-center justify-center transition-colors duration-300">
-        <div className="w-full max-w-4xl mx-auto space-y-6">
-          <div className="rounded-2xl sm:rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 p-6 sm:p-10 shadow-lg shadow-stone-200/50 dark:shadow-none space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 dark:border-zinc-800 pb-6">
-              <div className="flex items-center gap-3.5">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#b04a15] to-[#e07b3a] flex items-center justify-center text-white shadow-lg shadow-[#b04a15]/25 shrink-0">
-                  <ShieldCheck className="w-8 h-8" />
-                </div>
-                <div>
-                  <span className="text-3xs font-black uppercase tracking-widest text-[#b04a15] bg-[#b04a15]/10 px-2.5 py-1 rounded-full inline-block mb-1">
-                    CauseKind NGO Partner
-                  </span>
-                  <h1 className="text-xl sm:text-3xl font-black text-stone-900 dark:text-stone-50">
-                    Application Under Review
-                  </h1>
-                  <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
-                    Your NGO legal registration application has been received and is currently in verification.
-                  </p>
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              <div className="self-start sm:self-auto">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800/60 px-4 py-2 text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 shadow-sm">
-                  <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                  Under Review
-                </span>
-              </div>
-            </div>
-
-            {/* Reference Details Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-stone-50/80 dark:bg-zinc-800/50 p-4 sm:p-6 rounded-2xl border border-stone-200/60 dark:border-zinc-700/60 text-xs">
-              <div>
-                <span className="text-3xs uppercase font-bold text-stone-400 block">Application Reference ID</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="font-mono text-base font-black text-[#b04a15]">
-                    {ngoApplication.applicationId || "—"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={copyNgoAppId}
-                    className="text-stone-400 hover:text-[#b04a15] p-1 transition-colors rounded"
-                    title="Copy Application ID"
-                    aria-label="Copy Application ID"
-                  >
-                    {copiedAppId ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-3xs uppercase font-bold text-stone-400 block">Submission Date</span>
-                <span className="font-bold text-stone-800 dark:text-stone-200 text-sm block mt-1">
-                  {formatNgoSubmissionDate(ngoApplication.submittedAt)}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-3xs uppercase font-bold text-stone-400 block">Organization</span>
-                <span className="font-bold text-stone-800 dark:text-stone-200 text-sm truncate block mt-1">
-                  {ngoApplication.organizationName || user?.email}
-                </span>
-              </div>
-            </div>
-
-            {/* What Happens Next Timeline Tracker */}
-            <div className="space-y-3 pt-2">
-              <h3 className="text-xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">
-                What Happens Next
-              </h3>
-
-              <div className="space-y-2.5">
-                <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50/50 dark:border-green-900/30 dark:bg-green-950/10 p-3.5">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
-                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                      1. Application & Documents Logged
-                    </p>
-                    <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      Your legal documents, representative authorization, and details have been securely recorded.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10 p-3.5">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white animate-pulse">
-                    <Clock className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                        2. Document & Compliance Review
-                      </p>
-                      <span className="rounded bg-amber-200 dark:bg-amber-900/60 px-1.5 py-0.2 text-4xs font-black uppercase text-amber-800 dark:text-amber-300">
-                        In Progress
-                      </span>
-                    </div>
-                    <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      Our verification desk evaluates your Trust Deed / Society MOA and PAN against national registries within 2–3 business days.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50/40 dark:border-zinc-800 dark:bg-zinc-900/30 p-3.5 opacity-80">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-stone-300 bg-white dark:border-zinc-700 dark:bg-zinc-800 text-stone-400">
-                    <PhoneCall className="h-3 w-3" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                      3. Authorized Representative Call
-                    </p>
-                    <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      We may reach out to your registered representative for a brief 2-minute verification call.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50/40 dark:border-zinc-800 dark:bg-zinc-900/30 p-3.5 opacity-80">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-stone-300 bg-white dark:border-zinc-700 dark:bg-zinc-800 text-stone-400">
-                    <Sparkles className="h-3 w-3" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                      4. Verified NGO Partner Badge & Active Platform Access
-                    </p>
-                    <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      Upon approval, your public verified profile goes live to receive in-kind donations and run campaigns.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-              <Link
-                href="/dashboard/ngo/profile"
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-[#b04a15] hover:bg-[#963c0d] px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
-              >
-                View My Profile
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
       {/* Welcome modal & profile toast for incomplete NGO profiles */}
-      {isNgo && userIdentifier && (
+      {isNgo && userIdentifier && ngoAppStatus !== "SUBMITTED" && (
         <>
           <NgoWelcomeModal
             userId={userIdentifier}
             isProfileComplete={false}
+            onDismiss={handleModalDismiss}
           />
           <NgoProfileToast
             userId={userIdentifier}
             isProfileComplete={false}
+            isModalOpen={isWelcomeModalOpen}
           />
         </>
       )}

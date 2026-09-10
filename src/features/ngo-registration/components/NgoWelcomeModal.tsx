@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   Dialog,
@@ -27,6 +27,16 @@ interface NgoWelcomeModalProps {
  */
 export function NgoWelcomeModal({ userId, isProfileComplete, onDismiss }: NgoWelcomeModalProps) {
   const [open, setOpen] = useState(false);
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+  const dismissedRef = useRef(false);
+
+  const handleDismiss = useCallback(() => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    setOpen(false);
+    onDismissRef.current?.();
+  }, []);
 
   useEffect(() => {
     if (isProfileComplete || !userId) {
@@ -34,17 +44,16 @@ export function NgoWelcomeModal({ userId, isProfileComplete, onDismiss }: NgoWel
       return;
     }
 
-    // Small delay for natural appearance after page load
-    const timer = setTimeout(() => {
-      setOpen(true);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [userId, isProfileComplete]);
+    dismissedRef.current = false;
+    setOpen(true);
 
-  function handleDismiss() {
-    setOpen(false);
-    onDismiss?.();
-  }
+    // Auto-close after 5 seconds if not dismissed earlier by the user
+    const autoCloseTimer = setTimeout(() => {
+      handleDismiss();
+    }, 5000);
+
+    return () => clearTimeout(autoCloseTimer);
+  }, [userId, isProfileComplete, handleDismiss]);
 
   if (isProfileComplete) return null;
 
