@@ -268,6 +268,14 @@ export default function HomeClient({
 
         <SectionDivider />
 
+        {/* "What We Provide" — 2-step dark section. Second on the page, right
+            after the hero: it is the one section that explains what actually
+            happens here, so it earns the position before the visitor is asked
+            to look at open needs. */}
+        <ItemDonationScrolly />
+
+        <SectionDivider />
+
         {/* Live Needs section — real verified needs across multiple categories */}
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
 
@@ -287,11 +295,6 @@ export default function HomeClient({
             <AudiencePathwaysSection />
           </>
         )}
-
-        <SectionDivider />
-
-        {/* "What We Provide" — 2-step dark section */}
-        <ItemDonationScrolly />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
