@@ -218,7 +218,9 @@ export default function HomeClient({
           Each section is its own extracted component — edit the
           file in src/components/home/ to change that section.
       ════════════════════════════════════════════════════════════ */}
-      <div className="hidden lg:block bg-white dark:bg-zinc-950 relative z-10">
+      {/* One paper for the whole desktop page. Sections are transparent over
+          it — see PageSection for why they no longer bring their own. */}
+      <div className="hidden lg:block bg-[var(--surface-cream,#faf8f5)] dark:bg-zinc-950 relative z-10">
         {/* Mobile stats strip (inside desktop wrapper but sm:hidden) */}
         {FEATURES.money && (
           <div className="sm:hidden overflow-hidden border-b border-[var(--ck-home-surface,#ffedd5)] bg-white dark:bg-zinc-950">
@@ -247,7 +249,6 @@ export default function HomeClient({
           </>
         )}
 
-        <SectionDivider />
 
         {/* "What We Provide" — 2-step dark section. Second on the page, right
             after the hero: it is the one section that explains what actually
@@ -267,12 +268,10 @@ export default function HomeClient({
             is the whole reason for the condition. */}
         {showAudiencePathways && (
           <>
-            <SectionDivider />
             <AudiencePathwaysSection />
           </>
         )}
 
-        <SectionDivider />
 
         {/* Live Needs section — real verified needs across multiple categories */}
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
@@ -280,7 +279,6 @@ export default function HomeClient({
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
           <>
-            <SectionDivider />
             <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
           </>
         )}
@@ -391,18 +389,15 @@ export default function HomeClient({
           />
         )}
 
-        <SectionDivider />
 
         {/* "Be the Change" feature cards */}
         <BeTheChangeSection />
 
 
-        <SectionDivider />
 
         {/* Coming soon magnets */}
         <ComingSoonMagnets />
 
-        <SectionDivider />
 
         {/* Bottom CTA — hidden when logged in */}
         <CTASection />

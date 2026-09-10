@@ -80,10 +80,17 @@ export function CategoryStrip() {
                   aria-label={label}
                   className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-center transition-[transform,background-color] duration-200 ease-out hover:-translate-y-1 hover:bg-[var(--ck-home-hover,#c54805)]/5 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#c54805)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fffdf9] dark:hover:bg-white/5 dark:focus-visible:ring-offset-stone-950 sm:gap-1.5 lg:min-h-[clamp(4.8rem,9.7vh,6.6rem)] lg:gap-2"
                 >
+                  {/* One ink for all nine, not each category's own colour.
+                      CATEGORY_VISUALS gives every category a semantic hue —
+                      blue medical, green livelihood, red household — which
+                      earns its place on a card or a pill, where the colour
+                      tells you what you are looking at. Nine of them in a row
+                      read as a rainbow toolbar and belong to no palette. The
+                      label already says which category it is, so here the icon
+                      follows the page: terracotta for a guest, navy once a
+                      donee is signed in. The rest of the app is untouched. */}
                   <span
-                    className={`flex size-8 items-center justify-center ${
-                      visual?.text ?? "text-[var(--ck-home-ink,#bd4c20)] dark:text-[var(--ck-home-highlight,#f09a67)]"
-                    } transition-transform duration-200 ease-out group-hover:-translate-y-0.5 lg:size-10`}
+                    className="flex size-8 items-center justify-center text-[var(--ck-home-ink,#bd4c20)] transition-transform duration-200 ease-out group-hover:-translate-y-0.5 dark:text-[var(--ck-home-highlight,#f09a67)] lg:size-10"
                   >
                     {/* react-icons are solid fills, so there is no strokeWidth to
                         set — the glyphs read heavier than the outlines they
