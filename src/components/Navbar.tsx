@@ -454,6 +454,18 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Immersive full-screen sections (the scroll-scrubbed film hero) ask the
+  // header to slide away while they own the viewport, and to return when they
+  // scroll out of it. They announce this with a `ck:immersive-nav` event whose
+  // detail is the desired hidden state — decoupled so the section never has to
+  // reach into the header.
+  const [immersive, setImmersive] = useState(false);
+  useEffect(() => {
+    const onImmersive = (e: Event) => setImmersive(!!(e as CustomEvent).detail);
+    window.addEventListener("ck:immersive-nav", onImmersive as EventListener);
+    return () => window.removeEventListener("ck:immersive-nav", onImmersive as EventListener);
+  }, []);
+
   // Publish the header's real height as --ck-nav-h so full-viewport sections can
   // size themselves against it. It has to be measured, not assumed: the mobile
   // bar and the lg: bar have different padding, and layout.tsx's 3.5rem is only
@@ -733,7 +745,16 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header ref={headerRef} className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 transition-shadow duration-300 ease-out ${
+      <header
+        ref={headerRef}
+        style={{
+          transform: immersive ? "translateY(-100%)" : "translateY(0)",
+          opacity: immersive ? 0 : 1,
+          pointerEvents: immersive ? "none" : undefined,
+          transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
+          willChange: "transform",
+        }}
+        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"

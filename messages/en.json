@@ -665,6 +665,18 @@
       "handedOverDesc": "The two meet. One six-digit code, confirmed by both, or it does not close.",
       "certified": "A record that holds up",
       "certifiedDesc": "The certificate carries its own number, checkable against the register later."
+    },
+    "scrolly": {
+      "p1": "Give what you no longer use.",
+      "p2": "List it in a moment.",
+      "p3": "We find the need nearby.",
+      "p4": "Matched with a neighbour.",
+      "p5": "Given directly. No fees.",
+      "brandLine1": "Give what you have.",
+      "brandLine2": "Help someone nearby.",
+      "badges": "Verified · Local · Zero fees",
+      "cta": "Donate an Item",
+      "a11y": "A short film: an item is packed, listed, matched with a nearby neighbour, and given directly through CauseKind."
     }
   },
   "adminAnalytics": {

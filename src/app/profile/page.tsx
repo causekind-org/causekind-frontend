@@ -112,6 +112,29 @@ function getInitials(name: string): string {
   return ((words[0][0] ?? "") + (words[words.length - 1][0] ?? "")).toUpperCase();
 }
 
+/**
+ * A human-looking name for someone whose profile hasn't loaded (or who never
+ * filled one in). Showing the raw address instead put
+ * "causekindorg@gmail.com" in the pass's italic serif name slot, where it wrapped
+ * mid-domain and read as a broken field rather than a person.
+ */
+function nameFromEmail(email: string): string {
+  const local = email.split("@")[0] ?? email;
+  return (
+    local
+      .split(/[._\-+\d]+/)
+      .filter(Boolean)
+      .map((w) => w[0].toUpperCase() + w.slice(1))
+      .join(" ") || email
+  );
+}
+
+/** "DONEE" -> "Donee", "SUPER_ADMIN" -> "Super admin". Rendered uppercase by CSS. */
+function humanizeRole(role: string): string {
+  const r = role.replace(/_/g, " ").toLowerCase().trim();
+  return r ? r[0].toUpperCase() + r.slice(1) : "";
+}
+
 function avatarKey(email: string) {
   return `ck_profile_image_${email}`;
 }
@@ -262,11 +285,16 @@ export default function ProfilePage() {
     // written while the promises settle and read once in `finally`, so a setter
     // per rejection would just queue redundant renders.
     let activityFailed = false;
+    let profileFailed = false;
 
     // Run IP geolocation, profile fetch, donation/campaign history, and in-kind data in parallel
     Promise.all([
       detectCountryFromIP(),
-      getProfile(),
+      // Caught like the activity calls: a dead /auth/me used to reject the whole
+      // Promise.all, so a single backend hiccup also threw away the donations,
+      // listings and matches that had already come back, and left the page
+      // claiming the signed-in donor was a nameless "MEMBER".
+      getProfile().catch((): UserProfile | null => { profileFailed = true; return null; }),
       getMyDonations().catch((): Donation[] => []),
       getMyCampaigns().catch((): Campaign[] => []),
       // These three feed the milestones and the ledger. Still caught — but the
@@ -281,12 +309,22 @@ export default function ProfilePage() {
     ])
       .then(([detectedCountry, p, d, c, req, listings, matches, serverDialCodes]) => {
         setProfile(p);
-        setFullName(p.fullName);
         setDonations(d);
         setCampaigns(c);
         setMyRequests(req);
         setMyListings(listings);
         setMyMatches(matches);
+
+        if (!p) {
+          // No profile: still resolve a sensible country so the settings form
+          // and the dial-code picker are usable, then stop.
+          setCountryIso(detectedCountry);
+          setDialCountry(detectedCountry);
+          toast.error(t("errorLoadProfile"));
+          return;
+        }
+
+        setFullName(p.fullName);
 
         // Parse phone: if stored with a dial-code prefix, split it back out so
         // the dropdown and the input each hold their own half.
@@ -331,7 +369,7 @@ export default function ProfilePage() {
         setDialCountry(fallback);
       })
       .finally(() => {
-        setActivityLoadFailed(activityFailed);
+        setActivityLoadFailed(activityFailed || profileFailed);
         setLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -545,8 +583,15 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
-  const initials = getInitials(fullName || profile?.fullName || user.email);
-  const isDonee = (profile?.role ?? "").toUpperCase() === "DONEE";
+  // The profile is the source of truth, but it can be missing (backend down, or
+  // a fetch that failed). The signed-in session already carries an email and a
+  // role, so fall back to those rather than to a blank name and a generic
+  // "MEMBER" badge that contradicts what the user actually is.
+  const displayName = fullName || profile?.fullName || nameFromEmail(user.email);
+  const displayEmail = profile?.email ?? user.email;
+  const displayRole = humanizeRole(profile?.role || user.role || "Member");
+  const initials = getInitials(displayName);
+  const isDonee = (profile?.role || user.role || "").toUpperCase() === "DONEE";
 
   // Section accents: copper for donors, the donee dashboard's navy for donees
   const acc = isDonee
@@ -670,8 +715,8 @@ export default function ProfilePage() {
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-14 pb-2 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-10 lg:gap-16 items-center">
           <div data-tour="member-pass">
             <MemberPass
-              name={fullName || profile?.fullName || user.email}
-              role={profile?.role ?? "MEMBER"}
+              name={displayName}
+              role={displayRole}
               city={profile?.city}
               avatarDataUrl={avatarDataUrl}
               initials={initials}
@@ -679,13 +724,13 @@ export default function ProfilePage() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }} className="min-w-0">
-            <p className={`text-3xs font-black uppercase tracking-[0.28em] ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`}>CauseKind member</p>
+            <p className={`text-3xs font-black uppercase tracking-[0.28em] ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`}>CauseKind {displayRole}</p>
             <h1 className="mt-1.5 sm:mt-2 text-2xl sm:text-4xl md:text-5xl leading-[1.05] break-words"
               style={{ fontFamily: "var(--font-lora), serif", fontStyle: "italic", fontWeight: 600 }}>
-              {fullName || profile?.fullName}
+              {displayName}
             </h1>
             <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 text-2xs sm:text-xs text-white/55">
-              <span className="flex items-center gap-1.5"><Mail className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile?.email}</span>
+              <span className="flex items-center gap-1.5"><Mail className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{displayEmail}</span>
               {profile?.phone && <span className="flex items-center gap-1.5"><Phone className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.phone}</span>}
               {profile?.city && <span className="flex items-center gap-1.5"><MapPin className={`w-3.5 h-3.5 ${isDonee ? "text-[#7fb0e8]" : "text-[#C17A3A]"}`} />{profile.city}</span>}
             </div>
