@@ -27,7 +27,6 @@ export default function MoneyDonateClient() {
       <MoneyFlowStory />
       <SectionDivider />
       <ImpactCarousel />
-      <SectionDivider />
       <MoneyDonationForm />
       <SectionDivider />
       <AboutSahas />

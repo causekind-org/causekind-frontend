@@ -31,7 +31,7 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
         className="flex flex-col p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 shadow-[0_4px_24px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.1)] border border-stone-100 dark:border-white/10 h-full group"
       >
         {/* Icon */}
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 ${iconBgColor}`}>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${iconBgColor}`}>
           {icon}
         </div>
 

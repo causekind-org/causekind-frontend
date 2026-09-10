@@ -43,7 +43,7 @@ const allocationAreas = [
 
 export function TrustCredibility() {
   return (
-    <section className="min-h-[calc(100svh-3.5rem)] py-12 lg:py-16 bg-background flex items-center">
+    <section className="min-h-0 lg:min-h-[calc(100svh-3.5rem)] py-8 lg:py-16 bg-background flex items-center">
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
 
         <motion.div
@@ -53,7 +53,7 @@ export function TrustCredibility() {
           transition={{ duration: 0.6 }}
         >
           {/* Section header */}
-          <div className="max-w-2xl mb-14">
+          <div className="max-w-2xl mb-8 sm:mb-14">
             <SahasLogo size={48} className="mb-4" />
             <span className="block text-xs font-bold tracking-wider uppercase text-brand-500 mb-4">
               Trust &amp; Credibility
@@ -64,7 +64,7 @@ export function TrustCredibility() {
           </div>
 
           {/* Credentials grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-14">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-8 sm:mb-14">
             <CertificateCard
               title="12AA Registration Certificate"
               description="Confirms our status as a charitable institution under the Income Tax Act, 1961."
@@ -112,12 +112,12 @@ export function TrustCredibility() {
           </div>
 
           {/* Verified badge */}
-          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 text-sm font-medium mb-14">
+          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 text-sm font-medium mb-8 sm:mb-14">
             <Shield className="w-4 h-4 text-teal-500" />
             Verified Nonprofit Partner
           </div>
 
-          <hr className="border-stone-200 dark:border-white/15 mb-14" />
+          <hr className="border-stone-200 dark:border-white/15 mb-8 sm:mb-14" />
         </motion.div>
 
         {/* ── Where Your Money Goes ── */}
@@ -155,7 +155,7 @@ export function TrustCredibility() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.12 }}
                   whileHover={{ y: -3, boxShadow: '0 8px 25px rgba(0,0,0,0.06)' }}
-                  className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-white/10 p-5 sm:p-6 transition-all duration-300 cursor-default group"
+                  className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-white/10 p-4 sm:p-6 transition-all duration-300 cursor-default group"
                 >
                   <div className="flex items-start gap-4 mb-4">
                     {/* Icon */}
@@ -183,7 +183,7 @@ export function TrustCredibility() {
             </div>
           </div>
 
-          <hr className="border-stone-200 dark:border-white/15 mt-14" />
+          <hr className="border-stone-200 dark:border-white/15 mt-8 sm:mt-14" />
         </motion.div>
 
       </div>
