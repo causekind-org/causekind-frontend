@@ -18,24 +18,24 @@ const allocationAreas = [
   {
     label: 'Healthcare & Medical Support',
     icon: <Stethoscope className="w-5 h-5" />,
-    barColor: 'from-rose-400 to-rose-600',
-    iconBg: 'bg-rose-50 dark:bg-rose-500/10 text-rose-600',
+    barColor: 'from-brand-400 to-brand-600',
+    iconBg: 'bg-brand-50 dark:bg-brand-500/10 text-brand-600',
     widthPercent: '30%',
     description: 'Community health camps, medical aid, and wellness programs.',
   },
   {
     label: 'Community Welfare & Relief',
     icon: <Home className="w-5 h-5" />,
-    barColor: 'from-teal-400 to-teal-600',
-    iconBg: 'bg-teal-50 dark:bg-teal-500/10 text-teal-600',
+    barColor: 'from-brand-400 to-brand-600',
+    iconBg: 'bg-brand-50 dark:bg-brand-500/10 text-brand-600',
     widthPercent: '20%',
     description: 'Disaster relief, nutrition support, and infrastructure development.',
   },
   {
     label: 'Women & Youth Empowerment',
     icon: <Users className="w-5 h-5" />,
-    barColor: 'from-violet-400 to-violet-600',
-    iconBg: 'bg-violet-50 dark:bg-violet-500/10 text-violet-600',
+    barColor: 'from-brand-400 to-brand-600',
+    iconBg: 'bg-brand-50 dark:bg-brand-500/10 text-brand-600',
     widthPercent: '10%',
     description: 'Skill-building, mentorship, and inclusion initiatives.',
   },
@@ -45,8 +45,8 @@ export function TrustCredibility() {
   return (
     <section className="min-h-[calc(100svh-3.5rem)] py-12 lg:py-16 bg-background flex items-center">
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -128,7 +128,7 @@ export function TrustCredibility() {
           transition={{ duration: 0.6 }}
         >
           <div className="flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-20">
-            
+
             {/* Left: heading and context */}
             <div className="lg:w-2/5 flex-shrink-0">
               <span className="inline-block text-xs font-bold tracking-wider uppercase text-brand-500 mb-4 bg-brand-50 dark:bg-brand-500/10 px-3 py-1 rounded-full">

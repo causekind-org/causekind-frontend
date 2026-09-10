@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
+import Script from "next/script";
 import { RouteProgressBar } from "@/components/RouteProgressBar";
 import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
@@ -98,7 +99,7 @@ export default async function RootLayout({
             useEffect, which runs after paint. Reads only the non-secret
             {email, role} metadata the app already caches, and whitelists the
             role to donor|donee — see lib/roleTheme.ts. */}
-        <script dangerouslySetInnerHTML={{ __html: ROLE_THEME_BOOT_SCRIPT }} />
+        <script suppressHydrationWarning>{ROLE_THEME_BOOT_SCRIPT}</script>
         {/* Material Symbols, subset and pinned.
 
             This was requesting the FULL variable axis range
