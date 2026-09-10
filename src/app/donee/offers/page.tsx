@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getOffersForMyRequests, doneeReviewOffer, type DonationOffer } from "@/lib/api";
@@ -81,11 +82,11 @@ function PhotoLightbox({ urls, index, onClose, onNavigate }: {
               key={u}
               onClick={() => onNavigate(i)}
               aria-label={`Photo ${i + 1}`}
-              className={`h-12 w-12 overflow-hidden rounded-lg border-2 transition-all ${
+              className={`relative h-12 w-12 overflow-hidden rounded-lg border-2 transition-all ${
                 i === index ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-80"
               }`}
             >
-              <img src={u} alt="" className="h-full w-full object-cover" />
+              <Image src={u} alt="" fill className="object-cover" />
             </button>
           ))}
         </div>
@@ -274,9 +275,9 @@ function DoneeOffersView() {
                         key={url}
                         onClick={() => setLightbox({ urls, index: i })}
                         aria-label={`Preview photo ${i + 1}`}
-                        className="group aspect-square cursor-zoom-in overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+                        className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
                       >
-                        <img src={url} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <Image src={url} alt="" fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                       </button>
                     ))}
                   </div>

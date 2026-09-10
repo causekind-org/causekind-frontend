@@ -23,10 +23,10 @@ export function TrustBand() {
           <li
             key={title}
             className={`flex min-w-0 items-center justify-center gap-2 px-1.5 sm:gap-3 sm:px-3 lg:gap-4 lg:px-[clamp(1rem,2.8vw,3.6rem)] ${
-              index > 0 ? "border-l border-[#c65729]/18 dark:border-white/10" : ""
+              index > 0 ? "border-l border-[var(--ck-home-accent,#c65729)]/18 dark:border-white/10" : ""
             }`}
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#fce1c5] text-[#c54805] dark:bg-[#c54805]/22 dark:text-[#f2a06e] sm:size-10 lg:size-[clamp(2.8rem,3.5vw,4.15rem)]">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--ck-home-soft,#fce1c5)] text-[var(--ck-home-ink,#c54805)] dark:bg-[var(--ck-home-accent,#c54805)]/22 dark:text-[var(--ck-home-highlight,#f2a06e)] sm:size-10 lg:size-[clamp(2.8rem,3.5vw,4.15rem)]">
               <Icon className="size-4 sm:size-5 lg:size-[clamp(1.25rem,1.7vw,2rem)]" strokeWidth={1.7} aria-hidden />
             </span>
 

@@ -30,7 +30,6 @@ import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
 import { BeTheChangeSection } from "@/components/BeTheChangeSection";
-import { DoneeRequestsSection } from "@/components/home/DoneeRequestsSection";
 import { ComingSoonMagnets } from "@/components/ComingSoonMagnets";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -204,24 +203,6 @@ export default function HomeClient({
     return out;
   }, [itemRequests, selectedCategory, myProfile]);
 
-  /*
-    What "Watching for you" counts.
-
-    `itemRequests` comes from `/api/v1/item-requests`, which requires a session.
-    It is empty on every server render (there is no cookie there) and stays empty
-    for a logged-out visitor, because the client refetch 401s and is swallowed.
-    That band renders for guests, so keyed off `itemRequests` alone it reported
-    every category "quiet" no matter how many verified needs were open — the
-    exact failure `page.tsx` already avoids for the campaign surfaces by
-    preferring the public endpoint.
-
-    Falls back rather than replaces: a signed-in donor's board is the more
-    specific list (it is theirs, and distance-aware), so it wins whenever it has
-    anything in it. `PublicItemRequest` carries `category`, which is all this
-    band reads.
-  */
-  const watchedRequests = itemRequests.length > 0 ? itemRequests : initialPublicRequests;
-
   // ── Raksha Bandhan ────────────────────────────────────────────────────────
   //
   // One switch, read once here and handed down, so the hero thread, the need at
@@ -339,7 +320,7 @@ export default function HomeClient({
     : "";
 
   return (
-    <div className="bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+    <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
       {/* Welcome modal & profile toast for incomplete NGO profiles */}
       {isNgo && userIdentifier && ngoAppStatus !== "SUBMITTED" && (
         <>
@@ -374,10 +355,12 @@ export default function HomeClient({
           Each section is its own extracted component — edit the
           file in src/components/home/ to change that section.
       ════════════════════════════════════════════════════════════ */}
-      <div className="hidden lg:block bg-white dark:bg-zinc-950 relative z-10">
+      {/* One paper for the whole desktop page. Sections are transparent over
+          it — see PageSection for why they no longer bring their own. */}
+      <div className="hidden lg:block bg-[var(--surface-cream,#faf8f5)] dark:bg-zinc-950 relative z-10">
         {/* Mobile stats strip (inside desktop wrapper but sm:hidden) */}
         {FEATURES.money && (
-          <div className="sm:hidden overflow-hidden border-b border-orange-100 bg-white dark:bg-zinc-950">
+          <div className="sm:hidden overflow-hidden border-b border-[var(--ck-home-surface,#ffedd5)] bg-white dark:bg-zinc-950">
             <div className="stats-ticker-track py-3.5">
               {[0, 1].map(copy => (
                 <div key={copy} className="flex items-center shrink-0">
@@ -403,51 +386,50 @@ export default function HomeClient({
           </>
         )}
 
-        <SectionDivider />
 
-        {/* Live Needs section — real verified needs across multiple categories */}
-        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+        {/* "What We Provide" — 2-step dark section. Second on the page, right
+            after the hero: it is the one section that explains what actually
+            happens here, so it earns the position before the visitor is asked
+            to look at open needs. */}
+        <ItemDonationScrolly />
 
         {/* Donor / Donee pathways — the two sides of the platform, each with a
-            role-preselecting signup CTA. Placed high so the visitor is told
-            which side they are on before being told why the platform is worth
-            using. ("Why CauseKind" used to follow this and was removed on
-            2026-08-21: it advertised fundraising, which FEATURES.money gates
-            off, and repeated three claims the Be the Change band already makes.)
+            role-preselecting signup CTA. Third on the page, so the visitor is
+            told which side they are on before being shown the board.
+            ("Why CauseKind" used to follow this and was removed on 2026-08-21:
+            it advertised fundraising, which FEATURES.money gates off, and
+            repeated three claims the Be the Change band already makes.)
 
             Guest-only, and gated in both responsive trees — see the mobile copy
             below. Asking someone who is already signed in to "Join as a donor"
             is the whole reason for the condition. */}
         {showAudiencePathways && (
           <>
-            <SectionDivider />
             <AudiencePathwaysSection />
           </>
         )}
 
-        <SectionDivider />
 
-        {/* "What We Provide" — 2-step dark section */}
-        <ItemDonationScrolly />
+        {/* Live Needs section — real verified needs across multiple categories */}
+        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
           <>
-            <SectionDivider />
             <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
           </>
         )}
 
         {/* In-Kind Requests section — hidden from landing page; shown only via WelcomeOverlay filter */}
         {false && (loading || itemRequests.length > 0) && (
-          <section id="inkind-requests-section" className="bg-white dark:bg-zinc-900 border-b border-orange-100/35 dark:border-stone-850 py-20">
+          <section id="inkind-requests-section" className="bg-white dark:bg-zinc-900 border-b border-[var(--ck-home-surface,#ffedd5)]/35 dark:border-stone-850 py-20">
             <div className="mx-auto max-w-7xl px-6">
               <Reveal className="mb-14">
                 <div className="grid lg:grid-cols-[1fr_auto] gap-6 items-end">
                   <div>
                     <div className="flex items-center gap-4 mb-3">
-                      <span className="text-2xs font-black uppercase tracking-widest text-[#b04a15]">In-Kind Giving</span>
-                      <span className="h-px flex-1 bg-[#b04a15]/20" />
+                      <span className="text-2xs font-black uppercase tracking-widest text-[var(--ck-home-ink,#b04a15)]">In-Kind Giving</span>
+                      <span className="h-px flex-1 bg-[var(--ck-home-accent,#b04a15)]/20" />
                     </div>
                     <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
                       {selectedCategory ? `${selectedCategory} Needs Near You` : t("inkindSection.title")}
@@ -457,7 +439,7 @@ export default function HomeClient({
                     </p>
                   </div>
                   <Link href="/requests" className="inline-flex shrink-0">
-                    <Button variant="outline" className="btn-3d border-orange-200 dark:border-stone-850 hover:bg-orange-50 dark:hover:bg-zinc-800 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200">
+                    <Button variant="outline" className="btn-3d border-[var(--ck-home-soft,#fed7aa)] dark:border-stone-850 hover:bg-[var(--ck-home-surface,#fff7ed)] dark:hover:bg-zinc-800 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200">
                       {t("inkindSection.browseAll")} <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
@@ -466,7 +448,7 @@ export default function HomeClient({
 
               {loading ? (
                 <div className="flex justify-center py-20">
-                  <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#b04a15]/20 border-t-[#b04a15]" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" />
                 </div>
               ) : (
                 <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
@@ -477,7 +459,7 @@ export default function HomeClient({
                       <Reveal key={req.id} delay={i * 90} className={isFeatured ? "col-span-2 lg:col-span-1 row-span-2 lg:row-span-1" : ""}>
                         <HoverCard openDelay={300}>
                           <HoverCardTrigger asChild>
-                            <Card className={`card-glow inkind-card-featured bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-zinc-800 overflow-hidden flex flex-col cursor-pointer group transition-all duration-300 ${isFeatured ? "lg:min-h-[320px]" : isTall ? "min-h-[280px]" : "min-h-[220px]"}`}>
+                            <Card className={`card-glow inkind-card-featured bg-white dark:bg-zinc-900 rounded-2xl border border-[var(--ck-home-surface,#ffedd5)] dark:border-zinc-800 overflow-hidden flex flex-col cursor-pointer group transition-all duration-300 ${isFeatured ? "lg:min-h-[320px]" : isTall ? "min-h-[280px]" : "min-h-[220px]"}`}>
                               <div className={`relative w-full bg-stone-100 dark:bg-zinc-950 shrink-0 overflow-hidden ${isFeatured ? "h-40 sm:h-52" : "h-28 sm:h-36"}`}>
                                 <Image src={req.imageUrl || getMobileCardImage(req.category, req.id)} alt={req.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 33vw" />
                                 {isFeatured && <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />}
@@ -506,12 +488,12 @@ export default function HomeClient({
                                     <TranslatedText text={req.description} />
                                   </p>
                                 )}
-                                <div className="mt-auto pt-2 border-t border-orange-50 dark:border-zinc-800 flex justify-between items-center">
+                                <div className="mt-auto pt-2 border-t border-[var(--ck-home-surface,#fff7ed)] dark:border-zinc-800 flex justify-between items-center">
                                   <span className="text-3xs sm:text-xs text-stone-400 font-semibold">
                                     Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span>
                                   </span>
                                   <Link href="/requests" className="inline-flex">
-                                    <span className="text-[#b04a15] font-extrabold uppercase text-4xs sm:text-3xs tracking-wider hover:underline">Give →</span>
+                                    <span className="text-[var(--ck-home-ink,#b04a15)] font-extrabold uppercase text-4xs sm:text-3xs tracking-wider hover:underline">Give →</span>
                                   </Link>
                                 </div>
                               </CardContent>
@@ -521,7 +503,7 @@ export default function HomeClient({
                             <div className="space-y-2">
                               <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight"><TranslatedText text={req.title} /></h4>
                               <p className="text-sm text-stone-500 dark:text-stone-400">{req.description ? <TranslatedText text={req.description} /> : `Requested by ${req.doneeName}. Qty ${req.quantity} needed.`}</p>
-                              <div className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-bold">Requested by: {req.doneeName}</div>
+                              <div className="text-xs text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] font-bold">Requested by: {req.doneeName}</div>
                             </div>
                           </HoverCardContent>
                         </HoverCard>
@@ -544,27 +526,15 @@ export default function HomeClient({
           />
         )}
 
-        <SectionDivider />
 
         {/* "Be the Change" feature cards */}
         <BeTheChangeSection />
 
-        {/* Donee requests, filtered by the donor's chosen focus areas — hidden for donees themselves.
 
-            `watchedRequests`, not `itemRequests`: this section renders for
-            logged-out visitors too, and the authenticated board is empty for
-            them. See the note beside the definition. */}
-        {/* No <SectionDivider/> here: DoneeRequestsSection self-nulls (two early
-            returns), so a divider gated on this condition outlives it and
-            stacks against the next one. It owns its own divider instead. */}
-        {user?.role !== "DONEE" && <DoneeRequestsSection itemRequests={watchedRequests} />}
-
-        <SectionDivider />
 
         {/* Coming soon magnets */}
         <ComingSoonMagnets />
 
-        <SectionDivider />
 
         {/* Bottom CTA — hidden when logged in */}
         <CTASection />
@@ -578,7 +548,7 @@ export default function HomeClient({
       <div className="lg:hidden min-h-screen bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-5">
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white */}
         {FEATURES.money && (
-          <div className="overflow-hidden bg-[#b04a15] -mx-4">
+          <div className="overflow-hidden bg-[var(--ck-home-accent,#b04a15)] -mx-4">
             <div className="animate-stats-ticker flex gap-0 whitespace-nowrap py-2">
               {[0, 1].map(copy => (
                 <div key={copy} className="flex items-center gap-8 px-4 shrink-0">
@@ -603,16 +573,16 @@ export default function HomeClient({
               <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
                 <TranslatedText text="Latest Active Campaigns" />
               </h2>
-              <Link href="/campaigns" className="text-3xs font-extrabold text-[#b04a15] uppercase tracking-wider hover:underline">
+              <Link href="/campaigns" className="text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
                 <TranslatedText text="Browse All" /> →
               </Link>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 px-1 -mx-5 scrollbar-none snap-x snap-mandatory">
-              {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15]" /></div>}
+              {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" /></div>}
               {!loading && campaigns.slice(0, 5).map(campaign => {
                 const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
                 return (
-                  <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.75rem] p-3.5 border border-[#e8e2d5]/60 dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0 shadow-xs">
+                  <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.75rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)]/60 dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0 shadow-xs">
                     <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
                       <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
                         <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
@@ -623,20 +593,20 @@ export default function HomeClient({
                       <h4 className="text-2xs font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {[campaign.city, campaign.category].map(t => (
-                          <span key={t} className="bg-[#faf1e1] dark:bg-zinc-850 text-[#b04a15] dark:text-orange-400 font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
+                          <span key={t} className="bg-[var(--ck-home-surface,#faf1e1)] dark:bg-zinc-850 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-highlight,#fb923c)] font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
                         ))}
                       </div>
                       <div className="mt-2.5 space-y-1">
                         <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
-                          <span>Progress</span><span className="text-[#b04a15]">{pct}% Funded</span>
+                          <span>Progress</span><span className="text-[var(--ck-home-ink,#b04a15)]">{pct}% Funded</span>
                         </div>
                         <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
-                          <div className="bg-[#b04a15] h-full rounded-full" style={{ width: `${pct}%` }} />
+                          <div className="bg-[var(--ck-home-accent,#b04a15)] h-full rounded-full" style={{ width: `${pct}%` }} />
                         </div>
                         <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
                       </div>
                       <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
-                        <button className="w-full bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
+                        <button className="w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
                       </Link>
                     </div>
                   </div>

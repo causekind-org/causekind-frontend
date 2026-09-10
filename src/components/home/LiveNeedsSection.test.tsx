@@ -53,12 +53,24 @@ const SAMPLE_REQUESTS: PublicItemRequest[] = [
 ];
 
 describe("LiveNeedsSection", () => {
-  it("renders the headline and live pulsing indicator", () => {
+  it("renders the headline", () => {
     render(<LiveNeedsSection initialRequests={SAMPLE_REQUESTS} />);
 
     expect(screen.getByText(/Real people\. Real needs\./i)).toBeInTheDocument();
-    expect(screen.getByText(/Live Open Needs/i)).toBeInTheDocument();
-    expect(screen.getByText(/3 verified needs awaiting items/i)).toBeInTheDocument();
+  });
+
+  /**
+   * The green "Live Open Needs · N verified needs awaiting items" pill was
+   * removed deliberately: it was the only emerald element on a page being
+   * brought onto one palette. The count it carried is not lost — when the board
+   * holds more than the grid shows, the overflow line under the grid states the
+   * remainder (see liveNeedsOverflow.test.tsx).
+   */
+  it("no longer renders the live indicator pill", () => {
+    render(<LiveNeedsSection initialRequests={SAMPLE_REQUESTS} />);
+
+    expect(screen.queryByText(/Live Open Needs/i)).toBeNull();
+    expect(screen.queryByText(/verified needs awaiting items/i)).toBeNull();
   });
 
   it("renders cards with category icons, locations, quantities, and locked CTAs", () => {

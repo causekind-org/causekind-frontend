@@ -18,8 +18,8 @@ export function DesktopStatsBar({ stats }: { stats: PlatformStats | null }) {
   const tStats = useTranslations("stats");
 
   const items = [
-    { value: stats ? `₹${formatINR(stats.totalRaised)}` : "₹5,652", label: tStats("totalRaised"),    icon: Coins,    color: "text-[#b04a15]"  },
-    { value: stats ? stats.activeCampaigns             : "3",       label: tStats("activeCampaigns"), icon: Heart,    color: "text-[#c2660a]"  },
+    { value: stats ? `₹${formatINR(stats.totalRaised)}` : "₹5,652", label: tStats("totalRaised"),    icon: Coins,    color: "text-[var(--ck-home-ink,#b04a15)]"  },
+    { value: stats ? stats.activeCampaigns             : "3",       label: tStats("activeCampaigns"), icon: Heart,    color: "text-[var(--ck-home-ink,#c2660a)]"  },
     { value: stats ? stats.totalDonations               : "24",      label: tStats("donations"),       icon: Sparkles, color: "text-[#1e3a60]"  },
     { value: stats ? stats.uniqueDonors                 : "18",      label: tStats("donors"),          icon: Users,    color: "text-amber-700"  },
   ];
@@ -45,9 +45,9 @@ export function LiveTicker({ activity }: { activity: RecentActivity[] }) {
   if (!activity.length) return null;
 
   return (
-    <div className="bg-orange-50/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
-      <span className="shrink-0 ml-6 rounded-full bg-[#963c0d] px-3 py-1 text-3xs font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
-        <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#f0b97a]" />
+    <div className="bg-[var(--ck-home-surface,#fff7ed)]/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
+      <span className="shrink-0 ml-6 rounded-full bg-[var(--ck-home-accent,#963c0d)] px-3 py-1 text-3xs font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
+        <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--ck-home-highlight,#f0b97a)]" />
         LIVE
       </span>
       <div className="overflow-hidden flex-1">
@@ -56,8 +56,8 @@ export function LiveTicker({ activity }: { activity: RecentActivity[] }) {
             <span key={i} className="flex items-center gap-2 text-xs text-stone-500 font-bold whitespace-nowrap px-8">
               {a.type === "DONATION" ? (
                 <>
-                  <span className="inline-block h-2 w-2 rounded-full bg-[#b04a15]" />
-                  <span className="text-[#b04a15] font-extrabold">₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}</span>
+                  <span className="inline-block h-2 w-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
+                  <span className="text-[var(--ck-home-ink,#b04a15)] font-extrabold">₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}</span>
                   {" donated to "}
                   <span className="font-extrabold text-stone-800 dark:text-stone-200"><TranslatedText text={a.campaignTitle} /></span>
                   <span className="text-stone-400">· <TranslatedText text={a.city} /></span>

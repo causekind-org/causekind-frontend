@@ -1594,5 +1594,17 @@
     "impactBody": "Helping people in your neighborhood.",
     "togetherTitle": "Stronger Together",
     "togetherBody": "Better community. Better tomorrow."
+  },
+  "needProfileGate": {
+    "incompleteTitle": "Finish your profile first",
+    "incompleteBody": "You can post a need as soon as these are saved. It is a one-time step — every future request reuses it.",
+    "completeCta": "Complete my profile",
+    "notNow": "Not now",
+    "reassurance": "Your documents stay private and are reviewed only by our team.",
+    "errorTitle": "We could not check your profile",
+    "retry": "Try again",
+    "goAnyway": "Continue anyway",
+    "close": "Close",
+    "stillNeeded": "Still needed ({count})"
   }
 }

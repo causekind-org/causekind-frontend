@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { NewRequestLink } from "@/components/NewRequestLink";
 import {
   Stethoscope, BookOpen, Sprout, Users, Home, Package,
   MapPin, ChevronDown, ArrowRight, Plus, ShieldCheck,
@@ -197,12 +198,12 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
 
             {/* CTA row */}
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 anim-up anim-d4">
-              <Link href="/requests/new">
+              <NewRequestLink href="/requests/new">
                 <button className="flex items-center gap-2.5 bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] active:scale-[0.97] text-stone-950 font-extrabold px-4 sm:px-7 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-sm transition-all shadow-xl shadow-[var(--ck-role-highlight)]/20 btn-shine">
                   <Plus className="w-4 h-4" />
                   Post a Need
                 </button>
-              </Link>
+              </NewRequestLink>
               {myRequestCount > 0 && (
                 <a href="#my-requests" className="flex items-center gap-2 text-white/55 hover:text-white text-sm sm:text-sm font-bold transition-colors">
                   My {myRequestCount} request{myRequestCount !== 1 ? "s" : ""}
@@ -413,7 +414,7 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
 
           return (
             <Reveal key={cat} delay={i * 75}>
-              <Link href={`/requests/new?category=${encodeURIComponent(cat)}`}>
+              <NewRequestLink prefetch={false} href={`/requests/new?category=${encodeURIComponent(cat)}`}>
                 <div className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${gradient}
                                 h-[102px] sm:h-44 flex flex-col justify-between p-2 sm:p-5 cursor-pointer
                                 hover:-translate-y-2 hover:shadow-xl ${shadow}
@@ -450,7 +451,7 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
                     </div>
                   </div>
                 </div>
-              </Link>
+              </NewRequestLink>
             </Reveal>
           );
         })}
@@ -476,11 +477,11 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
                 <span className="ml-2 sm:ml-3 text-sm sm:text-base font-semibold text-stone-400">({requests.length})</span>
               </h2>
             </div>
-            <Link href="/requests/new">
+            <NewRequestLink href="/requests/new">
               <button className="flex items-center gap-1.5 sm:gap-2 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-bold px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-2xs sm:text-xs transition-all shadow-sm">
                 <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> New Need
               </button>
-            </Link>
+            </NewRequestLink>
           </div>
         </Reveal>
 
@@ -583,13 +584,13 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
       <Reveal delay={420}>
         <div className="mt-7 sm:mt-12 text-center">
           <p className="text-stone-500 dark:text-stone-400 text-sm sm:text-sm mb-3 sm:mb-5">Don&apos;t see what you need? Post your own.</p>
-          <Link href="/requests/new">
+          <NewRequestLink href="/requests/new">
             <button className="inline-flex items-center gap-2 sm:gap-2.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-extrabold px-4 py-2.5 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-sm transition-all shadow-lg shadow-blue-900/20 btn-shine">
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Post What You Need
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
-          </Link>
+          </NewRequestLink>
         </div>
       </Reveal>
     </div>

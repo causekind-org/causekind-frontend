@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { NewRequestLink } from "@/components/NewRequestLink";
+import Image from "next/image";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import {
@@ -403,10 +405,10 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
           {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
           {canDeleteDraft(r.status) && (
             <>
-              <Link href={`/requests/new?draftId=${r.id}`}
+              <NewRequestLink href={`/requests/new?draftId=${r.id}`}
                 className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#1e3a60]/30 dark:border-blue-400/40 text-2xs font-bold text-[#1e3a60] dark:text-blue-400 hover:bg-[#1e3a60]/5 dark:hover:bg-blue-400/10 transition-colors">
                 <Pencil className="w-3 h-3" /> Continue editing
-              </Link>
+              </NewRequestLink>
               <DeleteDraftButton requestId={r.id} onDeleted={onCancelled} />
             </>
           )}
@@ -545,8 +547,8 @@ function OfferStageCard({
           <p className="text-xs text-stone-500 mt-0.5">{offer.requestCategory}{offer.requestCity ? ` · ${offer.requestCity}` : ""}</p>
         </div>
         {offer.media?.[0] && (
-          <div className="h-10 sm:h-12 w-10 sm:w-12 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
-            <img src={offer.media[0].mediaUrl} alt="" className="h-full w-full object-cover" />
+          <div className="relative h-10 sm:h-12 w-10 sm:w-12 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
+            <Image src={offer.media[0].mediaUrl} alt="" fill className="object-cover" />
           </div>
         )}
       </div>
@@ -1016,11 +1018,11 @@ function DoneeDashboard({
                   : "Post your first need and we'll find a verified donor near you."}
               </p>
             </motion.div>
-            <Link href="/requests/new" data-tour="primary-cta">
+            <NewRequestLink href="/requests/new" data-tour="primary-cta">
               <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-xl sm:rounded-2xl px-3.5 sm:px-6 py-2 sm:py-3 h-auto text-sm sm:text-sm flex items-center gap-2 shadow-xl shadow-[var(--ck-role-highlight)]/20 shrink-0">
                 <Plus className="w-4 h-4" /> Post a Need
               </Button>
-            </Link>
+            </NewRequestLink>
           </div>
 
           {/* Impact ledger — live numbers over hairline rules, no stat cards */}
@@ -1146,8 +1148,8 @@ function DoneeDashboard({
                           )}
                         </div>
                         {offer.media?.[0] && (
-                          <div className="h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
-                            <img src={offer.media[0].mediaUrl} alt="" className="h-full w-full object-cover" />
+                          <div className="relative h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
+                            <Image src={offer.media[0].mediaUrl} alt="" fill className="object-cover" />
                           </div>
                         )}
                       </div>
@@ -1333,9 +1335,9 @@ function DoneeDashboard({
                 <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
                 <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
               </div>
-              <Link href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0">
+              <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0">
                 <Plus className="w-3.5 h-3.5" /> New need
-              </Link>
+              </NewRequestLink>
             </div>
 
             {itemRequests.length === 0 ? (
@@ -1345,9 +1347,9 @@ function DoneeDashboard({
                 </div>
                 <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing posted yet</p>
                 <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Tell us what you need &mdash; books, clothes, medical supplies &mdash; and we&apos;ll find donors nearby.</p>
-                <Link href="/requests/new">
+                <NewRequestLink href="/requests/new">
                   <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
-                </Link>
+                </NewRequestLink>
               </div>
             ) : (
               <div>
@@ -1722,11 +1724,11 @@ export default function DashboardPage() {
                 </Link>
               )}
               {(myProfile?.role === "DONEE" || myProfile?.role === "ADMIN") && (
-                <Link href="/requests/new">
+                <NewRequestLink href="/requests/new">
                   <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 h-auto flex items-center gap-1.5 text-sm sm:text-sm">
                     <Plus className="w-4 h-4" /> Post a Need
                   </Button>
-                </Link>
+                </NewRequestLink>
               )}
             </div>
           </div>
@@ -2143,19 +2145,19 @@ export default function DashboardPage() {
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">01</div>
                     <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 mb-4 relative z-10">
                       <CardTitle className="text-sm sm:text-base font-bold">My Needs & Requests</CardTitle>
-                      <Link href="/requests/new">
+                      <NewRequestLink href="/requests/new">
                         <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">
                           <Plus className="w-3.5 h-3.5 mr-1" /> New Need
                         </Button>
-                      </Link>
+                      </NewRequestLink>
                     </CardHeader>
                     <CardContent className="space-y-3 sm:space-y-4 relative z-10">
                       {itemRequests.length === 0 ? (
                         <div className="py-7 sm:py-12 text-center">
                           <p className="text-sm text-stone-400">You haven&apos;t posted any needs yet.</p>
-                          <Link href="/requests/new" className="inline-block mt-3">
+                          <NewRequestLink href="/requests/new" className="inline-block mt-3">
                             <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">Post your first need</Button>
-                          </Link>
+                          </NewRequestLink>
                         </div>
                       ) : (
                         <div className="divide-y space-y-3">
@@ -2182,10 +2184,10 @@ export default function DashboardPage() {
                                   </Badge>
                                   {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
                                   {r.status === "DRAFT" && (
-                                    <Link href={`/requests/new?draftId=${r.id}`}
+                                    <NewRequestLink href={`/requests/new?draftId=${r.id}`}
                                       className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-2xs font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
                                       <Pencil className="w-3 h-3" /> Continue editing
-                                    </Link>
+                                    </NewRequestLink>
                                   )}
                                 </div>
                               </div>
