@@ -48,7 +48,7 @@ export function CategoryStrip() {
   return (
     <nav
       aria-label={t("ariaLabel")}
-      className="min-w-0 w-full max-w-full rounded-[1.55rem] bg-[#fffdf9]/96 px-2.5 py-2 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_16px_42px_rgba(91,50,22,0.14),0_0_0_1px_rgba(110,62,30,0.045)] backdrop-blur-[3px] dark:bg-stone-950/95 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_16px_42px_rgba(0,0,0,0.3)] sm:px-3 lg:rounded-[2rem] lg:px-[clamp(1rem,2.2vw,2.75rem)] lg:py-[clamp(0.55rem,1.3vh,0.95rem)]"
+      className="min-w-0 w-full max-w-full rounded-[1.55rem] bg-[#fffdf9]/96 px-2.5 py-2 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_16px_42px_rgba(var(--ck-home-shadow-rgb,91,50,22),0.14),0_0_0_1px_rgba(var(--ck-home-shadow-rgb,110,62,30),0.045)] backdrop-blur-[3px] dark:bg-stone-950/95 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_16px_42px_rgba(0,0,0,0.3)] sm:px-3 lg:rounded-[2rem] lg:px-[clamp(1rem,2.2vw,2.75rem)] lg:py-[clamp(0.55rem,1.3vh,0.95rem)]"
     >
       <p className="sr-only">{t("heading")}</p>
 
@@ -70,7 +70,7 @@ export function CategoryStrip() {
               >
                 {index > 0 ? (
                   <span
-                    className="absolute bottom-[18%] left-0 top-[18%] hidden w-px bg-[#c65729]/18 lg:block dark:bg-white/10"
+                    className="absolute bottom-[18%] left-0 top-[18%] hidden w-px bg-[var(--ck-home-accent,#c65729)]/18 lg:block dark:bg-white/10"
                     aria-hidden
                   />
                 ) : null}
@@ -78,11 +78,11 @@ export function CategoryStrip() {
                 <Link
                   href={`/requests/category/${cat.slug}`}
                   aria-label={label}
-                  className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-center transition-[transform,background-color] duration-200 ease-out hover:-translate-y-1 hover:bg-[#c54805]/5 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c54805] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fffdf9] dark:hover:bg-white/5 dark:focus-visible:ring-offset-stone-950 sm:gap-1.5 lg:min-h-[clamp(4.8rem,9.7vh,6.6rem)] lg:gap-2"
+                  className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-center transition-[transform,background-color] duration-200 ease-out hover:-translate-y-1 hover:bg-[var(--ck-home-hover,#c54805)]/5 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#c54805)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fffdf9] dark:hover:bg-white/5 dark:focus-visible:ring-offset-stone-950 sm:gap-1.5 lg:min-h-[clamp(4.8rem,9.7vh,6.6rem)] lg:gap-2"
                 >
                   <span
                     className={`flex size-8 items-center justify-center ${
-                      visual?.text ?? "text-[#bd4c20] dark:text-[#f09a67]"
+                      visual?.text ?? "text-[var(--ck-home-ink,#bd4c20)] dark:text-[var(--ck-home-highlight,#f09a67)]"
                     } transition-transform duration-200 ease-out group-hover:-translate-y-0.5 lg:size-10`}
                   >
                     {/* react-icons are solid fills, so there is no strokeWidth to

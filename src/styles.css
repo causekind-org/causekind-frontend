@@ -466,8 +466,14 @@ body {
    screen the moment the URL bar shows — which is one way a section ends up cut
    at the top. svh is the small-viewport value, so it fits either way.
    Spacing budget also trimmed from ~47vh to ~39svh. */
+/* These gaps were tuned when the needs stage was a fixed 280px-tall carousel,
+   so the whole section landed inside one viewport. A content-sized grid card is
+   taller than that stage, which left the donor band flush against the fold and
+   reading as clipped. The bottom gets its own, larger padding so the section
+   always ends with room below it. */
 .ck-live-needs-section {
-  padding-block: clamp(1.25rem, 3svh, 2.75rem);
+  padding-top: clamp(1.25rem, 3svh, 2.75rem);
+  padding-bottom: clamp(2.5rem, 5svh, 4.5rem);
 }
 .ck-live-needs-header-gap {
   padding-bottom: clamp(0.875rem, 2.5svh, 1.75rem);
@@ -476,9 +482,11 @@ body {
   padding-top: clamp(0.25rem, 0.75svh, 0.5rem);
   padding-bottom: clamp(0.625rem, 1.5svh, 1.25rem);
 }
-.ck-live-needs-carousel {
-  height: clamp(200px, 26svh, 280px);
-}
+/* .ck-live-needs-carousel is gone. It gave the needs stage a fixed
+   height — clamp(200px, 26svh, 280px) — while the cards inside it were
+   absolutely positioned, so any card taller than the stage escaped it and
+   painted over the donor band below. The section is a content-sized grid now
+   and needs no height of its own. */
 .ck-live-needs-footer-gap {
   margin-top: clamp(1.25rem, 2.5svh, 2.5rem);
 }
@@ -1248,7 +1256,7 @@ section:focus-within {
 /* ── Bottom chrome geometry — ONE source of truth, site-wide ──────────────
    The floating nav and the bottom blur are two independent fixed elements that
    have to agree about where the bottom of the screen is. They did not: the nav
-   floats `--ck-nav-float + inset` up from the edge and is `--ck-nav-h` tall, so
+   floats `--ck-nav-float + inset` up from the edge and is `--ck-dock-h` tall, so
    its TOP edge sat well above the blur band's top. The blur therefore ended
    mid-air just above the bar (a visible hard cut) while the strip of page
    scrolling below the bar stayed sharp, making the nav look like it was
@@ -1263,8 +1271,8 @@ section:focus-within {
 :root {
   --ck-bottom-inset: env(safe-area-inset-bottom, 0px);
   --ck-nav-float: 0.75rem;   /* island's gap from the screen edge */
-  --ck-nav-h: 5rem;          /* compact bar plus the raised active-tab bead */
-  --ck-bottom-chrome: calc(var(--ck-nav-float) + var(--ck-bottom-inset) + var(--ck-nav-h));
+  --ck-dock-h: 5rem;          /* compact bar plus the raised active-tab bead */
+  --ck-bottom-chrome: calc(var(--ck-nav-float) + var(--ck-bottom-inset) + var(--ck-dock-h));
 }
 
 /* Bottom padding for the page's main element, so content ends ABOVE the dock
@@ -1281,9 +1289,9 @@ section:focus-within {
    The +0.5rem is breathing room, so content clears the dock rather than
    touching it.
 
-   No lg: override needed — at min-width 1024px the block below zeroes
-   --ck-nav-float and --ck-nav-h, so this collapses to the safe-area inset on
-   its own.
+   The dock has its own height token: --ck-nav-h is measured by the TOP
+   header and must never feed bottom spacing. Desktop has no dock, so the
+   page needs no bottom clearance there.
 
    Real CSS, not pb-[var(--ck-bottom-chrome)]: an unemitted Tailwind arbitrary
    value fails silently, and a layout value is the last place that can happen. */
@@ -1294,7 +1302,10 @@ section:focus-within {
 @media (min-width: 1024px) {
   :root {
     --ck-nav-float: 0px;
-    --ck-nav-h: 0px;
+    --ck-dock-h: 0px;
+  }
+  .ck-main-bottom-pad {
+    padding-bottom: 0;
   }
 }
 
@@ -2176,7 +2187,7 @@ body.mobile-menu-open {
 }
 
 .ck-hero-dot-field {
-  background-image: radial-gradient(circle, rgb(197 72 5 / 0.12) 1px, transparent 1.25px);
+  background-image: radial-gradient(circle, rgba(var(--ck-home-shadow-rgb,197,72,5),0.12) 1px, transparent 1.25px);
   background-size: 18px 18px;
   mask-image: linear-gradient(to top, #000, transparent 82%);
 }
@@ -2267,9 +2278,9 @@ body.mobile-menu-open {
   background: linear-gradient(
     108deg,
     transparent 22%,
-    rgb(176 74 21 / 0.02) 39%,
-    rgb(176 74 21 / 0.2) 50%,
-    rgb(176 74 21 / 0.02) 61%,
+    rgba(var(--ck-home-shadow-rgb,176,74,21),0.02) 39%,
+    rgba(var(--ck-home-shadow-rgb,176,74,21),0.2) 50%,
+    rgba(var(--ck-home-shadow-rgb,176,74,21),0.02) 61%,
     transparent 78%
   );
 }
@@ -3565,4 +3576,43 @@ div:has(.searchable-select-open) {
      320 KB need not be fetched at all. */
   .ck-rb-wordmark-video { display: none; }
   .ck-rb-wordmark-static { display: block; }
+}
+
+/* Landing-page accents inherit the signed-in recipient palette. Fallbacks in
+   shared sections preserve their public appearance outside this page. Tokens
+   live on html while home is mounted so the header and portalled dialogs inherit. */
+[data-ck-role-theme="donee"]:has(.ck-home-page) {
+  --ck-home-accent: #1e3a60;
+  --ck-home-ink: var(--ck-role-accent);
+  --ck-home-hover: #2d5a96;
+  --ck-home-deep: #12253f;
+  --ck-home-highlight: #7fb0e8;
+  --ck-home-soft: #dce8f6;
+  --ck-home-surface: #f3f6fb;
+  --ck-home-shadow-rgb: 30,58,96;
+  --rust-action: #1e3a60;
+  --color-orange-50: #f3f6fb;
+  --color-orange-100: #e7eef8;
+  --color-orange-200: #dce8f6;
+  --color-orange-300: #a3c8f2;
+  --color-orange-400: #7fb0e8;
+  --color-orange-500: #4a7fc1;
+  --color-orange-600: #2d5a96;
+  --color-orange-700: #1e3a60;
+  --color-orange-800: #12253f;
+  --color-orange-900: #12253f;
+  --color-orange-950: #0b1929;
+}
+
+/* Category colours are semantic elsewhere; on the home page only, the two
+   warm categories follow the recipient accent, including their hover states. */
+[data-ck-role-theme="donee"]:has(.ck-home-page) {
+  --color-amber-50: #f3f6fb;
+  --color-amber-100: #e7eef8;
+  --color-amber-200: #dce8f6;
+  --color-amber-300: #a3c8f2;
+  --color-amber-400: #7fb0e8;
+  --color-amber-500: #4a7fc1;
+  --color-amber-600: #2d5a96;
+  --color-amber-700: #1e3a60;
 }

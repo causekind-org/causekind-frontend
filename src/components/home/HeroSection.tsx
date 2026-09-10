@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { NewRequestLink } from "@/components/NewRequestLink";
 import { MotionConfig, motion } from "framer-motion";
 import { ArrowRight, Heart, MapPin, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -55,7 +56,7 @@ function LocationMarker() {
     <svg viewBox="0 0 36 44" className="h-10 w-9" aria-hidden>
       <path
         d="M18 42S33 28.2 33 15.8C33 7.6 26.3 1 18 1S3 7.6 3 15.8C3 28.2 18 42 18 42Z"
-        fill="#c54805"
+        fill="var(--ck-home-accent,#c54805)"
         stroke="#fff"
         strokeWidth="2"
       />
@@ -122,7 +123,7 @@ function ConnectionPins() {
              If the cards move again, move these endpoints with them. */
           d="M430 125 C472 82 578 82 620 125"
           fill="none"
-          stroke="#d75a17"
+          stroke="var(--ck-home-accent,#d75a17)"
           strokeLinecap="round"
           strokeWidth="3"
           vectorEffect="non-scaling-stroke"
@@ -137,11 +138,11 @@ function ConnectionPins() {
           animate={{ y: [0, -4, 0] }}
           transition={{ duration: 3.8, ease: "easeInOut", repeat: Infinity, delay }}
         >
-          <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 drop-shadow-[0_5px_8px_rgba(114,43,8,0.25)]">
+          <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 drop-shadow-[0_5px_8px_rgba(var(--ck-home-shadow-rgb,114,43,8),0.25)]">
             <LocationMarker />
           </span>
-          <div className="relative rounded-[0.9rem] bg-[#fffdf9]/96 px-2.5 py-3 shadow-[0_10px_26px_rgba(75,42,19,0.18),0_0_0_1px_rgba(103,58,27,0.05)] backdrop-blur-[2px] dark:bg-stone-900/96">
-            <p className="text-[clamp(0.64rem,0.8vw,0.82rem)] font-extrabold leading-tight text-[#c54805] dark:text-[#f29a65]">
+          <div className="relative rounded-[0.9rem] bg-[#fffdf9]/96 px-2.5 py-3 shadow-[0_10px_26px_rgba(var(--ck-home-shadow-rgb,75,42,19),0.18),0_0_0_1px_rgba(var(--ck-home-shadow-rgb,103,58,27),0.05)] backdrop-blur-[2px] dark:bg-stone-900/96">
+            <p className="text-[clamp(0.64rem,0.8vw,0.82rem)] font-extrabold leading-tight text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]">
               {lead}
             </p>
             <p className="mt-0.5 text-[clamp(0.61rem,0.76vw,0.78rem)] font-bold leading-[1.28] text-[#231d18] dark:text-stone-100">
@@ -156,10 +157,10 @@ function ConnectionPins() {
         {callouts.map(({ lead, rest }) => (
           <div
             key={lead}
-            className="relative w-[8.2rem] rounded-xl bg-[#fffdf9]/94 px-3 py-2.5 text-center shadow-[0_8px_22px_rgba(75,42,19,0.18)] backdrop-blur-[2px] dark:bg-stone-900/94"
+            className="relative w-[8.2rem] rounded-xl bg-[#fffdf9]/94 px-3 py-2.5 text-center shadow-[0_8px_22px_rgba(var(--ck-home-shadow-rgb,75,42,19),0.18)] backdrop-blur-[2px] dark:bg-stone-900/94"
           >
-            <MapPin className="absolute -top-3 left-1/2 size-5 -translate-x-1/2 fill-[#c54805] text-white" aria-hidden />
-            <p className="text-[0.65rem] font-extrabold leading-tight text-[#c54805] dark:text-[#f29a65]">{lead}</p>
+            <MapPin className="absolute -top-3 left-1/2 size-5 -translate-x-1/2 fill-[var(--ck-home-accent,#c54805)] text-white" aria-hidden />
+            <p className="text-[0.65rem] font-extrabold leading-tight text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]">{lead}</p>
             <p className="mt-0.5 text-[0.62rem] font-bold leading-tight text-stone-800 dark:text-stone-100">{rest}</p>
           </div>
         ))}
@@ -185,7 +186,7 @@ export function HeroSection() {
         <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full max-w-[1920px]">
           <div className="ck-lead-hero-stage relative grid min-w-0 bg-[#fdf5ed] dark:bg-[#1a1512] lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
             <div className="ck-hero-copy relative z-10 flex min-w-0 flex-col justify-center px-3 pb-5 pt-4 sm:px-7 sm:pb-7 sm:pt-6 lg:px-0 lg:pb-[clamp(2.6rem,5vh,5.5rem)] lg:pl-[clamp(0.75rem,1.2vw,1.75rem)] lg:pr-[clamp(3rem,6vw,8rem)] lg:pt-[clamp(1.2rem,2.4vh,2.5rem)]">
-              <div className="flex items-center gap-3 text-[#c54805] dark:text-[#f29a65]">
+              <div className="flex items-center gap-3 text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]">
                 <span className="h-px w-8 bg-current opacity-55 sm:w-12" aria-hidden />
                 <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] sm:text-xs lg:text-[clamp(0.68rem,0.78vw,0.92rem)]">
                   {t("eyebrow")}
@@ -198,12 +199,12 @@ export function HeroSection() {
                 className="ck-hero-headline mt-[clamp(0.8rem,2vh,1.65rem)] text-[#100c06] dark:text-stone-50"
               >
                 <span className="block whitespace-nowrap">{t("headlineTop")}</span>
-                <span className="block whitespace-nowrap text-[#c54805] dark:text-[#ef8f54]">
+                <span className="block whitespace-nowrap text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
                   {t("headlineAccent")}
                 </span>
               </h1>
 
-              <div className="mt-[clamp(0.75rem,2.1vh,1.55rem)] flex items-center gap-3 text-[#c54805] dark:text-[#f29a65]" aria-hidden>
+              <div className="mt-[clamp(0.75rem,2.1vh,1.55rem)] flex items-center gap-3 text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]" aria-hidden>
                 <span className="h-px w-[clamp(3.5rem,8vw,8.5rem)] bg-current opacity-55" />
                 <Heart className="size-4 fill-current sm:size-5" strokeWidth={0} />
                 <span className="h-px w-[clamp(3.5rem,8vw,8.5rem)] bg-current opacity-55" />
@@ -215,18 +216,18 @@ export function HeroSection() {
 
               <div className="ck-hero-actions mt-[clamp(1rem,2.6vh,2.2rem)] grid w-full grid-cols-[minmax(0,0.82fr)_minmax(0,1.35fr)] gap-2 sm:flex sm:w-max sm:flex-row sm:flex-nowrap sm:gap-3">
                 {primaryAction.href ? (
-                  <Link
+                  <NewRequestLink
                     href={primaryAction.href}
-                    className="ck-hero-primary-cta group relative isolate inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#b04a15] px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white shadow-[0_11px_25px_rgba(176,74,21,0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#c45520] hover:shadow-[0_15px_30px_rgba(176,74,21,0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a60] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[#f29a65] dark:focus-visible:ring-offset-[#1a1512] sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.045em]"
+                    className="ck-hero-primary-cta group relative isolate inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)] px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a60] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[var(--ck-home-highlight,#f29a65)] dark:focus-visible:ring-offset-[#1a1512] sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="ck-hero-cta-icon relative z-[1] size-4 shrink-0 sm:size-5" strokeWidth={2} aria-hidden />
                     <span className="relative z-[1] min-w-0 text-center">{primaryAction.label}</span>
                     <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
-                  </Link>
+                  </NewRequestLink>
                 ) : (
                   <span
                     aria-hidden
-                    className="inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#b04a15]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.045em]"
+                    className="inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="size-4 shrink-0 sm:size-5" />
                     <span className="min-w-0 text-center">{primaryAction.label}</span>
@@ -236,7 +237,7 @@ export function HeroSection() {
 
                 <Link
                   href="/requests"
-                  className="ck-hero-secondary-cta group relative isolate inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] px-2 text-[0.56rem] font-extrabold uppercase leading-tight tracking-[0.02em] text-[#b04a15] shadow-[inset_0_0_0_1.5px_rgba(176,74,21,0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(176,74,21,0.82),0_10px_22px_rgba(176,74,21,0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:text-[#e07b3a] dark:hover:bg-white/5 dark:focus-visible:ring-offset-[#1a1512] sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.04em]"
+                  className="ck-hero-secondary-cta group relative isolate inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] px-2 text-[0.56rem] font-extrabold uppercase leading-tight tracking-[0.02em] text-[var(--ck-home-ink,#b04a15)] shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.82),0_10px_22px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:text-[var(--ck-home-ink,#e07b3a)] dark:hover:bg-white/5 dark:focus-visible:ring-offset-[#1a1512] sm:min-h-14 sm:w-auto sm:shrink-0 sm:gap-3 sm:whitespace-nowrap sm:rounded-[0.9rem] sm:px-6 sm:text-xs sm:tracking-[0.04em]"
                 >
                   <UsersRound className="ck-hero-cta-icon relative z-[1] size-4 shrink-0 sm:size-5" strokeWidth={2} aria-hidden />
                   <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
@@ -246,7 +247,7 @@ export function HeroSection() {
             </div>
 
             <div className="ck-hero-photo-shell relative min-h-[clamp(10.5rem,24vh,14rem)] min-w-0">
-              <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[#e9c69d]">
+              <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <Image
                   src={HERO_IMAGE}
                   alt={t("photoAlt")}
@@ -256,7 +257,7 @@ export function HeroSection() {
                   className="ck-hero-photo-image object-cover object-center"
                 />
                 <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[12%] bg-gradient-to-r from-[#fdf5ed]/65 to-transparent lg:block dark:from-[#1a1512]/78" aria-hidden />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[17%] bg-gradient-to-t from-[#5d2608]/18 to-transparent" aria-hidden />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[17%] bg-gradient-to-t from-[var(--ck-home-deep,#5d2608)]/18 to-transparent" aria-hidden />
               </div>
               <div
                 className="ck-hero-photo-breakout pointer-events-none absolute inset-0 z-[5] hidden lg:block"

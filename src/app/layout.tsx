@@ -7,6 +7,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
+import { NeedProfileGateProvider } from "@/hooks/useNeedProfileGate";
 import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
@@ -129,6 +130,7 @@ export default async function RootLayout({
           <GoogleProvider>
             <AuthProvider>
               <NotificationsProvider>
+                <NeedProfileGateProvider>
                 {/* Suspense is required, not stylistic: RouteProgressBar calls
                     useSearchParams, and without a boundary Next opts the whole
                     tree out of static rendering and fails the build. It has no
@@ -172,6 +174,7 @@ export default async function RootLayout({
                   />
                   <DeferredOverlays />
                 </RoleClickSpark>
+                </NeedProfileGateProvider>
               </NotificationsProvider>
             </AuthProvider>
           </GoogleProvider>

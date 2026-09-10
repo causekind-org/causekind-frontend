@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { MousePointerClick } from "lucide-react";
 
+// These illustrated cards keep their original brand palettes for every role.
 const TERRACOTTA = "#b04a15";
 const COPPER     = "#e07b3a";
 const INK        = "#1e3a60";
@@ -29,7 +30,7 @@ function Stamp() {
       fontSize: "var(--text-3xs)", fontWeight: 900, letterSpacing: "0.15em",
       textTransform: "uppercase" as const, lineHeight: 1.2,
       userSelect: "none" as const, opacity: 0.9, whiteSpace: "nowrap" as const,
-      boxShadow: `0 0 0 1px ${GOLD}44 inset`,
+      boxShadow: `0 0 0 1px color-mix(in srgb, ${GOLD} 27%, transparent) inset`,
     }}>
       COMING<br />SOON
     </div>
@@ -74,9 +75,9 @@ function PosterFace({ gradient, title, Illustration }: { gradient: string; title
 function FundraisingIllustration() {
   return (
     <svg viewBox="0 0 240 180" fill="none" style={{ width: "100%", height: "100%" }}>
-      <ellipse cx="120" cy="95" rx="95" ry="70" fill={`${TERRACOTTA}10`} />
-      <rect x="44" y="118" width="30" height="42" rx="4" fill={`${TERRACOTTA}38`} />
-      <rect x="90" y="88"  width="30" height="72" rx="4" fill={`${TERRACOTTA}60`} />
+      <ellipse cx="120" cy="95" rx="95" ry="70" fill={`color-mix(in srgb, ${TERRACOTTA} 6%, transparent)`} />
+      <rect x="44" y="118" width="30" height="42" rx="4" fill={`color-mix(in srgb, ${TERRACOTTA} 22%, transparent)`} />
+      <rect x="90" y="88"  width="30" height="72" rx="4" fill={`color-mix(in srgb, ${TERRACOTTA} 38%, transparent)`} />
       <rect x="136" y="54" width="30" height="106" rx="4" fill={TERRACOTTA} />
       <polyline points="59,112 105,80 151,48" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       <circle cx="59"  cy="112" r="5" fill={GOLD} />
@@ -84,8 +85,8 @@ function FundraisingIllustration() {
       <circle cx="151" cy="48"  r="5" fill={GOLD} />
       <path d="M174 40 L182 30 L190 40" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       <line x1="182" y1="30" x2="182" y2="56" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="36" cy="52" r="20" fill={`${GOLD}22`} stroke={GOLD} strokeWidth="1.5" />
-      <circle cx="36" cy="52" r="12" fill={`${GOLD}15`} stroke={GOLD} strokeWidth="1" strokeDasharray="3 2" />
+      <circle cx="36" cy="52" r="20" fill={`color-mix(in srgb, ${GOLD} 13%, transparent)`} stroke={GOLD} strokeWidth="1.5" />
+      <circle cx="36" cy="52" r="12" fill={`color-mix(in srgb, ${GOLD} 8%, transparent)`} stroke={GOLD} strokeWidth="1" strokeDasharray="3 2" />
       <path d="M36 44v16M33 47h6a2 2 0 010 4h-4a2 2 0 000 4h6" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
@@ -102,7 +103,7 @@ function OnlineDonationsIllustration() {
       <circle cx="110" cy="121" r="6" fill={`${INK}30`} stroke={INK} strokeWidth="1" />
       <path d="M150 66 Q164 90 150 114" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round" fill="none" />
       <path d="M160 57 Q178 90 160 123" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.4" />
-      <circle cx="55" cy="68" r="18" fill={`${GOLD}22`} stroke={GOLD} strokeWidth="1.5" />
+      <circle cx="55" cy="68" r="18" fill={`color-mix(in srgb, ${GOLD} 13%, transparent)`} stroke={GOLD} strokeWidth="1.5" />
       <path d="M55 60v16M52 63h6a2 2 0 010 4h-4a2 2 0 000 4h6" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
@@ -345,7 +346,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
           }}>{card.title}</h3>
 
           {/* Divider */}
-          <div style={{ height: "1px", background: `${detail.accent}20`, margin: "0 0 14px" }} />
+          <div style={{ height: "1px", background: `color-mix(in srgb, ${detail.accent} 13%, transparent)`, margin: "0 0 14px" }} />
 
           {/* Description */}
           <p style={{
@@ -362,7 +363,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
                 <span style={{
                   flexShrink: 0, marginTop: "2px",
                   width: "18px", height: "18px", borderRadius: "50%",
-                  background: `${detail.accent}18`, color: detail.accent,
+                  background: `color-mix(in srgb, ${detail.accent} 9%, transparent)`, color: detail.accent,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "var(--text-3xs)", fontWeight: 900,
                 }}>✓</span>
@@ -374,8 +375,8 @@ function CardModal({ cardIdx, startRect, onClose }: {
           {/* Notify badge */}
           <div style={{
             marginTop: "22px", padding: "11px 14px", borderRadius: "12px",
-            background: `${detail.accent}0d`,
-            border: `1px solid ${detail.accent}25`,
+            background: `color-mix(in srgb, ${detail.accent} 5%, transparent)`,
+            border: `1px solid color-mix(in srgb, ${detail.accent} 15%, transparent)`,
             display: "flex", alignItems: "center", gap: "8px",
           }}>
             <span style={{ fontSize: "var(--text-sm)" }}>🔔</span>
@@ -773,13 +774,13 @@ export function ComingSoonMagnets() {
       <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
         <div style={{
           position: "absolute", top: "-140px", left: "-100px", width: "440px", height: "440px",
-          borderRadius: "50%", background: `radial-gradient(circle, ${COPPER}30 0%, transparent 70%)`,
+          borderRadius: "50%", background: `radial-gradient(circle, color-mix(in srgb, ${COPPER} 19%, transparent) 0%, transparent 70%)`,
           filter: "blur(48px)", willChange: "transform",
           animation: reducedMotion ? "none" : "ck-blob-a 22s ease-in-out infinite",
         }} />
         <div style={{
           position: "absolute", top: "20%", right: "-140px", width: "480px", height: "480px",
-          borderRadius: "50%", background: `radial-gradient(circle, ${GOLD}2e 0%, transparent 70%)`,
+          borderRadius: "50%", background: `radial-gradient(circle, color-mix(in srgb, ${GOLD} 18%, transparent) 0%, transparent 70%)`,
           filter: "blur(52px)", willChange: "transform",
           animation: reducedMotion ? "none" : "ck-blob-b 26s ease-in-out infinite",
         }} />
@@ -791,10 +792,10 @@ export function ComingSoonMagnets() {
         }} />
         {!reducedMotion && [
           { left: "10%", size: 6, delay: "0s",  dur: "13s", color: GOLD },
-          { left: "24%", size: 4, delay: "4s",  dur: "16s", color: TERRACOTTA },
+          { left: "24%", size: 4, delay: "4s",  dur: "16s", color: "var(--ck-home-ink,#b04a15)" },
           { left: "46%", size: 5, delay: "8s",  dur: "14s", color: COPPER },
           { left: "65%", size: 4, delay: "2s",  dur: "17s", color: GOLD },
-          { left: "81%", size: 6, delay: "6s",  dur: "15s", color: TERRACOTTA },
+          { left: "81%", size: 6, delay: "6s",  dur: "15s", color: "var(--ck-home-ink,#b04a15)" },
           { left: "92%", size: 4, delay: "10s", dur: "18s", color: COPPER },
         ].map((s, i) => (
           <span key={i} style={{
@@ -809,7 +810,7 @@ export function ComingSoonMagnets() {
       <div className="text-center mb-12 relative z-[1]">
         <span
           className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4"
-          style={{ background: `${TERRACOTTA}18`, color: TERRACOTTA }}
+          style={{ background: `color-mix(in srgb, ${TERRACOTTA} 9%, transparent)`, color: "var(--ck-home-ink,#b04a15)" }}
         >
           On the way
         </span>
@@ -818,7 +819,7 @@ export function ComingSoonMagnets() {
           style={{ lineHeight: 1.2 }}
         >
           More ways to give —{" "}
-          <span style={{ color: TERRACOTTA }}>coming soon</span>
+          <span style={{ color: "var(--ck-home-ink,#b04a15)" }}>coming soon</span>
         </h2>
         <p className="mt-3 text-stone-500 dark:text-stone-400 text-base max-w-md mx-auto leading-relaxed">
           CauseKind launches with verified in-kind giving. Monetary features
@@ -854,7 +855,7 @@ export function ComingSoonMagnets() {
             animation: "ck-hint-bob 1.2s ease-in-out infinite",
           }}
         >
-          <MousePointerClick style={{ width: 15, height: 15, color: TERRACOTTA }} />
+          <MousePointerClick style={{ width: 15, height: 15, color: "var(--ck-home-ink,#b04a15)" }} />
         </span>
         <span
           style={{

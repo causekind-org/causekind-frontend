@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { NewRequestLink } from "@/components/NewRequestLink";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import {
   MapPin,
@@ -9,10 +10,7 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
-  HeartHandshake,
   Sparkles,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { loginUrlFor } from "@/lib/safeRedirect";
@@ -22,79 +20,24 @@ import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 
 /**
- * Animated number counter that counts smoothly from 0 to target when scrolled into view.
+ * How many needs the homepage grid shows before handing off to /requests.
+ *
+ * The same number at every breakpoint, deliberately. A smaller mobile cap
+ * would make any "N more" wording wrong at one width or the other, and the
+ * component cannot know the viewport without a media-query hook. Six compact
+ * cards make a long mobile section; that is what a feed looks like.
  */
-function AnimatedCounter({
-  target,
-  duration = 1.6,
-  prefix = "",
-  suffix = "",
-}: {
-  target: number;
-  duration?: number;
-  prefix?: string;
-  suffix?: string;
-}) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.5 });
-  const reduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (!inView) return;
-    if (reduceMotion || target === 0) {
-      setCount(target);
-      return;
-    }
-
-    let startTime: number | null = null;
-    let frameId: number;
-
-    const step = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(easeProgress * target));
-
-      if (progress < 1) {
-        frameId = requestAnimationFrame(step);
-      } else {
-        setCount(target);
-      }
-    };
-
-    frameId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frameId);
-  }, [inView, target, duration, reduceMotion]);
-
-  return (
-    <span ref={ref} className="tabular-nums">
-      {prefix}
-      {count.toLocaleString("en-IN")}
-      {suffix}
-    </span>
-  );
-}
-
-/**
- * Shortest-path circular distance from `active` to `idx` within a list of
- * length `len`. Returns a signed offset in {-1, 0, 1, ...}; used to decide
- * whether a card renders as the center card, an immediate left/right
- * neighbour (blurred, peeking), or stays hidden off-stage.
- */
-function circularOffset(idx: number, active: number, len: number): number {
-  const raw = idx - active;
-  const half = len / 2;
-  if (raw > half) return raw - len;
-  if (raw < -half) return raw + len;
-  return raw;
-}
+const NEEDS_SHOWN = 6;
 
 export function LiveNeedsSection({
   initialRequests = [],
-  stats,
 }: {
   initialRequests?: PublicItemRequest[];
+  /**
+   * Still accepted so HomeClient's call site is unchanged, but no longer read:
+   * the only thing this section took from it was `totalDonations`, which was
+   * rendering as the "0+ Needs Fulfilled" counter described below.
+   */
   stats?: PlatformStats | null;
 }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -131,67 +74,43 @@ export function LiveNeedsSection({
   // array) is what renders. No local fallback/dummy data masking a real empty state.
   const allNeeds = initialRequests ?? [];
 
-  // Filter based on selected category pill
-  const displayedNeeds = useMemo(() => {
-    if (selectedCategory === "All") {
-      return allNeeds.slice(0, 6);
-    }
-    return allNeeds.filter((n) => n.category === selectedCategory).slice(0, 6);
-  }, [allNeeds, selectedCategory]);
+  /*
+   * The filtered list and the six we show are derived separately, on purpose.
+   *
+   * The API caps nothing — `getPublicApproved` returns every PUBLIC_REQUEST —
+   * so at any real volume this grid is a sample. Slicing inside the same memo
+   * that filters would leave us with no honest denominator: the eyebrow would
+   * still announce the true total while the grid quietly showed six, and the
+   * category pill counts would promise nine and deliver six.
+   */
+  const filteredNeeds = useMemo(
+    () =>
+      selectedCategory === "All"
+        ? allNeeds
+        : allNeeds.filter((n) => n.category === selectedCategory),
+    [allNeeds, selectedCategory],
+  );
+  const displayedNeeds = filteredNeeds.slice(0, NEEDS_SHOWN);
+  const hiddenCount = filteredNeeds.length - displayedNeeds.length;
 
   const totalOpenCount = allNeeds.length;
   const cardCount = displayedNeeds.length;
 
-  // ── Coverflow carousel state ──────────────────────────────────────────────
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  // Reset carousel position whenever the filtered list changes
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [selectedCategory]);
-
-  // Auto-advance every 2s, paused on hover
-  useEffect(() => {
-    if (isPaused || cardCount <= 1) return;
-    const timer = setTimeout(() => {
-      setActiveIndex((i) => (i + 1) % cardCount);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [activeIndex, isPaused, cardCount]);
-
-  const goPrev = () => {
-    if (cardCount <= 1) return;
-    setActiveIndex((i) => (i - 1 + cardCount) % cardCount);
-  };
-
-  const goNext = () => {
-    if (cardCount <= 1) return;
-    setActiveIndex((i) => (i + 1) % cardCount);
-  };
-
-  /**
-   * Computes the position/scale/blur/opacity for a card at circular `offset`
-   * from the active card. offset 0 = center, clear. ±1 = immediate neighbour,
-   * blurred and peeking to the side. Anything further is pushed off-stage and
-   * hidden — sliding into that position happens by passing through ±1 first,
-   * which is exactly what changing activeIndex + a CSS transition gives us.
+  /*
+   * How many open needs sit behind each category pill.
+   *
+   * Without this every pill looked equally clickable and most of them led
+   * straight to "No open requests in X right now" — nine invitations, one of
+   * which goes anywhere. A pill with a count is an offer; a pill without one is
+   * information.
    */
-  function getCardStyle(offset: number): React.CSSProperties {
-    const clamped = offset < -1 ? -1 - 0.001 : offset > 1 ? 1 + 0.001 : offset;
-    const shiftPercent = 60; // how far neighbours peek out, in % of card width
-    const translateX = clamped * shiftPercent;
-    const isCenter = offset === 0;
-    const isNeighbor = offset === -1 || offset === 1;
-
-    return {
-      transform: `translateX(calc(-50% + ${translateX}%)) scale(${isCenter ? 1 : 0.82})`,
-      filter: isCenter ? "blur(0px)" : "blur(4px)",
-      opacity: isCenter ? 1 : isNeighbor ? 0.55 : 0,
-      zIndex: isCenter ? 30 : isNeighbor ? 20 : 0,
-      pointerEvents: isCenter ? "auto" : "none",
-    };
-  }
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const need of allNeeds) {
+      counts[need.category] = (counts[need.category] ?? 0) + 1;
+    }
+    return counts;
+  }, [allNeeds]);
 
   return (
     <section
@@ -203,11 +122,11 @@ export function LiveNeedsSection({
       {/* Soft warm ambient lighting glow matching brand palette */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-24 -left-20 w-[420px] h-[420px] rounded-full bg-[#b04a15]/6 dark:bg-[#b04a15]/10 blur-3xl"
+        className="pointer-events-none absolute -top-24 -left-20 w-[420px] h-[420px] rounded-full bg-[var(--ck-home-accent,#b04a15)]/6 dark:bg-[var(--ck-home-accent,#b04a15)]/10 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 -right-24 w-[380px] h-[380px] rounded-full bg-[#e07b3a]/7 dark:bg-[#e07b3a]/12 blur-3xl"
+        className="pointer-events-none absolute top-1/2 -right-24 w-[380px] h-[380px] rounded-full bg-[var(--ck-home-accent,#e07b3a)]/7 dark:bg-[var(--ck-home-accent,#e07b3a)]/12 blur-3xl"
       />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -234,7 +153,7 @@ export function LiveNeedsSection({
               className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-[1.12]"
             >
               Real people. Real needs.{" "}
-              <span className="text-[#b04a15] dark:text-[#e07b3a]">Right now.</span>
+              <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]">Right now.</span>
             </h2>
 
             <p className="mt-3 text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
@@ -243,39 +162,26 @@ export function LiveNeedsSection({
             </p>
           </div>
 
-          {/* Impact Highlights with Animated Counters */}
-          <div className="flex items-center gap-4 sm:gap-6 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-sm border border-stone-200/80 dark:border-zinc-800 rounded-2xl p-3.5 sm:p-4 shrink-0 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#b04a15]/10 dark:bg-[#b04a15]/20 flex items-center justify-center text-[#b04a15] dark:text-[#e07b3a] shrink-0">
-                <ShieldCheck className="w-5 h-5" aria-hidden="true" />
-              </div>
-              <div>
-                <div className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-100 leading-none">
-                  <AnimatedCounter target={100} suffix="%" />
-                </div>
-                <div className="text-3xs font-extrabold uppercase tracking-wider text-stone-400 dark:text-stone-500 mt-1">
-                  Verified Donees
-                </div>
-              </div>
+          {/*
+            One claim we can stand behind, rather than a pair of counters.
+
+            This was "100% VERIFIED DONEES" beside "0+ NEEDS FULFILLED", where
+            the second number came from `stats?.totalDonations ?? 0`. A zero
+            rendered as proof reads as "nothing has ever happened here" — the
+            opposite of what a trust badge is for. Put numbers back when they
+            argue for us.
+          */}
+          <div className="flex items-center gap-3.5 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-sm border border-stone-200/80 dark:border-zinc-800 rounded-2xl p-4 shrink-0 shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-[var(--ck-home-accent,#b04a15)]/10 dark:bg-[var(--ck-home-accent,#b04a15)]/20 flex items-center justify-center text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] shrink-0">
+              <ShieldCheck className="w-5 h-5" aria-hidden="true" />
             </div>
-
-            <div className="h-8 w-px bg-stone-200 dark:bg-zinc-800" />
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400 shrink-0">
-                <HeartHandshake className="w-5 h-5" aria-hidden="true" />
-              </div>
-              <div>
-                <div className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-100 leading-none">
-                  <AnimatedCounter
-                    target={stats?.totalDonations ?? 0}
-                    suffix="+"
-                  />
-                </div>
-                <div className="text-3xs font-extrabold uppercase tracking-wider text-stone-400 dark:text-stone-500 mt-1">
-                  Needs Fulfilled
-                </div>
-              </div>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-stone-900 dark:text-stone-100 leading-tight">
+                Every donee is verified
+              </p>
+              <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+                ID and address checked before a need is posted
+              </p>
             </div>
           </div>
         </div>
@@ -288,7 +194,7 @@ export function LiveNeedsSection({
               onClick={() => setSelectedCategory("All")}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 selectedCategory === "All"
-                  ? "bg-[#b04a15] text-white shadow-sm shadow-orange-950/20 ring-2 ring-[#b04a15]/30"
+                  ? "bg-[var(--ck-home-accent,#b04a15)] text-white shadow-sm shadow-[var(--ck-home-deep,#431407)]/20 ring-2 ring-[var(--ck-home-accent,#b04a15)]/30"
                   : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
               }`}
             >
@@ -299,6 +205,11 @@ export function LiveNeedsSection({
             {ALL_REQUEST_CATEGORIES.map((cat) => {
               const visual = CATEGORY_VISUALS[cat];
               const isSelected = selectedCategory === cat;
+              const count = categoryCounts[cat] ?? 0;
+              // Still clickable when empty — the empty state explains itself and
+              // is a legitimate place to land — but it no longer looks like the
+              // same offer as a category that has something waiting.
+              const isEmpty = count === 0 && !isSelected;
               return (
                 <button
                   key={cat}
@@ -306,36 +217,48 @@ export function LiveNeedsSection({
                   onClick={() => setSelectedCategory(cat)}
                   className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
                     isSelected
-                      ? "bg-[#b04a15] text-white shadow-sm shadow-orange-950/20 ring-2 ring-[#b04a15]/30"
-                      : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
+                      ? "bg-[var(--ck-home-accent,#b04a15)] text-white shadow-sm shadow-[var(--ck-home-deep,#431407)]/20 ring-2 ring-[var(--ck-home-accent,#b04a15)]/30"
+                      : isEmpty
+                        ? "bg-transparent text-stone-400 dark:text-stone-600 border border-stone-200/70 dark:border-zinc-800/70 hover:bg-stone-50 dark:hover:bg-zinc-900"
+                        : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <span
                     className={`inline-flex items-center justify-center ${
-                      isSelected ? "text-white" : visual?.text ?? "text-stone-500"
+                      isSelected ? "text-white" : isEmpty ? "text-stone-300 dark:text-stone-700" : visual?.text ?? "text-stone-500"
                     }`}
                   >
                     <AnimatedCategoryIcon category={cat} iconClassName="w-3.5 h-3.5" />
                   </span>
                   {cat}
+                  {count > 0 && (
+                    <span
+                      className={`rounded-full px-1.5 text-3xs font-black tabular-nums ${
+                        isSelected ? "bg-white/25 text-white" : "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* ── Coverflow Carousel ──────────────────────────────────────────────
-            Center card: clear, full size. Left/right neighbours: blurred,
-            scaled down, peeking at the edges. Clicking an arrow (or a dot)
-            changes activeIndex; every card's inline transform/filter/opacity
-            is recomputed and the browser transitions smoothly between the
-            old and new values — the clicked neighbour slides into the
-            center and sharpens as it arrives. ── */}
+        {/* ── The needs themselves ────────────────────────────────────────────
+            A grid, not a carousel. The carousel was a fixed-height stage
+            (`.ck-live-needs-carousel`, clamp(200px, 26svh, 280px)) holding
+            absolutely-positioned cards: content taller than the stage escaped
+            it and landed on top of the donor band below — visibly, in
+            production. It was also built for a dozen needs while the board
+            usually holds a handful.
+
+            A grid is honest at any count: one need fills one cell, more needs
+            wrap onto more rows, and every card is sized by its own content so
+            nothing can overlap what follows. ── */}
         {cardCount === 0 ? (
-          <div
-            className="mx-auto flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-stone-300 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/50 px-6 text-center ck-live-needs-carousel"
-            style={{ width: "min(92vw, 980px)" }}
-          >
+          <div className="mx-auto flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-stone-300 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/50 px-6 py-10 text-center max-w-2xl">
             <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center text-stone-400 dark:text-stone-500">
               <Sparkles className="w-6 h-6" />
             </div>
@@ -348,57 +271,31 @@ export function LiveNeedsSection({
                 : "Check back soon — new needs are added regularly. Try another category in the meantime."}
             </p>
             {emptyStateCta ? (
-              <Link
+              <NewRequestLink
                 href={emptyStateCta.href}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-orange-950/20 active:scale-95"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95"
               >
                 <span>{emptyStateCta.label}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              </NewRequestLink>
             ) : null}
           </div>
         ) : (
-          <div className="relative ck-live-needs-carousel">
+          <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {displayedNeeds.map((need, idx) => {
-              const offset = circularOffset(idx, activeIndex, cardCount);
-              // Only render the center card and its two immediate neighbours —
-              // anything farther away contributes nothing visible and would
-              // just be dead DOM.
-              if (offset < -1 || offset > 1) return null;
-
-              const isCenter = offset === 0;
               const visual = CATEGORY_VISUALS[need.category];
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
               const offerUrl = loginUrlFor(`/requests/${need.id}/offer`);
-              const style = reduceMotion
-                ? ({ transform: "translateX(-50%)", opacity: isCenter ? 1 : 0, zIndex: isCenter ? 30 : 0 } as React.CSSProperties)
-                : getCardStyle(offset);
 
               return (
-                <article
+                <motion.article
                   key={need.id}
-                  style={{
-                    ...style,
-                    position: "absolute",
-                    left: "50%",
-                    top: 0,
-                    width: "min(92%, 980px)",
-                    transitionProperty: "transform, filter, opacity",
-                    transitionDuration: "0.6s",
-                    transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
-                  }}
-                  className={`flex flex-col justify-between rounded-2xl bg-white/95 dark:bg-zinc-900/95 border border-stone-200/90 dark:border-zinc-800 p-6 shadow-xl shadow-orange-950/10 dark:shadow-black/40 overflow-hidden ${
-                    isCenter ? "" : "cursor-pointer"
-                  }`}
-                  onClick={
-                    !isCenter
-                      ? () => {
-                          setActiveIndex(idx);
-                        }
-                      : undefined
-                  }
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : undefined}
+                  transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06 }}
+                  className="flex flex-col rounded-2xl bg-white/95 dark:bg-zinc-900/95 border border-stone-200/90 dark:border-zinc-800 p-5 sm:p-6 shadow-sm shadow-[var(--ck-home-deep,#431407)]/5 dark:shadow-black/20"
                 >
-                  <div>
+                  <div className="grow">
                     {/* Top Bar: Category Pill & Urgent Tag */}
                     <div className="flex items-center justify-between gap-2 mb-4">
                       <span
@@ -418,8 +315,9 @@ export function LiveNeedsSection({
                       )}
                     </div>
 
-                    {/* Title */}
-                    <h3 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-50 leading-snug">
+                    {/* Title — a third of the row is narrower than the old
+                        980px stage, so the display size comes down with it. */}
+                    <h3 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-50 leading-snug text-pretty">
                       <TranslatedText text={need.title} />
                     </h3>
 
@@ -431,8 +329,9 @@ export function LiveNeedsSection({
                     )}
                   </div>
 
-                  {/* Card Meta & CTA */}
-                  <div className="mt-4 pt-4 border-t border-stone-100 dark:border-zinc-800/80 space-y-3">
+                  {/* Card Meta & CTA. The block above grows, so every footer in
+                      the row sits on the same line however long a title wraps. */}
+                  <div className="mt-5 pt-4 border-t border-stone-100 dark:border-zinc-800/80 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-y-1 text-xs text-stone-500 dark:text-stone-400">
                       <div className="flex items-center gap-1.5 truncate font-semibold">
                         <MapPin className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
@@ -459,72 +358,47 @@ export function LiveNeedsSection({
                       </div>
                     </div>
 
+                    {/* Every card is now fully visible, so every CTA is live and
+                        keyboard-reachable — the carousel had to disable the
+                        blurred neighbours' links. */}
                     <Link
                       href={offerUrl}
-                      onClick={(e) => {
-                        if (!isCenter) e.preventDefault();
-                      }}
-                      tabIndex={isCenter ? 0 : -1}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-50/70 hover:bg-[#b04a15] dark:bg-zinc-800/80 dark:hover:bg-[#b04a15] border border-orange-200/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[#b04a15] hover:text-white dark:text-orange-300 dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
                     >
                       <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
                       <span>Log in to offer this item</span>
                       <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
                     </Link>
                   </div>
-                </article>
+                </motion.article>
               );
             })}
           </div>
         )}
 
-        {/* Prev / Next controls */}
-        {cardCount > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={goPrev}
-              aria-label="Previous need"
-              className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 dark:bg-zinc-900/95 border border-stone-200 dark:border-zinc-800 shadow-md flex items-center justify-center text-stone-600 dark:text-stone-300 hover:bg-white dark:hover:bg-zinc-800 hover:scale-105 transition-all z-40"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={goNext}
-              aria-label="Next need"
-              className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 dark:bg-zinc-900/95 border border-stone-200 dark:border-zinc-800 shadow-md flex items-center justify-center text-stone-600 dark:text-stone-300 hover:bg-white dark:hover:bg-zinc-800 hover:scale-105 transition-all z-40"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </>
-        )}
-
-        {/* Dot indicators */}
-        {cardCount > 1 && (
-          <div className="flex items-center justify-center gap-1.5 mt-6">
-            {displayedNeeds.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => {
-                  setActiveIndex(i);
-                }}
-                aria-label={`Go to need ${i + 1}`}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === activeIndex
-                    ? "w-6 bg-[#b04a15] dark:bg-[#e07b3a]"
-                    : "w-1.5 bg-stone-300 dark:bg-zinc-700 hover:bg-stone-400 dark:hover:bg-zinc-600"
-                }`}
-              />
-            ))}
-          </div>
+        {/* The grid is a sample, so it says so. Without this the eyebrow
+            announces the true total while six cards render, and the pill counts
+            promise more than the grid delivers. Nothing renders when the grid
+            is already showing everything. */}
+        {hiddenCount > 0 && (
+          <Link
+            href="/requests"
+            className="mt-4 inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs sm:text-sm text-stone-500 dark:text-stone-400 hover:text-[var(--ck-home-ink,#b04a15)] dark:hover:text-[var(--ck-home-ink,#e07b3a)] transition-colors group/more"
+          >
+            <span className="font-bold text-stone-700 dark:text-stone-200 tabular-nums">
+              {hiddenCount} more open {hiddenCount === 1 ? "need" : "needs"}
+            </span>
+            {selectedCategory !== "All" && <span>in {selectedCategory}</span>}
+            <span className="text-stone-300 dark:text-stone-700">·</span>
+            <span className="font-semibold">See them all</span>
+            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/more:translate-x-1" />
+          </Link>
         )}
 
         {/* ── Footer Link: Explore All Needs ── */}
         <div className="ck-live-needs-footer-gap flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-stone-100/70 dark:bg-zinc-900/60 border border-stone-200/70 dark:border-zinc-800 p-4 sm:p-5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#b04a15]/10 flex items-center justify-center text-[#b04a15] shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--ck-home-accent,#b04a15)]/10 flex items-center justify-center text-[var(--ck-home-ink,#b04a15)] shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
@@ -539,7 +413,7 @@ export function LiveNeedsSection({
 
           <Link
             href="/requests"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-orange-950/20 active:scale-95 shrink-0"
+            className="inline-flex items-center gap-2 rounded-xl bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95 shrink-0"
           >
             <span>See all open requests</span>
             <ArrowRight className="w-3.5 h-3.5" />

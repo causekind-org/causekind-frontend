@@ -1094,6 +1094,7 @@ export function getMyRequestVerificationDetails(id: number) {
 }
 
 export type RequestVerification = {
+  requestingForSomeoneElse?: boolean;
   householdSize: number | null;
   dependents: number | null;
   age: number | null;
@@ -3966,4 +3967,33 @@ export function subscribe(input: {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export type DoneeNeedProfile = {
+  details: RequestVerification;
+  documents: VerificationDocument[];
+  complete: boolean;
+  missing: string[];
+};
+export function getDoneeNeedProfile() { return request<DoneeNeedProfile>("/api/v1/users/me/need-profile"); }
+export function saveDoneeNeedProfile(details: Partial<RequestVerification>) {
+  return request<DoneeNeedProfile>("/api/v1/users/me/need-profile", { method: "PUT", body: JSON.stringify(details) });
+}
+export function importPreviousNeedProfile() { return request<DoneeNeedProfile>("/api/v1/users/me/need-profile/import-previous", {method: "POST"}); }
+export function deleteNeedProfileDocument(id: number) { return request<void>(`/api/v1/users/me/need-profile/documents/${id}`, {method: "DELETE"}); }
+export async function uploadNeedProfileDocument(docType: VerificationDocumentType, file: File): Promise<VerificationDocument> {
+  const body = new FormData(); body.append("docType",docType); body.append("file",file);
+  const res = await fetch(`${BASE_URL}/api/v1/users/me/need-profile/documents`, {method: "POST", body, credentials: "include"});
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    const screeningMessages: Record<string,string> = {
+      NO_FACE: "We couldn't clearly see your face. Take a well-lit photo with your face visible.",
+      FACE_NOT_CLEAR: "Your face is obscured or unclear. Face the camera and try again in good light.",
+      SCREENING_UNAVAILABLE: "AI couldn't check your photo right now. Please try again; your saved photo has not changed.",
+      INVALID_IMAGE: "We couldn't read this photo. Please take another photo or choose a clear JPG, PNG or WebP.",
+      PROHIBITED_CONTENT: "This photo did not pass the content check. Please use a clear photo of yourself.",
+    };
+    throw new Error(screeningMessages[error.code] || error.detail || error.message || "Could not upload this document. Use a JPG, PNG or WebP photo under 10 MB (8 MB for your photo).");
+  }
+  return res.json();
 }

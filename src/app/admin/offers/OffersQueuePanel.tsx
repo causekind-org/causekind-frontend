@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
   adminGetAllOffers, adminActionOffer, adminGetOfferById, adminGetOfferHistory,
@@ -389,8 +390,8 @@ export function OffersQueuePanel() {
 
               {/* Thumbnail */}
               {offer.media?.[0] ? (
-                <div className="h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-800">
-                  <img src={offer.media[0].mediaUrl} alt="" className="h-full w-full object-cover" />
+                <div className="relative h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-800">
+                  <Image src={offer.media[0].mediaUrl} alt="" fill className="object-cover" />
                 </div>
               ) : (
                 <div className="h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center">
@@ -758,8 +759,8 @@ export function OffersQueuePanel() {
                             <div className="grid grid-cols-4 gap-2">
                               {Array.from(new Map(expandedData.offer.media.map(m => [m.mediaUrl, m])).values()).map(m => (
                                 <a key={m.id} href={m.mediaUrl} target="_blank" rel="noreferrer"
-                                  className="aspect-square overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800 block hover:opacity-80 transition-opacity">
-                                  <img src={m.mediaUrl} alt="" className="h-full w-full object-cover" />
+                                  className="relative aspect-square overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800 block hover:opacity-80 transition-opacity">
+                                  <Image src={m.mediaUrl} alt="" fill className="object-cover" />
                                 </a>
                               ))}
                             </div>

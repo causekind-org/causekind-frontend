@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { NewRequestLink } from "@/components/NewRequestLink";
 import { usePathname } from "next/navigation";
 import { ArrowRight, ClipboardList, Sparkles, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -153,14 +154,14 @@ export function DoneeListingPrompt() {
               </p>
             </div>
 
-            <Link
+            <NewRequestLink
               href="/requests/new"
               onClick={handleAction}
               className="group flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#1e3a60] px-2.5 text-2xs font-black uppercase text-white shadow-[0_7px_14px_rgba(30,58,96,0.23)] transition-all hover:bg-[#16304d] active:scale-95"
             >
               List
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-            </Link>
+            </NewRequestLink>
 
             <button
               onClick={dismiss}

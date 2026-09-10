@@ -4,6 +4,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PHOTO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { OfferResult } from "@/features/donation-offer-wizard/OfferResult";
 import {
   getAnonymizedRequest,
@@ -174,8 +175,8 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
               </span>
             </div>
           ) : request.imageUrl ? (
-            <div className="flex-shrink-0 sm:w-56">
-              <img src={request.imageUrl} alt={request.title} className="h-48 w-full object-cover sm:h-full" />
+            <div className="relative flex-shrink-0 h-48 w-full sm:w-56 sm:h-full overflow-hidden">
+              <Image src={request.imageUrl} alt={request.title} fill className="object-cover" />
             </div>
           ) : null}
           <div className="flex-1 p-3.5 sm:p-5">
@@ -1092,7 +1093,7 @@ export default function OfferWizardPage() {
                 />
                 {offer.media?.map((m) => (
                   <div key={m.id} className="relative aspect-square overflow-hidden rounded-lg">
-                    <img src={m.mediaUrl} alt="" className="h-full w-full object-cover" />
+                    <Image src={m.mediaUrl} alt="" fill className="object-cover" />
                     <button
                       type="button"
                       onClick={() => handleRemovePhoto(m.id)}
