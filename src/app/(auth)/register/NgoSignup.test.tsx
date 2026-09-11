@@ -47,6 +47,14 @@ vi.mock("next-intl", () => ({
   },
 }));
 
+vi.mock("@/lib/features", () => ({
+  FEATURES: {
+    money: false,
+    bottomBlur: false,
+    ngoRegistration: true,
+  },
+}));
+
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
     user: null,

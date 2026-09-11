@@ -37,6 +37,7 @@
   ],
   "exclude": [
     "node_modules",
-    "tsup.config.ts"
+    "tsup.config.ts",
+    "scratch"
   ]
 }

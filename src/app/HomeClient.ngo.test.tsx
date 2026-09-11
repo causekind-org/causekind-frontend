@@ -33,6 +33,10 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
 
+vi.mock("@/hooks/useNeedProfileGate", () => ({
+  useNeedProfileGate: () => ({ requestAccess: async () => true, checking: false }),
+}));
+
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
