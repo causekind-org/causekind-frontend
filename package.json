@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
-    "build": "next build",
+    "build": "node scripts/clear-build-cache.mjs && next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "next lint",
     "test": "vitest run",
