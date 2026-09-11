@@ -129,7 +129,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
             whileInView={{ scaleY: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.5, delay: index * 0.18 + 0.25 }}
-            className="w-px h-16 md:hidden bg-gradient-to-b from-brand-300 to-transparent origin-top mt-3"
+            className="w-px h-8 md:hidden bg-gradient-to-b from-brand-300 to-transparent origin-top mt-2"
           />
         )}
       </div>
@@ -140,7 +140,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.5, delay: index * 0.18 + 0.1 }}
-        className="flex-1 md:text-center mt-0.5 md:mt-5 pb-6 md:pb-0 md:px-2"
+        className="flex-1 md:text-center mt-0.5 md:mt-5 pb-4 md:pb-0 md:px-2"
       >
         <span className="inline-block text-[11px] font-bold tracking-widest uppercase text-stone-400 dark:text-stone-500 mb-1.5">
           {step.label}
@@ -258,10 +258,10 @@ export function MoneyFlowStory() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="w-full"
         >
-          <h4 className="text-sm font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 text-center mb-8">
+          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 text-center mb-4 sm:mb-8">
             Supporting Core Initiatives
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5" style={{ perspective: '1000px' }}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5" style={{ perspective: '1000px' }}>
             {impactAreas.map((area, i) => (
               <motion.div
                 key={i}
@@ -271,16 +271,16 @@ export function MoneyFlowStory() {
                 transition={{ duration: 0.4, delay: 0.5 + i * 0.1 }}
               >
                 <TiltCard className="cursor-pointer h-full">
-                  <Link href={`/initiatives/${area.slug}`} aria-label={`Explore ${area.label}`} className="card-shimmer relative overflow-hidden flex h-full flex-col items-center justify-center text-center gap-4 p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-white/10 shadow-sm hover:shadow-xl transition-[box-shadow,transform] duration-300 group active:scale-[0.98]">
+                  <Link href={`/initiatives/${area.slug}`} aria-label={`Explore ${area.label}`} className="card-shimmer relative overflow-hidden flex h-full flex-col items-center justify-center text-center gap-2.5 sm:gap-4 p-3 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-white/10 shadow-sm hover:shadow-xl transition-[box-shadow,transform] duration-300 group active:scale-[0.98]">
                     {/* Gradient accent bg on hover */}
                     <div className={`absolute inset-0 ${area.bgAccent} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`} />
                     
                     <div className="relative z-10">
-                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${area.color} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                      <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${area.color} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
                         {area.icon}
                       </div>
                     </div>
-                    <span className="relative z-10 text-sm font-semibold text-foreground leading-tight group-hover:text-foreground transition-colors">
+                    <span className="relative z-10 text-xs sm:text-sm font-semibold text-foreground leading-tight group-hover:text-foreground transition-colors">
                       {area.label}
                     </span>
                   </Link>

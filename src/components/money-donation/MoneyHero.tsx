@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Image from 'next/image';
 
 const images = [
@@ -25,13 +25,20 @@ const images = [
 
 export function MoneyHero() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // ?? false because framer's hook returns boolean | null — same coercion as
+  // MoneyFlowStory's TiltCard.
+  const reduceMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
+    // A hero that restarts a Ken Burns zoom every five seconds is exactly the
+    // unprompted motion prefers-reduced-motion exists to stop. Hold on the
+    // first image; the indicators below are still operable by hand.
+    if (reduceMotion) return;
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
     }, 5000); // Change image every 5 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [reduceMotion]);
 
   return (
     <section className="relative min-h-[75svh] lg:min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center overflow-hidden pt-10 pb-8 sm:pt-16 sm:pb-12 lg:pt-20 lg:pb-16">
@@ -41,8 +48,8 @@ export function MoneyHero() {
         <AnimatePresence mode="popLayout">
           <motion.div
             key={currentImageIndex}
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 1.05 }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
             exit={{ opacity: 0, transition: { duration: 1.5 } }}
             transition={{ duration: 1.5, ease: "easeInOut" }}
             className="absolute inset-0"
@@ -119,12 +126,20 @@ export function MoneyHero() {
       </div>
 
       {/* Carousel Progress Indicators */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-        {images.map((_, idx) => (
-          <div
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+        {images.map((image, idx) => (
+          <button
             key={idx}
-            className={`h-1.5 rounded-full transition-all duration-500 ${idx === currentImageIndex ? 'w-8 bg-brand-400' : 'w-2 bg-white/40'}`}
-          />
+            type="button"
+            onClick={() => setCurrentImageIndex(idx)}
+            aria-label={`Show image ${idx + 1} of ${images.length}: ${image.alt}`}
+            aria-current={idx === currentImageIndex}
+            className="group grid h-11 w-10 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+          >
+            <span
+              className={`h-1.5 rounded-full transition-all duration-500 ${idx === currentImageIndex ? 'w-8 bg-brand-400' : 'w-2 bg-white/40 group-hover:bg-white/70'}`}
+            />
+          </button>
         ))}
       </div>
 

@@ -64,7 +64,7 @@ export function TrustCredibility() {
           </div>
 
           {/* Credentials grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-8 sm:mb-14">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-8 mb-8 sm:mb-14">
             <CertificateCard
               title="12AA Registration Certificate"
               description="Confirms our status as a charitable institution under the Income Tax Act, 1961."
@@ -127,7 +127,7 @@ export function TrustCredibility() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-20">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-8 lg:gap-20">
 
             {/* Left: heading and context */}
             <div className="lg:w-2/5 flex-shrink-0">
@@ -146,7 +146,7 @@ export function TrustCredibility() {
             </div>
 
             {/* Right: allocation cards with animated bars */}
-            <div className="lg:w-3/5 space-y-5">
+            <div className="lg:w-3/5 space-y-3 sm:space-y-5">
               {allocationAreas.map((area, i) => (
                 <motion.div
                   key={i}
@@ -164,7 +164,10 @@ export function TrustCredibility() {
                     </div>
                     {/* Text */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-base font-bold text-foreground mb-1">{area.label}</h4>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h4 className="text-sm sm:text-base font-bold text-foreground mb-1">{area.label}</h4>
+                        <span className="text-xs font-bold text-brand-600 dark:text-brand-300 tabular-nums">{area.widthPercent}</span>
+                      </div>
                       <p className="text-xs text-stone-400 dark:text-stone-500 leading-relaxed">{area.description}</p>
                     </div>
                   </div>

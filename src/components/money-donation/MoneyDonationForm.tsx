@@ -196,7 +196,10 @@ export function MoneyDonationForm() {
     }
   };
 
-  const inputClasses = "w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-white/15 bg-white dark:bg-zinc-900 text-foreground placeholder:text-stone-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-colors text-sm";
+  // text-base below sm is deliberate: iOS Safari zooms the viewport when a
+  // focused input renders under 16px, which throws the donor out of the form
+  // layout mid-entry. Desktop keeps the 14px it has always had.
+  const inputClasses = "w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-white/15 bg-white dark:bg-zinc-900 text-foreground placeholder:text-stone-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-colors text-base sm:text-sm";
 
   return (
     <section id="donate-form" className="scroll-mt-24 py-8 sm:py-12 lg:py-14 bg-stone-50 dark:bg-zinc-900/60 border-t border-stone-100">
@@ -304,10 +307,11 @@ export function MoneyDonationForm() {
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 text-sm font-medium">₹</span>
                     <input
                       type="text"
+                      inputMode="decimal"
                       value={customAmount}
                       onChange={handleCustomAmountChange}
                       placeholder="Enter amount"
-                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-stone-300 dark:border-white/20 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white dark:bg-zinc-900 transition-all shadow-inner"
+                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-stone-300 dark:border-white/20 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-base sm:text-sm bg-white dark:bg-zinc-900 transition-all shadow-inner"
                     />
                   </motion.div>
                 )}
@@ -366,7 +370,7 @@ export function MoneyDonationForm() {
                               placeholder="Search country or code..."
                               value={searchQuery}
                               onChange={e => setSearchQuery(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-brand-500"
+                              className="w-full pl-9 pr-3 py-2 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-white/10 rounded-lg text-base sm:text-sm outline-none focus:border-brand-500"
                             />
                           </div>
                           <div className="max-h-60 overflow-y-auto scrollbar-hide pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -489,10 +493,11 @@ export function MoneyDonationForm() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 text-sm font-medium">₹</span>
                     <input
                       type="text"
+                      inputMode="decimal"
                       value={customSupportAmountStr}
                       onChange={handleCustomSupportChange}
                       placeholder="Enter amount"
-                      className="w-full pl-7 pr-3 py-2 rounded-lg border border-stone-300 dark:border-white/20 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm bg-white dark:bg-zinc-900 transition-all shadow-inner"
+                      className="w-full pl-7 pr-3 py-2 rounded-lg border border-stone-300 dark:border-white/20 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-base sm:text-sm bg-white dark:bg-zinc-900 transition-all shadow-inner"
                     />
                   </motion.div>
                 )}

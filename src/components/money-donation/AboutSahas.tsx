@@ -56,13 +56,13 @@ export function AboutSahas() {
               {areas.map((area, index) => (
                 <div
                   key={index}
-                  className="flex flex-col sm:flex-row gap-4 sm:gap-5 p-4 sm:p-6 rounded-2xl border border-stone-100 dark:border-white/10 bg-white dark:bg-zinc-900 hover:shadow-sm transition-all duration-300"
+                  className="flex flex-row gap-3 sm:gap-5 p-4 sm:p-6 rounded-2xl border border-stone-100 dark:border-white/10 bg-white dark:bg-zinc-900 hover:shadow-sm transition-all duration-300"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/25 flex items-center justify-center text-brand-600">
+                  <div className="flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/25 flex items-center justify-center text-brand-600">
                     {area.icon}
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-foreground mb-2">{area.title}</h3>
+                    <h3 className="text-base font-bold text-foreground mb-1 sm:mb-2">{area.title}</h3>
                     <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">{area.description}</p>
                   </div>
                 </div>
