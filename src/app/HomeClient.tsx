@@ -489,7 +489,7 @@ export default function HomeClient({
             padding and background at this width (see LiveNeedsSection), so it
             sits on this column's px-5 gutter like everything else. */}
         {doorIsDonor && (
-          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} animateHeading />
         )}
 
         {/* Mobile Campaigns horizontal scroll */}

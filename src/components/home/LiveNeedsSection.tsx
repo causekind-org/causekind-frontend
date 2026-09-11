@@ -18,6 +18,7 @@ import type { PlatformStats, PublicItemRequest } from "@/lib/api";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
+import LetterSwap from "@/components/LetterSwap";
 
 /**
  * How many needs the homepage grid shows before handing off to /requests.
@@ -31,8 +32,17 @@ const NEEDS_SHOWN = 6;
 
 export function LiveNeedsSection({
   initialRequests = [],
+  animateHeading = false,
 }: {
   initialRequests?: PublicItemRequest[];
+  /**
+   * Flip the heading in a character at a time when this section mounts.
+   *
+   * <p>Opt-in, and only the mobile guest tree passes it. This section renders in
+   * both responsive trees, so animating unconditionally would run the flourish
+   * on desktop too, where nothing swapped and there is no switch to answer.
+   */
+  animateHeading?: boolean;
   /**
    * Still accepted so HomeClient's call site is unchanged, but no longer read:
    * the only thing this section took from it was `totalDonations`, which was
@@ -132,8 +142,12 @@ export function LiveNeedsSection({
               id="live-needs-heading"
               className="text-2xl lg:text-5xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-[1.12]"
             >
-              Real people. Real needs.{" "}
-              <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]">Right now.</span>
+              {/* Two runs, not one: the accent half has to keep its own colour,
+                  and LetterSwap emits a single coloured span. */}
+              {animateHeading ? <LetterSwap text="Real people. Real needs." /> : "Real people. Real needs."}{" "}
+              <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]">
+                {animateHeading ? <LetterSwap text="Right now." /> : "Right now."}
+              </span>
             </h2>
 
             <p className="mt-3 text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
