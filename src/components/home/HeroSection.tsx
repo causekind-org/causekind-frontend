@@ -313,6 +313,18 @@ export function HeroSection() {
               </div>
               <ConnectionPins />
             </div>
+
+            {/* Melts the hero's bottom edge into the section below it, so the
+                photograph and the cream read as one surface rather than two
+                stacked blocks with a cut between them. Mobile only — on desktop
+                the hero already ends on cream.
+
+                Markup rather than a `::after` on the hero: that was tried, it
+                computed correctly and never painted, buried under one of the
+                hero's own opaque layers. A real element can be proven to be on
+                top. Its height keeps it clear of the trust band — see the note
+                in styles.css for why that matters. */}
+            <div className="ck-hero-seam-fade pointer-events-none absolute inset-x-0 bottom-0 z-20 lg:hidden" aria-hidden />
           </div>
 
           <div className="ck-hero-category-rail relative z-30 -mt-3 lg:-mt-[clamp(1.75rem,3.7vh,2.75rem)]">
