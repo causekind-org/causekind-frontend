@@ -1,0 +1,11 @@
+ganesha-openclipart.svg
+-----------------------
+Source:   https://freesvg.org/ganesh4  (item id 101204)
+Origin:   OpenClipart, via freesvg.org
+License:  CC0 1.0 / Public Domain. Free to use, modify and redistribute,
+          including commercially, with no attribution required.
+
+Retrieved 2026-09-11. Inkscape editor metadata stripped; artwork unchanged.
+
+Verify the upstream licence before a public launch. freesvg.org relays
+user uploads, so provenance is worth a second look for anything that ships.

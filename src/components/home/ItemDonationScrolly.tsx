@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
+import { isGanpatiActive } from "@/lib/isGanpatiActive";
+import { RangoliBorderStrip } from "./GanpatiVisuals";
 
 /* ─── The film ─────────────────────────────────────────────────────────────
    A ~10-second, 60fps clip (598 frames) exported to still WebPs and scrubbed by
@@ -102,6 +104,7 @@ function captionOpacity(p: number, c: Caption) {
 export function ItemDonationScrolly() {
   const t = useTranslations("landing.scrolly");
   const reduceMotion = useReducedMotion() ?? false;
+  const isGanpati = isGanpatiActive();
 
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -267,6 +270,11 @@ export function ItemDonationScrolly() {
   if (reduceMotion) {
     return (
       <section id="how" className="relative w-full overflow-hidden bg-[#0e0f10]">
+        {isGanpati && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
+            <RangoliBorderStrip />
+          </div>
+        )}
         <div className="relative aspect-[16/9] w-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -277,6 +285,11 @@ export function ItemDonationScrolly() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/30 to-transparent" />
           <BrandBlock t={t} />
         </div>
+        {isGanpati && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
+            <RangoliBorderStrip flip />
+          </div>
+        )}
       </section>
     );
   }
@@ -294,6 +307,12 @@ export function ItemDonationScrolly() {
           hidden (see the `ck:immersive-nav` dispatch below), so the film really
           does own the whole screen. */}
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#0e0f10]">
+        {/* Top Rangoli decorative border for Ganpati theme */}
+        {isGanpati && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
+            <RangoliBorderStrip />
+          </div>
+        )}
         {/* Scoped keyframes for the caption chrome. Kept local (unique ck-scrolly-*
             names) rather than in the global sheet so nothing here can collide with
             it — the same reason the animations in the old dial section were named. */}
@@ -454,6 +473,12 @@ export function ItemDonationScrolly() {
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
               Loading…
             </span>
+          </div>
+        )}
+        {/* Bottom Rangoli decorative border for Ganpati theme */}
+        {isGanpati && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
+            <RangoliBorderStrip flip />
           </div>
         )}
       </div>

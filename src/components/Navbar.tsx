@@ -7,6 +7,7 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 import SpecularButton from "@/components/SpecularButton";
 import Link from "next/link";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
+import { GanpatiWordmark } from "@/components/brand/GanpatiWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -22,6 +23,8 @@ import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
+import { isGanpatiActive } from "@/lib/isGanpatiActive";
+import { ModakIcon } from "@/components/home/GanpatiVisuals";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import {
@@ -62,6 +65,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   // cannot outlive its window — which is exactly how the Independence Day
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
+  const isGanpati = isGanpatiActive();
   return (
     <motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
@@ -69,7 +73,9 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      {!hideIcon && (
+      {/* `!isGanpati`: the festive artwork draws the heart-and-hands mark
+          itself, so keeping LogoVideo beside it shows the brand mark twice. */}
+      {!hideIcon && !isGanpati && (
         <motion.div
           className="shrink-0"
           initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
@@ -99,6 +105,13 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
            wordmark outright rather than decorating it. Gated on the campaign
            switch, unlike the flag asset it is standing in for. */
         <RakshaBandhanWordmark size={size} />
+      ) : isGanpati ? (
+        /* Same arrangement for Ganeshotsav, and gated the same way on
+           isGanpatiActive(), so the artwork cannot outlive its window the way
+           the Independence Day wordmark did. The modak that used to be pinned
+           after "Kind" is not rendered alongside it: this artwork already has
+           two of them. */
+        <GanpatiWordmark size={size} />
       ) : (
         <span className="relative flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
@@ -128,6 +141,11 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
           >
             Kind
           </motion.span>
+          {isGanpati && (
+            <span className="ml-1 inline-flex items-center shrink-0 self-center" aria-hidden="true" title="Ganesh Chaturthi Special">
+              <ModakIcon className="size-3.5 sm:size-4 text-amber-600 drop-shadow-[0_1px_3px_rgba(217,119,6,0.35)]" />
+            </span>
+          )}
         </span>
       )}
     </motion.span>
@@ -705,6 +723,7 @@ export function SiteHeader() {
 
   // Hooks must run unconditionally — keep this above the hideChrome early return.
   const tilt = useTilt();
+  const isGanpati = isGanpatiActive();
 
   if (hideChrome) return null;
 
@@ -745,11 +764,25 @@ export function SiteHeader() {
           transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
           willChange: "transform",
         }}
-        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 ${
+        className={`sticky top-0 z-50 w-full ${
+          isGanpati
+            ? pathname === "/"
+              ? "bg-gradient-to-r from-[#fffbf4]/80 via-[#fff5e6]/70 to-[#fffbf4]/80 dark:from-[#1b0c05]/80 dark:via-[#240e06]/70 dark:to-[#1b0c05]/80 backdrop-blur-xs border-b-0"
+              : "bg-gradient-to-r from-[#fffbf4] via-[#fff5e6] to-[#fffbf4] dark:from-[#1b0c05] dark:via-[#240e06] dark:to-[#1b0c05] lg:bg-gradient-to-r lg:from-[#fffbf4]/92 lg:via-[#fff5e6]/88 lg:to-[#fffbf4]/92 lg:dark:from-[#1b0c05]/92 lg:dark:via-[#240e06]/88 lg:dark:to-[#1b0c05]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-amber-300/60 dark:border-amber-700/40"
+            : "bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850"
+        } ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
-          : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
+          : pathname === "/" && isGanpati
+            ? "shadow-none"
+            : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
+        {isGanpati && pathname !== "/" && (
+          <div
+            className="absolute bottom-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none z-10"
+            aria-hidden="true"
+          />
+        )}
         {/* One-day Raksha Bandhan dressing. Renders null on every other day, so
             the header is back to normal on its own at IST midnight. It sits at
             z-0 behind the two content rows below, which are lifted to z-[1]. */}
