@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .kick { font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .card { background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; }
+    .num { font-variant-numeric: tabular-nums; }
+    .hero-edge { border-top: 1px dashed #d9cfbd; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #fbf9f4; color: #1c1917; padding-bottom: 44px">
+
+  <div style="padding: 10px 20px; display: flex; align-items: center; gap: 8px">
+    <span class="hero-edge" style="flex: 1"></span>
+    <span style="font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #b9ae9b">Hero ends here &mdash; unchanged</span>
+    <span class="hero-edge" style="flex: 1"></span>
+  </div>
+
+  <!-- BOARD: the filter row is the first thing under the hero, then real needs. -->
+  <div style="padding: 26px 20px 0">
+    <div style="display: flex; align-items: center; gap: 9px">
+      <span style="width: 7px; height: 7px; border-radius: 999px; background: #b04a15; box-shadow: 0 0 0 4px rgba(176,74,21,.14)"></span>
+      <span class="kick" style="color: #b04a15">23 open right now</span>
+    </div>
+    <h2 style="margin: 12px 0 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em">Real needs, waiting for someone</h2>
+    <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #57534e; text-wrap: pretty">Each one checked by our team before it appeared here.</p>
+  </div>
+
+  <div style="display: flex; gap: 8px; margin-top: 18px; padding: 0 20px; overflow: hidden">
+    <span style="background: #1c1917; color: #fff; font-size: 12px; font-weight: 700; padding: 8px 15px; border-radius: 999px; white-space: nowrap">All 23</span>
+    <span class="card" style="font-size: 12px; font-weight: 700; padding: 8px 15px; border-radius: 999px; color: #57534e; white-space: nowrap">Medical 9</span>
+    <span class="card" style="font-size: 12px; font-weight: 700; padding: 8px 15px; border-radius: 999px; color: #57534e; white-space: nowrap">Education 6</span>
+    <span class="card" style="font-size: 12px; font-weight: 700; padding: 8px 15px; border-radius: 999px; color: #57534e; white-space: nowrap">Shel</span>
+  </div>
+
+  <div style="display: grid; gap: 12px; margin-top: 16px; padding: 0 20px">
+    <div class="card" style="padding: 16px; display: flex; gap: 14px; align-items: flex-start">
+      <div style="width: 66px; height: 66px; border-radius: 14px; background: #f0ebe1; flex: none"></div>
+      <div style="flex: 1; min-width: 0">
+        <div style="display: flex; justify-content: space-between; gap: 8px">
+          <span style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Medical &middot; Pune</span>
+          <span class="num" style="font-size: 11px; font-weight: 800; color: #78716c">12d</span>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">A wheelchair for Kamla, 68</p>
+        <div style="margin-top: 12px; height: 44px; border-radius: 12px; background: #faf1e1; color: #b04a15; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800">I have one</div>
+      </div>
+    </div>
+    <div class="card" style="padding: 16px; display: flex; gap: 14px; align-items: flex-start">
+      <div style="width: 66px; height: 66px; border-radius: 14px; background: #f0ebe1; flex: none"></div>
+      <div style="flex: 1; min-width: 0">
+        <div style="display: flex; justify-content: space-between; gap: 8px">
+          <span style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Education &middot; Nashik</span>
+          <span class="num" style="font-size: 11px; font-weight: 800; color: #78716c">6d</span>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">Notebooks for 60 children</p>
+        <div style="margin-top: 12px; height: 44px; border-radius: 12px; background: #faf1e1; color: #b04a15; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800">I have these</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- proof interrupts the board once, full bleed. Not a section. -->
+  <div style="margin-top: 24px; background: #f2ede3; padding: 18px 20px">
+    <span class="kick" style="color: #78716c">Just handed over</span>
+    <p style="margin: 10px 0 0; font-size: 14px; font-weight: 700; line-height: 1.5">A sewing machine reached Farida in Thane &mdash; confirmed at the door, certificate <a href="#" style="font-weight: 800; text-decoration: none">CK&#8209;8814</a>.</p>
+  </div>
+
+  <div style="display: grid; gap: 12px; margin-top: 24px; padding: 0 20px">
+    <div class="card" style="padding: 16px; display: flex; gap: 14px; align-items: flex-start">
+      <div style="width: 66px; height: 66px; border-radius: 14px; background: #f0ebe1; flex: none"></div>
+      <div style="flex: 1; min-width: 0">
+        <div style="display: flex; justify-content: space-between; gap: 8px">
+          <span style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Shelter &middot; Pune</span>
+          <span class="num" style="font-size: 11px; font-weight: 800; color: #9a6b12">41d</span>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">4 mattresses for a night shelter</p>
+        <div style="margin-top: 12px; height: 44px; border-radius: 12px; background: #faf1e1; color: #b04a15; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800">I have these</div>
+      </div>
+    </div>
+    <div class="card" style="height: 138px"></div>
+  </div>
+
+  <div style="padding: 0 20px; margin-top: 18px">
+    <div class="card" style="height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #b04a15">Show the other 19 needs</div>
+  </div>
+
+  <!-- money gets ONE band, clearly a different kind of thing -->
+  <div style="padding: 44px 20px 0">
+    <div style="border-top: 1px solid #e8e2d5; padding-top: 24px">
+      <span class="kick" style="color: #b04a15">When an item is not the answer</span>
+      <h2 style="margin: 10px 0 0; font-size: 22px; font-weight: 800; letter-spacing: -.02em">7 cash campaigns open</h2>
+    </div>
+    <div class="card" style="margin-top: 16px; padding: 16px">
+      <p style="margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3">Cataract surgery for Sunita</p>
+      <div style="height: 5px; background: #f0ebe1; border-radius: 999px; margin-top: 12px; overflow: hidden"><div style="width: 63%; height: 100%; background: #b04a15; border-radius: 999px"></div></div>
+      <p class="num" style="margin: 9px 0 0; font-size: 12px; font-weight: 700; color: #78716c">&#8377;28,400 of &#8377;45,000 &middot; Mumbai</p>
+    </div>
+    <a href="#" style="display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 800; text-decoration: none">Browse all campaigns &rarr;</a>
+  </div>
+
+  <!-- the close: how it works in three lines, no dark film section -->
+  <div style="margin-top: 44px; background: #1c1917; color: #fff; padding: 32px 20px">
+    <h2 style="margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em">You give the item.<br>We do everything else.</h2>
+    <div style="margin-top: 22px; display: grid; gap: 16px">
+      <div style="display: flex; gap: 14px; align-items: flex-start">
+        <span class="num" style="font-size: 12px; font-weight: 800; color: #8a817a; width: 20px; flex: none">01</span>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #d6d3d1">You pick a need and say you have the item. No listing, no photos.</p>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: flex-start">
+        <span class="num" style="font-size: 12px; font-weight: 800; color: #8a817a; width: 20px; flex: none">02</span>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #d6d3d1">We check it against what was asked for, and arrange the handover.</p>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: flex-start">
+        <span class="num" style="font-size: 12px; font-weight: 800; color: #8a817a; width: 20px; flex: none">03</span>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #d6d3d1">Both sides confirm at the door with an OTP. You get a certificate anyone can check.</p>
+      </div>
+    </div>
+    <div style="margin-top: 24px; display: grid; gap: 10px">
+      <div style="height: 50px; border-radius: 12px; background: #fff; color: #1c1917; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Donate an item</div>
+      <div style="height: 50px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Post a need</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":1740}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

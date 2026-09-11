@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .tag { font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+    .row { padding: 18px 20px; border-bottom: 1px solid #efe9dd; }
+    .meta { font-size: 11px; font-weight: 700; color: #a8a29e; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #fbf9f4; color: #1c1917; padding-bottom: 40px">
+
+  <!-- sticky filter bar — the only chrome; no section headers anywhere below -->
+  <div style="background: rgba(251,249,244,.96); border-bottom: 1px solid #e5ddd0; padding: 12px 20px; display: flex; gap: 8px; overflow: hidden">
+    <span style="background: #1c1917; color: #fff; font-size: 12px; font-weight: 800; padding: 8px 15px; border-radius: 999px; white-space: nowrap">Everything</span>
+    <span style="background: #fff; border: 1px solid #e5ddd0; font-size: 12px; font-weight: 700; padding: 8px 15px; border-radius: 999px; white-space: nowrap; color: #57534e">Needs 23</span>
+    <span style="background: #fff; border: 1px solid #e5ddd0; font-size: 12px; font-weight: 700; padding: 8px 15px; border-radius: 999px; white-space: nowrap; color: #57534e">Money 7</span>
+    <span style="background: #fff; border: 1px solid #e5ddd0; font-size: 12px; font-weight: 700; padding: 8px 15px; border-radius: 999px; white-space: nowrap; color: #57534e">Near</span>
+  </div>
+
+  <!-- entry: need -->
+  <div class="row">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+      <span class="tag" style="background: #fdece0; color: #b04a15">Need &middot; Medical</span>
+      <span class="meta">2h ago</span>
+    </div>
+    <p style="margin: 12px 0 0; font-size: 17px; font-weight: 800; line-height: 1.3; letter-spacing: -.01em">A wheelchair for Kamla, 68</p>
+    <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: #57534e">She has not left the first floor in four months. Pune.</p>
+    <div style="margin-top: 12px; height: 150px; border-radius: 16px; background: #efe7da"></div>
+    <div style="margin-top: 12px; display: flex; gap: 8px">
+      <div style="flex: 1; height: 44px; border-radius: 12px; background: #b04a15; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800">I have one</div>
+      <div style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #e5ddd0; background: #fff; display: flex; align-items: center; justify-content: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#57534e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v14"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- entry: fulfilled (proof, inline, not a stats band) -->
+  <div class="row" style="background: #f7f4ec">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+      <span class="tag" style="background: #e7f0e4; color: #3f6b32">Handed over</span>
+      <span class="meta">5h ago</span>
+    </div>
+    <p style="margin: 10px 0 0; font-size: 15px; font-weight: 700; line-height: 1.45; color: #292524">A sewing machine reached Farida in Thane. Confirmed by OTP, certificate <a href="#" style="font-weight: 800; text-decoration: none">CK&#8209;8814</a>.</p>
+  </div>
+
+  <!-- entry: campaign -->
+  <div class="row">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+      <span class="tag" style="background: #fdece0; color: #b04a15">Money &middot; Medical</span>
+      <span class="meta">1d ago</span>
+    </div>
+    <p style="margin: 12px 0 0; font-size: 17px; font-weight: 800; line-height: 1.3; letter-spacing: -.01em">Cataract surgery for Sunita</p>
+    <div style="margin-top: 12px; height: 6px; background: #ece5d8; border-radius: 999px; overflow: hidden"><div style="width: 63%; height: 100%; background: #b04a15; border-radius: 999px"></div></div>
+    <p style="margin: 8px 0 0; font-size: 12px; font-weight: 700; color: #78716c; font-variant-numeric: tabular-nums">&#8377;28,400 of &#8377;45,000 &middot; Mumbai</p>
+    <div style="margin-top: 12px; height: 44px; border-radius: 12px; border: 1.5px solid #b04a15; color: #b04a15; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800">Donate</div>
+  </div>
+
+  <!-- entry: the long wait, styled as an interruption -->
+  <div class="row" style="background: #1c1917; border-bottom-color: #1c1917">
+    <span class="tag" style="background: rgba(232,180,90,.2); color: #e8b45a">Waiting 41 days</span>
+    <p style="margin: 12px 0 0; font-size: 20px; font-weight: 800; line-height: 1.25; color: #fff; letter-spacing: -.01em">Four mattresses. Nobody has taken them.</p>
+    <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.55; color: #a8a29e">A night shelter in Pune. The oldest thing on the board.</p>
+    <a href="#" style="display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 800; color: #e8b45a; text-decoration: none">See the 6 oldest &rarr;</a>
+  </div>
+
+  <!-- entry: need -->
+  <div class="row">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+      <span class="tag" style="background: #fdece0; color: #b04a15">Need &middot; Education</span>
+      <span class="meta">1d ago</span>
+    </div>
+    <p style="margin: 12px 0 0; font-size: 17px; font-weight: 800; line-height: 1.3; letter-spacing: -.01em">Sixty notebooks, one classroom</p>
+    <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: #57534e">Nashik. Term starts in nine days.</p>
+    <div style="margin-top: 12px; display: flex; gap: 8px">
+      <div style="flex: 1; height: 44px; border-radius: 12px; background: #b04a15; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800">I have these</div>
+    </div>
+  </div>
+
+  <!-- entry: the one CTA, earned by arriving late -->
+  <div class="row" style="border-bottom: none; padding-top: 26px">
+    <p style="margin: 0; font-size: 20px; font-weight: 800; line-height: 1.3; letter-spacing: -.01em">Got something sitting unused?</p>
+    <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: #57534e">List it and we will find whose need it closes.</p>
+    <div style="margin-top: 14px; height: 48px; border-radius: 12px; background: #b04a15; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Donate an item</div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":1500}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

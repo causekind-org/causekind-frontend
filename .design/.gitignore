@@ -1,0 +1,5 @@
+# The seeded canvas pages are ~2.5 MB of generated editor payload each, and they
+# are rebuilt from the .dc.html sources beside them whenever the design changes.
+# The sources are worth keeping; the payloads are not worth carrying in git.
+causekind-mobile-landing.html
+causekind-landing-directions.html
