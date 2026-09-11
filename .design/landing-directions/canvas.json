@@ -1,0 +1,18 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Chosen" },
+    { "id": "page-2", "name": "Not chosen" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 1700, "title": "Mobile landing", "page": "page-1" },
+    { "file": "Board.dc.html", "x": 0, "y": 0, "w": 390, "h": 1740, "title": "Board", "page": "page-2" },
+    { "file": "Journey.dc.html", "x": 530, "y": 0, "w": 390, "h": 2180, "title": "Journey", "page": "page-2" },
+    { "file": "Record.dc.html", "x": 1060, "y": 0, "w": 390, "h": 1700, "title": "Record", "page": "page-2" },
+    { "file": "Local.dc.html", "x": 1590, "y": 0, "w": 390, "h": 1880, "title": "Local", "page": "page-2" }
+  ],
+  "annotations": [
+    { "id": "note-chosen", "x": 0, "y": -330, "w": 390, "page": "page-1", "text": "CHOSEN — Doors. The build target, mobile, below the hero. The hero itself does not change.\n\nThe structure: one question, two stacked cards, then a sticky switcher, then evidence for whichever half is selected. The 20px gutter and 44px rhythm already shipped hold throughout.\n\nWhat it replaces: the donor/donee pathways section stops being section six and becomes the thing directly under the hero. Live needs and the stats become the donor half's evidence rather than standalone sections.\n\nTHE KNOWN WEAKNESS, stated plainly: stacked on a phone, the second door is below the fold and will read as secondary no matter what the copy says. Worth deciding before build — see the plan." },
+    { "id": "note-notchosen", "x": 0, "y": -190, "w": 1980, "page": "page-2", "text": "NOT CHOSEN — kept for reference, not being built.\n\nWorth stealing from later: Board's full-bleed proof strip (a completed handover interrupting the feed, instead of a stats band), Journey's private-matching chapter (the one thing about the product nobody currently understands), Local's distance bands." }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

@@ -1848,26 +1848,6 @@ export function GanpatiGarlandRight({ className = "w-full h-auto" }: { className
   );
 }
 
-/**
- * GanpatiCornerGarlands — Festive Botanical Garlands
- * Originates from the top corners of the navbar, draping down continuously into the hero section.
- */
 export function GanpatiCornerGarlands() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-x-0 top-0 h-[380px] overflow-visible z-40 select-none"
-      aria-hidden="true"
-    >
-      <GanpatiAnimationStyles />
-      {/* Left Corner Garland — 4 distinct vertical strands matching reference image */}
-      <div className="hidden md:block absolute top-0 left-1 sm:left-2 lg:left-3 w-[88px] sm:w-[98px] lg:w-[110px]">
-        <GanpatiGarlandLeft className="w-full h-auto" />
-      </div>
-
-      {/* Right Corner Garland — Symmetrical 4 strands positioned in top-right corner, sitting cleanly beside the bell */}
-      <div className="hidden md:block absolute top-0 right-4 sm:right-6 lg:right-8 w-[88px] sm:w-[98px] lg:w-[110px]">
-        <GanpatiGarlandRight className="w-full h-auto" />
-      </div>
-    </div>
-  );
+  return null;
 }

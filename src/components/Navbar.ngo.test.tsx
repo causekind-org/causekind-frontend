@@ -59,6 +59,7 @@ describe("Navbar - NGO Profile Button States", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 201, email: "fresh@ngo.org", role: "NGO_PARTNER" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -80,6 +81,7 @@ describe("Navbar - NGO Profile Button States", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 202, email: "submitted@ngo.org", role: "NGO_PARTNER" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -110,6 +112,7 @@ describe("Navbar - NGO Profile Button States", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 301, email: "donor@example.com", role: "DONOR" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -125,6 +128,7 @@ describe("Navbar - NGO Profile Button States", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 203, email: "submitting@ngo.org", role: "NGO_PARTNER" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),

@@ -96,15 +96,17 @@ export function LiveNeedsSectionGanpati({
           <div>
             <div className="flex items-center gap-2.5 text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
               <ModakIcon className="size-4 text-amber-600" />
-              <span>Ganeshotsav Giving · Real people, real needs</span>
+              <span>Ganeshotsav Giving</span>
               <ModakIcon className="size-3.5 text-amber-600" />
             </div>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl lg:text-5xl dark:text-white font-serif">
-              Real people, real needs.
+            <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl font-serif">
+              <span className="text-stone-900 dark:text-white">Real people. Real needs.</span>
+              <br />
+              <span className="text-[#ea580c] dark:text-[#f59e0b]">This Ganeshotsav.</span>
             </h2>
             <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-stone-600 sm:text-base dark:text-stone-300">
-              This festive season, fulfill verified requests from families and shelters near you.
-              Direct handoff, zero middlemen, 100% sacred impact.
+              Every request here is posted by a verified individual or community school in India.
+              This festive season, offer the exact item they&apos;re waiting for — no cash, no guesswork, no middlemen.
             </p>
           </div>
 

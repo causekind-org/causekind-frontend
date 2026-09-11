@@ -7,6 +7,10 @@ import { getMyNgoApplication, getCampaigns, getPlatformStats, getRecentActivity,
 const mockReplace = vi.fn();
 const mockPush = vi.fn();
 
+// HeroSection pulls Anton from next/font/google, which has no jsdom
+// implementation. Same stub heroFrontDoor.test.tsx already uses.
+vi.mock("next/font/google", () => ({ Anton: () => ({ style: { fontFamily: "Anton" } }) }));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     replace: mockReplace,
@@ -44,6 +48,7 @@ describe("HomeClient - NGO Experience (Root URL /)", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "fresh@charity.org", role: "NGO_PARTNER" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -102,6 +107,7 @@ describe("HomeClient - NGO Experience (Root URL /)", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 102, email: "submitted@charity.org", role: "NGO_PARTNER" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),

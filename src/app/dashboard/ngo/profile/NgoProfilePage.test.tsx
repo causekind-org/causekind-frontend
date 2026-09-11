@@ -37,6 +37,7 @@ describe("NgoProfilePage", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -91,6 +92,7 @@ describe("NgoProfilePage", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -112,6 +114,7 @@ describe("NgoProfilePage", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -140,6 +143,7 @@ describe("NgoProfilePage", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -168,6 +172,7 @@ describe("NgoProfilePage", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),
@@ -214,6 +219,7 @@ describe("NgoProfilePage", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "fresh@smilefoundation.org", role: "NGO" },
       isLoading: false,
+      isRestoring: false,
       setUser: vi.fn(),
       logout: vi.fn(),
       setAuth: vi.fn(),

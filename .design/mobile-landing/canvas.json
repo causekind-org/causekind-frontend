@@ -1,0 +1,20 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Chosen" },
+    { "id": "page-2", "name": "Not chosen" }
+  ],
+  "artboards": [
+    { "file": "Current.dc.html", "x": 0, "y": 0, "w": 390, "h": 1500, "title": "Today (reference)", "page": "page-1" },
+    { "file": "Main.dc.html", "x": 530, "y": 0, "w": 390, "h": 2320, "title": "Mobile landing", "page": "page-1" },
+    { "file": "Editorial.dc.html", "x": 0, "y": 0, "w": 390, "h": 1740, "title": "Editorial", "page": "page-2" },
+    { "file": "Feed.dc.html", "x": 530, "y": 0, "w": 390, "h": 1500, "title": "Feed", "page": "page-2" },
+    { "file": "Deck.dc.html", "x": 1060, "y": 0, "w": 390, "h": 1420, "title": "Deck", "page": "page-2" },
+    { "file": "Ledger.dc.html", "x": 1590, "y": 0, "w": 390, "h": 1620, "title": "Ledger", "page": "page-2" }
+  ],
+  "annotations": [
+    { "id": "note-current", "x": 0, "y": -210, "w": 390, "page": "page-1", "text": "TODAY — the red lines are the two gutters the page actually uses (16px and 24px).\n\nThree left edges, gaps alternating 20 / 76, two near-identical creams, titles at 16 / 30 / 30, three card styles. Kept here only as the before." },
+    { "id": "note-chosen", "x": 530, "y": -280, "w": 390, "page": "page-1", "text": "CHOSEN — the build target.\n\nFive rules, applied everywhere:\n1. One gutter — 20px. Sections stop owning horizontal padding; the column owns it. Only deliberate exception is a right-only bleed for scrolling rails.\n2. One rhythm — 44px between sections, 0 inside. No more gap-5 plus py-14 stacking to 76.\n3. One ground — #fbf9f4 throughout. Contrast comes from white cards, never a second cream.\n4. One header shape — rule + eyebrow, 24px/800 title, one line of body, optional link out.\n5. One card — white, 20px radius, 1px #e8e2d5, no shadow. Terracotta #b04a15 is the only accent that acts; unclaimed gold #9a6b12 survives as a marker on that section only.\n\nAlso reordered: live needs first, then still-waiting, campaigns, the one pathway choice, then trust as a closing list rather than a boxed band.\n\nOPEN: Be the Change and Coming Soon are not drawn. They take the same header shape — say where they go, or whether they go." },
+    { "id": "note-notchosen", "x": 0, "y": -180, "w": 920, "page": "page-2", "text": "NOT CHOSEN — kept for reference, not being built.\n\nWorth stealing from later if the restrained page feels flat once it is live: Editorial's numbered register, Feed's inline handover proof (completed handovers as feed entries rather than a stats band), Ledger's waiting column." }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}
