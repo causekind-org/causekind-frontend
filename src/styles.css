@@ -2401,27 +2401,30 @@ body.mobile-menu-open {
 }
 
 /* ── Live primary CTAs ──────────────────────────────────────────────────────
-   A slow glint on the landing page's filled primary actions, and only those.
+   A continuously travelling highlight on the landing page's filled primary
+   actions, and only those.
 
-   Read the note above before widening this. Two infinite loops on these
-   buttons were removed once already because ambient motion on the page's main
-   action pulls the eye to something that means nothing, and two cycles drifting
-   in and out of phase read as a rendering glitch. This is built to avoid both
-   failures rather than to repeat them:
+   The note above records two infinite loops being removed from these very
+   buttons, and this puts one back. That is Sushil's call, asked for twice on
+   2026-09-11 with the removal note in front of him. What is NOT back is the
+   part that actually broke: two cycles running at once and drifting in and out
+   of phase with each other.
 
-   - It is a GLINT, not a loop. The sweep occupies ~1s of a 6.5s cycle and the
-     layer is parked and invisible for the rest, so nothing is ever in constant
-     motion.
-   - It pauses under the pointer. The hover sheen on `::after` owns that moment,
-     and the two never run together — which is the exact overlap that failed
-     before. This uses `::before` for the same reason.
-   - Filled primaries only. If everything glints, nothing is primary.        */
+   - ONE cycle, never two. This travels on `::before`; the one-shot hover sheen
+     owns `::after`, and the loop pauses under the pointer so the hover sweep
+     reads on its own. The overlap is what failed, not the movement.
+   - Low contrast on purpose. It is a sheen passing over the fill, not a strobe;
+     the alpha is what keeps a permanent loop from becoming noise.
+   - Filled primaries only. If everything moves, nothing is primary.
+   - Off entirely under `prefers-reduced-motion`.
+
+   If this ever reads as a rendering glitch again, the fix is the alpha and the
+   period — or going back to a long-parked glint — not adding a second cycle. */
 @keyframes ck-cta-live-sheen {
   0%   { opacity: 0; transform: translateX(-140%) skewX(-12deg); }
-  3%   { opacity: 1; }
-  15%  { opacity: 1; transform: translateX(140%) skewX(-12deg); }
-  16%  { opacity: 0; transform: translateX(140%) skewX(-12deg); }
-  100% { opacity: 0; transform: translateX(-140%) skewX(-12deg); }
+  14%  { opacity: 1; }
+  86%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(140%) skewX(-12deg); }
 }
 
 .ck-cta-live {
@@ -2441,7 +2444,7 @@ body.mobile-menu-open {
     rgb(255 255 255 / 0.34) 50%,
     transparent 68%
   );
-  animation: ck-cta-live-sheen 6.5s ease-in-out infinite;
+  animation: ck-cta-live-sheen 3.2s ease-in-out infinite;
 }
 
 /* A dark label on a light fill needs a darker glint to register at all. */
@@ -2458,6 +2461,47 @@ body.mobile-menu-open {
 .ck-cta-live:focus-visible::before {
   animation-play-state: paused;
   opacity: 0;
+}
+
+/*
+  The one-shot hover sweep, for the CTAs that did not already have one.
+
+  `.ck-hero-primary-cta` is excluded on purpose: it carries its own `::after`
+  sheen, tuned with its own gradient and its paired icon lift, and a second rule
+  at equal specificity would come down to source order. Without this the Doors
+  and donee CTAs had a dead hover — the loop paused and nothing took its place.
+*/
+.ck-cta-live:not(.ck-hero-primary-cta)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    108deg,
+    transparent 22%,
+    rgb(255 255 255 / 0.06) 39%,
+    rgb(255 255 255 / 0.42) 50%,
+    rgb(255 255 255 / 0.06) 61%,
+    transparent 78%
+  );
+}
+
+.ck-cta-live[data-cta-live="dark"]:not(.ck-hero-primary-cta)::after {
+  background: linear-gradient(
+    108deg,
+    transparent 22%,
+    rgb(28 25 23 / 0.03) 39%,
+    rgb(28 25 23 / 0.18) 50%,
+    rgb(28 25 23 / 0.03) 61%,
+    transparent 78%
+  );
+}
+
+/* One pass, on intent — the same timing the hero pair already uses. */
+.ck-cta-live:not(.ck-hero-primary-cta):hover::after,
+.ck-cta-live:not(.ck-hero-primary-cta):focus-visible::after {
+  animation: ck-hero-cta-sheen 0.72s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 /* The hero's primary is only a filled button for a guest. Signed in it is a
