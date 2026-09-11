@@ -29,6 +29,15 @@ vi.mock("@/lib/api", () => ({
   getMyProfile: vi.fn().mockResolvedValue(null),
 }));
 
+// The festive hero and board reach NewRequestLink, which reads the
+// need-profile gate from context. .env.local forces the Ganpati skin on
+// outside its September window, so this test renders those components and
+// threw "must be used inside <NeedProfileGateProvider>" without this stub.
+// Same mock the two sibling Ganpati tests already carry.
+vi.mock("@/hooks/useNeedProfileGate", () => ({
+  useNeedProfileGate: () => ({ requestAccess: async () => true, checking: false }),
+}));
+
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));

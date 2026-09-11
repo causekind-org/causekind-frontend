@@ -104,4 +104,42 @@ describe("HomeClient Ganpati Theme Conditional Rendering", () => {
     // Should render bottom CTA festive heading
     expect(screen.getByText(/Remove obstacles for someone today/i)).toBeDefined();
   }, 15000);
+
+  /**
+   * The festive hero shares `.ck-showcase-hero` with the plain one for its
+   * layout, and that class also carries a `max-width: 1023px` block of CTA
+   * styling written for the plain hero's dark photo scrim. This hero's buttons
+   * sit on cream, so those rules painted the sign-up CTA at 1.05:1 and "Explore
+   * needs near you" at 1.53:1 — invisible, and only in light mode.
+   *
+   * <p>The opt-out is the `ck-ganpati-hero` marker, which every one of those
+   * selectors now excludes. jsdom applies no stylesheet, so this can only check
+   * that the marker is still on the element the stylesheet expects it on — but
+   * that is the half that gets dropped in a refactor.
+   */
+  it("marks the festive hero so the plain hero's mobile CTA styling skips it", () => {
+    vi.spyOn(isGanpatiActiveModule, "isGanpatiActive").mockReturnValue(true);
+
+    const { container } = render(
+      <HomeClient
+        initialCampaigns={[]}
+        initialStats={null}
+        initialActivity={[]}
+        initialItemRequests={[]}
+        initialPublicRequests={[]}
+      />
+    );
+
+    const hero = container.querySelector(".ck-showcase-hero");
+    expect(hero).toBeTruthy();
+    // Both, and in that order of importance: the layout half is why it keeps
+    // `ck-showcase-hero` at all, the marker is why the CTA half skips it.
+    expect(hero!.classList.contains("ck-ganpati-hero")).toBe(true);
+
+    // The buttons must still be styling themselves rather than inheriting.
+    const secondary = container.querySelector(".ck-hero-secondary-cta");
+    expect(secondary).toBeTruthy();
+    expect(secondary!.className).toContain("text-[#9a3412]");
+    expect(secondary!.className).toContain("bg-white/95");
+  }, 15000);
 });
