@@ -2479,12 +2479,20 @@ body.mobile-menu-open {
        order and put the full-width sizing back. */
     padding-block: 0.625rem;
     border-radius: 0.75rem;
-    background: var(--ck-home-highlight, #ff9f66);
-    color: #19120d;
+    /*
+      The brand accent, not the highlight tint. #ff9f66 is the pale-on-dark
+      variant and it made the one button we want pressed read as a pastel.
+      Terracotta with a white label measures 5.47:1 on the text and 3.44:1 for
+      the block against the hero's ground — past both floors — so there is no
+      legibility argument for the tint here. The tint keeps its job on the
+      headline accent, where it is type on the photo rather than a filled shape.
+    */
+    background: var(--ck-home-accent, #b04a15);
+    color: #fff6ed;
     font-weight: 800;
     box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
   }
-  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: #ffb887; }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: var(--ck-home-hover, #963c0d); }
   .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-signup-prompt { display: none; }
   /*
     No arrows on the guest pair, and this rule has to come after the one above
