@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .kick { font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .num { font-variant-numeric: tabular-nums; }
+    .card { background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; }
+    .hero-edge { border-top: 1px dashed #d9cfbd; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #fbf9f4; color: #1c1917; padding-bottom: 44px">
+
+  <div style="padding: 10px 20px; display: flex; align-items: center; gap: 8px">
+    <span class="hero-edge" style="flex: 1"></span>
+    <span style="font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #b9ae9b">Hero ends here &mdash; unchanged</span>
+    <span class="hero-edge" style="flex: 1"></span>
+  </div>
+
+  <!-- location bar: the one piece of chrome this direction needs -->
+  <div style="padding: 22px 20px 0">
+    <div class="card" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 999px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span style="font-size: 14px; font-weight: 700; flex: 1">Pune</span>
+      <span style="font-size: 13px; font-weight: 800; color: #b04a15">change</span>
+    </div>
+  </div>
+
+  <div style="padding: 26px 20px 0">
+    <span class="kick" style="color: #b04a15">4 needs within 10 km</span>
+    <h2 style="margin: 12px 0 0; font-size: 26px; font-weight: 800; line-height: 1.16; letter-spacing: -.025em">The nearest one is<br>four kilometres away.</h2>
+    <p style="margin: 10px 0 0; font-size: 14px; line-height: 1.6; color: #57534e; text-wrap: pretty">Giving in kind only works over short distances &mdash; a mattress does not travel. So this starts from where you are, not from a national feed.</p>
+  </div>
+
+  <!-- the map, full bleed so it reads as a place and not a widget -->
+  <div style="margin-top: 20px; height: 250px; position: relative; background: #f2ede3">
+    <svg viewBox="0 0 390 250" style="position: absolute; inset: 0; width: 100%; height: 100%">
+      <rect width="390" height="250" fill="#f2ede3"/>
+      <g stroke="#e2dacb" stroke-width="1.5" fill="none">
+        <path d="M0 66 L390 48"/><path d="M0 148 L390 130"/><path d="M0 212 L390 202"/>
+        <path d="M84 0 L104 250"/><path d="M198 0 L188 250"/><path d="M300 0 L320 250"/>
+      </g>
+      <path d="M0 176 C90 162 146 190 212 172 C278 156 332 176 390 166" stroke="#dbe6ea" stroke-width="14" fill="none"/>
+      <circle cx="190" cy="130" r="62" fill="rgba(176,74,21,.07)" stroke="rgba(176,74,21,.3)" stroke-width="1.5" stroke-dasharray="6 6"/>
+      <circle cx="190" cy="130" r="8" fill="#1c1917"/>
+      <circle cx="190" cy="130" r="15" fill="none" stroke="#1c1917" stroke-width="1.5" opacity=".35"/>
+      <circle cx="156" cy="98" r="13" fill="#b04a15"/>
+      <circle cx="232" cy="150" r="13" fill="#b04a15"/>
+      <circle cx="172" cy="176" r="13" fill="#b04a15"/>
+      <circle cx="224" cy="94" r="13" fill="#b04a15"/>
+      <circle cx="48" cy="54" r="10" fill="#c9bfae"/>
+      <circle cx="340" cy="208" r="10" fill="#c9bfae"/>
+    </svg>
+    <div style="position: absolute; left: 20px; bottom: 14px; display: flex; gap: 12px; background: rgba(255,255,255,.95); border: 1px solid #e8e2d5; border-radius: 11px; padding: 9px 13px">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700"><span style="width: 8px; height: 8px; border-radius: 999px; background: #b04a15"></span>Within 10 km</span>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #78716c"><span style="width: 8px; height: 8px; border-radius: 999px; background: #c9bfae"></span>Further</span>
+    </div>
+  </div>
+
+  <!-- the nearest one, given its own card -->
+  <div style="padding: 22px 20px 0">
+    <div class="card" style="padding: 16px">
+      <div style="display: flex; gap: 14px; align-items: center">
+        <div style="width: 64px; height: 64px; border-radius: 14px; background: #f0ebe1; flex: none"></div>
+        <div style="flex: 1; min-width: 0">
+          <p class="num" style="margin: 0; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #b04a15">4.2 km &middot; Kothrud</p>
+          <p style="margin: 6px 0 0; font-size: 16px; font-weight: 800; line-height: 1.25">A wheelchair for Kamla, 68</p>
+          <p style="margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Open 12 days</p>
+        </div>
+      </div>
+      <div style="margin-top: 14px; height: 46px; border-radius: 12px; background: #b04a15; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">I have one</div>
+    </div>
+  </div>
+
+  <!-- distance bands replace categories as the organising idea -->
+  <div style="padding: 44px 20px 0">
+    <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.02em; line-height: 1.24">Sorted by how far you would have to carry it</h2>
+
+    <div class="card" style="margin-top: 18px; padding: 18px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <span class="kick" style="color: #b04a15">Walking distance</span>
+        <span class="num" style="font-size: 12px; font-weight: 800; color: #78716c">2 needs</span>
+      </div>
+      <p style="margin: 14px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">A wheelchair for Kamla, 68</p>
+      <p class="num" style="margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #78716c">4.2 km &middot; Kothrud</p>
+      <div style="height: 1px; background: #f0ebe1; margin: 14px 0"></div>
+      <p style="margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3">4 mattresses for a night shelter</p>
+      <p class="num" style="margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #78716c">6.1 km &middot; Hadapsar</p>
+    </div>
+
+    <div class="card" style="margin-top: 12px; padding: 18px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <span class="kick" style="color: #b04a15">Same city</span>
+        <span class="num" style="font-size: 12px; font-weight: 800; color: #78716c">2 needs</span>
+      </div>
+      <p style="margin: 14px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">Cooking vessels for a shared kitchen</p>
+      <p class="num" style="margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #78716c">14 km &middot; Pimpri</p>
+    </div>
+
+    <div class="card" style="margin-top: 12px; padding: 18px; background: #f7f4ec">
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <span class="kick" style="color: #78716c">Courier territory</span>
+        <span class="num" style="font-size: 12px; font-weight: 800; color: #78716c">19 needs</span>
+      </div>
+      <p style="margin: 12px 0 0; font-size: 14px; line-height: 1.6; color: #57534e">Reachable, but someone has to pay to move it. Small and light things work here &mdash; notebooks, clothes, a phone. A mattress does not.</p>
+      <a href="#" style="display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 800; text-decoration: none">Browse the rest of Maharashtra &rarr;</a>
+    </div>
+  </div>
+
+  <!-- your city as its own record -->
+  <div style="margin-top: 44px; background: #f2ede3; padding: 26px 20px">
+    <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.02em">What Pune has done this year</h2>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 18px">
+      <div>
+        <p class="num" style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.03em">214</p>
+        <p style="margin: 5px 0 0; font-size: 12px; color: #78716c; font-weight: 600">items handed over here</p>
+      </div>
+      <div>
+        <p class="num" style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.03em">8.4 km</p>
+        <p style="margin: 5px 0 0; font-size: 12px; color: #78716c; font-weight: 600">median distance travelled</p>
+      </div>
+      <div>
+        <p class="num" style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.03em">6 days</p>
+        <p style="margin: 5px 0 0; font-size: 12px; color: #78716c; font-weight: 600">median ask to door</p>
+      </div>
+      <div>
+        <p class="num" style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.03em">4</p>
+        <p style="margin: 5px 0 0; font-size: 12px; color: #78716c; font-weight: 600">still open near you</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 40px 20px 0">
+    <div style="background: #1c1917; border-radius: 20px; padding: 26px 22px">
+      <h2 style="margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; color: #fff; letter-spacing: -.02em">Somebody four kilometres away needs something you own.</h2>
+      <p style="margin: 10px 0 0; font-size: 13px; color: #a8a29e; line-height: 1.55">Verified before listing &middot; OTP at the door &middot; certificate you can check</p>
+      <div style="margin-top: 20px; display: grid; gap: 10px">
+        <div style="height: 50px; border-radius: 12px; background: #fff; color: #1c1917; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Donate an item</div>
+        <div style="height: 50px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.4); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Post a need</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":1880}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

@@ -10,6 +10,10 @@ const authState = {
   isLoading: false,
 };
 
+// HeroSection pulls Anton from next/font/google, which has no jsdom
+// implementation. Same stub heroFrontDoor.test.tsx already uses.
+vi.mock("next/font/google", () => ({ Anton: () => ({ style: { fontFamily: "Anton" } }) }));
+
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => authState,
 }));
@@ -25,15 +29,20 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("next-intl", () => ({
   useTranslations: (namespace: string) => {
-    const t = (key: string) => {
-      const path = `${namespace}.${key}`.split(".");
+    const resolve = (key: string) => {
       let node: unknown = enMessages;
-      for (const segment of path) {
+      for (const segment of `${namespace}.${key}`.split(".")) {
         node = (node as Record<string, unknown>)?.[segment];
       }
-      return typeof node === "string" ? node : path.join(".");
+      return node;
+    };
+    const t = (key: string) => {
+      const node = resolve(key);
+      return typeof node === "string" ? node : `${namespace}.${key}`;
     };
     t.rich = (key: string) => t(key);
+    // HeroSection guards an optional message with t.has before reading it.
+    t.has = (key: string) => typeof resolve(key) === "string";
     return t;
   },
 }));

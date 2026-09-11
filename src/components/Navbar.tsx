@@ -465,6 +465,42 @@ export function SiteHeader() {
   // Elevate-on-scroll: flat at the top of the page, soft shadow fades in once
   // content scrolls beneath the bar (same pattern as the admin panel header).
   const [scrolled, setScrolled] = useState(false);
+  const [overMobileHero, setOverMobileHero] = useState(pathname === "/");
+  useEffect(() => {
+    if (pathname !== "/") { setOverMobileHero(false); return; }
+    const mobile = window.matchMedia("(max-width: 1023px)");
+    let frame = 0;
+    let observedHero: Element | null = null;
+    const update = () => {
+      frame = 0;
+      const hero = document.querySelector(".ck-lead-hero-stage");
+      if (hero && hero !== observedHero) {
+        resize.disconnect();
+        resize.observe(hero);
+        observedHero = hero;
+        mounted.disconnect();
+      }
+      const bounds = hero?.getBoundingClientRect();
+      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= 0 && bounds.bottom > 0);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const resize = new ResizeObserver(schedule);
+    // The homepage may arrive after the shared header during client navigation.
+    const mounted = new MutationObserver(schedule);
+    mounted.observe(document.body, { childList: true, subtree: true });
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    mobile.addEventListener("change", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      mounted.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      mobile.removeEventListener("change", schedule);
+    };
+  }, [pathname]);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -812,6 +848,7 @@ export function SiteHeader() {
 
       <header
         ref={headerRef}
+        data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
         style={{
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
           opacity: immersive ? 0 : 1,
@@ -839,8 +876,36 @@ export function SiteHeader() {
             z-0 behind the two content rows below, which are lifted to z-[1]. */}
         <RakshaBandhanNavAdornment />
 
-        {/* Mobile Header (lg:hidden) */}
-        <div className={`relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 ${
+        {/* Mobile Header (lg:hidden)
+
+            Three equal-sided columns, NOT flex + justify-between. A middle
+            child is only centred when the two flanking it are the same width,
+            and NotificationBell renders null for guests — so under
+            justify-between the logo sat half a button-width right of centre for
+            a visitor and somewhere else again once the bell appeared. With
+            1fr auto 1fr the side columns are equal by definition, so the logo
+            is exactly centred in both auth states.
+
+            Grid rather than absolute centring so everything stays in flow: a
+            side item that grows pushes nothing on top of the logo.
+
+            The menu button sits on the RIGHT because StaggeredMenu is
+            position="right" — the control and the panel it opens now share an
+            edge. This also puts the DOM order (bell, logo, menu) in step with
+            the visual order, so tab order reads left to right.
+
+            This row used to be strictly 100% opaque so that page content could
+            never show through it while scrolling. It still cannot: the <header>
+            itself carries the same opaque #faf8f5 / zinc-950 behind this row,
+            so the 90% here reveals only the header's own background — the exact
+            same colour — plus the festive layer on the one day it exists. Off
+            the day, this renders pixel-identical to the opaque version.
+
+            Through Ganeshotsav the row takes the header's own warm gradient
+            instead, so it reads as part of the festive header rather than as a
+            cream band sitting on it. `ck-mobile-header` survives either branch:
+            src/styles.css hangs the whole home-hero header layout off it. */}
+        <div className={`ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 ${
           isGanpati
             ? "bg-gradient-to-r from-[#fffbf4]/95 via-[#fff5e6]/95 to-[#fffbf4]/95 dark:from-[#1b0c05]/95 dark:via-[#240e06]/95 dark:to-[#1b0c05]/95"
             : "bg-[#faf8f5]/90 dark:bg-zinc-950/90"
@@ -849,7 +914,7 @@ export function SiteHeader() {
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            <CareNestLogo size="md" hideIcon={true} />
+            {pathname === "/" && overMobileHero ? <span className="text-xl font-extrabold tracking-tight text-[#fff6ed]">Cause<span className="text-[var(--ck-role-highlight,#ff9f66)]">Kind</span></span> : <CareNestLogo size="md" hideIcon={true} />}
           </Link>
           <button
             ref={menuTriggerRef}

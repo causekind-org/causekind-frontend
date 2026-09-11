@@ -21,6 +21,21 @@ type AuthContextValue = {
   /** True until storage rehydration + background server check complete. */
   isLoading: boolean;
   /**
+   * True only until localStorage has been read — one effect tick, never a
+   * network round trip.
+   *
+   * <p>Use this for anything PRESENTATIONAL that has a safe guest default: a
+   * CTA's label and href, a signup prompt. Getting it wrong shows a guest CTA
+   * to a signed-in user for a frame, and it corrects itself.
+   *
+   * <p>Use {@link isLoading} for anything that REDIRECTS. Getting that wrong
+   * bounces someone holding a valid cookie but empty storage — cleared site
+   * data, or a session opened in another tab — to /login, which does not
+   * correct itself. Every route guard in the app is on `isLoading` for that
+   * reason and must stay there.
+   */
+  isRestoring: boolean;
+  /**
    * Fix #4: replaces the old setAuth(token, rememberMe).
    * Accepts user metadata only — the actual JWT now lives in an httpOnly cookie
    * set by the server and is never accessible to JavaScript.
@@ -34,6 +49,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
+  isRestoring: true,
   setUser: () => {},
   logout: () => {},
   setAuth: () => {},
@@ -44,6 +60,7 @@ const USER_KEY = "ck_user";
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading]  = useState(true);
+  const [isRestoring, setIsRestoring] = useState(true);
 
   // ── Hydration ─────────────────────────────────────────────────────────────
   // Fix #4: We no longer store the JWT in localStorage.
@@ -51,13 +68,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // The real token lives in an httpOnly cookie the browser sends automatically.
   useEffect(() => {
     // 1. Instant hydration from cached metadata (no spinner on every page load)
+    let restoredFromCache = false;
     try {
       const stored = localStorage.getItem(USER_KEY);
       if (stored) {
         const parsed: AuthUser = JSON.parse(stored);
-        if (parsed?.email && parsed?.role) setUserState(parsed);
+        if (parsed?.email && parsed?.role) {
+          setUserState(parsed);
+          restoredFromCache = true;
+        }
       }
     } catch {}
+
+    /*
+      The storage question is now answered, whichever way it went. This is the
+      flag presentational surfaces wait on, and it costs one effect tick.
+
+      It has to be separate from `isLoading`. Flipping `isLoading` here for
+      everyone would resolve a cookie-holding, storage-empty visitor to "guest"
+      and every route guard would bounce them to /login. Flipping neither — what
+      shipped before — left the hero's primary CTA inert for a guest until
+      /users/me came back, which on a cold Neon is not milliseconds. Guests are
+      exactly the people that CTA is for.
+    */
+    setIsRestoring(false);
+
+    /*
+      Resolved the moment the cache answers — the whole point of step 1.
+
+      `setIsLoading(false)` used to live in step 2's `.finally()`, so "instant
+      hydration" never actually flipped the flag: everything gated on
+      `isLoading` waited for a round trip to /api/v1/users/me. That is not a
+      few milliseconds here. The Hikari pool is deliberately cold so NeonDB can
+      auto-suspend, so the first authenticated call after an idle spell wakes
+      the database, and the hero's primary CTA sat inert while it did.
+
+      Deliberately asymmetric. With no cached user we genuinely do not know
+      whether this person is signed in, and resolving to "guest" early would
+      bounce someone holding a valid cookie but empty storage — cleared site
+      data, or a session started in another tab — straight to /login from every
+      page that redirects on `!isLoading && !user`. That case keeps waiting.
+    */
+    if (restoredFromCache) setIsLoading(false);
 
     // 2. Background server validation — evicts stale localStorage if cookie expired
     const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
@@ -78,6 +130,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {}) // network offline — keep cached state
+      // Harmless when the cache already resolved it above; the one that matters
+      // is the no-cache path, which is still waiting on this.
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -117,8 +171,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [setUser]);
 
   const value = useMemo(
-    () => ({ user, isLoading, setUser, logout, setAuth }),
-    [user, isLoading, setUser, logout, setAuth],
+    () => ({ user, isLoading, isRestoring, setUser, logout, setAuth }),
+    [user, isLoading, isRestoring, setUser, logout, setAuth],
   );
 
   return (

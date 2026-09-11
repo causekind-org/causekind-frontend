@@ -71,8 +71,9 @@ import { toast } from "@/lib/toast";
 import { HeroSection }           from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
-import SectionDivider            from "@/components/SectionDivider";
 import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
+import { MobileDoors, useLandingDoor } from "@/components/audience-pathways/MobileDoors";
+import DoneeDoorEvidence      from "@/components/audience-pathways/DoneeDoorEvidence";
 import { ItemDonationScrolly }   from "@/components/home/ItemDonationScrolly";
 import { CTASection }            from "@/components/home/CTASection";
 
@@ -132,24 +133,44 @@ export default function HomeClient({
 }) {
   const t       = useTranslations("landing");
   const tCommon = useTranslations("common");
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isRestoring } = useAuth();
 
   /**
    * The donor/donee signup pathways are guest-only.
    *
-   * <p><b>Fails closed while auth is resolving.</b> `useAuth` starts at
-   * `{ user: null, isLoading: true }` and only then hydrates from
-   * `localStorage["ck_user"]` and validates against `/users/me`, so testing
-   * `!user` alone renders "Join as a donor" to someone who is already signed in
-   * and takes it away a moment later. Waiting for `isLoading` costs guests
-   * nothing visible and removes the flash entirely.
+   * <p><b>Waits for storage, not for the network.</b> `useAuth` starts at
+   * `{ user: null }` and only then hydrates from `localStorage["ck_user"]`, so
+   * testing `!user` alone renders "Join as a donor" to someone already signed
+   * in and takes it away a moment later. `isRestoring` closes that window.
+   *
+   * <p>It must NOT be `isLoading`. That flag is deliberately asymmetric — with
+   * no cached user it stays true until `/api/v1/users/me` answers, and that
+   * call wakes the deliberately cold Neon pool. Gating on it meant a guest saw
+   * the pre-Doors page for seconds and then watched it rearrange, which is the
+   * same bug the hero's primary CTA had. Guests are exactly who this is for.
+   *
+   * <p>The cost is the same one the hero accepts: someone holding a valid
+   * cookie but empty storage sees signup CTAs for a beat before their role
+   * resolves. That is a visible correction, not a redirect, and it corrects
+   * itself. See the two-flag table in `useAuth`.
    *
    * <p>Any authenticated user hides it, not just DONOR and DONEE. Role strings
    * circulate in both `ROLE_`-prefixed and bare forms (see `normalizeRole`), and
    * a role-by-role check would quietly start showing signup CTAs to whichever
    * role is added next.
    */
-  const showAudiencePathways = !authLoading && user === null;
+  const showAudiencePathways = !isRestoring && user === null;
+
+  /*
+    Which door a guest picked on the mobile landing. Drives what renders below
+    the switcher there; the desktop tree ignores it entirely.
+
+    `doorIsDonor` collapses the two cases a section actually cares about: a
+    signed-in visitor has no doors at all and keeps today's page, so everything
+    donor-facing renders for them unconditionally.
+  */
+  const { door, pick: pickDoor } = useLandingDoor();
+  const doorIsDonor = !showAudiencePathways || door === "donor";
 
   const [campaigns,    setCampaigns]    = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -568,10 +589,20 @@ export default function HomeClient({
           Still inline here — can be extracted to MobileView.tsx
           in a future session if it grows.
       ════════════════════════════════════════════════════════════ */}
-      <div className="lg:hidden min-h-screen bg-[#fbf9f4] dark:bg-zinc-950 px-4 pt-2 flex flex-col gap-5">
-        {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white */}
+      {/* `pt-11` matches this column's own `gap-11`: the join between the hero
+          and whatever follows it is a section join like every other one, and at
+          `pt-2` it was 8px against 44px everywhere else — the one odd seam on
+          the page, and it read as the next section being glued to the hero. */}
+      <div className="lg:hidden min-h-screen bg-[#fbf9f4] dark:bg-zinc-950 px-5 pt-11 flex flex-col gap-11">
+        {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
+
+            `-mt-9` pulls it back up against the hero. This bar is chrome, not a
+            section — full-bleed terracotta, it belongs flush under the hero
+            rather than 44px below it on a strip of cream. It cancels the
+            column's `pt-11` back to the 8px this join used to have. Dead today
+            (`money` is off) but correct the moment that flag flips. */}
         {FEATURES.money && (
-          <div className="overflow-hidden bg-[var(--ck-home-accent,#b04a15)] -mx-4">
+          <div className="overflow-hidden bg-[var(--ck-home-accent,#b04a15)] -mx-5 -mt-9">
             <div className="animate-stats-ticker flex gap-0 whitespace-nowrap py-2">
               {[0, 1].map(copy => (
                 <div key={copy} className="flex items-center gap-8 px-4 shrink-0">
@@ -589,23 +620,58 @@ export default function HomeClient({
           </div>
         )}
 
+        {/* Doors — the guest spine. One question, two cards, then a switcher;
+            everything after this point is the answer to it.
+
+            This replaces AudiencePathwaysSection in the mobile tree only. The
+            desktop tree still renders that section in its old position, and a
+            signed-in visitor still gets today's page in both trees — the donor
+            and donee variants are a separate piece of work. */}
+        {showAudiencePathways && <MobileDoors door={door} pick={pickDoor} />}
+
+        {/* The donee door's evidence. The one genuinely new surface here:
+            everything else below the hero is donor-facing, so a visitor who
+            says "I need something" had nothing to read. */}
+        {showAudiencePathways && door === "donee" && <DoneeDoorEvidence />}
+
+        {/* Live Needs — the donor door's first piece of evidence, so it leads
+            now rather than sitting below the campaigns rail.
+            No bleed wrapper below lg: the section drops its own horizontal
+            padding and background at this width (see LiveNeedsSection), so it
+            sits on this column's px-5 gutter like everything else. */}
+        {doorIsDonor && (
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+        )}
+
         {/* Mobile Campaigns horizontal scroll */}
-        {FEATURES.money && (
+        {FEATURES.money && doorIsDonor && (
           <section className="space-y-4">
-            <div className="flex items-end justify-between">
-              <h2 className="text-base sm:text-lg font-black text-stone-850 dark:text-stone-100 tracking-tight">
-                <TranslatedText text="Latest Active Campaigns" />
-              </h2>
-              <Link href="/campaigns" className="text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
-                <TranslatedText text="Browse All" /> →
-              </Link>
+            {/* One header shape, shared with every other mobile section: a
+                short rule, an eyebrow, then a 24px title. This one used to be
+                16px while its neighbours were 30px, which is most of why the
+                stack read as unrelated pages. */}
+            <div>
+              <div className="flex items-center gap-2.5">
+                <span className="h-0.5 w-[22px] shrink-0 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
+                <span className="text-3xs font-extrabold uppercase tracking-[0.16em] text-[var(--ck-home-ink,#b04a15)]">
+                  <TranslatedText text="Money campaigns" />
+                </span>
+              </div>
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <h2 className="text-2xl font-black tracking-tight leading-[1.2] text-stone-850 dark:text-stone-100">
+                  <TranslatedText text="Latest Active Campaigns" />
+                </h2>
+                <Link href="/campaigns" className="shrink-0 pb-1 text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
+                  <TranslatedText text="Browse All" /> →
+                </Link>
+              </div>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 px-1 -mx-5 scrollbar-none snap-x snap-mandatory">
+            <div className="flex gap-4 overflow-x-auto pb-4 -mr-5 scrollbar-none snap-x snap-mandatory">
               {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" /></div>}
               {!loading && campaigns.slice(0, 5).map(campaign => {
                 const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
                 return (
-                  <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.75rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)]/60 dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0 shadow-xs">
+                  <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.25rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0">
                     <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
                       <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
                         <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
@@ -644,59 +710,42 @@ export default function HomeClient({
             simply absent from the other — the mistake the pathways section
             below records having made. The section's own grid collapses to a
             single column at this width. */}
-        {rakshaBandhan && (
+        {rakshaBandhan && doorIsDonor && (
           <UnclaimedSection
             requests={initialPublicRequests}
             excludeId={longestWaitingRequest?.id ?? null}
           />
         )}
 
-        {/* Be the Change follows the complete hero composition. */}
-        <BeTheChangeSection tourAnchors />
+        {/* Be the Change — cut from the guest page. It restates "here are needs
+            and here is proof", which the doors and the live board already do;
+            leaving it in is how the mobile stack got to four sections saying
+            the same two things. Signed-in visitors keep it until their own
+            layout is designed. */}
+        {!showAudiencePathways && <BeTheChangeSection tourAnchors />}
 
-        <SectionDivider bleed className="-my-5" />
-
-        {/* Live Needs section — real verified needs across multiple categories */}
-        <div className="-mx-4">
-          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-        </div>
-
-        {/* Donor / Donee pathways — guest-only, same condition as the desktop
-            copy above.
-            This was added to the desktop branch only and so never rendered
-            below lg — HomeClient keeps two separate trees (hidden lg:block and
-            lg:hidden) and a component placed in one is simply absent from the
-            other. That cuts both ways: gating one tree leaves the other showing
-            signup CTAs to signed-in users, so both carry the condition.
-            Same treatment as ComingSoonMagnets below: one component in
-            both branches, with -mx-4 cancelling this column's px-4 so the
-            section's own full-bleed background and padding apply.
-
-            The whole -mx-4 wrapper is gated, not just its child, so nothing is
-            left behind contributing gap spacing to this flex column. */}
-        {showAudiencePathways && (
-          <>
-            <SectionDivider bleed className="-my-5" />
-            <div className="-mx-4">
-              <AudiencePathwaysComponent tourAnchors />
-            </div>
-          </>
-        )}
+        {/* AudiencePathwaysSection used to sit here, guest-only. MobileDoors
+            took its job at the top of this tree and its `tourAnchors` with it,
+            so rendering it again would put the same two signup CTAs on the page
+            twice. The desktop tree still renders it in its own position. */}
 
 
         {/* Coming soon magnets — previously desktop-only. The section sizes
             itself down through its own CSS vars, so the same component serves
-            both branches rather than a mobile-specific copy. The negative
-            margins cancel this column's px-4 so it can use its own padding. */}
-        <SectionDivider bleed className="-my-5" />
+            both branches rather than a mobile-specific copy. Below lg it zeroes
+            --ck-magnets-pad and drops its background, so it aligns to this
+            column's px-5 gutter with no bleed wrapper.
 
-        <div className="-mx-4">
-          <ComingSoonComponent />
-        </div>
+            Cut from the guest page for the same reason as Be the Change: it is
+            a fourth restatement of what the doors and the board already say.
+            Signed-in visitors keep it. */}
+        {!showAudiencePathways && <ComingSoonComponent />}
 
-        {/* Festive footer on home page during Ganpati theme (mobile tree) */}
+        {/* Festive footer on home page during Ganpati theme (mobile tree).
+            `-mx-5`, not the `-mx-4` it carried before: the doors work widened
+            this column's gutter, and the footer still has to bleed all of it. */}
         {isGanpati && (
-          <div className="-mx-4 -mb-2">
+          <div className="-mx-5 -mb-2">
             <FooterGanpati />
           </div>
         )}
