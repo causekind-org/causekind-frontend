@@ -48,10 +48,10 @@ import { UnclaimedSection } from "@/components/home/UnclaimedSection";
 import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
 
 // ── Extracted section components ─────────────────────────────────────────────
-import { HeroSection }           from "@/components/home/HeroSection";
+import { HeroSection } from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
-import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
-import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
+import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
+import AudiencePathwaysSection from "@/components/audience-pathways/AudiencePathwaysSection";
 import { MobileDoors, useLandingDoor } from "@/components/audience-pathways/MobileDoors";
 import DoneeDoorEvidence      from "@/components/audience-pathways/DoneeDoorEvidence";
 import DoorSwapReveal        from "@/components/audience-pathways/DoorSwapReveal";
@@ -69,6 +69,19 @@ import { ComingSoonMagnetsGanpati }  from "@/components/home/ComingSoonMagnetsGa
 import { CTASectionGanpati }         from "@/components/home/CTASectionGanpati";
 import { FooterGanpati }             from "@/components/home/FooterGanpati";
 import AudiencePathwaysSectionGanpati from "@/components/home/AudiencePathwaysSectionGanpati";
+import { MobileDoorsGanpati } from "@/components/home/MobileDoorsGanpati";
+import DoneeDoorEvidenceGanpati from "@/components/home/DoneeDoorEvidenceGanpati";
+// DiyaDecoration is exported from this module too, and is deliberately not
+// imported here: nothing on the page places a lamp yet, and an import with no
+// call site is the kind of thing that survives three refactors before anyone
+// checks whether it was ever meant to render.
+import {
+  MobileToran,
+  FestiveLights,
+  MobileFlowerPetals,
+  FestiveSectionDivider,
+  MangoLeafCorner
+} from "@/components/home/GanpatiMobileVisuals";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,10 +90,10 @@ function formatINR(n: number) {
 }
 
 const MOBILE_CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
-  Education:  ["/images/hero-7.webp"],
+  Medical: ["/images/medical-1.webp", "/images/medical-2.webp"],
+  Education: ["/images/hero-7.webp"],
   Livelihood: ["/images/hero-3.webp"],
-  Community:  ["/images/hero-6.webp"],
+  Community: ["/images/hero-6.webp"],
 };
 function getMobileCardImage(category: string, id: number): string {
   const imgs = MOBILE_CATEGORY_IMAGES[category];
@@ -102,9 +115,9 @@ export default function HomeClient({
   initialItemRequests,
   initialPublicRequests = [],
 }: {
-  initialCampaigns:    Campaign[];
-  initialStats:        PlatformStats | null;
-  initialActivity:     RecentActivity[];
+  initialCampaigns: Campaign[];
+  initialStats: PlatformStats | null;
+  initialActivity: RecentActivity[];
   initialItemRequests: ItemRequest[];
   /**
    * The guest-browsable need board. Everything on it is unclaimed by
@@ -115,7 +128,7 @@ export default function HomeClient({
    */
   initialPublicRequests?: PublicItemRequest[];
 }) {
-  const t       = useTranslations("landing");
+  const t = useTranslations("landing");
   const tCommon = useTranslations("common");
   const { user, isRestoring } = useAuth();
 
@@ -156,7 +169,7 @@ export default function HomeClient({
   const { door, pick: pickDoor } = useLandingDoor();
   const doorIsDonor = !showAudiencePathways || door === "donor";
 
-  const [campaigns,    setCampaigns]    = useState<Campaign[]>(initialCampaigns);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
   const [stats,        setStats]        = useState<PlatformStats | null>(initialStats);
   const [activity,     setActivity]     = useState<RecentActivity[]>(initialActivity);
@@ -170,7 +183,7 @@ export default function HomeClient({
   // empty. Re-fetch client-side once a logged-in user's cookie is available.
   useEffect(() => {
     if (!user) return;
-    getItemRequests().then(setItemRequests).catch(() => {});
+    getItemRequests().then(setItemRequests).catch(() => { });
   }, [user]);
 
   useEffect(() => {
@@ -181,8 +194,8 @@ export default function HomeClient({
         try {
           const profile = await getMyProfile();
           setMyProfile(profile);
-        } catch (err) {}
-        
+        } catch (err) { }
+
         // Scroll slightly after state updates
         setTimeout(() => {
           document.getElementById("inkind-requests-section")?.scrollIntoView({ behavior: "smooth" });
@@ -224,6 +237,12 @@ export default function HomeClient({
   const ComingSoonComponent = isGanpati ? ComingSoonMagnetsGanpati : ComingSoonMagnets;
   const CTAComponent = isGanpati ? CTASectionGanpati : CTASection;
   const AudiencePathwaysComponent = isGanpati ? AudiencePathwaysSectionGanpati : AudiencePathwaysSection;
+  // The mobile tree has two guest surfaces the desktop tree does not: the
+  // doors spine and the donee door's evidence. Both were still plain
+  // terracotta and teal between a festive hero and a festive board, so each
+  // gets a sibling on the same isGanpati switch as everything else.
+  const MobileDoorsComponent = isGanpati ? MobileDoorsGanpati : MobileDoors;
+  const DoneeDoorEvidenceComponent = isGanpati ? DoneeDoorEvidenceGanpati : DoneeDoorEvidence;
 
   // The single need that has gone unclaimed longest. It ends the hero's thread,
   // and is excluded from the section below so the same request does not appear
@@ -264,7 +283,7 @@ export default function HomeClient({
       ════════════════════════════════════════════════════════════ */}
       {/* One paper for the whole desktop page. Sections are transparent over
           it — see PageSection for why they no longer bring their own. */}
-      <div className="hidden lg:block bg-[var(--surface-cream,#faf8f5)] dark:bg-zinc-950 relative z-10">
+      <div className="ck-home-paper hidden lg:block relative z-10">
         {/* Mobile stats strip (inside desktop wrapper but sm:hidden) */}
         {FEATURES.money && (
           <div className="sm:hidden overflow-hidden border-b border-[var(--ck-home-surface,#ffedd5)] bg-white dark:bg-zinc-950">
@@ -361,7 +380,7 @@ export default function HomeClient({
                 <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
                   {displayedRequests.slice(0, 6).map((req, i) => {
                     const isFeatured = i === 0;
-                    const isTall     = i === 0 || i === 3;
+                    const isTall = i === 0 || i === 3;
                     return (
                       <Reveal key={req.id} delay={i * 90} className={isFeatured ? "col-span-2 lg:col-span-1 row-span-2 lg:row-span-1" : ""}>
                         <HoverCard openDelay={300}>
@@ -444,6 +463,7 @@ export default function HomeClient({
 
 
         {/* Bottom CTA — hidden when logged in */}
+        {isGanpati && <FestiveSectionDivider />}
         <CTAComponent />
         {isGanpati && <FooterGanpati />}
       </div>
@@ -457,7 +477,26 @@ export default function HomeClient({
           and whatever follows it is a section join like every other one, and at
           `pt-2` it was 8px against 44px everywhere else — the one odd seam on
           the page, and it read as the next section being glued to the hero. */}
-      <div className="lg:hidden min-h-screen bg-[#fbf9f4] dark:bg-zinc-950 px-5 pt-11 flex flex-col gap-11">
+      {/* The festive column starts lower than the plain one. The toran hangs
+          about 120px into this column and the light string another 56px, and
+          at pt-11 (44px) the garland came down across the first heading. The
+          decoration is pointer-events-none, so this is purely about not
+          reading text through a row of marigolds. */}
+      <div
+        className={`lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-hidden ${
+          isGanpati
+            ? "pt-[8.5rem] bg-gradient-to-b from-[#fffaf3] via-[#fff6ea] to-[#fffcf7] dark:from-[#1a0b05] dark:via-[#150803] dark:to-[#100601]"
+            : "pt-11 bg-[#fbf9f4] dark:bg-zinc-950"
+        }`}
+      >
+        {isGanpati && (
+          <div className="absolute top-0 left-0 w-full z-50 pointer-events-none overflow-hidden h-[360px]">
+            <MobileToran className="absolute top-0 left-0 w-full" />
+            <FestiveLights className="absolute top-0 left-0 w-full" />
+            <MobileFlowerPetals className="absolute top-0 left-0 w-full h-full" />
+          </div>
+        )}
+
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 
             `-mt-9` pulls it back up against the hero. This bar is chrome, not a
@@ -491,7 +530,7 @@ export default function HomeClient({
             desktop tree still renders that section in its old position, and a
             signed-in visitor still gets today's page in both trees — the donor
             and donee variants are a separate piece of work. */}
-        {showAudiencePathways && <MobileDoors door={door} pick={pickDoor} />}
+        {showAudiencePathways && <MobileDoorsComponent door={door} pick={pickDoor} />}
 
         {/* Everything from here to the end of the unclaimed section answers the
             switcher, so it re-plays a short staggered entrance each time the
@@ -504,7 +543,7 @@ export default function HomeClient({
         {/* The donee door's evidence. The one genuinely new surface here:
             everything else below the hero is donor-facing, so a visitor who
             says "I need something" had nothing to read. */}
-        {showAudiencePathways && door === "donee" && <DoneeDoorEvidence />}
+        {showAudiencePathways && door === "donee" && <DoneeDoorEvidenceComponent />}
 
         {/* Live Needs — the donor door's first piece of evidence, so it leads
             now rather than sitting below the campaigns rail.
@@ -517,64 +556,68 @@ export default function HomeClient({
 
         {/* Mobile Campaigns horizontal scroll */}
         {FEATURES.money && doorIsDonor && (
-          <section className="space-y-4">
-            {/* One header shape, shared with every other mobile section: a
+          <>
+            {isGanpati && <FestiveSectionDivider />}
+            <section className="space-y-4 relative">
+          {isGanpati && <MangoLeafCorner className="absolute -top-4 -left-2 z-10" />}
+          {/* One header shape, shared with every other mobile section: a
                 short rule, an eyebrow, then a 24px title. This one used to be
                 16px while its neighbours were 30px, which is most of why the
                 stack read as unrelated pages. */}
-            <div>
-              <div className="flex items-center gap-2.5">
-                <span className="h-0.5 w-[22px] shrink-0 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
-                <span className="text-3xs font-extrabold uppercase tracking-[0.16em] text-[var(--ck-home-ink,#b04a15)]">
-                  <TranslatedText text="Money campaigns" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-end justify-between gap-3">
-                <h2 className="text-2xl font-black tracking-tight leading-[1.2] text-stone-850 dark:text-stone-100">
-                  <TranslatedText text="Latest Active Campaigns" />
-                </h2>
-                <Link href="/campaigns" className="shrink-0 pb-1 text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
-                  <TranslatedText text="Browse All" /> →
-                </Link>
-              </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <span className="h-0.5 w-[22px] shrink-0 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
+              <span className="text-3xs font-extrabold uppercase tracking-[0.16em] text-[var(--ck-home-ink,#b04a15)]">
+                <TranslatedText text="Money campaigns" />
+              </span>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 -mr-5 scrollbar-none snap-x snap-mandatory">
-              {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" /></div>}
-              {!loading && campaigns.slice(0, 5).map(campaign => {
-                const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
-                return (
-                  <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.25rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0">
-                    <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
-                      <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
-                        <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
-                      </div>
-                      <p className="text-3xs font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
+            <div className="mt-3 flex items-end justify-between gap-3">
+              <h2 className="text-2xl font-black tracking-tight leading-[1.2] text-stone-850 dark:text-stone-100">
+                <TranslatedText text="Latest Active Campaigns" />
+              </h2>
+              <Link href="/campaigns" className="shrink-0 pb-1 text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
+                <TranslatedText text="Browse All" /> →
+              </Link>
+            </div>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-4 -mr-5 scrollbar-none snap-x snap-mandatory">
+            {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" /></div>}
+            {!loading && campaigns.slice(0, 5).map(campaign => {
+              const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
+              return (
+                <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.25rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0">
+                  <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
+                    <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
+                      <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
                     </div>
-                    <div className="flex-1 flex flex-col justify-between min-w-0">
-                      <h4 className="text-2xs font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {[campaign.city, campaign.category].map(t => (
-                          <span key={t} className="bg-[var(--ck-home-surface,#faf1e1)] dark:bg-zinc-850 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-highlight,#fb923c)] font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
-                        ))}
-                      </div>
-                      <div className="mt-2.5 space-y-1">
-                        <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
-                          <span>Progress</span><span className="text-[var(--ck-home-ink,#b04a15)]">{pct}% Funded</span>
-                        </div>
-                        <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
-                          <div className="bg-[var(--ck-home-accent,#b04a15)] h-full rounded-full" style={{ width: `${pct}%` }} />
-                        </div>
-                        <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
-                      </div>
-                      <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
-                        <button className="w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
-                      </Link>
-                    </div>
+                    <p className="text-3xs font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
                   </div>
-                );
-              })}
-            </div>
-          </section>
+                  <div className="flex-1 flex flex-col justify-between min-w-0">
+                    <h4 className="text-2xs font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {[campaign.city, campaign.category].map(t => (
+                        <span key={t} className="bg-[var(--ck-home-surface,#faf1e1)] dark:bg-zinc-850 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-highlight,#fb923c)] font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
+                      ))}
+                    </div>
+                    <div className="mt-2.5 space-y-1">
+                      <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
+                        <span>Progress</span><span className="text-[var(--ck-home-ink,#b04a15)]">{pct}% Funded</span>
+                      </div>
+                      <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
+                        <div className="bg-[var(--ck-home-accent,#b04a15)] h-full rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
+                    </div>
+                    <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
+                      <button className="w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+            </section>
+          </>
         )}
 
         {/* The needs nobody has taken. Repeated here rather than shared, because

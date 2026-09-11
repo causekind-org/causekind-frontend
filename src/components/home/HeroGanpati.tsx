@@ -67,11 +67,18 @@ export function HeroGanpati() {
     <section
       data-tour="guest-hero"
       aria-labelledby="causekind-hero-title"
-      className="ck-showcase-hero relative isolate flex flex-col overflow-hidden bg-[#fffdf9] text-[#100c06] dark:bg-[#190b05] dark:text-stone-100 w-full"
+      /* `ck-ganpati-hero` earns its keep in styles.css, not here. This hero
+         needs `ck-showcase-hero` for its layout — the negative top margin that
+         tucks it under the nav, the stage's min-heights — but that class also
+         carries a block of mobile CTA styling written for the plain hero, whose
+         phone copy sits on a dark photo scrim. This one's sits on cream, so
+         that styling painted both buttons in near-white on near-white. The
+         marker is what lets those rules opt out. */
+      className="ck-showcase-hero ck-ganpati-hero relative isolate flex flex-col overflow-hidden bg-[#fffdf9] text-[#100c06] dark:bg-[#190b05] dark:text-stone-100 w-full"
     >
       {/* Main Hero Stage spanning edge-to-edge for seamless continuity with Navbar */}
       <div className="ck-lead-hero-stage relative min-w-0 w-full min-h-[560px] sm:min-h-[620px] lg:min-h-[680px] xl:min-h-[730px] overflow-hidden bg-[#fffdf9] dark:bg-[#190b05]">
-        
+
         {/* Photorealistic Ganpati Hero Background Image (Desktop & Large screens) */}
         <div className="absolute inset-0 z-0 pointer-events-none select-none hidden lg:block overflow-hidden">
           {/* Subtle Divine Halo Aura behind Lord Ganesha */}
@@ -119,8 +126,45 @@ export function HeroGanpati() {
 
         {/* Foreground Content Container with generous breathing room and expanded scale (z-20: strictly above petals) */}
         <div className="relative z-20 mx-auto w-full max-w-[1440px] flex flex-col justify-center min-h-[560px] sm:min-h-[620px] lg:min-h-[680px] xl:min-h-[730px] px-6 py-10 sm:px-10 sm:py-14 lg:py-16 lg:pl-16 xl:pl-20">
+
+          {/* ── The deity, on phones and tablets ──────────────────────────────
+              Below lg this leads the hero instead of trailing it. It used to be
+              a rounded card rendered after the CTAs, which put the whole reason
+              the page looks like this below three paragraphs of copy, and read
+              as an illustration attached to the hero rather than as the hero.
+
+              Full-bleed, so it cancels this container's px-6/px-10 gutter and
+              its py top padding and sits flush against the festival strip.
+
+              The crop is the other half of the fix. The source is 1376x768 with
+              Ganesha at roughly 69% across and the left half left deliberately
+              empty as desktop's text bed. A short, wide band shows that empty
+              half and shrinks him to nothing at the right edge, which is why he
+              read as missing. A tall band crops width instead: at ~320px high
+              on a 390px screen the visible window is the pillar rightward, so
+              he lands near centre at full size, with the Spread Joy carton just
+              catching the right edge. object-position is 97% and not 100% to
+              keep a sliver of the arch on his left. */}
+          <div className="relative -mx-6 -mt-10 mb-8 block h-[20rem] w-[calc(100%+3rem)] overflow-hidden sm:-mx-10 sm:-mt-14 sm:mb-9 sm:h-[24rem] sm:w-[calc(100%+5rem)] lg:hidden">
+            <Image
+              src="/images/ganpati-hero-bg-v5.webp"
+              alt="Lord Ganesha seated on a flower-strewn altar with lit diyas"
+              fill
+              priority
+              sizes="(max-width: 1023px) 100vw, 1px"
+              className="object-cover object-[97%_center]"
+            />
+            {/* The seam. Without it the photograph stops on a hard horizontal
+                line against the cream and the hero reads as two stacked blocks
+                rather than one surface. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#fffdf9] via-[#fffdf9]/70 to-transparent dark:from-[#190b05] dark:via-[#190b05]/70"
+            />
+          </div>
+
           <div className="max-w-[36rem] sm:max-w-[42rem] lg:max-w-[46rem] xl:max-w-[50rem]">
-            
+
             {/* 1. Eyebrow Tag with Petal Accents */}
             <div className="inline-flex items-center gap-2.5 text-[#b45309] dark:text-amber-400">
               <PetalAccent className="size-4 text-[#ea580c] shrink-0" />
@@ -172,7 +216,18 @@ export function HeroGanpati() {
               {primaryAction.href ? (
                 <NewRequestLink
                   href={primaryAction.href}
-                  className="ck-hero-primary-cta group relative isolate inline-flex min-h-13 min-w-0 w-full items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-[#c2410c] via-[#ea580c] to-[#d97706] px-8 py-3.5 text-xs font-black uppercase leading-tight tracking-[0.06em] text-white shadow-[0_8px_24px_rgba(234,88,12,0.38)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_12px_28px_rgba(234,88,12,0.52)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:min-h-14 sm:w-auto sm:shrink-0 sm:whitespace-nowrap sm:px-9"
+                  /* The ramp runs terracotta to amber-700, not to amber-600.
+                     A white 12px bold label wants 4.5:1 and the old pale end
+                     gave 3.19:1, its middle 3.56:1 — the label thinned out
+                     across the right half of its own fill. Every stop now
+                     clears it (7.31 / 5.18 / 5.02), so it holds wherever the
+                     gradient happens to sit behind a given glyph.
+
+                     Deliberately deeper than the marigold ramp the donor door
+                     uses a section below. Two primaries that shout in the same
+                     register read as two of the same thing; this one anchors,
+                     that one invites. */
+                  className="ck-hero-primary-cta group relative isolate inline-flex min-h-13 min-w-0 w-full items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-[#9a3412] via-[#c2410c] to-[#b45309] px-8 py-3.5 text-xs font-black uppercase leading-tight tracking-[0.06em] text-white shadow-[0_8px_24px_rgba(234,88,12,0.38)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_12px_28px_rgba(234,88,12,0.52)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:min-h-14 sm:w-auto sm:shrink-0 sm:whitespace-nowrap sm:px-9"
                 >
                   <DiyaIcon className="relative z-[1] size-5 shrink-0 text-amber-200 group-hover:scale-110 transition-transform" />
                   <span className="relative z-[1] min-w-0 text-center">{primaryAction.label}</span>
@@ -191,7 +246,14 @@ export function HeroGanpati() {
 
               <Link
                 href="/requests"
-                className="ck-hero-secondary-cta group relative isolate inline-flex min-h-13 min-w-0 w-full items-center justify-center gap-2.5 rounded-full border-2 border-orange-500/80 bg-white/95 px-8 py-3.5 text-xs font-black uppercase leading-tight tracking-[0.05em] text-[#9a3412] shadow-[0_4px_14px_rgba(217,119,6,0.1)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-orange-50 hover:border-orange-600 hover:shadow-[0_6px_20px_rgba(217,119,6,0.22)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 dark:bg-[#251007]/90 dark:border-orange-500/60 dark:text-amber-200 dark:hover:bg-[#34170b] sm:min-h-14 sm:w-auto sm:shrink-0 sm:whitespace-nowrap sm:px-8"
+                /* `border-orange-600`, not `orange-500/80`. This button is a
+                   white fill on a cream hero, so the border is the only thing
+                   that says "button" — it is a component boundary, and 1.4.11
+                   wants 3:1 for one of those. The 80% orange-500 it shipped
+                   with measured 2.31:1 against its own fill; orange-600 at full
+                   opacity measures 3.56:1. Dark mode keeps its own value, which
+                   already clears the floor at 3.13:1. */
+                className="ck-hero-secondary-cta group relative isolate inline-flex min-h-13 min-w-0 w-full items-center justify-center gap-2.5 rounded-full border-2 border-orange-600 bg-white/95 px-8 py-3.5 text-xs font-black uppercase leading-tight tracking-[0.05em] text-[#9a3412] shadow-[0_4px_14px_rgba(217,119,6,0.1)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-orange-50 hover:border-orange-600 hover:shadow-[0_6px_20px_rgba(217,119,6,0.22)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 dark:bg-[#251007]/90 dark:border-orange-500/60 dark:text-amber-200 dark:hover:bg-[#34170b] sm:min-h-14 sm:w-auto sm:shrink-0 sm:whitespace-nowrap sm:px-8"
               >
                 <UsersRound className="relative z-[1] size-5 shrink-0 text-[#c2410c] dark:text-amber-300" strokeWidth={2.2} aria-hidden="true" />
                 <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
@@ -201,17 +263,8 @@ export function HeroGanpati() {
 
           </div>
 
-          {/* Mobile Ganpati Showcase banner */}
-          <div className="mt-8 sm:mt-10 relative block lg:hidden w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden border border-amber-200/70 shadow-[0_8px_30px_rgba(217,119,6,0.16)]">
-            <Image
-              src="/images/ganpati-hero-bg-v5.webp"
-              alt="Festive Ganpati Idol in Temple Setting"
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 1px"
-              className="object-cover object-[62%_center]"
-            />
-          </div>
+          {/* The mobile showcase banner used to sit here, after the CTAs. It has
+              moved to the top of this container — see the note there. */}
         </div>
 
       </div>
