@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, useTranslations } from "next-intl";
 import { FEATURES } from "@/lib/features";
@@ -357,27 +357,71 @@ export function FloatingSupportButton() {
   });
 
   /*
-    The panel hangs off whichever corner the bubble now sits in.
+    Keep the panel fully on screen, wherever the bubble has been dragged.
 
-    It opens upward from the bubble, and flips to the bubble's own side so it
-    never opens off-screen: past the halfway line it is right-aligned and scales
-    out of its bottom-right corner, before it the mirror. Untouched bubble means
-    untouched panel — both keep their original classes.
+    An earlier version only ever opened it upward from the bubble, which put it
+    off the top of the screen the moment the bubble was dragged anywhere near
+    it. Direction cannot be assumed: it has to be chosen from the space that is
+    actually available, and that needs the panel's real size, so this measures
+    rather than guesses. `offsetWidth`/`offsetHeight` and not
+    `getBoundingClientRect`, because the closed panel is held at `scale-90` and
+    the rect would report the scaled size.
+
+    Runs in a layout effect so the position is committed in the same frame the
+    panel becomes visible — computing it during render read `window`, which is
+    both an SSR hazard and stale the moment anything moved.
   */
-  const panelStyle: React.CSSProperties | undefined = bubblePosition
-    ? (() => {
-        const viewportW = typeof window === "undefined" ? 0 : window.innerWidth;
-        const viewportH = typeof window === "undefined" ? 0 : window.innerHeight;
-        const onRight = bubblePosition.x + 26 > viewportW / 2;
-        return {
-          top: "auto",
-          bottom: Math.max(8, viewportH - bubblePosition.y + 8),
-          left: onRight ? "auto" : Math.max(8, bubblePosition.x),
-          right: onRight ? Math.max(8, viewportW - bubblePosition.x - 52) : "auto",
-          transformOrigin: onRight ? "bottom right" : "bottom left",
-        };
-      })()
-    : undefined;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    if (!bubblePosition) { setPanelStyle(undefined); return; }
+
+    const place = () => {
+      const el = panelRef.current;
+      if (!el) return;
+      const GAP = 8;
+      const BUBBLE = 52;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+
+      // Above if it fits, otherwise below, otherwise wherever there is more room.
+      const spaceAbove = bubblePosition.y - GAP;
+      const spaceBelow = vh - (bubblePosition.y + BUBBLE) - GAP;
+      const openUp = h <= spaceAbove || spaceAbove >= spaceBelow;
+
+      let top = openUp ? bubblePosition.y - GAP - h : bubblePosition.y + BUBBLE + GAP;
+      top = Math.min(Math.max(top, GAP), Math.max(GAP, vh - h - GAP));
+
+      // Align to the bubble's side, then clamp — alignment is a preference,
+      // staying on screen is not.
+      const onRight = bubblePosition.x + BUBBLE / 2 > vw / 2;
+      let left = onRight ? bubblePosition.x + BUBBLE - w : bubblePosition.x;
+      left = Math.min(Math.max(left, GAP), Math.max(GAP, vw - w - GAP));
+
+      // Grow out of the bubble itself, not out of a corner it no longer sits in.
+      const originX = Math.min(Math.max(bubblePosition.x + BUBBLE / 2 - left, 0), w);
+      const originY = openUp ? h : 0;
+
+      setPanelStyle({
+        top,
+        left,
+        right: "auto",
+        bottom: "auto",
+        transformOrigin: `${originX}px ${originY}px`,
+      });
+    };
+
+    place();
+    window.addEventListener("resize", place);
+    window.visualViewport?.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.visualViewport?.removeEventListener("resize", place);
+    };
+  }, [bubblePosition, open]);
 
   useEffect(() => {
     // Client-only, post-mount — window.location isn't available during
@@ -435,6 +479,7 @@ export function FloatingSupportButton() {
 
       {/* Popover panel */}
       <div
+        ref={panelRef}
         style={panelStyle}
         className={`floating-support-item fixed z-50 w-60
           ${panelStyle ? "" : "bottom-[9.5rem] right-5 lg:bottom-24"}
