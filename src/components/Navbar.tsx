@@ -7,7 +7,7 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 import SpecularButton from "@/components/SpecularButton";
 import Link from "next/link";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
-import { GanpatiWordmark } from "@/components/brand/GanpatiWordmark";
+import { GanpatiLogoVideo } from "@/components/brand/GanpatiLogoVideo";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -110,8 +110,23 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
            isGanpatiActive(), so the artwork cannot outlive its window the way
            the Independence Day wordmark did. The modak that used to be pinned
            after "Kind" is not rendered alongside it: this artwork already has
-           two of them. */
-        <GanpatiWordmark size={size} />
+           two of them.
+
+           Now the supplied animation rather than the still it shipped with.
+           Two things about the delivered file are worth knowing before this is
+           tuned further, both fixable in one re-export:
+
+             1. It is opaque. The container declares AlphaMode=1 but the content
+                behind it is a solid rgb(252,246,237) plate, so it cannot simply
+                sit on the bar — see GanpatiLogoVideo, which multiplies it away
+                on light and keeps it as a chip on dark.
+             2. It is 2.9 MB, against 67 KB for the still, and the header is on
+                every page.
+
+           Both go away with a transparent, navbar-sized encode:
+             ffmpeg -i ganpati-logo.webm -vf "chromakey=0xFCF6ED:0.10:0.04,               scale=364:-2" -c:v libvpx-vp9 -pix_fmt yuva420p -crf 38 -b:v 0                -an ganpati-logo.webm
+           `yuva420p` is the part that matters — it is what carries the alpha. */
+        <GanpatiLogoVideo size={size} />
       ) : (
         <span className="relative flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
