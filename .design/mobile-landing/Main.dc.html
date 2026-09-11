@@ -1,0 +1,204 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #fbf9f4; color: #1c1917; padding-bottom: 48px">
+
+  <!-- Full-bleed stat ticker. Kept: it is chrome, not a section. -->
+  <div style="background: #b04a15; padding: 9px 20px; display: flex; gap: 22px; align-items: center; overflow: hidden">
+    <span style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap">1,284 <span style="opacity:.72; font-size:10px; font-weight:600">items matched</span></span>
+    <span style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap">312 <span style="opacity:.72; font-size:10px; font-weight:600">donors</span></span>
+    <span style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap">18 <span style="opacity:.72; font-size:10px; font-weight:600">cities</span></span>
+  </div>
+
+  <!-- ════ SECTION 1 — Live needs, moved first ════ -->
+  <div style="padding: 44px 0 0">
+    <div style="padding: 0 20px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="width: 22px; height: 2px; border-radius: 999px; background: #b04a15"></span>
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #b04a15">Open right now</span>
+      </div>
+      <h2 style="margin: 12px 0 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em">Real needs, waiting for someone</h2>
+      <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #57534e; text-wrap: pretty">Each one verified by our team before it appears here.</p>
+    </div>
+
+    <!-- filters bleed right only: the cut-off chip is the scroll affordance -->
+    <div style="display: flex; gap: 8px; margin-top: 18px; padding: 0 20px; overflow: hidden">
+      <span style="background: #b04a15; color: #fff; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; white-space: nowrap">All 23</span>
+      <span style="background: #fff; border: 1px solid #e8e2d5; color: #57534e; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; white-space: nowrap">Medical 9</span>
+      <span style="background: #fff; border: 1px solid #e8e2d5; color: #57534e; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; white-space: nowrap">Education 6</span>
+      <span style="background: #fff; border: 1px solid #e8e2d5; color: #57534e; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; white-space: nowrap">Bedd</span>
+    </div>
+
+    <div style="display: grid; gap: 12px; margin-top: 16px; padding: 0 20px">
+      <div style="background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 16px; display: flex; gap: 14px; align-items: flex-start">
+        <div style="width: 64px; height: 64px; border-radius: 14px; background: #f5f0e8; flex: none"></div>
+        <div style="flex: 1; min-width: 0">
+          <div style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Medical &middot; Pune</div>
+          <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">A wheelchair for Kamla, 68</p>
+          <p style="margin: 6px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Open 12 days</p>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 24px; flex: none"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </div>
+      <div style="background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 16px; display: flex; gap: 14px; align-items: flex-start">
+        <div style="width: 64px; height: 64px; border-radius: 14px; background: #f5f0e8; flex: none"></div>
+        <div style="flex: 1; min-width: 0">
+          <div style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Education &middot; Nashik</div>
+          <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">Notebooks for 60 children</p>
+          <p style="margin: 6px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Open 6 days</p>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 24px; flex: none"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </div>
+      <div style="background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 16px; display: flex; gap: 14px; align-items: flex-start">
+        <div style="width: 64px; height: 64px; border-radius: 14px; background: #f5f0e8; flex: none"></div>
+        <div style="flex: 1; min-width: 0">
+          <div style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Shelter &middot; Mumbai</div>
+          <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">40 blankets before winter</p>
+          <p style="margin: 6px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Open 3 days</p>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 24px; flex: none"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </div>
+    </div>
+
+    <div style="padding: 0 20px; margin-top: 14px">
+      <a href="#" style="font-size: 13px; font-weight: 800; text-decoration: none">20 more open needs &rarr;</a>
+    </div>
+  </div>
+
+  <!-- ════ SECTION 2 — Still waiting ════ -->
+  <div style="padding: 44px 20px 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span style="width: 22px; height: 2px; border-radius: 999px; background: #9a6b12"></span>
+      <span style="font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #9a6b12">Still waiting</span>
+    </div>
+    <h2 style="margin: 12px 0 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em">Nobody has taken these yet</h2>
+    <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #57534e; text-wrap: pretty">The needs that have been open the longest.</p>
+
+    <div style="margin-top: 18px; background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; overflow: hidden">
+      <div style="padding: 16px; border-bottom: 1px solid #f0ebe1">
+        <div style="display: flex; justify-content: space-between; gap: 12px">
+          <span style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Bedding</span>
+          <span style="font-size: 11px; font-weight: 800; color: #9a6b12; white-space: nowrap">41 days</span>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">4 mattresses for a night shelter</p>
+        <p style="margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Pune, Maharashtra</p>
+      </div>
+      <div style="padding: 16px; border-bottom: 1px solid #f0ebe1">
+        <div style="display: flex; justify-content: space-between; gap: 12px">
+          <span style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Mobility</span>
+          <span style="font-size: 11px; font-weight: 800; color: #9a6b12; white-space: nowrap">33 days</span>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">A walking frame for Rahim</p>
+        <p style="margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Nagpur, Maharashtra</p>
+      </div>
+      <div style="padding: 16px">
+        <div style="display: flex; justify-content: space-between; gap: 12px">
+          <span style="font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a8a29e">Kitchen</span>
+          <span style="font-size: 11px; font-weight: 800; color: #9a6b12; white-space: nowrap">28 days</span>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">Cooking vessels for a shared kitchen</p>
+        <p style="margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Thane, Maharashtra</p>
+      </div>
+    </div>
+    <div style="margin-top: 14px"><a href="#" style="font-size: 13px; font-weight: 800; text-decoration: none; color: #9a6b12">See everything still open &rarr;</a></div>
+  </div>
+
+  <!-- ════ SECTION 3 — Campaigns rail ════ -->
+  <div style="padding: 44px 0 0">
+    <div style="padding: 0 20px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="width: 22px; height: 2px; border-radius: 999px; background: #b04a15"></span>
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #b04a15">Money campaigns</span>
+      </div>
+      <h2 style="margin: 12px 0 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em">Where an item is not enough</h2>
+      <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #57534e; text-wrap: pretty">Costs that only cash can cover &mdash; surgery, transport, rent.</p>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 18px; padding: 0 20px; overflow: hidden">
+      <div style="width: 268px; flex: none; background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 14px">
+        <div style="height: 108px; border-radius: 14px; background: #f5f0e8"></div>
+        <p style="margin: 12px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">Cataract surgery for Sunita</p>
+        <p style="margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Mumbai &middot; Medical</p>
+        <div style="height: 5px; background: #f5f0e8; border-radius: 999px; margin-top: 12px; overflow: hidden"><div style="width: 62%; height: 100%; background: #b04a15; border-radius: 999px"></div></div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px">
+          <span style="font-size: 12px; font-weight: 800">&#8377;28,400</span>
+          <span style="font-size: 12px; font-weight: 700; color: #78716c">of &#8377;45,000</span>
+        </div>
+        <div style="margin-top: 12px; height: 44px; border-radius: 12px; background: #b04a15; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; letter-spacing: .04em">Donate</div>
+      </div>
+      <div style="width: 268px; flex: none; background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 14px">
+        <div style="height: 108px; border-radius: 14px; background: #f5f0e8"></div>
+        <p style="margin: 12px 0 0; font-size: 15px; font-weight: 800; line-height: 1.3">School fees for 12 girls</p>
+      </div>
+    </div>
+    <div style="padding: 0 20px; margin-top: 14px"><a href="#" style="font-size: 13px; font-weight: 800; text-decoration: none">Browse all campaigns &rarr;</a></div>
+  </div>
+
+  <!-- ════ SECTION 4 — Pathways, the one primary action ════ -->
+  <div style="padding: 44px 20px 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span style="width: 22px; height: 2px; border-radius: 999px; background: #b04a15"></span>
+      <span style="font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #b04a15">Start here</span>
+    </div>
+    <h2 style="margin: 12px 0 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em">Which side are you on?</h2>
+
+    <div style="display: grid; gap: 12px; margin-top: 18px">
+      <div style="background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 18px">
+        <div style="display: flex; gap: 12px; align-items: center">
+          <span style="width: 40px; height: 40px; border-radius: 12px; background: rgba(176,74,21,.1); display: flex; align-items: center; justify-content: center; flex: none">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+          </span>
+          <div><p style="margin: 0; font-size: 16px; font-weight: 800">I have something to give</p><p style="margin: 2px 0 0; font-size: 13px; color: #57534e">List an item in under two minutes.</p></div>
+        </div>
+        <div style="margin-top: 14px; height: 48px; border-radius: 12px; background: #b04a15; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800">Donate an item</div>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 18px">
+        <div style="display: flex; gap: 12px; align-items: center">
+          <span style="width: 40px; height: 40px; border-radius: 12px; background: rgba(176,74,21,.1); display: flex; align-items: center; justify-content: center; flex: none">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.4 3-5.5A5.5 5.5 0 0 0 12 5a5.5 5.5 0 0 0-10 3.5C2 10.6 3.5 12.5 5 14l7 7z"/></svg>
+          </span>
+          <div><p style="margin: 0; font-size: 16px; font-weight: 800">I need something</p><p style="margin: 2px 0 0; font-size: 13px; color: #57534e">Post a need. We verify, then publish.</p></div>
+        </div>
+        <div style="margin-top: 14px; height: 48px; border-radius: 12px; border: 1.5px solid #b04a15; color: #b04a15; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800">Post a need</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ SECTION 5 — Trust, as a closing line not a band ════ -->
+  <div style="padding: 44px 20px 0">
+    <div style="border-top: 1px solid #eae4d8; padding-top: 24px; display: grid; gap: 16px">
+      <div style="display: flex; gap: 12px; align-items: flex-start">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        <div><p style="margin: 0; font-size: 14px; font-weight: 800">Every need is verified</p><p style="margin: 2px 0 0; font-size: 13px; line-height: 1.5; color: #57534e">Documents checked by our team before anything is listed.</p></div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: flex-start">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+        <div><p style="margin: 0; font-size: 14px; font-weight: 800">You see where it lands</p><p style="margin: 2px 0 0; font-size: 13px; line-height: 1.5; color: #57534e">Handover confirmed by OTP, with a certificate you can check.</p></div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: flex-start">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px"><path d="M19 14c1.5-1.5 3-3.4 3-5.5A5.5 5.5 0 0 0 12 5a5.5 5.5 0 0 0-10 3.5C2 10.6 3.5 12.5 5 14l7 7z"/></svg>
+        <div><p style="margin: 0; font-size: 14px; font-weight: 800">Nothing goes to waste</p><p style="margin: 2px 0 0; font-size: 13px; line-height: 1.5; color: #57534e">An item you no longer use is something someone is waiting for.</p></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":2320}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

@@ -49,7 +49,7 @@ export function UnclaimedSection({
   return (
     <section
       aria-labelledby="ck-unclaimed-heading"
-      className="w-full px-6 sm:px-10 lg:px-12 py-14 sm:py-20"
+      className="w-full px-0 py-0 lg:px-12 lg:py-20"
     >
       <div className="mx-auto w-full max-w-[1440px]">
         <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ export function UnclaimedSection({
 
         <h2
           id="ck-unclaimed-heading"
-          className="mt-4 max-w-2xl font-jakarta text-3xl font-extrabold leading-tight tracking-tight text-stone-900 dark:text-white sm:text-4xl"
+          className="mt-4 max-w-2xl font-jakarta text-2xl font-extrabold leading-tight tracking-tight text-stone-900 dark:text-white lg:text-4xl"
           style={{ textWrap: "balance" }}
         >
           No one has tied a thread here yet
@@ -79,15 +79,15 @@ export function UnclaimedSection({
           was put on the open board. These are the ones that have waited longest.
         </p>
 
-        <ul className="mt-9 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-stone-200 bg-stone-200 dark:border-stone-800 dark:bg-stone-800 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-6 lg:mt-9 grid grid-cols-1 gap-px overflow-hidden rounded-[1.25rem] border border-[var(--ck-home-soft,#e8e2d5)] bg-[var(--ck-home-soft,#e8e2d5)] lg:border-stone-200 lg:bg-stone-200 dark:border-stone-800 dark:bg-stone-800 sm:grid-cols-2 lg:grid-cols-3">
           {items.map(request => {
             const days = daysWaiting(request.createdAt);
 
             return (
-              <li key={request.id} className="bg-[#fbf9f4] dark:bg-zinc-900">
+              <li key={request.id} className="bg-white dark:bg-zinc-900 lg:bg-[#fbf9f4]">
                 <Link
                   href={`/requests/${request.id}/offer`}
-                  className="group flex h-full flex-col gap-3 p-6 transition-colors hover:bg-white focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-[#9a6b12] dark:hover:bg-zinc-800/70"
+                  className="group flex h-full flex-col gap-3 p-4 lg:p-6 transition-colors hover:bg-white focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-[#9a6b12] dark:hover:bg-zinc-800/70"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-400 dark:text-stone-500">

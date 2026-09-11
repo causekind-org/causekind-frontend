@@ -137,7 +137,7 @@ export default function AudiencePathwaysSection({
       // #f7f4f0 was a shade darker and greyer than its neighbours, which read
       // as a black wash across this band. One cream — --surface-cream, the
       // value styles.css already names — so it matches the sections either side.
-      className="relative w-full overflow-hidden bg-[var(--surface-cream,#faf8f5)] py-9 sm:py-12 dark:bg-zinc-950"
+      className="relative w-full overflow-hidden py-0 lg:bg-[var(--surface-cream,#faf8f5)] lg:py-12 lg:dark:bg-zinc-950"
     >
       {/* The mouse-following light rays are gone. They were a WebGL shader
           painting orange shafts from the top of this section and nowhere else
@@ -171,7 +171,7 @@ export default function AudiencePathwaysSection({
         />
       )}
 
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="relative mx-auto max-w-6xl px-0 lg:px-6">
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}

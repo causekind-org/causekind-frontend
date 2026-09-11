@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .serif { font-family: "Source Serif 4", Georgia, serif; }
+    .kick { font-size: 10px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: #b04a15; }
+    .idx { font-family: "Source Serif 4", Georgia, serif; font-size: 13px; font-weight: 600; color: #c4bcae; font-variant-numeric: tabular-nums; }
+    .rule { height: 1px; background: #ded5c6; }
+    .thick { height: 3px; background: #1c1917; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #fbf9f4; color: #1c1917; padding: 0 0 40px">
+
+  <!-- masthead strip: the numbers as a dateline, not a coloured bar -->
+  <div style="padding: 12px 22px 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px">
+    <span class="kick">Today</span>
+    <span style="font-size: 11px; font-weight: 700; color: #57534e; font-variant-numeric: tabular-nums">23 open &middot; 1,284 matched &middot; 18 cities</span>
+  </div>
+  <div class="thick" style="margin: 0 22px"></div>
+
+  <!-- LEAD -->
+  <div style="padding: 26px 22px 0">
+    <span class="idx">01</span>
+    <h2 class="serif" style="margin: 6px 0 0; font-size: 34px; font-weight: 700; line-height: 1.08; letter-spacing: -.015em">Twenty&#8209;three people are waiting for one thing each.</h2>
+    <p style="margin: 12px 0 0; font-size: 14px; line-height: 1.6; color: #57534e; text-wrap: pretty">Not money. A wheelchair. A mattress. Sixty notebooks. Every one checked by our team before it appeared here.</p>
+  </div>
+
+  <!-- the needs as a numbered list, hairlines not cards -->
+  <div style="padding: 24px 22px 0">
+    <div class="rule"></div>
+    <div style="padding: 16px 0; display: flex; gap: 16px; align-items: baseline">
+      <span class="idx" style="width: 18px; flex: none">1</span>
+      <div style="flex: 1; min-width: 0">
+        <h3 class="serif" style="margin: 0; font-size: 19px; font-weight: 600; line-height: 1.25">A wheelchair for Kamla, 68</h3>
+        <p style="margin: 5px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #a8a29e">Pune &middot; open 12 days</p>
+      </div>
+      <span style="font-size: 12px; font-weight: 800; color: #b04a15; white-space: nowrap">Give &rarr;</span>
+    </div>
+    <div class="rule"></div>
+    <div style="padding: 16px 0; display: flex; gap: 16px; align-items: baseline">
+      <span class="idx" style="width: 18px; flex: none">2</span>
+      <div style="flex: 1; min-width: 0">
+        <h3 class="serif" style="margin: 0; font-size: 19px; font-weight: 600; line-height: 1.25">Sixty notebooks, one classroom</h3>
+        <p style="margin: 5px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #a8a29e">Nashik &middot; open 6 days</p>
+      </div>
+      <span style="font-size: 12px; font-weight: 800; color: #b04a15; white-space: nowrap">Give &rarr;</span>
+    </div>
+    <div class="rule"></div>
+    <div style="padding: 16px 0; display: flex; gap: 16px; align-items: baseline">
+      <span class="idx" style="width: 18px; flex: none">3</span>
+      <div style="flex: 1; min-width: 0">
+        <h3 class="serif" style="margin: 0; font-size: 19px; font-weight: 600; line-height: 1.25">Forty blankets before winter</h3>
+        <p style="margin: 5px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #a8a29e">Mumbai &middot; open 3 days</p>
+      </div>
+      <span style="font-size: 12px; font-weight: 800; color: #b04a15; white-space: nowrap">Give &rarr;</span>
+    </div>
+    <div class="rule"></div>
+    <a href="#" style="display: inline-block; margin-top: 16px; font-size: 13px; font-weight: 800; text-decoration: none">The other twenty &rarr;</a>
+  </div>
+
+  <!-- THE LONGEST WAITING — one photo, treated as a plate -->
+  <div style="padding: 44px 0 0">
+    <div style="padding: 0 22px"><span class="idx">02</span></div>
+    <div style="margin-top: 8px; height: 210px; background: #efe7da; position: relative">
+      <div style="position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 18px 22px; background: linear-gradient(to top, rgba(28,25,23,.72), rgba(28,25,23,0) 62%)">
+        <h2 class="serif" style="margin: 0; color: #fff; font-size: 26px; font-weight: 700; line-height: 1.15; letter-spacing: -.01em">Forty&#8209;one days<br>and nobody came.</h2>
+      </div>
+    </div>
+    <div style="padding: 16px 22px 0">
+      <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #57534e; text-wrap: pretty">Four mattresses for a night shelter in Pune. It is the oldest thing on the board, and the cheapest.</p>
+      <a href="#" style="display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 800; text-decoration: none; color: #9a6b12">Everything still waiting &rarr;</a>
+    </div>
+  </div>
+
+  <!-- CAMPAIGNS — a table, not a rail -->
+  <div style="padding: 44px 22px 0">
+    <span class="idx">03</span>
+    <h2 class="serif" style="margin: 6px 0 0; font-size: 26px; font-weight: 700; line-height: 1.15; letter-spacing: -.01em">When an item is not the answer</h2>
+    <div style="margin-top: 18px">
+      <div class="rule"></div>
+      <div style="padding: 14px 0">
+        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline">
+          <h3 class="serif" style="margin: 0; font-size: 17px; font-weight: 600; line-height: 1.3; flex: 1">Cataract surgery for Sunita</h3>
+          <span style="font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap">63%</span>
+        </div>
+        <div style="height: 2px; background: #e5ddd0; margin-top: 10px"><div style="width: 63%; height: 100%; background: #b04a15"></div></div>
+        <p style="margin: 8px 0 0; font-size: 12px; font-weight: 700; color: #78716c; font-variant-numeric: tabular-nums">&#8377;28,400 of &#8377;45,000 &middot; Mumbai</p>
+      </div>
+      <div class="rule"></div>
+      <div style="padding: 14px 0">
+        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline">
+          <h3 class="serif" style="margin: 0; font-size: 17px; font-weight: 600; line-height: 1.3; flex: 1">School fees for twelve girls</h3>
+          <span style="font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap">18%</span>
+        </div>
+        <div style="height: 2px; background: #e5ddd0; margin-top: 10px"><div style="width: 18%; height: 100%; background: #b04a15"></div></div>
+        <p style="margin: 8px 0 0; font-size: 12px; font-weight: 700; color: #78716c; font-variant-numeric: tabular-nums">&#8377;12,000 of &#8377;66,000 &middot; Nagpur</p>
+      </div>
+      <div class="rule"></div>
+    </div>
+  </div>
+
+  <!-- THE ASK -->
+  <div style="padding: 44px 22px 0">
+    <div class="thick"></div>
+    <h2 class="serif" style="margin: 20px 0 0; font-size: 30px; font-weight: 700; line-height: 1.12; letter-spacing: -.015em">You have something.<br>Someone needs it.</h2>
+    <div style="margin-top: 20px; display: grid; gap: 10px">
+      <div style="height: 52px; background: #b04a15; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Donate an item</div>
+      <div style="height: 52px; border: 1.5px solid #1c1917; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Post a need</div>
+    </div>
+    <p style="margin: 18px 0 0; font-size: 12px; line-height: 1.6; color: #78716c">Every need verified before listing &middot; handover confirmed by OTP &middot; certificate you can check</p>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":1740}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

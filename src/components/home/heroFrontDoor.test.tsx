@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
 import enMessages from "../../../messages/en.json";
+vi.mock("next/font/google", () => ({ Anton: () => ({ style: { fontFamily: "Anton" } }) }));
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import type { PublicItemRequest } from "@/lib/api";
 
@@ -16,16 +17,19 @@ import type { PublicItemRequest } from "@/lib/api";
 const authState = vi.hoisted(() => ({
   user: null as { email: string; role: string } | null,
   isLoading: false,
+  isRestoring: false,
 }));
+const messageState = vi.hoisted(() => ({ missingGivingPrompt: false }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: (namespace: string) => (key: string) => {
+  useTranslations: (namespace: string) => Object.assign((key: string) => {
+    if (key === "givingPrompt" && messageState.missingGivingPrompt) throw new Error("MISSING_MESSAGE");
     let node: unknown = enMessages;
     for (const part of `${namespace}.${key}`.split(".")) {
       node = (node as Record<string, unknown>)?.[part];
     }
     return typeof node === "string" ? node : key;
-  },
+  }, { has: (key: string) => key !== "givingPrompt" || !messageState.missingGivingPrompt }),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -48,6 +52,7 @@ const { NearbyNeedsPanel } = await import("./NearbyNeedsPanel");
 beforeEach(() => {
   authState.user = null;
   authState.isLoading = false;
+  authState.isRestoring = false;
 });
 
 function need(over: Partial<PublicItemRequest> = {}): PublicItemRequest {
@@ -109,6 +114,16 @@ describe("category strip", () => {
 });
 
 describe("hero", () => {
+  it("renders the signup prompt with an older message bundle", () => {
+    messageState.missingGivingPrompt = true;
+    try {
+      render(<HeroSection />);
+      expect(screen.getByText("Have something to give?")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: enMessages.hero.ctaStartGiving })).toBeInTheDocument();
+    } finally {
+      messageState.missingGivingPrompt = false;
+    }
+  });
   it("uses the dedicated donation handoff photograph", () => {
     render(<HeroSection />);
     expect(screen.getByRole("img", { name: enMessages.hero.photoAlt }))
@@ -150,8 +165,8 @@ describe("hero", () => {
       .not.toBeInTheDocument();
   });
 
-  it("keeps the auth-aware action inert while auth is resolving", () => {
-    authState.isLoading = true;
+  it("keeps the auth-aware action inert while storage is being read", () => {
+    authState.isRestoring = true;
 
     render(<HeroSection />);
 
@@ -159,6 +174,25 @@ describe("hero", () => {
       .not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: enMessages.hero.ctaBrowse }))
       .toHaveAttribute("href", "/requests");
+  });
+
+  /**
+   * The hero deliberately does NOT wait on `isLoading`. A guest has no cached
+   * user, so `isLoading` stays true until /users/me answers — and that call
+   * wakes a deliberately cold Neon pool. Gating the sign-up CTA on it left the
+   * one button guests need dead for seconds after a refresh.
+   *
+   * `isRestoring` is the flag the hero waits on; it resolves on the first
+   * effect tick. Route guards keep `isLoading` — see the note in useAuth.
+   */
+  it("offers a guest the sign-up CTA before the server check comes back", () => {
+    authState.isRestoring = false;
+    authState.isLoading = true;
+
+    render(<HeroSection />);
+
+    expect(screen.getByRole("link", { name: enMessages.hero.ctaStartGiving }))
+      .toBeInTheDocument();
   });
 
   it.each([
