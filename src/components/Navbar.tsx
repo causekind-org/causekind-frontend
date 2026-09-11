@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
 import { isGanpatiActive } from "@/lib/isGanpatiActive";
-import { ModakIcon } from "@/components/home/GanpatiVisuals";
+import { ModakIcon, GanpatiCornerGarlands } from "@/components/home/GanpatiVisuals";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
@@ -811,14 +811,19 @@ export function SiteHeader() {
         }}
         className={`sticky top-0 z-50 w-full ${
           isGanpati
-            ? "bg-gradient-to-r from-[#fffbf4] via-[#fff5e6] to-[#fffbf4] dark:from-[#1b0c05] dark:via-[#240e06] dark:to-[#1b0c05] lg:bg-gradient-to-r lg:from-[#fffbf4]/92 lg:via-[#fff5e6]/88 lg:to-[#fffbf4]/92 lg:dark:from-[#1b0c05]/92 lg:dark:via-[#240e06]/88 lg:dark:to-[#1b0c05]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-amber-300/60 dark:border-amber-700/40"
+            ? pathname === "/"
+              ? "bg-gradient-to-r from-[#fffbf4]/80 via-[#fff5e6]/70 to-[#fffbf4]/80 dark:from-[#1b0c05]/80 dark:via-[#240e06]/70 dark:to-[#1b0c05]/80 backdrop-blur-xs border-b-0"
+              : "bg-gradient-to-r from-[#fffbf4] via-[#fff5e6] to-[#fffbf4] dark:from-[#1b0c05] dark:via-[#240e06] dark:to-[#1b0c05] lg:bg-gradient-to-r lg:from-[#fffbf4]/92 lg:via-[#fff5e6]/88 lg:to-[#fffbf4]/92 lg:dark:from-[#1b0c05]/92 lg:dark:via-[#240e06]/88 lg:dark:to-[#1b0c05]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-amber-300/60 dark:border-amber-700/40"
             : "bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850"
         } ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
-          : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
+          : pathname === "/" && isGanpati
+            ? "shadow-none"
+            : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
-        {isGanpati && (
+        {isGanpati && <GanpatiCornerGarlands />}
+        {isGanpati && pathname !== "/" && (
           <div
             className="absolute bottom-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none z-10"
             aria-hidden="true"
@@ -854,7 +859,9 @@ export function SiteHeader() {
         </div>
 
         {/* Desktop Header */}
-        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between px-10 py-5">
+        <div className={`relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between py-5 ${
+          isGanpati && pathname === "/" ? "pl-24 pr-36 xl:pl-28 xl:pr-40" : "px-10"
+        }`}>
           <Link href="/" className="flex items-center gap-2">
             <CareNestLogo />
           </Link>

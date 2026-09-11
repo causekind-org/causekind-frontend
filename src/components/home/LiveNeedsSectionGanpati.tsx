@@ -17,7 +17,7 @@ import type { PlatformStats, PublicItemRequest } from "@/lib/api";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
-import { ModakIcon, GanpatiToran } from "@/components/home/GanpatiVisuals";
+import { ModakIcon, GanpatiToran, FloatingFestiveBadge } from "@/components/home/GanpatiVisuals";
 
 const NEEDS_SHOWN = 6;
 
@@ -109,6 +109,11 @@ export function LiveNeedsSectionGanpati({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <FloatingFestiveBadge
+              icon={<span className="text-sm">🪔</span>}
+              text="11 Days of Giving"
+              delay={0.7}
+            />
             {emptyStateCta && (
               <NewRequestLink
                 href={emptyStateCta.href}

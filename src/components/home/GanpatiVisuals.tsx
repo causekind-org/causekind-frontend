@@ -13,10 +13,30 @@ export function GanpatiAnimationStyles() {
       __html: `
       @keyframes toranGentleSway {
         0%, 100% {
-          transform: rotate(-4.5deg);
+          transform: rotate(-3.5deg);
         }
         50% {
-          transform: rotate(4.5deg);
+          transform: rotate(3.5deg);
+        }
+      }
+
+      @keyframes reverentPresence {
+        0%, 100% {
+          transform: scale(1) translateY(0px);
+        }
+        50% {
+          transform: scale(1.012) translateY(-2.5px);
+        }
+      }
+
+      @keyframes divineHaloAura {
+        0%, 100% {
+          transform: scale(0.95);
+          opacity: 0.35;
+        }
+        50% {
+          transform: scale(1.08);
+          opacity: 0.65;
         }
       }
 
@@ -88,6 +108,34 @@ export function GanpatiAnimationStyles() {
         }
       }
 
+      @keyframes petalDriftDown {
+        0% {
+          transform: translate3d(0, -40px, 0) rotate(0deg);
+          opacity: 0;
+        }
+        6% {
+          transform: translate3d(8px, 20px, 0) rotate(22deg);
+          opacity: 0.95;
+        }
+        25% {
+          transform: translate3d(-14px, 210px, 0) rotate(85deg);
+        }
+        50% {
+          transform: translate3d(18px, 460px, 0) rotate(175deg);
+        }
+        75% {
+          transform: translate3d(-12px, 710px, 0) rotate(260deg);
+        }
+        92% {
+          transform: translate3d(6px, 880px, 0) rotate(320deg);
+          opacity: 0.95;
+        }
+        100% {
+          transform: translate3d(14px, 960px, 0) rotate(360deg);
+          opacity: 0;
+        }
+      }
+
       .ck-toran-leaf-sway {
         transform-box: fill-box;
         transform-origin: 50% 0%;
@@ -123,54 +171,69 @@ export function GanpatiAnimationStyles() {
 }
 
 /**
- * Animated Drifting Marigold Flower Petals for the Hero background.
- * Creates a serene, divine, temple-celebration atmosphere.
+ * Animated Drifting Marigold Flower Petals for foreground depth.
+ * Renders behind text/buttons (z-10) and away from primary CTA buttons so interactive elements remain clear and readable.
  */
-export function DriftingPetals() {
+export function DriftingPetals({ className = "pointer-events-none absolute inset-0 overflow-hidden select-none z-10" }: { className?: string }) {
   const petals = useMemo(
     () => [
-      { id: 1, left: "6%", size: 14, delay: "0s", duration: "13s" },
-      { id: 2, left: "20%", size: 18, delay: "3.5s", duration: "16s" },
-      { id: 3, left: "36%", size: 12, delay: "7s", duration: "14s" },
-      { id: 4, left: "52%", size: 16, delay: "2s", duration: "18s" },
-      { id: 5, left: "68%", size: 20, delay: "5s", duration: "15s" },
-      { id: 6, left: "82%", size: 13, delay: "8.5s", duration: "17s" },
-      { id: 7, left: "94%", size: 15, delay: "4s", duration: "14s" },
+      // Left edge / top corner (safely clear of CTA buttons)
+      { id: 1, left: "3%", size: 16, delay: "0s", duration: "11s" },
+      { id: 2, left: "7%", size: 20, delay: "2.8s", duration: "13.5s" },
+      { id: 3, left: "32%", size: 16, delay: "6.2s", duration: "12s" },
+      { id: 4, left: "38%", size: 21, delay: "1.2s", duration: "14.5s" },
+      { id: 5, left: "44%", size: 18, delay: "4.5s", duration: "13s" },
+
+      // Center (Altar & Archway)
+      { id: 6, left: "51%", size: 20, delay: "3.2s", duration: "12.5s" },
+      { id: 7, left: "58%", size: 16, delay: "0.8s", duration: "14s" },
+      { id: 8, left: "65%", size: 22, delay: "5.1s", duration: "13.5s" },
+
+      // Right side (Ganpati idol, temple, gift box)
+      { id: 9, left: "72%", size: 18, delay: "2.1s", duration: "14s" },
+      { id: 10, left: "79%", size: 21, delay: "8.4s", duration: "12.5s" },
+      { id: 11, left: "86%", size: 16, delay: "4.2s", duration: "15.5s" },
+      { id: 12, left: "93%", size: 20, delay: "1.6s", duration: "13s" },
+
+      // Additional subtle depth layers
+      { id: 13, left: "48%", size: 15, delay: "9.5s", duration: "15s" },
+      { id: 14, left: "62%", size: 15, delay: "10.2s", duration: "12s" },
+      { id: 15, left: "83%", size: 19, delay: "7.1s", duration: "14s" },
     ],
     []
   );
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden select-none z-0"
+      className={className}
       aria-hidden="true"
     >
       <GanpatiAnimationStyles />
       {petals.map((p) => (
         <div
           key={p.id}
-          className="absolute -top-6"
+          className="absolute -top-8"
           style={{
             left: p.left,
-            animation: `petalDriftDown ${p.duration} ease-in-out infinite`,
+            animation: `petalDriftDown ${p.duration} linear infinite`,
             animationDelay: p.delay,
           }}
         >
-          <svg width={p.size} height={p.size * 1.3} viewBox="0 0 20 26" fill="none">
+          <svg width={p.size} height={p.size * 1.3} viewBox="0 0 20 26" fill="none" className="drop-shadow-[0_2px_8px_rgba(217,119,6,0.38)]">
             <defs>
               <linearGradient id={`petalGrad-${p.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#fef08a" />
-                <stop offset="40%" stopColor="#f59e0b" />
-                <stop offset="85%" stopColor="#ea580c" />
+                <stop offset="35%" stopColor="#f59e0b" />
+                <stop offset="80%" stopColor="#ea580c" />
                 <stop offset="100%" stopColor="#c2410c" />
               </linearGradient>
             </defs>
             <path
               d="M10 0 C4 5, 0 13, 3 20 C6 26, 14 26, 17 20 C20 13, 16 5, 10 0 Z"
               fill={`url(#petalGrad-${p.id})`}
-              opacity="0.9"
+              opacity="0.95"
             />
-            <path d="M10 3 Q10 14 10 23" stroke="#fed7aa" strokeWidth="0.8" opacity="0.6" />
+            <path d="M10 3 Q10 14 10 23" stroke="#fed7aa" strokeWidth="0.8" opacity="0.85" />
           </svg>
         </div>
       ))}
@@ -598,10 +661,26 @@ export function ModakIcon({ className = "size-5" }: { className?: string }) {
 }
 
 /**
- * DiyaIcon — Aliased to ModakIcon for page-wide consistency (only modak icon/emoji used).
+ * DiyaIcon — Sacred Festive Diya (Oil Lamp) Icon for buttons and festive accents
  */
-export function DiyaIcon({ className = "size-5" }: { className?: string }) {
-  return <ModakIcon className={className} />;
+export function DiyaIcon({ className = "size-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M12 2C12 2 9.5 5.5 9.5 8C9.5 9.38 10.62 10.5 12 10.5C13.38 10.5 14.5 9.38 14.5 8C14.5 5.5 12 2 12 2Z"
+        fill="#fef08a"
+      />
+      <path
+        d="M12 4C12 4 10.5 6.5 10.5 8C10.5 8.83 11.17 9.5 12 9.5C12.83 9.5 13.5 8.83 13.5 8C13.5 6.5 12 4 12 4Z"
+        fill="#f59e0b"
+      />
+      <path
+        d="M3 13.5C3 17.6 7 21 12 21C17 21 21 17.6 21 13.5C21 12.8 20.4 12.2 19.7 12.2H4.3C3.6 12.2 3 12.8 3 13.5Z"
+        fill="currentColor"
+      />
+      <ellipse cx="12" cy="12.5" rx="7.5" ry="1.5" fill="#fde68a" opacity="0.6" />
+    </svg>
+  );
 }
 
 /**
@@ -1393,4 +1472,402 @@ export function GanpatiDivineIllo({
  */
 export function GanpatiHeroIllo() {
   return <GanpatiDivineIllo variant="hero" />;
+}
+
+/**
+ * FloatingFestiveBadge — Purely decorative floating pill badge for Ganeshotsav theme.
+ * Features rounded pill shape, small icon, crisp text, soft shadow, and a gentle floating bob.
+ */
+export interface FloatingFestiveBadgeProps {
+  icon?: React.ReactNode;
+  text: React.ReactNode;
+  subtext?: React.ReactNode;
+  variant?: "cream" | "maroon";
+  delay?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export function FloatingFestiveBadge({
+  icon,
+  text,
+  subtext,
+  variant = "cream",
+  delay = 0,
+  className = "",
+  style,
+}: FloatingFestiveBadgeProps) {
+  const isMaroon = variant === "maroon";
+
+  return (
+    <div
+      style={{
+        animation: "festiveBadgeFloat 3.8s ease-in-out infinite",
+        animationDelay: `${delay}s`,
+        ...style,
+      }}
+      className={`pointer-events-none select-none inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 shadow-md border text-xs font-black transition-all ${
+        isMaroon
+          ? "bg-[#250a04]/95 text-amber-200 border-amber-500/50 shadow-[0_8px_20px_rgba(0,0,0,0.45)] backdrop-blur-xs"
+          : "bg-white/95 dark:bg-stone-900/95 text-amber-800 dark:text-amber-300 border-amber-300/60 dark:border-amber-500/40 shadow-md backdrop-blur-xs"
+      } ${className}`}
+    >
+      {icon && (
+        <span className="shrink-0 flex items-center justify-center select-none" aria-hidden="true">
+          {icon}
+        </span>
+      )}
+      <div className="flex flex-col text-left leading-tight">
+        <span className="tracking-wide">{text}</span>
+        {subtext && <span className="text-3xs font-semibold opacity-85 mt-0.5">{subtext}</span>}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * GanpatiMantraBadge — Sacred Sanskrit Ganesha Invocation Pill Badge:
+ * 🌺 वक्रतुण्ड महाकाय सूर्यकोटि समप्रभ
+ * ॐ गं गणपतये नमः
+ */
+export function GanpatiMantraBadge({
+  variant = "cream",
+  delay = 0.6,
+  className = "",
+  style,
+}: {
+  variant?: "cream" | "maroon";
+  delay?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const isMaroon = variant === "maroon";
+
+  return (
+    <div
+      style={{
+        animation: "festiveBadgeFloat 4.2s ease-in-out infinite",
+        animationDelay: `${delay}s`,
+        ...style,
+      }}
+      className={`pointer-events-none select-none inline-flex items-center gap-2.5 rounded-full px-4 py-2 border shadow-lg transition-all font-devanagari ${
+        isMaroon
+          ? "bg-[#240a04]/95 text-amber-100 border-amber-500/50 shadow-[0_10px_25px_rgba(0,0,0,0.5)] backdrop-blur-xs"
+          : "bg-white/95 dark:bg-stone-900/95 text-amber-950 dark:text-amber-100 border-amber-300/70 dark:border-amber-500/40 shadow-md backdrop-blur-xs"
+      } ${className}`}
+    >
+      <span className="text-base sm:text-lg shrink-0 select-none" aria-hidden="true">
+        🌺
+      </span>
+      <div className="flex flex-col text-left leading-tight font-devanagari">
+        <span className="text-xs sm:text-[13px] font-bold tracking-normal text-amber-950 dark:text-amber-100">
+          वक्रतुण्ड महाकाय सूर्यकोटि समप्रभ
+        </span>
+        <span className="text-[11px] sm:text-xs font-semibold tracking-normal text-amber-800/90 dark:text-amber-300/90 mt-0.5">
+          ॐ गं गणपतये नमः
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Petal / Leaf Accent Icon for the eyebrow badge
+ */
+export function PetalAccent({
+  className = "size-3.5",
+  flip = false,
+}: {
+  className?: string;
+  flip?: boolean;
+}) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      className={`${className} ${flip ? "-scale-x-100" : ""}`}
+      aria-hidden="true"
+    >
+      <path
+        d="M2.5 13.5C3.2 8.5 7.8 4 13.5 2.5C12 8.2 7.5 12.8 2.5 13.5Z"
+        fill="currentColor"
+      />
+      <circle cx="5" cy="5.5" r="1.2" fill="currentColor" opacity="0.85" />
+      <circle cx="10" cy="10.5" r="1" fill="currentColor" opacity="0.65" />
+    </svg>
+  );
+}
+
+/* Reusable SVG Definitions for Garland matching reference ground truth */
+function GarlandDefs() {
+  return (
+    <defs>
+      <filter id="refGarlandDropShadow" x="-25%" y="-15%" width="150%" height="130%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#451a03" floodOpacity="0.28" />
+      </filter>
+
+      {/* Marigold Saffron Orange Gradient */}
+      <radialGradient id="refOrangeGrad" cx="38%" cy="36%" r="65%">
+        <stop offset="0%" stopColor="#fef08a" />
+        <stop offset="22%" stopColor="#fb923c" />
+        <stop offset="65%" stopColor="#ea580c" />
+        <stop offset="90%" stopColor="#c2410c" />
+        <stop offset="100%" stopColor="#991b1b" />
+      </radialGradient>
+
+      {/* Marigold Golden Yellow Gradient */}
+      <radialGradient id="refYellowGrad" cx="38%" cy="35%" r="65%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="25%" stopColor="#fef08a" />
+        <stop offset="65%" stopColor="#facc15" />
+        <stop offset="90%" stopColor="#f59e0b" />
+        <stop offset="100%" stopColor="#b45309" />
+      </radialGradient>
+
+      {/* Mango Leaf Gradients */}
+      <linearGradient id="refLeafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#4ade80" />
+        <stop offset="35%" stopColor="#22c55e" />
+        <stop offset="80%" stopColor="#16a34a" />
+        <stop offset="100%" stopColor="#15803d" />
+      </linearGradient>
+      <linearGradient id="refLeafGradDark" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#22c55e" />
+        <stop offset="45%" stopColor="#16a34a" />
+        <stop offset="85%" stopColor="#15803d" />
+        <stop offset="100%" stopColor="#14532d" />
+      </linearGradient>
+    </defs>
+  );
+}
+
+function MarigoldBlossom({ cx, cy, r, isYellow = false }: { cx: number; cy: number; r: number; isYellow?: boolean }) {
+  const outerFill = isYellow ? "url(#refYellowGrad)" : "url(#refOrangeGrad)";
+  const innerFill = isYellow ? "#fef08a" : "#fb923c";
+  const stroke = isYellow ? "#b45309" : "#991b1b";
+  const midStroke = isYellow ? "#ca8a04" : "#c2410c";
+
+  const lobes = 14;
+  let dOuter = "";
+  for (let i = 0; i < lobes; i++) {
+    const a1 = (i / lobes) * Math.PI * 2;
+    const a2 = ((i + 0.5) / lobes) * Math.PI * 2;
+    const a3 = ((i + 1) / lobes) * Math.PI * 2;
+    const rBase = r * 0.82;
+    const rPeak = r;
+    const x1 = (cx + Math.cos(a1) * rBase).toFixed(1);
+    const y1 = (cy + Math.sin(a1) * rBase).toFixed(1);
+    const xMid = (cx + Math.cos(a2) * rPeak).toFixed(1);
+    const yMid = (cy + Math.sin(a2) * rPeak).toFixed(1);
+    const x2 = (cx + Math.cos(a3) * rBase).toFixed(1);
+    const y2 = (cy + Math.sin(a3) * rBase).toFixed(1);
+    if (i === 0) dOuter += `M ${x1} ${y1} `;
+    dOuter += `Q ${xMid} ${yMid} ${x2} ${y2} `;
+  }
+  dOuter += "Z";
+
+  return (
+    <g filter="url(#refGarlandDropShadow)">
+      <path d={dOuter} fill={outerFill} stroke={stroke} strokeWidth="0.6" />
+      <circle cx={cx} cy={cy} r={(r * 0.72).toFixed(1)} fill="none" stroke={midStroke} strokeWidth="0.75" strokeDasharray="3,1.5" />
+      <circle cx={cx} cy={cy} r={(r * 0.48).toFixed(1)} fill="none" stroke={stroke} strokeWidth="0.6" />
+      <circle cx={cx} cy={cy} r={(r * 0.28).toFixed(1)} fill={innerFill} />
+      <circle cx={cx} cy={cy} r={(r * 0.14).toFixed(1)} fill={stroke} />
+    </g>
+  );
+}
+
+function SerratedFlankingLeaf({ cx, cy, isRight = false }: { cx: number; cy: number; isRight?: boolean }) {
+  const f = isRight ? 1 : -1;
+  return (
+    <g>
+      <path
+        d={`M ${cx},${cy} 
+             C ${cx + f * 4},${cy + 4} ${cx + f * 10},${cy + 10} ${cx + f * 12},${cy + 18} 
+             L ${cx + f * 15},${cy + 21} L ${cx + f * 12},${cy + 24} 
+             L ${cx + f * 16},${cy + 28} L ${cx + f * 13},${cy + 32} 
+             L ${cx + f * 16},${cy + 36} L ${cx + f * 11},${cy + 42} 
+             C ${cx + f * 10},${cy + 48} ${cx + f * 6},${cy + 52} ${cx + f * 5},${cy + 56} 
+             C ${cx + f * 3},${cy + 48} ${cx + f * 1},${cy + 38} ${cx + f * 2},${cy + 26} 
+             C ${cx + f * 2},${cy + 16} ${cx + f * 1},${cy + 6} ${cx},${cy} Z`}
+        fill="url(#refLeafGrad)"
+        stroke="#14532d"
+        strokeWidth="0.75"
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M ${cx},${cy + 2} Q ${cx + f * 7},${cy + 26} ${cx + f * 5},${cy + 52}`}
+        stroke="#86efac"
+        strokeWidth="0.65"
+        fill="none"
+        opacity="0.8"
+      />
+    </g>
+  );
+}
+
+function TasselThreeLeaves({ cx, cy }: { cx: number; cy: number }) {
+  return (
+    <g filter="url(#refGarlandDropShadow)">
+      <path
+        d={`M ${cx},${cy} C ${cx - 5},${cy + 8} ${cx - 12},${cy + 18} ${cx - 13},${cy + 28} L ${cx - 16},${cy + 32} L ${cx - 12},${cy + 36} L ${cx - 15},${cy + 42} C ${cx - 13},${cy + 50} ${cx - 9},${cy + 56} ${cx - 8},${cy + 62} C ${cx - 6},${cy + 50} ${cx - 3},${cy + 36} ${cx},${cy} Z`}
+        fill="url(#refLeafGradDark)"
+        stroke="#14532d"
+        strokeWidth="0.7"
+      />
+      <path
+        d={`M ${cx},${cy} C ${cx + 5},${cy + 8} ${cx + 12},${cy + 18} ${cx + 13},${cy + 28} L ${cx + 16},${cy + 32} L ${cx + 12},${cy + 36} L ${cx + 15},${cy + 42} C ${cx + 13},${cy + 50} ${cx + 9},${cy + 56} ${cx + 8},${cy + 62} C ${cx + 6},${cy + 50} ${cx + 3},${cy + 36} ${cx},${cy} Z`}
+        fill="url(#refLeafGradDark)"
+        stroke="#14532d"
+        strokeWidth="0.7"
+      />
+      <path
+        d={`M ${cx},${cy} C ${cx - 3},${cy + 12} ${cx - 4},${cy + 24} ${cx - 3},${cy + 36} L ${cx - 6},${cy + 40} L ${cx - 3},${cy + 46} L ${cx - 5},${cy + 52} C ${cx - 3},${cy + 58} ${cx},${cy + 64} ${cx},${cy + 68} C ${cx},${cy + 64} ${cx + 3},${cy + 58} ${cx + 5},${cy + 52} L ${cx + 3},${cy + 46} L ${cx + 6},${cy + 40} L ${cx + 3},${cy + 36} C ${cx + 4},${cy + 24} ${cx + 3},${cy + 12} ${cx},${cy} Z`}
+        fill="url(#refLeafGrad)"
+        stroke="#14532d"
+        strokeWidth="0.75"
+      />
+      <line x1={cx} y1={cy + 2} x2={cx} y2={cy + 64} stroke="#14532d" strokeWidth="0.7" />
+    </g>
+  );
+}
+
+function TasselFourLeaves({ cx, cy }: { cx: number; cy: number }) {
+  return (
+    <g filter="url(#refGarlandDropShadow)">
+      <path
+        d={`M ${cx},${cy} C ${cx - 6},${cy + 6} ${cx - 14},${cy + 16} ${cx - 16},${cy + 26} L ${cx - 19},${cy + 30} L ${cx - 15},${cy + 34} L ${cx - 18},${cy + 40} C ${cx - 15},${cy + 48} ${cx - 11},${cy + 54} ${cx - 10},${cy + 60} C ${cx - 7},${cy + 48} ${cx - 3},${cy + 34} ${cx},${cy} Z`}
+        fill="url(#refLeafGradDark)"
+        stroke="#14532d"
+        strokeWidth="0.7"
+      />
+      <path
+        d={`M ${cx},${cy} C ${cx - 3},${cy + 8} ${cx - 7},${cy + 20} ${cx - 6},${cy + 32} L ${cx - 9},${cy + 36} L ${cx - 5},${cy + 42} C ${cx - 4},${cy + 52} ${cx - 2},${cy + 60} ${cx - 2},${cy + 66} C ${cx - 1},${cy + 52} ${cx},${cy + 36} ${cx},${cy} Z`}
+        fill="url(#refLeafGrad)"
+        stroke="#14532d"
+        strokeWidth="0.7"
+      />
+      <path
+        d={`M ${cx},${cy} C ${cx + 3},${cy + 8} ${cx + 7},${cy + 20} ${cx + 6},${cy + 32} L ${cx + 9},${cy + 36} L ${cx + 5},${cy + 42} C ${cx + 4},${cy + 52} ${cx + 2},${cy + 60} ${cx + 2},${cy + 66} C ${cx + 1},${cy + 52} ${cx},${cy + 36} ${cx},${cy} Z`}
+        fill="url(#refLeafGrad)"
+        stroke="#14532d"
+        strokeWidth="0.7"
+      />
+      <path
+        d={`M ${cx},${cy} C ${cx + 6},${cy + 6} ${cx + 14},${cy + 16} ${cx + 16},${cy + 26} L ${cx + 19},${cy + 30} L ${cx + 15},${cy + 34} L ${cx + 18},${cy + 40} C ${cx + 15},${cy + 48} ${cx + 11},${cy + 54} ${cx + 10},${cy + 60} C ${cx + 7},${cy + 48} ${cx + 3},${cy + 34} ${cx},${cy} Z`}
+        fill="url(#refLeafGradDark)"
+        stroke="#14532d"
+        strokeWidth="0.7"
+      />
+    </g>
+  );
+}
+
+function SpacedStrand({ x, startY, stations = 5, r = 10 }: { x: number; startY: number; stations?: number; r?: number }) {
+  const step = 64;
+  const endY = startY + (stations - 1) * step;
+
+  return (
+    <g className="ck-toran-leaf-sway" style={{ transformOrigin: `${x}px 10px` }}>
+      <line x1={x} y1={startY - 20} x2={x} y2={endY} stroke="#14532d" strokeWidth={2} />
+      {Array.from({ length: stations }).map((_, i) => {
+        const cy = startY + i * step;
+        if (i < stations - 1) {
+          return (
+            <React.Fragment key={i}>
+              <SerratedFlankingLeaf cx={x} cy={cy - 2} isRight={false} />
+              <SerratedFlankingLeaf cx={x} cy={cy - 2} isRight={true} />
+              <MarigoldBlossom cx={x} cy={cy} r={r} isYellow={false} />
+            </React.Fragment>
+          );
+        }
+        return (
+          <React.Fragment key={i}>
+            <MarigoldBlossom cx={x} cy={cy} r={r} isYellow={false} />
+            <TasselThreeLeaves cx={x} cy={cy + r * 0.5} />
+          </React.Fragment>
+        );
+      })}
+    </g>
+  );
+}
+
+function ChainStrand({ x, startY, count = 12, r = 9.5, delay = "0.2s" }: { x: number; startY: number; count?: number; r?: number; delay?: string }) {
+  const step = r * 1.56;
+  const lastCy = startY + (count - 1) * step;
+
+  return (
+    <g className="ck-toran-leaf-sway" style={{ transformOrigin: `${x}px 10px`, animationDelay: delay }}>
+      <line x1={x} y1={startY - 16} x2={x} y2={lastCy} stroke="#14532d" strokeWidth={1.8} />
+      {Array.from({ length: count }).map((_, i) => {
+        const cy = startY + i * step;
+        const isYellow = (i % 2 === 0);
+        return <MarigoldBlossom key={i} cx={x} cy={cy} r={r} isYellow={isYellow} />;
+      })}
+      <TasselFourLeaves cx={x} cy={lastCy + r * 0.5} />
+    </g>
+  );
+}
+
+/**
+ * Clean, layered VECTOR illustration style garland (SVG-based)
+ * Matches the user's reference image exactly:
+ * - 4 distinct vertical strands side-by-side with generous, clean horizontal spacing.
+ * - Strand 1 (longest): green string with spaced orange marigolds flanked by serrated mango leaves.
+ * - Strand 2 (second longest): solid chain of alternating yellow and orange marigolds.
+ * - Strand 3 (third longest): spaced orange marigolds flanked by serrated mango leaves.
+ * - Strand 4 (shortest): solid chain of alternating yellow and orange marigolds.
+ */
+export function GanpatiGarlandLeft({ className = "w-full h-auto" }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 215 365" width={215} height={365} fill="none">
+      <GarlandDefs />
+      {/* 4 Distinct Vertical Strands with generous spacing */}
+      <SpacedStrand x={28} startY={26} stations={5} r={10} />
+      <ChainStrand x={78} startY={16} count={12} r={9.5} delay="0.25s" />
+      <SpacedStrand x={128} startY={26} stations={4} r={10} />
+      <ChainStrand x={178} startY={16} count={8} r={9.5} delay="0.5s" />
+    </svg>
+  );
+}
+
+/**
+ * Right Corner Garland — Symmetrical / mirrored version of the exact same 4-strand garland design.
+ * Positioned in the top-right corner, shifted slightly inward so it sits cleanly next to the bell without colliding.
+ */
+export function GanpatiGarlandRight({ className = "w-full h-auto" }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 215 365" width={215} height={365} fill="none">
+      <GarlandDefs />
+      {/* 4 Distinct Vertical Strands (mirrored) */}
+      <ChainStrand x={36} startY={16} count={8} r={9.5} delay="0.5s" />
+      <SpacedStrand x={86} startY={26} stations={4} r={10} />
+      <ChainStrand x={136} startY={16} count={12} r={9.5} delay="0.25s" />
+      <SpacedStrand x={186} startY={26} stations={5} r={10} />
+    </svg>
+  );
+}
+
+/**
+ * GanpatiCornerGarlands — Festive Botanical Garlands
+ * Originates from the top corners of the navbar, draping down continuously into the hero section.
+ */
+export function GanpatiCornerGarlands() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 top-0 h-[380px] overflow-visible z-40 select-none"
+      aria-hidden="true"
+    >
+      <GanpatiAnimationStyles />
+      {/* Left Corner Garland — 4 distinct vertical strands matching reference image */}
+      <div className="hidden md:block absolute top-0 left-1 sm:left-2 lg:left-3 w-[88px] sm:w-[98px] lg:w-[110px]">
+        <GanpatiGarlandLeft className="w-full h-auto" />
+      </div>
+
+      {/* Right Corner Garland — Symmetrical 4 strands positioned in top-right corner, sitting cleanly beside the bell */}
+      <div className="hidden md:block absolute top-0 right-4 sm:right-6 lg:right-8 w-[88px] sm:w-[98px] lg:w-[110px]">
+        <GanpatiGarlandRight className="w-full h-auto" />
+      </div>
+    </div>
+  );
 }

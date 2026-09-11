@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
-import { ModakIcon, GanpatiDivineIllo } from "@/components/home/GanpatiVisuals";
+import { ModakIcon, LotusIcon, GanpatiDivineIllo, FloatingFestiveBadge } from "@/components/home/GanpatiVisuals";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 /**
@@ -97,6 +97,13 @@ export function CTASectionGanpati() {
 
           {/* Right accent panel: Kept intact for future illustration placement */}
           <div className="relative hidden lg:flex bg-gradient-to-br from-[#7f1d1d] via-[#450a0a] to-[#200505] items-center justify-center overflow-hidden border-amber-500/25 lg:border-l p-4 min-h-[300px]">
+            <FloatingFestiveBadge
+              variant="maroon"
+              icon={<LotusIcon className="size-4 text-amber-400" />}
+              text="Vighnaharta Blesses You"
+              subtext="Remover of Obstacles"
+              delay={0.6}
+            />
             {/* Ganpati illustration removed for now per user request */}
             {/* <GanpatiDivineIllo variant="cta" /> */}
           </div>

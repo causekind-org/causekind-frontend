@@ -51,17 +51,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // The real token lives in an httpOnly cookie the browser sends automatically.
   useEffect(() => {
     // 1. Instant hydration from cached metadata (no spinner on every page load)
+    let hasStoredUser = false;
     try {
       const stored = localStorage.getItem(USER_KEY);
       if (stored) {
         const parsed: AuthUser = JSON.parse(stored);
-        if (parsed?.email && parsed?.role) setUserState(parsed);
+        if (parsed?.email && parsed?.role) {
+          setUserState(parsed);
+          hasStoredUser = true;
+        }
       }
     } catch {}
 
+    if (!hasStoredUser) {
+      setIsLoading(false);
+    }
+
     // 2. Background server validation — evicts stale localStorage if cookie expired
     const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-    fetch(`${BASE}/api/v1/users/me`, { credentials: "include" })
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 2000) : null;
+
+    fetch(`${BASE}/api/v1/users/me`, {
+      credentials: "include",
+      signal: controller?.signal,
+    })
       .then(res => {
         if (res.ok) return res.json();
         if (res.status === 401) {
@@ -78,7 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {}) // network offline — keep cached state
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (timeoutId) clearTimeout(timeoutId);
+        setIsLoading(false);
+      });
   }, []);
 
   // ── setUser ───────────────────────────────────────────────────────────────
