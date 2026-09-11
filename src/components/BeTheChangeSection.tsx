@@ -228,8 +228,10 @@ export function BeTheChangeSection({
       // The ink flood is `lg:` only. Below that the band keeps the light ground
       // so the hero overlap panel still tucks under the Hero's rounded edge;
       // an ink panel there would read as a dark seam across the composition.
-      className={`relative w-full overflow-hidden pb-6 lg:bg-surface-cream lg:py-14 ${
-        overlapHero ? "ck-hero-overlap isolate z-10" : "pt-6"
+      // The mobile column owns the vertical rhythm below lg, so the pb-6/pt-6
+      // pair is lg-gated now — it was adding 24px on top of the column's gap.
+      className={`relative w-full overflow-hidden lg:bg-surface-cream lg:py-14 ${
+        overlapHero ? "ck-hero-overlap isolate z-10" : ""
       }`}
     >
       <div className="relative z-10 mx-auto max-w-7xl px-6 sm:px-10">
