@@ -447,6 +447,42 @@ export function SiteHeader() {
   // Elevate-on-scroll: flat at the top of the page, soft shadow fades in once
   // content scrolls beneath the bar (same pattern as the admin panel header).
   const [scrolled, setScrolled] = useState(false);
+  const [overMobileHero, setOverMobileHero] = useState(pathname === "/");
+  useEffect(() => {
+    if (pathname !== "/") { setOverMobileHero(false); return; }
+    const mobile = window.matchMedia("(max-width: 1023px)");
+    let frame = 0;
+    let observedHero: Element | null = null;
+    const update = () => {
+      frame = 0;
+      const hero = document.querySelector(".ck-lead-hero-stage");
+      if (hero && hero !== observedHero) {
+        resize.disconnect();
+        resize.observe(hero);
+        observedHero = hero;
+        mounted.disconnect();
+      }
+      const bounds = hero?.getBoundingClientRect();
+      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= 0 && bounds.bottom > 0);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const resize = new ResizeObserver(schedule);
+    // The homepage may arrive after the shared header during client navigation.
+    const mounted = new MutationObserver(schedule);
+    mounted.observe(document.body, { childList: true, subtree: true });
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    mobile.addEventListener("change", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      mounted.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      mobile.removeEventListener("change", schedule);
+    };
+  }, [pathname]);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -701,6 +737,7 @@ export function SiteHeader() {
 
       <header
         ref={headerRef}
+        data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
         style={{
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
           opacity: immersive ? 0 : 1,
@@ -742,12 +779,12 @@ export function SiteHeader() {
             so the 90% here reveals only the header's own background — the exact
             same colour — plus the festive layer on the one day it exists. Off
             the day, this renders pixel-identical to the opaque version. */}
-        <div className="relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
+        <div className="ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
           <div className="flex items-center gap-2 justify-self-start">
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            <CareNestLogo size="md" hideIcon={true} />
+            {pathname === "/" && overMobileHero ? <span className="text-xl font-extrabold tracking-tight text-[#fff6ed]">Cause<span className="text-[var(--ck-role-highlight,#ff9f66)]">Kind</span></span> : <CareNestLogo size="md" hideIcon={true} />}
           </Link>
           <button
             ref={menuTriggerRef}
