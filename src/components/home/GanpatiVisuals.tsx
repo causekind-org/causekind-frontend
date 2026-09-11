@@ -177,28 +177,28 @@ export function GanpatiAnimationStyles() {
 export function DriftingPetals({ className = "pointer-events-none absolute inset-0 overflow-hidden select-none z-10" }: { className?: string }) {
   const petals = useMemo(
     () => [
-      // Left edge / top corner (safely clear of CTA buttons)
-      { id: 1, left: "3%", size: 16, delay: "0s", duration: "11s" },
-      { id: 2, left: "7%", size: 20, delay: "2.8s", duration: "13.5s" },
-      { id: 3, left: "32%", size: 16, delay: "6.2s", duration: "12s" },
-      { id: 4, left: "38%", size: 21, delay: "1.2s", duration: "14.5s" },
-      { id: 5, left: "44%", size: 18, delay: "4.5s", duration: "13s" },
+      // Left side (where leaves used to be, now festive floral petals/blossoms)
+      { id: 1, left: "4%", size: 18, delay: "0s", duration: "12s", type: "pink-petal" as const, rot: 25 },
+      { id: 2, left: "8%", size: 20, delay: "3.5s", duration: "14s", type: "marigold" as const, rot: -15 },
+      { id: 3, left: "28%", size: 16, delay: "6.2s", duration: "12s", type: "golden-petal" as const, rot: 40 },
+      { id: 4, left: "36%", size: 19, delay: "1.2s", duration: "14.5s", type: "red-petal" as const, rot: -30 },
+      { id: 5, left: "44%", size: 21, delay: "4.5s", duration: "13s", type: "marigold" as const, rot: 15 },
 
-      // Center (Altar & Archway)
-      { id: 6, left: "51%", size: 20, delay: "3.2s", duration: "12.5s" },
-      { id: 7, left: "58%", size: 16, delay: "0.8s", duration: "14s" },
-      { id: 8, left: "65%", size: 22, delay: "5.1s", duration: "13.5s" },
+      // Center
+      { id: 6, left: "52%", size: 17, delay: "3.2s", duration: "12.5s", type: "pink-petal" as const, rot: -20 },
+      { id: 7, left: "59%", size: 22, delay: "0.8s", duration: "14s", type: "marigold" as const, rot: 35 },
+      { id: 8, left: "66%", size: 18, delay: "5.1s", duration: "13.5s", type: "golden-petal" as const, rot: -10 },
 
-      // Right side (Ganpati idol, temple, gift box)
-      { id: 9, left: "72%", size: 18, delay: "2.1s", duration: "14s" },
-      { id: 10, left: "79%", size: 21, delay: "8.4s", duration: "12.5s" },
-      { id: 11, left: "86%", size: 16, delay: "4.2s", duration: "15.5s" },
-      { id: 12, left: "93%", size: 20, delay: "1.6s", duration: "13s" },
+      // Right side
+      { id: 9, left: "74%", size: 19, delay: "2.1s", duration: "14s", type: "red-petal" as const, rot: 45 },
+      { id: 10, left: "81%", size: 22, delay: "8.4s", duration: "12.5s", type: "marigold" as const, rot: -25 },
+      { id: 11, left: "88%", size: 17, delay: "4.2s", duration: "15.5s", type: "pink-petal" as const, rot: 30 },
+      { id: 12, left: "94%", size: 20, delay: "1.6s", duration: "13s", type: "golden-petal" as const, rot: -35 },
 
-      // Additional subtle depth layers
-      { id: 13, left: "48%", size: 15, delay: "9.5s", duration: "15s" },
-      { id: 14, left: "62%", size: 15, delay: "10.2s", duration: "12s" },
-      { id: 15, left: "83%", size: 19, delay: "7.1s", duration: "14s" },
+      // Subtle depth layers
+      { id: 13, left: "48%", size: 16, delay: "9.5s", duration: "15s", type: "marigold" as const, rot: 10 },
+      { id: 14, left: "63%", size: 15, delay: "10.2s", duration: "12s", type: "pink-petal" as const, rot: -40 },
+      { id: 15, left: "84%", size: 19, delay: "7.1s", duration: "14s", type: "red-petal" as const, rot: 20 },
     ],
     []
   );
@@ -209,6 +209,38 @@ export function DriftingPetals({ className = "pointer-events-none absolute inset
       aria-hidden="true"
     >
       <GanpatiAnimationStyles />
+      <svg className="absolute w-0 h-0 overflow-hidden" aria-hidden="true">
+        <defs>
+          {/* Marigold Flower Blossom Gradient */}
+          <radialGradient id="marigoldBloomGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="45%" stopColor="#f59e0b" />
+            <stop offset="85%" stopColor="#ea580c" />
+            <stop offset="100%" stopColor="#c2410c" />
+          </radialGradient>
+          {/* Lotus / Rose Pink Petal Gradient */}
+          <linearGradient id="pinkPetalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fdf2f8" />
+            <stop offset="30%" stopColor="#f472b6" />
+            <stop offset="75%" stopColor="#e11d48" />
+            <stop offset="100%" stopColor="#be123c" />
+          </linearGradient>
+          {/* Golden Saffron Petal Gradient */}
+          <linearGradient id="goldenPetalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fffbeb" />
+            <stop offset="35%" stopColor="#fde047" />
+            <stop offset="75%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#d97706" />
+          </linearGradient>
+          {/* Festive Vermilion Red Petal Gradient */}
+          <linearGradient id="redPetalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fee2e2" />
+            <stop offset="35%" stopColor="#f87171" />
+            <stop offset="75%" stopColor="#dc2626" />
+            <stop offset="100%" stopColor="#991b1b" />
+          </linearGradient>
+        </defs>
+      </svg>
       {petals.map((p) => (
         <div
           key={p.id}
@@ -217,24 +249,57 @@ export function DriftingPetals({ className = "pointer-events-none absolute inset
             left: p.left,
             animation: `petalDriftDown ${p.duration} linear infinite`,
             animationDelay: p.delay,
+            transform: `rotate(${p.rot}deg)`,
           }}
         >
-          <svg width={p.size} height={p.size * 1.3} viewBox="0 0 20 26" fill="none" className="drop-shadow-[0_2px_8px_rgba(217,119,6,0.38)]">
-            <defs>
-              <linearGradient id={`petalGrad-${p.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fef08a" />
-                <stop offset="35%" stopColor="#f59e0b" />
-                <stop offset="80%" stopColor="#ea580c" />
-                <stop offset="100%" stopColor="#c2410c" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M10 0 C4 5, 0 13, 3 20 C6 26, 14 26, 17 20 C20 13, 16 5, 10 0 Z"
-              fill={`url(#petalGrad-${p.id})`}
-              opacity="0.95"
-            />
-            <path d="M10 3 Q10 14 10 23" stroke="#fed7aa" strokeWidth="0.8" opacity="0.85" />
-          </svg>
+          {p.type === "marigold" ? (
+            /* Multi-Petal Marigold Blossom */
+            <svg width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" className="drop-shadow-[0_2px_8px_rgba(234,88,12,0.45)]">
+              <circle cx="12" cy="12" r="10" fill="url(#marigoldBloomGrad)" opacity="0.95" />
+              {/* Petal indentations */}
+              <circle cx="12" cy="4" r="3.2" fill="#fbbf24" opacity="0.9" />
+              <circle cx="18" cy="7" r="3.2" fill="#f59e0b" opacity="0.9" />
+              <circle cx="20" cy="12" r="3.2" fill="#ea580c" opacity="0.9" />
+              <circle cx="18" cy="17" r="3.2" fill="#ea580c" opacity="0.9" />
+              <circle cx="12" cy="20" r="3.2" fill="#f59e0b" opacity="0.9" />
+              <circle cx="6" cy="17" r="3.2" fill="#fbbf24" opacity="0.9" />
+              <circle cx="4" cy="12" r="3.2" fill="#f59e0b" opacity="0.9" />
+              <circle cx="6" cy="7" r="3.2" fill="#fbbf24" opacity="0.9" />
+              {/* Center disc */}
+              <circle cx="12" cy="12" r="3.8" fill="#b45309" />
+              <circle cx="12" cy="12" r="2.2" fill="#fde047" />
+            </svg>
+          ) : p.type === "pink-petal" ? (
+            /* Festive Pink Lotus Petal */
+            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_8px_rgba(225,29,72,0.38)]">
+              <path
+                d="M10 0 C3.5 5, 0.5 12, 3 19 C5.5 25, 14.5 25, 17 19 C19.5 12, 16.5 5, 10 0 Z"
+                fill="url(#pinkPetalGrad)"
+                opacity="0.92"
+              />
+              <path d="M10 2 Q10 13 10 22" stroke="#fbcfe8" strokeWidth="0.6" opacity="0.75" />
+            </svg>
+          ) : p.type === "red-petal" ? (
+            /* Festive Vermilion Red Flower Petal */
+            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_8px_rgba(220,38,38,0.4)]">
+              <path
+                d="M10 0 C4 5.5, 1 13, 3.5 19.5 C6 25, 14 25, 16.5 19.5 C19 13, 16 5.5, 10 0 Z"
+                fill="url(#redPetalGrad)"
+                opacity="0.92"
+              />
+              <path d="M10 2 Q10 13 10 22" stroke="#fecaca" strokeWidth="0.6" opacity="0.7" />
+            </svg>
+          ) : (
+            /* Golden Saffron Petal */
+            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_8px_rgba(217,119,6,0.38)]">
+              <path
+                d="M10 0 C4 5, 1 12.5, 3.5 19 C6 25, 14 25, 16.5 19 C19 12.5, 16 5, 10 0 Z"
+                fill="url(#goldenPetalGrad)"
+                opacity="0.92"
+              />
+              <path d="M10 2 Q10 13 10 22" stroke="#fef08a" strokeWidth="0.6" opacity="0.75" />
+            </svg>
+          )}
         </div>
       ))}
     </div>
