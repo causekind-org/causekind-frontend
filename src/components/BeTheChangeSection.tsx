@@ -8,6 +8,8 @@ import { ArrowRight, ChevronDown } from "lucide-react";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { MATCH_RADIUS_KM } from "@/lib/constants";
+import { isGanpatiActive } from "@/lib/isGanpatiActive";
+import { RangoliBackdrop } from "@/components/home/GanpatiVisuals";
 
 /* ─── Brand tokens ───────────────────────────────────────────────────
    This band used to flood the logo's ink (#1e3a60) at `lg` while keeping a
@@ -187,6 +189,7 @@ export function BeTheChangeSection({
   tourAnchors = false,
 }: { overlapHero?: boolean; tourAnchors?: boolean } = {}) {
   const { user } = useAuth();
+  const isGanpati = isGanpatiActive();
 
   // Category-pill overflow, below `lg` only. `useId` rather than a literal
   // string because HomeClient mounts this component twice — a hardcoded id
@@ -279,14 +282,24 @@ export function BeTheChangeSection({
                  step, whose copy — reviewed before it goes live, matched within
                  10 km — is a description of exactly these three. ── */}
             <div
-              className="flex flex-col gap-6 lg:gap-7 lg:pt-2"
+              className="relative flex flex-col gap-6 lg:gap-7 lg:pt-2"
               data-tour={tourAnchors ? "guest-signals" : undefined}
             >
-              <MarqueeStat value="100%" label="Admin-verified listings" />
-              {/* Read from the shared constant, never retyped: the match radius
-                  is also enforced server-side, and two copies would drift. */}
-              <MarqueeStat value={`${MATCH_RADIUS_KM} km`} label="Match radius" />
-              <MarqueeStat value="Zero" label="Middlemen" />
+              {isGanpati && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -inset-x-8 -inset-y-12 flex items-center justify-center overflow-hidden select-none z-0"
+                >
+                  <RangoliBackdrop className="w-[340px] h-[340px] sm:w-[420px] sm:h-[420px] text-amber-600 dark:text-amber-400 opacity-[0.07] max-w-full" />
+                </div>
+              )}
+              <div className="relative z-10 flex flex-col gap-6 lg:gap-7">
+                <MarqueeStat value="100%" label="Admin-verified listings" />
+                {/* Read from the shared constant, never retyped: the match radius
+                    is also enforced server-side, and two copies would drift. */}
+                <MarqueeStat value={`${MATCH_RADIUS_KM} km`} label="Match radius" />
+                <MarqueeStat value="Zero" label="Middlemen" />
+              </div>
             </div>
 
           </div>

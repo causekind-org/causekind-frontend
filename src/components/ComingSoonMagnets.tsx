@@ -609,7 +609,7 @@ function MagnetCard({ card, idx, reducedMotion, sectionRef, onOpen }: {
 }
 
 /* ─── Main section ───────────────────────────────────────────────────────── */
-export function ComingSoonMagnets() {
+export function ComingSoonMagnets({ heading }: { heading?: React.ReactNode } = {}) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const [modal, setModal] = useState<{ idx: number; rect: DOMRect } | null>(null);
@@ -795,8 +795,12 @@ export function ComingSoonMagnets() {
           className="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100"
           style={{ lineHeight: 1.2 }}
         >
-          More ways to give —{" "}
-          <span style={{ color: "var(--ck-home-ink,#b04a15)" }}>coming soon</span>
+          {heading ?? (
+            <>
+              More ways to give —{" "}
+              <span style={{ color: "var(--ck-home-ink,#b04a15)" }}>coming soon</span>
+            </>
+          )}
         </h2>
         <p className="mt-3 text-stone-500 dark:text-stone-400 text-base max-w-md mx-auto leading-relaxed">
           CauseKind launches with verified in-kind giving. Monetary features

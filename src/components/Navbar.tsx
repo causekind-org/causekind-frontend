@@ -21,6 +21,8 @@ import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
+import { isGanpatiActive } from "@/lib/isGanpatiActive";
+import { ModakIcon } from "@/components/home/GanpatiVisuals";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
@@ -62,6 +64,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   // cannot outlive its window — which is exactly how the Independence Day
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
+  const isGanpati = isGanpatiActive();
   return (
     <motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
@@ -128,6 +131,11 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
           >
             Kind
           </motion.span>
+          {isGanpati && (
+            <span className="ml-1 inline-flex items-center shrink-0 self-center" aria-hidden="true" title="Ganesh Chaturthi Special">
+              <ModakIcon className="size-3.5 sm:size-4 text-amber-600 drop-shadow-[0_1px_3px_rgba(217,119,6,0.35)]" />
+            </span>
+          )}
         </span>
       )}
     </motion.span>
@@ -761,6 +769,7 @@ export function SiteHeader() {
 
   // Hooks must run unconditionally — keep this above the hideChrome early return.
   const tilt = useTilt();
+  const isGanpati = isGanpatiActive();
 
   if (hideChrome) return null;
 
@@ -800,41 +809,32 @@ export function SiteHeader() {
           transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
           willChange: "transform",
         }}
-        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 ${
+        className={`sticky top-0 z-50 w-full ${
+          isGanpati
+            ? "bg-gradient-to-r from-[#fffbf4] via-[#fff5e6] to-[#fffbf4] dark:from-[#1b0c05] dark:via-[#240e06] dark:to-[#1b0c05] lg:bg-gradient-to-r lg:from-[#fffbf4]/92 lg:via-[#fff5e6]/88 lg:to-[#fffbf4]/92 lg:dark:from-[#1b0c05]/92 lg:dark:via-[#240e06]/88 lg:dark:to-[#1b0c05]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-amber-300/60 dark:border-amber-700/40"
+            : "bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850"
+        } ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
+        {isGanpati && (
+          <div
+            className="absolute bottom-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none z-10"
+            aria-hidden="true"
+          />
+        )}
         {/* One-day Raksha Bandhan dressing. Renders null on every other day, so
             the header is back to normal on its own at IST midnight. It sits at
             z-0 behind the two content rows below, which are lifted to z-[1]. */}
         <RakshaBandhanNavAdornment />
 
-        {/* Mobile Header (lg:hidden)
-
-            Three equal-sided columns, NOT flex + justify-between. A middle
-            child is only centred when the two flanking it are the same width,
-            and NotificationBell renders null for guests — so under
-            justify-between the logo sat half a button-width right of centre for
-            a visitor and somewhere else again once the bell appeared. With
-            1fr auto 1fr the side columns are equal by definition, so the logo
-            is exactly centred in both auth states.
-
-            Grid rather than absolute centring so everything stays in flow: a
-            side item that grows pushes nothing on top of the logo.
-
-            The menu button sits on the RIGHT because StaggeredMenu is
-            position="right" — the control and the panel it opens now share an
-            edge. This also puts the DOM order (bell, logo, menu) in step with
-            the visual order, so tab order reads left to right.
-
-            This row used to be strictly 100% opaque so that page content could
-            never show through it while scrolling. It still cannot: the <header>
-            itself carries the same opaque #faf8f5 / zinc-950 behind this row,
-            so the 90% here reveals only the header's own background — the exact
-            same colour — plus the festive layer on the one day it exists. Off
-            the day, this renders pixel-identical to the opaque version. */}
-        <div className="relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
+        {/* Mobile Header (lg:hidden) */}
+        <div className={`relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 ${
+          isGanpati
+            ? "bg-gradient-to-r from-[#fffbf4]/95 via-[#fff5e6]/95 to-[#fffbf4]/95 dark:from-[#1b0c05]/95 dark:via-[#240e06]/95 dark:to-[#1b0c05]/95"
+            : "bg-[#faf8f5]/90 dark:bg-zinc-950/90"
+        }`}>
           <div className="flex items-center gap-2 justify-self-start">
             <NotificationBell />
           </div>

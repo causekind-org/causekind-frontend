@@ -75,6 +75,15 @@ import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePa
 import { ItemDonationScrolly }   from "@/components/home/ItemDonationScrolly";
 import { CTASection }            from "@/components/home/CTASection";
 
+// ── Ganpati Festival parallel components ─────────────────────────────────────
+import { isGanpatiActive }           from "@/lib/isGanpatiActive";
+import { HeroGanpati }               from "@/components/home/HeroGanpati";
+import { LiveNeedsSectionGanpati }   from "@/components/home/LiveNeedsSectionGanpati";
+import { ComingSoonMagnetsGanpati }  from "@/components/home/ComingSoonMagnetsGanpati";
+import { CTASectionGanpati }         from "@/components/home/CTASectionGanpati";
+import { FooterGanpati }             from "@/components/home/FooterGanpati";
+import AudiencePathwaysSectionGanpati from "@/components/home/AudiencePathwaysSectionGanpati";
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatINR(n: number) {
@@ -210,6 +219,14 @@ export default function HomeClient({
   // campaign is on.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
+  // ── Ganpati Festival 11-day skin (14-24 Sept 2026) ─────────────────────────
+  const isGanpati = isGanpatiActive();
+  const HeroComponent = isGanpati ? HeroGanpati : HeroSection;
+  const LiveNeedsComponent = isGanpati ? LiveNeedsSectionGanpati : LiveNeedsSection;
+  const ComingSoonComponent = isGanpati ? ComingSoonMagnetsGanpati : ComingSoonMagnets;
+  const CTAComponent = isGanpati ? CTASectionGanpati : CTASection;
+  const AudiencePathwaysComponent = isGanpati ? AudiencePathwaysSectionGanpati : AudiencePathwaysSection;
+
   // The single need that has gone unclaimed longest. It ends the hero's thread,
   // and is excluded from the section below so the same request does not appear
   // twice within one screen of itself.
@@ -320,7 +337,7 @@ export default function HomeClient({
     : "";
 
   return (
-    <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+    <div className={`ck-home-page ${isGanpati ? "ck-ganpati-active" : ""} bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
       {/* Welcome modal & profile toast for incomplete NGO profiles */}
       {isNgo && userIdentifier && ngoAppStatus !== "SUBMITTED" && (
         <>
@@ -348,7 +365,7 @@ export default function HomeClient({
 
       {/* One responsive front door. Keeping it outside the two legacy layout
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}
-      <HeroSection />
+      <HeroComponent />
 
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
@@ -405,13 +422,13 @@ export default function HomeClient({
             is the whole reason for the condition. */}
         {showAudiencePathways && (
           <>
-            <AudiencePathwaysSection />
+            <AudiencePathwaysComponent />
           </>
         )}
 
 
         {/* Live Needs section — real verified needs across multiple categories */}
-        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
@@ -533,11 +550,15 @@ export default function HomeClient({
 
 
         {/* Coming soon magnets */}
-        <ComingSoonMagnets />
+        <ComingSoonComponent />
+
 
 
         {/* Bottom CTA — hidden when logged in */}
-        <CTASection />
+        <CTAComponent />
+
+        {/* Festive footer on home page during Ganpati theme */}
+        {isGanpati && <FooterGanpati />}
       </div>
 
       {/* ════════════════════════════════════════════════════════════
@@ -635,7 +656,7 @@ export default function HomeClient({
 
         {/* Live Needs section — real verified needs across multiple categories */}
         <div className="-mx-4">
-          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
         </div>
 
         {/* Donor / Donee pathways — guest-only, same condition as the desktop
@@ -655,7 +676,7 @@ export default function HomeClient({
           <>
             <SectionDivider bleed className="-my-5" />
             <div className="-mx-4">
-              <AudiencePathwaysSection tourAnchors />
+              <AudiencePathwaysComponent tourAnchors />
             </div>
           </>
         )}
@@ -668,8 +689,15 @@ export default function HomeClient({
         <SectionDivider bleed className="-my-5" />
 
         <div className="-mx-4">
-          <ComingSoonMagnets />
+          <ComingSoonComponent />
         </div>
+
+        {/* Festive footer on home page during Ganpati theme (mobile tree) */}
+        {isGanpati && (
+          <div className="-mx-4 -mb-2">
+            <FooterGanpati />
+          </div>
+        )}
       </div>
     </div>
   );
