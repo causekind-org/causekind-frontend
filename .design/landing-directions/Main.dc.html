@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .kick { font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .num { font-variant-numeric: tabular-nums; }
+    .hero-edge { border-top: 1px dashed #d9cfbd; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #fbf9f4; color: #1c1917; padding-bottom: 44px">
+
+  <div style="padding: 10px 20px; display: flex; align-items: center; gap: 8px">
+    <span class="hero-edge" style="flex: 1"></span>
+    <span style="font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #b9ae9b">Hero ends here &mdash; unchanged</span>
+    <span class="hero-edge" style="flex: 1"></span>
+  </div>
+
+  <!-- ONE QUESTION, directly under the hero. On a phone the two doors stack, so
+       the top one gets the weight and the second is a real, reachable choice. -->
+  <div style="padding: 28px 20px 0">
+    <h2 style="margin: 0; font-size: 26px; font-weight: 800; line-height: 1.16; letter-spacing: -.025em">Which side of this<br>are you on?</h2>
+    <p style="margin: 10px 0 0; font-size: 14px; line-height: 1.55; color: #57534e; text-wrap: pretty">Pick your half and the rest of the page follows you.</p>
+  </div>
+
+  <div style="display: grid; gap: 12px; padding: 20px 20px 0">
+
+    <div style="border-radius: 22px; background: #1c1917; color: #fff; padding: 22px; position: relative; overflow: hidden">
+      <div style="position: absolute; inset: 0; background: radial-gradient(130% 80% at 85% 0%, rgba(176,74,21,.42), transparent 62%)"></div>
+      <div style="position: relative">
+        <span class="kick" style="color: #f0a06a">I have something</span>
+        <h3 style="margin: 12px 0 0; font-size: 21px; font-weight: 800; line-height: 1.22; letter-spacing: -.015em">There is a cupboard in your house with somebody&#39;s answer in it.</h3>
+        <div style="height: 132px; border-radius: 14px; background: rgba(255,255,255,.07); margin-top: 18px"></div>
+        <div style="margin-top: 18px; display: grid; gap: 11px">
+          <div style="display: flex; gap: 12px; align-items: baseline">
+            <span class="num" style="font-size: 11px; font-weight: 800; color: #8a817a; width: 16px; flex: none">01</span>
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #d6d3d1">Pick an open need it matches. No listing, no photos.</p>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: baseline">
+            <span class="num" style="font-size: 11px; font-weight: 800; color: #8a817a; width: 16px; flex: none">02</span>
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #d6d3d1">We check it against what was asked for.</p>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: baseline">
+            <span class="num" style="font-size: 11px; font-weight: 800; color: #8a817a; width: 16px; flex: none">03</span>
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #d6d3d1">OTP at the door, then a certificate you can check.</p>
+          </div>
+        </div>
+        <div style="margin-top: 22px; height: 50px; border-radius: 13px; background: #fff; color: #1c1917; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Donate an item</div>
+      </div>
+    </div>
+
+    <div style="border-radius: 22px; background: #fff; border: 1px solid #e8e2d5; padding: 22px">
+      <span class="kick" style="color: #b04a15">I need something</span>
+      <h3 style="margin: 12px 0 0; font-size: 21px; font-weight: 800; line-height: 1.22; letter-spacing: -.015em">Ask for the one thing that would change this month.</h3>
+      <p style="margin: 12px 0 0; font-size: 13px; line-height: 1.6; color: #57534e">One form. Our team verifies it before anyone sees it, and looks for a private match first &mdash; the public board is the fallback, not the first step.</p>
+      <div style="margin-top: 18px; height: 50px; border-radius: 13px; border: 1.5px solid #b04a15; color: #b04a15; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Post a need</div>
+    </div>
+  </div>
+
+  <!-- everything below is the selected door's evidence. Sticky switcher. -->
+  <div style="margin-top: 36px; background: rgba(251,249,244,.96); border-top: 1px solid #e8e2d5; border-bottom: 1px solid #e8e2d5; padding: 12px 20px; display: flex; align-items: center; gap: 10px">
+    <span class="kick" style="color: #78716c; flex: none">Showing for</span>
+    <span style="font-size: 13px; font-weight: 800; flex: 1; min-width: 0">people who have something</span>
+    <span style="font-size: 12px; font-weight: 800; color: #b04a15; flex: none">Switch</span>
+  </div>
+
+  <div style="padding: 26px 20px 0">
+    <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.02em; line-height: 1.24">Needs your cupboard might already close</h2>
+    <div style="display: grid; gap: 12px; margin-top: 16px">
+      <div style="background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 16px; display: flex; gap: 14px; align-items: center">
+        <div style="width: 62px; height: 62px; border-radius: 13px; background: #f0ebe1; flex: none"></div>
+        <div style="min-width: 0">
+          <p style="margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3">A wheelchair for Kamla, 68</p>
+          <p style="margin: 5px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Pune &middot; open 12 days</p>
+        </div>
+      </div>
+      <div style="background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 16px; display: flex; gap: 14px; align-items: center">
+        <div style="width: 62px; height: 62px; border-radius: 13px; background: #f0ebe1; flex: none"></div>
+        <div style="min-width: 0">
+          <p style="margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3">4 mattresses for a night shelter</p>
+          <p style="margin: 5px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Pune &middot; open 41 days</p>
+        </div>
+      </div>
+      <div style="background: #fff; border: 1px solid #e8e2d5; border-radius: 20px; padding: 16px; display: flex; gap: 14px; align-items: center">
+        <div style="width: 62px; height: 62px; border-radius: 13px; background: #f0ebe1; flex: none"></div>
+        <div style="min-width: 0">
+          <p style="margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3">40 blankets before winter</p>
+          <p style="margin: 5px 0 0; font-size: 12px; font-weight: 600; color: #78716c">Mumbai &middot; open 3 days</p>
+        </div>
+      </div>
+    </div>
+    <a href="#" style="display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 800; text-decoration: none">All 23 open needs &rarr;</a>
+  </div>
+
+  <div style="padding: 40px 20px 0">
+    <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.02em">What happened to the last one</h2>
+    <div style="margin-top: 16px; border: 1px solid #e8e2d5; border-radius: 20px; overflow: hidden; background: #fff">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr))">
+        <div style="padding: 18px; border-right: 1px solid #f0ebe1; border-bottom: 1px solid #f0ebe1">
+          <p class="num" style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em">1,284</p>
+          <p style="margin: 5px 0 0; font-size: 12px; color: #78716c; font-weight: 600">items handed over</p>
+        </div>
+        <div style="padding: 18px; border-bottom: 1px solid #f0ebe1">
+          <p class="num" style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em">18</p>
+          <p style="margin: 5px 0 0; font-size: 12px; color: #78716c; font-weight: 600">cities</p>
+        </div>
+        <div style="padding: 18px; border-right: 1px solid #f0ebe1">
+          <p class="num" style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em">100%</p>
+          <p style="margin: 5px 0 0; font-size: 12px; color: #78716c; font-weight: 600">confirmed by OTP</p>
+        </div>
+        <div style="padding: 18px">
+          <p class="num" style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em">&#8377;0</p>
+          <p style="margin: 5px 0 0; font-size: 12px; color: #78716c; font-weight: 600">taken from a donor</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":1700}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

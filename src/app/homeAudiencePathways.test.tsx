@@ -20,10 +20,14 @@ import enMessages from "../../messages/en.json";
  * `messages/en.json`. The assertions are therefore on copy a visitor actually
  * reads, not on an identifier a stub happened to carry.
  *
- * <p>The loading case is the one worth keeping. `useAuth` begins at
- * `{ user: null, isLoading: true }` and only then restores the session, so a
- * `!user` check passes during hydration and flashes guest signup CTAs at
- * someone who is already signed in.
+ * <p>The loading case is the one worth keeping. `useAuth` begins with no user
+ * and only then restores the session from storage, so a `!user` check passes
+ * during hydration and flashes guest signup CTAs at someone already signed in.
+ *
+ * <p>The gate is `isRestoring`, NOT `isLoading`. `isLoading` stays true for a
+ * guest until `/users/me` answers over a deliberately cold pool, and gating on
+ * it made a guest watch the whole page rearrange seconds after load. These
+ * cases set both flags so a regression in either direction fails here.
  */
 
 // ── Auth, the thing actually under test ──────────────────────────────────────
@@ -31,6 +35,7 @@ import enMessages from "../../messages/en.json";
 const authState = {
   user: null as { email: string; role: string } | null,
   isLoading: true,
+  isRestoring: true,
 };
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -125,6 +130,7 @@ const headings = () => screen.queryAllByText(/whichever side you're on/i);
 beforeEach(() => {
   authState.user = null;
   authState.isLoading = true;
+  authState.isRestoring = true;
 });
 
 afterEach(() => {
@@ -133,7 +139,7 @@ afterEach(() => {
 
 describe("while auth is still resolving", () => {
   it("renders no guest signup pathway at all", async () => {
-    authState.isLoading = true;
+    authState.isRestoring = true;
     authState.user = null;
 
     await renderHome();
@@ -150,6 +156,7 @@ describe("while auth is still resolving", () => {
 describe("a guest, once auth has resolved", () => {
   beforeEach(() => {
     authState.isLoading = false;
+    authState.isRestoring = false;
     authState.user = null;
   });
 
@@ -161,13 +168,27 @@ describe("a guest, once auth has resolved", () => {
     expect(doneeCtas().length).toBeGreaterThan(0);
   });
 
-  it("gets the section in both responsive trees", async () => {
+  /**
+   * The mobile tree stopped rendering `AudiencePathwaysSection` when the Doors
+   * spine took its job at the top of that column — see `MobileDoors`. Rendering
+   * both would put the same two signup CTAs on the page twice.
+   *
+   * So the section is now desktop-only, and the thing that must exist in BOTH
+   * trees is the guest's way in, not this particular component. Both halves are
+   * asserted here so a regression that drops either one still fails.
+   */
+  it("keeps the pathways section in the desktop tree only", async () => {
     await renderHome();
 
-    // One copy per tree. The desktop tree is `hidden lg:block` and the mobile
-    // one `lg:hidden`, so both exist in the DOM at every viewport and CSS picks
-    // — which is exactly why gating only one of them leaves the bug alive.
-    expect(headings()).toHaveLength(2);
+    expect(headings()).toHaveLength(1);
+  });
+
+  it("gives a guest both doors on mobile, without duplicating the desktop CTAs", async () => {
+    await renderHome();
+
+    // One from the desktop pathways section, one from the mobile doors.
+    expect(donorCtas()).toHaveLength(2);
+    expect(doneeCtas()).toHaveLength(2);
   });
 
   it("puts the guest tour anchor on the mobile instance only", async () => {
@@ -186,6 +207,7 @@ describe("an authenticated user", () => {
   for (const role of roles) {
     it(`sees no guest signup pathway as ${role}`, async () => {
       authState.isLoading = false;
+    authState.isRestoring = false;
       authState.user = { email: "someone@example.invalid", role };
 
       await renderHome();
@@ -202,6 +224,7 @@ describe("an authenticated user", () => {
     // roles circulate both bare and `ROLE_`-prefixed, and a per-role check
     // would start leaking signup CTAs the day a new one is added.
     authState.isLoading = false;
+    authState.isRestoring = false;
     authState.user = { email: "someone@example.invalid", role: "PARTNER_LIAISON" };
 
     await renderHome();
@@ -212,6 +235,7 @@ describe("an authenticated user", () => {
 
   it("removes it from the DOM rather than hiding it visually", async () => {
     authState.isLoading = false;
+    authState.isRestoring = false;
     authState.user = { email: "someone@example.invalid", role: "DONOR" };
 
     const { container } = await renderHome();

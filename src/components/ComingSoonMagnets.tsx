@@ -625,7 +625,7 @@ export function ComingSoonMagnets() {
   return (
     <section
       ref={sectionRef}
-      className="ck-magnets relative w-full bg-[#faf8f5] dark:bg-zinc-950 overflow-hidden"
+      className="ck-magnets relative w-full lg:bg-[#faf8f5] lg:dark:bg-zinc-950 overflow-hidden"
       style={{ padding: "var(--ck-magnets-pad, 80px 24px 96px)" }}
     >
       <style dangerouslySetInnerHTML={{ __html: `
@@ -699,6 +699,15 @@ export function ComingSoonMagnets() {
             --ck-illo-w: 62px;   --ck-illo-h: 47px;
             --ck-poster-title: 11px;
           }
+        }
+        /* Below lg the mobile column in HomeClient owns both the gutter (px-5)
+           and the rhythm (one 44px gap), so this section adds neither. It must
+           come after the 640px block above — that block is a subset of this
+           range, and equal specificity means the later rule wins. The old
+           values are why the mobile stack had a third left edge at 16px and a
+           76px join where every other join was 20px. */
+        @media (max-width: 1023px) {
+          .ck-magnets { --ck-magnets-pad: 0; }
         }
         /* 3x132 + 2x10 = 416px, wider than a 390px phone's content box — so the
            smallest tier shrinks again rather than overflowing. */

@@ -41,6 +41,7 @@
     "localCampaign": "ಸ್ಥಳೀಯ ಪ್ರಚಾರ",
     "ctaBrowse": "ನಿಮ್ಮ ಹತ್ತಿರದ ಅಗತ್ಯಗಳನ್ನು ಅನ್ವೇಷಿಸಿ",
     "ctaStartGiving": "ಈಗಲೇ ಸೈನ್ ಅಪ್ ಮಾಡಿ",
+    "givingPrompt": "ನಿಮ್ಮ ಬಳಿ ನೀಡಲು ಏನಾದರೂ ಇದೆಯೇ?",
     "ctaListItem": "ವಸ್ತುವನ್ನು ಪಟ್ಟಿ ಮಾಡಿ",
     "ctaRequestItem": "ವಸ್ತುವನ್ನು ಕೋರಿ",
     "ctaOpenDashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ತೆರೆಯಿರಿ",

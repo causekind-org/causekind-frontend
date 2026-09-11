@@ -18,6 +18,7 @@ import type { PlatformStats, PublicItemRequest } from "@/lib/api";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
+import LetterSwap from "@/components/LetterSwap";
 
 /**
  * How many needs the homepage grid shows before handing off to /requests.
@@ -31,8 +32,17 @@ const NEEDS_SHOWN = 6;
 
 export function LiveNeedsSection({
   initialRequests = [],
+  animateHeading = false,
 }: {
   initialRequests?: PublicItemRequest[];
+  /**
+   * Flip the heading in a character at a time when this section mounts.
+   *
+   * <p>Opt-in, and only the mobile guest tree passes it. This section renders in
+   * both responsive trees, so animating unconditionally would run the flourish
+   * on desktop too, where nothing swapped and there is no switch to answer.
+   */
+  animateHeading?: boolean;
   /**
    * Still accepted so HomeClient's call site is unchanged, but no longer read:
    * the only thing this section took from it was `totalDonations`, which was
@@ -117,23 +127,27 @@ export function LiveNeedsSection({
       id="live-needs-section"
       aria-labelledby="live-needs-heading"
       // Was #fbf9f4 — a shade off the sections either side. Same one cream.
-      className="relative w-full bg-[var(--surface-cream,#faf8f5)] dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
+      className="relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
     >
       {/* The two warm ambient blurs are gone — see the note in
           ComingSoonMagnets. Every section was tinting its own background a
           slightly different warm colour, which is most of why the page read as
           a stack of separate pages rather than one surface. */}
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-0 lg:px-8">
         {/* ── Section Header ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
           <div className="max-w-2xl min-w-0">
             <h2
               id="live-needs-heading"
-              className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-[1.12]"
+              className="text-2xl lg:text-5xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-[1.12]"
             >
-              Real people. Real needs.{" "}
-              <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]">Right now.</span>
+              {/* Two runs, not one: the accent half has to keep its own colour,
+                  and LetterSwap emits a single coloured span. */}
+              {animateHeading ? <LetterSwap text="Real people. Real needs." /> : "Real people. Real needs."}{" "}
+              <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]">
+                {animateHeading ? <LetterSwap text="Right now." /> : "Right now."}
+              </span>
             </h2>
 
             <p className="mt-3 text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
@@ -151,7 +165,7 @@ export function LiveNeedsSection({
             opposite of what a trust badge is for. Put numbers back when they
             argue for us.
           */}
-          <div className="flex items-center gap-3.5 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-sm border border-stone-200/80 dark:border-zinc-800 rounded-2xl p-4 shrink-0 shadow-xs">
+          <div className="flex items-center gap-3.5 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-sm border border-stone-200/80 dark:border-zinc-800 rounded-[1.25rem] p-4 shrink-0 lg:shadow-xs">
             <div className="w-10 h-10 rounded-xl bg-[var(--ck-home-accent,#b04a15)]/10 dark:bg-[var(--ck-home-accent,#b04a15)]/20 flex items-center justify-center text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] shrink-0">
               <ShieldCheck className="w-5 h-5" aria-hidden="true" />
             </div>
@@ -273,7 +287,7 @@ export function LiveNeedsSection({
                   initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
                   animate={isInView ? { opacity: 1, y: 0 } : undefined}
                   transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06 }}
-                  className="flex flex-col rounded-2xl bg-white/95 dark:bg-zinc-900/95 border border-stone-200/90 dark:border-zinc-800 p-5 sm:p-6 shadow-sm shadow-[var(--ck-home-deep,#431407)]/5 dark:shadow-black/20"
+                  className="flex flex-col rounded-[1.25rem] bg-white dark:bg-zinc-900/95 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 p-4 lg:p-6 lg:bg-white/95 lg:border-stone-200/90 lg:shadow-sm lg:shadow-[var(--ck-home-deep,#431407)]/5 dark:lg:shadow-black/20"
                 >
                   <div className="grow">
                     {/* Top Bar: Category Pill & Urgent Tag */}

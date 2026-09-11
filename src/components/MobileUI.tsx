@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, useTranslations } from "next-intl";
 import { FEATURES } from "@/lib/features";
 import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 import { useNearFooter } from "@/hooks/useNearFooter";
+import { useDraggableBubble } from "@/hooks/useDraggableBubble";
 import { RequestNudge } from "@/components/RequestNudge";
 import GlassSurface from "@/components/GlassSurface";
 
@@ -336,6 +337,92 @@ export function FloatingSupportButton() {
   // app/offers/[id]/handover).
   const onHandover = !!pathname?.endsWith("/handover");
 
+  /*
+    The support bubble can be dragged anywhere and stays where it is dropped.
+
+    52px is its rendered size (`w-13 h-13`). The bottom inset keeps it clear of
+    the mobile dock, which is the one thing on screen it must never hide behind
+    -- `--ck-bottom-chrome` is that dock's height, so it is read rather than
+    guessed, and falls back to the default corner offset when the var is absent.
+  */
+  const {
+    position: bubblePosition,
+    dragging,
+    guardClick,
+    handlers: dragHandlers,
+  } = useDraggableBubble({
+    storageKey: "ck_support_bubble_pos",
+    size: 52,
+    bottomInset: 88,
+  });
+
+  /*
+    Keep the panel fully on screen, wherever the bubble has been dragged.
+
+    An earlier version only ever opened it upward from the bubble, which put it
+    off the top of the screen the moment the bubble was dragged anywhere near
+    it. Direction cannot be assumed: it has to be chosen from the space that is
+    actually available, and that needs the panel's real size, so this measures
+    rather than guesses. `offsetWidth`/`offsetHeight` and not
+    `getBoundingClientRect`, because the closed panel is held at `scale-90` and
+    the rect would report the scaled size.
+
+    Runs in a layout effect so the position is committed in the same frame the
+    panel becomes visible — computing it during render read `window`, which is
+    both an SSR hazard and stale the moment anything moved.
+  */
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    if (!bubblePosition) { setPanelStyle(undefined); return; }
+
+    const place = () => {
+      const el = panelRef.current;
+      if (!el) return;
+      const GAP = 8;
+      const BUBBLE = 52;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+
+      // Above if it fits, otherwise below, otherwise wherever there is more room.
+      const spaceAbove = bubblePosition.y - GAP;
+      const spaceBelow = vh - (bubblePosition.y + BUBBLE) - GAP;
+      const openUp = h <= spaceAbove || spaceAbove >= spaceBelow;
+
+      let top = openUp ? bubblePosition.y - GAP - h : bubblePosition.y + BUBBLE + GAP;
+      top = Math.min(Math.max(top, GAP), Math.max(GAP, vh - h - GAP));
+
+      // Align to the bubble's side, then clamp — alignment is a preference,
+      // staying on screen is not.
+      const onRight = bubblePosition.x + BUBBLE / 2 > vw / 2;
+      let left = onRight ? bubblePosition.x + BUBBLE - w : bubblePosition.x;
+      left = Math.min(Math.max(left, GAP), Math.max(GAP, vw - w - GAP));
+
+      // Grow out of the bubble itself, not out of a corner it no longer sits in.
+      const originX = Math.min(Math.max(bubblePosition.x + BUBBLE / 2 - left, 0), w);
+      const originY = openUp ? h : 0;
+
+      setPanelStyle({
+        top,
+        left,
+        right: "auto",
+        bottom: "auto",
+        transformOrigin: `${originX}px ${originY}px`,
+      });
+    };
+
+    place();
+    window.addEventListener("resize", place);
+    window.visualViewport?.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.visualViewport?.removeEventListener("resize", place);
+    };
+  }, [bubblePosition, open]);
+
   useEffect(() => {
     // Client-only, post-mount — window.location isn't available during
     // server render, so computing this at render time (instead of here)
@@ -392,7 +479,10 @@ export function FloatingSupportButton() {
 
       {/* Popover panel */}
       <div
-        className={`floating-support-item fixed bottom-[9.5rem] right-5 lg:bottom-24 z-50 w-60
+        ref={panelRef}
+        style={panelStyle}
+        className={`floating-support-item fixed z-50 w-60
+          ${panelStyle ? "" : "bottom-[9.5rem] right-5 lg:bottom-24"}
           bg-white/75 dark:bg-zinc-900/70 backdrop-blur-md
           rounded-2xl shadow-2xl border border-white/50 dark:border-white/10
           transition-all duration-300 origin-bottom-right
@@ -430,17 +520,30 @@ export function FloatingSupportButton() {
         </div>
       </div>
 
-      {/* Trigger button */}
+      {/* Trigger button.
+
+          Draggable. `position` is null until the viewer actually moves it, and
+          while it is null the button keeps its Tailwind corner classes — so the
+          default placement stays exactly where it was and only a viewer who has
+          dragged it gets inline coordinates.
+
+          `touch-none` matters: without it a drag on a touch screen scrolls the
+          page instead of moving the button. */}
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={guardClick(() => setOpen(v => !v))}
+        {...dragHandlers}
         aria-label={open ? t("closeSupport") : t("openSupport")}
-        className={`floating-support-item fixed bottom-[7.25rem] right-5 lg:bottom-8 z-50
+        style={bubblePosition ? { left: bubblePosition.x, top: bubblePosition.y, right: "auto", bottom: "auto" } : undefined}
+        className={`floating-support-item fixed z-50 touch-none
+                   ${bubblePosition ? "" : "bottom-[7.25rem] right-5 lg:bottom-8"}
+                   ${dragging ? "cursor-grabbing" : "cursor-grab"}
                    w-13 h-13 rounded-full
                    bg-[#1e3a60]/65 backdrop-blur-md
                    shadow-[0_8px_32px_-4px_rgba(30,58,96,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]
                    border border-white/20 dark:border-white/12
                    flex items-center justify-center
-                   active:scale-95 transition-all duration-200
+                   ${/* No transition mid-drag, or the button lags the finger. */ ""}
+                   ${dragging ? "" : "active:scale-95 transition-all duration-200"}
                    support-btn-ripple
                    ${menuOpen ? "menu-open" : ""}`}
       >
