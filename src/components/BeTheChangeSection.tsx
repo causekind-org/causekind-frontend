@@ -9,7 +9,7 @@ import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { MATCH_RADIUS_KM } from "@/lib/constants";
 import { isGanpatiActive } from "@/lib/isGanpatiActive";
-import { RangoliBackdrop } from "@/components/home/GanpatiVisuals";
+import { RangoliBackdrop, FloatingFestiveBadge } from "@/components/home/GanpatiVisuals";
 
 /* ─── Brand tokens ───────────────────────────────────────────────────
    This band used to flood the logo's ink (#1e3a60) at `lg` while keeping a
@@ -257,6 +257,15 @@ export function BeTheChangeSection({
 
             {/* ── Headline ── */}
             <div>
+              {isGanpati && (
+                <div className="mb-3.5">
+                  <FloatingFestiveBadge
+                    icon={<span className="text-sm">🐘</span>}
+                    text="Ganesha's Grace"
+                    delay={1.1}
+                  />
+                </div>
+              )}
               <p
                 className="mb-4 text-[11px] font-extrabold uppercase tracking-[0.24em]"
                 style={{ color: "var(--ck-home-ink,#b04a15)" }}

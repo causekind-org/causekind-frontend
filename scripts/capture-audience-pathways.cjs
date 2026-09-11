@@ -10,7 +10,7 @@ async function capture() {
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1440, height: 1050, deviceScaleFactor: 1 });
-    await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto('http://127.0.0.1:3000', { waitUntil: 'domcontentloaded', timeout: 30000 });
     await new Promise(r => setTimeout(r, 4000));
     await page.addStyleTag({
       content: `

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -328,6 +329,32 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ── Festive Floating Pill Badges (Ganpati Theme) ── */
+@keyframes festiveBadgeFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-festive-float {
+  animation: festiveBadgeFloat 3.8s ease-in-out infinite;
+}
+
+.animate-festive-float-delayed {
+  animation: festiveBadgeFloat 4.2s ease-in-out 1.2s infinite;
+}
+
+.animate-festive-float-slow {
+  animation: festiveBadgeFloat 4.6s ease-in-out 2.4s infinite;
+}
+
+.font-devanagari {
+  font-family: 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Kokila', 'Utsaah', 'Arial Unicode MS', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* The instrument face turning inside the ten-kilometre ring. Used by

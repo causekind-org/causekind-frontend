@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import AudiencePathwayPanelGanpati from "./AudiencePathwayPanelGanpati";
-import { ModakIcon, DiyaIcon, GhantiIcon, LotusIcon, RangoliBorderStrip } from "./GanpatiVisuals";
+import { ModakIcon, DiyaIcon, GhantiIcon, LotusIcon, RangoliBorderStrip, FloatingFestiveBadge } from "./GanpatiVisuals";
 
 /**
  * AudiencePathwaysSectionGanpati — Festive Ganeshotsav edition of "Two Sides, One Platform".
@@ -130,6 +130,13 @@ export default function AudiencePathwaysSectionGanpati({
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
+          <div className="flex items-center justify-center mb-2.5">
+            <FloatingFestiveBadge
+              icon={<Sparkles className="size-3.5 text-amber-500" />}
+              text="Shubh Labh ✨"
+              delay={0.5}
+            />
+          </div>
           <p className="text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-[#ea580c] dark:text-[#f59e0b]">
             {t("eyebrow")}
           </p>

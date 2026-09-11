@@ -113,7 +113,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Background server validation — evicts stale localStorage if cookie expired
     const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-    fetch(`${BASE}/api/v1/users/me`, { credentials: "include" })
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 2000) : null;
+
+    fetch(`${BASE}/api/v1/users/me`, {
+      credentials: "include",
+      signal: controller?.signal,
+    })
       .then(res => {
         if (res.ok) return res.json();
         if (res.status === 401) {
