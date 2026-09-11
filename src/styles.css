@@ -2400,16 +2400,33 @@ body.mobile-menu-open {
     overflow-wrap: anywhere;
   }
   .ck-showcase-hero .ck-hero-actions { margin-top: 1.25rem; gap: 0.25rem; }
+  /*
+    Outlined, not filled.
+
+    It shipped as a near-white #fff6ed fill, which measured 17.6:1 against the
+    hero's dark ground while the primary's #ff9f66 measured 9.3:1 — the
+    secondary action was almost twice as loud as the one we want pressed. On a
+    dark hero the brightest element wins regardless of what the copy says, so
+    the fill came off rather than the primary getting louder: keeping the peach
+    is what keeps this hero warm.
+
+    The ring is a box-shadow, not a border, so it does not add to the 44px
+    height or shift the label off-centre.
+  */
   .ck-showcase-hero .ck-hero-secondary-cta {
     min-height: 2.75rem;
     padding: 0.625rem 1rem;
     border-radius: 0.75rem;
-    color: #19120d;
-    background: #fff6ed;
+    color: #fff6ed;
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px rgb(255 246 237 / 0.45);
     font-size: 0.8125rem;
     letter-spacing: 0;
   }
-  .ck-showcase-hero .ck-hero-secondary-cta:hover { background: #fff; }
+  .ck-showcase-hero .ck-hero-secondary-cta:hover {
+    background: rgb(255 246 237 / 0.1);
+    box-shadow: inset 0 0 0 1.5px rgb(255 246 237 / 0.7);
+  }
   .ck-showcase-hero .ck-hero-primary-cta,
   .ck-showcase-hero .ck-hero-auth-placeholder {
     order: 2;
@@ -2462,12 +2479,20 @@ body.mobile-menu-open {
        order and put the full-width sizing back. */
     padding-block: 0.625rem;
     border-radius: 0.75rem;
-    background: var(--ck-home-highlight, #ff9f66);
-    color: #19120d;
+    /*
+      The brand accent, not the highlight tint. #ff9f66 is the pale-on-dark
+      variant and it made the one button we want pressed read as a pastel.
+      Terracotta with a white label measures 5.47:1 on the text and 3.44:1 for
+      the block against the hero's ground — past both floors — so there is no
+      legibility argument for the tint here. The tint keeps its job on the
+      headline accent, where it is type on the photo rather than a filled shape.
+    */
+    background: var(--ck-home-accent, #b04a15);
+    color: #fff6ed;
     font-weight: 800;
     box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
   }
-  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: #ffb887; }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: var(--ck-home-hover, #963c0d); }
   .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-signup-prompt { display: none; }
   /*
     No arrows on the guest pair, and this rule has to come after the one above
