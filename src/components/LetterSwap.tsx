@@ -54,7 +54,15 @@ export function LetterSwap({
       {/* The accessible copy — one string, not a pile of glyphs. */}
       <span className="sr-only">{text}</span>
 
-      <AnimatePresence mode="wait" initial={false}>
+      {/*
+        `initial` is left on, and that is the whole reason the headings move.
+
+        With `initial={false}` a mount produces no animation — only a change of
+        `text` does. The switcher label changes text, so it flipped; the headings
+        never change theirs, they only mount when the door remounts the slot, so
+        they silently did nothing at all. Structure was there, motion was not.
+      */}
+      <AnimatePresence mode="wait">
         <motion.span
           key={text}
           aria-hidden
