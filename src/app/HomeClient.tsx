@@ -39,6 +39,7 @@ import { Sparkles, Heart, HandCoins, Coins, Users, ArrowRight } from "lucide-rea
 import { FEATURES } from "@/lib/features";
 import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
 import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
+import { GanpatiStrip } from "@/components/GanpatiStrip";
 import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
 
 import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
@@ -56,6 +57,18 @@ import DoneeDoorEvidence      from "@/components/audience-pathways/DoneeDoorEvid
 import DoorSwapReveal        from "@/components/audience-pathways/DoorSwapReveal";
 import { ItemDonationScrolly }   from "@/components/home/ItemDonationScrolly";
 import { CTASection }            from "@/components/home/CTASection";
+
+// ── Ganpati Festival parallel components ─────────────────────────────────────
+// Each one is a sibling of the section it stands in for, selected at render
+// time by isGanpatiActive(). Nothing here mutates the standard components, so
+// when the window closes the page returns to its normal self with no cleanup.
+import { isGanpatiActive }           from "@/lib/isGanpatiActive";
+import { HeroGanpati }               from "@/components/home/HeroGanpati";
+import { LiveNeedsSectionGanpati }   from "@/components/home/LiveNeedsSectionGanpati";
+import { ComingSoonMagnetsGanpati }  from "@/components/home/ComingSoonMagnetsGanpati";
+import { CTASectionGanpati }         from "@/components/home/CTASectionGanpati";
+import { FooterGanpati }             from "@/components/home/FooterGanpati";
+import AudiencePathwaysSectionGanpati from "@/components/home/AudiencePathwaysSectionGanpati";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -204,6 +217,14 @@ export default function HomeClient({
   // campaign is on.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
+  // ── Ganpati Festival skin (14–25 Sept 2026 IST) ────────────────────────────
+  const isGanpati = isGanpatiActive();
+  const HeroComponent = isGanpati ? HeroGanpati : HeroSection;
+  const LiveNeedsComponent = isGanpati ? LiveNeedsSectionGanpati : LiveNeedsSection;
+  const ComingSoonComponent = isGanpati ? ComingSoonMagnetsGanpati : ComingSoonMagnets;
+  const CTAComponent = isGanpati ? CTASectionGanpati : CTASection;
+  const AudiencePathwaysComponent = isGanpati ? AudiencePathwaysSectionGanpati : AudiencePathwaysSection;
+
   // The single need that has gone unclaimed longest. It ends the hero's thread,
   // and is excluded from the section below so the same request does not appear
   // twice within one screen of itself.
@@ -220,7 +241,7 @@ export default function HomeClient({
   ];
 
   return (
-    <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+    <div className={`ck-home-page ${isGanpati ? "ck-ganpati-active" : ""} bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders
           on "/" and nowhere else, so login, dashboard, requests, profile and
@@ -230,10 +251,11 @@ export default function HomeClient({
 
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
+      <GanpatiStrip />
 
       {/* One responsive front door. Keeping it outside the two legacy layout
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}
-      <HeroSection />
+      <HeroComponent />
 
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
@@ -290,13 +312,13 @@ export default function HomeClient({
             is the whole reason for the condition. */}
         {showAudiencePathways && (
           <>
-            <AudiencePathwaysSection />
+            <AudiencePathwaysComponent />
           </>
         )}
 
 
         {/* Live Needs section — real verified needs across multiple categories */}
-        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
@@ -418,11 +440,12 @@ export default function HomeClient({
 
 
         {/* Coming soon magnets */}
-        <ComingSoonMagnets />
+        <ComingSoonComponent />
 
 
         {/* Bottom CTA — hidden when logged in */}
-        <CTASection />
+        <CTAComponent />
+        {isGanpati && <FooterGanpati />}
       </div>
 
       {/* ════════════════════════════════════════════════════════════
@@ -489,7 +512,7 @@ export default function HomeClient({
             padding and background at this width (see LiveNeedsSection), so it
             sits on this column's px-5 gutter like everything else. */}
         {doorIsDonor && (
-          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} animateHeading />
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} animateHeading />
         )}
 
         {/* Mobile Campaigns horizontal scroll */}
@@ -590,7 +613,7 @@ export default function HomeClient({
             Cut from the guest page for the same reason as Be the Change: it is
             a fourth restatement of what the doors and the board already say.
             Signed-in visitors keep it. */}
-        {!showAudiencePathways && <ComingSoonMagnets />}
+        {!showAudiencePathways && <ComingSoonComponent />}
       </div>
     </div>
   );

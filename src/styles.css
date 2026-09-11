@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -328,6 +329,32 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ── Festive Floating Pill Badges (Ganpati Theme) ── */
+@keyframes festiveBadgeFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-festive-float {
+  animation: festiveBadgeFloat 3.8s ease-in-out infinite;
+}
+
+.animate-festive-float-delayed {
+  animation: festiveBadgeFloat 4.2s ease-in-out 1.2s infinite;
+}
+
+.animate-festive-float-slow {
+  animation: festiveBadgeFloat 4.6s ease-in-out 2.4s infinite;
+}
+
+.font-devanagari {
+  font-family: 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Kokila', 'Utsaah', 'Arial Unicode MS', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* The instrument face turning inside the ten-kilometre ring. Used by
@@ -1888,7 +1915,6 @@ body.mobile-menu-open {
   .faq-answer-enter,
   .mobile-donate-pulse,
   .support-btn-ripple,
-  .ck-cta-live::before,
   .ck-handover-fab-halo,
   .stats-ticker-track,
   .animate-stats-ticker,
@@ -2239,66 +2265,6 @@ body.mobile-menu-open {
   .ck-showcase-hero .ck-hero-photo-clip {
     border-radius: 0;
   }
-
-  /*
-    Melt the hero's bottom edge into the section below it.
-
-    Full-bleed photograph meeting flat cream produced a hard horizontal cut
-    across the page. This ramps the photograph's own colour into the next
-    section's ground and blurs it on the way, so the two read as one surface
-    instead of two stacked blocks.
-
-    Height is in `svh`, and that is not decoration: the band has to stay BELOW
-    the trust band. Those labels are cream on the dark photo, and a cream
-    gradient rising behind them would take their contrast to nothing. A fixed
-    rem height that cleared them on a 844px phone would sit right through them
-    on a 568px one.
-
-    `z-index: 5` puts it above the photograph and below `.ck-hero-frame`'s
-    `z-10`, so the copy is never washed out even if the two ever do meet.
-  */
-  /*
-    A real element, not a `::after` on the hero.
-
-    The pseudo-element route was tried first and silently lost: it computed
-    exactly right — 375x169 at `bottom: 0`, `z-index: 5`, `display: block` — and
-    never painted a pixel, buried under one of the hero's own opaque layers.
-    A sibling inside `.ck-lead-hero-stage` can be pointed at with
-    `elementsFromPoint` and proven to be on top, which is the whole reason it is
-    markup rather than CSS.
-
-    Height is in `svh` and that is not decoration: the band has to stay BELOW
-    the trust band. Those labels are cream on the dark photograph, and a cream
-    gradient rising behind them would take their contrast to nothing. A fixed
-    rem height that cleared them on an 844px phone would sit through them on a
-    568px one.
-  */
-  .ck-hero-seam-fade {
-    display: block;
-    height: clamp(2.5rem, 9svh, 6rem);
-    background: linear-gradient(
-      to bottom,
-      rgb(251 249 244 / 0) 0%,
-      rgb(251 249 244 / 0.18) 42%,
-      rgb(251 249 244 / 0.62) 74%,
-      rgb(251 249 244) 100%
-    );
-    backdrop-filter: blur(7px);
-    -webkit-backdrop-filter: blur(7px);
-    mask-image: linear-gradient(to bottom, transparent, #000 38%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 38%);
-  }
-
-  /* Dark mode lands on zinc-950, which is what the mobile column paints there. */
-  .dark .ck-hero-seam-fade {
-    background: linear-gradient(
-      to bottom,
-      rgb(9 9 11 / 0) 0%,
-      rgb(9 9 11 / 0.18) 42%,
-      rgb(9 9 11 / 0.62) 74%,
-      rgb(9 9 11) 100%
-    );
-  }
 }
 
 .ck-hero-photo-image {
@@ -2400,116 +2366,6 @@ body.mobile-menu-open {
   to { stroke-dashoffset: -108; }
 }
 
-/* ── Live primary CTAs ──────────────────────────────────────────────────────
-   A continuously travelling highlight on the landing page's filled primary
-   actions, and only those.
-
-   The note above records two infinite loops being removed from these very
-   buttons, and this puts one back. That is Sushil's call, asked for twice on
-   2026-09-11 with the removal note in front of him. What is NOT back is the
-   part that actually broke: two cycles running at once and drifting in and out
-   of phase with each other.
-
-   - ONE cycle, never two. This travels on `::before`; the one-shot hover sheen
-     owns `::after`, and the loop pauses under the pointer so the hover sweep
-     reads on its own. The overlap is what failed, not the movement.
-   - Low contrast on purpose. It is a sheen passing over the fill, not a strobe;
-     the alpha is what keeps a permanent loop from becoming noise.
-   - Filled primaries only. If everything moves, nothing is primary.
-   - Off entirely under `prefers-reduced-motion`.
-
-   If this ever reads as a rendering glitch again, the fix is the alpha and the
-   period — or going back to a long-parked glint — not adding a second cycle. */
-@keyframes ck-cta-live-sheen {
-  0%   { opacity: 0; transform: translateX(-140%) skewX(-12deg); }
-  14%  { opacity: 1; }
-  86%  { opacity: 1; }
-  100% { opacity: 0; transform: translateX(140%) skewX(-12deg); }
-}
-
-.ck-cta-live {
-  position: relative;
-  overflow: hidden;
-}
-
-.ck-cta-live::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 32%,
-    rgb(255 255 255 / 0.34) 50%,
-    transparent 68%
-  );
-  animation: ck-cta-live-sheen 3.2s ease-in-out infinite;
-}
-
-/* A dark label on a light fill needs a darker glint to register at all. */
-.ck-cta-live[data-cta-live="dark"]::before {
-  background: linear-gradient(
-    100deg,
-    transparent 32%,
-    rgb(28 25 23 / 0.14) 50%,
-    transparent 68%
-  );
-}
-
-.ck-cta-live:hover::before,
-.ck-cta-live:focus-visible::before {
-  animation-play-state: paused;
-  opacity: 0;
-}
-
-/*
-  The one-shot hover sweep, for the CTAs that did not already have one.
-
-  `.ck-hero-primary-cta` is excluded on purpose: it carries its own `::after`
-  sheen, tuned with its own gradient and its paired icon lift, and a second rule
-  at equal specificity would come down to source order. Without this the Doors
-  and donee CTAs had a dead hover — the loop paused and nothing took its place.
-*/
-.ck-cta-live:not(.ck-hero-primary-cta)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    108deg,
-    transparent 22%,
-    rgb(255 255 255 / 0.06) 39%,
-    rgb(255 255 255 / 0.42) 50%,
-    rgb(255 255 255 / 0.06) 61%,
-    transparent 78%
-  );
-}
-
-.ck-cta-live[data-cta-live="dark"]:not(.ck-hero-primary-cta)::after {
-  background: linear-gradient(
-    108deg,
-    transparent 22%,
-    rgb(28 25 23 / 0.03) 39%,
-    rgb(28 25 23 / 0.18) 50%,
-    rgb(28 25 23 / 0.03) 61%,
-    transparent 78%
-  );
-}
-
-/* One pass, on intent — the same timing the hero pair already uses. */
-.ck-cta-live:not(.ck-hero-primary-cta):hover::after,
-.ck-cta-live:not(.ck-hero-primary-cta):focus-visible::after {
-  animation: ck-hero-cta-sheen 0.72s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-/* The hero's primary is only a filled button for a guest. Signed in it is a
-   transparent text link, and a sheen crossing bare text reads as a smudge. */
-.ck-hero-actions:not([data-guest="true"]) .ck-cta-live::before {
-  display: none;
-}
-
 @keyframes ck-hero-cta-sheen {
   from { opacity: 1; transform: translateX(-135%); }
   to   { opacity: 1; transform: translateX(135%); }
@@ -2560,22 +2416,7 @@ body.mobile-menu-open {
     max-width: 44rem;
     align-self: center;
     padding-inline: max(clamp(1.25rem, 6vw, 2rem), env(safe-area-inset-left), env(safe-area-inset-right));
-    /*
-      This number decides whether the hero fits on screen at all.
-
-      At 25svh the copy stack made the hero 677px tall inside a 634px viewport,
-      so its bottom padding — the 108px that is meant to hold the trust band
-      clear of the mobile dock — sat below the fold, and the band ran under the
-      dock by 7px. It was not a padding bug: the hero was simply taller than the
-      screen, and a visitor never saw the whole thing without scrolling.
-
-      Measured on a 634px viewport, 16svh is the point where the content stops
-      driving the height and `.ck-lead-hero-stage`'s `min-height: 100svh` takes
-      over. 15svh keeps a little slack for a longer headline or a fallback font.
-      Lowering it further does not shrink the hero — it only shows more
-      photograph above the copy.
-    */
-    padding-top: calc(var(--ck-nav-h, 4.25rem) + clamp(5rem, 15svh, 14rem));
+    padding-top: calc(var(--ck-nav-h, 4.25rem) + clamp(7rem, 25svh, 18rem));
     padding-bottom: calc(max(var(--ck-bottom-chrome, 0px), env(safe-area-inset-bottom)) + 1rem);
   }
   .ck-showcase-hero .ck-hero-headline {
@@ -2586,33 +2427,16 @@ body.mobile-menu-open {
     overflow-wrap: anywhere;
   }
   .ck-showcase-hero .ck-hero-actions { margin-top: 1.25rem; gap: 0.25rem; }
-  /*
-    Outlined, not filled.
-
-    It shipped as a near-white #fff6ed fill, which measured 17.6:1 against the
-    hero's dark ground while the primary's #ff9f66 measured 9.3:1 — the
-    secondary action was almost twice as loud as the one we want pressed. On a
-    dark hero the brightest element wins regardless of what the copy says, so
-    the fill came off rather than the primary getting louder: keeping the peach
-    is what keeps this hero warm.
-
-    The ring is a box-shadow, not a border, so it does not add to the 44px
-    height or shift the label off-centre.
-  */
   .ck-showcase-hero .ck-hero-secondary-cta {
     min-height: 2.75rem;
     padding: 0.625rem 1rem;
     border-radius: 0.75rem;
-    color: #fff6ed;
-    background: transparent;
-    box-shadow: inset 0 0 0 1.5px rgb(255 246 237 / 0.45);
+    color: #19120d;
+    background: #fff6ed;
     font-size: 0.8125rem;
     letter-spacing: 0;
   }
-  .ck-showcase-hero .ck-hero-secondary-cta:hover {
-    background: rgb(255 246 237 / 0.1);
-    box-shadow: inset 0 0 0 1.5px rgb(255 246 237 / 0.7);
-  }
+  .ck-showcase-hero .ck-hero-secondary-cta:hover { background: #fff; }
   .ck-showcase-hero .ck-hero-primary-cta,
   .ck-showcase-hero .ck-hero-auth-placeholder {
     order: 2;
@@ -2665,20 +2489,12 @@ body.mobile-menu-open {
        order and put the full-width sizing back. */
     padding-block: 0.625rem;
     border-radius: 0.75rem;
-    /*
-      The brand accent, not the highlight tint. #ff9f66 is the pale-on-dark
-      variant and it made the one button we want pressed read as a pastel.
-      Terracotta with a white label measures 5.47:1 on the text and 3.44:1 for
-      the block against the hero's ground — past both floors — so there is no
-      legibility argument for the tint here. The tint keeps its job on the
-      headline accent, where it is type on the photo rather than a filled shape.
-    */
-    background: var(--ck-home-accent, #b04a15);
-    color: #fff6ed;
+    background: var(--ck-home-highlight, #ff9f66);
+    color: #19120d;
     font-weight: 800;
     box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
   }
-  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: var(--ck-home-hover, #963c0d); }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: #ffb887; }
   .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-signup-prompt { display: none; }
   /*
     No arrows on the guest pair, and this rule has to come after the one above
@@ -2756,16 +2572,6 @@ body.mobile-menu-open {
 
   .ck-showcase-hero .ck-hero-photo-shell {
     min-height: 6.5rem;
-  }
-
-  /*
-    Short phones need the copy higher still. At 320x568 the 15svh above left the
-    hero 36px past the fold and the trust band sitting exactly on the dock's top
-    edge — clearing it by nothing at all. There is no slack to spend on
-    photograph here; the copy has to start sooner.
-  */
-  .ck-showcase-hero .ck-hero-copy {
-    padding-top: calc(var(--ck-nav-h, 4.25rem) + clamp(2.5rem, 8svh, 6rem));
   }
 }
 
