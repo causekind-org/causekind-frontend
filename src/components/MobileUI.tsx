@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { FEATURES } from "@/lib/features";
 import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 import { useNearFooter } from "@/hooks/useNearFooter";
+import { useDraggableBubble } from "@/hooks/useDraggableBubble";
 import { RequestNudge } from "@/components/RequestNudge";
 import GlassSurface from "@/components/GlassSurface";
 
@@ -336,6 +337,48 @@ export function FloatingSupportButton() {
   // app/offers/[id]/handover).
   const onHandover = !!pathname?.endsWith("/handover");
 
+  /*
+    The support bubble can be dragged anywhere and stays where it is dropped.
+
+    52px is its rendered size (`w-13 h-13`). The bottom inset keeps it clear of
+    the mobile dock, which is the one thing on screen it must never hide behind
+    -- `--ck-bottom-chrome` is that dock's height, so it is read rather than
+    guessed, and falls back to the default corner offset when the var is absent.
+  */
+  const {
+    position: bubblePosition,
+    dragging,
+    guardClick,
+    handlers: dragHandlers,
+  } = useDraggableBubble({
+    storageKey: "ck_support_bubble_pos",
+    size: 52,
+    bottomInset: 88,
+  });
+
+  /*
+    The panel hangs off whichever corner the bubble now sits in.
+
+    It opens upward from the bubble, and flips to the bubble's own side so it
+    never opens off-screen: past the halfway line it is right-aligned and scales
+    out of its bottom-right corner, before it the mirror. Untouched bubble means
+    untouched panel — both keep their original classes.
+  */
+  const panelStyle: React.CSSProperties | undefined = bubblePosition
+    ? (() => {
+        const viewportW = typeof window === "undefined" ? 0 : window.innerWidth;
+        const viewportH = typeof window === "undefined" ? 0 : window.innerHeight;
+        const onRight = bubblePosition.x + 26 > viewportW / 2;
+        return {
+          top: "auto",
+          bottom: Math.max(8, viewportH - bubblePosition.y + 8),
+          left: onRight ? "auto" : Math.max(8, bubblePosition.x),
+          right: onRight ? Math.max(8, viewportW - bubblePosition.x - 52) : "auto",
+          transformOrigin: onRight ? "bottom right" : "bottom left",
+        };
+      })()
+    : undefined;
+
   useEffect(() => {
     // Client-only, post-mount — window.location isn't available during
     // server render, so computing this at render time (instead of here)
@@ -392,7 +435,9 @@ export function FloatingSupportButton() {
 
       {/* Popover panel */}
       <div
-        className={`floating-support-item fixed bottom-[9.5rem] right-5 lg:bottom-24 z-50 w-60
+        style={panelStyle}
+        className={`floating-support-item fixed z-50 w-60
+          ${panelStyle ? "" : "bottom-[9.5rem] right-5 lg:bottom-24"}
           bg-white/75 dark:bg-zinc-900/70 backdrop-blur-md
           rounded-2xl shadow-2xl border border-white/50 dark:border-white/10
           transition-all duration-300 origin-bottom-right
@@ -430,17 +475,30 @@ export function FloatingSupportButton() {
         </div>
       </div>
 
-      {/* Trigger button */}
+      {/* Trigger button.
+
+          Draggable. `position` is null until the viewer actually moves it, and
+          while it is null the button keeps its Tailwind corner classes — so the
+          default placement stays exactly where it was and only a viewer who has
+          dragged it gets inline coordinates.
+
+          `touch-none` matters: without it a drag on a touch screen scrolls the
+          page instead of moving the button. */}
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={guardClick(() => setOpen(v => !v))}
+        {...dragHandlers}
         aria-label={open ? t("closeSupport") : t("openSupport")}
-        className={`floating-support-item fixed bottom-[7.25rem] right-5 lg:bottom-8 z-50
+        style={bubblePosition ? { left: bubblePosition.x, top: bubblePosition.y, right: "auto", bottom: "auto" } : undefined}
+        className={`floating-support-item fixed z-50 touch-none
+                   ${bubblePosition ? "" : "bottom-[7.25rem] right-5 lg:bottom-8"}
+                   ${dragging ? "cursor-grabbing" : "cursor-grab"}
                    w-13 h-13 rounded-full
                    bg-[#1e3a60]/65 backdrop-blur-md
                    shadow-[0_8px_32px_-4px_rgba(30,58,96,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]
                    border border-white/20 dark:border-white/12
                    flex items-center justify-center
-                   active:scale-95 transition-all duration-200
+                   ${/* No transition mid-drag, or the button lags the finger. */ ""}
+                   ${dragging ? "" : "active:scale-95 transition-all duration-200"}
                    support-btn-ripple
                    ${menuOpen ? "menu-open" : ""}`}
       >
