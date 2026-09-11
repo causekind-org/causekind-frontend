@@ -89,10 +89,10 @@ export function HeroGanpati() {
 
       {/* Frame: Proven container width matching original HeroSection.tsx */}
       <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full max-w-[1920px]">
-        
+
         {/* Main Stage: Balanced 2-column grid */}
         <div className="ck-lead-hero-stage relative grid min-w-0 rounded-3xl bg-[#fffaf3]/95 border border-amber-200/70 shadow-[0_16px_50px_rgba(217,119,6,0.12)] dark:bg-[#1a0c06]/95 dark:border-amber-900/40 dark:shadow-[0_16px_50px_rgba(0,0,0,0.5)] lg:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)] overflow-hidden">
-          
+
           {/* Subtle Sacred Rangoli / Mandala Watermark Backdrop (6-8% opacity) */}
           <div className="pointer-events-none absolute -left-12 top-1/2 -translate-y-1/2 size-[480px] lg:size-[560px] text-amber-600/7 dark:text-amber-400/8 z-0">
             <RangoliBackdrop className="size-full" />
@@ -100,7 +100,7 @@ export function HeroGanpati() {
 
           {/* Left Copy Column: Sits close to the toran without dead space */}
           <div className="ck-hero-copy relative z-10 flex min-w-0 flex-col justify-start px-4 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-6 lg:px-0 lg:pt-6 lg:pb-10 lg:pl-[clamp(2rem,3.2vw,4.2rem)] lg:pr-[clamp(1.5rem,2.5vw,2.5rem)]">
-            
+
             {/* 1. Eyebrow */}
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
               <ModakIcon className="size-4.5 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -190,7 +190,7 @@ export function HeroGanpati() {
 
           {/* Right Column: Kept intact for future illustration placement */}
           <div className="relative hidden lg:flex lg:min-h-[560px] min-w-0 items-center justify-center overflow-hidden lg:rounded-r-3xl bg-gradient-to-br from-[#fff2de]/85 via-[#fde8cf]/75 to-[#fed7aa]/65 dark:from-[#2a1309]/85 dark:via-[#1e0d05]/75 dark:to-[#170802]/65 p-3 sm:p-5 lg:p-8">
-            
+
             {/* Badges */}
             <div className="absolute top-6 left-8 hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-stone-900/95 shadow-md border border-amber-300/50 text-xs font-black text-amber-800 dark:text-amber-300 z-20">
               <ModakIcon className="size-4" />
@@ -202,7 +202,7 @@ export function HeroGanpati() {
               <span>Auspicious Giving</span>
             </div>
 
-            {/* Ganpati & Mushak illustration removed for now per user request */}
+            {/* Ganpati & Mushak illustration removed per user request */}
             {/* <GanpatiHeroIllo /> */}
           </div>
 

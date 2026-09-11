@@ -50,6 +50,7 @@ import { FEATURES } from "@/lib/features";
 import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
 import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
 import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
+import { GanpatiStrip } from "@/components/GanpatiStrip";
 
 import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
 import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-bandhan";
@@ -362,6 +363,7 @@ export default function HomeClient({
 
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
+      <GanpatiStrip />
 
       {/* One responsive front door. Keeping it outside the two legacy layout
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}

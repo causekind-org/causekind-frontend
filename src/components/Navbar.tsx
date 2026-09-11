@@ -7,6 +7,7 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 import SpecularButton from "@/components/SpecularButton";
 import Link from "next/link";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
+import { GanpatiWordmark } from "@/components/brand/GanpatiWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -72,7 +73,9 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      {!hideIcon && (
+      {/* `!isGanpati`: the festive artwork draws the heart-and-hands mark
+          itself, so keeping LogoVideo beside it shows the brand mark twice. */}
+      {!hideIcon && !isGanpati && (
         <motion.div
           className="shrink-0"
           initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
@@ -102,6 +105,13 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
            wordmark outright rather than decorating it. Gated on the campaign
            switch, unlike the flag asset it is standing in for. */
         <RakshaBandhanWordmark size={size} />
+      ) : isGanpati ? (
+        /* Same arrangement for Ganeshotsav, and gated the same way — on
+           isGanpatiActive(), so the artwork cannot outlive its window the way
+           the Independence Day wordmark did. The modak that used to be pinned
+           after "Kind" is not rendered alongside it: this artwork already has
+           two of them. */
+        <GanpatiWordmark size={size} />
       ) : (
         <span className="relative flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}

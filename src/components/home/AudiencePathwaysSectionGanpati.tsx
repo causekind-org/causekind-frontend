@@ -102,6 +102,8 @@ export default function AudiencePathwaysSectionGanpati({
     donee: `polygon(${p0}, 100% 0%, 100% 100%, ${p6}, ${p5}, ${p4}, ${p3}, ${p2}, ${p1})`,
   };
 
+  const trunkPath = `M ${top} 0 L ${top - 1.8} 16 L ${top - 4.8} 34 L ${seam} 50 L ${bottom + 4.8} 66 L ${bottom + 1.8} 84 L ${bottom} 100`;
+
   return (
     <section
       ref={ref}
@@ -144,11 +146,6 @@ export default function AudiencePathwaysSectionGanpati({
 
         {/* The Split Slab */}
         <div className="relative mt-5 overflow-hidden rounded-3xl border border-amber-900/20 shadow-md md:min-h-[19rem] md:rtl:-scale-x-100 dark:border-amber-500/20">
-          {/* Top Toran-Style Decorative Strip Border */}
-          <div className="absolute inset-x-0 top-0 z-20">
-            <RangoliBorderStrip />
-          </div>
-
           {panels.map((p) => {
             const isActive = focused === p.tone;
             const spotlit = spotlightEnabled && isActive;
@@ -173,6 +170,15 @@ export default function AudiencePathwaysSectionGanpati({
                 onFocus={() => setFocused(p.tone)}
                 onBlur={() => setFocused(null)}
               >
+                {/* Top Toran-Style Decorative Strip Border (Clipped to this panel) */}
+                <div 
+                  className="absolute inset-x-0 top-0 z-20 transition-opacity duration-300"
+                  style={{ opacity: focused === null || isActive ? 1 : 0 }}
+                  aria-hidden="true"
+                >
+                  <RangoliBorderStrip />
+                </div>
+
                 <AudiencePathwayPanelGanpati
                   {...p}
                   active={isActive}
@@ -204,7 +210,7 @@ export default function AudiencePathwaysSectionGanpati({
 
               {/* Soft ambient glow along the trunk seam */}
               <path
-                d={`M ${top} 0 C ${top - 6.5} 35, ${bottom + 6.5} 65, ${bottom} 100`}
+                d={trunkPath}
                 fill="none"
                 stroke="#f59e0b"
                 strokeWidth="4"
@@ -219,7 +225,7 @@ export default function AudiencePathwaysSectionGanpati({
 
               {/* Primary Trunk-Swirl S-Curve Line */}
               <path
-                d={`M ${top} 0 C ${top - 6.5} 35, ${bottom + 6.5} 65, ${bottom} 100`}
+                d={trunkPath}
                 fill="none"
                 stroke="url(#trunkSeamGrad)"
                 strokeWidth="2.5"
