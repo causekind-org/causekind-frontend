@@ -53,6 +53,7 @@ import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
 import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
 import { MobileDoors, useLandingDoor } from "@/components/audience-pathways/MobileDoors";
 import DoneeDoorEvidence      from "@/components/audience-pathways/DoneeDoorEvidence";
+import DoorSwapReveal        from "@/components/audience-pathways/DoorSwapReveal";
 import { ItemDonationScrolly }   from "@/components/home/ItemDonationScrolly";
 import { CTASection }            from "@/components/home/CTASection";
 
@@ -469,6 +470,14 @@ export default function HomeClient({
             and donee variants are a separate piece of work. */}
         {showAudiencePathways && <MobileDoors door={door} pick={pickDoor} />}
 
+        {/* Everything from here to the end of the unclaimed section answers the
+            switcher, so it re-plays a short staggered entrance each time the
+            door changes. The wrapper repeats this column's `gap-11` — its
+            children are direct flex items of that column, and collapsing them
+            into one item would cost every section below the switcher its 44px
+            join. See DoorSwapReveal. */}
+        <DoorSwapReveal door={showAudiencePathways ? door : "static"}>
+
         {/* The donee door's evidence. The one genuinely new surface here:
             everything else below the hero is donor-facing, so a visitor who
             says "I need something" had nothing to read. */}
@@ -556,6 +565,8 @@ export default function HomeClient({
             excludeId={longestWaitingRequest?.id ?? null}
           />
         )}
+
+        </DoorSwapReveal>
 
         {/* Be the Change — cut from the guest page. It restates "here are needs
             and here is proof", which the doors and the live board already do;
