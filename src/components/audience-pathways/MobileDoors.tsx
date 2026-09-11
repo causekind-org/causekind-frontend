@@ -123,7 +123,8 @@ export function MobileDoors({ door, pick }: { door: Door; pick: (next: Door) => 
               href="/register?role=DONOR"
               data-tour="guest-join"
               onClick={() => pick("donor")}
-              className="mt-5 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-white text-[0.9375rem] font-extrabold text-stone-900 transition-transform active:scale-[0.97]"
+              data-cta-live="dark"
+              className="ck-cta-live mt-5 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-white text-[0.9375rem] font-extrabold text-stone-900 transition-transform active:scale-[0.97]"
             >
               {t("donor.cta")}
             </Link>

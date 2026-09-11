@@ -1888,6 +1888,7 @@ body.mobile-menu-open {
   .faq-answer-enter,
   .mobile-donate-pulse,
   .support-btn-ripple,
+  .ck-cta-live::before,
   .ck-handover-fab-halo,
   .stats-ticker-track,
   .animate-stats-ticker,
@@ -2397,6 +2398,72 @@ body.mobile-menu-open {
 
 @keyframes ck-hero-route-flow {
   to { stroke-dashoffset: -108; }
+}
+
+/* ── Live primary CTAs ──────────────────────────────────────────────────────
+   A slow glint on the landing page's filled primary actions, and only those.
+
+   Read the note above before widening this. Two infinite loops on these
+   buttons were removed once already because ambient motion on the page's main
+   action pulls the eye to something that means nothing, and two cycles drifting
+   in and out of phase read as a rendering glitch. This is built to avoid both
+   failures rather than to repeat them:
+
+   - It is a GLINT, not a loop. The sweep occupies ~1s of a 6.5s cycle and the
+     layer is parked and invisible for the rest, so nothing is ever in constant
+     motion.
+   - It pauses under the pointer. The hover sheen on `::after` owns that moment,
+     and the two never run together — which is the exact overlap that failed
+     before. This uses `::before` for the same reason.
+   - Filled primaries only. If everything glints, nothing is primary.        */
+@keyframes ck-cta-live-sheen {
+  0%   { opacity: 0; transform: translateX(-140%) skewX(-12deg); }
+  3%   { opacity: 1; }
+  15%  { opacity: 1; transform: translateX(140%) skewX(-12deg); }
+  16%  { opacity: 0; transform: translateX(140%) skewX(-12deg); }
+  100% { opacity: 0; transform: translateX(-140%) skewX(-12deg); }
+}
+
+.ck-cta-live {
+  position: relative;
+  overflow: hidden;
+}
+
+.ck-cta-live::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    rgb(255 255 255 / 0.34) 50%,
+    transparent 68%
+  );
+  animation: ck-cta-live-sheen 6.5s ease-in-out infinite;
+}
+
+/* A dark label on a light fill needs a darker glint to register at all. */
+.ck-cta-live[data-cta-live="dark"]::before {
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    rgb(28 25 23 / 0.14) 50%,
+    transparent 68%
+  );
+}
+
+.ck-cta-live:hover::before,
+.ck-cta-live:focus-visible::before {
+  animation-play-state: paused;
+  opacity: 0;
+}
+
+/* The hero's primary is only a filled button for a guest. Signed in it is a
+   transparent text link, and a sheen crossing bare text reads as a smudge. */
+.ck-hero-actions:not([data-guest="true"]) .ck-cta-live::before {
+  display: none;
 }
 
 @keyframes ck-hero-cta-sheen {

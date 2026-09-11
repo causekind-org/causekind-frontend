@@ -69,7 +69,7 @@ export function DoneeDoorEvidence() {
 
       <Link
         href="/register?role=DONEE"
-        className="mt-4 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-teal-700 text-[0.9375rem] font-extrabold text-white transition-transform active:scale-[0.97] hover:bg-teal-800"
+        className="ck-cta-live mt-4 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-teal-700 text-[0.9375rem] font-extrabold text-white transition-transform active:scale-[0.97] hover:bg-teal-800"
       >
         {t("cta")}
       </Link>
