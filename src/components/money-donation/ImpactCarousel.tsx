@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useCallback, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { gsap } from 'gsap';
-import { PlayCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { PlayCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 /* ── video sources ── */
 const VIDEOS = [
@@ -43,14 +43,6 @@ export function ImpactCarousel() {
   const innerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const reduceMotion = usePrefersReducedMotion();
-
-  const [activeVideo, setActiveVideo] = useState<string | null>(null);
-  const activeVideoRef = useRef(activeVideo);
-  
-  // Keep ref synced for the GSAP ticker closure
-  useEffect(() => {
-    activeVideoRef.current = activeVideo;
-  }, [activeVideo]);
 
   const total = VIDEOS.length;
 
@@ -208,7 +200,7 @@ export function ImpactCarousel() {
         if (!revealStartRef.current) revealStartRef.current = now;
         revealRef.current = Math.min(1, (now - revealStartRef.current) / 1100);
       }
-      if (autoRotateSpeed && !reduceMotion && !draggingRef.current && !(pauseOnHover && hoveredRef.current) && !activeVideoRef.current) {
+      if (autoRotateSpeed && !reduceMotion && !draggingRef.current && !(pauseOnHover && hoveredRef.current)) {
         targetRef.current += autoRotateSpeed * dt;
       }
       draw(dt);
@@ -223,9 +215,6 @@ export function ImpactCarousel() {
     const stage = stageRef.current;
     if (!stage || !total) return;
     
-    let startX = 0;
-    let startY = 0;
-    let downTarget: EventTarget | null = null;
 
     const pushSample = () => {
       const now = performance.now();
@@ -239,9 +228,6 @@ export function ImpactCarousel() {
       draggingRef.current = true;
       pointerIdRef.current = e.pointerId;
       lastXRef.current = e.clientX;
-      startX = e.clientX;
-      startY = e.clientY;
-      downTarget = e.target;
       samplesRef.current = [{ t: performance.now(), value: targetRef.current }];
       targetRef.current = currentRef.current;
       stage.setPointerCapture(e.pointerId);
@@ -263,19 +249,6 @@ export function ImpactCarousel() {
       stage.style.cursor = 'grab';
       if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId);
       pushSample();
-      
-      const dx = Math.abs(e.clientX - startX);
-      const dy = Math.abs(e.clientY - startY);
-      
-      // If the pointer barely moved, treat it as a click
-      if (dx < 5 && dy < 5 && downTarget) {
-        const targetEl = downTarget as HTMLElement;
-        const cardEl = targetEl.closest('[data-video-src]');
-        if (cardEl) {
-          const src = cardEl.getAttribute('data-video-src');
-          if (src) setActiveVideo(src);
-        }
-      }
 
       let projected = targetRef.current;
       if (!reduceMotion) {
@@ -377,13 +350,12 @@ export function ImpactCarousel() {
             <div
               key={i}
               ref={(el) => { cardRefs.current[i] = el; }}
-              className="group absolute top-0 left-0 will-change-transform"
+              className="absolute top-0 left-0 will-change-transform"
               style={{ visibility: 'hidden' }}
             >
               <div
                 ref={(el) => { innerRefs.current[i] = el; }}
-                data-video-src={videoSrc}
-                className="relative h-full w-full overflow-hidden rounded-[10px] bg-stone-200 dark:bg-zinc-800 cursor-pointer"
+                className="relative h-full w-full overflow-hidden rounded-[10px] bg-stone-200 dark:bg-zinc-800"
                 style={{
                   opacity: reduceMotion ? 1 : 0,
                   boxShadow: '0 18px 40px -12px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.15)',
@@ -399,51 +371,12 @@ export function ImpactCarousel() {
                   preload="metadata"
                   className="pointer-events-none block h-full w-full object-cover select-none"
                 />
-                {/* Play icon overlay on hover */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
-                  <div className="w-10 h-10 bg-brand-500/90 text-white rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
-                    <PlayCircle className="w-6 h-6" />
-                  </div>
-                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Fullscreen Video Modal */}
-      {activeVideo && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-8">
-          {/* Glassmorphism Backdrop */}
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xl" onClick={() => setActiveVideo(null)} />
-          
-          <button 
-            onClick={() => setActiveVideo(null)}
-            className="absolute top-6 right-6 sm:top-10 sm:right-10 z-[101] p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white transition-all duration-300 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:scale-110"
-            aria-label="Close video"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          
-          {/* Glassmorphism Video Container */}
-          <div className="w-full h-full max-w-5xl max-h-[85vh] mx-auto rounded-[2rem] overflow-hidden relative flex items-center justify-center shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] bg-white/5 border border-white/10 backdrop-blur-xl z-10">
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
-            <video 
-              ref={(el) => { 
-                if (el) { 
-                  // Force playback on mount to bypass some browser policies
-                  el.play().catch(e => console.log("Autoplay blocked:", e)); 
-                } 
-              }}
-              src={activeVideo} 
-              controls 
-              autoPlay 
-              playsInline
-              className="w-full h-full object-contain relative z-20 rounded-[2rem]"
-            />
-          </div>
-        </div>
-      )}
     </section>
   );
 }
