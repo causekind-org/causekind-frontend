@@ -54,9 +54,26 @@ function urgencyRank(r: PublicItemRequest): number {
   return i === -1 ? URGENCIES.length + 1 : i + 1;
 }
 
-export default function PublicRequestsBoard() {
-  const [requests, setRequests] = useState<PublicItemRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function PublicRequestsBoard({
+  initialRequests = [],
+}: {
+  /**
+   * The board as fetched on the server by src/app/requests/page.tsx.
+   *
+   * When it arrives non-empty the component renders needs on its very first
+   * paint and sends no request of its own — the board used to mount empty and
+   * fetch, which could not start until the page had hydrated.
+   *
+   * Empty means one of two things, and both want the same behaviour: the server
+   * fetch failed, or the board genuinely has nothing on it. Fetching once on the
+   * client covers the first and costs an empty round trip on the second, which
+   * is the cheap way round — the alternative is a visitor staring at "no needs"
+   * because the server call timed out.
+   */
+  initialRequests?: PublicItemRequest[];
+} = {}) {
+  const [requests, setRequests] = useState<PublicItemRequest[]>(initialRequests);
+  const [loading, setLoading] = useState(initialRequests.length === 0);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [urgencies, setUrgencies] = useState<string[]>([]);
@@ -72,7 +89,11 @@ export default function PublicRequestsBoard() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Seeded from the server: nothing to fetch. `load` stays wired up for the
+  // retry button on the error state, which is why this is not `if (!seeded)`
+  // around the callback itself.
+  const seeded = initialRequests.length > 0;
+  useEffect(() => { if (!seeded) load(); }, [load, seeded]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};

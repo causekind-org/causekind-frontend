@@ -1,0 +1,17 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 800, "title": "Quiet" },
+    { "file": "Urgency.dc.html", "x": 530, "y": 0, "w": 390, "h": 900, "title": "Urgency" },
+    { "file": "Index.dc.html", "x": 1060, "y": 0, "w": 390, "h": 820, "title": "Register" },
+    { "file": "Faces.dc.html", "x": 1590, "y": 0, "w": 390, "h": 900, "title": "Faces" }
+  ],
+  "annotations": [
+    { "id": "note-brief", "x": 0, "y": -380, "w": 920, "text": "IN-KIND REQUESTS, mobile. Built from PublicRequestsBoard.tsx — same ground (#f2ede7), same --ck-role-accent terracotta, same copy, same card anatomy.\n\nThe problem is not decoration. On the live page eight category chips sit above the board and SEVEN of them read 0 — greyed, disabled, unclickable. Add the search field, the urgency row, the sort control, the clear-filters link and the sign-in banner, and a visitor scrolls past six rows of controls to reach one need. The controls outnumber the content.\n\nSo these four differ by what they do with that, not by skin. All four keep: browse-without-account, the login-to-offer destination, and the verified framing." },
+    { "id": "note-quiet", "x": 0, "y": -170, "w": 390, "text": "QUIET — the controls stand down. Search plus one Filter button; only categories that actually hold something get a chip, the rest collapse into \"7 more\". The sign-in note moves BELOW the board it used to sit on top of.\n\nWhy: the smallest change that fixes the real problem, and the board is visible without scrolling.\nAgainst: it is the least \"cool\" of the four — it wins by removing things, not by adding a look." },
+    { "id": "note-urgency", "x": 530, "y": -190, "w": 390, "text": "URGENCY — the board is grouped by how long someone has waited, not by category. Urgent sits on ink so colour carries meaning rather than decoration; the other bands state their own emptiness instead of hiding it.\n\nWhy: with one open need, category filters are noise and urgency is the only axis that says anything. It also makes a stale need impossible to miss as volume grows.\nAgainst: the ink band is heavy for a browse page, and at zero urgent needs the page opens on an empty section." },
+    { "id": "note-index", "x": 1060, "y": -190, "w": 390, "text": "REGISTER — typographic. Source Serif 4, hairline rules, a numbered column, no cards at all. The count is stated as a range (01–01) and the empty remainder is written out rather than left blank.\n\nWhy: scans fastest at volume, and treats each need as a record rather than a product tile. The most distinct of the four.\nAgainst: no imagery and no colour to carry emotion — it is the coolest to look at and the least moving to read." },
+    { "id": "note-faces", "x": 1590, "y": -200, "w": 390, "text": "FACES — one need per screen, photo-led, near-full-height card. The empty state becomes a real card instead of a grey strip.\n\nWhy: strongest emotional hit, and honest at low volume — with one open need, showing it big is better than pretending a grid is full.\nAgainst: needs a good photograph for every need, which the public payload does not guarantee today. At forty open needs it becomes a long swipe." },
+    { "id": "note-scope", "x": 0, "y": 960, "w": 920, "text": "Static mockups, not a working prototype — say if you want one wired up.\n\nNothing in the code has changed. Your own standing note says this page's design should not be touched without an explicit ask; this is that ask, so it holds." }
+  ],
+  "launch": { "view": "canvas" }
+}

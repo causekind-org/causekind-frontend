@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
-import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type UserProfile } from "@/lib/api";
+import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicItemRequest, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import PublicRequestsBoard from "@/components/PublicRequestsBoard";
@@ -27,10 +28,27 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { DoneeRequestsPage } from "./donee-view";
 import { ALL_REQUEST_CATEGORIES as ITEM_REQ_CATEGORIES } from "@/lib/categoryVisuals";
-// @ts-expect-error — MagicBento is the JS/CSS React Bits variant (no types shipped)
-import MagicBento from "@/components/MagicBento";
+
+/*
+  Both of these are split out of the guest's download, not just deferred.
+
+  This module serves three different people from one file: a logged-out
+  visitor gets `PublicRequestsBoard` and nothing else, a donee gets the donee
+  portal, a donor gets the mosaic. Statically imported, the donee portal and
+  MagicBento (which drags in gsap) shipped to all three — so the visitor who
+  renders neither still paid to parse both before the board could paint.
+
+  `ssr: false` on MagicBento is not a preference: it reads the DOM and drives
+  gsap on mount, so it has nothing to render on the server anyway.
+*/
+const DoneeRequestsPage = dynamic(
+  () => import("./donee-view").then(m => m.DoneeRequestsPage),
+  { loading: () => <PageSkeleton><CardGridSkeleton count={6} label="Loading your requests" /></PageSkeleton> },
+);
+// Props now come from src/components/MagicBento.d.ts — see the note there for
+// why this stopped being a `@ts-expect-error`.
+const MagicBento = dynamic(() => import("@/components/MagicBento"), { ssr: false });
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -533,9 +551,20 @@ function RequestFilterPanel({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function RequestsClient() {
+export default function RequestsClient({
+  initialPublicRequests = [],
+}: {
+  /**
+   * The public board, already fetched on the server by src/app/requests/page.tsx.
+   *
+   * Only the logged-out branch uses it — a donor's mosaic and a donee's portal
+   * both need authenticated, per-user data that a server render cannot obtain.
+   * Defaults to `[]` so the component stays renderable on its own in tests.
+   */
+  initialPublicRequests?: PublicItemRequest[];
+}) {
   const t        = useTranslations("requests");
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isRestoring } = useAuth();
   const router   = useRouter();
 
   useEntityUpdates(["REQUEST"], () => {
@@ -824,7 +853,27 @@ export default function RequestsClient() {
 
   // ── Guard ─────────────────────────────────────────────────────────────────
 
-  if (authLoading) {
+  /*
+    `isRestoring`, not `authLoading` — the difference is a cold database.
+
+    `isRestoring` is one effect tick: it answers "has localStorage been read
+    yet". `authLoading` stays true for a visitor with empty storage until
+    /users/me returns a 401, and that call is what wakes the deliberately-cold
+    Hikari pool. Gating here on it meant a logged-out visitor coming from the
+    hero's "Explore needs near you" waited out the whole wake-up, got told they
+    were a guest, and only THEN mounted the board — which starts its own fetch.
+    Two round trips end to end, the first of which exists only to learn nothing.
+
+    Gating on `isRestoring` mounts the board on the first tick, so its fetch
+    goes out alongside /users/me instead of behind it.
+
+    The cost is one real case: someone signed in whose localStorage was cleared
+    sees the public board for a moment before the donor or donee view replaces
+    it. That is a content swap on a page that never redirects — unlike a route
+    guard, where resolving early to "guest" would bounce them to /login, which
+    is exactly why useAuth keeps the two flags apart.
+  */
+  if (isRestoring) {
     // Shaped like the board that follows, so the page settles once rather than
     // jumping from a centred spinner to a three-column grid.
     return (
@@ -844,7 +893,7 @@ export default function RequestsClient() {
   // Logged-out visitors get the public board: the reduced-field endpoint, no GPS
   // prompt, and every action routed through /login?next=. They used to be held
   // on the spinner above forever, since `user` never arrives for a guest.
-  if (!user) return <PublicRequestsBoard />;
+  if (!user) return <PublicRequestsBoard initialRequests={initialPublicRequests} />;
 
   // Dedicated donee portal
   if (user.role === "DONEE") return <DoneeRequestsPage />;

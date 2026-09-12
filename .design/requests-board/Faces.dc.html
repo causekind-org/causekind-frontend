@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .kick { font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #efe9e1; color: #1c1917; padding-bottom: 40px">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px">
+    <span style="font-size: 17px; font-weight: 800; letter-spacing: -.02em">CauseKind</span>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1c1917" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </div>
+
+  <div style="padding: 10px 20px 0">
+    <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em; line-height: 1.14">One person, one thing they need.</h1>
+    <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #57534e; text-wrap: pretty">Browse freely. An account is only for offering.</p>
+  </div>
+
+  <div style="display: flex; gap: 8px; padding: 16px 20px 0">
+    <div style="flex: 1; display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 14px; border-radius: 999px; background: #fffdfa; border: 1px solid #e3ddd4">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span style="font-size: 14px; color: #a8a29e">Search needs</span>
+    </div>
+    <div style="display: flex; align-items: center; min-height: 44px; padding: 0 15px; border-radius: 999px; background: #fffdfa; border: 1px solid #e3ddd4; font-size: 14px; font-weight: 700">Filter</div>
+  </div>
+
+  <!-- One need per screen, photo-led -->
+  <div style="padding: 18px 20px 0">
+    <div style="border-radius: 22px; overflow: hidden; background: #1c1917; position: relative; height: 400px">
+      <div style="position: absolute; inset: 0; background: #cdbfa9"></div>
+      <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(20,17,15,.92) 0%, rgba(20,17,15,.35) 46%, rgba(20,17,15,0) 70%)"></div>
+
+      <div style="position: absolute; top: 14px; left: 14px; display: flex; gap: 7px">
+        <span class="kick" style="background: rgb(239 68 68 / .92); color: #fff; padding: 6px 10px; border-radius: 999px">Urgent</span>
+        <span class="kick" style="background: rgba(255,255,255,.92); color: #b04a15; padding: 6px 10px; border-radius: 999px">Medical aid</span>
+      </div>
+
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 20px">
+        <p style="margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; color: #fff; letter-spacing: -.02em">Wheelchair for my friend</p>
+        <p style="margin: 9px 0 0; font-size: 13px; line-height: 1.55; color: rgba(255,255,255,.76)">He recently got into an accident, due to which he cannot walk and needs support to move around.</p>
+        <div style="display: flex; gap: 14px; margin-top: 11px; font-size: 12px; color: rgba(255,255,255,.6)">
+          <span>Pune</span><span class="num">Qty 1</span>
+        </div>
+        <div style="margin-top: 16px; min-height: 46px; border-radius: 13px; background: #fff6ed; color: #1c1917; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">Log in to offer this</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- The honest empty state, as its own card rather than a grey strip -->
+  <div style="padding: 14px 20px 0">
+    <div style="border-radius: 22px; border: 1px dashed #d3cabd; padding: 26px 20px; text-align: center">
+      <div style="width: 44px; height: 44px; border-radius: 999px; background: #e5ded4; margin: 0 auto; display: grid; place-items: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      </div>
+      <p style="margin: 14px 0 0; font-size: 15px; font-weight: 800">That is everything open today</p>
+      <p style="margin: 7px 0 0; font-size: 13px; line-height: 1.55; color: #78716c">One need, verified and waiting. New ones appear here as our team clears them.</p>
+    </div>
+  </div>
+
+  <div style="padding: 24px 20px 0">
+    <div style="display: flex; align-items: center; gap: 12px; border-top: 1px solid #ddd6cb; padding-top: 18px">
+      <p style="margin: 0; flex: 1; font-size: 13px; line-height: 1.5; color: #57534e">You only need an account when you decide to give.</p>
+      <a href="#" style="flex: none; font-size: 13px; font-weight: 800; text-decoration: none">Log in</a>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

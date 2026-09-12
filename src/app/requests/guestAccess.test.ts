@@ -59,7 +59,40 @@ describe("/requests is public", () => {
   });
 
   it("still renders the public board for a logged-out visitor", () => {
-    expect(PAGE).toMatch(/if\s*\(!user\)\s*return\s*<PublicRequestsBoard\s*\/>/);
+    // Props deliberately unconstrained: the guard is about the board being
+    // reachable at all, and pinning the exact attribute list made it fail on
+    // `initialRequests` — a change that did not touch reachability.
+    expect(PAGE).toMatch(/if\s*\(!user\)\s*return\s*<PublicRequestsBoard[^>]*\/>/);
+  });
+
+  /**
+   * The board must not be gated behind the session check.
+   *
+   * <p>`authLoading` stays true for a visitor with empty localStorage until
+   * /users/me answers, and that call is what wakes the deliberately-cold Hikari
+   * pool. Gating the guest branch on it meant a logged-out visitor waited out
+   * the whole wake-up to be told they were a guest, and only then mounted the
+   * board — which then started its own fetch. Two round trips, the first
+   * learning nothing.
+   *
+   * <p>`isRestoring` is the flag that answers "has localStorage been read", one
+   * effect tick. The distinction is load-bearing and easy to undo by reaching
+   * for the more obvious name, which is why it is asserted rather than trusted.
+   */
+  it("gates the guest branch on the storage read, not on the session check", () => {
+    expect(PAGE).toMatch(/if\s*\(isRestoring\)\s*\{/);
+    expect(PAGE).not.toMatch(/if\s*\(authLoading\)\s*\{\s*$/m);
+  });
+
+  /**
+   * The board is seeded from the server, so a guest gets needs on first paint
+   * instead of after hydration. If this wiring is ever dropped the page still
+   * works — the board falls back to fetching on mount — which is exactly why it
+   * needs a test: the regression would be invisible except as slowness.
+   */
+  it("hands the server-fetched board to the client", () => {
+    expect(code("page.tsx")).toContain("getPublicItemRequests()");
+    expect(PAGE).toMatch(/initialPublicRequests/);
   });
 
   it("builds any login URL through the validated helper", () => {

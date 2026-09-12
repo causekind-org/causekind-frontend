@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .kick { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .card { background: #fffdfa; border: 1px solid #e5e0d8; border-radius: 16px; }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #f2ede7; color: #1c1917; padding-bottom: 40px">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px">
+    <span style="font-size: 17px; font-weight: 800; letter-spacing: -.02em">CauseKind</span>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1c1917" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </div>
+
+  <div style="padding: 10px 20px 0">
+    <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em; line-height: 1.12">What can you give?</h1>
+    <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #57534e; text-wrap: pretty"><span class="num" style="font-weight: 800; color: #1c1917">247</span> verified needs are open. Tell us what you have and we will find the ones it closes.</p>
+  </div>
+
+  <!-- The search field IS the page, not a control above a list -->
+  <div style="padding: 18px 20px 0">
+    <div class="card" style="display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 16px; border-radius: 14px; border-color: #b04a15">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span style="font-size: 15px; color: #1c1917; font-weight: 600">wheelchair</span>
+      <span style="flex: 1"></span>
+      <span class="num" style="font-size: 12px; font-weight: 800; color: #b04a15">3 matches</span>
+    </div>
+  </div>
+
+  <!-- Suggested starting points, so an empty search is never a dead end -->
+  <div style="padding: 14px 20px 0">
+    <p class="kick" style="margin: 0; color: #a8a29e">Or start from something you have</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px">
+      <span class="card" style="font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; color: #57534e">Clothes <span class="num" style="color: #a8a29e">41</span></span>
+      <span class="card" style="font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; color: #57534e">A bed <span class="num" style="color: #a8a29e">18</span></span>
+      <span class="card" style="font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; color: #57534e">School things <span class="num" style="color: #a8a29e">54</span></span>
+      <span class="card" style="font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; color: #57534e">A phone <span class="num" style="color: #a8a29e">7</span></span>
+      <span class="card" style="font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; color: #57534e">Kitchen <span class="num" style="color: #a8a29e">12</span></span>
+    </div>
+  </div>
+
+  <div style="padding: 24px 20px 0">
+    <div style="display: flex; align-items: baseline; justify-content: space-between">
+      <span class="kick" style="color: #a8a29e">Matches for &ldquo;wheelchair&rdquo;</span>
+      <span class="kick num" style="color: #a8a29e">3</span>
+    </div>
+    <div style="display: grid; gap: 12px; margin-top: 12px">
+      <div class="card" style="padding: 16px">
+        <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start">
+          <p style="margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3">Wheelchair for my friend</p>
+          <span style="flex: none; background: rgb(239 68 68 / .1); color: #dc2626; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px">Urgent</span>
+        </div>
+        <p class="num" style="margin: 10px 0 0; font-size: 12px; color: #a8a29e">Medical aid · Pune · Qty 1</p>
+        <p style="margin: 10px 0 0; font-size: 12px; font-weight: 800; color: #b04a15">Log in to offer an item</p>
+      </div>
+      <div class="card" style="padding: 16px">
+        <p style="margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3">Folding wheelchair for home use</p>
+        <p class="num" style="margin: 10px 0 0; font-size: 12px; color: #a8a29e">Medical aid · Nagpur · Qty 1</p>
+        <p style="margin: 10px 0 0; font-size: 12px; font-weight: 800; color: #b04a15">Log in to offer an item</p>
+      </div>
+      <div class="card" style="padding: 16px">
+        <p style="margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3">Wheelchair cushion and straps</p>
+        <p class="num" style="margin: 10px 0 0; font-size: 12px; color: #a8a29e">Medical aid · Thane · Qty 2</p>
+        <p style="margin: 10px 0 0; font-size: 12px; font-weight: 800; color: #b04a15">Log in to offer an item</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 20px 20px 0">
+    <a href="#" style="font-size: 13px; font-weight: 800; text-decoration: none">Or browse all 247 &rarr;</a>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":980}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

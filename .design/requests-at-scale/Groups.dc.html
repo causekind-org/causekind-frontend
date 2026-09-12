@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .kick { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .card { background: #fffdfa; border: 1px solid #e5e0d8; border-radius: 16px; }
+    .num { font-variant-numeric: tabular-nums; }
+    .row { display: flex; align-items: center; gap: 12px; padding: 15px 16px; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #f2ede7; color: #1c1917; padding-bottom: 40px">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px">
+    <span style="font-size: 17px; font-weight: 800; letter-spacing: -.02em">CauseKind</span>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1c1917" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </div>
+
+  <div style="padding: 10px 20px 0">
+    <span class="kick" style="color: #b04a15">Open needs</span>
+    <h1 style="margin: 10px 0 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em; line-height: 1.12">247 needs, in nine groups</h1>
+    <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #57534e; text-wrap: pretty">Open a group to see what is inside it. Nothing loads until you do.</p>
+  </div>
+
+  <div style="padding: 16px 20px 0">
+    <div class="card" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border-radius: 999px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span style="font-size: 14px; color: #a8a29e">Search all 247</span>
+    </div>
+  </div>
+
+  <!-- The top level is BOUNDED: nine rows, whatever the volume -->
+  <div style="padding: 18px 20px 0">
+    <div class="card" style="overflow: hidden; padding: 0">
+
+      <!-- one group open -->
+      <div style="background: #f7f3ec; border-bottom: 1px solid #eee7dc">
+        <div class="row">
+          <span style="width: 32px; height: 32px; border-radius: 9px; background: rgb(176 74 21 / .1); display: grid; place-items: center; flex: none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b04a15" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>
+          </span>
+          <span style="flex: 1; font-size: 15px; font-weight: 800">Medical aid</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px; background: rgb(239 68 68 / .1); color: #dc2626; padding: 3px 8px; border-radius: 999px" class="kick">6 urgent</span>
+          <span class="num" style="font-size: 14px; font-weight: 800; color: #78716c">86</span>
+        </div>
+
+        <div style="padding: 0 16px 14px; display: grid; gap: 10px">
+          <div style="background: #fffdfa; border: 1px solid #e9e2d7; border-radius: 12px; padding: 13px">
+            <p style="margin: 0; font-size: 14px; font-weight: 800; line-height: 1.3">Wheelchair for my friend</p>
+            <p class="num" style="margin: 6px 0 0; font-size: 12px; color: #a8a29e">Pune · Qty 1 · Urgent</p>
+          </div>
+          <div style="background: #fffdfa; border: 1px solid #e9e2d7; border-radius: 12px; padding: 13px">
+            <p style="margin: 0; font-size: 14px; font-weight: 800; line-height: 1.3">Folding wheelchair for home use</p>
+            <p class="num" style="margin: 6px 0 0; font-size: 12px; color: #a8a29e">Nagpur · Qty 1</p>
+          </div>
+          <div style="background: #fffdfa; border: 1px solid #e9e2d7; border-radius: 12px; padding: 13px">
+            <p style="margin: 0; font-size: 14px; font-weight: 800; line-height: 1.3">Insulin cool box</p>
+            <p class="num" style="margin: 6px 0 0; font-size: 12px; color: #a8a29e">Thane · Qty 2</p>
+          </div>
+          <a href="#" style="font-size: 13px; font-weight: 800; text-decoration: none; padding-top: 2px">All 86 in Medical aid &rarr;</a>
+        </div>
+      </div>
+
+      <div class="row" style="border-bottom: 1px solid #eee7dc">
+        <span style="width: 32px; height: 32px; border-radius: 9px; background: #f0ebe1; flex: none"></span>
+        <span style="flex: 1; font-size: 15px; font-weight: 800">Education</span>
+        <span class="num" style="font-size: 14px; font-weight: 800; color: #78716c">54</span>
+      </div>
+      <div class="row" style="border-bottom: 1px solid #eee7dc">
+        <span style="width: 32px; height: 32px; border-radius: 9px; background: #f0ebe1; flex: none"></span>
+        <span style="flex: 1; font-size: 15px; font-weight: 800">Shelter &amp; bedding</span>
+        <span style="display: inline-flex; align-items: center; gap: 5px; background: rgb(154 107 18 / .12); color: #9a6b12; padding: 3px 8px; border-radius: 999px" class="kick">4 over 30d</span>
+        <span class="num" style="font-size: 14px; font-weight: 800; color: #78716c">38</span>
+      </div>
+      <div class="row" style="border-bottom: 1px solid #eee7dc">
+        <span style="width: 32px; height: 32px; border-radius: 9px; background: #f0ebe1; flex: none"></span>
+        <span style="flex: 1; font-size: 15px; font-weight: 800">Livelihood</span>
+        <span class="num" style="font-size: 14px; font-weight: 800; color: #78716c">27</span>
+      </div>
+      <div class="row" style="border-bottom: 1px solid #eee7dc">
+        <span style="width: 32px; height: 32px; border-radius: 9px; background: #f0ebe1; flex: none"></span>
+        <span style="flex: 1; font-size: 15px; font-weight: 800">Clothing</span>
+        <span class="num" style="font-size: 14px; font-weight: 800; color: #78716c">22</span>
+      </div>
+      <div class="row">
+        <span style="width: 32px; height: 32px; border-radius: 9px; background: #f0ebe1; flex: none"></span>
+        <span style="flex: 1; font-size: 15px; font-weight: 800; color: #a8a29e">Four more groups</span>
+        <span class="num" style="font-size: 14px; font-weight: 800; color: #a8a29e">20</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 18px 20px 0">
+    <p style="margin: 0; font-size: 12px; line-height: 1.55; color: #a8a29e">The list of groups is the same nine rows at 20 needs or 2,000. Only an opened group fetches anything.</p>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":1040}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>
