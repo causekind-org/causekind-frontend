@@ -76,7 +76,7 @@ describe("HomeClient Ganpati Theme Conditional Rendering", () => {
     expect(screen.getByText("Find Someone Near You")).toBeDefined();
   }, 15000);
 
-  it("renders festive Ganpati components when isGanpatiActive returns true (14-25 Sept 2026)", () => {
+  it("renders festive Ganpati components when isGanpatiActive returns true (12-25 Sept 2026)", () => {
     vi.spyOn(isGanpatiActiveModule, "isGanpatiActive").mockReturnValue(true);
 
     const { container } = render(

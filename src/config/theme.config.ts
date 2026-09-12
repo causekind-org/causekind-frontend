@@ -2,20 +2,21 @@
  * Theme and seasonal configuration for CauseKind.
  *
  * Ganpati / Ganesh Chaturthi promotional skin:
- * Runs for 12 days, starting 14th September 2026 00:00 IST
+ * Runs for 14 days, starting 12th September 2026 00:00 IST
  * and ending 25th September 2026 23:59:59 IST (one day past Anant Chaturdashi, by request).
  *
  * IST is UTC+5:30:
- * 14 Sept 2026 00:00:00 IST = 13 Sept 2026 18:30:00.000Z
+ * 12 Sept 2026 00:00:00 IST = 11 Sept 2026 18:30:00.000Z
  * 25 Sept 2026 23:59:59.999 IST = 25 Sept 2026 18:29:59.999Z
  */
 
 export type GanpatiThemeOverride = "on" | "off" | undefined;
 
-// 14 Sept 2026 00:00:00 IST in UTC
-export const GANPATI_START = new Date("2026-09-13T18:30:00.000Z");
+// 12 Sept 2026 00:00:00 IST in UTC — brought forward from the 14th on request,
+// so the skin is live immediately. The end date is unchanged.
+export const GANPATI_START = new Date("2026-09-11T18:30:00.000Z");
 
-// 25 Sept 2026 23:59:59.999 IST in UTC (end of 12th day)
+// 25 Sept 2026 23:59:59.999 IST in UTC (end of 14th day)
 export const GANPATI_END = new Date("2026-09-25T18:29:59.999Z");
 
 export const GANPATI_CONFIG = {

@@ -98,6 +98,21 @@ vi.mock("@/components/home/CTASection", () => ({ CTASection: () => null }));
 // WebGL: `ogl` touches window on import and the section loads it through
 // next/dynamic with ssr:false. Nothing here depends on what it draws.
 vi.mock("@/components/LightRays", () => ({ default: () => null }));
+/**
+ * The festive skin is pinned OFF here, deliberately.
+ *
+ * <p>These cases are about the *ordinary* pathways section. When the Ganpati
+ * window is open, HomeClient swaps it for AudiencePathwaysSectionGanpati, so
+ * without this mock the whole file's result depended on the wall clock: it
+ * passed for months, then failed the moment the window actually opened on
+ * 12 Sept. A guest-only gate is not a seasonal question, so the season is
+ * fixed rather than left to the calendar.
+ */
+vi.mock("@/lib/isGanpatiActive", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/isGanpatiActive")>()),
+  isGanpatiActive: () => false,
+}));
+vi.mock("@/components/GanpatiStrip", () => ({ GanpatiStrip: () => null }));
 
 import HomeClient from "./HomeClient";
 
