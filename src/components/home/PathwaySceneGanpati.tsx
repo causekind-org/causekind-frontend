@@ -164,7 +164,7 @@ export default function PathwaySceneGanpati({
                     background: isDonor ? "rgba(254, 240, 138, 0.2)" : "rgba(254, 240, 138, 0.15)",
                     color: ring,
                   }}
-                  animate={animate ? { rotate: -360 } : { rotate: 0 }}
+                  animate={animate ? { rotate: [-angle, -angle - 360] } : { rotate: -angle }}
                   transition={{ duration: active ? 26 : 44, repeat: Infinity, ease: "linear" }}
                 >
                   <OrbitIcon className="h-3.5 w-3.5" />

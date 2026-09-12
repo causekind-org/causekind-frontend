@@ -124,15 +124,11 @@ export function HeroGanpati() {
         </div>
 
         {/* Drifting Marigold Petals (z-10: below text & buttons).
-
-            `lg:hidden`: upstream dropped these when the desktop stage became a
-            full uncropped photograph, where drifting divs over the image read
-            as dust on the lens. On the phone the photo is a band rather than
-            the ground, so they still land. */}
+            `lg:hidden`: drifting divs over the uncropped desktop photograph read as dust on the lens.
+            On the phone the photo is a band rather than the ground, so they still land. */}
         <DriftingPetals className="pointer-events-none absolute inset-0 overflow-hidden select-none z-10 lg:hidden" />
 
-        {/* Foreground Content Container. Phone gutter and rhythm are this
-            branch's; the lg padding and column width are upstream's. */}
+        {/* Foreground Content Container. Phone gutter and rhythm below lg; desktop padding and positioning at lg and above. */}
         <div className="relative z-20 mx-auto w-full max-w-[1440px] flex flex-col justify-center min-h-[560px] sm:min-h-[620px] lg:min-h-0 px-6 py-10 sm:px-10 sm:py-14 lg:py-12 lg:pl-10 xl:pl-12 2xl:pl-16">
 
           {/* The deity, on phones and tablets.
@@ -214,10 +210,8 @@ export function HeroGanpati() {
             />
           </div>
 
-          {/* Phone measure is this branch's; the lg column is upstream's
-              narrower one, which is what its 16:9 stage needs. */}
+          {/* Content column: wider on mobile/tablet (below lg), exact desktop column width at lg and above. */}
           <div className="w-full max-w-[36rem] sm:max-w-[42rem] lg:max-w-[29rem] xl:max-w-[31rem]">
-
             {/* 1. Eyebrow Tag with Petal Accents */}
             <div className="inline-flex items-center gap-2 text-[#b45309] dark:text-amber-400">
               <PetalAccent className="size-3.5 text-[#ea580c] shrink-0" />

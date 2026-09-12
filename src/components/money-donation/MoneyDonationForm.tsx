@@ -7,13 +7,10 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Lock, ShieldCheck, Heart } from 'lucide-react';
 import { initiateTrustDonation } from '@/lib/api';
+import { DiyaIcon } from '@/components/home/GanpatiVisuals';
 
 /**
  * Loads Razorpay's checkout script on demand.
- *
- * Same shape as the one in `DonateButton` rather than a shared helper: the two
- * live in different feature areas and a shared module here would be one import
- * cycle away from pulling the campaign donate flow into this page's bundle.
  */
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -76,9 +73,6 @@ export function MoneyDonationForm() {
       toast.error('Please fill out your name and email.');
       return;
     }
-    // Mirrors the server's @Pattern so a typo is caught before an order is
-    // created at Razorpay, rather than coming back as a 400 afterwards. Blank
-    // stays legal — it means "no 80G receipt wanted".
     if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
       toast.error('PAN must be five letters, four digits and one letter, e.g. ABCDE1234F.');
       return;
@@ -86,8 +80,6 @@ export function MoneyDonationForm() {
 
     setSubmitting(true);
     try {
-      // Script first: an order created against a checkout that then fails to
-      // load leaves a stranded INITIATED row and a donor with no way to pay it.
       const loaded = await loadRazorpayScript();
       if (!loaded) {
         toast.error('Could not load Razorpay. Check your connection and try again.');
@@ -114,15 +106,8 @@ export function MoneyDonationForm() {
           email: formData.email,
           contact: formData.mobileNumber || undefined,
         },
-        theme: { color: '#b04a15' },
+        theme: { color: '#ea580c' },
         handler: () => {
-          // The donation is only COMPLETED when Razorpay's webhook reaches the
-          // backend, which is why nothing here marks it paid — this is purely
-          // the donor's confirmation that checkout closed successfully.
-          // Reuses /thank-you unchanged: it reads `campaign` as a display label
-          // and falls back to a generic one when absent, so passing the trust's
-          // name here makes the confirmation read correctly with no branch
-          // added there for a second kind of donation.
           router.push(
             `/thank-you?campaign=${encodeURIComponent('Sahas Charitable Trust')}` +
               `&amount=${encodeURIComponent(String(amount))}`
@@ -138,10 +123,10 @@ export function MoneyDonationForm() {
     }
   };
 
-  const inputClasses = "w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-white/15 bg-white dark:bg-zinc-900 text-foreground placeholder:text-stone-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-colors text-sm";
+  const inputClasses = "w-full px-4 py-3 rounded-lg border border-amber-200/80 dark:border-amber-800/60 bg-[#fffdfa] dark:bg-[#221008] text-foreground placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 outline-none transition-colors text-sm shadow-xs";
 
   return (
-    <section id="donate-form" className="scroll-mt-24 py-10 sm:py-12 lg:py-14 bg-stone-50 dark:bg-zinc-900/60 border-t border-stone-100">
+    <section id="donate-form" className="scroll-mt-24 py-10 sm:py-12 lg:py-14 bg-[#fff9f2] dark:bg-[#1a0b04]">
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
 
@@ -153,7 +138,7 @@ export function MoneyDonationForm() {
             transition={{ duration: 0.6 }}
             className="flex flex-col"
           >
-            <div className="inline-flex items-center gap-3 text-xs font-bold tracking-wider uppercase text-brand-500 mb-4 bg-brand-50 dark:bg-brand-500/10 pr-4 pl-3 py-1.5 rounded-full w-max border border-brand-100">
+            <div className="inline-flex items-center gap-3 text-xs font-bold tracking-wider uppercase text-amber-900 dark:text-amber-200 mb-4 bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 pr-4 pl-3 py-1.5 rounded-full w-max shadow-[0_0_12px_rgba(217,119,6,0.15)]">
               <Image 
                 src="/images/money-donation/sahas-logo-transparent.png"
                 alt="Sahas Logo" 
@@ -170,24 +155,24 @@ export function MoneyDonationForm() {
               Your contribution goes directly toward critical initiatives in education, healthcare, and community welfare managed by Sahas Charitable Trust.
             </p>
 
-            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-stone-100 dark:border-white/10 shadow-sm">
+            <div className="bg-[#fffdfa] dark:bg-[#23120a] p-6 rounded-2xl border border-amber-200/70 dark:border-amber-900/40 shadow-sm">
               <div className="flex items-start gap-4 mb-4">
-                <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center text-green-600 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-950 dark:to-orange-950 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-700 dark:text-amber-300 flex-shrink-0">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
                   <h4 className="text-base font-bold text-foreground">100% Secure & Transparent</h4>
-                  <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Sahas Charitable Trust is a registered non-profit. All donations are secure and properly audited.</p>
+                  <p className="text-sm text-stone-600 dark:text-stone-300 mt-1">Sahas Charitable Trust is a registered non-profit. All donations are secure and properly audited.</p>
                 </div>
               </div>
-              <hr className="border-stone-100 dark:border-white/10 my-4" />
+              <hr className="border-amber-200/60 dark:border-amber-900/40 my-4" />
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-950 dark:to-orange-950 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-700 dark:text-amber-300 flex-shrink-0">
                   <Heart className="w-5 h-5" />
                 </div>
                 <div>
                   <h4 className="text-base font-bold text-foreground">Zero Platform Fees</h4>
-                  <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">CauseKind does not take a cut. Your entire donation supports the charitable programs.</p>
+                  <p className="text-sm text-stone-600 dark:text-stone-300 mt-1">CauseKind does not take a cut. Your entire donation supports the charitable programs.</p>
                 </div>
               </div>
             </div>
@@ -199,36 +184,41 @@ export function MoneyDonationForm() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, type: 'spring', bounce: 0.4 }}
-            className="bg-white dark:bg-zinc-900 p-6 sm:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-stone-100"
+            className="relative bg-[#fffdfa] dark:bg-[#23120a] p-6 sm:p-8 rounded-3xl shadow-[0_8px_35px_rgba(217,119,6,0.12)] border border-amber-200/80 dark:border-amber-800/50"
           >
+            {/* Small decorative Diya accent in top corner (pointer-events: none, aria-hidden: true, non-overlapping) */}
+            <div className="pointer-events-none absolute top-4 right-5 opacity-80 z-10 select-none" aria-hidden="true">
+              <DiyaIcon className="w-6 h-6 text-amber-500 drop-shadow-[0_2px_8px_rgba(234,88,12,0.4)]" />
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Amount Selection */}
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-3">Select Amount (₹)</label>
+                <label className="block text-sm font-bold text-foreground mb-3">Select Amount (₹)</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                   {predefinedAmounts.map((amt) => (
                     <motion.button
-                      whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                      whileHover={{ y: -2, boxShadow: '0 6px 16px rgba(234,88,12,0.15)' }}
                       whileTap={{ scale: 0.98 }}
                       key={amt}
                       type="button"
                       onClick={() => handleAmountClick(amt)}
-                      className={`py-3 px-4 rounded-xl text-sm font-bold transition-colors border cursor-pointer ${!isCustom && amount === amt
-                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 text-brand-700'
-                          : 'border-stone-200 dark:border-white/15 text-stone-700 dark:text-stone-200 hover:border-brand-200 bg-white'
+                      className={`py-3 px-4 rounded-xl text-sm font-bold transition-all border cursor-pointer ${!isCustom && amount === amt
+                          ? 'border-amber-500 bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] text-white shadow-[0_0_20px_rgba(234,88,12,0.35)] ring-2 ring-amber-400/40'
+                          : 'border-amber-200/80 dark:border-amber-800/60 text-stone-800 dark:text-amber-100 hover:border-amber-400 hover:bg-amber-50/60 bg-[#fffefb] dark:bg-[#25130b]'
                         }`}
                     >
                       ₹{amt.toLocaleString()}
                     </motion.button>
                   ))}
                   <motion.button
-                    whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                    whileHover={{ y: -2, boxShadow: '0 6px 16px rgba(234,88,12,0.15)' }}
                     whileTap={{ scale: 0.98 }}
                     type="button"
                     onClick={handleCustomAmountClick}
-                    className={`py-3 px-4 rounded-xl text-sm font-bold transition-colors border cursor-pointer sm:col-span-4 ${isCustom
-                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 text-brand-700'
-                        : 'border-stone-200 dark:border-white/15 text-stone-700 dark:text-stone-200 hover:border-brand-200 bg-white'
+                    className={`py-3 px-4 rounded-xl text-sm font-bold transition-all border cursor-pointer sm:col-span-4 ${isCustom
+                        ? 'border-amber-500 bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] text-white shadow-[0_0_20px_rgba(234,88,12,0.35)] ring-2 ring-amber-400/40'
+                        : 'border-amber-200/80 dark:border-amber-800/60 text-stone-800 dark:text-amber-100 hover:border-amber-400 hover:bg-amber-50/60 bg-[#fffefb] dark:bg-[#25130b]'
                       }`}
                   >
                     Custom Amount
@@ -241,25 +231,25 @@ export function MoneyDonationForm() {
                     animate={{ opacity: 1, height: 'auto' }}
                     className="relative mt-3"
                   >
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 text-sm font-medium">₹</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-700 dark:text-amber-300 text-sm font-bold">₹</span>
                     <input
                       type="text"
                       value={customAmount}
                       onChange={handleCustomAmountChange}
                       placeholder="Enter amount"
-                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-stone-300 dark:border-white/20 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white dark:bg-zinc-900 transition-all shadow-inner"
+                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-amber-200/80 dark:border-amber-800/60 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 outline-none text-sm bg-[#fffdfa] dark:bg-[#221008] text-foreground transition-all shadow-inner"
                     />
                   </motion.div>
                 )}
               </div>
 
-              <hr className="border-stone-100 dark:border-white/10" />
+              <hr className="border-amber-200/60 dark:border-amber-900/40" />
 
               {/* Personal Details */}
               <div className="space-y-4">
-                <label className="block text-sm font-semibold text-foreground">Your Details</label>
+                <label className="block text-sm font-bold text-foreground">Your Details</label>
                 <div>
-                  <label htmlFor="fullName" className="block text-xs text-stone-500 dark:text-stone-400 mb-1.5">Full Name</label>
+                  <label htmlFor="fullName" className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1.5">Full Name</label>
                   <input
                     type="text"
                     id="fullName"
@@ -272,7 +262,7 @@ export function MoneyDonationForm() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-xs text-stone-500 dark:text-stone-400 mb-1.5">Email Address</label>
+                  <label htmlFor="email" className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1.5">Email Address</label>
                   <input
                     type="email"
                     id="email"
@@ -285,7 +275,7 @@ export function MoneyDonationForm() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="mobileNumber" className="block text-xs text-stone-500 dark:text-stone-400 mb-1.5">Mobile Number</label>
+                  <label htmlFor="mobileNumber" className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1.5">Mobile Number</label>
                   <input
                     type="tel"
                     id="mobileNumber"
@@ -301,7 +291,7 @@ export function MoneyDonationForm() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="panNumber" className="block text-xs text-stone-500 dark:text-stone-400 mb-1.5">PAN Number (For 80G Tax Receipt)</label>
+                  <label htmlFor="panNumber" className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1.5">PAN Number (For 80G Tax Receipt)</label>
                   <input
                     type="text"
                     id="panNumber"
@@ -317,9 +307,9 @@ export function MoneyDonationForm() {
 
               {/* Summary & Submit */}
               <div className="pt-4">
-                <div className="flex justify-between items-center mb-6 text-sm bg-stone-50 dark:bg-zinc-900/60 p-4 rounded-xl border border-stone-100">
-                  <span className="text-stone-600 dark:text-stone-300 font-medium">Total Contribution</span>
-                  <span className="text-xl font-extrabold text-brand-600">
+                <div className="flex justify-between items-center mb-6 text-sm bg-amber-50/90 dark:bg-amber-950/50 p-4 rounded-xl border border-amber-300/60 dark:border-amber-700/50 shadow-xs">
+                  <span className="text-amber-950 dark:text-amber-100 font-semibold">Total Contribution</span>
+                  <span className="text-xl font-extrabold text-amber-700 dark:text-amber-300">
                     ₹{amount ? amount.toLocaleString() : '0'}
                   </span>
                 </div>
@@ -328,7 +318,7 @@ export function MoneyDonationForm() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-brand-500 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-brand-500/20 transition-all duration-200 ease-out hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-brand-500"
+                    className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] hover:from-[#c2410c] hover:to-[#b45309] px-8 py-3.5 text-base font-extrabold text-white shadow-lg shadow-orange-900/30 shadow-[0_0_25px_rgba(217,119,6,0.35)] hover:shadow-[0_0_35px_rgba(217,119,6,0.5)] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {submitting ? 'Opening secure checkout…' : (
                       <>
@@ -339,11 +329,11 @@ export function MoneyDonationForm() {
                 </motion.div>
 
                 {/* Secure payment note */}
-                <div className="flex items-center justify-center gap-2 mt-6 text-xs text-stone-400">
-                  <Lock className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-center gap-2 mt-6 text-xs font-medium text-stone-500 dark:text-stone-400">
+                  <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   <span>Secure payment &middot; UPI &middot; Cards &middot; Net Banking</span>
                 </div>
-                <p className="text-xs text-center text-stone-400 dark:text-stone-500 mt-2">
+                <p className="text-xs text-center text-stone-500 dark:text-stone-400 mt-2">
                   No payment is collected on this page. You will be redirected to a secure payment gateway.
                 </p>
               </div>
@@ -354,3 +344,4 @@ export function MoneyDonationForm() {
     </section>
   );
 }
+

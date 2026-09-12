@@ -98,6 +98,7 @@ export default function AudiencePathwayPanelGanpati({
     ? "focus-visible:ring-[#ea580c]"
     : "focus-visible:ring-[#9f1239]";
 
+
   // Side ambient wash. The donee's now falls maroon → temple gold → marigold,
   // the same three the ramp above walks, so the panel and the button agree.
   const wash = isDonor
