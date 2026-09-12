@@ -19,6 +19,27 @@ export const GANPATI_START = new Date("2026-09-11T18:30:00.000Z");
 // 25 Sept 2026 23:59:59.999 IST in UTC (end of 14th day)
 export const GANPATI_END = new Date("2026-09-25T18:29:59.999Z");
 
+/**
+ * The dates the BAND SHOWS, which are deliberately NOT the activation window
+ * above.
+ *
+ * Ganeshotsav itself runs 14 Sept (Ganesh Chaturthi) to 24 Sept (Anant
+ * Chaturdashi) — that is what the festival is, and what the strip must state.
+ * GANPATI_START / GANPATI_END are wider on purpose: the skin goes up two days
+ * early and comes down a day late, so the site is already dressed when people
+ * arrive for the first day and has not stripped itself bare while the last day
+ * is still being observed.
+ *
+ * Keep these two pairs separate. Pointing the label back at the activation
+ * constants would advertise 12-25, which are operational dates that mean
+ * nothing to a visitor and misstate the festival.
+ */
+// 14 Sept 2026 00:00:00 IST in UTC — Ganesh Chaturthi
+export const GANPATI_DISPLAY_START = new Date("2026-09-13T18:30:00.000Z");
+
+// 24 Sept 2026 23:59:59.999 IST in UTC — Anant Chaturdashi
+export const GANPATI_DISPLAY_END = new Date("2026-09-24T18:29:59.999Z");
+
 export const GANPATI_CONFIG = {
   override: process.env.NEXT_PUBLIC_GANPATI_THEME as GanpatiThemeOverride,
   startDate: GANPATI_START,
