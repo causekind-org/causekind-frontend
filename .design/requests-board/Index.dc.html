@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #b04a15; } a:hover { color: #963c0d; }
+    .serif { font-family: "Source Serif 4", Georgia, serif; }
+    .kick { font-size: 10px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    .num { font-variant-numeric: tabular-nums; }
+    .rule { height: 1px; background: #ded5c6; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #f5f1ea; color: #1c1917; padding-bottom: 40px">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px">
+    <span style="font-size: 17px; font-weight: 800; letter-spacing: -.02em">CauseKind</span>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1c1917" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </div>
+
+  <div style="padding: 12px 20px 0">
+    <span class="kick" style="color: #b04a15">The register</span>
+    <h1 class="serif" style="margin: 12px 0 0; font-size: 34px; font-weight: 700; line-height: 1.08; letter-spacing: -.015em">Every open need, in one list.</h1>
+    <p style="margin: 12px 0 0; font-size: 14px; line-height: 1.6; color: #57534e; text-wrap: pretty">Each one checked by a person before it appeared. Reading costs nothing; only offering needs an account.</p>
+  </div>
+
+  <div style="padding: 20px 20px 0">
+    <div style="display: flex; align-items: center; gap: 9px; border-bottom: 1.5px solid #1c1917; padding-bottom: 10px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span style="flex: 1; font-size: 14px; color: #a8a29e">Search item, city or category</span>
+      <span class="kick" style="color: #b04a15">Filter</span>
+    </div>
+  </div>
+
+  <!-- The list. Hairlines and a numbered column, no cards. -->
+  <div style="padding: 26px 20px 0">
+    <div style="display: flex; justify-content: space-between; padding-bottom: 10px">
+      <span class="kick" style="color: #a8a29e">Open now</span>
+      <span class="kick num" style="color: #a8a29e">01 &ndash; 01</span>
+    </div>
+    <div class="rule"></div>
+
+    <div style="padding: 18px 0; display: flex; gap: 16px; align-items: baseline">
+      <span class="serif num" style="width: 22px; flex: none; font-size: 15px; font-weight: 600; color: #c4bcae">01</span>
+      <div style="flex: 1; min-width: 0">
+        <div style="display: flex; align-items: baseline; gap: 8px">
+          <h2 class="serif" style="margin: 0; font-size: 21px; font-weight: 600; line-height: 1.25">Wheelchair for my friend</h2>
+        </div>
+        <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: #57534e">He recently got into an accident, due to which he cannot walk and needs support to move around.</p>
+        <p class="kick" style="margin: 10px 0 0; color: #a8a29e">Medical aid &middot; Pune &middot; Qty 1</p>
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 12px">
+          <span style="font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #dc2626">Urgent</span>
+          <span style="flex: 1"></span>
+          <a href="#" style="font-size: 13px; font-weight: 800; text-decoration: none">Offer this &rarr;</a>
+        </div>
+      </div>
+    </div>
+    <div class="rule"></div>
+
+    <!-- The empty rest of the register, stated rather than hidden -->
+    <div style="padding: 22px 0 0; display: flex; gap: 16px; align-items: baseline">
+      <span class="serif num" style="width: 22px; flex: none; font-size: 15px; font-weight: 600; color: #d9d2c6">02</span>
+      <p class="serif" style="margin: 0; font-size: 17px; font-weight: 400; line-height: 1.5; color: #a8a29e">The next line is empty. Eight categories are open to post into and only one has anything in it.</p>
+    </div>
+  </div>
+
+  <div style="padding: 30px 20px 0">
+    <div class="rule" style="margin-bottom: 18px"></div>
+    <div style="display: flex; align-items: center; gap: 12px">
+      <p style="margin: 0; flex: 1; font-size: 13px; line-height: 1.5; color: #57534e">You only need an account when you decide to give.</p>
+      <a href="#" style="flex: none; font-size: 13px; font-weight: 800; text-decoration: none">Log in</a>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":820}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

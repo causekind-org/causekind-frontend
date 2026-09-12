@@ -1,0 +1,17 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Chosen" },
+    { "id": "page-2", "name": "Not chosen" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 1020, "title": "Paged feed", "page": "page-1" },
+    { "file": "Search.dc.html", "x": 0, "y": 0, "w": 390, "h": 980, "title": "Search first", "page": "page-2" },
+    { "file": "Groups.dc.html", "x": 530, "y": 0, "w": 390, "h": 1040, "title": "Groups", "page": "page-2" },
+    { "file": "Nearby.dc.html", "x": 1060, "y": 0, "w": 390, "h": 1020, "title": "City + pages", "page": "page-2" }
+  ],
+  "annotations": [
+    { "id": "note-chosen", "x": 0, "y": -420, "w": 390, "page": "page-1", "text": "CHOSEN — the build target.\n\nThe page you have, plus three things:\n\n1. A STICKY context bar — \"Showing 24 of 247\" with sort and filter. It must not scroll away; it is what stops a long feed feeling bottomless.\n2. An EXPLICIT \"Load 24 more\", naming what is left. Not silent infinite scroll: a guest should always know how much board is behind them.\n3. Filters keep searching ALL 247, never just what is on screen.\n\nTHE HARD PART IS NOT THE FRONTEND. Today `/api/v1/item-requests/public` returns every approved request as one array and the board filters it client-side — and the per-category counts exist BECAUSE of that. Page the request naively and every number on this screen starts lying.\n\nSo this needs the endpoint to return a page AND the aggregate totals in the same response. That is the same ceiling already noted for the homepage's live-needs grid: one backend change serves both." },
+    { "id": "note-notchosen", "x": 0, "y": -190, "w": 1450, "page": "page-2", "text": "NOT CHOSEN — kept for reference, not being built.\n\nWorth stealing from later: Groups' warning badges (\"6 urgent\", \"4 over 30d\") are a better summary than a bare count, and City+pages' addressable pages matter if this board should ever rank in search or be linked to." }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}
