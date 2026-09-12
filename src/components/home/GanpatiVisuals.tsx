@@ -110,29 +110,37 @@ export function GanpatiAnimationStyles() {
 
       @keyframes petalDriftDown {
         0% {
-          transform: translate3d(0, -40px, 0) rotate(0deg);
+          transform: translate3d(0, -30px, 0) rotate(0deg);
           opacity: 0;
         }
-        6% {
-          transform: translate3d(8px, 20px, 0) rotate(22deg);
-          opacity: 0.95;
+        8% {
+          transform: translate3d(6px, 60px, 0) rotate(20deg);
+          opacity: 0.65;
         }
-        25% {
-          transform: translate3d(-14px, 210px, 0) rotate(85deg);
+        30% {
+          transform: translate3d(-10px, 240px, 0) rotate(75deg);
         }
-        50% {
-          transform: translate3d(18px, 460px, 0) rotate(175deg);
+        55% {
+          transform: translate3d(12px, 480px, 0) rotate(160deg);
         }
-        75% {
-          transform: translate3d(-12px, 710px, 0) rotate(260deg);
+        78% {
+          transform: translate3d(-8px, 720px, 0) rotate(240deg);
         }
-        92% {
-          transform: translate3d(6px, 880px, 0) rotate(320deg);
-          opacity: 0.95;
+        90% {
+          transform: translate3d(5px, 860px, 0) rotate(300deg);
+          opacity: 0.65;
         }
         100% {
-          transform: translate3d(14px, 960px, 0) rotate(360deg);
+          transform: translate3d(10px, 980px, 0) rotate(360deg);
           opacity: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ck-drifting-petals,
+        .ck-petal-drift {
+          display: none !important;
+          animation: none !important;
         }
       }
 
@@ -171,34 +179,19 @@ export function GanpatiAnimationStyles() {
 }
 
 /**
- * Animated Drifting Marigold Flower Petals for foreground depth.
- * Renders behind text/buttons (z-10) and away from primary CTA buttons so interactive elements remain clear and readable.
+ * Animated Drifting Marigold & Lotus Flower Petals for subtle hero depth.
+ * Renders behind text/buttons (z-10) with 6-8 petals at 0.55-0.65 opacity.
  */
-export function DriftingPetals({ className = "pointer-events-none absolute inset-0 overflow-hidden select-none z-10" }: { className?: string }) {
+export function DriftingPetals({ className = "pointer-events-none absolute inset-0 overflow-hidden select-none z-10 ck-drifting-petals" }: { className?: string }) {
   const petals = useMemo(
     () => [
-      // Left side (where leaves used to be, now festive floral petals/blossoms)
-      { id: 1, left: "4%", size: 18, delay: "0s", duration: "12s", type: "pink-petal" as const, rot: 25 },
-      { id: 2, left: "8%", size: 20, delay: "3.5s", duration: "14s", type: "marigold" as const, rot: -15 },
-      { id: 3, left: "28%", size: 16, delay: "6.2s", duration: "12s", type: "golden-petal" as const, rot: 40 },
-      { id: 4, left: "36%", size: 19, delay: "1.2s", duration: "14.5s", type: "red-petal" as const, rot: -30 },
-      { id: 5, left: "44%", size: 21, delay: "4.5s", duration: "13s", type: "marigold" as const, rot: 15 },
-
-      // Center
-      { id: 6, left: "52%", size: 17, delay: "3.2s", duration: "12.5s", type: "pink-petal" as const, rot: -20 },
-      { id: 7, left: "59%", size: 22, delay: "0.8s", duration: "14s", type: "marigold" as const, rot: 35 },
-      { id: 8, left: "66%", size: 18, delay: "5.1s", duration: "13.5s", type: "golden-petal" as const, rot: -10 },
-
-      // Right side
-      { id: 9, left: "74%", size: 19, delay: "2.1s", duration: "14s", type: "red-petal" as const, rot: 45 },
-      { id: 10, left: "81%", size: 22, delay: "8.4s", duration: "12.5s", type: "marigold" as const, rot: -25 },
-      { id: 11, left: "88%", size: 17, delay: "4.2s", duration: "15.5s", type: "pink-petal" as const, rot: 30 },
-      { id: 12, left: "94%", size: 20, delay: "1.6s", duration: "13s", type: "golden-petal" as const, rot: -35 },
-
-      // Subtle depth layers
-      { id: 13, left: "48%", size: 16, delay: "9.5s", duration: "15s", type: "marigold" as const, rot: 10 },
-      { id: 14, left: "63%", size: 15, delay: "10.2s", duration: "12s", type: "pink-petal" as const, rot: -40 },
-      { id: 15, left: "84%", size: 19, delay: "7.1s", duration: "14s", type: "red-petal" as const, rot: 20 },
+      { id: 1, left: "7%", size: 17, delay: "0s", duration: "13s", type: "pink-petal" as const, rot: 20 },
+      { id: 2, left: "24%", size: 19, delay: "4.2s", duration: "15s", type: "marigold" as const, rot: -15 },
+      { id: 3, left: "41%", size: 16, delay: "8.5s", duration: "12s", type: "golden-petal" as const, rot: 35 },
+      { id: 4, left: "58%", size: 18, delay: "1.8s", duration: "14s", type: "red-petal" as const, rot: -25 },
+      { id: 5, left: "73%", size: 20, delay: "6.1s", duration: "16s", type: "marigold" as const, rot: 15 },
+      { id: 6, left: "86%", size: 16, delay: "3.4s", duration: "12.5s", type: "pink-petal" as const, rot: -30 },
+      { id: 7, left: "94%", size: 17, delay: "9.8s", duration: "14.5s", type: "golden-petal" as const, rot: 25 },
     ],
     []
   );
@@ -244,7 +237,7 @@ export function DriftingPetals({ className = "pointer-events-none absolute inset
       {petals.map((p) => (
         <div
           key={p.id}
-          className="absolute -top-8"
+          className="absolute -top-8 ck-petal-drift"
           style={{
             left: p.left,
             animation: `petalDriftDown ${p.duration} linear infinite`,
@@ -254,50 +247,50 @@ export function DriftingPetals({ className = "pointer-events-none absolute inset
         >
           {p.type === "marigold" ? (
             /* Multi-Petal Marigold Blossom */
-            <svg width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" className="drop-shadow-[0_2px_8px_rgba(234,88,12,0.45)]">
-              <circle cx="12" cy="12" r="10" fill="url(#marigoldBloomGrad)" opacity="0.95" />
+            <svg width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" className="drop-shadow-[0_2px_6px_rgba(234,88,12,0.3)]">
+              <circle cx="12" cy="12" r="10" fill="url(#marigoldBloomGrad)" opacity="0.65" />
               {/* Petal indentations */}
-              <circle cx="12" cy="4" r="3.2" fill="#fbbf24" opacity="0.9" />
-              <circle cx="18" cy="7" r="3.2" fill="#f59e0b" opacity="0.9" />
-              <circle cx="20" cy="12" r="3.2" fill="#ea580c" opacity="0.9" />
-              <circle cx="18" cy="17" r="3.2" fill="#ea580c" opacity="0.9" />
-              <circle cx="12" cy="20" r="3.2" fill="#f59e0b" opacity="0.9" />
-              <circle cx="6" cy="17" r="3.2" fill="#fbbf24" opacity="0.9" />
-              <circle cx="4" cy="12" r="3.2" fill="#f59e0b" opacity="0.9" />
-              <circle cx="6" cy="7" r="3.2" fill="#fbbf24" opacity="0.9" />
+              <circle cx="12" cy="4" r="3.2" fill="#fbbf24" opacity="0.65" />
+              <circle cx="18" cy="7" r="3.2" fill="#f59e0b" opacity="0.65" />
+              <circle cx="20" cy="12" r="3.2" fill="#ea580c" opacity="0.65" />
+              <circle cx="18" cy="17" r="3.2" fill="#ea580c" opacity="0.65" />
+              <circle cx="12" cy="20" r="3.2" fill="#f59e0b" opacity="0.65" />
+              <circle cx="6" cy="17" r="3.2" fill="#fbbf24" opacity="0.65" />
+              <circle cx="4" cy="12" r="3.2" fill="#f59e0b" opacity="0.65" />
+              <circle cx="6" cy="7" r="3.2" fill="#fbbf24" opacity="0.65" />
               {/* Center disc */}
-              <circle cx="12" cy="12" r="3.8" fill="#b45309" />
-              <circle cx="12" cy="12" r="2.2" fill="#fde047" />
+              <circle cx="12" cy="12" r="3.8" fill="#b45309" opacity="0.65" />
+              <circle cx="12" cy="12" r="2.2" fill="#fde047" opacity="0.75" />
             </svg>
           ) : p.type === "pink-petal" ? (
             /* Festive Pink Lotus Petal */
-            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_8px_rgba(225,29,72,0.38)]">
+            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_6px_rgba(225,29,72,0.25)]">
               <path
                 d="M10 0 C3.5 5, 0.5 12, 3 19 C5.5 25, 14.5 25, 17 19 C19.5 12, 16.5 5, 10 0 Z"
                 fill="url(#pinkPetalGrad)"
-                opacity="0.92"
+                opacity="0.62"
               />
-              <path d="M10 2 Q10 13 10 22" stroke="#fbcfe8" strokeWidth="0.6" opacity="0.75" />
+              <path d="M10 2 Q10 13 10 22" stroke="#fbcfe8" strokeWidth="0.6" opacity="0.5" />
             </svg>
           ) : p.type === "red-petal" ? (
             /* Festive Vermilion Red Flower Petal */
-            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_8px_rgba(220,38,38,0.4)]">
+            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_6px_rgba(220,38,38,0.25)]">
               <path
                 d="M10 0 C4 5.5, 1 13, 3.5 19.5 C6 25, 14 25, 16.5 19.5 C19 13, 16 5.5, 10 0 Z"
                 fill="url(#redPetalGrad)"
-                opacity="0.92"
+                opacity="0.62"
               />
-              <path d="M10 2 Q10 13 10 22" stroke="#fecaca" strokeWidth="0.6" opacity="0.7" />
+              <path d="M10 2 Q10 13 10 22" stroke="#fecaca" strokeWidth="0.6" opacity="0.5" />
             </svg>
           ) : (
             /* Golden Saffron Petal */
-            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_8px_rgba(217,119,6,0.38)]">
+            <svg width={p.size} height={p.size * 1.25} viewBox="0 0 20 25" fill="none" className="drop-shadow-[0_2px_6px_rgba(217,119,6,0.25)]">
               <path
                 d="M10 0 C4 5, 1 12.5, 3.5 19 C6 25, 14 25, 16.5 19 C19 12.5, 16 5, 10 0 Z"
                 fill="url(#goldenPetalGrad)"
-                opacity="0.92"
+                opacity="0.62"
               />
-              <path d="M10 2 Q10 13 10 22" stroke="#fef08a" strokeWidth="0.6" opacity="0.75" />
+              <path d="M10 2 Q10 13 10 22" stroke="#fef08a" strokeWidth="0.6" opacity="0.5" />
             </svg>
           )}
         </div>

@@ -19,9 +19,7 @@ export const GANPATI_START = new Date("2026-09-13T18:30:00.000Z");
 export const GANPATI_END = new Date("2026-09-24T18:29:59.999Z");
 
 export const GANPATI_CONFIG = {
-  override: (typeof process !== "undefined"
-    ? process.env?.NEXT_PUBLIC_GANPATI_THEME
-    : undefined) as GanpatiThemeOverride,
+  override: process.env.NEXT_PUBLIC_GANPATI_THEME as GanpatiThemeOverride,
   startDate: GANPATI_START,
   endDate: GANPATI_END,
   title: "Ganeshotsav 2026",

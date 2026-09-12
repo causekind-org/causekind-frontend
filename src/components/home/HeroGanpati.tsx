@@ -111,6 +111,9 @@ export function HeroGanpati() {
           <RangoliBackdrop className="w-full h-full text-[#b45309] dark:text-amber-400 opacity-[0.06] dark:opacity-[0.07]" />
         </div>
 
+        {/* Drifting Festive Flower Petals (Subtle foreground depth, 6-8 petals, z-10 behind content) */}
+        <DriftingPetals className="pointer-events-none absolute inset-0 overflow-hidden select-none z-10" />
+
         {/* Foreground Content Container positioned on left with vertical centering */}
         <div className="relative z-20 mx-auto w-full max-w-[1440px] flex flex-col justify-center px-5 pt-16 pb-8 sm:px-8 sm:pt-20 sm:pb-10 lg:py-12 lg:pl-10 xl:pl-12 2xl:pl-16">
           <div className="w-full max-w-[23rem] sm:max-w-[27rem] lg:max-w-[29rem] xl:max-w-[31rem]">

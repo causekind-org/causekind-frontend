@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
 import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
 import { SahasLogo } from './SahasLogo';
 import Link from 'next/link';
+import { GanpatiToran, ModakIcon } from '@/components/home/GanpatiVisuals';
 
 /* ─── Step Data ─── */
 const steps = [
   {
     icon: <Heart className="w-7 h-7" />,
-    iconBg: 'from-brand-400 to-brand-600',
-    glowColor: 'rgba(176,74,21,0.25)',
+    iconBg: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
+    glowColor: 'rgba(234,88,12,0.3)',
     label: 'You Donate',
     headline: 'Your journey starts here.',
     description: 'Your contribution through CauseKind is securely collected and directed toward tangible change.',
@@ -19,8 +20,8 @@ const steps = [
   },
   {
     icon: <SahasLogo size={44} />,
-    iconBg: 'from-[#fff7ed] to-[#f0dfca] dark:from-[#403027] dark:to-[#2a201b]',
-    glowColor: 'rgba(185,133,67,0.20)',
+    iconBg: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
+    glowColor: 'rgba(217,119,6,0.3)',
     label: 'Sahas Charitable Trust',
     headline: 'Managed with full transparency.',
     description: 'Sahas Charitable Trust — registered with 12AA and 80G certifications — manages every rupee with accountability.',
@@ -28,8 +29,8 @@ const steps = [
   },
   {
     icon: <Banknote className="w-7 h-7" />,
-    iconBg: 'from-[#b98543] to-[#95602b]',
-    glowColor: 'rgba(185,133,67,0.25)',
+    iconBg: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
+    glowColor: 'rgba(234,88,12,0.3)',
     label: 'Funds Are Allocated',
     headline: 'Every rupee is accounted for.',
     description: 'Funds are allocated across verified programs in education, healthcare, and community welfare.',
@@ -37,8 +38,8 @@ const steps = [
   },
   {
     icon: <HandHeart className="w-7 h-7" />,
-    iconBg: 'from-[#c4774e] to-[#9c4824]',
-    glowColor: 'rgba(196,119,78,0.25)',
+    iconBg: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
+    glowColor: 'rgba(217,119,6,0.3)',
     label: 'Direct Impact',
     headline: 'Real people. Real change.',
     description: 'Your contribution directly reaches families, students, and communities — no middlemen.',
@@ -47,16 +48,14 @@ const steps = [
 ];
 
 const impactAreas = [
-  { icon: <GraduationCap className="w-6 h-6" />, label: 'Education & Scholarships', slug: 'education', color: 'from-[#b98543] to-[#95602b]', bgAccent: 'bg-[#fff4df] dark:bg-[#b98543]/10' },
-  { icon: <Stethoscope className="w-6 h-6" />, label: 'Healthcare & Medical Aid', slug: 'healthcare', color: 'from-[#c4774e] to-[#9c4824]', bgAccent: 'bg-[#fbe8df] dark:bg-[#c4774e]/10' },
-  { icon: <Home className="w-6 h-6" />, label: 'Community Welfare', slug: 'community-welfare', color: 'from-brand-400 to-brand-600', bgAccent: 'bg-brand-50 dark:bg-brand-500/10' },
-  { icon: <Users className="w-6 h-6" />, label: 'Women & Youth Empowerment', slug: 'empowerment', color: 'from-[#a66e4b] to-[#795039]', bgAccent: 'bg-[#f1e5dc] dark:bg-[#a66e4b]/10' },
+  { icon: <GraduationCap className="w-6 h-6" />, label: 'Education & Scholarships', slug: 'education', color: 'from-[#f97316] to-[#c2410c]', bgAccent: 'bg-amber-500/10 dark:bg-amber-500/15' },
+  { icon: <Stethoscope className="w-6 h-6" />, label: 'Healthcare & Medical Aid', slug: 'healthcare', color: 'from-[#f97316] to-[#c2410c]', bgAccent: 'bg-amber-500/10 dark:bg-amber-500/15' },
+  { icon: <Home className="w-6 h-6" />, label: 'Community Welfare', slug: 'community-welfare', color: 'from-[#f97316] to-[#c2410c]', bgAccent: 'bg-amber-500/10 dark:bg-amber-500/15' },
+  { icon: <Users className="w-6 h-6" />, label: 'Women & Youth Empowerment', slug: 'empowerment', color: 'from-[#f97316] to-[#c2410c]', bgAccent: 'bg-amber-500/10 dark:bg-amber-500/15' },
 ];
 
 /* ─── 3D Tilt Card ─── */
 function TiltCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  // ?? false because framer's hook returns boolean | null — same coercion as
-  // WhatWeProvideSection and BeTheChangeSection.
   const reduceMotion = useReducedMotion() ?? false;
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -81,8 +80,6 @@ function TiltCard({ children, className = '' }: { children: React.ReactNode; cla
     <motion.div
       onMouseMove={reduceMotion ? undefined : handleMouse}
       onMouseLeave={reduceMotion ? undefined : handleLeave}
-      // Dropping the style entirely, not zeroing it: an identity rotate still
-      // creates a 3D rendering context and can soften text on some GPUs.
       style={reduceMotion ? undefined : { rotateX, rotateY, transformStyle: 'preserve-3d' }}
       className={className}
     >
@@ -95,7 +92,7 @@ function TiltCard({ children, className = '' }: { children: React.ReactNode; cla
 function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: number; isLast: boolean }) {
   return (
     <div className="relative flex flex-row md:flex-col items-start md:items-center gap-5 md:gap-0 md:flex-1 z-10 group">
-      {/* Icon orb with glow */}
+      {/* Icon orb with gold ring */}
       <div className="flex-shrink-0 flex flex-col items-center">
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
@@ -113,10 +110,10 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
             className="absolute inset-0 rounded-2xl blur-xl opacity-60"
             style={{ background: step.glowColor }}
           />
-          <div className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${step.iconBg} text-white flex items-center justify-center shadow-lg`}>
+          <div className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${step.iconBg} text-white flex items-center justify-center shadow-lg ring-2 ring-[#d97706]/40 shadow-[0_0_18px_rgba(234,88,12,0.28)]`}>
             {step.icon}
             {/* Step number badge */}
-            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 text-foreground text-xs font-bold flex items-center justify-center shadow-md border border-stone-100">
+            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#fffbf5] dark:bg-[#2a1309] text-[#c2410c] dark:text-amber-300 text-xs font-extrabold flex items-center justify-center shadow-md border border-amber-300/70 dark:border-amber-700/60">
               {index + 1}
             </div>
           </div>
@@ -129,7 +126,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
             whileInView={{ scaleY: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.5, delay: index * 0.18 + 0.25 }}
-            className="w-px h-20 md:hidden bg-gradient-to-b from-brand-300 to-transparent origin-top mt-3"
+            className="w-px h-20 md:hidden bg-gradient-to-b from-[#ea580c] via-[#f59e0b] to-transparent origin-top mt-3"
           />
         )}
       </div>
@@ -142,32 +139,33 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
         transition={{ duration: 0.5, delay: index * 0.18 + 0.1 }}
         className="flex-1 md:text-center mt-1 md:mt-5 pb-10 md:pb-0 md:px-2"
       >
-        <span className="inline-block text-[11px] font-bold tracking-widest uppercase text-stone-400 dark:text-stone-500 mb-1.5">
+        <span className="inline-block text-[11px] font-bold tracking-widest uppercase text-amber-800 dark:text-amber-300 mb-1.5">
           {step.label}
         </span>
         <h3 className="text-lg sm:text-xl font-extrabold text-foreground mb-2 leading-snug">
           {step.headline}
         </h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed mb-3">
+        <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed mb-3">
           {step.description}
         </p>
         {step.detail && (
-          <span className="inline-block text-[11px] font-semibold text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-white/10 px-3 py-1 rounded-full">
+          <span className="inline-block text-[11px] font-semibold text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/50 px-3 py-1 rounded-full border border-amber-300/60 dark:border-amber-700/50 shadow-xs">
             {step.detail}
           </span>
         )}
       </motion.div>
 
-      {/* Desktop arrow connector between steps */}
+      {/* Desktop arrow connector between steps with diamond motif */}
       {!isLast && (
         <motion.div
           initial={{ opacity: 0, x: -10 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.4, delay: index * 0.18 + 0.35 }}
-          className="hidden md:flex absolute -right-4 lg:-right-6 top-7 z-20 text-stone-300"
+          className="hidden md:flex items-center gap-1 absolute -right-4 lg:-right-6 top-7 z-20 text-amber-500 dark:text-amber-400"
         >
-          <ArrowRight className="w-5 h-5" />
+          <span className="w-1.5 h-1.5 rotate-45 bg-amber-400 dark:bg-amber-500 inline-block" />
+          <ArrowRight className="w-5 h-5 text-amber-600 dark:text-amber-400" />
         </motion.div>
       )}
     </div>
@@ -186,18 +184,28 @@ export function MoneyFlowStory() {
   const bgX = useTransform(scrollYProgress, [0, 1], ['0%', '-15%']);
 
   return (
-    <section ref={containerRef} className="relative min-h-[calc(100svh-3.5rem)] py-10 sm:py-14 lg:py-16 bg-background overflow-hidden border-t border-stone-100 flex items-center">
+    <section ref={containerRef} className="relative min-h-[calc(100svh-3.5rem)] py-10 sm:py-14 lg:py-16 bg-gradient-to-b from-[#fffbf5] via-[#fff8ee] to-[#fffbf5] dark:from-[#1c0d06] dark:via-[#160a04] dark:to-[#1c0d06] overflow-hidden flex flex-col justify-center">
+      {/* Top Edge Garland Decoration */}
+      <div className="absolute top-0 inset-x-0 z-10 pointer-events-none">
+        <GanpatiToran />
+      </div>
+
+      {/* Subtle Ganpati Watermark Motif in corner */}
+      <div className="pointer-events-none absolute right-4 bottom-4 z-0 opacity-[0.06] dark:opacity-[0.08] select-none" aria-hidden="true">
+        <ModakIcon className="w-48 h-48 text-amber-600 dark:text-amber-400" />
+      </div>
+
       {/* Decorative background blobs */}
       <motion.div
         style={{ y: bgY }}
-        className="absolute -right-40 top-1/4 w-[500px] h-[500px] rounded-full bg-brand-50/40 blur-3xl pointer-events-none"
+        className="absolute -right-40 top-1/4 w-[500px] h-[500px] rounded-full bg-amber-500/10 blur-3xl pointer-events-none"
       />
       <motion.div
         style={{ y: bgX }}
-        className="absolute -left-40 bottom-1/4 w-[400px] h-[400px] rounded-full bg-blue-50/30 blur-3xl pointer-events-none"
+        className="absolute -left-40 bottom-1/4 w-[400px] h-[400px] rounded-full bg-orange-500/10 blur-3xl pointer-events-none"
       />
 
-      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-6">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -206,27 +214,27 @@ export function MoneyFlowStory() {
           transition={{ duration: 0.6 }}
           className="mb-8 sm:mb-10 text-center max-w-3xl mx-auto"
         >
-          <span className="inline-block text-xs font-bold tracking-wider uppercase text-brand-500 mb-4 bg-brand-50 dark:bg-brand-500/10 px-3 py-1 rounded-full">
+          <span className="inline-block text-xs font-bold tracking-wider uppercase text-amber-900 dark:text-amber-200 mb-4 bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 px-3 py-1 rounded-full shadow-xs">
             Where Your Money Goes
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground leading-tight mb-5">
             From you, to those who need it most.
           </h2>
-          <p className="text-base sm:text-lg text-stone-500 dark:text-stone-400 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed max-w-2xl mx-auto">
             Every donation follows a clear, accountable path. Here&apos;s exactly how your contribution creates real impact.
           </p>
         </motion.div>
 
         {/* ── Horizontal Timeline ── */}
-          <div className="relative mb-8">
+        <div className="relative mb-8">
           {/* Desktop connecting line with animated progress */}
-          <div className="hidden md:block absolute top-8 left-[8%] right-[8%] h-0.5 bg-stone-100 dark:bg-white/10 z-0">
+          <div className="hidden md:block absolute top-8 left-[8%] right-[8%] h-0.5 bg-amber-200/60 dark:bg-amber-900/40 z-0">
             <motion.div
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 1.8, ease: 'easeInOut' }}
-              className="h-full bg-gradient-to-r from-brand-300 via-[#d8bb91] to-[#c4774e] origin-left rounded-full"
+              className="h-full bg-gradient-to-r from-[#ea580c] via-[#f59e0b] to-[#c2410c] origin-left rounded-full"
             />
             {/* Animated pulse dot traveling along the line */}
             <motion.div
@@ -234,7 +242,7 @@ export function MoneyFlowStory() {
               whileInView={{ left: '100%', opacity: [0, 1, 1, 1, 0] }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 2.2, ease: 'easeInOut', delay: 0.3 }}
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-brand-500 shadow-lg shadow-brand-500/40"
+              className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-[#f97316] shadow-lg shadow-orange-500/50 ring-2 ring-amber-300"
             />
           </div>
 
@@ -258,7 +266,7 @@ export function MoneyFlowStory() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="w-full"
         >
-          <h4 className="text-sm font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 text-center mb-8">
+          <h4 className="text-sm font-bold uppercase tracking-widest text-amber-800 dark:text-amber-300 text-center mb-8">
             Supporting Core Initiatives
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1000px' }}>
@@ -271,7 +279,7 @@ export function MoneyFlowStory() {
                 transition={{ duration: 0.4, delay: 0.5 + i * 0.1 }}
               >
                 <TiltCard className="cursor-pointer h-full">
-                  <Link href={`/initiatives/${area.slug}`} aria-label={`Explore ${area.label}`} className="card-shimmer relative overflow-hidden flex h-full flex-col items-center justify-center text-center gap-4 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-white/10 shadow-sm hover:shadow-xl transition-[box-shadow,transform] duration-300 group active:scale-[0.98]">
+                  <Link href={`/initiatives/${area.slug}`} aria-label={`Explore ${area.label}`} className="card-shimmer relative overflow-hidden flex h-full flex-col items-center justify-center text-center gap-4 p-6 rounded-2xl bg-[#fffdfa] dark:bg-[#23120a] border border-amber-200/80 dark:border-amber-800/40 shadow-[0_4px_20px_rgba(217,119,6,0.08)] hover:shadow-[0_12px_32px_rgba(217,119,6,0.2)] hover:border-amber-400/90 transition-[box-shadow,transform,border-color] duration-300 group active:scale-[0.98]">
                     {/* Gradient accent bg on hover */}
                     <div className={`absolute inset-0 ${area.bgAccent} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`} />
                     
@@ -280,7 +288,7 @@ export function MoneyFlowStory() {
                         {area.icon}
                       </div>
                     </div>
-                    <span className="relative z-10 text-sm font-semibold text-foreground leading-tight group-hover:text-foreground transition-colors">
+                    <span className="relative z-10 text-sm font-semibold text-foreground leading-tight group-hover:text-amber-800 dark:group-hover:text-amber-200 transition-colors">
                       {area.label}
                     </span>
                   </Link>
@@ -293,3 +301,4 @@ export function MoneyFlowStory() {
     </section>
   );
 }
+

@@ -85,6 +85,7 @@ import { ComingSoonMagnetsGanpati }  from "@/components/home/ComingSoonMagnetsGa
 import { CTASectionGanpati }         from "@/components/home/CTASectionGanpati";
 import { FooterGanpati }             from "@/components/home/FooterGanpati";
 import AudiencePathwaysSectionGanpati from "@/components/home/AudiencePathwaysSectionGanpati";
+import { GanpatiWelcomeModal }        from "@/components/home/GanpatiWelcomeModal";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -360,6 +361,9 @@ export default function HomeClient({
 
   return (
     <div className={`ck-home-page ${isGanpati ? "ck-ganpati-active" : ""} bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
+      {/* Festive Ganpati Welcome Popup on site load */}
+      {isGanpati && <GanpatiWelcomeModal />}
+
       {/* Welcome modal & profile toast for incomplete NGO profiles */}
       {isNgo && userIdentifier && ngoAppStatus !== "SUBMITTED" && (
         <>

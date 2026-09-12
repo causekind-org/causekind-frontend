@@ -54,13 +54,9 @@ export default function AudiencePathwayPanelGanpati({
     ? "text-[#ea580c] dark:text-[#fb923c]"
     : "text-[#831843] dark:text-[#f472b6]";
 
-  const ctaBg = isDonor
-    ? "bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] hover:from-[#c2410c] hover:to-[#b45309] text-white shadow-md shadow-orange-700/25"
-    : "bg-gradient-to-r from-[#701a2d] via-[#831843] to-[#14532d] hover:from-[#500724] hover:to-[#0f3d1e] text-white shadow-md shadow-pink-950/25";
+  const ctaBg = "bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] hover:from-[#c2410c] hover:to-[#b45309] text-white shadow-md shadow-orange-700/25";
 
-  const ringFocus = isDonor
-    ? "focus-visible:ring-[#ea580c]"
-    : "focus-visible:ring-[#701a2d]";
+  const ringFocus = "focus-visible:ring-[#ea580c]";
 
   // Side ambient wash
   const wash = isDonor

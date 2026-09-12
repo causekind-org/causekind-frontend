@@ -9,16 +9,16 @@ export interface CertificateCardProps {
   title: string;
   description: string;
   icon: React.ReactNode;
-  iconBgColor: string;
+  iconBgColor?: string;
   benefits: string[];
   documentUrl: string;
   imageUrl?: string;
   extraImages?: string[];
 }
 
-export function CertificateCard({ title, description, icon, iconBgColor, benefits, documentUrl, imageUrl, extraImages = [] }: CertificateCardProps) {
+export function CertificateCard({ title, description, icon, benefits, documentUrl, imageUrl, extraImages = [] }: CertificateCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxPage, setLightboxPage] = useState(0);
+  const [, setLightboxPage] = useState(0);
   
   const allPages = imageUrl ? [imageUrl, ...extraImages] : [];
   const totalPages = allPages.length;
@@ -28,10 +28,10 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
       <motion.div 
         whileHover={{ y: -8, scale: 1.01 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="flex flex-col p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 shadow-[0_4px_24px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.1)] border border-stone-100 dark:border-white/10 h-full group"
+        className="flex flex-col p-6 sm:p-8 rounded-3xl bg-[#fffdfa] dark:bg-[#23120a] shadow-[0_4px_24px_rgba(217,119,6,0.06)] hover:shadow-[0_18px_40px_rgba(217,119,6,0.18)] border border-amber-200/70 dark:border-amber-800/40 hover:border-amber-400/90 h-full group"
       >
         {/* Icon */}
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 ${iconBgColor}`}>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] shadow-md">
           {icon}
         </div>
 
@@ -39,9 +39,9 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
         <h3 className="text-xl font-bold text-foreground mb-3">{title}</h3>
 
         {/* Description */}
-        <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed mb-6">{description}</p>
+        <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed mb-6">{description}</p>
 
-        {/* Document Thumbnail */}
+        {/* Document Thumbnail - Untouched */}
         <div className="mb-8">
           <h4 className="text-sm font-bold text-foreground mb-4">Document Pages:</h4>
           
@@ -120,20 +120,20 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
           )}
         </div>
 
-        {/* Key Benefits */}
+        {/* Key Benefits - Switched to warm gold check icons with legible text */}
         <div className="flex-grow mb-8">
           <h4 className="text-sm font-bold text-foreground mb-4">Key Benefits:</h4>
           <ul className="space-y-3">
             {benefits.map((benefit, index) => (
               <li key={index} className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-stone-600">{benefit}</span>
+                <CheckCircle2 className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-stone-700 dark:text-stone-300 font-medium">{benefit}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* View All Button */}
+        {/* View All Button - Festive Saffron Outline Treatment */}
         <button 
           type="button" 
           onClick={() => {
@@ -144,7 +144,7 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
               window.open(documentUrl, '_blank');
             }
           }}
-          className="w-full py-3 rounded-xl border border-stone-200 dark:border-white/15 text-sm font-bold text-foreground hover:bg-stone-50 hover:border-stone-300 transition-colors flex items-center justify-center gap-2 cursor-pointer mt-auto"
+          className="w-full py-3 rounded-xl border border-amber-400/80 text-amber-950 dark:text-amber-100 hover:bg-gradient-to-r hover:from-[#ea580c] hover:to-[#d97706] hover:text-white hover:border-amber-500 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer font-bold text-sm shadow-xs mt-auto"
         >
           <Eye className="w-4 h-4" />
           View All
@@ -206,3 +206,4 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
     </>
   );
 }
+
