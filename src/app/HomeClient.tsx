@@ -252,7 +252,7 @@ export default function HomeClient({
   // campaign is on.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
-  // ── Ganpati Festival 11-day skin (14-24 Sept 2026) ─────────────────────────
+  // ── Ganpati Festival 12-day skin (14-25 Sept 2026) ─────────────────────────
   const isGanpati = isGanpatiActive();
   const HeroComponent = isGanpati ? HeroGanpati : HeroSection;
   const LiveNeedsComponent = isGanpati ? LiveNeedsSectionGanpati : LiveNeedsSection;
