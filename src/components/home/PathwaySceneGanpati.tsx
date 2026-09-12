@@ -9,7 +9,7 @@ export type PathwayTone = "donor" | "donee";
  * PathwaySceneGanpati — Reskinned holographic scan scene with festive Ganpati palette.
  * 
  * Saffron/terracotta palette on the donor side.
- * Deep maroon to temple-gold-green palette on the donee side.
+ * Deep temple maroon into gold on the donee side.
  * 
  * Features:
  * - Continuous slow rotation animation on orbiting ring
@@ -38,8 +38,10 @@ export default function PathwaySceneGanpati({
 
   const isDonor = tone === "donor";
 
-  // Saffron/terracotta for donor; Deep maroon to temple-gold-green for donee
-  const ring = isDonor ? "rgb(234 88 12)" : "rgb(112 26 45)";
+  // Saffron/terracotta for donor; temple maroon for donee. The maroon is
+  // the same red the panel wash and the CTA ramp use, rather than the three
+  // neighbouring wines this half carried before.
+  const ring = isDonor ? "rgb(234 88 12)" : "rgb(107 23 23)";
   const glow = isDonor ? "rgb(245 158 11)" : "rgb(202 138 4)";
   const greenAccent = "rgb(20 83 45)";
 
@@ -119,8 +121,8 @@ export default function PathwaySceneGanpati({
           style={{
             left: motif.x,
             top: motif.y,
-            borderColor: isDonor ? "rgba(234, 88, 12, 0.4)" : "rgba(112, 26, 45, 0.4)",
-            background: isDonor ? "rgba(245, 158, 11, 0.15)" : "rgba(112, 26, 45, 0.15)",
+            borderColor: isDonor ? "rgba(234, 88, 12, 0.4)" : "rgba(107, 23, 23, 0.4)",
+            background: isDonor ? "rgba(245, 158, 11, 0.15)" : "rgba(107, 23, 23, 0.15)",
             color: ring,
           }}
           animate={
@@ -142,7 +144,7 @@ export default function PathwaySceneGanpati({
           style={{
             left: motif.x,
             top: motif.y,
-            borderColor: isDonor ? "rgba(234, 88, 12, 0.28)" : "rgba(112, 26, 45, 0.28)",
+            borderColor: isDonor ? "rgba(234, 88, 12, 0.28)" : "rgba(107, 23, 23, 0.28)",
           }}
           animate={animate ? { rotate: 360 } : { rotate: 0 }}
           transition={{ duration: active ? 26 : 44, repeat: Infinity, ease: "linear" }}
@@ -158,7 +160,7 @@ export default function PathwaySceneGanpati({
                 <motion.span
                   className="flex h-6.5 w-6.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg border backdrop-blur-sm shadow-sm"
                   style={{
-                    borderColor: isDonor ? "rgba(234, 88, 12, 0.4)" : "rgba(112, 26, 45, 0.4)",
+                    borderColor: isDonor ? "rgba(234, 88, 12, 0.4)" : "rgba(107, 23, 23, 0.4)",
                     background: isDonor ? "rgba(254, 240, 138, 0.2)" : "rgba(254, 240, 138, 0.15)",
                     color: ring,
                   }}

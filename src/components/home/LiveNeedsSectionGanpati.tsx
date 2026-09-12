@@ -83,7 +83,15 @@ export function LiveNeedsSectionGanpati({
     <section
       ref={sectionRef}
       aria-label="Verified community needs — Ganeshotsav"
-      className="relative isolate overflow-hidden bg-gradient-to-b from-[#fffcf7] via-[#fff8ed] to-[#fffcf7] px-4 py-16 sm:px-6 sm:py-24 lg:px-8 dark:from-[#140803] dark:via-[#1c0c05] dark:to-[#140803]"
+      // One gutter and one ground below lg, matching LiveNeedsSection.
+      //
+      // This carried px-4 and its own full background at every width. In the
+      // mobile tree it is a child of a column that already pads px-5, so the
+      // board sat on a 36px gutter while every other section on that column sat
+      // on 20px, and its gradient read as a panel inset from both edges rather
+      // than as the page. Below lg it now drops both and inherits the column.
+      // The desktop tree is hidden below lg, so nothing there changes.
+      className="relative isolate overflow-hidden px-0 pt-10 pb-2 sm:pt-12 lg:bg-gradient-to-b lg:from-[#fffcf7] lg:via-[#fff8ed] lg:to-[#fffcf7] lg:px-8 lg:py-24 lg:dark:from-[#140803] lg:dark:via-[#1c0c05] lg:dark:to-[#140803]"
     >
       {/* Festive toran border at the top of the section */}
       <div className="absolute top-0 inset-x-0 z-10 pointer-events-none select-none overflow-visible">

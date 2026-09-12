@@ -26,7 +26,7 @@ export type PathwayPanelGanpatiProps = {
 /**
  * AudiencePathwayPanelGanpati — Reskinned split panel half for the Ganpati festival theme.
  *
- * Saffron/terracotta palette on donor side; deep maroon to temple-gold-green on donee side.
+ * Saffron/terracotta on the donor side; temple maroon into gold on the donee side.
  * Keeps exact hover interaction, copy structure, and navigation intact.
  */
 export default function AudiencePathwayPanelGanpati({
@@ -48,20 +48,59 @@ export default function AudiencePathwayPanelGanpati({
   const reduceMotion = useReducedMotion();
   const isDonor = tone === "donor";
 
-  // Donor: warm saffron-to-terracotta
-  // Donee: deep maroon-to-temple-gold-green
+  /*
+    Both halves are warm, and that is the point.
+
+    The donee side used to answer the donor's saffron with magenta and forest
+    green: the CTA ran `#701a2d → #831843 → #14532d`, which is 179° of hue in
+    one button. Its right half landed on `#4c3638` — 17% saturation, a grey
+    mauve — while the donor's ramp travels 23° and never drops below 92%. Next
+    to it the donee CTA read as a different product's button, and `#831843`
+    appeared nowhere else in the festive skin.
+
+    Green was the other half of the mistake, and a subtler one. There are 134
+    green values across this theme and every one of them is *foliage* — mango
+    leaves in the torans, the banana-leaf strips, the garland gradients. Green
+    is the festival's plant colour, not its interface colour, and the moment it
+    became a button it stopped reading as a banana leaf and started reading as
+    a success state.
+
+    So the two doors are told apart by value, not hue: the donor is bright
+    saffron, the donee is deep temple maroon warming into gold. Both sit inside
+    the theme's documented palette, one step below `GANPATI_CONFIG.colors.maroon`
+    (#7f1d1d) so the filled control sits under the palette's reference rather
+    than level with it — a button carries more area than a swatch does, and at
+    the reference value it read hotter than the rest of the section. The donee
+    half now also matches its own decorative scene, which was already wine and
+    gold while the CTA was magenta and green.
+
+    <p><b>The CTA alone breaks from that maroon, into sindoor.</b> "Join as a
+    donee" sits beside "Join as a donor" in this split, and at 21° of hue from
+    the donor's saffron the maroon button read as the same button in a darker
+    shade rather than as the other choice. Sindoor #9f1239 puts 37° between
+    them, which is the widest gap available without leaving the palette — and
+    it is already in the skin, on the hero's Zero Fees pill. The section keeps
+    its maroon; only the control moves, so the button reads as the action
+    inside the half rather than as a second accent competing with it.
+  */
   const accent = isDonor
     ? "text-[#ea580c] dark:text-[#fb923c]"
-    : "text-[#831843] dark:text-[#f472b6]";
+    : "text-[#6b1717] dark:text-[#f87171]";
 
-  const ctaBg = "bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] hover:from-[#c2410c] hover:to-[#b45309] text-white shadow-md shadow-orange-700/25";
+  const ctaBg = isDonor
+    ? "bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] hover:from-[#c2410c] hover:to-[#b45309] text-white shadow-md shadow-orange-700/25"
+    : "bg-gradient-to-r from-[#9f1239] via-[#881337] to-[#7a1030] hover:from-[#6b1130] hover:to-[#5a0d28] text-white shadow-md shadow-rose-950/30";
 
-  const ringFocus = "focus-visible:ring-[#ea580c]";
+  const ringFocus = isDonor
+    ? "focus-visible:ring-[#ea580c]"
+    : "focus-visible:ring-[#9f1239]";
 
-  // Side ambient wash
+
+  // Side ambient wash. The donee's now falls maroon → temple gold → marigold,
+  // the same three the ramp above walks, so the panel and the button agree.
   const wash = isDonor
     ? "linear-gradient(150deg, rgba(234, 88, 12, 0.15) 0%, rgba(217, 119, 6, 0.06) 55%, transparent 100%)"
-    : "linear-gradient(210deg, rgba(112, 26, 45, 0.16) 0%, rgba(20, 83, 45, 0.11) 48%, rgba(133, 77, 14, 0.06) 82%, transparent 100%)";
+    : "linear-gradient(210deg, rgba(107, 23, 23, 0.18) 0%, rgba(146, 64, 14, 0.10) 48%, rgba(180, 83, 9, 0.05) 82%, transparent 100%)";
 
   return (
     <>

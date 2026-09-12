@@ -16,7 +16,7 @@ import { ModakIcon, DiyaIcon, GhantiIcon, LotusIcon, RangoliBorderStrip, Floatin
  * Dedicated sibling to AudiencePathwaysSection.tsx for the Ganpati festival theme.
  * Keeps existing hover interactions and structure while updating:
  * 1. Headline: "This Ganeshotsav, Whichever Side You're On — CauseKind Connects You"
- * 2. Warm saffron-terracotta (donor) and deep maroon-temple-gold-green (donee) palettes
+ * 2. Warm saffron-terracotta (donor) and temple maroon-into-gold (donee) palettes
  * 3. Slim rangoli/toran-inspired top border on the rounded card
  * 4. Reskinned icon clusters with Modak, Lotus, Bell, and Diya motifs
  * 5. Trunk-swirl S-curve shape dividing the two halves
@@ -321,7 +321,7 @@ export default function AudiencePathwaysSectionGanpati({
                     <stop offset="0%" stopColor="#ea580c" stopOpacity="0.9" />
                     <stop offset="35%" stopColor="#f59e0b" stopOpacity="0.95" />
                     <stop offset="70%" stopColor="#ca8a04" stopOpacity="0.9" />
-                    <stop offset="100%" stopColor="#701a2d" stopOpacity="0.85" />
+                    <stop offset="100%" stopColor="#6b1717" stopOpacity="0.85" />
                   </linearGradient>
                 </defs>
 

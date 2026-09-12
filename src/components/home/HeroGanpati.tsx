@@ -67,11 +67,23 @@ export function HeroGanpati() {
     <section
       data-tour="guest-hero"
       aria-labelledby="causekind-hero-title"
-      className="ck-showcase-hero relative isolate flex flex-col overflow-hidden bg-[#fffdf9] text-[#100c06] dark:bg-[#190b05] dark:text-stone-100 w-full"
+      /* `ck-ganpati-hero` earns its keep in styles.css, not here. This hero
+         needs `ck-showcase-hero` for its layout — the negative top margin that
+         tucks it under the nav, the stage's min-heights — but that class also
+         carries a block of mobile CTA styling written for the plain hero, whose
+         phone copy sits on a dark photo scrim. This one's sits on cream, so
+         that styling painted both buttons in near-white on near-white. The
+         marker is what lets those rules opt out. */
+      className="ck-showcase-hero ck-ganpati-hero relative isolate flex flex-col overflow-hidden bg-[#fffdf9] text-[#100c06] dark:bg-[#190b05] dark:text-stone-100 w-full"
     >
-      {/* Main Hero Stage with full uncropped 16:9 aspect ratio */}
-      <div className="ck-lead-hero-stage relative min-w-0 w-full min-h-[560px] sm:min-h-[620px] lg:min-h-0 lg:aspect-[16/9] lg:max-h-[900px] xl:max-h-[960px] overflow-hidden bg-[#fffdf9] dark:bg-[#190b05] flex flex-col justify-center">
-        
+      {/* Main Hero Stage. Below lg this is the tall cream stage the phone
+          column wants; at lg it becomes upstream's uncropped 16:9 frame.
+
+          `lg:flex` and not `flex`: upstream centres the stage's children
+          vertically, which is right for a fixed-aspect desktop frame and wrong
+          for the phone, where the deity band leads and the copy follows it. */}
+      <div className="ck-lead-hero-stage relative min-w-0 w-full min-h-[560px] sm:min-h-[620px] lg:min-h-0 lg:aspect-[16/9] lg:max-h-[900px] xl:max-h-[960px] overflow-hidden bg-[#fffdf9] dark:bg-[#190b05] lg:flex lg:flex-col lg:justify-center">
+
         {/* Photorealistic Ganpati Hero Full Background Image (Desktop & Large screens) */}
         <div className="absolute inset-0 z-0 pointer-events-none select-none hidden lg:block overflow-hidden">
           <Image
@@ -111,13 +123,33 @@ export function HeroGanpati() {
           <RangoliBackdrop className="w-full h-full text-[#b45309] dark:text-amber-400 opacity-[0.06] dark:opacity-[0.07]" />
         </div>
 
-        {/* Drifting Festive Flower Petals (Subtle foreground depth, 6-8 petals, z-10 behind content) */}
-        <DriftingPetals className="pointer-events-none absolute inset-0 overflow-hidden select-none z-10" />
+        {/* Drifting Marigold Petals (z-10: below text & buttons).
+            `lg:hidden`: drifting divs over the uncropped desktop photograph read as dust on the lens.
+            On the phone the photo is a band rather than the ground, so they still land. */}
+        <DriftingPetals className="pointer-events-none absolute inset-0 overflow-hidden select-none z-10 lg:hidden" />
 
-        {/* Foreground Content Container positioned on left with vertical centering */}
-        <div className="relative z-20 mx-auto w-full max-w-[1440px] flex flex-col justify-center px-5 pt-16 pb-8 sm:px-8 sm:pt-20 sm:pb-10 lg:py-12 lg:pl-10 xl:pl-12 2xl:pl-16">
-          <div className="w-full max-w-[23rem] sm:max-w-[27rem] lg:max-w-[29rem] xl:max-w-[31rem]">
-            
+        {/* Foreground Content Container. Phone gutter and rhythm below lg; desktop padding and positioning at lg and above. */}
+        <div className="relative z-20 mx-auto w-full max-w-[1440px] flex flex-col justify-center min-h-[560px] sm:min-h-[620px] lg:min-h-0 px-6 py-10 sm:px-10 sm:py-14 lg:py-12 lg:pl-10 xl:pl-12 2xl:pl-16">
+
+          {/* The deity image block, on phones and tablets (below lg). */}
+          <div className="relative -mx-6 -mt-10 mb-8 block h-[20rem] w-[calc(100%+3rem)] overflow-hidden sm:-mx-10 sm:-mt-14 sm:mb-9 sm:h-[24rem] sm:w-[calc(100%+5rem)] lg:hidden">
+            <Image
+              src="/images/ganpati-hero-bg-v5.webp"
+              alt="Lord Ganesha seated on a flower-strewn altar with lit diyas"
+              fill
+              priority
+              sizes="(max-width: 1023px) 100vw, 1px"
+              className="object-cover object-[97%_center]"
+            />
+            {/* The seam gradient overlay */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#fffdf9] via-[#fffdf9]/70 to-transparent dark:from-[#190b05] dark:via-[#190b05]/70"
+            />
+          </div>
+
+          {/* Content column: wider on mobile/tablet (below lg), exact desktop column width at lg and above. */}
+          <div className="w-full max-w-[36rem] sm:max-w-[42rem] lg:max-w-[29rem] xl:max-w-[31rem]">
             {/* 1. Eyebrow Tag with Petal Accents */}
             <div className="inline-flex items-center gap-2 text-[#b45309] dark:text-amber-400">
               <PetalAccent className="size-3.5 text-[#ea580c] shrink-0" />
@@ -171,7 +203,23 @@ export function HeroGanpati() {
               {primaryAction.href ? (
                 <NewRequestLink
                   href={primaryAction.href}
-                  className="ck-hero-primary-cta group relative isolate inline-flex min-h-11 sm:min-h-11.5 min-w-0 w-auto shrink-0 whitespace-nowrap items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#c2410c] via-[#ea580c] to-[#d97706] px-5.5 py-2.5 text-xs font-black uppercase leading-tight tracking-[0.05em] text-white shadow-[0_6px_20px_rgba(234,88,12,0.35)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_10px_24px_rgba(234,88,12,0.48)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:px-6.5"
+                  /* The ramp runs terracotta to amber-700, not to amber-600.
+                     A white 12px bold label wants 4.5:1 and the pale end gave
+                     3.19:1, its middle 3.56:1 — the label thinned out across
+                     the right half of its own fill. Every stop now clears it
+                     (7.31 / 5.18 / 5.02). Kept through the merge rather than
+                     taken from upstream, which still carries the pre-fix ramp:
+                     upstream changed this button's size, not its colour, so
+                     there is nothing on that side to prefer here.
+
+                     Deliberately deeper than the marigold ramp the donor door
+                     uses a section below. Two primaries that shout in the same
+                     register read as two of the same thing; this one anchors,
+                     that one invites.
+
+                     The lg: run is upstream's tighter desktop button; the phone
+                     keeps the full-width 52px target. */
+                  className="ck-hero-primary-cta group relative isolate inline-flex min-h-13 min-w-0 w-full items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-[#9a3412] via-[#c2410c] to-[#b45309] px-8 py-3.5 text-xs font-black uppercase leading-tight tracking-[0.06em] text-white shadow-[0_8px_24px_rgba(234,88,12,0.38)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_12px_28px_rgba(234,88,12,0.52)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:min-h-14 sm:w-auto sm:shrink-0 sm:whitespace-nowrap sm:px-9 lg:min-h-11.5 lg:gap-2 lg:px-6.5 lg:py-2.5 lg:tracking-[0.05em]"
                 >
                   <DiyaIcon className="relative z-[1] size-4 shrink-0 text-amber-200 group-hover:scale-110 transition-transform" />
                   <span className="relative z-[1] min-w-0 text-center">{primaryAction.label}</span>
@@ -190,7 +238,16 @@ export function HeroGanpati() {
 
               <Link
                 href="/requests"
-                className="ck-hero-secondary-cta group relative isolate inline-flex min-h-11 sm:min-h-11.5 min-w-0 w-auto shrink-0 whitespace-nowrap items-center justify-center gap-2 rounded-full border-2 border-orange-500/80 bg-white/95 px-5 py-2.5 text-xs font-black uppercase leading-tight tracking-[0.04em] text-[#9a3412] shadow-[0_4px_12px_rgba(217,119,6,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-orange-50 hover:border-orange-600 hover:shadow-[0_6px_18px_rgba(217,119,6,0.18)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 dark:bg-[#251007]/90 dark:border-orange-500/60 dark:text-amber-200 dark:hover:bg-[#34170b] sm:px-5.5"
+                /* `border-orange-600`, not `orange-500/80`. This button is a
+                   white fill on a cream hero, so the border is the only thing
+                   that says "button" — it is a component boundary, and 1.4.11
+                   wants 3:1 for one of those. The 80% orange-500 upstream still
+                   carries measured 2.31:1 against its own fill; orange-600 at
+                   full opacity measures 3.56:1. Dark mode keeps its own value,
+                   which already clears the floor at 3.13:1.
+
+                   The lg: run is upstream's tighter desktop button. */
+                className="ck-hero-secondary-cta group relative isolate inline-flex min-h-13 min-w-0 w-full items-center justify-center gap-2.5 rounded-full border-2 border-orange-600 bg-white/95 px-8 py-3.5 text-xs font-black uppercase leading-tight tracking-[0.05em] text-[#9a3412] shadow-[0_4px_14px_rgba(217,119,6,0.1)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-orange-50 hover:border-orange-600 hover:shadow-[0_6px_20px_rgba(217,119,6,0.22)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 dark:bg-[#251007]/90 dark:border-orange-500/60 dark:text-amber-200 dark:hover:bg-[#34170b] sm:min-h-14 sm:w-auto sm:shrink-0 sm:whitespace-nowrap sm:px-8 lg:min-h-11.5 lg:gap-2 lg:px-5.5 lg:py-2.5 lg:tracking-[0.04em]"
               >
                 <UsersRound className="relative z-[1] size-4 shrink-0 text-[#c2410c] dark:text-amber-300" strokeWidth={2.2} aria-hidden="true" />
                 <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
@@ -200,31 +257,11 @@ export function HeroGanpati() {
 
           </div>
 
-          {/* Mobile Ganpati Showcase banner — Full 16:9 uncropped image */}
-          <div className="mt-6 sm:mt-8 relative block lg:hidden w-full aspect-[16/9] rounded-2xl overflow-hidden border border-amber-200/70 shadow-[0_8px_30px_rgba(217,119,6,0.16)]">
-            <Image
-              src="/images/ganpati-hero-hd.webp"
-              alt="Festive Ganpati Idol in Temple Setting"
-              fill
-              priority
-              quality={100}
-              sizes="(max-width: 1024px) 100vw, 100vw"
-              className="object-contain sm:object-cover object-center"
-            />
-            {/* Kraft Cardboard Emblem Mask (covers printed logo on donation box) */}
-            <div
-              className="absolute rounded-full pointer-events-none z-[1]"
-              style={{
-                left: "79.8%",
-                top: "78.5%",
-                width: "7.0%",
-                height: "11.0%",
-                background: "radial-gradient(ellipse at 50% 50%, #c46830 0%, #bc612a 65%, rgba(184,94,40,0.85) 85%, rgba(184,94,40,0) 100%)",
-                filter: "blur(2px)",
-              }}
-              aria-hidden="true"
-            />
-          </div>
+          {/* Upstream re-adds its 16:9 showcase banner here, after the CTAs.
+              Dropped in this branch: the deity already leads this column, and
+              keeping both puts the same photograph on the phone twice. The
+              desktop stage above is upstream's, which is where that uncropped
+              framing now lives. */}
         </div>
 
       </div>
