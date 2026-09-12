@@ -36,9 +36,13 @@ export function MoneyDonationForm() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Optional top-up for the trust's own running costs, added onto the donation.
+  /* Optional top-up for the trust's own running costs, added onto the
+     donation. Opens on the lowest preset rather than empty, so the default
+     total is 1000 + 50 and the Support Sahas line is in the summary from
+     the first render. Tapping the selected chip still clears it to 0, so a
+     donor who wants to add nothing is one tap away from that. */
   const supportPresets = [50, 100, 200, 500];
-  const [supportAmount, setSupportAmount] = useState<number | ''>('');
+  const [supportAmount, setSupportAmount] = useState<number | ''>(50);
   const [isCustomSupport, setIsCustomSupport] = useState(false);
   const [customSupportAmountStr, setCustomSupportAmountStr] = useState('');
 
