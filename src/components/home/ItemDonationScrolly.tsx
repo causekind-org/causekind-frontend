@@ -46,6 +46,22 @@ const SECTION_VH = 600;
 const SCRUB_EASE = 0.15;
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+const smoothstep = (e0: number, e1: number, x: number) => {
+  const t = clamp01((x - e0) / (e1 - e0 || 1e-6));
+  return t * t * (3 - 2 * t);
+};
+
+/* ─── The expand-in intro (adapted from React Bits' ScrollExpand) ───────────
+   The first slice of the section's scroll opens the film from a rounded card in
+   the middle of the screen to full bleed, with a headline held over it that
+   lifts away — THEN the frame-scrub and captions take over. It's woven into the
+   same pinned panel and the same eased progress, so it inherits the inertia and
+   the scrub keeps running from the frame the card settles on. */
+const EXPAND_END = 0.14; // fraction of the section's scroll spent expanding
+const START_W = 46; //       resting card width, as % of the viewport
+const START_H = 62; //       resting card height, as % of the viewport
+const START_RADIUS = 26; //  resting corner radius, px (eases to 0)
+const MEDIA_ZOOM = 1.16; //  media zoom at rest, easing back to 1 as it opens
 
 /* ─── The copy, tied to scroll ─────────────────────────────────────────────
    Each caption owns a window of progress (0→1) and a side of the frame. The
@@ -62,17 +78,13 @@ interface Caption {
   from: number;
   to: number;
   side: Side;
-  /** The floating, glowing glyph for this beat — it changes with the sentence. */
-  icon: LucideIcon;
-  /** Step index shown as a small kicker above the line. */
-  step: string;
 }
 const CAPTIONS: Caption[] = [
-  { key: "p1", from: 0.0, to: 0.15, side: "right", icon: PackageOpen, step: "01" }, // packing the box
-  { key: "p2", from: 0.18, to: 0.32, side: "right", icon: Smartphone, step: "02" }, // the listing card appears
-  { key: "p3", from: 0.35, to: 0.5, side: "left", icon: MapPin, step: "03" }, // the matching network
-  { key: "p4", from: 0.52, to: 0.64, side: "left", icon: HeartHandshake, step: "04" }, // matched nearby
-  { key: "p5", from: 0.66, to: 0.78, side: "left", icon: HandHeart, step: "05" }, // handover / opening
+  { key: "p1", from: 0.0, to: 0.15, side: "right" }, // packing the box
+  { key: "p2", from: 0.18, to: 0.32, side: "right" }, // the listing card appears
+  { key: "p3", from: 0.35, to: 0.5, side: "left" }, // the matching network
+  { key: "p4", from: 0.52, to: 0.64, side: "left" }, // matched nearby
+  { key: "p5", from: 0.66, to: 0.78, side: "left" }, // handover / opening
 ];
 
 /** The brand + CTA block, held on the dark left space of the closing frames. */
@@ -178,7 +190,10 @@ export function ItemDonationScrolly() {
         cv.height = Math.round(cssH * dpr);
       }
 
-      const idx = Math.min(FRAME_COUNT - 1, Math.round(p * (FRAME_COUNT - 1)));
+      // The expand eats the first slice of scroll; the frame-scrub maps to what
+      // is left, so the film holds on frame 1 while the card opens, then plays.
+      const sp = clamp01((p - EXPAND_END) / (1 - EXPAND_END));
+      const idx = Math.min(FRAME_COUNT - 1, Math.round(sp * (FRAME_COUNT - 1)));
       const img = nearestLoaded(idx);
       if (!img) return;
 
@@ -262,7 +277,38 @@ export function ItemDonationScrolly() {
     };
   }, [reduceMotion]);
 
-  const brandOpacity = clamp01((progress - BRAND_FROM) / 0.06);
+  // Split the eased scroll into the expand phase and the scrub phase, so both
+  // are driven off the same inertia-smoothed `progress`.
+  const expand = smoothstep(0, EXPAND_END, progress); // 0 → 1 as the card opens
+  const sp = clamp01((progress - EXPAND_END) / (1 - EXPAND_END)); // scrub after
+  const brandOpacity = clamp01((sp - BRAND_FROM) / 0.06);
+
+  // The opening card: a centred inset that grows to full bleed, its corners
+  // squaring off and its media un-zooming as it opens.
+  const cardW = START_W + (100 - START_W) * expand;
+  const cardH = START_H + (100 - START_H) * expand;
+  const insetX = Math.max(0, (100 - cardW) / 2);
+  const insetY = Math.max(0, (100 - cardH) / 2);
+  const cardRadius = START_RADIUS * (1 - expand);
+  const clip = `inset(${insetY}% ${insetX}% ${insetY}% ${insetX}% round ${cardRadius}px)`;
+  const mediaScale = MEDIA_ZOOM + (1 - MEDIA_ZOOM) * expand;
+  // The scroll cue vanishes as soon as the open begins.
+  const hintOut = smoothstep(0, 0.28, expand);
+
+  // Viewfinder brackets frame the resting card and fade out as it opens.
+  const bracketOpacity = 1 - smoothstep(0, 0.8, expand);
+  const corners = [
+    { v: "top", h: "left" },
+    { v: "top", h: "right" },
+    { v: "bottom", h: "left" },
+    { v: "bottom", h: "right" },
+  ] as const;
+
+  // Timecode: reads the scrub as MM:SS against the ~10s clip. Appears once the
+  // film is full bleed and steps aside for the closing brand block.
+  const tcCur = Math.min(10, Math.floor(sp * 10));
+  const timecode = `00:${String(tcCur).padStart(2, "0")} / 00:10`;
+  const tcOpacity = smoothstep(0.6, 1, expand) * (1 - brandOpacity);
 
   /* ── Reduced-motion / server fallback ────────────────────────────────────
      A single representative still with the brand block and CTA laid over it.
@@ -315,34 +361,143 @@ export function ItemDonationScrolly() {
         )}
         {/* Scoped keyframes for the caption chrome. Kept local (unique ck-scrolly-*
             names) rather than in the global sheet so nothing here can collide with
-            it — the same reason the animations in the old dial section were named. */}
+            it — the same reason the animations in the old dial section were named.
+
+            `.ck-shine` is the orange shine on the headlines: the text is filled by
+            a mostly-white gradient carrying a warm band, clipped to the glyphs, and
+            the band sweeps across on a loop. A drop-shadow filter (not text-shadow,
+            which clipped text ignores) adds the dark legibility halo plus a soft
+            terracotta glow. */}
         <style>{`
-          @keyframes ck-scrolly-float {
-            from { transform: translateY(0); }
-            to   { transform: translateY(-9px); }
+          @keyframes ck-scrolly-shine {
+            0%   { background-position: 130% 0; }
+            100% { background-position: -30% 0; }
           }
-          @keyframes ck-scrolly-glow {
-            from { box-shadow: 0 0 18px rgba(176,74,21,0.35), inset 0 0 12px rgba(176,74,21,0.14); }
-            to   { box-shadow: 0 0 36px rgba(176,74,21,0.62), inset 0 0 18px rgba(176,74,21,0.30); }
+          @keyframes ck-scrolly-bob {
+            0%, 100% { transform: translateY(0); opacity: 0.9; }
+            50%      { transform: translateY(6px); opacity: 0.4; }
           }
-          @keyframes ck-scrolly-line {
-            from { transform: scaleX(0.2); opacity: 0.4; }
-            to   { transform: scaleX(1);   opacity: 1;   }
+          @keyframes ck-scrolly-grain {
+            0%   { transform: translate(0, 0); }
+            20%  { transform: translate(-6%, 3%); }
+            40%  { transform: translate(5%, -6%); }
+            60%  { transform: translate(-3%, 6%); }
+            80%  { transform: translate(6%, 2%); }
+            100% { transform: translate(0, 0); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .ck-grain { animation: none !important; }
+          }
+          .ck-shine {
+            background: linear-gradient(100deg,
+              #fff 0%, #fff 36%, #ffd8a6 45%, #ff8a2b 50%, #ffd8a6 55%, #fff 64%, #fff 100%);
+            background-size: 220% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            animation: ck-scrolly-shine 5.5s linear infinite;
+            filter: drop-shadow(0 2px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 34px rgba(176,74,21,0.45));
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .ck-shine { animation: none; }
           }
         `}</style>
-        <canvas ref={canvasRef} aria-hidden className="absolute inset-0 block h-full w-full" />
+        {/* The opening card. clip-path insets the whole media plane to a centred
+            rounded rectangle at rest and grows it to full bleed; the canvas is
+            mildly zoomed inside and eases back to 1 as it opens. */}
+        <div
+          className="absolute inset-0"
+          style={{ clipPath: clip, WebkitClipPath: clip, willChange: "clip-path" }}
+        >
+          <canvas
+            ref={canvasRef}
+            aria-hidden
+            className="absolute inset-0 block h-full w-full"
+            style={{ transform: `scale(${mediaScale})`, transformOrigin: "center", willChange: "transform" }}
+          />
+        </div>
 
-        {/* Legibility scrims. Left and right darken independently so the words
-            stay readable over whatever is behind them — including the bright
-            window on the right at the very start. They strengthen as the copy
-            moves to that side. */}
+        {/* Cinematic vignette — darkens the edges so the frame reads as a lens. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.5) 100%)",
+          }}
+        />
+        {/* Film grain — a faint SVG-noise plane, oversized so its drift never
+            reveals an edge, flickering slowly over the whole panel. */}
+        <div
+          aria-hidden
+          className="ck-grain pointer-events-none absolute"
+          style={{
+            top: "-25%",
+            left: "-25%",
+            width: "150%",
+            height: "150%",
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+            opacity: 0.08,
+            mixBlendMode: "overlay",
+            animation: "ck-scrolly-grain 0.7s steps(5) infinite",
+          }}
+        />
+
+        {/* Viewfinder brackets — camera-style corners on the resting card that
+            slide to the screen edges and fade as the frame opens. */}
+        {bracketOpacity > 0.01 &&
+          corners.map((c) => {
+            const isTop = c.v === "top";
+            const isLeft = c.h === "left";
+            const edge = "2px solid rgba(255,224,198,0.85)";
+            const radiusKey = `border${isTop ? "Top" : "Bottom"}${isLeft ? "Left" : "Right"}Radius`;
+            return (
+              <span
+                key={`${c.v}-${c.h}`}
+                aria-hidden
+                className="pointer-events-none absolute"
+                style={{
+                  [c.v]: `${insetY}%`,
+                  [c.h]: `${insetX}%`,
+                  width: "clamp(22px, 2.4vw, 34px)",
+                  height: "clamp(22px, 2.4vw, 34px)",
+                  margin: "14px",
+                  [isTop ? "borderTop" : "borderBottom"]: edge,
+                  [isLeft ? "borderLeft" : "borderRight"]: edge,
+                  [radiusKey]: "6px",
+                  opacity: bracketOpacity,
+                  boxShadow: "0 0 12px rgba(176,74,21,0.35)",
+                }}
+              />
+            );
+          })}
+
+        {/* Scroll cue under the resting card — gone the moment the open begins. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-7 flex flex-col items-center gap-2"
+          style={{ opacity: 1 - hintOut, transform: `translateY(${8 * hintOut}px)` }}
+        >
+          <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
+            Scroll
+          </span>
+          <span
+            className="block h-4 w-4 rotate-45 border-b border-r border-white/50"
+            style={{ animation: "ck-scrolly-bob 1.8s ease-in-out infinite" }}
+          />
+        </div>
+
+        {/* Legibility scrims for the captions. Faded in with the expand so they
+            never shadow the resting card, then keyed to the scrub side. */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
             background:
               "linear-gradient(90deg, rgba(6,7,8,0.72) 0%, rgba(6,7,8,0.28) 28%, rgba(6,7,8,0) 52%)",
-            opacity: progress > 0.32 ? 1 : 0.55,
+            opacity: (sp > 0.32 ? 1 : 0.55) * expand,
             transition: "opacity 0.5s ease",
           }}
         />
@@ -352,26 +507,23 @@ export function ItemDonationScrolly() {
           style={{
             background:
               "linear-gradient(270deg, rgba(6,7,8,0.6) 0%, rgba(6,7,8,0.2) 26%, rgba(6,7,8,0) 50%)",
-            opacity: progress < 0.34 ? 1 : 0,
+            opacity: (sp < 0.34 ? 1 : 0) * expand,
             transition: "opacity 0.5s ease",
           }}
         />
 
         {/* Phase captions. Decorative/transient, so hidden from assistive tech —
-            the accessible summary is on the <section> and the brand block. Each
-            beat carries a glowing, gently-floating icon that changes with the
-            sentence, a step kicker, and an accent line — so the copy reads as a
-            designed moment, not a plain caption dropped on the video. */}
+            the accessible summary is on the <section> and the brand block. Just
+            the line itself now, in a sweeping orange shine. */}
         {CAPTIONS.map((c) => {
-          const o = captionOpacity(progress, c);
+          const o = captionOpacity(sp, c);
           const slide = (1 - o) * (c.side === "right" ? 24 : -24);
-          const Icon = c.icon;
           const alignEnd = c.side === "right";
           return (
             <div
               key={c.key}
               aria-hidden
-              className={`pointer-events-none absolute inset-y-0 flex max-w-[min(48ch,44vw)] flex-col justify-center gap-4 px-6 sm:px-10 lg:px-16 ${
+              className={`pointer-events-none absolute inset-y-0 flex max-w-[min(48ch,46vw)] flex-col justify-center px-6 sm:px-10 lg:px-16 ${
                 alignEnd ? "items-end text-right" : "items-start text-left"
               }`}
               style={{
@@ -381,73 +533,18 @@ export function ItemDonationScrolly() {
                 transition: "opacity 0.15s linear, transform 0.15s linear",
               }}
             >
-              {/* Floating wrapper (transform) holds the glowing badge (box-shadow)
-                  — split across two elements so the two animations don't fight for
-                  the same property. */}
-              <span
+              <p
+                className="ck-shine"
                 style={{
-                  display: "inline-block",
-                  animation: "ck-scrolly-float 3.4s ease-in-out infinite alternate",
-                  willChange: "transform",
+                  fontFamily: "var(--font-source-serif-4), Georgia, serif",
+                  fontSize: "clamp(2rem, 1.1rem + 3vw, 4rem)",
+                  fontWeight: 600,
+                  lineHeight: 1.05,
+                  letterSpacing: "-0.02em",
                 }}
               >
-                <span
-                  className="flex items-center justify-center rounded-2xl backdrop-blur-sm"
-                  style={{
-                    width: "clamp(48px, 3.4vw, 68px)",
-                    height: "clamp(48px, 3.4vw, 68px)",
-                    background:
-                      "radial-gradient(120% 120% at 30% 20%, rgba(176,74,21,0.42) 0%, rgba(176,74,21,0.14) 55%, rgba(12,12,14,0.35) 100%)",
-                    border: "1px solid rgba(255,222,196,0.32)",
-                    animation: "ck-scrolly-glow 2.8s ease-in-out infinite alternate",
-                  }}
-                >
-                  <Icon
-                    strokeWidth={1.75}
-                    style={{ width: "48%", height: "48%", color: "#ffd9bf" }}
-                  />
-                </span>
-              </span>
-
-              <div className={`flex flex-col gap-3 ${alignEnd ? "items-end" : "items-start"}`}>
-                <span
-                  className="text-[11px] font-extrabold uppercase"
-                  style={{ letterSpacing: "0.22em", color: "#e88a4e" }}
-                >
-                  {c.step} <span style={{ opacity: 0.5 }}>/ 05</span>
-                </span>
-
-                <p
-                  className="text-white"
-                  style={{
-                    fontFamily: "var(--font-source-serif-4), Georgia, serif",
-                    fontSize: "clamp(1.9rem, 1.1rem + 2.6vw, 3.6rem)",
-                    fontWeight: 600,
-                    lineHeight: 1.06,
-                    letterSpacing: "-0.02em",
-                    // A soft terracotta halo under the usual dark legibility shadow.
-                    textShadow:
-                      "0 2px 24px rgba(0,0,0,0.6), 0 0 42px rgba(176,74,21,0.28)",
-                  }}
-                >
-                  {t(c.key)}
-                </p>
-
-                {/* Accent line — grows from the text side, glowing terracotta. */}
-                <span
-                  style={{
-                    height: "3px",
-                    width: "clamp(64px, 8vw, 128px)",
-                    borderRadius: "999px",
-                    transformOrigin: alignEnd ? "right" : "left",
-                    background: alignEnd
-                      ? "linear-gradient(270deg, #b04a15 0%, rgba(176,74,21,0) 100%)"
-                      : "linear-gradient(90deg, #b04a15 0%, rgba(176,74,21,0) 100%)",
-                    boxShadow: "0 0 16px rgba(176,74,21,0.5)",
-                    animation: "ck-scrolly-line 0.6s ease-out both",
-                  }}
-                />
-              </div>
+                {t(c.key)}
+              </p>
             </div>
           );
         })}
@@ -465,6 +562,40 @@ export function ItemDonationScrolly() {
           }}
         >
           <BrandBlock t={t} />
+        </div>
+
+        {/* Scroll-progress rail — a thin glowing line along the top edge that
+            fills as you move through the whole section. Top, not bottom, so it
+            is never lost under the OS taskbar. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[3px]">
+          <div
+            className="h-full origin-left"
+            style={{
+              transform: `scaleX(${progress})`,
+              background: "linear-gradient(90deg, #b04a15 0%, #ff8a2b 100%)",
+              boxShadow: "0 0 12px rgba(255,138,43,0.6)",
+              willChange: "transform",
+            }}
+          />
+        </div>
+
+        {/* Timecode — the film metaphor made literal. Reads the scrub as MM:SS,
+            appears once the frame is full bleed, steps aside for the brand. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-6 left-6 flex items-center gap-2 sm:left-10 lg:left-14"
+          style={{ opacity: tcOpacity, transition: "opacity 0.2s linear" }}
+        >
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: "#ff5a2b", boxShadow: "0 0 8px rgba(255,90,43,0.9)" }}
+          />
+          <span
+            className="text-[12px] font-semibold tabular-nums tracking-[0.14em] text-white/70"
+            style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+          >
+            {timecode}
+          </span>
         </div>
 
         {/* First-load hint, gone once the opening frame paints. */}
@@ -492,28 +623,20 @@ function BrandBlock({ t }: { t: ReturnType<typeof useTranslations> }) {
   return (
     <div className="max-w-[52ch]">
       <h2
-        className="text-white"
+        className="ck-shine"
         style={{
           fontFamily: "var(--font-source-serif-4), Georgia, serif",
           fontSize: "clamp(2rem, 1.2rem + 3vw, 4rem)",
           fontWeight: 600,
           lineHeight: 1.04,
           letterSpacing: "-0.025em",
-          // Same terracotta halo the phase captions carry, so the close matches.
-          textShadow: "0 2px 28px rgba(0,0,0,0.6), 0 0 48px rgba(176,74,21,0.3)",
         }}
       >
         {t("brandLine1")}
         <br />
         {t("brandLine2")}
       </h2>
-      <p className="mt-4 inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.18em] text-white/85">
-        <ShieldCheck
-          className="shrink-0"
-          strokeWidth={2}
-          style={{ width: 17, height: 17, color: "#e88a4e" }}
-          aria-hidden
-        />
+      <p className="mt-4 text-[13px] font-bold uppercase tracking-[0.18em] text-white/85">
         {t("badges")}
       </p>
       <Link
