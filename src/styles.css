@@ -1921,6 +1921,7 @@ body.mobile-menu-open {
   .faq-answer-enter,
   .mobile-donate-pulse,
   .support-btn-ripple,
+  .ck-cta-live::before,
   .ck-handover-fab-halo,
   .stats-ticker-track,
   .animate-stats-ticker,
@@ -2318,6 +2319,66 @@ body.mobile-menu-open {
   .ck-showcase-hero .ck-hero-photo-clip {
     border-radius: 0;
   }
+
+  /*
+    Melt the hero's bottom edge into the section below it.
+
+    Full-bleed photograph meeting flat cream produced a hard horizontal cut
+    across the page. This ramps the photograph's own colour into the next
+    section's ground and blurs it on the way, so the two read as one surface
+    instead of two stacked blocks.
+
+    Height is in `svh`, and that is not decoration: the band has to stay BELOW
+    the trust band. Those labels are cream on the dark photo, and a cream
+    gradient rising behind them would take their contrast to nothing. A fixed
+    rem height that cleared them on a 844px phone would sit right through them
+    on a 568px one.
+
+    `z-index: 5` puts it above the photograph and below `.ck-hero-frame`'s
+    `z-10`, so the copy is never washed out even if the two ever do meet.
+  */
+  /*
+    A real element, not a `::after` on the hero.
+
+    The pseudo-element route was tried first and silently lost: it computed
+    exactly right — 375x169 at `bottom: 0`, `z-index: 5`, `display: block` — and
+    never painted a pixel, buried under one of the hero's own opaque layers.
+    A sibling inside `.ck-lead-hero-stage` can be pointed at with
+    `elementsFromPoint` and proven to be on top, which is the whole reason it is
+    markup rather than CSS.
+
+    Height is in `svh` and that is not decoration: the band has to stay BELOW
+    the trust band. Those labels are cream on the dark photograph, and a cream
+    gradient rising behind them would take their contrast to nothing. A fixed
+    rem height that cleared them on an 844px phone would sit through them on a
+    568px one.
+  */
+  .ck-hero-seam-fade {
+    display: block;
+    height: clamp(2.5rem, 9svh, 6rem);
+    background: linear-gradient(
+      to bottom,
+      rgb(251 249 244 / 0) 0%,
+      rgb(251 249 244 / 0.18) 42%,
+      rgb(251 249 244 / 0.62) 74%,
+      rgb(251 249 244) 100%
+    );
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    mask-image: linear-gradient(to bottom, transparent, #000 38%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 38%);
+  }
+
+  /* Dark mode lands on zinc-950, which is what the mobile column paints there. */
+  .dark .ck-hero-seam-fade {
+    background: linear-gradient(
+      to bottom,
+      rgb(9 9 11 / 0) 0%,
+      rgb(9 9 11 / 0.18) 42%,
+      rgb(9 9 11 / 0.62) 74%,
+      rgb(9 9 11) 100%
+    );
+  }
 }
 
 .ck-hero-photo-image {
@@ -2419,6 +2480,116 @@ body.mobile-menu-open {
   to { stroke-dashoffset: -108; }
 }
 
+/* ── Live primary CTAs ──────────────────────────────────────────────────────
+   A continuously travelling highlight on the landing page's filled primary
+   actions, and only those.
+
+   The note above records two infinite loops being removed from these very
+   buttons, and this puts one back. That is Sushil's call, asked for twice on
+   2026-09-11 with the removal note in front of him. What is NOT back is the
+   part that actually broke: two cycles running at once and drifting in and out
+   of phase with each other.
+
+   - ONE cycle, never two. This travels on `::before`; the one-shot hover sheen
+     owns `::after`, and the loop pauses under the pointer so the hover sweep
+     reads on its own. The overlap is what failed, not the movement.
+   - Low contrast on purpose. It is a sheen passing over the fill, not a strobe;
+     the alpha is what keeps a permanent loop from becoming noise.
+   - Filled primaries only. If everything moves, nothing is primary.
+   - Off entirely under `prefers-reduced-motion`.
+
+   If this ever reads as a rendering glitch again, the fix is the alpha and the
+   period — or going back to a long-parked glint — not adding a second cycle. */
+@keyframes ck-cta-live-sheen {
+  0%   { opacity: 0; transform: translateX(-140%) skewX(-12deg); }
+  14%  { opacity: 1; }
+  86%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(140%) skewX(-12deg); }
+}
+
+.ck-cta-live {
+  position: relative;
+  overflow: hidden;
+}
+
+.ck-cta-live::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    rgb(255 255 255 / 0.34) 50%,
+    transparent 68%
+  );
+  animation: ck-cta-live-sheen 3.2s ease-in-out infinite;
+}
+
+/* A dark label on a light fill needs a darker glint to register at all. */
+.ck-cta-live[data-cta-live="dark"]::before {
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    rgb(28 25 23 / 0.14) 50%,
+    transparent 68%
+  );
+}
+
+.ck-cta-live:hover::before,
+.ck-cta-live:focus-visible::before {
+  animation-play-state: paused;
+  opacity: 0;
+}
+
+/*
+  The one-shot hover sweep, for the CTAs that did not already have one.
+
+  `.ck-hero-primary-cta` is excluded on purpose: it carries its own `::after`
+  sheen, tuned with its own gradient and its paired icon lift, and a second rule
+  at equal specificity would come down to source order. Without this the Doors
+  and donee CTAs had a dead hover — the loop paused and nothing took its place.
+*/
+.ck-cta-live:not(.ck-hero-primary-cta)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    108deg,
+    transparent 22%,
+    rgb(255 255 255 / 0.06) 39%,
+    rgb(255 255 255 / 0.42) 50%,
+    rgb(255 255 255 / 0.06) 61%,
+    transparent 78%
+  );
+}
+
+.ck-cta-live[data-cta-live="dark"]:not(.ck-hero-primary-cta)::after {
+  background: linear-gradient(
+    108deg,
+    transparent 22%,
+    rgb(28 25 23 / 0.03) 39%,
+    rgb(28 25 23 / 0.18) 50%,
+    rgb(28 25 23 / 0.03) 61%,
+    transparent 78%
+  );
+}
+
+/* One pass, on intent — the same timing the hero pair already uses. */
+.ck-cta-live:not(.ck-hero-primary-cta):hover::after,
+.ck-cta-live:not(.ck-hero-primary-cta):focus-visible::after {
+  animation: ck-hero-cta-sheen 0.72s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* The hero's primary is only a filled button for a guest. Signed in it is a
+   transparent text link, and a sheen crossing bare text reads as a smudge. */
+.ck-hero-actions:not([data-guest="true"]) .ck-cta-live::before {
+  display: none;
+}
+
 @keyframes ck-hero-cta-sheen {
   from { opacity: 1; transform: translateX(-135%); }
   to   { opacity: 1; transform: translateX(135%); }
@@ -2501,7 +2672,22 @@ body.mobile-menu-open {
     align-self: center;
     isolation: isolate;
     padding-inline: max(clamp(1.25rem, 6vw, 2rem), env(safe-area-inset-left), env(safe-area-inset-right));
-    padding-top: calc(var(--ck-nav-h, 4.25rem) + clamp(7rem, 25svh, 18rem));
+    /*
+      This number decides whether the hero fits on screen at all.
+
+      At 25svh the copy stack made the hero 677px tall inside a 634px viewport,
+      so its bottom padding — the 108px that is meant to hold the trust band
+      clear of the mobile dock — sat below the fold, and the band ran under the
+      dock by 7px. It was not a padding bug: the hero was simply taller than the
+      screen, and a visitor never saw the whole thing without scrolling.
+
+      Measured on a 634px viewport, 16svh is the point where the content stops
+      driving the height and `.ck-lead-hero-stage`'s `min-height: 100svh` takes
+      over. 15svh keeps a little slack for a longer headline or a fallback font.
+      Lowering it further does not shrink the hero — it only shows more
+      photograph above the copy.
+    */
+    padding-top: calc(var(--ck-nav-h, 4.25rem) + clamp(5rem, 15svh, 14rem));
     padding-bottom: calc(max(var(--ck-bottom-chrome, 0px), env(safe-area-inset-bottom)) + 1rem);
   }
   /* A feathered stage behind the lower third keeps copy sharp over bright
@@ -2755,6 +2941,16 @@ body.mobile-menu-open {
 
   .ck-showcase-hero .ck-hero-photo-shell {
     min-height: 6.5rem;
+  }
+
+  /*
+    Short phones need the copy higher still. At 320x568 the 15svh above left the
+    hero 36px past the fold and the trust band sitting exactly on the dock's top
+    edge — clearing it by nothing at all. There is no slack to spend on
+    photograph here; the copy has to start sooner.
+  */
+  .ck-showcase-hero .ck-hero-copy {
+    padding-top: calc(var(--ck-nav-h, 4.25rem) + clamp(2.5rem, 8svh, 6rem));
   }
 }
 
@@ -3263,6 +3459,18 @@ div:has(.searchable-select-open) {
     #b04a15 100%
   );
   background-size: 300% auto;
+  /*
+    The resting position, and it is not cosmetic.
+
+    The gradient is terracotta at both ends with a pale sweep through the middle,
+    and the animation runs 150% -> -150%. With no `background-position` of its
+    own the element sat at the default `0%`, which lands on the pale middle — so
+    "Kind" rendered peach instead of the brand accent for the whole 1.4s delay
+    before the shine starts, and permanently for anyone the animation never runs
+    for. Matching the animation's own 0% keyframe means the word is #b04a15 at
+    rest and the shine is the only thing that ever lightens it.
+  */
+  background-position: 150% center;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

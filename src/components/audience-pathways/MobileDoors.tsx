@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import { useTranslations } from "next-intl";
+import LetterSwap from "@/components/LetterSwap";
 
 type Door = "donor" | "donee";
 
@@ -123,7 +124,8 @@ export function MobileDoors({ door, pick }: { door: Door; pick: (next: Door) => 
               href="/register?role=DONOR"
               data-tour="guest-join"
               onClick={() => pick("donor")}
-              className="mt-5 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-white text-[0.9375rem] font-extrabold text-stone-900 transition-transform active:scale-[0.97]"
+              data-cta-live="dark"
+              className="ck-cta-live mt-5 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-white text-[0.9375rem] font-extrabold text-stone-900 transition-transform active:scale-[0.97]"
             >
               {t("donor.cta")}
             </Link>
@@ -174,8 +176,10 @@ export function MobileDoors({ door, pick }: { door: Door; pick: (next: Door) => 
             showing is the worst thing this rail can do, and it has to hold in
             fourteen locales. If a longer label ever runs out of room it wraps
             and the rail grows a line, which is survivable; an ellipsis is not. */}
-        <span className="min-w-0 flex-1 text-xs font-extrabold leading-snug text-stone-900 dark:text-stone-100">
-          {door === "donor" ? t("mobileShowingDonor") : t("mobileShowingDonee")}
+        <span className="min-w-0 flex-1 overflow-hidden text-xs font-extrabold leading-snug text-stone-900 dark:text-stone-100">
+          {/* The one string on the page that literally swaps, so it is the one
+              place a per-character flip means something. */}
+          <LetterSwap text={door === "donor" ? t("mobileShowingDonor") : t("mobileShowingDonee")} />
         </span>
         <button
           type="button"

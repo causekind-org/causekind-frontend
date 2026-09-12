@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { FileCheck2, UserSearch, ClipboardList } from "lucide-react";
+import LetterSwap from "@/components/LetterSwap";
 
 /**
  * What the mobile landing shows below the switcher when the donee door is
@@ -36,7 +37,7 @@ export function DoneeDoorEvidence() {
         </span>
       </div>
       <h2 className="mt-3 text-2xl font-extrabold leading-[1.2] tracking-tight text-stone-900 dark:text-stone-50">
-        {t("heading")}
+        <LetterSwap text={t("heading")} />
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-stone-600 dark:text-stone-300 [text-wrap:pretty]">
         {t("body")}
@@ -69,7 +70,7 @@ export function DoneeDoorEvidence() {
 
       <Link
         href="/register?role=DONEE"
-        className="mt-4 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-teal-700 text-[0.9375rem] font-extrabold text-white transition-transform active:scale-[0.97] hover:bg-teal-800"
+        className="ck-cta-live mt-4 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-teal-700 text-[0.9375rem] font-extrabold text-white transition-transform active:scale-[0.97] hover:bg-teal-800"
       >
         {t("cta")}
       </Link>
