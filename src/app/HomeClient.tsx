@@ -35,27 +35,67 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Sparkles, Heart, HandCoins, Coins, Users, ArrowRight } from "lucide-react";
+import {
+  Sparkles,
+  Heart,
+  HandCoins,
+  Coins,
+  Users,
+  ArrowRight,
+  ShieldCheck,
+  Check,
+  Clock,
+} from "lucide-react";
 import { FEATURES } from "@/lib/features";
 import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
 import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
 import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
+import { GanpatiStrip } from "@/components/GanpatiStrip";
 
 import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
 import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-bandhan";
 import { UnclaimedSection } from "@/components/home/UnclaimedSection";
-import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
+import {
+  getMyProfile,
+  getItemRequests,
+  type UserProfile,
+} from "@/lib/api";
+import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
-import { HeroSection }           from "@/components/home/HeroSection";
+import { HeroSection } from "@/components/home/HeroSection";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
-import { LiveNeedsSection }      from "@/components/home/LiveNeedsSection";
-import AudiencePathwaysSection   from "@/components/audience-pathways/AudiencePathwaysSection";
+import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
+import AudiencePathwaysSection from "@/components/audience-pathways/AudiencePathwaysSection";
 import { MobileDoors, useLandingDoor } from "@/components/audience-pathways/MobileDoors";
-import DoneeDoorEvidence      from "@/components/audience-pathways/DoneeDoorEvidence";
-import DoorSwapReveal        from "@/components/audience-pathways/DoorSwapReveal";
-import { ItemDonationScrolly }   from "@/components/home/ItemDonationScrolly";
-import { CTASection }            from "@/components/home/CTASection";
+import DoneeDoorEvidence from "@/components/audience-pathways/DoneeDoorEvidence";
+import { ItemDonationScrolly } from "@/components/home/ItemDonationScrolly";
+import { CTASection } from "@/components/home/CTASection";
+
+// ── Ganpati Festival parallel components ─────────────────────────────────────
+import { isGanpatiActive } from "@/lib/isGanpatiActive";
+import { HeroGanpati } from "@/components/home/HeroGanpati";
+import { LiveNeedsSectionGanpati } from "@/components/home/LiveNeedsSectionGanpati";
+import { ComingSoonMagnetsGanpati } from "@/components/home/ComingSoonMagnetsGanpati";
+import { CTASectionGanpati } from "@/components/home/CTASectionGanpati";
+import { FooterGanpati } from "@/components/home/FooterGanpati";
+import AudiencePathwaysSectionGanpati from "@/components/home/AudiencePathwaysSectionGanpati";
+
+import { GanpatiWelcomeModal }        from "@/components/home/GanpatiWelcomeModal";
+
+import { MobileDoorsGanpati } from "@/components/home/MobileDoorsGanpati";
+import DoneeDoorEvidenceGanpati from "@/components/home/DoneeDoorEvidenceGanpati";
+// DiyaDecoration is exported from this module too, and is deliberately not
+// imported here: nothing on the page places a lamp yet, and an import with no
+// call site is the kind of thing that survives three refactors before anyone
+// checks whether it was ever meant to render.
+import {
+  MobileFlowerPetals,
+  FestiveSectionDivider,
+  MangoLeafCorner
+} from "@/components/home/GanpatiMobileVisuals";
+import { MushakBooksBandGanpati } from "@/components/home/MushakBooksBandGanpati";
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -64,10 +104,10 @@ function formatINR(n: number) {
 }
 
 const MOBILE_CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
-  Education:  ["/images/hero-7.webp"],
+  Medical: ["/images/medical-1.webp", "/images/medical-2.webp"],
+  Education: ["/images/hero-7.webp"],
   Livelihood: ["/images/hero-3.webp"],
-  Community:  ["/images/hero-6.webp"],
+  Community: ["/images/hero-6.webp"],
 };
 function getMobileCardImage(category: string, id: number): string {
   const imgs = MOBILE_CATEGORY_IMAGES[category];
@@ -89,9 +129,9 @@ export default function HomeClient({
   initialItemRequests,
   initialPublicRequests = [],
 }: {
-  initialCampaigns:    Campaign[];
-  initialStats:        PlatformStats | null;
-  initialActivity:     RecentActivity[];
+  initialCampaigns: Campaign[];
+  initialStats: PlatformStats | null;
+  initialActivity: RecentActivity[];
   initialItemRequests: ItemRequest[];
   /**
    * The guest-browsable need board. Everything on it is unclaimed by
@@ -102,7 +142,7 @@ export default function HomeClient({
    */
   initialPublicRequests?: PublicItemRequest[];
 }) {
-  const t       = useTranslations("landing");
+  const t = useTranslations("landing");
   const tCommon = useTranslations("common");
   const { user, isRestoring } = useAuth();
 
@@ -143,12 +183,20 @@ export default function HomeClient({
   const { door, pick: pickDoor } = useLandingDoor();
   const doorIsDonor = !showAudiencePathways || door === "donor";
 
-  const [campaigns,    setCampaigns]    = useState<Campaign[]>(initialCampaigns);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
-  const [stats,        setStats]        = useState<PlatformStats | null>(initialStats);
-  const [activity,     setActivity]     = useState<RecentActivity[]>(initialActivity);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState("");
+  const [stats, setStats] = useState<PlatformStats | null>(initialStats);
+  const [activity, setActivity] = useState<RecentActivity[]>(initialActivity);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const tStats = useTranslations("stats");
+  const statItems = useMemo(() => [
+    { value: stats ? `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(stats.totalRaised)}` : "₹5,652", label: tStats("totalRaised"), icon: Coins, color: "text-[#b04a15]" },
+    { value: stats ? stats.activeCampaigns : "3", label: tStats("activeCampaigns"), icon: Heart, color: "text-[#c2660a]" },
+    { value: stats ? stats.totalDonations : "24", label: tStats("donations"), icon: Sparkles, color: "text-[#1e3a60]" },
+    { value: stats ? stats.uniqueDonors : "18", label: tStats("donors"), icon: Users, color: "text-amber-700" },
+  ], [stats, tStats]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
 
@@ -157,7 +205,7 @@ export default function HomeClient({
   // empty. Re-fetch client-side once a logged-in user's cookie is available.
   useEffect(() => {
     if (!user) return;
-    getItemRequests().then(setItemRequests).catch(() => {});
+    getItemRequests().then(setItemRequests).catch(() => { });
   }, [user]);
 
   useEffect(() => {
@@ -168,8 +216,8 @@ export default function HomeClient({
         try {
           const profile = await getMyProfile();
           setMyProfile(profile);
-        } catch (err) {}
-        
+        } catch (err) { }
+
         // Scroll slightly after state updates
         setTimeout(() => {
           document.getElementById("inkind-requests-section")?.scrollIntoView({ behavior: "smooth" });
@@ -204,6 +252,20 @@ export default function HomeClient({
   // campaign is on.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
+  // ── Ganpati Festival 11-day skin (14-24 Sept 2026) ─────────────────────────
+  const isGanpati = isGanpatiActive();
+  const HeroComponent = isGanpati ? HeroGanpati : HeroSection;
+  const LiveNeedsComponent = isGanpati ? LiveNeedsSectionGanpati : LiveNeedsSection;
+  const ComingSoonComponent = isGanpati ? ComingSoonMagnetsGanpati : ComingSoonMagnets;
+  const CTAComponent = isGanpati ? CTASectionGanpati : CTASection;
+  const AudiencePathwaysComponent = isGanpati ? AudiencePathwaysSectionGanpati : AudiencePathwaysSection;
+  // The mobile tree has two guest surfaces the desktop tree does not: the
+  // doors spine and the donee door's evidence. Both were still plain
+  // terracotta and teal between a festive hero and a festive board, so each
+  // gets a sibling on the same isGanpati switch as everything else.
+  const MobileDoorsComponent = isGanpati ? MobileDoorsGanpati : MobileDoors;
+  const DoneeDoorEvidenceComponent = isGanpati ? DoneeDoorEvidenceGanpati : DoneeDoorEvidence;
+
   // The single need that has gone unclaimed longest. It ends the hero's thread,
   // and is excluded from the section below so the same request does not appear
   // twice within one screen of itself.
@@ -212,15 +274,12 @@ export default function HomeClient({
     [rakshaBandhan, initialPublicRequests],
   );
 
-  const statItems = [
-    { value: stats ? `₹${formatINR(stats.totalRaised)}` : "—", label: useTranslations("stats")("totalRaised"),    icon: Coins,    color: "text-[var(--ck-home-ink,#b04a15)]" },
-    { value: stats ? stats.activeCampaigns               : "—", label: useTranslations("stats")("activeCampaigns"), icon: Heart,    color: "text-[var(--ck-home-ink,#b04a15)]" },
-    { value: stats ? stats.totalDonations                : "—", label: useTranslations("stats")("donations"),       icon: Sparkles, color: "text-[var(--ck-home-ink,#b04a15)]" },
-    { value: stats ? stats.uniqueDonors                  : "—", label: useTranslations("stats")("donors"),          icon: Users,    color: "text-[var(--ck-home-ink,#b04a15)]" },
-  ];
 
   return (
-    <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+    <div className={`ck-home-page ${isGanpati ? "ck-ganpati-active" : ""} bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
+      {/* Festive Ganpati Welcome Popup on site load */}
+      {isGanpati && <GanpatiWelcomeModal />}
+
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders
           on "/" and nowhere else, so login, dashboard, requests, profile and
@@ -230,10 +289,25 @@ export default function HomeClient({
 
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
+      {/* Desktop only, and it costs nothing: below lg this strip has never been
+          visible. `.ck-showcase-hero` carries `margin-top: -var(--ck-nav-h)`
+          under 1024px to tuck itself under the header, and the strip sits
+          between the two — so the hero is pulled straight over it and paints it
+          out. All it contributed on a phone was its own height, pushing the
+          hero down by that much.
+
+          That was invisible while the header was an opaque bar covering the
+          same band. With the festive home's bar gone it became a strip of bare
+          page above the photograph, which reads as a leftover navbar. Dropping
+          it from the mobile flow puts the hero's top edge at y=0, which is what
+          a bar-less header wants behind it. */}
+      <div className="hidden lg:block">
+        <GanpatiStrip />
+      </div>
 
       {/* One responsive front door. Keeping it outside the two legacy layout
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}
-      <HeroSection />
+      <HeroComponent />
 
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
@@ -242,7 +316,7 @@ export default function HomeClient({
       ════════════════════════════════════════════════════════════ */}
       {/* One paper for the whole desktop page. Sections are transparent over
           it — see PageSection for why they no longer bring their own. */}
-      <div className="hidden lg:block bg-[var(--surface-cream,#faf8f5)] dark:bg-zinc-950 relative z-10">
+      <div className="ck-home-paper hidden lg:block relative z-10">
         {/* Mobile stats strip (inside desktop wrapper but sm:hidden) */}
         {FEATURES.money && (
           <div className="sm:hidden overflow-hidden border-b border-[var(--ck-home-surface,#ffedd5)] bg-white dark:bg-zinc-950">
@@ -290,13 +364,13 @@ export default function HomeClient({
             is the whole reason for the condition. */}
         {showAudiencePathways && (
           <>
-            <AudiencePathwaysSection />
+            <AudiencePathwaysComponent />
           </>
         )}
 
 
         {/* Live Needs section — real verified needs across multiple categories */}
-        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
 
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
@@ -339,7 +413,7 @@ export default function HomeClient({
                 <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
                   {displayedRequests.slice(0, 6).map((req, i) => {
                     const isFeatured = i === 0;
-                    const isTall     = i === 0 || i === 3;
+                    const isTall = i === 0 || i === 3;
                     return (
                       <Reveal key={req.id} delay={i * 90} className={isFeatured ? "col-span-2 lg:col-span-1 row-span-2 lg:row-span-1" : ""}>
                         <HoverCard openDelay={300}>
@@ -418,11 +492,16 @@ export default function HomeClient({
 
 
         {/* Coming soon magnets */}
-        <ComingSoonMagnets />
+        <ComingSoonComponent />
+
 
 
         {/* Bottom CTA — hidden when logged in */}
-        <CTASection />
+        {isGanpati && <FestiveSectionDivider />}
+        <CTAComponent />
+
+        {/* Festive footer on home page during Ganpati theme */}
+        {isGanpati && <FooterGanpati />}
       </div>
 
       {/* ════════════════════════════════════════════════════════════
@@ -434,7 +513,48 @@ export default function HomeClient({
           and whatever follows it is a section join like every other one, and at
           `pt-2` it was 8px against 44px everywhere else — the one odd seam on
           the page, and it read as the next section being glued to the hero. */}
-      <div className="lg:hidden min-h-screen bg-[#fbf9f4] dark:bg-zinc-950 px-5 pt-11 flex flex-col gap-11">
+      {/* The festive column used to start at pt-[8.5rem] — 136px — because the
+          toran hung about 120px into it and would otherwise have come down
+          across the first heading. That garland is gone from here now, and what
+          leads the column is the mushak's book band, which is in flow and
+          reserves its own height. So the festive branch goes back to the same
+          `pt-11` as the plain one: 136px of padding with nothing hanging in it
+          is just a hole between the hero and the page. */}
+      {/* `overflow-x-clip`, never `overflow-x-hidden`. They clip identically,
+          but `hidden` on one axis drags the other one with it: CSS will not let
+          a box be `hidden` across and `visible` down, so `overflow-y` computes
+          to `auto` and this column silently becomes its own scroll container —
+          a 100vh-tall one, wrapping the whole mobile page. The footer's `-mb-2`
+          then lands 8px past its content box, which is the entire scroll range,
+          so a swipe anywhere over this column moved the doors 8px and stopped
+          before the page itself would take the gesture. That is what read as
+          the donor/donee spine being a separate, separately scrolling page.
+          `clip` leaves `overflow-y: visible` alone, so nothing here scrolls and
+          the horizontal bleed — Bappa's halo overhangs 7px a side — is still
+          clipped exactly as before. */}
+      <div
+        className={`lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-clip ${
+          isGanpati
+            ? "pt-11 bg-gradient-to-b from-[#fffaf3] via-[#fff6ea] to-[#fffcf7] dark:from-[#1a0b05] dark:via-[#150803] dark:to-[#100601]"
+            : "pt-11 bg-[#fbf9f4] dark:bg-zinc-950"
+        }`}
+      >
+        {/* The petals stay; the toran and its light string do not. That garland
+            now hangs at the foot of the doors section instead
+            (`MobileGarlandStrip`), so the column no longer opens and closes on
+            the same motif, and the mushak walks his books across the join
+            between the hero and the question below it. */}
+        {isGanpati && (
+          <div className="absolute top-0 left-0 w-full z-50 pointer-events-none overflow-hidden h-[360px]">
+            <MobileFlowerPetals className="absolute top-0 left-0 w-full h-full" />
+          </div>
+        )}
+
+        {/* Full-bleed: the clip is a walk across the whole column, so `-mx-5`
+            cancels the gutter and lets him enter and leave at the screen edges
+            rather than at a margin. */}
+        {isGanpati && <MushakBooksBandGanpati className="-mx-5" />}
+
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 
             `-mt-9` pulls it back up against the hero. This bar is chrome, not a
@@ -468,20 +588,12 @@ export default function HomeClient({
             desktop tree still renders that section in its old position, and a
             signed-in visitor still gets today's page in both trees — the donor
             and donee variants are a separate piece of work. */}
-        {showAudiencePathways && <MobileDoors door={door} pick={pickDoor} />}
-
-        {/* Everything from here to the end of the unclaimed section answers the
-            switcher, so it re-plays a short staggered entrance each time the
-            door changes. The wrapper repeats this column's `gap-11` — its
-            children are direct flex items of that column, and collapsing them
-            into one item would cost every section below the switcher its 44px
-            join. See DoorSwapReveal. */}
-        <DoorSwapReveal door={showAudiencePathways ? door : "static"}>
+        {showAudiencePathways && <MobileDoorsComponent door={door} pick={pickDoor} />}
 
         {/* The donee door's evidence. The one genuinely new surface here:
             everything else below the hero is donor-facing, so a visitor who
             says "I need something" had nothing to read. */}
-        {showAudiencePathways && door === "donee" && <DoneeDoorEvidence />}
+        {showAudiencePathways && door === "donee" && <DoneeDoorEvidenceComponent />}
 
         {/* Live Needs — the donor door's first piece of evidence, so it leads
             now rather than sitting below the campaigns rail.
@@ -489,69 +601,73 @@ export default function HomeClient({
             padding and background at this width (see LiveNeedsSection), so it
             sits on this column's px-5 gutter like everything else. */}
         {doorIsDonor && (
-          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} animateHeading />
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
         )}
 
         {/* Mobile Campaigns horizontal scroll */}
         {FEATURES.money && doorIsDonor && (
-          <section className="space-y-4">
-            {/* One header shape, shared with every other mobile section: a
+          <>
+            {isGanpati && <FestiveSectionDivider />}
+            <section className="space-y-4 relative">
+          {isGanpati && <MangoLeafCorner className="absolute -top-4 -left-2 z-10" />}
+          {/* One header shape, shared with every other mobile section: a
                 short rule, an eyebrow, then a 24px title. This one used to be
                 16px while its neighbours were 30px, which is most of why the
                 stack read as unrelated pages. */}
-            <div>
-              <div className="flex items-center gap-2.5">
-                <span className="h-0.5 w-[22px] shrink-0 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
-                <span className="text-3xs font-extrabold uppercase tracking-[0.16em] text-[var(--ck-home-ink,#b04a15)]">
-                  <TranslatedText text="Money campaigns" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-end justify-between gap-3">
-                <h2 className="text-2xl font-black tracking-tight leading-[1.2] text-stone-850 dark:text-stone-100">
-                  <TranslatedText text="Latest Active Campaigns" />
-                </h2>
-                <Link href="/campaigns" className="shrink-0 pb-1 text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
-                  <TranslatedText text="Browse All" /> →
-                </Link>
-              </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <span className="h-0.5 w-[22px] shrink-0 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
+              <span className="text-3xs font-extrabold uppercase tracking-[0.16em] text-[var(--ck-home-ink,#b04a15)]">
+                <TranslatedText text="Money campaigns" />
+              </span>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 -mr-5 scrollbar-none snap-x snap-mandatory">
-              {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" /></div>}
-              {!loading && campaigns.slice(0, 5).map(campaign => {
-                const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
-                return (
-                  <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.25rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0">
-                    <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
-                      <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
-                        <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
-                      </div>
-                      <p className="text-3xs font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
+            <div className="mt-3 flex items-end justify-between gap-3">
+              <h2 className="text-2xl font-black tracking-tight leading-[1.2] text-stone-850 dark:text-stone-100">
+                <TranslatedText text="Latest Active Campaigns" />
+              </h2>
+              <Link href="/campaigns" className="shrink-0 pb-1 text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
+                <TranslatedText text="Browse All" /> →
+              </Link>
+            </div>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-4 -mr-5 scrollbar-none snap-x snap-mandatory">
+            {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" /></div>}
+            {!loading && campaigns.slice(0, 5).map(campaign => {
+              const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
+              return (
+                <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.25rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0">
+                  <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
+                    <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
+                      <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
                     </div>
-                    <div className="flex-1 flex flex-col justify-between min-w-0">
-                      <h4 className="text-2xs font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {[campaign.city, campaign.category].map(t => (
-                          <span key={t} className="bg-[var(--ck-home-surface,#faf1e1)] dark:bg-zinc-850 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-highlight,#fb923c)] font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
-                        ))}
-                      </div>
-                      <div className="mt-2.5 space-y-1">
-                        <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
-                          <span>Progress</span><span className="text-[var(--ck-home-ink,#b04a15)]">{pct}% Funded</span>
-                        </div>
-                        <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
-                          <div className="bg-[var(--ck-home-accent,#b04a15)] h-full rounded-full" style={{ width: `${pct}%` }} />
-                        </div>
-                        <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
-                      </div>
-                      <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
-                        <button className="w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
-                      </Link>
-                    </div>
+                    <p className="text-3xs font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
                   </div>
-                );
-              })}
-            </div>
-          </section>
+                  <div className="flex-1 flex flex-col justify-between min-w-0">
+                    <h4 className="text-2xs font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {[campaign.city, campaign.category].map(t => (
+                        <span key={t} className="bg-[var(--ck-home-surface,#faf1e1)] dark:bg-zinc-850 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-highlight,#fb923c)] font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
+                      ))}
+                    </div>
+                    <div className="mt-2.5 space-y-1">
+                      <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
+                        <span>Progress</span><span className="text-[var(--ck-home-ink,#b04a15)]">{pct}% Funded</span>
+                      </div>
+                      <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
+                        <div className="bg-[var(--ck-home-accent,#b04a15)] h-full rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
+                    </div>
+                    <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
+                      <button className="w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+            </section>
+          </>
         )}
 
         {/* The needs nobody has taken. Repeated here rather than shared, because
@@ -565,8 +681,6 @@ export default function HomeClient({
             excludeId={longestWaitingRequest?.id ?? null}
           />
         )}
-
-        </DoorSwapReveal>
 
         {/* Be the Change — cut from the guest page. It restates "here are needs
             and here is proof", which the doors and the live board already do;
@@ -590,7 +704,16 @@ export default function HomeClient({
             Cut from the guest page for the same reason as Be the Change: it is
             a fourth restatement of what the doors and the board already say.
             Signed-in visitors keep it. */}
-        {!showAudiencePathways && <ComingSoonMagnets />}
+        {!showAudiencePathways && <ComingSoonComponent />}
+
+        {/* Festive footer on home page during Ganpati theme (mobile tree).
+            `-mx-5`, not the `-mx-4` it carried before: the doors work widened
+            this column's gutter, and the footer still has to bleed all of it. */}
+        {isGanpati && (
+          <div className="-mx-5 -mb-2">
+            <FooterGanpati />
+          </div>
+        )}
       </div>
     </div>
   );

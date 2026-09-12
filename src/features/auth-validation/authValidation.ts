@@ -71,6 +71,24 @@ export function validateFullName(raw: string): RuleResult {
   return { ok: true, successKey: "fullNameValid" };
 }
 
+/** NgoSignupRequest: 5 uppercase letters, 4 digits, 1 uppercase letter. */
+const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+
+export function validatePanNumber(raw: string): RuleResult {
+  const value = raw.trim().toUpperCase();
+  if (!value) return fail("panRequired");
+  if (!PAN_RE.test(value)) return fail("panInvalid");
+  return { ok: true, successKey: "panValid" };
+}
+
+export function validateOrganizationName(raw: string): RuleResult {
+  const value = raw.trim();
+  if (!value) return fail("orgNameRequired");
+  if (value.length < 2) return fail("orgNameTooShort", { min: 2 });
+  if (value.length > 255) return fail("orgNameTooLong", { max: 255 });
+  return { ok: true, successKey: "orgNameValid" };
+}
+
 /**
  * Phone, against the value that will actually be sent (`dialCode + national`).
  *
@@ -117,9 +135,9 @@ export function validateCity(cityValue: string, cityFreeText: string, useFreeTex
   return OK;
 }
 
-/** Only DONOR and DONEE are registerable roles. */
+/** DONOR, DONEE, and NGO are registerable roles. */
 export function validateRole(role: string): RuleResult {
-  if (role !== "DONOR" && role !== "DONEE") return fail("roleRequired");
+  if (role !== "DONOR" && role !== "DONEE" && role !== "NGO") return fail("roleRequired");
   return OK;
 }
 
@@ -154,6 +172,12 @@ export function mapServerErrorToField(message: string): { field: string; errorKe
   }
   if (m.includes("full name") || m.includes("fullname")) {
     return { field: "fullName", errorKey: "fullNameTooShort" };
+  }
+  if (m.includes("organization name") || m.includes("organizationname")) {
+    return { field: "organizationName", errorKey: "orgNameRequired" };
+  }
+  if (m.includes("pan") || m.includes("pan number")) {
+    return { field: "panNumber", errorKey: "panInvalid" };
   }
   return null;
 }

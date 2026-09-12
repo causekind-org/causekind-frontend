@@ -7,6 +7,7 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 import SpecularButton from "@/components/SpecularButton";
 import Link from "next/link";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
+import { GanpatiLogoVideo } from "@/components/brand/GanpatiLogoVideo";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -16,13 +17,15 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
-import { useTilt } from "@/hooks/useTilt";
-import { getMyProfile, getMyMatches, type UserProfile, type ItemMatch } from "@/lib/api";
+import { getMyProfile, getMyMatches, getMyNgoApplication, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
+import { isGanpatiActive } from "@/lib/isGanpatiActive";
+import { ModakIcon } from "@/components/home/GanpatiVisuals";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
+import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import {
   AlertDialog,
@@ -62,6 +65,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   // cannot outlive its window — which is exactly how the Independence Day
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
+  const isGanpati = isGanpatiActive();
   return (
     <motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
@@ -69,7 +73,9 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      {!hideIcon && (
+      {/* `!isGanpati`: the festive artwork draws the heart-and-hands mark
+          itself, so keeping LogoVideo beside it shows the brand mark twice. */}
+      {!hideIcon && !isGanpati && (
         <motion.div
           className="shrink-0"
           initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
@@ -99,6 +105,28 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
            wordmark outright rather than decorating it. Gated on the campaign
            switch, unlike the flag asset it is standing in for. */
         <RakshaBandhanWordmark size={size} />
+      ) : isGanpati ? (
+        /* Same arrangement for Ganeshotsav, and gated the same way — on
+           isGanpatiActive(), so the artwork cannot outlive its window the way
+           the Independence Day wordmark did. The modak that used to be pinned
+           after "Kind" is not rendered alongside it: this artwork already has
+           two of them.
+
+           Now the supplied animation rather than the still it shipped with.
+           Two things about the delivered file are worth knowing before this is
+           tuned further, both fixable in one re-export:
+
+             1. It is opaque. The container declares AlphaMode=1 but the content
+                behind it is a solid rgb(252,246,237) plate, so it cannot simply
+                sit on the bar — see GanpatiLogoVideo, which multiplies it away
+                on light and keeps it as a chip on dark.
+             2. It is 2.9 MB, against 67 KB for the still, and the header is on
+                every page.
+
+           Both go away with a transparent, navbar-sized encode:
+             ffmpeg -i ganpati-logo.webm -vf "chromakey=0xFCF6ED:0.10:0.04,               scale=364:-2" -c:v libvpx-vp9 -pix_fmt yuva420p -crf 38 -b:v 0                -an ganpati-logo.webm
+           `yuva420p` is the part that matters — it is what carries the alpha. */
+        <GanpatiLogoVideo size={size} />
       ) : (
         <span className="relative flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
@@ -128,6 +156,11 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
           >
             Kind
           </motion.span>
+          {isGanpati && (
+            <span className="ml-1 inline-flex items-center shrink-0 self-center" aria-hidden="true" title="Ganesh Chaturthi Special">
+              <ModakIcon className="size-3.5 sm:size-4 text-amber-600 drop-shadow-[0_1px_3px_rgba(217,119,6,0.35)]" />
+            </span>
+          )}
         </span>
       )}
     </motion.span>
@@ -592,7 +625,9 @@ export function SiteHeader() {
   const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
   const dashHref = user?.role === "SUPER_ADMIN" ? "/super-admin"
-    : user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
+    : user?.role === "ADMIN" ? "/admin/dashboard"
+    : (user?.role === "NGO" || user?.role === "NGO_PARTNER") ? "/"
+    : "/dashboard";
 
   /** Opens the confirmation dialog — actual logout happens only on confirm. */
   function requestLogout() { setLogoutDialogOpen(true); }
@@ -670,8 +705,109 @@ export function SiteHeader() {
     pathname?.startsWith("/admin/dashboard") ||
     user?.role === "SUPER_ADMIN";
 
-  // Mobile drawer lists everything flat; desktop groups these three under
-  // an "About Us" dropdown instead of three separate pills (see render below).
+  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const isNgoDashboard =
+    isNgo ||
+    pathname?.startsWith("/dashboard/ngo") ||
+    pathname?.startsWith("/ngo");
+
+  const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(() => {
+    if (typeof window === "undefined" || !user) return true;
+    const userIdentifier =
+      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
+    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
+    const realAppKey = `ngo-application-${userIdentifier}`;
+    const cached = localStorage.getItem(demoAppKey) || localStorage.getItem(realAppKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (
+          parsed?.status === "UNDER_REVIEW" ||
+          parsed?.status === "APPROVED" ||
+          parsed?.status === "PENDING_VERIFICATION"
+        ) {
+          return false;
+        }
+      } catch {}
+    }
+    return true;
+  });
+
+  const checkNgoApplicationStatus = useCallback(() => {
+    if (!isNgoDashboard) {
+      setIsNgoProfileIncomplete(false);
+      return;
+    }
+
+    const userIdentifier =
+      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
+    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
+    const realAppKey = `ngo-application-${userIdentifier}`;
+
+    const cachedDemo = typeof window !== "undefined" ? localStorage.getItem(demoAppKey) : null;
+    const cachedReal = typeof window !== "undefined" ? localStorage.getItem(realAppKey) : null;
+    if (cachedDemo || cachedReal) {
+      try {
+        const parsed = JSON.parse((cachedDemo || cachedReal)!);
+        if (
+          parsed?.status === "UNDER_REVIEW" ||
+          parsed?.status === "APPROVED" ||
+          parsed?.status === "PENDING_VERIFICATION"
+        ) {
+          setIsNgoProfileIncomplete(false);
+          return;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (user) {
+      getMyNgoApplication()
+        .then((app) => {
+          const isComplete =
+            (app as any)?.submissionStatus === "UNDER_REVIEW" ||
+            (app as any)?.submissionStatus === "APPROVED" ||
+            (app as any)?.submissionStatus === "PENDING_VERIFICATION" ||
+            app?.status === "UNDER_REVIEW" ||
+            app?.status === "APPROVED" ||
+            app?.status === "PENDING_VERIFICATION";
+          setIsNgoProfileIncomplete(!isComplete);
+        })
+        .catch(() => {
+          setIsNgoProfileIncomplete(true);
+        });
+    } else {
+      setIsNgoProfileIncomplete(true);
+    }
+  }, [isNgoDashboard, user]);
+
+  useEffect(() => {
+    checkNgoApplicationStatus();
+
+    const handleUpdate = (e?: Event) => {
+      const customEvent = e as CustomEvent;
+      if (
+        customEvent?.detail?.status === "UNDER_REVIEW" ||
+        customEvent?.detail?.status === "APPROVED" ||
+        customEvent?.detail?.status === "PENDING_VERIFICATION"
+      ) {
+        setIsNgoProfileIncomplete(false);
+        return;
+      }
+      checkNgoApplicationStatus();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("ngo-application-submitted", handleUpdate);
+      window.addEventListener("storage", handleUpdate);
+      return () => {
+        window.removeEventListener("ngo-application-submitted", handleUpdate);
+        window.removeEventListener("storage", handleUpdate);
+      };
+    }
+  }, [checkNgoApplicationStatus, pathname]);
+
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
@@ -681,17 +817,6 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    // Visible to everyone, including guests: the board itself is public
-    // (reduced-field endpoint, no GPS) and only the act of offering needs an
-    // account. Hiding it from logged-out visitors meant nobody could see what
-    // CauseKind is actually for before signing up.
-    // Labelled "Donate", not "In-Kind Requests": the panel behind it now offers
-    // money and in-kind side by side, so naming it after one of the two would
-    // hide the other. `nav.donate` is reused rather than a new key added — it
-    // already carries exactly this word, correctly translated in all fourteen
-    // locales, and a second key for the same string is a second thing to keep
-    // in step. The href is unchanged: clicking still goes to the in-kind hub,
-    // which is the destination for everyone the panel is open to.
     { href: "/requests", label: t("nav.donate") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
@@ -705,6 +830,22 @@ export function SiteHeader() {
 
   // Hooks must run unconditionally — keep this above the hideChrome early return.
   const tilt = useTilt();
+  const isGanpati = isGanpatiActive();
+
+  /**
+   * The festive home page carries no bar on a phone: no ground, no blur, no
+   * hairline, no shadow — just the wordmark and the menu button floating on the
+   * hero. Everything that draws the bar is switched off in styles.css off the
+   * `data-bare-nav` marker below, because those rules have to outrank both the
+   * utility classes on this header and the `data-home-hero` block written for
+   * the old translucent-over-photo treatment.
+   *
+   * Scoped to the festive home. Every other page still needs a bar behind its
+   * controls — they scroll ordinary copy under this header, not a photograph —
+   * and the plain home's mobile bar is opaque rather than translucent, so there
+   * is no "transparent effect" there to remove.
+   */
+  const bareNav = isGanpati && pathname === "/";
 
   if (hideChrome) return null;
 
@@ -738,6 +879,7 @@ export function SiteHeader() {
       <header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
+        data-bare-nav={bareNav ? "true" : undefined}
         style={{
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
           opacity: immersive ? 0 : 1,
@@ -745,11 +887,25 @@ export function SiteHeader() {
           transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
           willChange: "transform",
         }}
-        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 ${
+        className={`sticky top-0 z-50 w-full ${
+          isGanpati
+            ? pathname === "/"
+              ? "bg-gradient-to-r from-[#fffbf4]/80 via-[#fff5e6]/70 to-[#fffbf4]/80 dark:from-[#1b0c05]/80 dark:via-[#240e06]/70 dark:to-[#1b0c05]/80 backdrop-blur-xs border-b-0"
+              : "bg-gradient-to-r from-[#fffbf4] via-[#fff5e6] to-[#fffbf4] dark:from-[#1b0c05] dark:via-[#240e06] dark:to-[#1b0c05] lg:bg-gradient-to-r lg:from-[#fffbf4]/92 lg:via-[#fff5e6]/88 lg:to-[#fffbf4]/92 lg:dark:from-[#1b0c05]/92 lg:dark:via-[#240e06]/88 lg:dark:to-[#1b0c05]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-amber-300/60 dark:border-amber-700/40"
+            : "bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850"
+        } ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
-          : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
+          : pathname === "/" && isGanpati
+            ? "shadow-none"
+            : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
+        {isGanpati && pathname !== "/" && (
+          <div
+            className="absolute bottom-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none z-10"
+            aria-hidden="true"
+          />
+        )}
         {/* One-day Raksha Bandhan dressing. Renders null on every other day, so
             the header is back to normal on its own at IST midnight. It sits at
             z-0 behind the two content rows below, which are lifted to z-[1]. */}
@@ -778,28 +934,54 @@ export function SiteHeader() {
             itself carries the same opaque #faf8f5 / zinc-950 behind this row,
             so the 90% here reveals only the header's own background — the exact
             same colour — plus the festive layer on the one day it exists. Off
-            the day, this renders pixel-identical to the opaque version. */}
-        <div className="ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
+            the day, this renders pixel-identical to the opaque version.
+
+            Through Ganeshotsav the row takes the header's own warm gradient
+            instead, so it reads as part of the festive header rather than as a
+            cream band sitting on it. `ck-mobile-header` survives either branch:
+            src/styles.css hangs the whole home-hero header layout off it. */}
+        <div className={`ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 ${
+          bareNav
+            ? ""
+            : isGanpati
+              ? "bg-gradient-to-r from-[#fffbf4]/95 via-[#fff5e6]/95 to-[#fffbf4]/95 dark:from-[#1b0c05]/95 dark:via-[#240e06]/95 dark:to-[#1b0c05]/95"
+              : "bg-[#faf8f5]/90 dark:bg-zinc-950/90"
+        }`}>
           <div className="flex items-center gap-2 justify-self-start">
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            {pathname === "/" && overMobileHero ? <span className="text-xl font-extrabold tracking-tight text-[#fff6ed]">Cause<span className="text-[var(--ck-role-highlight,#ff9f66)]">Kind</span></span> : <CareNestLogo size="md" hideIcon={true} />}
+            <CareNestLogo size="md" hideIcon={true} />
           </Link>
+          {/* With the bar gone there is nothing behind this button but the
+              hero, so it brings its own surface: `glass-pill` is the same
+              frosted treatment the desktop icon buttons use, and `relative` is
+              not decoration — its specular highlight is an absolutely
+              positioned `::after`.
+
+              44px rather than 32px because it is now a control floating on a
+              photograph rather than one sitting in a bar, and its glyph colour
+              lives in styles.css, which is the only place that can outrank the
+              cream `data-home-hero` inherited from the old treatment. The
+              hover tint goes: it fought the glass for the same surface. */}
           <button
             ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
             aria-expanded={isSidebarOpen}
             aria-controls="staggered-menu-panel"
-            className="justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+            className={
+              bareNav
+                ? "glass-pill glass-3d relative justify-self-end flex items-center justify-center w-11 h-11 rounded-full transition-transform active:scale-95"
+                : "justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+            }
           >
             <Menu className="w-5 h-5" />
           </button>
         </div>
 
         {/* Desktop Header */}
-        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between px-10 py-5">
+        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between py-5 px-10">
           <Link href="/" className="flex items-center gap-2">
             <CareNestLogo />
           </Link>
@@ -984,7 +1166,28 @@ export function SiteHeader() {
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
             </button>
 
-            {FEATURES.money && <Donate3DButton />}
+            {FEATURES.money && !isNgoDashboard && <Donate3DButton />}
+
+            {isNgoDashboard && (
+              <Link href="/dashboard/ngo/profile">
+                {isNgoProfileIncomplete ? (
+                  <Button
+                    size="sm"
+                    className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
+                  >
+                    Complete Profile
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                  >
+                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                    Application Under Review
+                  </Button>
+                )}
+              </Link>
+            )}
 
             {/* Auth action — login/logout, top-right */}
             <div className="relative">
@@ -1256,8 +1459,12 @@ export function SiteHeader() {
           ...navLinks.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
           ...(user
             ? [
-                { label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" },
-                { label: "My Profile", link: "/profile", ariaLabel: "View profile" },
+                ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
+                {
+                  label: "My Profile",
+                  link: isNgo ? "/dashboard/ngo/profile" : "/profile",
+                  ariaLabel: "View profile"
+                },
               ]
             : [
                 { label: t("nav.logIn"), link: "/login", ariaLabel: "Log in" },
