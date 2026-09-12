@@ -6,10 +6,16 @@
 // back to `true` to re-enable those features everywhere at once.
 //
 // `bottomBlur` is the site-wide bottom fade band (SiteBottomBlur → GradualBlur).
-// Temporarily switched off; the component and GradualBlur are untouched and
-// still mounted in layout.tsx, so flipping this back to `true` restores the band
-// exactly as it was.
+// Back on as of 2026-09-12. It was switched off inside a broad "glass surface
+// UI" commit with no reason recorded for the band itself, and the component and
+// GradualBlur stayed mounted in layout.tsx throughout — so this is the flag
+// coming back, not the feature being rebuilt.
+//
+// One band serves every width: SiteBottomBlur passes mobile / tablet / desktop /
+// wide heights and GradualBlur picks between them at <=480 / <=768 / <=1024.
+// It stays suppressed on the admin and super-admin panels, which have their own
+// dark chrome.
 export const FEATURES: { money: boolean; bottomBlur: boolean } = {
   money: false,
-  bottomBlur: false,
+  bottomBlur: true,
 };
