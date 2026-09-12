@@ -3274,6 +3274,18 @@ div:has(.searchable-select-open) {
     #b04a15 100%
   );
   background-size: 300% auto;
+  /*
+    The resting position, and it is not cosmetic.
+
+    The gradient is terracotta at both ends with a pale sweep through the middle,
+    and the animation runs 150% -> -150%. With no `background-position` of its
+    own the element sat at the default `0%`, which lands on the pale middle — so
+    "Kind" rendered peach instead of the brand accent for the whole 1.4s delay
+    before the shine starts, and permanently for anyone the animation never runs
+    for. Matching the animation's own 0% keyframe means the word is #b04a15 at
+    rest and the shine is the only thing that ever lightens it.
+  */
+  background-position: 150% center;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
