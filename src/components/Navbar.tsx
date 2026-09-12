@@ -994,7 +994,7 @@ export function SiteHeader() {
         </div>
 
         {/* Desktop Header */}
-        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between py-5 px-10">
+        <div className="ck-desktop-header relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between py-5 px-10">
           <Link href="/" className="flex items-center gap-2">
             <CareNestLogo />
           </Link>

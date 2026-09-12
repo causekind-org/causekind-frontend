@@ -2774,6 +2774,30 @@ body.mobile-menu-open {
   }
 }
 
+/* Desktop counterpart to the `data-over-hero` rules in the block above.
+
+   Those are scoped to `max-width: 1023px`, because the desktop bar used to
+   keep its own cream ground on this route and its dark contents never had to
+   survive the photograph. The money hero now runs the full height of the
+   screen and the bar floats on it at every width, so they do.
+
+   Only the wordmark is repainted. The centre capsule carries its own
+   translucent white ground and its dark labels are legible against that, and
+   the right-hand cluster is filled terracotta and amber buttons with white
+   text already. Repainting the whole row would wash all three out.
+
+   During Ganeshotsav the wordmark is a video rather than text, so this rule
+   simply finds nothing to recolour — the festive mark is light-on-dark
+   already. It matters the rest of the year, when "Cause" is `text-stone-900`
+   sitting directly on a dark photograph. */
+@media (min-width: 1024px) {
+  header[data-over-hero] .ck-desktop-header > a[href="/"],
+  header[data-over-hero] .ck-desktop-header > a[href="/"] * {
+    color: #fff6ed;
+  }
+}
+
+
 @media (max-width: 1023px) and (max-height: 500px) and (orientation: landscape) {
   .ck-showcase-hero .ck-hero-copy { padding-top: calc(var(--ck-nav-h, 4.25rem) + 2rem); }
   .ck-showcase-hero .ck-hero-headline { font-size: clamp(2.25rem, 6vw, 3.25rem); }
