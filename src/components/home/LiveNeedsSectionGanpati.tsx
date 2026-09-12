@@ -91,14 +91,35 @@ export function LiveNeedsSectionGanpati({
       // on 20px, and its gradient read as a panel inset from both edges rather
       // than as the page. Below lg it now drops both and inherits the column.
       // The desktop tree is hidden below lg, so nothing there changes.
-      className="relative isolate overflow-hidden px-0 pt-10 pb-2 sm:pt-12 lg:bg-gradient-to-b lg:from-[#fffcf7] lg:via-[#fff8ed] lg:to-[#fffcf7] lg:px-8 lg:py-24 lg:dark:from-[#140803] lg:dark:via-[#1c0c05] lg:dark:to-[#140803]"
+      // `pt-0` below lg, where `pt-10 sm:pt-12` used to be. That padding was
+      // headroom for the toran pinned to this section's top edge, and the toran
+      // is `hidden lg:block` now — so on a phone it was reserving 40-48px for
+      // something that no longer renders. Stacked on the column's own `gap-11`
+      // and the header's `pt-4` it put ~100px of cream between the garland
+      // closing the doors section and this heading. `lg:py-24` still overrides
+      // both, so the desktop spacing is untouched.
+      className="relative isolate overflow-hidden px-0 pt-0 pb-2 lg:bg-gradient-to-b lg:from-[#fffcf7] lg:via-[#fff8ed] lg:to-[#fffcf7] lg:px-8 lg:py-24 lg:dark:from-[#140803] lg:dark:via-[#1c0c05] lg:dark:to-[#140803]"
     >
-      {/* Festive toran border at the top of the section */}
-      <div className="absolute top-0 inset-x-0 z-10 pointer-events-none select-none overflow-visible">
+      {/* Festive toran border at the top of the section.
+
+          `hidden lg:block`: this is the desktop toran, and it does not survive
+          the phone column. Its viewBox is 1440x95 drawn with
+          `preserveAspectRatio="none"`, so at the 350px this column gives it the
+          x scale falls to 0.24 while `h-14` holds y at 0.59 — every marigold,
+          leaf and bell is squashed to a quarter of its width and the whole
+          string renders as a row of faint specks above the heading. It read as
+          a stray line of dots under the doors spine rather than as a garland.
+          The mobile tree already hangs a real one: `MobileGarlandStrip`, drawn
+          on a 390-unit viewBox for exactly this width, closes the doors section
+          immediately above this one. Nothing changes at lg and up, where the
+          toran has the width it was drawn for. */}
+      <div className="absolute top-0 inset-x-0 z-10 hidden lg:block pointer-events-none select-none overflow-visible">
         <GanpatiToran />
       </div>
 
-      <div className="mx-auto max-w-7xl pt-4">
+      {/* `lg:pt-4`, not `pt-4`: the same headroom-for-a-toran story as the
+          section's own top padding above. */}
+      <div className="mx-auto max-w-7xl lg:pt-4">
         {/* Section Header */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>

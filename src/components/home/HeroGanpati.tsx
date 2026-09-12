@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
-import { ArrowRight, UsersRound, ShieldCheck, Sparkles, HandHeart } from "lucide-react";
+import { ArrowRight, UsersRound, ShieldCheck, HandHeart } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { CategoryStripGanpati } from "@/components/home/CategoryStripGanpati";
@@ -54,7 +54,7 @@ function usePrimaryAction() {
  * - Photorealistic Ganpati background image with altar, temple archway, sunset river, diyas,
  *   garlands, and "Share Care Spread Joy" gift box.
  * - Precise left text hierarchy: Eyebrow with petal accents, 2-line headline, body paragraph,
- *   3 tinted pill badges ("100% Verified", "Zero Fees", "Direct Handover"), and 2 rounded pill CTAs.
+ *   2 tinted pill badges ("100% Verified", "Direct Handover"), and 2 rounded pill CTAs.
  * - Drifting flower petals in foreground across both left and right sides.
  * - Faint circular rangoli mandala pattern in background (5-8% opacity).
  * - Floating Category Strip Ganpati with outlined circular icons.
@@ -144,30 +144,73 @@ export function HeroGanpati() {
               Full-bleed, so it cancels this container's px-6/px-10 gutter and
               its py top padding and sits flush against the festival strip.
 
-              The crop is the other half of it. The source is 1376x768 with
-              Ganesha at roughly 69% across and the left half left deliberately
-              empty as desktop's text bed. A short, wide band shows that empty
-              half and shrinks him to nothing at the right edge, which is why he
-              read as missing. A tall band crops width instead: at ~320px high
-              on a 390px screen the visible window is the pillar rightward, so
-              he lands near centre at full size, with the Spread Joy carton just
-              catching the right edge. object-position is 97% and not 100% to
-              keep a sliver of the arch on his left. */}
-          <div className="relative -mx-6 -mt-10 mb-8 block h-[20rem] w-[calc(100%+3rem)] overflow-hidden sm:-mx-10 sm:-mt-14 sm:mb-9 sm:h-[24rem] sm:w-[calc(100%+5rem)] lg:hidden">
-            <Image
-              src="/images/ganpati-hero-bg-v5.webp"
-              alt="Lord Ganesha seated on a flower-strewn altar with lit diyas"
-              fill
-              priority
-              sizes="(max-width: 1023px) 100vw, 1px"
-              className="object-cover object-[97%_center]"
-            />
+              Same photograph the desktop stage above uses, so the two views
+              show one artwork rather than two of it. That swap is what the
+              framing below is for: the old phone asset (bg-v5) was 1376x768
+              with Ganesha at roughly 69% across and its left half left
+              deliberately empty as desktop's text bed, so it had to be cropped
+              hard to the right to find him at all. This one is composed around
+              him — he sits at ~48%, arch and garlands frame him on both sides,
+              diyas across the foot — so the band simply takes its middle.
+
+              The height is `max(20rem, …)` and not a pair of fixed steps
+              because the photo is 16:9 and this band is full-bleed: a band
+              shorter than its own width ÷ 1.777 cannot be covered by the photo
+              on height, and the framing below flips to cropping top and bottom
+              instead. On a phone 20rem always wins and nothing moves — 57vw
+              only overtakes it past ~480px, which is where a fixed 24rem
+              started leaving the artwork short. `+3rem` pays for the gutter
+              this band bleeds into, the wider sm one included. */}
+          <div className="relative -mx-6 -mt-10 mb-8 block h-[max(20rem,calc(57vw+3rem))] w-[calc(100%+3rem)] overflow-hidden sm:-mx-10 sm:-mt-14 sm:mb-9 sm:w-[calc(100%+5rem)] lg:hidden">
+            {/* The photograph's own box, sized and centred by hand instead of
+                left to object-cover on the band. It comes out at exactly the
+                box object-cover would pick — height binds, by the rule above,
+                so the 16:9 width overflows the band evenly on both sides — but
+                as a real element, which is what the emblem mask below needs: a
+                frame it can be positioned inside in image percentages, the
+                same ones the desktop stage uses, at every screen width. */}
+            <div className="absolute left-1/2 top-0 h-full aspect-[1672/941] -translate-x-1/2">
+              <Image
+                src="/images/ganpati-hero-hd.webp"
+                alt="Lord Ganesha seated on a flower-strewn altar with lit diyas"
+                fill
+                priority
+                quality={100}
+                /* Not the band's width — the box's, which is 1.777× the band
+                   height and so overruns the viewport. Under ~480px that is a
+                   flat 570px (20rem × 1.777); above it the height tracks 57vw
+                   and the box lands near 101vw + 86px, which 105vw covers. */
+                sizes="(max-width: 480px) 570px, (max-width: 1023px) 105vw, 1px"
+                className="object-cover object-center"
+              />
+              {/* Kraft Cardboard Emblem Mask (covers printed logo on donation
+                  box), carrying the desktop stage's percentages unchanged —
+                  the carton catches the right edge of this band too, printed
+                  mark and all. */}
+              <div
+                className="absolute rounded-full pointer-events-none z-[1]"
+                style={{
+                  left: "79.8%",
+                  top: "78.5%",
+                  width: "7.0%",
+                  height: "11.0%",
+                  background: "radial-gradient(ellipse at 50% 50%, #c46830 0%, #bc612a 65%, rgba(184,94,40,0.85) 85%, rgba(184,94,40,0) 100%)",
+                  filter: "blur(2.5px)",
+                }}
+                aria-hidden="true"
+              />
+            </div>
             {/* The seam. Without it the photograph stops on a hard horizontal
                 line against the cream and the hero reads as two stacked blocks
-                rather than one surface. */}
+                rather than one surface.
+
+                Shorter than it was (h-24). The old asset ended in empty floor,
+                so a tall fade cost nothing; this one ends in the altar's
+                marigold row and the lit diyas, and 96px of cream swallowed
+                them. 64px still lands on cream at the bottom edge. */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#fffdf9] via-[#fffdf9]/70 to-transparent dark:from-[#190b05] dark:via-[#190b05]/70"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#fffdf9] via-[#fffdf9]/70 to-transparent dark:from-[#190b05] dark:via-[#190b05]/70"
             />
           </div>
 
@@ -202,18 +245,12 @@ export function HeroGanpati() {
               This Ganesh Chaturthi, what&apos;s extra for you could be essential to someone else. Give with intention, not just tradition.
             </p>
 
-            {/* 4. Three Rounded Pill Badges with proportional spacing */}
+            {/* 4. Two Rounded Pill Badges with proportional spacing */}
             <div className="mt-5 sm:mt-5.5 flex flex-wrap items-center gap-2 sm:gap-2.5">
               {/* 100% Verified — Pale Yellow */}
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fef9c3]/95 px-3 py-1.2 text-xs font-bold text-[#854d0e] border border-[#fef08a] shadow-2xs dark:bg-yellow-950/70 dark:border-yellow-700/50 dark:text-yellow-200 sm:text-[0.78rem]">
                 <ShieldCheck className="size-3.5 text-[#ca8a04] dark:text-yellow-400 shrink-0" strokeWidth={2.2} />
                 <span>100% Verified</span>
-              </span>
-
-              {/* Zero Fees — Pale Pink / Rose */}
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ffe4e6]/95 px-3 py-1.2 text-xs font-bold text-[#9f1239] border border-[#fecdd3] shadow-2xs dark:bg-rose-950/70 dark:border-rose-700/50 dark:text-rose-200 sm:text-[0.78rem]">
-                <Sparkles className="size-3.5 text-[#e11d48] dark:text-rose-400 shrink-0" strokeWidth={2.2} />
-                <span>Zero Fees</span>
               </span>
 
               {/* Direct Handover — Pale Green */}

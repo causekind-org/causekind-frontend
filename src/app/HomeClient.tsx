@@ -92,12 +92,11 @@ import DoneeDoorEvidenceGanpati from "@/components/home/DoneeDoorEvidenceGanpati
 // call site is the kind of thing that survives three refactors before anyone
 // checks whether it was ever meant to render.
 import {
-  MobileToran,
-  FestiveLights,
   MobileFlowerPetals,
   FestiveSectionDivider,
   MangoLeafCorner
 } from "@/components/home/GanpatiMobileVisuals";
+import { MushakBooksBandGanpati } from "@/components/home/MushakBooksBandGanpati";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -403,7 +402,21 @@ export default function HomeClient({
 
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
-      <GanpatiStrip />
+      {/* Desktop only, and it costs nothing: below lg this strip has never been
+          visible. `.ck-showcase-hero` carries `margin-top: -var(--ck-nav-h)`
+          under 1024px to tuck itself under the header, and the strip sits
+          between the two — so the hero is pulled straight over it and paints it
+          out. All it contributed on a phone was its own height, pushing the
+          hero down by that much.
+
+          That was invisible while the header was an opaque bar covering the
+          same band. With the festive home's bar gone it became a strip of bare
+          page above the photograph, which reads as a leftover navbar. Dropping
+          it from the mobile flow puts the hero's top edge at y=0, which is what
+          a bar-less header wants behind it. */}
+      <div className="hidden lg:block">
+        <GanpatiStrip />
+      </div>
 
       {/* One responsive front door. Keeping it outside the two legacy layout
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}
@@ -613,25 +626,47 @@ export default function HomeClient({
           and whatever follows it is a section join like every other one, and at
           `pt-2` it was 8px against 44px everywhere else — the one odd seam on
           the page, and it read as the next section being glued to the hero. */}
-      {/* The festive column starts lower than the plain one. The toran hangs
-          about 120px into this column and the light string another 56px, and
-          at pt-11 (44px) the garland came down across the first heading. The
-          decoration is pointer-events-none, so this is purely about not
-          reading text through a row of marigolds. */}
+      {/* The festive column used to start at pt-[8.5rem] — 136px — because the
+          toran hung about 120px into it and would otherwise have come down
+          across the first heading. That garland is gone from here now, and what
+          leads the column is the mushak's book band, which is in flow and
+          reserves its own height. So the festive branch goes back to the same
+          `pt-11` as the plain one: 136px of padding with nothing hanging in it
+          is just a hole between the hero and the page. */}
+      {/* `overflow-x-clip`, never `overflow-x-hidden`. They clip identically,
+          but `hidden` on one axis drags the other one with it: CSS will not let
+          a box be `hidden` across and `visible` down, so `overflow-y` computes
+          to `auto` and this column silently becomes its own scroll container —
+          a 100vh-tall one, wrapping the whole mobile page. The footer's `-mb-2`
+          then lands 8px past its content box, which is the entire scroll range,
+          so a swipe anywhere over this column moved the doors 8px and stopped
+          before the page itself would take the gesture. That is what read as
+          the donor/donee spine being a separate, separately scrolling page.
+          `clip` leaves `overflow-y: visible` alone, so nothing here scrolls and
+          the horizontal bleed — Bappa's halo overhangs 7px a side — is still
+          clipped exactly as before. */}
       <div
-        className={`lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-hidden ${
+        className={`lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-clip ${
           isGanpati
-            ? "pt-[8.5rem] bg-gradient-to-b from-[#fffaf3] via-[#fff6ea] to-[#fffcf7] dark:from-[#1a0b05] dark:via-[#150803] dark:to-[#100601]"
+            ? "pt-11 bg-gradient-to-b from-[#fffaf3] via-[#fff6ea] to-[#fffcf7] dark:from-[#1a0b05] dark:via-[#150803] dark:to-[#100601]"
             : "pt-11 bg-[#fbf9f4] dark:bg-zinc-950"
         }`}
       >
+        {/* The petals stay; the toran and its light string do not. That garland
+            now hangs at the foot of the doors section instead
+            (`MobileGarlandStrip`), so the column no longer opens and closes on
+            the same motif, and the mushak walks his books across the join
+            between the hero and the question below it. */}
         {isGanpati && (
           <div className="absolute top-0 left-0 w-full z-50 pointer-events-none overflow-hidden h-[360px]">
-            <MobileToran className="absolute top-0 left-0 w-full" />
-            <FestiveLights className="absolute top-0 left-0 w-full" />
             <MobileFlowerPetals className="absolute top-0 left-0 w-full h-full" />
           </div>
         )}
+
+        {/* Full-bleed: the clip is a walk across the whole column, so `-mx-5`
+            cancels the gutter and lets him enter and leave at the screen edges
+            rather than at a margin. */}
+        {isGanpati && <MushakBooksBandGanpati className="-mx-5" />}
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 

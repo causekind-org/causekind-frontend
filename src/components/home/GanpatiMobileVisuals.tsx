@@ -381,6 +381,40 @@ export function FestiveLights({ className = "" }: { className?: string }) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
+   2b. MobileGarlandStrip — the toran and its light string, in flow
+   ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The same garland the mobile column hangs under the hero, as an ordinary block
+ * a section can sit below.
+ *
+ * <p>It is the two strings and not three: `MobileToran` and `FestiveLights`,
+ * which together are what reads as "the garland", but not `MobileFlowerPetals`.
+ * Those petals are weather rather than decoration — they fall through whatever
+ * box they are given, and the top of the column gives them 360px to fall
+ * through. Repeating them mid-page would drift petals across the copy below
+ * rather than hang anything.
+ *
+ * <p><b>Why the box has to declare an aspect ratio.</b> Both strings are
+ * absolutely positioned so they overlap the way they do under the hero — the
+ * toran's cord sags 38 units, the lighter wire only 26, and hanging them both
+ * from the same top edge is what separates them into two strings. Absolute
+ * children give the box no height of its own, so it takes the toran's
+ * viewBox — 390x118 — and the lights, 56 units tall, land inside that band.
+ */
+export function MobileGarlandStrip({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none relative w-full select-none aspect-[390/118] ${className}`}
+    >
+      <MobileToran className="absolute inset-x-0 top-0" />
+      <FestiveLights className="absolute inset-x-0 top-0" />
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
    3. MobileFlowerPetals — marigold petals drifting through the top band
    ────────────────────────────────────────────────────────────────────────── */
 

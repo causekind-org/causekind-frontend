@@ -17,9 +17,13 @@ import { useState } from "react";
  * `isGanpatiActive()` is true. Nothing here is responsive because nothing here
  * is ever painted above `lg`.
  *
- * <p><b>Why `mix-blend-mode: screen`.</b> The clip is H.264, which carries no
- * alpha, so the key was flattened to a black ground. Screen is the exact
- * composite for that, not an approximation: `screen(base, black) = base`, so
+ * <p><b>Why `mix-blend-mode: screen`.</b> The clip carries no alpha — its key
+ * was flattened to a black ground — so it has to be composited back out.
+ * That is a fact about the artwork and not about the container: the clip was
+ * H.264 and is now VP9 in WebM, and the delivered WebM is the same flattened
+ * matte, not a keyed one. (Compare `mushak-peek.webm`, which does carry alpha
+ * and therefore needs none of this.) Screen is the exact
+ * composite for a black matte, not an approximation: `screen(base, black) = base`, so
  * every black pixel is the identity and disappears over *any* ground — the
  * cream page outside the niche included — while the rim light composites the
  * way light does. Runtime chroma-keying would mean a canvas readback of a
@@ -32,13 +36,13 @@ import { useState } from "react";
  * derived: the figure's whole travel has to stay inside it. It does, with about
  * 21% of the niche's width spare on each side — see `SUBJECT_X_MIN/MAX`.
  *
- * <p><b>Screen also makes the black floor matter.</b> The clip's SPS carries
- * `video_full_range_flag = 0`, so its black is TV-range 16 and every conforming
- * decoder expands it to 0 on the way to the screen — which is what keeps the
- * blend an identity. The still was pulled out of the clip by a decoder that
- * does *not* do that expansion, so it was re-levelled to a true black floor
- * before being saved. A still at 16 would lift the whole niche a visible step
- * wherever it covered it.
+ * <p><b>Screen also makes the black floor matter.</b> The matte has to reach the
+ * compositor at 0, not at TV-range 16, or the blend stops being an identity and
+ * lifts the whole niche a visible step. Both encodes of this clip are tagged
+ * limited-range and decode to 0; it was re-checked after the swap to WebM by
+ * sampling the decoded corners, which is the thing to redo if the clip is ever
+ * re-encoded. The still was pulled out by a decoder that does *not* expand the
+ * range, so it was re-levelled to a true black floor before being saved.
  *
  * <p><b>It must not be given a stacking context.</b> The clip carries `z-10` so
  * the fingers paint over the card, which is the next sibling. That works only
@@ -48,7 +52,7 @@ import { useState } from "react";
  * backdrop, and the fingers would vanish into a black rectangle.
  */
 
-const CLIP_SRC = "/images/ganpati/bappa-peek.mp4";
+const CLIP_SRC = "/images/ganpati/bappa-peek.webm";
 
 /** One frame of the clip, at rest: fully up, eyes open, hands on the edge.
  *  Poster, reduced-motion stand-in, and what is left if the clip will not

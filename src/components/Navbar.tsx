@@ -832,6 +832,21 @@ export function SiteHeader() {
   const tilt = useTilt();
   const isGanpati = isGanpatiActive();
 
+  /**
+   * The festive home page carries no bar on a phone: no ground, no blur, no
+   * hairline, no shadow — just the wordmark and the menu button floating on the
+   * hero. Everything that draws the bar is switched off in styles.css off the
+   * `data-bare-nav` marker below, because those rules have to outrank both the
+   * utility classes on this header and the `data-home-hero` block written for
+   * the old translucent-over-photo treatment.
+   *
+   * Scoped to the festive home. Every other page still needs a bar behind its
+   * controls — they scroll ordinary copy under this header, not a photograph —
+   * and the plain home's mobile bar is opaque rather than translucent, so there
+   * is no "transparent effect" there to remove.
+   */
+  const bareNav = isGanpati && pathname === "/";
+
   if (hideChrome) return null;
 
   // Shared icon-button class (matches the theme toggle button exactly)
@@ -864,6 +879,7 @@ export function SiteHeader() {
       <header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
+        data-bare-nav={bareNav ? "true" : undefined}
         style={{
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
           opacity: immersive ? 0 : 1,
@@ -925,9 +941,11 @@ export function SiteHeader() {
             cream band sitting on it. `ck-mobile-header` survives either branch:
             src/styles.css hangs the whole home-hero header layout off it. */}
         <div className={`ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 ${
-          isGanpati
-            ? "bg-gradient-to-r from-[#fffbf4]/95 via-[#fff5e6]/95 to-[#fffbf4]/95 dark:from-[#1b0c05]/95 dark:via-[#240e06]/95 dark:to-[#1b0c05]/95"
-            : "bg-[#faf8f5]/90 dark:bg-zinc-950/90"
+          bareNav
+            ? ""
+            : isGanpati
+              ? "bg-gradient-to-r from-[#fffbf4]/95 via-[#fff5e6]/95 to-[#fffbf4]/95 dark:from-[#1b0c05]/95 dark:via-[#240e06]/95 dark:to-[#1b0c05]/95"
+              : "bg-[#faf8f5]/90 dark:bg-zinc-950/90"
         }`}>
           <div className="flex items-center gap-2 justify-self-start">
             <NotificationBell />
@@ -935,13 +953,28 @@ export function SiteHeader() {
           <Link href="/" className="flex items-center justify-center">
             <CareNestLogo size="md" hideIcon={true} />
           </Link>
+          {/* With the bar gone there is nothing behind this button but the
+              hero, so it brings its own surface: `glass-pill` is the same
+              frosted treatment the desktop icon buttons use, and `relative` is
+              not decoration — its specular highlight is an absolutely
+              positioned `::after`.
+
+              44px rather than 32px because it is now a control floating on a
+              photograph rather than one sitting in a bar, and its glyph colour
+              lives in styles.css, which is the only place that can outrank the
+              cream `data-home-hero` inherited from the old treatment. The
+              hover tint goes: it fought the glass for the same surface. */}
           <button
             ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
             aria-expanded={isSidebarOpen}
             aria-controls="staggered-menu-panel"
-            className="justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+            className={
+              bareNav
+                ? "glass-pill glass-3d relative justify-self-end flex items-center justify-center w-11 h-11 rounded-full transition-transform active:scale-95"
+                : "justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+            }
           >
             <Menu className="w-5 h-5" />
           </button>

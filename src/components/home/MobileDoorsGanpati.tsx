@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { ModakIcon, DiyaIcon, RangoliBorderStrip } from "@/components/home/GanpatiVisuals";
+import { MobileGarlandStrip } from "@/components/home/GanpatiMobileVisuals";
 import { PeekingBappaGanpati } from "@/components/home/PeekingBappaGanpati";
+import { PeekingMushakGanpati } from "@/components/home/PeekingMushakGanpati";
 
 type Door = "donor" | "donee";
 
@@ -132,31 +134,40 @@ export function MobileDoorsGanpati({ door, pick }: { door: Door; pick: (next: Do
         {/* ── Door two: I need something ──
             The banana leaf: warm parchment ground, amber border, leaf-green
             accent. Same shape as door one so neither reads as secondary. */}
-        <div className="relative overflow-hidden rounded-[1.375rem] border border-amber-300/60 bg-gradient-to-br from-[#fffaf3] via-[#fff6e9] to-[#fff1de] p-5 shadow-[0_10px_30px_rgba(217,119,6,0.1)] dark:border-amber-900/40 dark:from-[#221008] dark:via-[#1b0b05] dark:to-[#160803]">
-          {/* Maroon wash from the low corner, opposite the donor card's
-              saffron, so the pair reads as two grounds and not two tints. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_10%_100%,rgba(107,23,23,0.10),transparent_60%)]"
-          />
-          <div className="relative">
-            <p className="text-[0.5625rem] font-extrabold uppercase tracking-[0.16em] text-[#6b1717] dark:text-[#f87171]">
-              {t("donee.eyebrow")}
-            </p>
-            <h3 className="mt-3 font-serif text-xl font-extrabold leading-[1.24] tracking-tight text-[#1a0f05] dark:text-stone-50">
-              {t("mobileDoneeHeading")}
-            </h3>
-            <p className="mt-3 text-[0.8125rem] leading-relaxed text-[#4a3726] dark:text-stone-300 [text-wrap:pretty]">
-              {t("mobileDoneeBody")}
-            </p>
+        {/* Wrapped exactly as the donor card is, and for the same reason: the
+            mushak is in flow directly above the card with no gap between them,
+            which is what puts his paws on the card's own top edge. The grid's
+            `gap-3.5` would otherwise open 14px under him and leave him holding
+            on to nothing — which is why this is a wrapper and not one more
+            child of the grid. */}
+        <div>
+          <PeekingMushakGanpati />
+          <div className="relative overflow-hidden rounded-[1.375rem] border border-amber-300/60 bg-gradient-to-br from-[#fffaf3] via-[#fff6e9] to-[#fff1de] p-5 shadow-[0_10px_30px_rgba(217,119,6,0.1)] dark:border-amber-900/40 dark:from-[#221008] dark:via-[#1b0b05] dark:to-[#160803]">
+            {/* Maroon wash from the low corner, opposite the donor card's
+                saffron, so the pair reads as two grounds and not two tints. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_10%_100%,rgba(107,23,23,0.10),transparent_60%)]"
+            />
+            <div className="relative">
+              <p className="text-[0.5625rem] font-extrabold uppercase tracking-[0.16em] text-[#6b1717] dark:text-[#f87171]">
+                {t("donee.eyebrow")}
+              </p>
+              <h3 className="mt-3 font-serif text-xl font-extrabold leading-[1.24] tracking-tight text-[#1a0f05] dark:text-stone-50">
+                {t("mobileDoneeHeading")}
+              </h3>
+              <p className="mt-3 text-[0.8125rem] leading-relaxed text-[#4a3726] dark:text-stone-300 [text-wrap:pretty]">
+                {t("mobileDoneeBody")}
+              </p>
 
-            <Link
-              href="/register?role=DONEE"
-              onClick={() => pick("donee")}
-              className="mt-4 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] border-[1.5px] border-[#9f1239] bg-white/70 text-[0.9375rem] font-extrabold text-[#9f1239] transition-transform active:scale-[0.97] dark:border-[#fda4af] dark:bg-transparent dark:text-[#fda4af]"
-            >
-              {t("donee.cta")}
-            </Link>
+              <Link
+                href="/register?role=DONEE"
+                onClick={() => pick("donee")}
+                className="mt-4 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] border-[1.5px] border-[#9f1239] bg-white/70 text-[0.9375rem] font-extrabold text-[#9f1239] transition-transform active:scale-[0.97] dark:border-[#fda4af] dark:bg-transparent dark:text-[#fda4af]"
+              >
+                {t("donee.cta")}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -166,9 +177,14 @@ export function MobileDoorsGanpati({ door, pick }: { door: Door; pick: (next: Do
 
         Full-bleed for the same reason as the plain build: it is a rail the page
         hangs off, not a card, so it cancels the mobile column's px-5 with -mx-5
-        and re-pads. What changes is the edging — a rangoli cord above and below
+        and re-pads. What changes is the edging — a rangoli cord above it
         instead of a hairline, which is the one place on this column where the
         festival's own border motif fits without taking room from a card.
+
+        Only above it. The matching cord under the rail is gone: the garland now
+        hangs directly below, and a beaded strip between the two put two lengths
+        of festival cord within 14px of each other — the rail read as fenced in
+        rather than edged.
       */}
       <div className="-mx-5 mt-11">
         <RangoliBorderStrip />
@@ -192,7 +208,21 @@ export function MobileDoorsGanpati({ door, pick }: { door: Door; pick: (next: Do
             {t("mobileSwitch")}
           </button>
         </div>
-        <RangoliBorderStrip flip />
+      </div>
+
+      {/* The garland again, closing the spine the way it opens the column under
+          the hero — same two strings, same full bleed. `-mx-5` cancels the
+          mobile column's gutter, which is what lets the cord run to both screen
+          edges instead of stopping 20px short and reading as a picture of a
+          garland rather than one strung across the page. */}
+      {/* `-mb-6` cancels the strip's own empty tail. Its box is the toran's
+          390x118 viewBox, but the lowest strand ends around y=100, so ~18px of
+          it is always blank — and the column adds its `gap-11` to that, which
+          is what left the next heading floating. The negative margin takes the
+          blank back so the join measures the 44px every other section join on
+          this column does. */}
+      <div className="-mx-5 mt-6 -mb-6">
+        <MobileGarlandStrip />
       </div>
     </section>
   );
