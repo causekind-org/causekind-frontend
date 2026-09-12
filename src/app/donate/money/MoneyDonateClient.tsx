@@ -2,6 +2,7 @@
 
 import { MoneyHero } from "@/components/money-donation/MoneyHero";
 import { MoneyFlowStory } from "@/components/money-donation/MoneyFlowStory";
+import { ImpactCarousel } from "@/components/money-donation/ImpactCarousel";
 import { MoneyDonationForm } from "@/components/money-donation/MoneyDonationForm";
 import { AboutSahas } from "@/components/money-donation/AboutSahas";
 import { TrustCredibility } from "@/components/money-donation/TrustCredibility";
@@ -24,6 +25,12 @@ export default function MoneyDonateClient() {
       <MoneyHero />
       <RangoliBorderStrip className="relative z-10" />
       <MoneyFlowStory />
+      <RangoliBorderStrip className="relative z-10" />
+      {/* Restored after the Ganpati rework dropped it. It is the only proof on
+          the page — real photographs of the work being funded — and it earns the
+          slot directly before the form, where it is the last thing read before
+          the amount buttons. The component was never deleted, only unmounted. */}
+      <ImpactCarousel />
       <RangoliBorderStrip className="relative z-10" />
       <MoneyDonationForm />
       <RangoliBorderStrip className="relative z-10" />

@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, FileText, Award, GraduationCap, Stethoscope, Home, Users } from 'lucide-react';
+import CountUp from '@/components/reactbits/CountUp';
 import { CertificateCard } from './CertificateCard';
 import { SahasLogo } from './SahasLogo';
 
@@ -43,8 +44,13 @@ const allocationAreas = [
 
 export function TrustCredibility() {
   return (
-    <section className="min-h-[calc(100svh-3.5rem)] py-12 lg:py-16 bg-[#fff9f4] dark:bg-[#180b04] flex items-center">
-      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="min-h-0 lg:min-h-[calc(100svh-3.5rem)] py-8 md:py-12 lg:py-16 bg-[#fff9f4] dark:bg-[#180b04] flex items-center">
+      {/* `min-w-0` because this is a flex item of the section above, so it
+          defaults to `min-width: auto` — its min-content width. The certificate
+          row below scrolls horizontally, and without this the row's content
+          would set that min-content and stretch the page instead of scrolling
+          inside it. */}
+      <div className="min-w-0 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -64,7 +70,13 @@ export function TrustCredibility() {
           </div>
 
           {/* Credentials grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-14">
+          {/* Phone: one snap-scrolling row rather than three stacked cards.
+              Each card is ~610px tall, so stacked they measured 1830px — over a
+              screen and a half of credentials before the allocation figures
+              below them. Nothing is hidden; the row just spends one card's
+              height instead of three. `-mx-4 px-4` lets it bleed to the screen
+              edges so the next card peeks in and advertises the scroll. */}
+          <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 mb-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:w-[82vw] [&>*]:shrink-0 [&>*]:snap-start md:mx-0 md:grid md:w-auto md:grid-cols-3 md:gap-8 md:overflow-visible md:px-0 md:pb-0 md:mb-14 md:[&>*]:w-auto">
             <CertificateCard
               title="12AA Registration Certificate"
               description="Confirms our status as a charitable institution under the Income Tax Act, 1961."
@@ -109,12 +121,12 @@ export function TrustCredibility() {
           </div>
 
           {/* Verified badge */}
-          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 text-amber-950 dark:text-amber-100 text-sm font-semibold shadow-xs mb-14">
+          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 text-amber-950 dark:text-amber-100 text-sm font-semibold shadow-xs mb-8 md:mb-14">
             <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             Verified Nonprofit Partner
           </div>
 
-          <hr className="border-amber-200/60 dark:border-amber-900/40 mb-14" />
+          <hr className="border-amber-200/60 dark:border-amber-900/40 mb-8 md:mb-14" />
         </motion.div>
 
         {/* ── Where Your Money Goes ── */}
@@ -124,20 +136,20 @@ export function TrustCredibility() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-20">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-5 md:gap-12 lg:gap-20">
             
             {/* Left: heading and context */}
             <div className="lg:w-2/5 flex-shrink-0">
               <span className="inline-block text-xs font-bold tracking-wider uppercase text-amber-900 dark:text-amber-200 mb-4 bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 px-3 py-1 rounded-full shadow-xs">
                 Fund Allocation
               </span>
-              <h3 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-5 leading-tight">
+              <h3 className="text-2xl sm:text-4xl font-extrabold text-foreground mb-3 sm:mb-5 leading-tight">
                 Where your money goes
               </h3>
-              <p className="text-base text-stone-600 dark:text-stone-300 leading-relaxed mb-6">
+              <p className="hidden sm:block text-base text-stone-600 dark:text-stone-300 leading-relaxed mb-6">
                 Sahas Charitable Trust channels contributions into direct charitable work across the following focus areas.
               </p>
-              <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed bg-amber-50/90 dark:bg-amber-950/50 p-4 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
+              <p className="text-[0.6875rem] sm:text-xs text-stone-600 dark:text-stone-300 leading-relaxed bg-amber-50/90 dark:bg-amber-950/50 p-3 sm:p-4 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
                 Allocation is illustrative and based on the trust&apos;s stated areas of work. Audited financials and detailed breakdowns are available upon request.
               </p>
             </div>
@@ -152,7 +164,7 @@ export function TrustCredibility() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.12 }}
                   whileHover={{ y: -3, boxShadow: '0 8px 25px rgba(217,119,6,0.12)' }}
-                  className="bg-[#fffdfa] dark:bg-[#23120a] rounded-2xl border border-amber-200/70 dark:border-amber-800/40 p-5 sm:p-6 transition-all duration-300 cursor-default group hover:border-amber-400"
+                  className="bg-[#fffdfa] dark:bg-[#23120a] rounded-2xl border border-amber-200/70 dark:border-amber-800/40 p-4 sm:p-6 transition-all duration-300 cursor-default group hover:border-amber-400"
                 >
                   <div className="flex items-start gap-4 mb-4">
                     {/* Icon */}
@@ -161,7 +173,19 @@ export function TrustCredibility() {
                     </div>
                     {/* Text */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-base font-bold text-foreground mb-1">{area.label}</h4>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h4 className="text-sm sm:text-base font-bold text-foreground mb-1">{area.label}</h4>
+                        {/* The figure itself, which main's card left implicit in
+                            the bar's width. This is the only place on the phone
+                            these four programmes still appear, so the number is
+                            worth stating — and worth animating, on the same
+                            scroll trigger as the bar under it. CountUp writes
+                            straight to the text node, so counting costs no
+                            re-renders. */}
+                        <span className="shrink-0 text-xs font-bold text-amber-800 dark:text-amber-300 tabular-nums">
+                          <CountUp to={parseInt(area.widthPercent, 10)} duration={1.2} delay={i * 0.15} />%
+                        </span>
+                      </div>
                       <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">{area.description}</p>
                     </div>
                   </div>

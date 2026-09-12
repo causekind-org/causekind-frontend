@@ -880,6 +880,17 @@ export function SiteHeader() {
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
         data-bare-nav={bareNav ? "true" : undefined}
+        /* `/donate/money` pulls its hero up under this bar so the photograph
+           runs to the top of the screen, which only works if the bar stops
+           painting a ground over it. Below lg, styles.css turns this marker into
+           a transparent header with cream contents. Desktop keeps its solid bar:
+           that hero is still sized `calc(100svh - 3.5rem)`, i.e. drawn to sit
+           below a nav rather than behind one.
+
+           Kept separate from `data-bare-nav` above even though the two do a
+           similar job — that one is gated on the festival being on, and this
+           page's hero is a photograph all year round. */
+        data-over-hero={pathname === "/donate/money" ? "true" : undefined}
         style={{
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
           opacity: immersive ? 0 : 1,

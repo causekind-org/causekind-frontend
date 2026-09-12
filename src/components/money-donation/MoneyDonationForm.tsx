@@ -148,14 +148,33 @@ export function MoneyDonationForm() {
               />
               Make a Contribution
             </div>
-            <h2 className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight mb-6">
+            <h2 className="text-2xl sm:text-5xl font-extrabold text-foreground leading-tight mb-3 sm:mb-6">
               Empower communities with your generosity.
             </h2>
-            <p className="text-lg text-stone-600 dark:text-stone-300 leading-relaxed mb-10 max-w-lg">
+            {/* `hidden sm:block`: this names the same three programmes the
+                allocation bars name further down the page, and on a phone it is
+                one more paragraph between the reader and the amount buttons —
+                the only thing this section is actually asking them to do. */}
+            <p className="hidden sm:block text-lg text-stone-600 dark:text-stone-300 leading-relaxed mb-10 max-w-lg">
               Your contribution goes directly toward critical initiatives in education, healthcare, and community welfare managed by Sahas Charitable Trust.
             </p>
 
-            <div className="bg-[#fffdfa] dark:bg-[#23120a] p-6 rounded-2xl border border-amber-200/70 dark:border-amber-900/40 shadow-sm">
+            {/* Phone: the same two promises as one row of chips. Both
+                descriptions restate the trust's registration and the zero-fee
+                line, which TrustCredibility carries in full; the headlines are
+                the part that has to survive above the form. */}
+            <div className="sm:hidden flex gap-2">
+              <span className="flex flex-1 items-center gap-2 rounded-xl border border-amber-200/70 bg-[#fffdfa] px-3 py-2.5 shadow-sm dark:border-amber-900/40 dark:bg-[#23120a]">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
+                <span className="text-[0.75rem] font-bold leading-tight text-foreground">100% Secure</span>
+              </span>
+              <span className="flex flex-1 items-center gap-2 rounded-xl border border-amber-200/70 bg-[#fffdfa] px-3 py-2.5 shadow-sm dark:border-amber-900/40 dark:bg-[#23120a]">
+                <Heart className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
+                <span className="text-[0.75rem] font-bold leading-tight text-foreground">Zero Fees</span>
+              </span>
+            </div>
+
+            <div className="hidden sm:block bg-[#fffdfa] dark:bg-[#23120a] p-6 rounded-2xl border border-amber-200/70 dark:border-amber-900/40 shadow-sm">
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-950 dark:to-orange-950 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-700 dark:text-amber-300 flex-shrink-0">
                   <ShieldCheck className="w-5 h-5" />

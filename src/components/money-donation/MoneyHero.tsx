@@ -41,7 +41,19 @@ export function MoneyHero() {
   }, [reduceMotion]);
 
   return (
-    <section className="relative min-h-[75svh] lg:min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center overflow-hidden pt-10 pb-8 sm:pt-16 sm:pb-12 lg:pt-20 lg:pb-16">
+    /* Below lg the section is pulled up by the header's own measured height so
+       the photograph runs to the top of the screen and the nav floats on it —
+       Navbar publishes that height as `--ck-nav-h` (57px here) and marks itself
+       `data-over-hero` on this route so it paints no ground. The top padding
+       gains the same amount back, so nothing inside moves; only the image grows
+       upward. `lg:mt-0` and `lg:pt-20` restore the desktop hero exactly, which
+       is still drawn to sit *below* a solid bar rather than behind one.
+
+       Written as explicit `lg:` resets rather than a `max-lg:` variant on top
+       of the existing `pt-10 sm:pt-16`: mixing max-width and min-width variants
+       on one property leaves the winner to Tailwind's variant ordering, and
+       this is load-bearing enough to state outright. */
+    <section className="relative min-h-[75svh] lg:min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center overflow-hidden mt-[calc(-1*var(--ck-nav-h,3.5rem))] lg:mt-0 pt-[calc(2.5rem+var(--ck-nav-h,3.5rem))] sm:pt-[calc(4rem+var(--ck-nav-h,3.5rem))] lg:pt-20 pb-8 sm:pb-12 lg:pb-16">
 
       {/* Background Image Carousel */}
       <div className="absolute inset-0 z-0">
@@ -79,14 +91,18 @@ export function MoneyHero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center gap-3 text-[10px] sm:text-xs font-bold tracking-widest uppercase text-brand-200 mb-6 sm:mb-8 bg-brand-900/60 border border-brand-500/30 pl-2 pr-4 sm:pr-5 py-1.5 sm:py-2 rounded-full backdrop-blur-md shadow-[0_0_30px_rgba(176,74,21,0.3)]"
+            /* Smaller on a phone: the eyebrow is the least important line in
+               the hero and at 10px in a pill with a 28px logo it was taking a
+               third of the headline's width off the top of the screen. Every
+               step down here is phone-only; `sm:` holds the original. */
+            className="inline-flex items-center gap-1.5 sm:gap-3 text-[8px] sm:text-xs font-bold tracking-[0.12em] sm:tracking-widest uppercase text-brand-200 mb-4 sm:mb-8 bg-brand-900/60 border border-brand-500/30 pl-1.5 pr-2.5 sm:pl-2 sm:pr-5 py-1 sm:py-2 rounded-full backdrop-blur-md shadow-[0_0_30px_rgba(176,74,21,0.3)]"
           >
             <Image 
               src="/images/money-donation/sahas-logo-transparent.png"
               alt="Sahas Logo" 
               width={28} 
               height={28}
-              className="object-contain drop-shadow-sm"
+              className="object-contain drop-shadow-sm w-4 h-4 sm:w-7 sm:h-7"
             />
             An initiative of Sahas Charitable Trust
           </motion.div>

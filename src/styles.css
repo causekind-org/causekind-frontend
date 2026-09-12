@@ -2485,6 +2485,37 @@ body.mobile-menu-open {
      invisible. */
   header[data-bare-nav] .ck-mobile-header > button { color: #3f2a18; }
   .dark header[data-bare-nav] .ck-mobile-header > button { color: #fde8c8; }
+
+  /* ── A bar with nothing behind it, on /donate/money ─────────────────────────
+     Same idea as the `data-bare-nav` rules above, for a different reason: that
+     one is the festive home page, this one is a hero photograph that is there
+     every day of the year.
+
+     The page's hero is pulled up by `--ck-nav-h` so its image reaches the top of
+     the screen instead of starting under a 57px cream strip. The bar has to stop
+     painting a ground for that to be visible at all, so its background, hairline
+     and elevation shadow go, and the contents turn cream to survive the dark
+     gradient the hero lays over the top of its image.
+
+     `color` on the row rather than on each child: the wordmark's "Cause" is
+     `text-stone-900` and the bell and menu glyph are `text-stone-700`, and those
+     are utilities this cannot outrank one at a time without a specificity fight.
+     "Kind" is unaffected by design — it paints through `background-clip: text`,
+     so it keeps its terracotta gradient and stays legible on the photo. */
+  header[data-over-hero] {
+    background: none;
+    border-bottom-color: transparent;
+    box-shadow: none;
+  }
+
+  header[data-over-hero] .ck-mobile-header {
+    background: none;
+  }
+
+  header[data-over-hero] .ck-mobile-header,
+  header[data-over-hero] .ck-mobile-header * {
+    color: #fff6ed;
+  }
   .ck-showcase-hero {
     padding: 0;
     margin-top: calc(-1 * var(--ck-nav-h, 4.25rem));

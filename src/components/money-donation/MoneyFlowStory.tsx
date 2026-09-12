@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
 import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
 import { SahasLogo } from './SahasLogo';
+import { MobileFlowCarousel3D } from './MobileFlowCarousel3D';
 import Link from 'next/link';
 import { GanpatiToran, ModakIcon } from '@/components/home/GanpatiVisuals';
 
@@ -184,7 +185,7 @@ export function MoneyFlowStory() {
   const bgX = useTransform(scrollYProgress, [0, 1], ['0%', '-15%']);
 
   return (
-    <section ref={containerRef} className="relative min-h-[calc(100svh-3.5rem)] py-10 sm:py-14 lg:py-16 bg-gradient-to-b from-[#fffbf5] via-[#fff8ee] to-[#fffbf5] dark:from-[#1c0d06] dark:via-[#160a04] dark:to-[#1c0d06] overflow-hidden flex flex-col justify-center">
+    <section ref={containerRef} className="relative min-h-0 lg:min-h-[calc(100svh-3.5rem)] py-10 sm:py-14 lg:py-16 bg-gradient-to-b from-[#fffbf5] via-[#fff8ee] to-[#fffbf5] dark:from-[#1c0d06] dark:via-[#160a04] dark:to-[#1c0d06] overflow-hidden flex flex-col justify-center">
       {/* Top Edge Garland Decoration */}
       <div className="absolute top-0 inset-x-0 z-10 pointer-events-none">
         <GanpatiToran />
@@ -220,7 +221,10 @@ export function MoneyFlowStory() {
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground leading-tight mb-5">
             From you, to those who need it most.
           </h2>
-          <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed max-w-2xl mx-auto">
+          {/* `hidden md:block`: the carousel directly below says this, and on a
+              phone it is the next thing in the viewport rather than a row
+              away. */}
+          <p className="hidden md:block text-base sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed max-w-2xl mx-auto">
             Every donation follows a clear, accountable path. Here&apos;s exactly how your contribution creates real impact.
           </p>
         </motion.div>
@@ -246,7 +250,13 @@ export function MoneyFlowStory() {
             />
           </div>
 
-          <div className="flex flex-col md:flex-row md:justify-between items-stretch md:items-start md:gap-2 lg:gap-4 relative">
+          {/* Phone: one swipeable card at a time. The four steps stacked
+              vertically measured 758px — a screen and a half to say the same
+              thing the timeline says in a row at md+. The carousel shows the
+              same `steps` array, so nothing is cut. */}
+          <MobileFlowCarousel3D steps={steps} loop baseWidth={340} />
+
+          <div className="hidden md:flex flex-col md:flex-row md:justify-between items-stretch md:items-start md:gap-2 lg:gap-4 relative">
             {steps.map((step, index) => (
               <StoryStep
                 key={index}
@@ -269,7 +279,47 @@ export function MoneyFlowStory() {
           <h4 className="text-sm font-bold uppercase tracking-widest text-amber-800 dark:text-amber-300 text-center mb-8">
             Supporting Core Initiatives
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1000px' }}>
+          {/* ═══ PHONE: one scrollable row of chips ═══
+
+              The grid below is the second of three printings of these same four
+              programmes on this page; `AboutSahas` had a third, and
+              `TrustCredibility` keeps the only one that adds anything, since it
+              gives each a percentage. Single-column on a phone this grid
+              measured 664px of repetition.
+
+              They stay links: each chip is the only route to
+              `/initiatives/[slug]` on this page, and compacting a section must
+              not quietly delete its navigation. No tilt effect on this branch
+              either — it tracks a mouse, and a phone has none. */}
+          <div className="md:hidden -mx-4 px-4">
+            <ul className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {impactAreas.map((area, i) => (
+                <motion.li
+                  key={area.slug}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ duration: 0.35, delay: i * 0.06 }}
+                  className="snap-start shrink-0"
+                >
+                  <Link
+                    href={`/initiatives/${area.slug}`}
+                    aria-label={`Explore ${area.label}`}
+                    className="flex items-center gap-2.5 rounded-full border border-amber-200/70 bg-white/80 py-2 pl-2 pr-4 shadow-sm transition-transform active:scale-[0.97] dark:border-amber-800/40 dark:bg-[#241009]/80"
+                  >
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${area.color} text-white [&_svg]:h-4 [&_svg]:w-4`}>
+                      {area.icon}
+                    </span>
+                    <span className="whitespace-nowrap text-[0.8125rem] font-semibold text-foreground">
+                      {area.label}
+                    </span>
+                  </Link>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1000px' }}>
             {impactAreas.map((area, i) => (
               <motion.div
                 key={i}
