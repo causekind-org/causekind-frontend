@@ -2,25 +2,32 @@ import Link from "next/link";
 import { ArrowUpRight, Plus } from "lucide-react";
 
 import { ModakIcon } from "@/components/home/GanpatiVisuals";
-import { GANPATI_CONFIG, GANPATI_START, GANPATI_END, isGanpatiActive } from "@/lib/isGanpatiActive";
+import { GANPATI_CONFIG, isGanpatiActive } from "@/lib/isGanpatiActive";
+import { GANPATI_DISPLAY_START, GANPATI_DISPLAY_END } from "@/config/theme.config";
 
 /** The site's display serif, as set up in src/app/layout.tsx. */
 const SERIF = "var(--font-source-serif-4), Georgia, serif";
 
 /**
- * The festival window runs on IST, and GANPATI_START / GANPATI_END are the UTC
- * instants of those IST boundaries. Formatting them in the viewer's own zone
- * would print "13" in London and "24" in Sydney, so the zone is pinned here.
- * Deriving the label instead of hardcoding it is what keeps the band from
- * drifting out of step with theme.config.ts if the dates are ever moved.
+ * The band shows the FESTIVAL dates (14-24 Sept), not the activation window
+ * (12-25). The skin is deliberately up before and after Ganeshotsav itself, so
+ * showing GANPATI_START / GANPATI_END here would advertise operational dates
+ * that misstate the festival — see the note on GANPATI_DISPLAY_* in
+ * theme.config.ts.
+ *
+ * The dates run on IST and GANPATI_DISPLAY_* are the UTC instants of those IST
+ * boundaries. Formatting them in the viewer's own zone would print "13" in
+ * London and "25" in Sydney, so the zone is pinned here. Deriving the label
+ * rather than hardcoding it keeps the band in step with theme.config.ts if the
+ * festival dates are ever moved.
  */
 const IST = "Asia/Kolkata";
 const istPart = (date: Date, options: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("en-GB", { timeZone: IST, ...options }).format(date);
 
-const START_DAY = istPart(GANPATI_START, { day: "numeric" });
-const END_DAY = istPart(GANPATI_END, { day: "numeric" });
-const MONTH = istPart(GANPATI_START, { month: "short" });
+const START_DAY = istPart(GANPATI_DISPLAY_START, { day: "numeric" });
+const END_DAY = istPart(GANPATI_DISPLAY_END, { day: "numeric" });
+const MONTH = istPart(GANPATI_DISPLAY_START, { month: "short" });
 
 /**
  * GanpatiStrip — the festive band above the hero for Ganeshotsav.
