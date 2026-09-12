@@ -127,7 +127,11 @@ export function MoneyDonationForm() {
 
   return (
     <section id="donate-form" className="scroll-mt-24 py-10 sm:py-12 lg:py-14 bg-[#fff9f2] dark:bg-[#1a0b04]">
-      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
+      {/* `min-w-0 w-full` guards the same phone overflow the flow-story
+          section hit: the `whitespace-nowrap` chips below carry a min-content
+          width far wider than a 390px screen, and without the floor removed
+          they push this wrapper past the viewport. */}
+      <div className="min-w-0 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
 
           {/* Left Column: Supporting Visual & Message */}

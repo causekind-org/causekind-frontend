@@ -206,7 +206,17 @@ export function MoneyFlowStory() {
         className="absolute -left-40 bottom-1/4 w-[400px] h-[400px] rounded-full bg-orange-500/10 blur-3xl pointer-events-none"
       />
 
-      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-6">
+      {/* `min-w-0 w-full`, and both halves matter. This div is a flex item of
+          the section above, and `mx-auto` on a flex item cancels the
+          cross-axis stretch that would otherwise size it to the section — so
+          it falls back to fit-content, and fit-content is floored by
+          min-content, which the `whitespace-nowrap` chips below push to 936px
+          on a 390px phone. The section's `overflow-hidden` then clipped the
+          result instead of scrolling it: the carousel and the centred heading
+          were both centred on 936 and sat off the right edge of the screen.
+          `w-full` pins the width to the section; `min-w-0` removes the
+          min-content floor so nothing can push past it again. */}
+      <div className="min-w-0 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-6">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

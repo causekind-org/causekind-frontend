@@ -898,20 +898,22 @@ export function SiteHeader() {
           transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
           willChange: "transform",
         }}
-        className={`sticky top-0 z-50 w-full ${
-          isGanpati
-            ? pathname === "/"
-              ? "bg-gradient-to-r from-[#fffbf4]/80 via-[#fff5e6]/70 to-[#fffbf4]/80 dark:from-[#1b0c05]/80 dark:via-[#240e06]/70 dark:to-[#1b0c05]/80 backdrop-blur-xs border-b-0"
-              : "bg-gradient-to-r from-[#fffbf4] via-[#fff5e6] to-[#fffbf4] dark:from-[#1b0c05] dark:via-[#240e06] dark:to-[#1b0c05] lg:bg-gradient-to-r lg:from-[#fffbf4]/92 lg:via-[#fff5e6]/88 lg:to-[#fffbf4]/92 lg:dark:from-[#1b0c05]/92 lg:dark:via-[#240e06]/88 lg:dark:to-[#1b0c05]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-amber-300/60 dark:border-amber-700/40"
-            : "bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850"
+        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+          pathname === "/donate/money" && !scrolled
+            ? "bg-transparent border-transparent"
+            : isGanpati
+              ? pathname === "/"
+                ? "bg-gradient-to-r from-[#fffbf4]/80 via-[#fff5e6]/70 to-[#fffbf4]/80 dark:from-[#1b0c05]/80 dark:via-[#240e06]/70 dark:to-[#1b0c05]/80 backdrop-blur-xs border-b-0"
+                : "bg-gradient-to-r from-[#fffbf4] via-[#fff5e6] to-[#fffbf4] dark:from-[#1b0c05] dark:via-[#240e06] dark:to-[#1b0c05] lg:bg-gradient-to-r lg:from-[#fffbf4]/92 lg:via-[#fff5e6]/88 lg:to-[#fffbf4]/92 lg:dark:from-[#1b0c05]/92 lg:dark:via-[#240e06]/88 lg:dark:to-[#1b0c05]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-amber-300/60 dark:border-amber-700/40"
+              : "bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850"
         } ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
-          : pathname === "/" && isGanpati
+          : (pathname === "/" && isGanpati) || pathname === "/donate/money"
             ? "shadow-none"
             : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
-        {isGanpati && pathname !== "/" && (
+        {isGanpati && pathname !== "/" && pathname !== "/donate/money" && (
           <div
             className="absolute bottom-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none z-10"
             aria-hidden="true"

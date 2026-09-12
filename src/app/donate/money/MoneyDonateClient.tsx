@@ -16,7 +16,7 @@ import { RangoliBorderStrip } from "@/components/home/GanpatiVisuals";
  */
 export default function MoneyDonateClient() {
   return (
-    <div className="money-donate-ganpati relative min-h-screen bg-[#fffbf5] dark:bg-[#1a0b04]">
+    <div className="money-donate-ganpati relative min-h-screen bg-[#fffbf5] dark:bg-[#1a0b04] overflow-x-hidden">
       {/* Subtle repeating festive background pattern (3-4% opacity) behind sections below hero */}
       <div
         className="pointer-events-none absolute inset-x-0 top-[100vh] bottom-0 z-0 opacity-[0.035] dark:opacity-[0.05] select-none bg-[radial-gradient(#ea580c_1px,transparent_1px)] [background-size:28px_28px]"

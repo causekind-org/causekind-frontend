@@ -53,7 +53,7 @@ export function MoneyHero() {
        of the existing `pt-10 sm:pt-16`: mixing max-width and min-width variants
        on one property leaves the winner to Tailwind's variant ordering, and
        this is load-bearing enough to state outright. */
-    <section className="relative min-h-[75svh] lg:min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center overflow-hidden mt-[calc(-1*var(--ck-nav-h,3.5rem))] lg:mt-0 pt-[calc(2.5rem+var(--ck-nav-h,3.5rem))] sm:pt-[calc(4rem+var(--ck-nav-h,3.5rem))] lg:pt-20 pb-8 sm:pb-12 lg:pb-16">
+    <section className="relative min-h-[75svh] lg:min-h-[100svh] flex flex-col items-center justify-center overflow-hidden mt-[calc(-1*var(--ck-nav-h,3.5rem))] pt-[calc(2.5rem+var(--ck-nav-h,3.5rem))] sm:pt-[calc(4rem+var(--ck-nav-h,3.5rem))] lg:pt-[calc(5rem+var(--ck-nav-h,3.5rem))] pb-8 sm:pb-12 lg:pb-16">
 
       {/* Background Image Carousel */}
       <div className="absolute inset-0 z-0">
