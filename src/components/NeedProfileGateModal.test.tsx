@@ -9,7 +9,19 @@ import { getDoneeNeedProfile } from "@/lib/api";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
-vi.mock("@/lib/api", () => ({ getDoneeNeedProfile: vi.fn() }));
+// ApiError has to be exported here even though nothing below constructs one:
+// the gate now branches on `e instanceof ApiError` to tell a server without the
+// endpoint apart from a check that failed, and an undefined right-hand side
+// makes `instanceof` throw. Built inside vi.hoisted because vi.mock factories
+// run before module-scope declarations exist.
+const { ApiError } = vi.hoisted(() => {
+  class ApiError extends Error {
+    status: number;
+    constructor(status: number, message: string) { super(message); this.status = status; }
+  }
+  return { ApiError };
+});
+vi.mock("@/lib/api", () => ({ getDoneeNeedProfile: vi.fn(), ApiError }));
 
 const mockUser = { user: { email: "d@example.com", role: "DONEE" }, isLoading: false };
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mockUser }));

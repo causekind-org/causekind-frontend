@@ -21,6 +21,7 @@ import {
   type ItemRequest,
   type ItemListing,
   type ItemMatch,
+  ApiError,
   getDoneeNeedProfile,
   type DoneeNeedProfile,
 } from "@/lib/api";
@@ -421,7 +422,22 @@ export default function ProfilePage() {
     let cancelled = false;
     getDoneeNeedProfile()
       .then((np) => { if (!cancelled) { setNeedProfile(np); setNeedProfileLoadFailed(false); } })
-      .catch(() => { if (!cancelled) setNeedProfileLoadFailed(true); });
+      .catch((e) => {
+        if (cancelled) return;
+        /*
+          A 404 means this server has no need-profile endpoint, so there is no
+          readiness to report and no amount of retrying will produce any. The
+          rail renders on `needProfile || needProfileLoadFailed`, so leaving both
+          falsy removes it rather than parking a permanent "Couldn't check your
+          request readiness — Retry" on the profile, which invites the donee to
+          keep pressing a button that cannot work.
+
+          Every other failure still sets the flag: those are genuinely
+          retryable, and the rail's error state is the honest thing to show.
+        */
+        if (e instanceof ApiError && e.status === 404) return;
+        setNeedProfileLoadFailed(true);
+      });
     return () => { cancelled = true; };
   }, [doneeRole]);
 

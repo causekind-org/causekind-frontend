@@ -7,7 +7,7 @@ import { documentScreeningCopy } from "@/features/wizard-kit/documentScreeningCo
 import { RequestGuidance } from "@/components/requests/RequestGuidance";
 import { toast } from "@/lib/toast";
 import {
-  getProfile, getDoneeNeedProfile, type DoneeNeedProfile,
+  getProfile, getDoneeNeedProfile, ApiError, type DoneeNeedProfile,
   getMyItemRequests,
   getMyVerificationDocuments,
   getMyRequestVerificationDetails,
@@ -417,7 +417,25 @@ function NewRequestForm() {
   const [needProfile,setNeedProfile] = useState<DoneeNeedProfile | null>(null);
   const [profileError,setProfileError] = useState("");
   const profileLink = "/profile/need-details?next=" + encodeURIComponent("/requests/new" + (resumeDraftId && /^\d+$/.test(resumeDraftId) ? "?draftId=" + resumeDraftId : ""));
-  useEffect(() => { if (!user) return; let active = true; getDoneeNeedProfile().then(p => {if(active)setNeedProfile(p);}).catch(e => {if(active)setProfileError(e instanceof Error && e.message && e.message !== "Failed to fetch" ? e.message : "We could not reach CauseKind to check your profile. Please check your connection and try again.");}); return () => {active=false;}; }, [user]);
+  /*
+    A 404 means this server has no need-profile endpoint at all, and that must
+    open the wizard rather than bar it.
+
+    The frontend shipped ahead of the backend carrying the endpoint, so every
+    donee landed on "Could not check your profile" with a Retry that reloads
+    into the same 404 — locked out of posting a need by the very feature meant
+    to make posting one easier.
+
+    Passing them through is safe: submitRequestDraft() calls
+    enforceMandatoryDocuments() and snapshots the profile server-side, so an
+    incomplete donee is still stopped at submit. Only the early warning is lost.
+
+    Any other error keeps the blocking screen — a 500 or a dead network leaves
+    the profile unknown, and walking someone through the whole wizard to fail at
+    the end is worse than telling them now.
+  */
+  const [profileGateUnsupported, setProfileGateUnsupported] = useState(false);
+  useEffect(() => { if (!user) return; let active = true; getDoneeNeedProfile().then(p => {if(active)setNeedProfile(p);}).catch(e => {if(!active)return; if(e instanceof ApiError && e.status === 404){setProfileGateUnsupported(true);return;} setProfileError(e instanceof Error && e.message && e.message !== "Failed to fetch" ? e.message : "We could not reach CauseKind to check your profile. Please check your connection and try again.");}); return () => {active=false;}; }, [user]);
 
   const [step, setStep] = useState<DoneeRequestStep>("need-details");
   // +1 forward, -1 back. Drives the card's travel direction so going Back reads
@@ -666,7 +684,7 @@ function NewRequestForm() {
   }), [title, category, quantity, urgency, pincode, description, gpsCoords, isEmergency, emergencyNature, incidentDate, cityValue, cityFreeText, stateIso, countryIso, showCityFreeText]);
 
   async function ensureDraft(): Promise<number> {
-    if (!needProfile?.complete) throw new Error("Complete your Donee profile before starting a request");
+    if (!profileGateUnsupported && !needProfile?.complete) throw new Error("Complete your Donee profile before starting a request");
     if (draftId) return draftId;
     const d = await createItemRequestDraft();
     setDraftId(d.id);
@@ -945,7 +963,7 @@ function NewRequestForm() {
 
   if (authLoading || !user) return null;
 
-  if (!needProfile?.complete) return <div className="mx-auto max-w-xl px-5 py-16"><h1 className="text-2xl font-bold text-[#1e3a60] dark:text-blue-200">{profileError ? "Could not check your profile" : !needProfile ? "Checking your profile…" : "Complete your profile first"}</h1><p className="mt-3 text-sm text-slate-500">{profileError || "Save your household details and identity documents once in your profile. You can then request items without entering them again."}</p>{needProfile && <Link href={profileLink} className="mt-6 inline-flex rounded-lg bg-[#1e3a60] px-5 py-3 text-sm font-bold text-white">Complete profile →</Link>}{profileError && <button onClick={() => window.location.reload()} className="mt-5 underline">Retry</button>}</div>;
+  if (!profileGateUnsupported && !needProfile?.complete) return <div className="mx-auto max-w-xl px-5 py-16"><h1 className="text-2xl font-bold text-[#1e3a60] dark:text-blue-200">{profileError ? "Could not check your profile" : !needProfile ? "Checking your profile…" : "Complete your profile first"}</h1><p className="mt-3 text-sm text-slate-500">{profileError || "Save your household details and identity documents once in your profile. You can then request items without entering them again."}</p>{needProfile && <Link href={profileLink} className="mt-6 inline-flex rounded-lg bg-[#1e3a60] px-5 py-3 text-sm font-bold text-white">Complete profile →</Link>}{profileError && <button onClick={() => window.location.reload()} className="mt-5 underline">Retry</button>}</div>;
 
   if (gpsBlocked) {
     return (

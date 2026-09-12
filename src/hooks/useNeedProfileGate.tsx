@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { getDoneeNeedProfile } from "@/lib/api";
+import { ApiError, getDoneeNeedProfile } from "@/lib/api";
 import { NeedProfileGateModal } from "@/components/NeedProfileGateModal";
 
 export type NeedProfileGateState =
@@ -53,6 +53,29 @@ export function NeedProfileGateProvider({ children }: { children: React.ReactNod
       setState({ mode: "incomplete", destination, missing: profile.missing });
       return false;
     } catch (e) {
+      /*
+        A 404 is the one failure that means "this server has no profile gate",
+        and it is the one failure that must not stop anybody.
+
+        The endpoint went live on the frontend before the backend carrying it
+        was deployed, so every donee got the error modal and could not reach the
+        request wizard at all — the gate meant to help them finish a profile was
+        the only thing preventing them from starting one.
+
+        Letting them through is safe because this gate was never the rule, only
+        an early reading of it: ItemRequestService.submitRequestDraft calls
+        enforceMandatoryDocuments() and snapshots the profile on the server, so a
+        genuinely incomplete donee is still refused at submit. The cost of
+        opening here is that they learn later and further in, which is a worse
+        experience than this check exists to give them — and a far better one
+        than a wall.
+
+        Every other failure stays closed. A 500, a 403 or a dead network leaves
+        the profile's real state unknown, and guessing "complete" there would
+        march someone through a wizard the server will reject.
+      */
+      if (e instanceof ApiError && e.status === 404) return true;
+
       // An unreachable backend must never be reported as an incomplete profile.
       setState({
         mode: "error",
