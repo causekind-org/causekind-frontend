@@ -93,8 +93,39 @@ export default async function BlogPostPage({ params }: PageProps) {
       }
     : null;
 
+  const postSchemaData = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.causekind.com/blog/${post.slug}`
+    },
+    "headline": post.title,
+    "description": post.description,
+    "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
+    "author": {
+      "@type": "Person",
+      "name": post.author,
+      "image": post.authorImage
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "CauseKind",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.causekind.com/logo.png"
+      }
+    },
+    "datePublished": post.publishedDate === "June 2026" ? "2026-06-01" : "2026-06-26",
+    "url": `https://www.causekind.com/blog/${post.slug}`
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(postSchemaData) }}
+      />
       {faqSchema && (
         <script
           type="application/ld+json"
