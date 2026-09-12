@@ -9,13 +9,14 @@
  * upon scrolling, with gentle trunk sway and playful Mushak animation.
  */
 
+import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
-import { ModakIcon, LotusIcon, GanpatiDivineIllo, FloatingFestiveBadge } from "@/components/home/GanpatiVisuals";
+import { ModakIcon, LotusIcon, FloatingFestiveBadge } from "@/components/home/GanpatiVisuals";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 /**
@@ -35,7 +36,18 @@ export function CTASectionGanpati() {
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <div className="relative rounded-3xl overflow-hidden border border-amber-500/40 shadow-[0_20px_50px_rgba(217,119,6,0.25)] grid lg:grid-cols-[3fr_2fr] min-h-[320px] bg-[#1a0802]">
+        <div className="relative rounded-3xl overflow-hidden border border-amber-500/40 shadow-[0_20px_50px_rgba(217,119,6,0.25)] grid md:grid-cols-[3fr_2fr] min-h-[320px] bg-[#1a0802]">
+
+          {/* Desktop/Tablet: Floating festive badge straddling the vertical divider seam near top (top: 32px) */}
+          <div className="absolute z-30 pointer-events-none hidden md:block top-8 left-[60%] -translate-x-1/2">
+            <FloatingFestiveBadge
+              variant="maroon"
+              icon={<LotusIcon className="size-4 text-amber-400" />}
+              text="Vighnaharta Blesses You"
+              subtext="Remover of Obstacles"
+              delay={0.6}
+            />
+          </div>
 
           {/* Left panel */}
           <div className="relative bg-gradient-to-br from-[#240c04] via-[#1a0802] to-[#120501] px-8 sm:px-12 py-12 sm:py-16 flex flex-col justify-between z-10">
@@ -95,17 +107,40 @@ export function CTASectionGanpati() {
             </div>
           </div>
 
-          {/* Right accent panel: Kept intact for future illustration placement */}
-          <div className="relative hidden lg:flex bg-gradient-to-br from-[#7f1d1d] via-[#450a0a] to-[#200505] items-center justify-center overflow-hidden border-amber-500/25 lg:border-l p-4 min-h-[300px]">
-            <FloatingFestiveBadge
-              variant="maroon"
-              icon={<LotusIcon className="size-4 text-amber-400" />}
-              text="Vighnaharta Blesses You"
-              subtext="Remover of Obstacles"
-              delay={0.6}
-            />
-            {/* Ganpati illustration removed for now per user request */}
-            {/* <GanpatiDivineIllo variant="cta" /> */}
+          {/* Right accent panel: Filled edge-to-edge with footer.webp image */}
+          <div className="relative flex h-[260px] md:h-auto min-h-[260px] md:min-h-[320px] bg-gradient-to-br from-[#7f1d1d] via-[#450a0a] to-[#200505] items-center justify-center border-t md:border-t-0 md:border-l border-amber-500/25">
+            {/* Image container with clipped overflow matching card border radius */}
+            <div className="absolute inset-0 overflow-hidden">
+              <Image
+                src="/images/footer.webp"
+                alt="Lord Ganesha Festive Blessing"
+                fill
+                quality={90}
+                sizes="(max-width: 768px) 100vw, 40vw"
+                className="object-cover object-center"
+              />
+              {/* Soft dark gradient overlay toward the left edge to blend with the dark left column */}
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#120501]/85 via-[#120501]/35 to-transparent hidden md:block"
+                aria-hidden="true"
+              />
+              {/* Soft dark gradient overlay from top on mobile */}
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#120501]/75 via-transparent to-transparent block md:hidden"
+                aria-hidden="true"
+              />
+            </div>
+
+            {/* Mobile: Floating festive badge centered and slightly overlapping top edge of image block */}
+            <div className="absolute z-30 pointer-events-none -top-4.5 left-1/2 -translate-x-1/2 md:hidden">
+              <FloatingFestiveBadge
+                variant="maroon"
+                icon={<LotusIcon className="size-4 text-amber-400" />}
+                text="Vighnaharta Blesses You"
+                subtext="Remover of Obstacles"
+                delay={0.6}
+              />
+            </div>
           </div>
 
         </div>

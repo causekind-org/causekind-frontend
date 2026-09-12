@@ -3,10 +3,7 @@
  *
  * Ganpati / Ganesh Chaturthi promotional skin:
  * Runs for 12 days, starting 14th September 2026 00:00 IST
- * and ending 25th September 2026 23:59:59 IST.
- *
- * Anant Chaturdashi itself falls on the 24th; the window deliberately carries
- * one day past it so the skin is still up all day on the 25th.
+ * and ending 25th September 2026 23:59:59 IST (one day past Anant Chaturdashi, by request).
  *
  * IST is UTC+5:30:
  * 14 Sept 2026 00:00:00 IST = 13 Sept 2026 18:30:00.000Z
@@ -22,9 +19,7 @@ export const GANPATI_START = new Date("2026-09-13T18:30:00.000Z");
 export const GANPATI_END = new Date("2026-09-25T18:29:59.999Z");
 
 export const GANPATI_CONFIG = {
-  override: (typeof process !== "undefined"
-    ? process.env?.NEXT_PUBLIC_GANPATI_THEME
-    : undefined) as GanpatiThemeOverride,
+  override: process.env.NEXT_PUBLIC_GANPATI_THEME as GanpatiThemeOverride,
   startDate: GANPATI_START,
   endDate: GANPATI_END,
   title: "Ganeshotsav 2026",

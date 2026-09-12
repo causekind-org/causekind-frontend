@@ -1,92 +1,48 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, CheckCircle2, ChevronDown, X } from 'lucide-react';
+import { Eye, CheckCircle2, X } from 'lucide-react';
 import Image from 'next/image';
 
 export interface CertificateCardProps {
   title: string;
   description: string;
   icon: React.ReactNode;
-  iconBgColor: string;
+  iconBgColor?: string;
   benefits: string[];
   documentUrl: string;
   imageUrl?: string;
   extraImages?: string[];
 }
 
-export function CertificateCard({ title, description, icon, iconBgColor, benefits, documentUrl, imageUrl, extraImages = [] }: CertificateCardProps) {
+export function CertificateCard({ title, description, icon, benefits, documentUrl, imageUrl, extraImages = [] }: CertificateCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxPage, setLightboxPage] = useState(0);
-  // Phones only: the card body (pages, benefits, action) starts folded away so
-  // all three credentials stay on one screen. From md up the body is always
-  // shown and this flag is inert.
-  const [expanded, setExpanded] = useState(false);
+  const [, setLightboxPage] = useState(0);
   
   const allPages = imageUrl ? [imageUrl, ...extraImages] : [];
   const totalPages = allPages.length;
-
-  // The overlay closes on backdrop tap but had no keyboard escape, and the page
-  // behind it kept scrolling under the finger on phones.
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setLightboxOpen(false);
-    };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [lightboxOpen]);
 
   return (
     <>
       <motion.div 
         whileHover={{ y: -8, scale: 1.01 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="flex flex-col p-5 md:p-8 rounded-3xl bg-white dark:bg-zinc-900 shadow-[0_4px_24px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.1)] border border-stone-100 dark:border-white/10 h-full group"
+        className="flex flex-col p-6 sm:p-8 rounded-3xl bg-[#fffdfa] dark:bg-[#23120a] shadow-[0_4px_24px_rgba(217,119,6,0.06)] hover:shadow-[0_18px_40px_rgba(217,119,6,0.18)] border border-amber-200/70 dark:border-amber-800/40 hover:border-amber-400/90 h-full group"
       >
-        {/* Header. Written out twice rather than once behind a media query so
-            that the element is a real <button> exactly where it is interactive
-            — a focusable control that does nothing at desktop widths would be
-            worse for keyboard users than a little duplicated markup. */}
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="md:hidden flex w-full items-start gap-3 rounded-2xl text-left cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"
-        >
-          <div className={`w-11 h-11 rounded-2xl flex flex-shrink-0 items-center justify-center ${iconBgColor}`}>
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-foreground">{title}</h3>
-            <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed mt-1">{description}</p>
-          </div>
-          <ChevronDown
-            className={`w-5 h-5 flex-shrink-0 text-stone-400 dark:text-stone-500 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-          />
-        </button>
-
-        <div className="hidden md:block">
-          {/* Icon */}
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${iconBgColor}`}>
-            {icon}
-          </div>
-
-          {/* Title */}
-          <h3 className="text-xl font-bold text-foreground mb-3">{title}</h3>
-
-          {/* Description */}
-          <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed mb-6">{description}</p>
+        {/* Icon */}
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] shadow-md">
+          {icon}
         </div>
 
-        {/* Document Thumbnail */}
-        <div className={`${expanded ? 'block' : 'hidden'} md:block mt-5 mb-6 md:mt-0 md:mb-8`}>
+        {/* Title */}
+        <h3 className="text-xl font-bold text-foreground mb-3">{title}</h3>
+
+        {/* Description */}
+        <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed mb-6">{description}</p>
+
+        {/* Document Thumbnail - Untouched */}
+        <div className="mb-8">
           <h4 className="text-sm font-bold text-foreground mb-4">Document Pages:</h4>
           
           {totalPages > 0 ? (
@@ -164,20 +120,20 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
           )}
         </div>
 
-        {/* Key Benefits */}
-        <div className={`${expanded ? 'block' : 'hidden'} md:block flex-grow mb-6 md:mb-8`}>
+        {/* Key Benefits - Switched to warm gold check icons with legible text */}
+        <div className="flex-grow mb-8">
           <h4 className="text-sm font-bold text-foreground mb-4">Key Benefits:</h4>
           <ul className="space-y-3">
             {benefits.map((benefit, index) => (
               <li key={index} className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-stone-600">{benefit}</span>
+                <CheckCircle2 className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-stone-700 dark:text-stone-300 font-medium">{benefit}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* View All Button */}
+        {/* View All Button - Festive Saffron Outline Treatment */}
         <button 
           type="button" 
           onClick={() => {
@@ -188,7 +144,7 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
               window.open(documentUrl, '_blank');
             }
           }}
-          className={`${expanded ? 'flex' : 'hidden'} md:flex w-full py-3 rounded-xl border border-stone-200 dark:border-white/15 text-sm font-bold text-foreground hover:bg-stone-50 hover:border-stone-300 transition-colors items-center justify-center gap-2 cursor-pointer mt-auto`}
+          className="w-full py-3 rounded-xl border border-amber-400/80 text-amber-950 dark:text-amber-100 hover:bg-gradient-to-r hover:from-[#ea580c] hover:to-[#d97706] hover:text-white hover:border-amber-500 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer font-bold text-sm shadow-xs mt-auto"
         >
           <Eye className="w-4 h-4" />
           View All
@@ -204,9 +160,6 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
             onClick={() => setLightboxOpen(false)}
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${title} — document preview`}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -221,8 +174,7 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
                 <h3 className="font-bold text-lg text-foreground">Document Preview</h3>
                 <button
                   onClick={() => setLightboxOpen(false)}
-                  aria-label="Close document preview"
-                  className="grid h-11 w-11 cursor-pointer place-items-center text-stone-400 dark:text-stone-500 hover:text-stone-800 hover:bg-stone-100 dark:hover:bg-white/10 rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-500 sm:h-9 sm:w-9"
+                  className="p-2 text-stone-400 dark:text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -254,3 +206,4 @@ export function CertificateCard({ title, description, icon, iconBgColor, benefit
     </>
   );
 }
+

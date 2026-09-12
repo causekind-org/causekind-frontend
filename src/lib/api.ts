@@ -36,9 +36,22 @@ type RequestOptions = RequestInit & {
   silent401?: boolean;
 };
 
+export class ApiError extends Error {
+  status: number;
+  data?: unknown;
+
+  constructor(status: number, message: string, data?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
 /** A 409 conflict from a super-admin hard-delete carries the exact rows blocking it. */
 export type SuperAdminDependent = { table: string; column: string; count: number };
-export type ApiConflictError = Error & { dependents?: SuperAdminDependent[]; code?: string };
+export type ApiConflictError = ApiError & { dependents?: SuperAdminDependent[]; code?: string };
 
 // Request deduplication & GET cache (3s TTL for GET requests to prevent redundant fetch cascades)
 const inFlightGetRequests = new Map<string, Promise<any>>();
@@ -168,7 +181,7 @@ async function request<T>(
         const body401 = await res.json().catch(() => ({}));
         const msg401 = body401?.message ?? body401?.title;
         if (!silent401) handleUnauthorized();
-        throw new Error(msg401 ?? "Invalid email or password. Please try again.");
+        throw new ApiError(401, msg401 ?? "Invalid email or password. Please try again.", body401);
       }
       if (res.status === 403) {
         // Most 403s are ordinary permission errors, but the backend also uses 403
@@ -181,17 +194,17 @@ async function request<T>(
           message?: string;
         };
         if (isSessionEndedCode(body403.code)) handleUnauthorized();
-        throw new Error(body403.message ?? "You don't have permission to do that.");
+        throw new ApiError(403, body403.message ?? "You don't have permission to do that.", body403);
       }
-      if (res.status === 404) throw new Error("The requested item was not found.");
+      if (res.status === 404) throw new ApiError(404, "The requested item was not found.");
       if (res.status === 409) {
         const body = await res.json().catch(() => ({}));
-        const err = new Error(body?.message ?? "This action has already been done.");
-        if (Array.isArray(body?.dependents)) (err as ApiConflictError).dependents = body.dependents;
-        if (typeof body?.code === "string") (err as ApiConflictError).code = body.code;
+        const err = new ApiError(409, body?.message ?? "This action has already been done.", body);
+        if (Array.isArray(body?.dependents)) (err as unknown as ApiConflictError).dependents = body.dependents;
+        if (typeof body?.code === "string") (err as unknown as ApiConflictError).code = body.code;
         throw err;
       }
-      if (res.status === 500) throw new Error("Something went wrong on our end. Please try again.");
+      if (res.status === 500) throw new ApiError(500, "Something went wrong on our end. Please try again.");
       // Errors don't always arrive as JSON — a proxy or gateway can return plain
       // text or HTML. Read once as text, then parse only if it actually is JSON,
       // so a non-JSON error still yields something readable instead of a blank
@@ -215,7 +228,7 @@ async function request<T>(
         (body?.title !== "Bad Request" ? body?.title : null) ??
         plainText ??
         `Something went wrong (${res.status})`;
-      throw new Error(String(msg));
+      throw new ApiError(res.status, String(msg), body);
     }
 
     // A successful response does not guarantee a JSON body. 204 is the obvious
@@ -283,6 +296,28 @@ export function resendRegistrationOtp(email: string) {
     method: "POST",
     body: JSON.stringify({ email }),
   });
+}
+
+export type NgoSignupData = {
+  organizationName: string;
+  officialEmail: string;
+  phoneNumber: string;
+  panNumber: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  password: string;
+  website?: string;
+};
+
+export function registerNgo(data: NgoSignupData) {
+  return request<{ token: null; email: string; role: string; userId: number }>(
+    "/api/v1/auth/register/ngo",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
 }
 
 export function serverLogout() {
@@ -605,6 +640,15 @@ export type ItemListing = {
 export async function getMyItemListings(options: { silent401?: boolean } = {}) {
   const listings = await request<ItemListing[]>("/api/v1/items/mine", options);
   return filterVisibleListings(listings);
+}
+
+export async function getAvailableDonorListings(options: { silent401?: boolean } = {}) {
+  try {
+    const listings = await request<ItemListing[]>("/api/v1/items", options);
+    return filterVisibleListings(listings);
+  } catch {
+    return [];
+  }
 }
 
 export function getItemListing(id: number) {
@@ -3939,6 +3983,61 @@ export function superAdminSetConfig(key: string, value: string, reason: string) 
   });
 }
 
+// ── NGO Application Draft (Wizard Resume) ─────────────────────────────────────
+
+export interface UploadedFileDto {
+  documentId?: number | null;
+  photoId?: number | null;
+  name: string;
+  key?: string | null;
+  url?: string | null;
+  size?: number | null;
+  mimeType?: string | null;
+  demo?: boolean;
+}
+
+export interface NgoDraftDto {
+  currentStep?: string;
+  organizationName?: string;
+  legalStructure?: string;
+  registrationNumber?: string;
+  registeredOfficeAddress?: string;
+  yearOfEstablishment?: string;
+  representativeName?: string;
+  designation?: string;
+  mobileNumber?: string;
+  officialEmail?: string;
+  confirmationChecked?: boolean;
+  authorizationLetter?: UploadedFileDto | null;
+  documents?: Record<string, UploadedFileDto | null>;
+  logo?: UploadedFileDto | null;
+  officePhoto?: UploadedFileDto | null;
+  activityPhotos?: (UploadedFileDto | null)[];
+  updatedAt?: string | null;
+}
+
+/**
+ * Retrieves the currently authenticated NGO's wizard draft.
+ * Returns null if no draft exists yet (HTTP 204 or 404).
+ */
+export async function getNgoDraft(): Promise<NgoDraftDto | null> {
+  const result = await request<NgoDraftDto | undefined>(
+    "/api/v1/ngo-registration/draft",
+    { method: "GET" }
+  );
+  return result ?? null;
+}
+
+/**
+ * Saves or updates the currently authenticated NGO's wizard draft.
+ */
+export function saveNgoDraft(draft: Partial<NgoDraftDto>): Promise<NgoDraftDto> {
+  return request<NgoDraftDto>("/api/v1/ngo-registration/draft", {
+    method: "PATCH",
+    body: JSON.stringify(draft),
+  });
+}
+
 // ── Mailing list ─────────────────────────────────────────────────────────────
 
 /**
@@ -3969,6 +4068,186 @@ export function subscribe(input: {
   });
 }
 
+
+// ── NGO Registration ───────────────────────────────────────────────────────────
+
+export interface NgoSubmitResponse {
+  /** Canonical application ID, e.g. "CK-NGO-2026-A1B2C3D4". Issued by the backend. */
+  applicationId: string;
+  status: string;
+  officialEmail: string;
+  submittedAt: string;
+}
+
+export interface NgoStatusResponse {
+  applicationId: string;
+  organizationName: string;
+  status: string;
+  submittedAt: string;
+  verifiedAt: string | null;
+  updatedAt: string | null;
+  rejectionReason: string | null;
+  needsInformationDetails: string | null;
+}
+
+export interface NgoDocumentUploadResult {
+  documentId: number;
+  applicationId?: string | null;
+  documentType: string;
+  fileName?: string;
+  s3Key: string;
+  fileUrl?: string | null;
+  uploadedAt: string;
+}
+
+export interface NgoPhotoUploadResult {
+  photoId: number;
+  applicationId?: string | null;
+  photoType: string;
+  s3Url: string;
+  s3Key: string;
+  fileName?: string;
+  uploadedAt: string;
+}
+
+/**
+ * Step 2: Upload a legal document (PDF, PNG, JPG).
+ * Validates, scans, and stores under ngo-documents/ prefix in draft state.
+ */
+export async function uploadNgoDocument(file: File, documentType: string, category?: string): Promise<NgoDocumentUploadResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("documentType", documentType);
+  if (category) fd.append("category", category);
+
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/documents/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    let message = "Document upload failed. Please check the file and try again.";
+    try {
+      const body = await res.json();
+      if (typeof body?.message === "string" && body.message) message = body.message;
+    } catch {}
+    throw new Error(message);
+  }
+
+  return (await res.json()) as NgoDocumentUploadResult;
+}
+
+/**
+ * Step 4: Upload an organization photo (Logo, Office, Activity).
+ * Validates, sanitizes, moderates, and stores under ngo-photos/ prefix in draft state.
+ */
+export async function uploadNgoPhoto(file: File, photoType: string): Promise<NgoPhotoUploadResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("photoType", photoType);
+
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/photos/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    let message = "Photo upload failed. Please check the image and try again.";
+    try {
+      const body = await res.json();
+      if (typeof body?.message === "string" && body.message) message = body.message;
+    } catch {}
+    throw new Error(message);
+  }
+
+  return (await res.json()) as NgoPhotoUploadResult;
+}
+
+/**
+ * Step 5: Submit the NGO registration application.
+ * Returns the canonical backend-issued applicationId and current status.
+ * This endpoint is public (no JWT required).
+ */
+export function submitNgoApplication(payload: {
+  organizationName: string;
+  legalStructure: string;
+  registrationNumber: string;
+  registeredOfficeAddress: string;
+  yearOfEstablishment: string;
+  representativeName: string;
+  designation: string;
+  mobileNumber: string;
+  officialEmail: string;
+  confirmationChecked: boolean;
+  authorizationLetter: UploadedFileDto | null;
+  documents: Record<string, UploadedFileDto | null>;
+  logo: UploadedFileDto | null;
+  officePhoto: UploadedFileDto | null;
+  activityPhotos: (UploadedFileDto | null)[];
+}) {
+  return request<NgoSubmitResponse>("/api/v1/ngo-registration/submit", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Step 6: Verify the 6-digit OTP.
+ * On success the application transitions to UNDER_REVIEW.
+ */
+export function verifyNgoOtp(applicationId: string, otp: string) {
+  return request<{ message: string }>("/api/v1/ngo-registration/verify", {
+    method: "POST",
+    body: JSON.stringify({ applicationId, otp }),
+  });
+}
+
+/**
+ * Step 6: Resend the OTP. Enforces a 60-second cooldown server-side.
+ */
+export function resendNgoOtp(applicationId: string) {
+  return request<{ message: string }>("/api/v1/ngo-registration/resend-otp", {
+    method: "POST",
+    body: JSON.stringify({ applicationId }),
+  });
+}
+
+export type NgoApplicationStatusResponse = {
+  applicationId: string;
+  organizationName: string;
+  status: string;
+  submittedAt: string | null;
+  verifiedAt: string | null;
+  updatedAt: string | null;
+  rejectionReason: string | null;
+  needsInformationDetails: string | null;
+};
+
+/**
+ * Retrieves the currently authenticated NGO's application status.
+ * Returns null if no application exists yet (HTTP 204 or 404).
+ */
+export async function getMyNgoApplication(): Promise<NgoApplicationStatusResponse | null> {
+  const result = await request<NgoApplicationStatusResponse | undefined>(
+    "/api/v1/ngo-registration/my-application",
+    { method: "GET" }
+  );
+  return result ?? null;
+}
+
+/**
+ * Poll current status of an NGO application.
+ */
+export function getNgoApplicationStatus(applicationId: string) {
+  return request<NgoApplicationStatusResponse>(`/api/v1/ngo-registration/${applicationId}/status`);
+}
+
+
+
+
+
 export type DoneeNeedProfile = {
   details: RequestVerification;
   documents: VerificationDocument[];
@@ -3997,3 +4276,4 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
   }
   return res.json();
 }
+

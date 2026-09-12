@@ -31,6 +31,12 @@ const nextConfig: NextConfig = {
     ],
   },
   images: {
+    // Every quality any <Image> in the app actually asks for. The optimizer
+    // rejects an unlisted one outright — `/_next/image?...&q=100` answers 400,
+    // not a downgraded image — so a value missing here is a blank picture, not
+    // a slightly heavier one. 90 is the Ganpati CTA section's, 100 the hero's
+    // on both phone and desktop.
+    qualities: [75, 90, 95, 100],
     remotePatterns: [
       {
         protocol: "https",
@@ -41,6 +47,20 @@ const nextConfig: NextConfig = {
         hostname: "**.amazonaws.com",
       },
     ],
+  },
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/ngo",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/dashboard/ngo/complete-profile",
+        destination: "/dashboard/ngo/profile",
+        permanent: false,
+      },
+    ];
   },
 };
 

@@ -78,9 +78,12 @@ export default function AudiencePathwayPanelGanpati({
     donee" sits beside "Join as a donor" in this split, and at 21° of hue from
     the donor's saffron the maroon button read as the same button in a darker
     shade rather than as the other choice. Sindoor #9f1239 puts 37° between
-    them, which is the widest gap available without leaving the palette — and
-    it is already in the skin, on the hero's Zero Fees pill. The section keeps
-    its maroon; only the control moves, so the button reads as the action
+    them, which is the widest gap available without leaving the palette. It
+    used to have a second claim on that spot — the hero carried a Zero Fees pill
+    in the same sindoor, so the colour was already established a screen above.
+    That pill is gone, and this is now the first place the skin uses sindoor,
+    but the 37° is the reason that mattered and it is unchanged. The section
+    keeps its maroon; only the control moves, so the button reads as the action
     inside the half rather than as a second accent competing with it.
   */
   const accent = isDonor
@@ -94,6 +97,7 @@ export default function AudiencePathwayPanelGanpati({
   const ringFocus = isDonor
     ? "focus-visible:ring-[#ea580c]"
     : "focus-visible:ring-[#9f1239]";
+
 
   // Side ambient wash. The donee's now falls maroon → temple gold → marigold,
   // the same three the ramp above walks, so the panel and the button agree.

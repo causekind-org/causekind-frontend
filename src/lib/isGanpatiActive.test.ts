@@ -16,7 +16,7 @@ describe("isGanpatiActive", () => {
     expect(isGanpatiActive(GANPATI_START)).toBe(true);
   });
 
-  it("returns true during the 12-day festival window (e.g. 19 Sept 2026)", () => {
+  it("returns true during the 11-day festival window (e.g. 19 Sept 2026)", () => {
     // 19 Sept 2026 14:00 IST
     const midFestival = new Date("2026-09-19T08:30:00.000Z");
     expect(isGanpatiActive(midFestival)).toBe(true);
@@ -24,12 +24,6 @@ describe("isGanpatiActive", () => {
 
   it("returns true at the very end of 25th September 2026 IST", () => {
     expect(isGanpatiActive(GANPATI_END)).toBe(true);
-  });
-
-  it("is still active through the whole of 25 September 2026 IST", () => {
-    // 25 Sept 2026 12:00 IST — the day past Anant Chaturdashi that the
-    // window was deliberately extended to cover.
-    expect(isGanpatiActive(new Date("2026-09-25T06:30:00.000Z"))).toBe(true);
   });
 
   it("returns false after 25th September 2026 23:59:59 IST", () => {

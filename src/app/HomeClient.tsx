@@ -35,17 +35,32 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Sparkles, Heart, HandCoins, Coins, Users, ArrowRight } from "lucide-react";
+import {
+  Sparkles,
+  Heart,
+  HandCoins,
+  Coins,
+  Users,
+  ArrowRight,
+  ShieldCheck,
+  Check,
+  Clock,
+} from "lucide-react";
 import { FEATURES } from "@/lib/features";
 import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
 import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
-import { GanpatiStrip } from "@/components/GanpatiStrip";
 import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
+import { GanpatiStrip } from "@/components/GanpatiStrip";
 
 import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
 import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-bandhan";
 import { UnclaimedSection } from "@/components/home/UnclaimedSection";
-import { getMyProfile, getItemRequests, type UserProfile } from "@/lib/api";
+import {
+  getMyProfile,
+  getItemRequests,
+  type UserProfile,
+} from "@/lib/api";
+import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
@@ -53,22 +68,21 @@ import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import AudiencePathwaysSection from "@/components/audience-pathways/AudiencePathwaysSection";
 import { MobileDoors, useLandingDoor } from "@/components/audience-pathways/MobileDoors";
-import DoneeDoorEvidence      from "@/components/audience-pathways/DoneeDoorEvidence";
-import DoorSwapReveal        from "@/components/audience-pathways/DoorSwapReveal";
-import { ItemDonationScrolly }   from "@/components/home/ItemDonationScrolly";
-import { CTASection }            from "@/components/home/CTASection";
+import DoneeDoorEvidence from "@/components/audience-pathways/DoneeDoorEvidence";
+import { ItemDonationScrolly } from "@/components/home/ItemDonationScrolly";
+import { CTASection } from "@/components/home/CTASection";
 
 // ── Ganpati Festival parallel components ─────────────────────────────────────
-// Each one is a sibling of the section it stands in for, selected at render
-// time by isGanpatiActive(). Nothing here mutates the standard components, so
-// when the window closes the page returns to its normal self with no cleanup.
-import { isGanpatiActive }           from "@/lib/isGanpatiActive";
-import { HeroGanpati }               from "@/components/home/HeroGanpati";
-import { LiveNeedsSectionGanpati }   from "@/components/home/LiveNeedsSectionGanpati";
-import { ComingSoonMagnetsGanpati }  from "@/components/home/ComingSoonMagnetsGanpati";
-import { CTASectionGanpati }         from "@/components/home/CTASectionGanpati";
-import { FooterGanpati }             from "@/components/home/FooterGanpati";
+import { isGanpatiActive } from "@/lib/isGanpatiActive";
+import { HeroGanpati } from "@/components/home/HeroGanpati";
+import { LiveNeedsSectionGanpati } from "@/components/home/LiveNeedsSectionGanpati";
+import { ComingSoonMagnetsGanpati } from "@/components/home/ComingSoonMagnetsGanpati";
+import { CTASectionGanpati } from "@/components/home/CTASectionGanpati";
+import { FooterGanpati } from "@/components/home/FooterGanpati";
 import AudiencePathwaysSectionGanpati from "@/components/home/AudiencePathwaysSectionGanpati";
+
+import { GanpatiWelcomeModal }        from "@/components/home/GanpatiWelcomeModal";
+
 import { MobileDoorsGanpati } from "@/components/home/MobileDoorsGanpati";
 import DoneeDoorEvidenceGanpati from "@/components/home/DoneeDoorEvidenceGanpati";
 // DiyaDecoration is exported from this module too, and is deliberately not
@@ -76,12 +90,12 @@ import DoneeDoorEvidenceGanpati from "@/components/home/DoneeDoorEvidenceGanpati
 // call site is the kind of thing that survives three refactors before anyone
 // checks whether it was ever meant to render.
 import {
-  MobileToran,
-  FestiveLights,
   MobileFlowerPetals,
   FestiveSectionDivider,
   MangoLeafCorner
 } from "@/components/home/GanpatiMobileVisuals";
+import { MushakBooksBandGanpati } from "@/components/home/MushakBooksBandGanpati";
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -171,10 +185,18 @@ export default function HomeClient({
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
-  const [stats,        setStats]        = useState<PlatformStats | null>(initialStats);
-  const [activity,     setActivity]     = useState<RecentActivity[]>(initialActivity);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState("");
+  const [stats, setStats] = useState<PlatformStats | null>(initialStats);
+  const [activity, setActivity] = useState<RecentActivity[]>(initialActivity);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const tStats = useTranslations("stats");
+  const statItems = useMemo(() => [
+    { value: stats ? `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(stats.totalRaised)}` : "₹5,652", label: tStats("totalRaised"), icon: Coins, color: "text-[#b04a15]" },
+    { value: stats ? stats.activeCampaigns : "3", label: tStats("activeCampaigns"), icon: Heart, color: "text-[#c2660a]" },
+    { value: stats ? stats.totalDonations : "24", label: tStats("donations"), icon: Sparkles, color: "text-[#1e3a60]" },
+    { value: stats ? stats.uniqueDonors : "18", label: tStats("donors"), icon: Users, color: "text-amber-700" },
+  ], [stats, tStats]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
 
@@ -230,7 +252,7 @@ export default function HomeClient({
   // campaign is on.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
-  // ── Ganpati Festival skin (14–25 Sept 2026 IST) ────────────────────────────
+  // ── Ganpati Festival 12-day skin (14-25 Sept 2026) ─────────────────────────
   const isGanpati = isGanpatiActive();
   const HeroComponent = isGanpati ? HeroGanpati : HeroSection;
   const LiveNeedsComponent = isGanpati ? LiveNeedsSectionGanpati : LiveNeedsSection;
@@ -252,15 +274,12 @@ export default function HomeClient({
     [rakshaBandhan, initialPublicRequests],
   );
 
-  const statItems = [
-    { value: stats ? `₹${formatINR(stats.totalRaised)}` : "—", label: useTranslations("stats")("totalRaised"),    icon: Coins,    color: "text-[var(--ck-home-ink,#b04a15)]" },
-    { value: stats ? stats.activeCampaigns               : "—", label: useTranslations("stats")("activeCampaigns"), icon: Heart,    color: "text-[var(--ck-home-ink,#b04a15)]" },
-    { value: stats ? stats.totalDonations                : "—", label: useTranslations("stats")("donations"),       icon: Sparkles, color: "text-[var(--ck-home-ink,#b04a15)]" },
-    { value: stats ? stats.uniqueDonors                  : "—", label: useTranslations("stats")("donors"),          icon: Users,    color: "text-[var(--ck-home-ink,#b04a15)]" },
-  ];
 
   return (
     <div className={`ck-home-page ${isGanpati ? "ck-ganpati-active" : ""} bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
+      {/* Festive Ganpati Welcome Popup on site load */}
+      {isGanpati && <GanpatiWelcomeModal />}
+
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders
           on "/" and nowhere else, so login, dashboard, requests, profile and
@@ -270,7 +289,21 @@ export default function HomeClient({
 
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
-      <GanpatiStrip />
+      {/* Desktop only, and it costs nothing: below lg this strip has never been
+          visible. `.ck-showcase-hero` carries `margin-top: -var(--ck-nav-h)`
+          under 1024px to tuck itself under the header, and the strip sits
+          between the two — so the hero is pulled straight over it and paints it
+          out. All it contributed on a phone was its own height, pushing the
+          hero down by that much.
+
+          That was invisible while the header was an opaque bar covering the
+          same band. With the festive home's bar gone it became a strip of bare
+          page above the photograph, which reads as a leftover navbar. Dropping
+          it from the mobile flow puts the hero's top edge at y=0, which is what
+          a bar-less header wants behind it. */}
+      <div className="hidden lg:block">
+        <GanpatiStrip />
+      </div>
 
       {/* One responsive front door. Keeping it outside the two legacy layout
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}
@@ -462,9 +495,12 @@ export default function HomeClient({
         <ComingSoonComponent />
 
 
+
         {/* Bottom CTA — hidden when logged in */}
         {isGanpati && <FestiveSectionDivider />}
         <CTAComponent />
+
+        {/* Festive footer on home page during Ganpati theme */}
         {isGanpati && <FooterGanpati />}
       </div>
 
@@ -477,25 +513,47 @@ export default function HomeClient({
           and whatever follows it is a section join like every other one, and at
           `pt-2` it was 8px against 44px everywhere else — the one odd seam on
           the page, and it read as the next section being glued to the hero. */}
-      {/* The festive column starts lower than the plain one. The toran hangs
-          about 120px into this column and the light string another 56px, and
-          at pt-11 (44px) the garland came down across the first heading. The
-          decoration is pointer-events-none, so this is purely about not
-          reading text through a row of marigolds. */}
+      {/* The festive column used to start at pt-[8.5rem] — 136px — because the
+          toran hung about 120px into it and would otherwise have come down
+          across the first heading. That garland is gone from here now, and what
+          leads the column is the mushak's book band, which is in flow and
+          reserves its own height. So the festive branch goes back to the same
+          `pt-11` as the plain one: 136px of padding with nothing hanging in it
+          is just a hole between the hero and the page. */}
+      {/* `overflow-x-clip`, never `overflow-x-hidden`. They clip identically,
+          but `hidden` on one axis drags the other one with it: CSS will not let
+          a box be `hidden` across and `visible` down, so `overflow-y` computes
+          to `auto` and this column silently becomes its own scroll container —
+          a 100vh-tall one, wrapping the whole mobile page. The footer's `-mb-2`
+          then lands 8px past its content box, which is the entire scroll range,
+          so a swipe anywhere over this column moved the doors 8px and stopped
+          before the page itself would take the gesture. That is what read as
+          the donor/donee spine being a separate, separately scrolling page.
+          `clip` leaves `overflow-y: visible` alone, so nothing here scrolls and
+          the horizontal bleed — Bappa's halo overhangs 7px a side — is still
+          clipped exactly as before. */}
       <div
-        className={`lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-hidden ${
+        className={`lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-clip ${
           isGanpati
-            ? "pt-[8.5rem] bg-gradient-to-b from-[#fffaf3] via-[#fff6ea] to-[#fffcf7] dark:from-[#1a0b05] dark:via-[#150803] dark:to-[#100601]"
+            ? "pt-11 bg-gradient-to-b from-[#fffaf3] via-[#fff6ea] to-[#fffcf7] dark:from-[#1a0b05] dark:via-[#150803] dark:to-[#100601]"
             : "pt-11 bg-[#fbf9f4] dark:bg-zinc-950"
         }`}
       >
+        {/* The petals stay; the toran and its light string do not. That garland
+            now hangs at the foot of the doors section instead
+            (`MobileGarlandStrip`), so the column no longer opens and closes on
+            the same motif, and the mushak walks his books across the join
+            between the hero and the question below it. */}
         {isGanpati && (
           <div className="absolute top-0 left-0 w-full z-50 pointer-events-none overflow-hidden h-[360px]">
-            <MobileToran className="absolute top-0 left-0 w-full" />
-            <FestiveLights className="absolute top-0 left-0 w-full" />
             <MobileFlowerPetals className="absolute top-0 left-0 w-full h-full" />
           </div>
         )}
+
+        {/* Full-bleed: the clip is a walk across the whole column, so `-mx-5`
+            cancels the gutter and lets him enter and leave at the screen edges
+            rather than at a margin. */}
+        {isGanpati && <MushakBooksBandGanpati className="-mx-5" />}
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 
@@ -532,14 +590,6 @@ export default function HomeClient({
             and donee variants are a separate piece of work. */}
         {showAudiencePathways && <MobileDoorsComponent door={door} pick={pickDoor} />}
 
-        {/* Everything from here to the end of the unclaimed section answers the
-            switcher, so it re-plays a short staggered entrance each time the
-            door changes. The wrapper repeats this column's `gap-11` — its
-            children are direct flex items of that column, and collapsing them
-            into one item would cost every section below the switcher its 44px
-            join. See DoorSwapReveal. */}
-        <DoorSwapReveal door={showAudiencePathways ? door : "static"}>
-
         {/* The donee door's evidence. The one genuinely new surface here:
             everything else below the hero is donor-facing, so a visitor who
             says "I need something" had nothing to read. */}
@@ -551,7 +601,7 @@ export default function HomeClient({
             padding and background at this width (see LiveNeedsSection), so it
             sits on this column's px-5 gutter like everything else. */}
         {doorIsDonor && (
-          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} animateHeading />
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
         )}
 
         {/* Mobile Campaigns horizontal scroll */}
@@ -632,8 +682,6 @@ export default function HomeClient({
           />
         )}
 
-        </DoorSwapReveal>
-
         {/* Be the Change — cut from the guest page. It restates "here are needs
             and here is proof", which the doors and the live board already do;
             leaving it in is how the mobile stack got to four sections saying
@@ -657,6 +705,15 @@ export default function HomeClient({
             a fourth restatement of what the doors and the board already say.
             Signed-in visitors keep it. */}
         {!showAudiencePathways && <ComingSoonComponent />}
+
+        {/* Festive footer on home page during Ganpati theme (mobile tree).
+            `-mx-5`, not the `-mx-4` it carried before: the doors work widened
+            this column's gutter, and the footer still has to bleed all of it. */}
+        {isGanpati && (
+          <div className="-mx-5 -mb-2">
+            <FooterGanpati />
+          </div>
+        )}
       </div>
     </div>
   );
