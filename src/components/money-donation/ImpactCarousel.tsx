@@ -335,28 +335,28 @@ export function ImpactCarousel() {
 
   return (
     <section 
-      className="relative z-0 bg-black overflow-hidden" 
+      className="relative z-0 bg-background overflow-hidden py-8 lg:py-24" 
       id="stories"
       style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
     >
       {/* Header overlay */}
-      <div className="relative z-10 pt-16 pb-6 text-center pointer-events-none">
+      <div className="relative z-10 pt-8 sm:pt-16 pb-4 sm:pb-6 text-center pointer-events-none">
         <div className="flex items-center justify-center gap-2 mb-3">
-          <PlayCircle className="w-4 h-4 text-[#D9480F]" />
-          <span className="text-sm font-bold text-[#D9480F] tracking-widest uppercase">
+          <PlayCircle className="w-4 h-4 text-brand-600" />
+          <span className="text-sm font-bold text-brand-600 tracking-widest uppercase">
             See Sahas in Action
           </span>
         </div>
-        <h2 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 tracking-tight">
+        <h2 className="text-3xl sm:text-5xl font-extrabold text-foreground mb-3 sm:mb-4 tracking-tight">
           Real stories. Real change.
         </h2>
-        <p className="text-lg text-white/60 leading-relaxed max-w-2xl mx-auto px-4">
+        <p className="text-base sm:text-lg text-stone-600 dark:text-stone-400 leading-relaxed max-w-2xl mx-auto px-4">
           Our field medical camps, skill workshops, and educational programs work alongside communities across high-need rural India.
         </p>
       </div>
 
       {/* Carousel */}
-      <div className="relative h-[65vh] min-h-[450px] lg:h-[85vh] lg:min-h-[650px] pb-10 lg:pb-24 mt-4">
+      <div className="relative h-[65vh] min-h-[400px] lg:h-[85vh] lg:min-h-[650px] pb-6 lg:pb-24 mt-2 sm:mt-4">
         <div
           ref={stageRef}
           tabIndex={0}
@@ -369,8 +369,8 @@ export function ImpactCarousel() {
           <div
             ref={discRef}
             aria-hidden
-            className="pointer-events-none absolute -translate-x-1/2 rounded-full"
-            style={{ backgroundColor: '#000000', boxShadow: 'none' }}
+            className="pointer-events-none absolute -translate-x-1/2 rounded-full bg-background"
+            style={{ boxShadow: 'none' }}
           />
 
           {slots.map((videoSrc, i) => (
@@ -383,7 +383,7 @@ export function ImpactCarousel() {
               <div
                 ref={(el) => { innerRefs.current[i] = el; }}
                 data-video-src={videoSrc}
-                className="relative h-full w-full overflow-hidden rounded-[10px] bg-black cursor-pointer"
+                className="relative h-full w-full overflow-hidden rounded-[10px] bg-stone-200 dark:bg-zinc-800 cursor-pointer"
                 style={{
                   opacity: reduceMotion ? 1 : 0,
                   boxShadow: '0 18px 40px -12px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.15)',
@@ -401,7 +401,7 @@ export function ImpactCarousel() {
                 />
                 {/* Play icon overlay on hover */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
-                  <div className="w-10 h-10 bg-[#D9480F]/90 text-white rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
+                  <div className="w-10 h-10 bg-brand-500/90 text-white rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
                     <PlayCircle className="w-6 h-6" />
                   </div>
                 </div>

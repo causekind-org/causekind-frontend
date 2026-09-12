@@ -94,7 +94,7 @@ function TiltCard({ children, className = '' }: { children: React.ReactNode; cla
 /* ─── Story Step ─── */
 function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: number; isLast: boolean }) {
   return (
-    <div className="relative flex flex-row md:flex-col items-start md:items-center gap-5 md:gap-0 md:flex-1 z-10 group">
+    <div className="relative flex flex-row md:flex-col items-start md:items-center gap-4 md:gap-0 md:flex-1 z-10 group">
       {/* Icon orb with glow */}
       <div className="flex-shrink-0 flex flex-col items-center">
         <motion.div
@@ -113,7 +113,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
             className="absolute inset-0 rounded-2xl blur-xl opacity-60"
             style={{ background: step.glowColor }}
           />
-          <div className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${step.iconBg} text-white flex items-center justify-center shadow-lg`}>
+          <div className={`relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br ${step.iconBg} text-white flex items-center justify-center shadow-lg`}>
             {step.icon}
             {/* Step number badge */}
             <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 text-foreground text-xs font-bold flex items-center justify-center shadow-md border border-stone-100">
@@ -129,7 +129,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
             whileInView={{ scaleY: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.5, delay: index * 0.18 + 0.25 }}
-            className="w-px h-20 md:hidden bg-gradient-to-b from-brand-300 to-transparent origin-top mt-3"
+            className="w-px h-8 md:hidden bg-gradient-to-b from-brand-300 to-transparent origin-top mt-2"
           />
         )}
       </div>
@@ -140,12 +140,12 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.5, delay: index * 0.18 + 0.1 }}
-        className="flex-1 md:text-center mt-1 md:mt-5 pb-10 md:pb-0 md:px-2"
+        className="flex-1 md:text-center mt-0.5 md:mt-5 pb-4 md:pb-0 md:px-2"
       >
         <span className="inline-block text-[11px] font-bold tracking-widest uppercase text-stone-400 dark:text-stone-500 mb-1.5">
           {step.label}
         </span>
-        <h3 className="text-lg sm:text-xl font-extrabold text-foreground mb-2 leading-snug">
+        <h3 className="text-base sm:text-xl font-extrabold text-foreground mb-1.5 sm:mb-2 leading-snug">
           {step.headline}
         </h3>
         <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed mb-3">
@@ -186,7 +186,7 @@ export function MoneyFlowStory() {
   const bgX = useTransform(scrollYProgress, [0, 1], ['0%', '-15%']);
 
   return (
-    <section ref={containerRef} className="relative min-h-[calc(100svh-3.5rem)] py-10 sm:py-14 lg:py-16 bg-background overflow-hidden border-t border-stone-100 flex items-center">
+    <section ref={containerRef} className="relative min-h-0 lg:min-h-[calc(100svh-3.5rem)] py-8 sm:py-14 lg:py-16 bg-background overflow-hidden border-t border-stone-100 flex items-center">
       {/* Decorative background blobs */}
       <motion.div
         style={{ y: bgY }}
@@ -204,12 +204,12 @@ export function MoneyFlowStory() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6 }}
-          className="mb-8 sm:mb-10 text-center max-w-3xl mx-auto"
+          className="mb-6 sm:mb-10 text-center max-w-3xl mx-auto"
         >
           <span className="inline-block text-xs font-bold tracking-wider uppercase text-brand-500 mb-4 bg-brand-50 dark:bg-brand-500/10 px-3 py-1 rounded-full">
             Where Your Money Goes
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground leading-tight mb-5">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-foreground leading-tight mb-4 sm:mb-5">
             From you, to those who need it most.
           </h2>
           <p className="text-base sm:text-lg text-stone-500 dark:text-stone-400 leading-relaxed max-w-2xl mx-auto">
@@ -258,10 +258,10 @@ export function MoneyFlowStory() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="w-full"
         >
-          <h4 className="text-sm font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 text-center mb-8">
+          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 text-center mb-4 sm:mb-8">
             Supporting Core Initiatives
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1000px' }}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5" style={{ perspective: '1000px' }}>
             {impactAreas.map((area, i) => (
               <motion.div
                 key={i}
@@ -271,16 +271,16 @@ export function MoneyFlowStory() {
                 transition={{ duration: 0.4, delay: 0.5 + i * 0.1 }}
               >
                 <TiltCard className="cursor-pointer h-full">
-                  <Link href={`/initiatives/${area.slug}`} aria-label={`Explore ${area.label}`} className="card-shimmer relative overflow-hidden flex h-full flex-col items-center justify-center text-center gap-4 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-white/10 shadow-sm hover:shadow-xl transition-[box-shadow,transform] duration-300 group active:scale-[0.98]">
+                  <Link href={`/initiatives/${area.slug}`} aria-label={`Explore ${area.label}`} className="card-shimmer relative overflow-hidden flex h-full flex-col items-center justify-center text-center gap-2.5 sm:gap-4 p-3 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-white/10 shadow-sm hover:shadow-xl transition-[box-shadow,transform] duration-300 group active:scale-[0.98]">
                     {/* Gradient accent bg on hover */}
                     <div className={`absolute inset-0 ${area.bgAccent} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`} />
                     
                     <div className="relative z-10">
-                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${area.color} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                      <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${area.color} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
                         {area.icon}
                       </div>
                     </div>
-                    <span className="relative z-10 text-sm font-semibold text-foreground leading-tight group-hover:text-foreground transition-colors">
+                    <span className="relative z-10 text-xs sm:text-sm font-semibold text-foreground leading-tight group-hover:text-foreground transition-colors">
                       {area.label}
                     </span>
                   </Link>

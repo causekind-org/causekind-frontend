@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Lock, ShieldCheck, Heart, Camera, ChevronDown, Search, Upload, CheckCircle, X } from 'lucide-react';
+import { CameraCaptureModal } from './CameraCaptureModal';
 import { initiateTrustDonation } from '@/lib/api';
 import { COUNTRIES } from '@/lib/countries';
 
@@ -35,6 +36,12 @@ export function MoneyDonationForm() {
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustom, setIsCustom] = useState(false);
   const [countryCode, setCountryCode] = useState('+91');
+  
+  // Support Sahas Section State
+  const supportPresets = [50, 100, 200, 500];
+  const [supportAmount, setSupportAmount] = useState<number | ''>('');
+  const [isCustomSupport, setIsCustomSupport] = useState(false);
+  const [customSupportAmountStr, setCustomSupportAmountStr] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -44,7 +51,7 @@ export function MoneyDonationForm() {
 
   const [panFile, setPanFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const cameraInputRef = React.useRef<HTMLInputElement>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -89,6 +96,31 @@ export function MoneyDonationForm() {
     setAmount(val ? parseInt(val) : '');
   };
 
+  const handleSupportClick = (value: number) => {
+    if (supportAmount === value && !isCustomSupport) {
+      setSupportAmount(0);
+    } else {
+      setSupportAmount(value);
+      setIsCustomSupport(false);
+      setCustomSupportAmountStr('');
+    }
+  };
+
+  const handleCustomSupportClick = () => {
+    setIsCustomSupport(true);
+    setSupportAmount('');
+  };
+
+  const handleCustomSupportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
+    setCustomSupportAmountStr(val);
+    setSupportAmount(val ? parseInt(val) : '');
+  };
+
+  const actualDonationAmount = Number(amount) || 0;
+  const actualSupportAmount = Number(supportAmount) || 0;
+  const totalContribution = actualDonationAmount + actualSupportAmount;
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -121,7 +153,7 @@ export function MoneyDonationForm() {
       }
 
       const order = await initiateTrustDonation({
-        amount: Number(amount),
+        amount: totalContribution,
         fullName: formData.fullName,
         email: formData.email,
         mobileNumber: formData.mobileNumber ? `${countryCode} ${formData.mobileNumber}` : undefined,
@@ -151,7 +183,7 @@ export function MoneyDonationForm() {
           // added there for a second kind of donation.
           router.push(
             `/thank-you?campaign=${encodeURIComponent('Sahas Charitable Trust')}` +
-            `&amount=${encodeURIComponent(String(amount))}`
+              `&amount=${encodeURIComponent(String(totalContribution))}`
           );
         },
         modal: { ondismiss: () => toast.info('Payment cancelled. Nothing was charged.') },
@@ -164,10 +196,13 @@ export function MoneyDonationForm() {
     }
   };
 
-  const inputClasses = "w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-white/15 bg-white dark:bg-zinc-900 text-foreground placeholder:text-stone-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-colors text-sm";
+  // text-base below sm is deliberate: iOS Safari zooms the viewport when a
+  // focused input renders under 16px, which throws the donor out of the form
+  // layout mid-entry. Desktop keeps the 14px it has always had.
+  const inputClasses = "w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-white/15 bg-white dark:bg-zinc-900 text-foreground placeholder:text-stone-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-colors text-base sm:text-sm";
 
   return (
-    <section id="donate-form" className="scroll-mt-24 py-10 sm:py-12 lg:py-14 bg-stone-50 dark:bg-zinc-900/60 border-t border-stone-100">
+    <section id="donate-form" className="scroll-mt-24 py-8 sm:py-12 lg:py-14 bg-stone-50 dark:bg-zinc-900/60 border-t border-stone-100">
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
 
@@ -189,14 +224,14 @@ export function MoneyDonationForm() {
               />
               Make a Contribution
             </div>
-            <h2 className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight mb-6">
+            <h2 className="text-3xl sm:text-5xl font-extrabold text-foreground leading-tight mb-4 sm:mb-6">
               Empower communities with your generosity.
             </h2>
-            <p className="text-lg text-stone-600 dark:text-stone-300 leading-relaxed mb-10 max-w-lg">
+            <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed mb-8 sm:mb-10 max-w-lg">
               Your contribution goes directly toward critical initiatives in education, healthcare, and community welfare managed by Sahas Charitable Trust.
             </p>
 
-            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-stone-100 dark:border-white/10 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 p-4 sm:p-6 rounded-2xl border border-stone-100 dark:border-white/10 shadow-sm">
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center text-green-600 flex-shrink-0">
                   <ShieldCheck className="w-5 h-5" />
@@ -225,12 +260,14 @@ export function MoneyDonationForm() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, type: 'spring', bounce: 0.4 }}
-            className="bg-white dark:bg-zinc-900 p-6 sm:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-stone-100"
+            className="bg-white dark:bg-zinc-900 p-4 sm:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-stone-100"
           >
             <form onSubmit={handleSubmit} className="space-y-6">
+
+
               {/* Amount Selection */}
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-3">Select Amount (₹)</label>
+                <label className="block text-sm font-semibold text-foreground mb-3">Select Donation Amount (₹)</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                   {predefinedAmounts.map((amt) => (
                     <motion.button
@@ -270,10 +307,11 @@ export function MoneyDonationForm() {
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 text-sm font-medium">₹</span>
                     <input
                       type="text"
+                      inputMode="decimal"
                       value={customAmount}
                       onChange={handleCustomAmountChange}
                       placeholder="Enter amount"
-                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-stone-300 dark:border-white/20 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white dark:bg-zinc-900 transition-all shadow-inner"
+                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-stone-300 dark:border-white/20 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-base sm:text-sm bg-white dark:bg-zinc-900 transition-all shadow-inner"
                     />
                   </motion.div>
                 )}
@@ -332,7 +370,7 @@ export function MoneyDonationForm() {
                               placeholder="Search country or code..."
                               value={searchQuery}
                               onChange={e => setSearchQuery(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-brand-500"
+                              className="w-full pl-9 pr-3 py-2 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-white/10 rounded-lg text-base sm:text-sm outline-none focus:border-brand-500"
                             />
                           </div>
                           <div className="max-h-60 overflow-y-auto scrollbar-hide pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -380,11 +418,10 @@ export function MoneyDonationForm() {
                   {!panFile ? (
                     <div className="flex flex-col sm:flex-row gap-3">
                       <input type="file" accept="image/*,.pdf" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                      <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={handleFileChange} />
 
                       <button
                         type="button"
-                        onClick={() => cameraInputRef.current?.click()}
+                        onClick={() => setIsCameraOpen(true)}
                         className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-brand-300 dark:border-brand-500/30 bg-brand-50/50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-500/20 transition-colors text-sm font-medium"
                       >
                         <Camera className="w-4 h-4" />
@@ -413,13 +450,81 @@ export function MoneyDonationForm() {
                 </div>
               </div>
 
+              {/* Support Sahas Option */}
+              <div className="pt-2">
+                <hr className="border-stone-100 dark:border-white/10 mb-6" />
+                <div className="mb-3">
+                  <h3 className="text-base font-bold text-foreground">Support Sahas Charitable Trust <span className="text-stone-400 dark:text-stone-500 font-normal text-sm ml-1">(Optional)</span></h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Help us continue our charitable work.</p>
+                </div>
+                <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-2">Choose support amount</label>
+                <div className="grid grid-cols-5 gap-2 mb-3">
+                  {supportPresets.map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => handleSupportClick(amt)}
+                      className={`py-2 px-1 rounded-lg text-xs font-bold transition-colors border cursor-pointer ${!isCustomSupport && supportAmount === amt
+                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 text-brand-700'
+                          : 'border-stone-200 dark:border-white/15 text-stone-600 dark:text-stone-300 hover:border-brand-200 bg-white dark:bg-zinc-800'
+                        }`}
+                    >
+                      ₹{amt}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleCustomSupportClick}
+                    className={`py-2 px-1 rounded-lg text-xs font-bold transition-colors border cursor-pointer ${isCustomSupport
+                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 text-brand-700'
+                        : 'border-stone-200 dark:border-white/15 text-stone-600 dark:text-stone-300 hover:border-brand-200 bg-white dark:bg-zinc-800'
+                      }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+
+                {isCustomSupport && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="relative mt-2"
+                  >
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 text-sm font-medium">₹</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={customSupportAmountStr}
+                      onChange={handleCustomSupportChange}
+                      placeholder="Enter amount"
+                      className="w-full pl-7 pr-3 py-2 rounded-lg border border-stone-300 dark:border-white/20 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-base sm:text-sm bg-white dark:bg-zinc-900 transition-all shadow-inner"
+                    />
+                  </motion.div>
+                )}
+              </div>
+
               {/* Summary & Submit */}
-              <div className="pt-4">
-                <div className="flex justify-between items-center mb-6 text-sm bg-stone-50 dark:bg-zinc-900/60 p-4 rounded-xl border border-stone-100">
-                  <span className="text-stone-600 dark:text-stone-300 font-medium">Total Contribution</span>
-                  <span className="text-xl font-extrabold text-brand-600">
-                    ₹{amount ? amount.toLocaleString() : '0'}
-                  </span>
+              <div className="pt-2">
+                <div className="mb-6 text-sm bg-stone-50 dark:bg-zinc-900/60 p-4 rounded-xl border border-stone-100 flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-stone-600 dark:text-stone-300">
+                    <span>Donation</span>
+                    <span className="font-semibold">₹{actualDonationAmount.toLocaleString()}</span>
+                  </div>
+                  {actualSupportAmount > 0 && (
+                    <div className="flex justify-between items-center text-stone-600 dark:text-stone-300">
+                      <span>Support Sahas</span>
+                      <span className="font-semibold">₹{actualSupportAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {actualSupportAmount > 0 && (
+                    <hr className="border-stone-200 dark:border-white/10 my-1" />
+                  )}
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-stone-800 dark:text-stone-200 font-bold">Total Contribution</span>
+                    <span className="text-xl font-extrabold text-brand-600">
+                      ₹{totalContribution.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
 
                 <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
@@ -446,6 +551,12 @@ export function MoneyDonationForm() {
                 </p>
               </div>
             </form>
+            
+            <CameraCaptureModal
+              isOpen={isCameraOpen}
+              onClose={() => setIsCameraOpen(false)}
+              onCapture={(file) => setPanFile(file)}
+            />
           </motion.div>
         </div>
       </div>
