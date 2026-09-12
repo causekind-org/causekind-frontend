@@ -28,7 +28,7 @@ const MONTH = istPart(GANPATI_START, { month: "short" });
  * HOW THIS DIFFERS FROM THE OTHER TWO STRIPS.
  * The 15 August and Raksha Bandhan bands are the *only* festive element on
  * their day — the page underneath them stays ordinary. Ganpati is not like
- * that: for its eleven days HomeClient swaps the hero, live needs, pathways,
+ * that: for its fourteen days HomeClient swaps the hero, live needs, pathways,
  * CTA and footer for festive variants, so this band arrives on top of a page
  * that is already saffron end to end.
  *

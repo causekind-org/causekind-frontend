@@ -2,21 +2,21 @@ import { describe, it, expect } from "vitest";
 import { isGanpatiActive, GANPATI_START, GANPATI_END } from "./isGanpatiActive";
 
 describe("isGanpatiActive", () => {
-  it("returns false before 14th September 2026 IST", () => {
-    // 10 Sept 2026 12:00 IST
-    const beforeDate = new Date("2026-09-10T06:30:00.000Z");
+  it("returns false before 12th September 2026 IST", () => {
+    // 9 Sept 2026 12:00 IST
+    const beforeDate = new Date("2026-09-09T06:30:00.000Z");
     expect(isGanpatiActive(beforeDate)).toBe(false);
 
-    // 13 Sept 2026 23:59:59 IST (18:29:59Z)
-    const justBefore = new Date("2026-09-13T18:29:59.000Z");
+    // 11 Sept 2026 23:59:59 IST (18:29:59Z)
+    const justBefore = new Date("2026-09-11T18:29:59.000Z");
     expect(isGanpatiActive(justBefore)).toBe(false);
   });
 
-  it("returns true on 14th September 2026 00:00:00 IST (exact start)", () => {
+  it("returns true on 12th September 2026 00:00:00 IST (exact start)", () => {
     expect(isGanpatiActive(GANPATI_START)).toBe(true);
   });
 
-  it("returns true during the 11-day festival window (e.g. 19 Sept 2026)", () => {
+  it("returns true during the 14-day festival window (e.g. 19 Sept 2026)", () => {
     // 19 Sept 2026 14:00 IST
     const midFestival = new Date("2026-09-19T08:30:00.000Z");
     expect(isGanpatiActive(midFestival)).toBe(true);

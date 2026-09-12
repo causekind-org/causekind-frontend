@@ -2,8 +2,8 @@ import { GANPATI_START, GANPATI_END, GANPATI_CONFIG, type GanpatiThemeOverride }
 
 /**
  * Returns true only when the current date/time (IST) falls within
- * the 11-day Ganpati festival window:
- * 14 Sept 2026, 00:00:00 IST to 25 Sept 2026, 23:59:59 IST.
+ * the 14-day Ganpati festival window:
+ * 12 Sept 2026, 00:00:00 IST to 25 Sept 2026, 23:59:59 IST.
  *
  * Honors development override via NEXT_PUBLIC_GANPATI_THEME="on" | "off".
  * Safe for both SSR and client-side execution without hydration mismatch.
