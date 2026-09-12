@@ -2,6 +2,7 @@
 
 import { MoneyHero } from "@/components/money-donation/MoneyHero";
 import { MoneyFlowStory } from "@/components/money-donation/MoneyFlowStory";
+import { ImpactCarousel } from "@/components/money-donation/ImpactCarousel";
 import { MoneyDonationForm } from "@/components/money-donation/MoneyDonationForm";
 import { AboutSahas } from "@/components/money-donation/AboutSahas";
 import { TrustCredibility } from "@/components/money-donation/TrustCredibility";
@@ -25,6 +26,7 @@ export default function MoneyDonateClient() {
       <SectionDivider />
       <MoneyFlowStory />
       <SectionDivider />
+      <ImpactCarousel />
       <MoneyDonationForm />
       <SectionDivider />
       <AboutSahas />

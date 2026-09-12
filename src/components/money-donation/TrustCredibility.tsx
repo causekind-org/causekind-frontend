@@ -18,24 +18,24 @@ const allocationAreas = [
   {
     label: 'Healthcare & Medical Support',
     icon: <Stethoscope className="w-5 h-5" />,
-    barColor: 'from-rose-400 to-rose-600',
-    iconBg: 'bg-rose-50 dark:bg-rose-500/10 text-rose-600',
+    barColor: 'from-brand-400 to-brand-600',
+    iconBg: 'bg-brand-50 dark:bg-brand-500/10 text-brand-600',
     widthPercent: '30%',
     description: 'Community health camps, medical aid, and wellness programs.',
   },
   {
     label: 'Community Welfare & Relief',
     icon: <Home className="w-5 h-5" />,
-    barColor: 'from-teal-400 to-teal-600',
-    iconBg: 'bg-teal-50 dark:bg-teal-500/10 text-teal-600',
+    barColor: 'from-brand-400 to-brand-600',
+    iconBg: 'bg-brand-50 dark:bg-brand-500/10 text-brand-600',
     widthPercent: '20%',
     description: 'Disaster relief, nutrition support, and infrastructure development.',
   },
   {
     label: 'Women & Youth Empowerment',
     icon: <Users className="w-5 h-5" />,
-    barColor: 'from-violet-400 to-violet-600',
-    iconBg: 'bg-violet-50 dark:bg-violet-500/10 text-violet-600',
+    barColor: 'from-brand-400 to-brand-600',
+    iconBg: 'bg-brand-50 dark:bg-brand-500/10 text-brand-600',
     widthPercent: '10%',
     description: 'Skill-building, mentorship, and inclusion initiatives.',
   },
@@ -43,17 +43,17 @@ const allocationAreas = [
 
 export function TrustCredibility() {
   return (
-    <section className="min-h-[calc(100svh-3.5rem)] py-12 lg:py-16 bg-background flex items-center">
+    <section className="min-h-0 lg:min-h-[calc(100svh-3.5rem)] py-8 lg:py-16 bg-background flex items-center">
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
           {/* Section header */}
-          <div className="max-w-2xl mb-14">
+          <div className="max-w-2xl mb-8 sm:mb-14">
             <SahasLogo size={48} className="mb-4" />
             <span className="block text-xs font-bold tracking-wider uppercase text-brand-500 mb-4">
               Trust &amp; Credibility
@@ -64,7 +64,7 @@ export function TrustCredibility() {
           </div>
 
           {/* Credentials grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-14">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-8 mb-8 sm:mb-14">
             <CertificateCard
               title="12AA Registration Certificate"
               description="Confirms our status as a charitable institution under the Income Tax Act, 1961."
@@ -112,12 +112,12 @@ export function TrustCredibility() {
           </div>
 
           {/* Verified badge */}
-          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 text-sm font-medium mb-14">
+          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 text-sm font-medium mb-8 sm:mb-14">
             <Shield className="w-4 h-4 text-teal-500" />
             Verified Nonprofit Partner
           </div>
 
-          <hr className="border-stone-200 dark:border-white/15 mb-14" />
+          <hr className="border-stone-200 dark:border-white/15 mb-8 sm:mb-14" />
         </motion.div>
 
         {/* ── Where Your Money Goes ── */}
@@ -127,8 +127,8 @@ export function TrustCredibility() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-20">
-            
+          <div className="flex flex-col lg:flex-row lg:items-start gap-8 lg:gap-20">
+
             {/* Left: heading and context */}
             <div className="lg:w-2/5 flex-shrink-0">
               <span className="inline-block text-xs font-bold tracking-wider uppercase text-brand-500 mb-4 bg-brand-50 dark:bg-brand-500/10 px-3 py-1 rounded-full">
@@ -146,7 +146,7 @@ export function TrustCredibility() {
             </div>
 
             {/* Right: allocation cards with animated bars */}
-            <div className="lg:w-3/5 space-y-5">
+            <div className="lg:w-3/5 space-y-3 sm:space-y-5">
               {allocationAreas.map((area, i) => (
                 <motion.div
                   key={i}
@@ -155,7 +155,7 @@ export function TrustCredibility() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.12 }}
                   whileHover={{ y: -3, boxShadow: '0 8px 25px rgba(0,0,0,0.06)' }}
-                  className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-white/10 p-5 sm:p-6 transition-all duration-300 cursor-default group"
+                  className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-100 dark:border-white/10 p-4 sm:p-6 transition-all duration-300 cursor-default group"
                 >
                   <div className="flex items-start gap-4 mb-4">
                     {/* Icon */}
@@ -164,7 +164,10 @@ export function TrustCredibility() {
                     </div>
                     {/* Text */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-base font-bold text-foreground mb-1">{area.label}</h4>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h4 className="text-sm sm:text-base font-bold text-foreground mb-1">{area.label}</h4>
+                        <span className="text-xs font-bold text-brand-600 dark:text-brand-300 tabular-nums">{area.widthPercent}</span>
+                      </div>
                       <p className="text-xs text-stone-400 dark:text-stone-500 leading-relaxed">{area.description}</p>
                     </div>
                   </div>
@@ -183,7 +186,7 @@ export function TrustCredibility() {
             </div>
           </div>
 
-          <hr className="border-stone-200 dark:border-white/15 mt-14" />
+          <hr className="border-stone-200 dark:border-white/15 mt-8 sm:mt-14" />
         </motion.div>
 
       </div>
