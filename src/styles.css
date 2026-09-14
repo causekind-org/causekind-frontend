@@ -2218,6 +2218,83 @@ body.mobile-menu-open {
   display: flex;
 }
 
+/*
+  The festive hero runs past the fold, and the arithmetic above is half the
+  reason why.
+
+  `.ck-showcase-hero` sizes itself to the viewport minus the navbar, which is
+  right for the plain hero — it is the first thing under the nav. The festive
+  home puts `GanpatiStrip` between the two (desktop only, `hidden lg:block` in
+  HomeClient), so the hero is asked for a full nav-less viewport while standing
+  60px further down. It is over-tall by exactly the strip, by construction.
+
+  The larger half is `lg:aspect-[16/9]` on the stage. An aspect ratio takes its
+  height from the width, so at 1440 the stage demands 802px whatever the window
+  is. Measured at 1440x820: nav 112 + strip 60 + hero 979 = 1151 against 820,
+  and the 331px that fell off the bottom were the two CTAs — the one part of a
+  hero that has to be reachable.
+
+  So the stage is sized from the viewport instead, minus both the nav and the
+  strip. The image is `object-cover` at lg, so a shorter stage crops rather than
+  letterboxes or distorts.
+
+  A min-height and deliberately not a height: the copy column measures 609px
+  here and fits the 648px this leaves, but translated copy, text zoom or a short
+  laptop window can all outgrow it. Capping would clip the CTAs again in a new
+  way — growing pushes the page a little taller, which is the failure worth
+  having. `.ck-ganpati-hero`'s own min-height goes to zero for the same reason:
+  it was fighting this one and adding the strip's height back a second time.
+
+  --ck-ganpati-strip-h tracks `min-h-[3.75rem]` on GanpatiStrip's inner row.
+  The strip renders only at lg, where that content is a single line.
+*/
+:root { --ck-ganpati-strip-h: 3.75rem; }
+
+@media (min-width: 1024px) {
+  .ck-ganpati-hero { min-height: 0; }
+
+  .ck-ganpati-hero .ck-lead-hero-stage {
+    aspect-ratio: auto;
+    max-height: none;
+    min-height: calc(100dvh - var(--ck-nav-h, 0px) - var(--ck-ganpati-strip-h));
+  }
+}
+
+/*
+  The copy's vertical padding flexes with the window, and its bottom half also
+  reserves the category strip's overhang.
+
+  Two things had to be solved together. The padding is `py-12` — 96px fixed — on
+  a column measuring 609px, which is most of why a short window could not hold
+  it. And `CategoryStripGanpati` is pulled up over the stage by `lg:-mt-12`
+  (48px) / `xl:-mt-14` (56px), deliberately, so it floats over the foot of the
+  photograph.
+
+  That overhang was harmless while the stage was locked to 16:9: at 802px the
+  centred copy ended around y=705 and the strip covered 746 onward. Sizing the
+  stage to the viewport removes that accidental slack, and at 1280x700 the copy
+  grew until "Explore needs near you" sat *underneath* the strip —
+  `elementFromPoint` at the button's centre returned the EDUCATION chip, so it
+  was not merely tight, it was unclickable. Fitting a hero by burying its own
+  CTA is not fitting it.
+
+  So the bottom padding carries the overhang as well as its share of the
+  breathing room, and the strip can only ever overlap padding. The clamp gives
+  the full 3rem where there is room and yields toward 0.5rem as the window
+  shortens, which keeps the whole hero within the fold down to roughly 800px of
+  viewport. Below that the stage grows past the fold rather than clipping or
+  overlapping — the honest failure, and the one that leaves the button usable.
+*/
+:root { --ck-ganpati-catstrip-overhang: 3rem; }
+@media (min-width: 1280px) { :root { --ck-ganpati-catstrip-overhang: 3.5rem; } }
+
+@media (min-width: 1024px) {
+  .ck-ganpati-hero .ck-ganpati-hero-copy {
+    padding-top: clamp(0.5rem, 4vh, 3rem);
+    padding-bottom: calc(clamp(0.5rem, 4vh, 3rem) + var(--ck-ganpati-catstrip-overhang));
+  }
+}
+
 .ck-hero-frame {
   align-self: stretch;
   display: flex;

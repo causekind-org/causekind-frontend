@@ -129,7 +129,7 @@ export function HeroGanpati() {
         <DriftingPetals className="pointer-events-none absolute inset-0 overflow-hidden select-none z-10 lg:hidden" />
 
         {/* Foreground Content Container. Phone gutter and rhythm below lg; desktop padding and positioning at lg and above. */}
-        <div className="relative z-20 mx-auto w-full max-w-[1440px] flex flex-col justify-center min-h-[560px] sm:min-h-[620px] lg:min-h-0 px-6 py-10 sm:px-10 sm:py-14 lg:py-12 lg:pl-10 xl:pl-12 2xl:pl-16">
+        <div className="ck-ganpati-hero-copy relative z-20 mx-auto w-full max-w-[1440px] flex flex-col justify-center min-h-[560px] sm:min-h-[620px] lg:min-h-0 px-6 py-10 sm:px-10 sm:py-14 lg:py-12 lg:pl-10 xl:pl-12 2xl:pl-16">
 
           {/* The deity, on phones and tablets.
 
