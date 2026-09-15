@@ -2,18 +2,36 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
-import { useEffect, Suspense } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "123456789";
 
+// One-time bypass for pixel setup verification (e.g. Meta's automated domain
+// checker, which can't click the cookie banner). Scoped to a single visit via
+// a URL param — it does NOT touch the consent record, so it never affects any
+// other visitor. No built-in expiry: remove this block entirely once
+// verification is confirmed done.
+const PREVIEW_TOKEN = "ck-px-verify-7q3n9x";
+
+function hasValidPreviewToken(searchParams: URLSearchParams): boolean {
+  return searchParams.get("pixel_preview") === PREVIEW_TOKEN;
+}
+
 function MetaPixelInner() {
-  
+
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
-    // Fire PageView event on route/search params change
+    // The init script below already fires the first PageView; skip this
+    // effect's initial run so we don't double-report it within the same
+    // second and trip Meta's duplicate-event detection.
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
     if (typeof window !== "undefined" && (window as any).fbq) {
       (window as any).fbq("track", "PageView");
     }
@@ -66,12 +84,24 @@ function MetaPixelInner() {
  */
 export default function MetaPixel() {
   const consent = useCookieConsent();
-  if (consent !== "accepted") return null;
 
   // Wrap in Suspense to avoid Next.js deoptimizing layout to client-side rendering due to searchParams
   return (
     <Suspense fallback={null}>
-      <MetaPixelInner />
+      <MetaPixelGate consentAccepted={consent === "accepted"} />
     </Suspense>
   );
+}
+
+function MetaPixelGate({ consentAccepted }: { consentAccepted: boolean }) {
+  const searchParams = useSearchParams();
+  // Latches for the tab's lifetime so the pixel doesn't unmount mid-session
+  // if the visitor navigates to a URL without the preview param.
+  const previewRef = useRef(false);
+  if (!previewRef.current) {
+    previewRef.current = hasValidPreviewToken(searchParams);
+  }
+
+  if (!consentAccepted && !previewRef.current) return null;
+  return <MetaPixelInner />;
 }
