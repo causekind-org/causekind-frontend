@@ -40,9 +40,13 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P7693M56";
  * <p>`@next/third-parties` emits no `<noscript>` iframe, only two `next/script`
  * tags, so there is no second injection path this gate misses.
  */
+// TEMP: same bypass as MetaPixel.tsx, for the same reason — no consent
+// banner is mounted yet. Remove once the banner is back.
+const TESTING_BYPASS = true;
+
 export default function GoogleTagManagerGated() {
   const consent = useCookieConsent();
-  if (consent !== "accepted") return null;
+  if (!TESTING_BYPASS && consent !== "accepted") return null;
 
   return <GoogleTagManager gtmId={GTM_ID} />;
 }

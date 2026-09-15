@@ -82,13 +82,19 @@ function MetaPixelInner() {
  *       consent stays "unset" there and the pixel correctly never loads.</li>
  * </ul>
  */
+// TEMP: no consent banner is mounted yet, so `consent` can never become
+// "accepted" on its own. This bypass fires the pixel unconditionally for
+// testing. Remove TESTING_BYPASS (revert to `consent === "accepted"`) once
+// the banner is back — see DeferredOverlays.tsx and layout.tsx.
+const TESTING_BYPASS = true;
+
 export default function MetaPixel() {
   const consent = useCookieConsent();
 
   // Wrap in Suspense to avoid Next.js deoptimizing layout to client-side rendering due to searchParams
   return (
     <Suspense fallback={null}>
-      <MetaPixelGate consentAccepted={consent === "accepted"} />
+      <MetaPixelGate consentAccepted={TESTING_BYPASS || consent === "accepted"} />
     </Suspense>
   );
 }

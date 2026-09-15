@@ -31,8 +31,8 @@ import { AdminRedirect } from "@/components/AdminRedirect";
   bringing any of it back is uncommenting two lines here and one in
   DeferredOverlays.
 */
-// import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
-// import MetaPixel from "@/components/MetaPixel";
+import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
+import MetaPixel from "@/components/MetaPixel";
 import { SiteBottomBlur } from "@/components/SiteBottomBlur";
 import { RoleClickSpark } from "@/components/RoleClickSpark";
 import { RoleThemeBridge } from "@/components/RoleThemeBridge";
@@ -140,8 +140,11 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
-        {/* Cookies and the trackers they gated are off for now — see the note
-            on the imports above. */}
+        {/* TEMP: MetaPixel + GTM mounted for testing, ahead of the consent
+            banner coming back — see the TESTING_BYPASS note in each
+            component. Remove this comment once the banner is restored. */}
+        <MetaPixel />
+        <GoogleTagManagerGated />
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>
             <AuthProvider>
