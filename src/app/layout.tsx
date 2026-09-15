@@ -16,8 +16,23 @@ import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
-import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
-import MetaPixel from "@/components/MetaPixel";
+/*
+  Cookies are out of the project for now: the consent banner, and the two
+  trackers that existed behind it.
+
+  Unmounting the banner alone was not enough. Both trackers read the visitor's
+  stored answer directly, so anyone carrying ck_cookie_consent="accepted" from
+  before kept loading Meta's pixel and GTM with no banner left to withdraw it
+  from. Off means off for them too, which is why the trackers come out here
+  rather than the stored key being cleared.
+
+  Commented, not deleted: GoogleTagManagerGated.tsx, MetaPixel.tsx,
+  CookieConsent.tsx and useCookieConsent are all untouched and still tested, so
+  bringing any of it back is uncommenting two lines here and one in
+  DeferredOverlays.
+*/
+// import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
+// import MetaPixel from "@/components/MetaPixel";
 import { SiteBottomBlur } from "@/components/SiteBottomBlur";
 import { RoleClickSpark } from "@/components/RoleClickSpark";
 import { RoleThemeBridge } from "@/components/RoleThemeBridge";
@@ -125,8 +140,8 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
-        <GoogleTagManagerGated />
-        <MetaPixel />
+        {/* Cookies and the trackers they gated are off for now — see the note
+            on the imports above. */}
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>
             <AuthProvider>
