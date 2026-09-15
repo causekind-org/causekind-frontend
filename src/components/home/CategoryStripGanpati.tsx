@@ -52,7 +52,7 @@ export function CategoryStripGanpati() {
   return (
     <nav
       aria-label="Festive Category Navigation — Ganeshotsav"
-      className="min-w-0 w-full max-w-full rounded-[2rem] sm:rounded-[2.5rem] bg-[#fffdfa]/98 border border-amber-200/70 px-3 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-md dark:bg-[#1a0c06]/98 dark:border-amber-800/40 dark:shadow-[0_16px_45px_rgba(0,0,0,0.5)] sm:px-5 sm:py-3.5 lg:px-6 lg:py-4"
+      className="ck-ganpati-catstrip min-w-0 w-full max-w-full rounded-[2rem] sm:rounded-[2.5rem] bg-[#fffdfa]/98 border border-amber-200/70 px-3 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-md dark:bg-[#1a0c06]/98 dark:border-amber-800/40 dark:shadow-[0_16px_45px_rgba(0,0,0,0.5)] sm:px-5 sm:py-3.5 lg:px-6 lg:py-4"
     >
       <p className="sr-only">{t("heading")}</p>
 
