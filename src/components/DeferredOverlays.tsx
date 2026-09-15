@@ -41,10 +41,24 @@ const LocationGate = dynamic(
   () => import("@/components/LocationGate").then((m) => m.LocationGate),
   { ssr: false },
 );
-const CookieConsent = dynamic(
-  () => import("@/components/CookieConsent").then((m) => m.CookieConsent),
-  { ssr: false },
-);
+/*
+  The cookie banner is switched off at its only mount point, not deleted.
+
+  Turning it off has a second effect that is easy to miss: `MetaPixel` and
+  `GoogleTagManagerGated` both render nothing until `useCookieConsent()` returns
+  "accepted", and the banner is what writes that answer. With no banner the
+  answer stays unset for ever, so neither tracker ever loads. That is the
+  privacy-safe direction — nothing is collected without consent — but it does
+  mean analytics and the Meta pixel are now off site-wide.
+
+  Left as a commented import rather than removed so turning it back on is one
+  line. `CookieConsent.tsx`, `useCookieConsent` and both gated trackers are all
+  untouched and still tested.
+*/
+// const CookieConsent = dynamic(
+//   () => import("@/components/CookieConsent").then((m) => m.CookieConsent),
+//   { ssr: false },
+// );
 const WelcomeOverlay = dynamic(
   () => import("@/components/WelcomeOverlay").then((m) => m.WelcomeOverlay),
   { ssr: false },
@@ -78,7 +92,7 @@ export function DeferredOverlays() {
   return (
     <>
       <LocationGate />
-      <CookieConsent />
+      {/* Cookie banner switched off — see the note on the import below. */}
       <WelcomeOverlay />
       <TourController />
       <DonorCategoryModal />
