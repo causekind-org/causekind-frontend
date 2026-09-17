@@ -48,6 +48,23 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        // The Ganpati header logo is a 1.1 MB clip on every page. Public files
+        // default to revalidating on each load, which is part of why a refresh
+        // showed an empty/frozen logo for a moment. The filename is not hashed,
+        // so keep the fresh window short and serve stale while revalidating.
+        source: "/images/ganpati/:file*.webm",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       {

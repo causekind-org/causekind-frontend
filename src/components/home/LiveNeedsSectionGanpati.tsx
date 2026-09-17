@@ -168,7 +168,7 @@ export function LiveNeedsSectionGanpati({
           <button
             type="button"
             onClick={() => setSelectedCategory("All")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-extrabold transition-all ${
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-extrabold whitespace-nowrap transition-all ${
               selectedCategory === "All"
                 ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/20"
                 : "bg-white/80 dark:bg-stone-900/80 text-stone-700 dark:text-stone-300 border border-amber-200/60 dark:border-amber-900/40 hover:bg-amber-50 dark:hover:bg-amber-950/40"
@@ -184,7 +184,7 @@ export function LiveNeedsSectionGanpati({
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-extrabold whitespace-nowrap transition-all ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-extrabold whitespace-nowrap transition-all ${
                   isSelected
                     ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/20"
                     : "bg-white/80 dark:bg-stone-900/80 text-stone-700 dark:text-stone-300 border border-amber-200/60 dark:border-amber-900/40 hover:bg-amber-50 dark:hover:bg-amber-950/40"

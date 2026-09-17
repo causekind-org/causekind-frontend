@@ -5,12 +5,14 @@
  * transparency, so it composites cleanly over both light and dark grounds
  * without blend-mode hacks or chip workarounds.
  *
- * <p>Reduced-motion viewers get a static poster frame and never fetch the clip.
+ * <p>Reduced-motion viewers get a static still in place of the clip.
  */
 
 /** The delivered clip with VP9 alpha transparency. */
 const CLIP_SRC = "/images/ganpati/CauseKind_Ganesha_logo_transparent_web.webm";
-/** Poster / reduced-motion still (reused from the previous cut). */
+/** Intrinsic size of `CLIP_SRC`, so its box is reserved before it loads. */
+const CLIP_ASPECT = "392 / 220";
+/** Reduced-motion still (reused from the previous cut). */
 const STILL_SRC = "/images/ganpati/ganpati-logo-still.jpg";
 
 /**
@@ -22,12 +24,9 @@ const HEIGHTS = { sm: 52, md: 72, lg: 88 } as const;
 export type GanpatiLogoVideoSize = keyof typeof HEIGHTS;
 
 /**
- * Reduced motion gets the still, and does not pay for the clip.
+ * Reduced motion gets the still instead of the clip.
  *
- * <p>Same contract as `RakshaBandhanWordmark`: `preload="none"` plus
- * `display: none` is the strongest declarative hint that a viewer who asked for
- * less motion should not also fetch the animation they will never see.
- * A pulsing logo in a fixed header is exactly the motion that setting is for —
+ * <p>A pulsing logo in a fixed header is exactly the motion that setting is for —
  * it is on screen for the whole visit, not just while a section is in view.
  */
 const LOGO_CSS = `
@@ -66,18 +65,24 @@ export function GanpatiLogoVideo({
         className="ck-glv-still h-full w-auto object-contain"
       />
 
-      {/* Alpha-transparent clip — no blend-mode needed. */}
+      {/* Alpha-transparent clip — no blend-mode needed.
+          No `poster`: the still is an opaque JPG, so on every load it sat in the
+          header for the second or two the clip took to arrive, reading as a
+          frozen logo. The slot stays empty until the first frame instead, and
+          `aspectRatio` (the clip's own 392×220) holds its width meanwhile so
+          the bar does not shift when it appears. `preload="auto"` starts the
+          fetch as early as the element exists. */}
       <video
         src={CLIP_SRC}
-        poster={STILL_SRC}
         autoPlay
         muted
         loop
         playsInline
-        preload="none"
+        preload="auto"
         disablePictureInPicture
         tabIndex={-1}
         className="ck-glv-clip h-full w-auto object-contain"
+        style={{ aspectRatio: CLIP_ASPECT }}
       />
     </span>
   );
