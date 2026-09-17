@@ -55,7 +55,10 @@ export function ImpactCarousel() {
   const total = VIDEOS.length;
 
   // Carousel parameters
-  const radiusRatio = 0.85;
+  // Flatter arc. The vertical drop of an off-centre card is roughly x squared
+  // over 2r, so a bigger radius curves the fan down far less for the same
+  // horizontal spread — which is what was pushing the outer cards off screen.
+  const radiusRatio = 1.35;
   const cardRatio = 0.28;
   const minCardWidth = 200;
   const maxCardWidth = 400;
@@ -94,13 +97,33 @@ export function ImpactCarousel() {
     const dynamicCardRatio = isMobile ? 0.45 : cardRatio;
     const dynamicMinCardWidth = isMobile ? 120 : minCardWidth;
     
-    const cardWidth = gsap.utils.clamp(dynamicMinCardWidth, maxCardWidth, width * dynamicCardRatio);
+    // Card size is bounded by the stage HEIGHT as well as its width.
+    //
+    // It used to be derived from width alone: `width * 0.28` clamped to 400,
+    // which at a 1520px stage gives a 400px card and — at cardAspect 0.62 — a
+    // 645px-tall one inside a stage only ~680px high. The cards then ran past
+    // the bottom of the arc and off the screen. Nothing capped that, so the
+    // taller the viewport got the worse it looked, and on a short laptop window
+    // the whole fan was clipped.
+    //
+    // 0.68 of the stage, paired with the raised arc centre below: the cards sit
+    // on a circle, so the further one is from centre the LOWER it hangs, and a
+    // cap alone is not enough — the arc has to be lifted too or the outer cards
+    // still drop out of the frame.
+    const cardWidthFittingHeight = height * 0.68 * cardAspect;
+    const cardWidth = gsap.utils.clamp(
+      dynamicMinCardWidth,
+      Math.max(dynamicMinCardWidth, Math.min(maxCardWidth, cardWidthFittingHeight)),
+      width * dynamicCardRatio,
+    );
     const cardHeight = cardWidth / cardAspect;
     const radius = Math.max(width * radiusRatio, cardWidth * 4.2);
     const step = (cardWidth * (1 - gsap.utils.clamp(-0.5, 0.85, overlap))) / radius;
     const centerX = width / 2;
-    // Shift the arc slightly higher on mobile so it doesn't clip at the bottom
-    const dynamicArcOffset = isMobile ? 0.45 : arcOffset;
+    // Shift the arc higher so the outer cards, which hang lower on the circle,
+    // stay inside the frame. Desktop was `arcOffset` (0.5), which put the centre
+    // low enough that anything off-centre dropped past the bottom edge.
+    const dynamicArcOffset = isMobile ? 0.42 : 0.42;
     const centerY = height * dynamicArcOffset + radius;
     const discRadius = radius - cardHeight * 0.66;
     const reach = Math.min(1, (width / 2 + cardWidth * 1.2) / radius);
@@ -335,28 +358,44 @@ export function ImpactCarousel() {
 
   return (
     <section 
-      className="relative z-0 bg-background overflow-hidden py-8 lg:py-24" 
+      className="relative z-0 bg-background overflow-hidden py-5 lg:py-8" 
       id="stories"
       style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
     >
       {/* Header overlay */}
-      <div className="relative z-10 pt-8 sm:pt-16 pb-4 sm:pb-6 text-center pointer-events-none">
+      <div className="relative z-10 pt-2 sm:pt-4 pb-2 sm:pb-3 text-center pointer-events-none">
         <div className="flex items-center justify-center gap-2 mb-3">
           <PlayCircle className="w-4 h-4 text-brand-600" />
           <span className="text-sm font-bold text-brand-600 tracking-widest uppercase">
             See Sahas in Action
           </span>
         </div>
-        <h2 className="text-3xl sm:text-5xl font-extrabold text-foreground mb-3 sm:mb-4 tracking-tight">
+        <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground mb-2 sm:mb-3 tracking-tight">
           Real stories. Real change.
         </h2>
-        <p className="text-base sm:text-lg text-stone-600 dark:text-stone-400 leading-relaxed max-w-2xl mx-auto px-4">
+        <p className="text-sm sm:text-base text-stone-600 dark:text-stone-400 leading-relaxed max-w-2xl mx-auto px-4">
           Our field medical camps, skill workshops, and educational programs work alongside communities across high-need rural India.
         </p>
       </div>
 
       {/* Carousel */}
-      <div className="relative h-[65vh] min-h-[400px] lg:h-[85vh] lg:min-h-[650px] pb-6 lg:pb-24 mt-2 sm:mt-4">
+      {/* Height is an INLINE STYLE, deliberately, not `h-[58vh] min-h-[400px]`.
+          Those arbitrary Tailwind classes silently failed to emit here — no
+          build error, no warning — and because every card inside is absolutely
+          positioned, the wrapper collapsed from 576px to 32px and took the whole
+          carousel with it. A plain CSS class in styles.css had the same problem
+          from the other end (the dev server did not recompile it).
+
+          This height is load-bearing rather than decorative: measure() derives
+          the card size from the stage's height, so if it ever resolves to auto
+          the cards clamp to their minimum and the fan is destroyed. An inline
+          style is the one form that cannot be dropped by a build step, and it
+          keeps the value next to the code that depends on it. The clamp covers
+          phone through desktop without a media query. */}
+      <div
+        className="relative pb-4 lg:pb-8 mt-2 sm:mt-3"
+        style={{ height: 'clamp(300px, 52vh, 480px)' }}
+      >
         <div
           ref={stageRef}
           tabIndex={0}

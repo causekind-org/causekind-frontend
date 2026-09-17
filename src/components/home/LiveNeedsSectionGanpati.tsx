@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
+import { cardImageFor } from "@/lib/cardImage";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import type { PlatformStats, PublicItemRequest } from "@/lib/api";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
@@ -20,18 +21,6 @@ import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import { ModakIcon, GanpatiToran, FloatingFestiveBadge } from "@/components/home/GanpatiVisuals";
 
 const NEEDS_SHOWN = 6;
-
-const MOBILE_CATEGORY_IMAGES: Record<string, string[]> = {
-  Medical:    ["/images/medical-1.webp", "/images/medical-2.webp"],
-  Education:  ["/images/hero-7.webp"],
-  Livelihood: ["/images/hero-3.webp"],
-  Community:  ["/images/hero-6.webp"],
-};
-
-function getCardImage(category: string, id: number): string {
-  const imgs = MOBILE_CATEGORY_IMAGES[category];
-  return imgs?.length ? imgs[id % imgs.length] : "/images/hero-1.webp";
-}
 
 /**
  * LiveNeedsSectionGanpati — Festive Ganpati skin for the "Real people, real needs" section.
@@ -98,7 +87,7 @@ export function LiveNeedsSectionGanpati({
       // and the header's `pt-4` it put ~100px of cream between the garland
       // closing the doors section and this heading. `lg:py-24` still overrides
       // both, so the desktop spacing is untouched.
-      className="relative isolate overflow-hidden px-0 pt-0 pb-2 lg:bg-gradient-to-b lg:from-[#fffcf7] lg:via-[#fff8ed] lg:to-[#fffcf7] lg:px-8 lg:py-24 lg:dark:from-[#140803] lg:dark:via-[#1c0c05] lg:dark:to-[#140803]"
+      className="relative isolate overflow-hidden px-0 pt-0 pb-2 lg:bg-surface-cream lg:px-8 lg:py-24"
     >
       {/* Festive toran border at the top of the section.
 
@@ -238,13 +227,22 @@ export function LiveNeedsSectionGanpati({
                   {/* Need Image */}
                   <div className="relative h-44 w-full overflow-hidden bg-amber-100/50 dark:bg-stone-950">
                     <Image
-                      src={need.imageUrl || getCardImage(need.category, need.id)}
+                      src={cardImageFor(need)}
                       alt={need.title}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    {/* Was from-black/60. That was tuned for the dark stock
+                        photos this card used to show, where the pill needed a
+                        dark ground under it. The category images are now light
+                        cream paper-collage illustrations, and a 60% black wash
+                        over the bottom half of one reads as dirt rather than as
+                        depth. Dropped to /25, which still seats a donee's own
+                        photo without muddying the cream — and the pill and the
+                        urgency badge each carry their own background anyway, so
+                        this gradient is doing far less work than it looks. */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
 
                     {/* Category pill on image */}
                     <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-black/40 backdrop-blur-md px-2.5 py-1 text-3xs font-black uppercase tracking-wider text-amber-200 border border-amber-300/30">

@@ -173,7 +173,7 @@ export const CATEGORY_VISUALS: Record<
       "text-sky-700 dark:text-sky-400",
 
     fallbackImage:
-      "/images/categories/medical-aid-v2.webp",
+      "/images/categories/medical-aid-v3.webp",
 
     col:
       "text-sky-300",
@@ -208,7 +208,7 @@ export const CATEGORY_VISUALS: Record<
       "text-amber-700 dark:text-amber-400",
 
     fallbackImage:
-      "/images/categories/education-v2.webp",
+      "/images/categories/education-v3.webp",
 
     col:
       "text-amber-300",
@@ -243,7 +243,7 @@ export const CATEGORY_VISUALS: Record<
       "text-emerald-700 dark:text-emerald-400",
 
     fallbackImage:
-      "/images/categories/livelihood-v2.webp",
+      "/images/categories/livelihood-v3.webp",
 
     col:
       "text-emerald-300",
@@ -278,7 +278,7 @@ export const CATEGORY_VISUALS: Record<
       "text-violet-700 dark:text-violet-400",
 
     fallbackImage:
-      "/images/categories/relief-v2.webp",
+      "/images/categories/relief-v3.webp",
 
     col:
       "text-violet-300",
@@ -313,7 +313,7 @@ export const CATEGORY_VISUALS: Record<
       "text-rose-700 dark:text-rose-400",
 
     fallbackImage:
-      "/images/categories/household.webp",
+      "/images/categories/household-v3.webp",
 
     col:
       "text-rose-300",
@@ -348,7 +348,7 @@ export const CATEGORY_VISUALS: Record<
       "text-indigo-700 dark:text-indigo-400",
 
     fallbackImage:
-      "/images/categories/furniture.webp",
+      "/images/categories/furniture-v3.webp",
 
     col:
       "text-indigo-300",
@@ -383,7 +383,7 @@ export const CATEGORY_VISUALS: Record<
       "text-teal-700 dark:text-teal-400",
 
     fallbackImage:
-      "/images/categories/clothing.webp",
+      "/images/categories/clothing-v3.webp",
 
     col:
       "text-teal-300",
@@ -418,7 +418,7 @@ export const CATEGORY_VISUALS: Record<
       "text-orange-700 dark:text-orange-400",
 
     fallbackImage:
-      "/images/categories/electronics.webp",
+      "/images/categories/electronics-v3.webp",
 
     col:
       "text-orange-300",
@@ -453,7 +453,7 @@ export const CATEGORY_VISUALS: Record<
       "text-cyan-700 dark:text-cyan-400",
 
     fallbackImage:
-      "/images/categories/sports.webp",
+      "/images/categories/sports-v3.webp",
 
     col:
       "text-cyan-300",

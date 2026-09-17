@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Lock, ShieldCheck, Heart } from 'lucide-react';
+import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight } from 'lucide-react';
 import { initiateTrustDonation } from '@/lib/api';
-import { DiyaIcon } from '@/components/home/GanpatiVisuals';
+import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
+import { getDialCodes } from '@/app/actions/locations';
+import { PHONE_LENGTHS, getDialCode } from '@/lib/phone';
 
 /**
  * Loads Razorpay's checkout script on demand.
@@ -23,20 +25,90 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
+const PRESET_AMOUNTS = [500, 1000, 2500, 5000];
+
+/**
+ * Tip options, in rupees. Zero is a first-class choice rather than something the
+ * donor has to hunt for — the platform's whole trust claim is that giving is
+ * free, so declining has to be as easy as accepting.
+ *
+ * <p>Five presets plus a custom cell fit on ONE row, which is the constraint
+ * that matters: the section has a ~690px budget so it sits inside one browser
+ * window, and a second row of chips would spend 54px of it. Any further option
+ * added here has to replace one, not extend the row.
+ */
+const TIP_OPTIONS = [0, 50, 100, 200, 500];
+
+/**
+ * Deliberately the LOWEST non-zero option, not the middle one.
+ *
+ * <p>When the ladder started at ₹25 this sat in the middle of it; raising the
+ * ladder moved it to the bottom, and it was left there on purpose. Pre-selecting
+ * a larger tip nudges people into paying more by default, which is the opposite
+ * of the "we take nothing from your donation" claim two lines above it. Raising
+ * this is a revenue decision for Sushil to make explicitly, not a side effect of
+ * changing the ladder.
+ */
+const DEFAULT_TIP = 50;
+
+const money = (n: number) => (n || 0).toLocaleString('en-IN');
+
+/** One numbered step heading. */
+function StepLabel({ n, title, hint }: { n: number; title: string; hint?: string }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border border-amber-300/70 bg-amber-100 text-[11px] font-black text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/70 dark:text-amber-300">
+        {n}
+      </span>
+      <span className="text-sm font-bold text-foreground">{title}</span>
+      {hint && <span className="text-xs font-semibold text-stone-400 dark:text-stone-500">{hint}</span>}
+    </div>
+  );
+}
+
 export function MoneyDonationForm() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const predefinedAmounts = [500, 1000, 2500, 5000];
   const [amount, setAmount] = useState<number | ''>(1000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustom, setIsCustom] = useState(false);
+  const [presetTip, setPresetTip] = useState<number>(DEFAULT_TIP);
+  const [customTip, setCustomTip] = useState<string>('');
+  const [isCustomTip, setIsCustomTip] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     mobileNumber: '',
     panNumber: '',
+    address: '',
   });
+
+  // Dial code, same plumbing the registration form uses: the option list comes
+  // from the `getDialCodes` server action (country-state-city data, no network)
+  // and the per-country digit count from PHONE_LENGTHS, so a number entered here
+  // is bounded exactly as it is at sign-up rather than by a second set of rules.
+  const [dialCodes, setDialCodes] = useState<(SelectOption & { phonecode?: string })[]>([]);
+  const [dialCountry, setDialCountry] = useState('IN');
+
+  useEffect(() => {
+    let alive = true;
+    getDialCodes()
+      .then((codes) => { if (alive) setDialCodes(codes); })
+      // A failure here must not block a donation: the field still accepts a
+      // number, it just loses the country prefix.
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const maxPhoneLength = PHONE_LENGTHS[dialCountry] ?? 15;
+
+  // What actually reaches Sahas. The tip is deliberately NOT part of this —
+  // see the payload comment in api.ts and Donation.platformTip on the backend:
+  // the 80G receipt is issued against this number alone.
+  const donation = isCustom ? (parseInt(customAmount, 10) || 0) : (amount || 0);
+  const tip = isCustomTip ? (parseInt(customTip, 10) || 0) : presetTip;
+  const total = donation + tip;
 
   const handleAmountClick = (value: number) => {
     setAmount(value);
@@ -44,28 +116,21 @@ export function MoneyDonationForm() {
     setCustomAmount('');
   };
 
-  const handleCustomAmountClick = () => {
+  const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
+    setCustomAmount(val);
     setIsCustom(true);
     setAmount('');
   };
 
-  const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^0-9]/g, '');
-    setCustomAmount(val);
-    setAmount(val ? parseInt(val) : '');
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!amount || amount < 1) {
+    if (!donation || donation < 1) {
       toast.error('Please select or enter a valid donation amount.');
       return;
     }
@@ -86,31 +151,47 @@ export function MoneyDonationForm() {
         return;
       }
 
+      // The dial code lives outside the text field, so recombine it here — the
+      // backend stores one `donorPhone` string and the receipt needs the country.
+      const dial = getDialCode(dialCountry, dialCodes);
+      const fullPhone = formData.mobileNumber
+        ? `${dial}${formData.mobileNumber}`
+        : '';
+
       const order = await initiateTrustDonation({
-        amount: Number(amount),
+        amount: donation,
+        tipAmount: tip,
         fullName: formData.fullName,
         email: formData.email,
-        mobileNumber: formData.mobileNumber || undefined,
+        mobileNumber: fullPhone || undefined,
         panNumber: formData.panNumber || undefined,
+        address: formData.address.trim() || undefined,
       });
 
       const rzp = new window.Razorpay({
         key: order.razorpayKeyId,
+        // The gateway charges donation + tip; the backend computed this and is
+        // the authority on it. Never recompute the paise here.
         amount: order.amountInPaise,
         currency: order.currency,
         name: 'CauseKind',
-        description: 'Donation to Sahas Charitable Trust',
+        description: tip > 0
+          ? 'Donation to Sahas Charitable Trust + CauseKind tip'
+          : 'Donation to Sahas Charitable Trust',
         order_id: order.razorpayOrderId,
         prefill: {
           name: formData.fullName,
           email: formData.email,
-          contact: formData.mobileNumber || undefined,
+          // Razorpay wants the dialled form too, not the bare national number.
+          contact: fullPhone || undefined,
         },
         theme: { color: '#ea580c' },
         handler: () => {
+          // The donation, not the total: this is what the thank-you page and the
+          // 80G receipt are about.
           router.push(
             `/thank-you?campaign=${encodeURIComponent('Sahas Charitable Trust')}` +
-              `&amount=${encodeURIComponent(String(amount))}`
+              `&amount=${encodeURIComponent(String(donation))}`
           );
         },
         modal: { ondismiss: () => toast.info('Payment cancelled. Nothing was charged.') },
@@ -123,219 +204,447 @@ export function MoneyDonationForm() {
     }
   };
 
-  const inputClasses = "w-full px-4 py-3 rounded-lg border border-amber-200/80 dark:border-amber-800/60 bg-[#fffdfa] dark:bg-[#221008] text-foreground placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 outline-none transition-colors text-sm shadow-xs";
+  const inputClasses =
+    'w-full px-3.5 py-2 rounded-lg border border-amber-200/80 dark:border-amber-800/60 bg-[#fffdfa] dark:bg-[#221008] text-foreground placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 outline-none transition-colors text-sm shadow-xs';
+
+  const chipClasses = (selected: boolean) =>
+    `py-3 px-3 rounded-xl text-sm font-bold tabular-nums transition-all border cursor-pointer ${
+      selected
+        ? 'border-amber-500 bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] text-white shadow-[0_0_20px_rgba(234,88,12,0.35)] ring-2 ring-amber-400/40'
+        : 'border-amber-200/80 dark:border-amber-800/60 text-stone-800 dark:text-amber-100 hover:border-amber-400 hover:bg-amber-50/60 dark:hover:bg-amber-950/40 bg-[#fffefb] dark:bg-[#25130b]'
+    }`;
+
+  const trustPill =
+    'flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#fffdfa] dark:bg-[#23120a] border border-amber-200/80 dark:border-amber-800/50 shadow-[0_2px_10px_rgba(217,119,6,0.06)]';
 
   return (
-    <section id="donate-form" className="scroll-mt-24 py-10 sm:py-12 lg:py-14 bg-[#fff9f2] dark:bg-[#1a0b04]">
+    <section
+      id="donate-form"
+      // Sized to sit inside one browser window rather than overflow it: the
+      // sticky nav takes ~113px, so the section has to come in around 690px on a
+      // 800px viewport. Every padding, gap and type size below is set with that
+      // budget in mind — see the two structural savings in step 1 and step 2.
+      className="scroll-mt-24 py-6 bg-[#fff9f2] dark:bg-[#1a0b04]"
+    >
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+        <div className="mx-auto flex max-w-[78rem] flex-col gap-3">
 
-          {/* Left Column: Supporting Visual & Message */}
+          {/* ── Header row ───────────────────────────────────────────────────
+              The two trust claims used to sit in a tall box in a left-hand
+              column, far from the button they were meant to reassure. They are
+              compact pills up here now, and the one that matters most is
+              restated inside the receipt, next to the CTA. */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col"
+            transition={{ duration: 0.5 }}
+            className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
           >
-            <div className="inline-flex items-center gap-3 text-xs font-bold tracking-wider uppercase text-amber-900 dark:text-amber-200 mb-4 bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 pr-4 pl-3 py-1.5 rounded-full w-max shadow-[0_0_12px_rgba(217,119,6,0.15)]">
-              <Image 
-                src="/images/money-donation/sahas-logo-transparent.png"
-                alt="Sahas Logo" 
-                width={24} 
-                height={24}
-                className="object-contain"
-              />
-              Make a Contribution
-            </div>
-            <h2 className="text-4xl sm:text-5xl font-extrabold text-foreground leading-tight mb-6">
-              Empower communities with your generosity.
-            </h2>
-            <p className="text-lg text-stone-600 dark:text-stone-300 leading-relaxed mb-10 max-w-lg">
-              Your contribution goes directly toward critical initiatives in education, healthcare, and community welfare managed by Sahas Charitable Trust.
-            </p>
-
-            <div className="bg-[#fffdfa] dark:bg-[#23120a] p-6 rounded-2xl border border-amber-200/70 dark:border-amber-900/40 shadow-sm">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-950 dark:to-orange-950 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-700 dark:text-amber-300 flex-shrink-0">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-foreground">100% Secure & Transparent</h4>
-                  <p className="text-sm text-stone-600 dark:text-stone-300 mt-1">Sahas Charitable Trust is a registered non-profit. All donations are secure and properly audited.</p>
-                </div>
+            <div className="flex max-w-3xl flex-col gap-2">
+              <div className="inline-flex w-max items-center gap-2.5 rounded-full border border-amber-300/60 bg-amber-100/90 py-1 pl-2.5 pr-3.5 text-[11px] font-bold uppercase tracking-wider text-amber-900 shadow-[0_0_12px_rgba(217,119,6,0.15)] dark:border-amber-700/50 dark:bg-amber-950/60 dark:text-amber-200">
+                <Image
+                  src="/images/money-donation/sahas-logo-transparent.png"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="object-contain"
+                />
+                Make a Contribution
               </div>
-              <hr className="border-amber-200/60 dark:border-amber-900/40 my-4" />
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-950 dark:to-orange-950 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-700 dark:text-amber-300 flex-shrink-0">
-                  <Heart className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-foreground">Zero Platform Fees</h4>
-                  <p className="text-sm text-stone-600 dark:text-stone-300 mt-1">CauseKind does not take a cut. Your entire donation supports the charitable programs.</p>
-                </div>
+              <h2 className="text-[28px] font-extrabold leading-[1.1] tracking-tight text-foreground text-pretty sm:text-[34px]">
+                Empower communities with your generosity.
+              </h2>
+              <p className="max-w-xl text-sm leading-relaxed text-stone-600 dark:text-stone-300">
+                Goes directly toward education, healthcare and community welfare run by Sahas
+                Charitable Trust.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 lg:pb-1">
+              <div className={trustPill}>
+                <ShieldCheck className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
+                <span className="text-[13px] font-bold text-foreground">
+                  Registered non-profit &middot; 80G eligible
+                </span>
+              </div>
+              <div className={trustPill}>
+                <Heart className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
+                <span className="text-[13px] font-bold text-foreground">
+                  Zero platform fees &middot; funded by tips
+                </span>
               </div>
             </div>
           </motion.div>
 
-          {/* Right Column: The Donation Form */}
+          {/* ── The contribution console ─────────────────────────────────────
+              One card: the three choices on the left, a live receipt on the
+              right. The <form> is the grid itself, because the fields and the
+              submit button live in different columns. */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 28 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, type: 'spring', bounce: 0.4 }}
-            className="relative bg-[#fffdfa] dark:bg-[#23120a] p-6 sm:p-8 rounded-3xl shadow-[0_8px_35px_rgba(217,119,6,0.12)] border border-amber-200/80 dark:border-amber-800/50"
+            transition={{ duration: 0.6, type: 'spring', bounce: 0.28 }}
           >
-            {/* Small decorative Diya accent in top corner (pointer-events: none, aria-hidden: true, non-overlapping) */}
-            <div className="pointer-events-none absolute top-4 right-5 opacity-80 z-10 select-none" aria-hidden="true">
-              <DiyaIcon className="w-6 h-6 text-amber-500 drop-shadow-[0_2px_8px_rgba(234,88,12,0.4)]" />
-            </div>
+            <form
+              onSubmit={handleSubmit}
+              // No `overflow-hidden` here, deliberately: it would clip the
+              // rounded corners neatly but it also breaks `position: sticky` on
+              // everything inside, and the receipt needs to stick. The corners
+              // are rounded on the panels themselves instead.
+              className="grid grid-cols-1 rounded-3xl border border-amber-200/80 bg-[#fffdfa] shadow-[0_8px_35px_rgba(217,119,6,0.12)] dark:border-amber-800/50 dark:bg-[#23120a] lg:grid-cols-[1.5fr_1fr]"
+            >
+              {/* LEFT — the choices */}
+              <div className="flex flex-col gap-4 p-5 sm:p-6">
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Amount Selection */}
-              <div>
-                <label className="block text-sm font-bold text-foreground mb-3">Select Amount (₹)</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                  {predefinedAmounts.map((amt) => (
-                    <motion.button
-                      whileHover={{ y: -2, boxShadow: '0 6px 16px rgba(234,88,12,0.15)' }}
-                      whileTap={{ scale: 0.98 }}
-                      key={amt}
-                      type="button"
-                      onClick={() => handleAmountClick(amt)}
-                      className={`py-3 px-4 rounded-xl text-sm font-bold transition-all border cursor-pointer ${!isCustom && amount === amt
-                          ? 'border-amber-500 bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] text-white shadow-[0_0_20px_rgba(234,88,12,0.35)] ring-2 ring-amber-400/40'
-                          : 'border-amber-200/80 dark:border-amber-800/60 text-stone-800 dark:text-amber-100 hover:border-amber-400 hover:bg-amber-50/60 bg-[#fffefb] dark:bg-[#25130b]'
-                        }`}
-                    >
-                      ₹{amt.toLocaleString()}
-                    </motion.button>
-                  ))}
-                  <motion.button
-                    whileHover={{ y: -2, boxShadow: '0 6px 16px rgba(234,88,12,0.15)' }}
-                    whileTap={{ scale: 0.98 }}
-                    type="button"
-                    onClick={handleCustomAmountClick}
-                    className={`py-3 px-4 rounded-xl text-sm font-bold transition-all border cursor-pointer sm:col-span-4 ${isCustom
-                        ? 'border-amber-500 bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] text-white shadow-[0_0_20px_rgba(234,88,12,0.35)] ring-2 ring-amber-400/40'
-                        : 'border-amber-200/80 dark:border-amber-800/60 text-stone-800 dark:text-amber-100 hover:border-amber-400 hover:bg-amber-50/60 bg-[#fffefb] dark:bg-[#25130b]'
-                      }`}
-                  >
-                    Custom Amount
-                  </motion.button>
+                {/* Step 1 — amount.
+                    The Custom control shares the preset row as a fifth cell and
+                    SWAPS IN PLACE into an input when chosen, rather than sitting
+                    on a second row with a permanently-visible field. That is one
+                    whole 44px row plus its gap saved, and the block never changes
+                    height when the donor switches to a custom amount. */}
+                <div className="flex flex-col gap-3">
+                  <StepLabel n={1} title="Choose your donation" hint="to Sahas Charitable Trust" />
+
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+                    {PRESET_AMOUNTS.map((amt) => (
+                      <motion.button
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        key={amt}
+                        type="button"
+                        aria-pressed={!isCustom && amount === amt}
+                        onClick={() => handleAmountClick(amt)}
+                        className={chipClasses(!isCustom && amount === amt)}
+                      >
+                        ₹{money(amt)}
+                      </motion.button>
+                    ))}
+
+                    {isCustom ? (
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-700 dark:text-amber-300">
+                          ₹
+                        </span>
+                        <label htmlFor="customAmount" className="sr-only">
+                          Custom donation amount in rupees
+                        </label>
+                        <input
+                          id="customAmount"
+                          type="text"
+                          inputMode="numeric"
+                          autoFocus
+                          value={customAmount}
+                          onChange={handleCustomAmountChange}
+                          placeholder="Amount"
+                          className="h-11 w-full rounded-xl border border-amber-500 bg-[#fffdfa] pl-6 pr-2 text-sm font-bold tabular-nums text-foreground shadow-xs outline-none ring-2 ring-amber-400/40 placeholder:font-semibold placeholder:text-stone-400 dark:bg-[#221008] dark:placeholder:text-stone-500"
+                        />
+                      </div>
+                    ) : (
+                      <motion.button
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        aria-pressed={false}
+                        onClick={() => {
+                          setIsCustom(true);
+                          setAmount('');
+                        }}
+                        className={chipClasses(false)}
+                      >
+                        Custom
+                      </motion.button>
+                    )}
+                  </div>
                 </div>
 
-                {isCustom && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="relative mt-3"
+                <hr className="border-amber-200/60 dark:border-amber-900/40" />
+
+                {/* Step 2 — the tip.
+                    Placed here, between the amount and the details, rather than
+                    beside the total. A charge that appears at the end of a form
+                    reads as a surprise fee however it is worded. */}
+                <div className="flex flex-col gap-3">
+                  <StepLabel n={2} title="Tip CauseKind" hint="optional" />
+                  {/* One line, not a paragraph. The reason to tip still has to be
+                      stated — it is the whole ask — but at three lines it cost
+                      more vertical space than the chips it was introducing. */}
+                  <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+                    We take nothing from your donation — tips are what keep CauseKind running.
+                  </p>
+                  {/* Same shape as step 1: the custom control is the last cell
+                      of the SAME row and swaps in place, so adding it costs no
+                      height and the block does not jump when it is chosen. */}
+                  <div
+                    role="group"
+                    aria-label="Tip to CauseKind"
+                    className="grid grid-cols-3 gap-2.5 sm:grid-cols-6"
                   >
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-700 dark:text-amber-300 text-sm font-bold">₹</span>
-                    <input
-                      type="text"
-                      value={customAmount}
-                      onChange={handleCustomAmountChange}
-                      placeholder="Enter amount"
-                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-amber-200/80 dark:border-amber-800/60 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 outline-none text-sm bg-[#fffdfa] dark:bg-[#221008] text-foreground transition-all shadow-inner"
-                    />
-                  </motion.div>
-                )}
+                    {TIP_OPTIONS.map((t) => (
+                      <motion.button
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        key={t}
+                        type="button"
+                        aria-pressed={!isCustomTip && presetTip === t}
+                        onClick={() => {
+                          setPresetTip(t);
+                          setIsCustomTip(false);
+                          setCustomTip('');
+                        }}
+                        className={`${chipClasses(!isCustomTip && presetTip === t)} px-1.5`}
+                      >
+                        {t === 0 ? 'No tip' : `₹${money(t)}`}
+                      </motion.button>
+                    ))}
+
+                    {isCustomTip ? (
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-700 dark:text-amber-300">
+                          ₹
+                        </span>
+                        <label htmlFor="customTip" className="sr-only">
+                          Custom tip to CauseKind, in rupees
+                        </label>
+                        <input
+                          id="customTip"
+                          type="text"
+                          inputMode="numeric"
+                          autoFocus
+                          value={customTip}
+                          onChange={(e) => {
+                            setCustomTip(e.target.value.replace(/[^0-9]/g, ''));
+                            setIsCustomTip(true);
+                          }}
+                          placeholder="Any"
+                          className="h-11 w-full rounded-xl border border-amber-500 bg-[#fffdfa] pl-5 pr-1.5 text-sm font-bold tabular-nums text-foreground shadow-xs outline-none ring-2 ring-amber-400/40 placeholder:font-semibold placeholder:text-stone-400 dark:bg-[#221008] dark:placeholder:text-stone-500"
+                        />
+                      </div>
+                    ) : (
+                      <motion.button
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        aria-pressed={false}
+                        onClick={() => setIsCustomTip(true)}
+                        className={`${chipClasses(false)} px-1.5`}
+                      >
+                        Custom
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
+
+                <hr className="border-amber-200/60 dark:border-amber-900/40" />
+
+                {/* Step 3 — details */}
+                <div className="flex flex-col gap-3">
+                  <StepLabel n={3} title="Your details" />
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="fullName" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                        Full name
+                      </label>
+                      <input
+                        type="text"
+                        id="fullName"
+                        name="fullName"
+                        required
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        className={inputClasses}
+                        placeholder="Jane Doe"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="email" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                        Email address
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        required
+                        value={formData.email}
+                        onChange={handleChange}
+                        className={inputClasses}
+                        placeholder="jane@example.com"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="mobileNumber" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                        Mobile number
+                      </label>
+                      {/* `min-w-0` on the input is load-bearing, same reason the
+                          registration form carries it: a flex item defaults to
+                          min-width:auto and an <input> has an implicit size=20,
+                          so flex-1 can grow it but never shrink it, and the row
+                          overflows its column. */}
+                      <div className="flex gap-2">
+                        <div className="ck-dial w-[84px] shrink-0">
+                          <SearchableSelect
+                            options={dialCodes}
+                            value={dialCountry}
+                            onChange={setDialCountry}
+                            placeholder="+–"
+                            searchPlaceholder="Search country"
+                            renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodes)}
+                          />
+                        </div>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          id="mobileNumber"
+                          name="mobileNumber"
+                          required
+                          value={formData.mobileNumber}
+                          maxLength={maxPhoneLength}
+                          autoComplete="tel"
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              // Digits only, bounded by the selected country's
+                              // national-number length — the dial code is held
+                              // separately and prepended at submit.
+                              mobileNumber: e.target.value.replace(/\D/g, '').slice(0, maxPhoneLength),
+                            })
+                          }
+                          className={`${inputClasses} flex-1 min-w-0`}
+                          placeholder="98765 43210"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="panNumber" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                        PAN{' '}
+                        <span className="font-semibold text-stone-400 dark:text-stone-500">
+                          · for 80G receipt
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        id="panNumber"
+                        name="panNumber"
+                        value={formData.panNumber}
+                        onChange={(e) =>
+                          setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })
+                        }
+                        className={inputClasses}
+                        placeholder="ABCDE1234F"
+                        maxLength={10}
+                      />
+                    </div>
+                    {/* Spans both columns so it costs exactly one grid row.
+                        Deliberately NOT required and deliberately a single line:
+                        this sits on the last screen before a payment, and an 80G
+                        receipt is valid without an address — refusing a donation
+                        over a blank box would trade money for a tidier document. */}
+                    <div className="flex flex-col gap-1.5 sm:col-span-2">
+                      <label htmlFor="address" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                        Address{' '}
+                        <span className="font-semibold text-stone-400 dark:text-stone-500">
+                          · optional, printed on the receipt
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        id="address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        className={inputClasses}
+                        placeholder="Flat, street, city, PIN"
+                        maxLength={300}
+                        autoComplete="street-address"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <hr className="border-amber-200/60 dark:border-amber-900/40" />
+              {/* RIGHT — the receipt.
+                  Donation and tip stay on separate lines so "all of it reaches
+                  Sahas" is literally true and visible at the moment of paying.
+                  The dashed edge is the tear line of a paper receipt. */}
+              <div className="rounded-b-3xl border-t-2 border-dashed border-amber-600/30 bg-amber-50/90 p-5 dark:border-amber-700/40 dark:bg-amber-950/40 sm:p-6 lg:rounded-bl-none lg:rounded-r-3xl lg:border-l-2 lg:border-t-0">
+                {/* Sticky so the running total stays in view while the donor
+                    works down the form — which is also why the CTA no longer
+                    needs a spacer pinning it to the bottom of a much taller
+                    column, where it left an obvious dead gap. */}
+                <div className="flex flex-col gap-4 lg:sticky lg:top-24">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[11px] font-black uppercase tracking-[0.1em] text-amber-800 dark:text-amber-300">
+                    Your contribution
+                  </span>
+                  <Receipt className="size-[18px] text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                </div>
 
-              {/* Personal Details */}
-              <div className="space-y-4">
-                <label className="block text-sm font-bold text-foreground">Your Details</label>
-                <div>
-                  <label htmlFor="fullName" className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1.5">Full Name</label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    name="fullName"
-                    required
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    className={inputClasses}
-                    placeholder="Jane Doe"
-                  />
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[13px] font-semibold text-stone-600 dark:text-stone-300">
+                      Donation to Sahas
+                    </span>
+                    <span className="text-[15px] font-bold tabular-nums text-foreground">
+                      ₹{money(donation)}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[13px] font-semibold text-stone-600 dark:text-stone-300">
+                      Tip to CauseKind
+                    </span>
+                    <span className="text-[15px] font-bold tabular-nums text-foreground">
+                      ₹{money(tip)}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1.5">Email Address</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={inputClasses}
-                    placeholder="jane@example.com"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="mobileNumber" className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1.5">Mobile Number</label>
-                  <input
-                    type="tel"
-                    id="mobileNumber"
-                    name="mobileNumber"
-                    required
-                    value={formData.mobileNumber}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9+-\s]/g, '');
-                      setFormData({ ...formData, mobileNumber: val });
-                    }}
-                    className={inputClasses}
-                    placeholder="+91 98765 43210"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="panNumber" className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1.5">PAN Number (For 80G Tax Receipt)</label>
-                  <input
-                    type="text"
-                    id="panNumber"
-                    name="panNumber"
-                    value={formData.panNumber}
-                    onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })}
-                    className={inputClasses}
-                    placeholder="ABCDE1234F"
-                    maxLength={10}
-                  />
-                </div>
-              </div>
 
-              {/* Summary & Submit */}
-              <div className="pt-4">
-                <div className="flex justify-between items-center mb-6 text-sm bg-amber-50/90 dark:bg-amber-950/50 p-4 rounded-xl border border-amber-300/60 dark:border-amber-700/50 shadow-xs">
-                  <span className="text-amber-950 dark:text-amber-100 font-semibold">Total Contribution</span>
-                  <span className="text-xl font-extrabold text-amber-700 dark:text-amber-300">
-                    ₹{amount ? amount.toLocaleString() : '0'}
+                <hr className="border-amber-600/25 dark:border-amber-700/40" />
+
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-sm font-black text-amber-950 dark:text-amber-100">
+                    Total today
+                  </span>
+                  <span className="text-3xl font-extrabold tracking-tight tabular-nums text-amber-700 dark:text-amber-300">
+                    ₹{money(total)}
                   </span>
                 </div>
 
-                <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
+                <div className="flex gap-2.5 rounded-xl border border-amber-300/55 bg-[#fffdfa]/90 p-3.5 dark:border-amber-700/50 dark:bg-[#23120a]/80">
+                  <Check className="mt-px size-4 shrink-0 text-green-700 dark:text-green-500" aria-hidden="true" />
+                  <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300">
+                    All <span className="font-bold tabular-nums text-foreground">₹{money(donation)}</span>{' '}
+                    reaches Sahas. CauseKind takes no cut — only the tip you choose.
+                  </p>
+                </div>
+
+                <motion.div whileHover={{ scale: 1.015, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] hover:from-[#c2410c] hover:to-[#b45309] px-8 py-3.5 text-base font-extrabold text-white shadow-lg shadow-orange-900/30 shadow-[0_0_25px_rgba(217,119,6,0.35)] hover:shadow-[0_0_35px_rgba(217,119,6,0.5)] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] px-8 py-3.5 text-[15px] font-extrabold text-white shadow-[0_0_25px_rgba(217,119,6,0.35)] transition-all duration-200 ease-out hover:from-[#c2410c] hover:to-[#b45309] hover:shadow-[0_0_35px_rgba(217,119,6,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {submitting ? 'Opening secure checkout…' : (
+                    {submitting ? (
+                      'Opening secure checkout…'
+                    ) : (
                       <>
-                        Proceed to Donate <span className="ml-2">&rarr;</span>
+                        Proceed to donate
+                        <ArrowRight className="size-[17px]" aria-hidden="true" />
                       </>
                     )}
                   </button>
                 </motion.div>
 
-                {/* Secure payment note */}
-                <div className="flex items-center justify-center gap-2 mt-6 text-xs font-medium text-stone-500 dark:text-stone-400">
-                  <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>Secure payment &middot; UPI &middot; Cards &middot; Net Banking</span>
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-stone-500 dark:text-stone-400">
+                    <Lock className="size-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                    <span>Secure payment · UPI · Cards · Net Banking</span>
+                  </div>
+                  <p className="text-center text-[11px] leading-snug text-stone-400 dark:text-stone-500">
+                    Nothing is charged on this page. You will be taken to a secure payment gateway.
+                  </p>
                 </div>
-                <p className="text-xs text-center text-stone-500 dark:text-stone-400 mt-2">
-                  No payment is collected on this page. You will be redirected to a secure payment gateway.
-                </p>
+                </div>
               </div>
             </form>
           </motion.div>
@@ -344,4 +653,3 @@ export function MoneyDonationForm() {
     </section>
   );
 }
-
