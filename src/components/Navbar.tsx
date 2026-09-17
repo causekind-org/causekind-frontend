@@ -1189,7 +1189,9 @@ export function SiteHeader() {
               </Link>
             )}
 
-            {/* Auth action — login/logout, top-right */}
+            {/* Auth action — login/logout, top-right. Hidden on the auth pages
+                themselves since the page already is the login/register form. */}
+            {!(pathname === "/login" || pathname === "/register") && (
             <div className="relative">
               <SpecularButton
                 size="sm"
@@ -1215,6 +1217,7 @@ export function SiteHeader() {
               </SpecularButton>
               <LoginNudgeBubble user={user} />
             </div>
+            )}
           </div>
         </div>
 
