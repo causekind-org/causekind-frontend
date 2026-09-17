@@ -10,6 +10,7 @@ import { initiateTrustDonation } from '@/lib/api';
 import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
 import { getDialCodes } from '@/app/actions/locations';
 import { PHONE_LENGTHS, getDialCode } from '@/lib/phone';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Loads Razorpay's checkout script on demand.
@@ -68,6 +69,17 @@ function StepLabel({ n, title, hint }: { n: number; title: string; hint?: string
 
 export function MoneyDonationForm() {
   const router = useRouter();
+  // A signed-in donor is never asked for their email, because the backend
+  // ignores anything typed: initiateTrustDonation overwrites donorEmail with the
+  // account's, so that a signed-in user cannot file a donation — and an 80G
+  // receipt — under someone else's identity. Asking for a value and then
+  // discarding it is worse than not asking.
+  //
+  // Guests keep the field. They have no account, so the address they type is the
+  // only way their receipt can reach them.
+  const { user } = useAuth();
+  const donorEmail = user?.email ?? '';
+
   const [submitting, setSubmitting] = useState(false);
   const [amount, setAmount] = useState<number | ''>(1000);
   const [customAmount, setCustomAmount] = useState<string>('');
@@ -134,8 +146,12 @@ export function MoneyDonationForm() {
       toast.error('Please select or enter a valid donation amount.');
       return;
     }
-    if (!formData.fullName || !formData.email) {
-      toast.error('Please fill out your name and email.');
+    if (!formData.fullName) {
+      toast.error('Please enter your name.');
+      return;
+    }
+    if (!user && !formData.email) {
+      toast.error('Please enter your email so we can send your receipt.');
       return;
     }
     if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
@@ -162,7 +178,11 @@ export function MoneyDonationForm() {
         amount: donation,
         tipAmount: tip,
         fullName: formData.fullName,
-        email: formData.email,
+        // The DTO requires a non-blank, well-formed address, so a signed-in
+        // donor sends their account's rather than an empty string. The backend
+        // overwrites it with the same value, making this consistent rather than
+        // load-bearing — but omitting it would fail validation before it got there.
+        email: donorEmail || formData.email,
         mobileNumber: fullPhone || undefined,
         panNumber: formData.panNumber || undefined,
         address: formData.address.trim() || undefined,
@@ -181,7 +201,7 @@ export function MoneyDonationForm() {
         order_id: order.razorpayOrderId,
         prefill: {
           name: formData.fullName,
-          email: formData.email,
+          email: donorEmail || formData.email,
           // Razorpay wants the dialled form too, not the bare national number.
           contact: fullPhone || undefined,
         },
@@ -457,21 +477,25 @@ export function MoneyDonationForm() {
                         placeholder="Jane Doe"
                       />
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label htmlFor="email" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
-                        Email address
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        required
-                        value={formData.email}
-                        onChange={handleChange}
-                        className={inputClasses}
-                        placeholder="jane@example.com"
-                      />
-                    </div>
+                    {/* Guests only — see the useAuth comment at the top of the
+                        component for why a signed-in donor is never asked. */}
+                    {!user && (
+                      <div className="flex flex-col gap-1.5">
+                        <label htmlFor="email" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                          Email address
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          required
+                          value={formData.email}
+                          onChange={handleChange}
+                          className={inputClasses}
+                          placeholder="jane@example.com"
+                        />
+                      </div>
+                    )}
                     <div className="flex flex-col gap-1.5">
                       <label htmlFor="mobileNumber" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
                         Mobile number
