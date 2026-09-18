@@ -2152,16 +2152,16 @@ export default function DashboardPage() {
                       </NewRequestLink>
                     </CardHeader>
                     <CardContent className="space-y-3 sm:space-y-4 relative z-10">
-                      {itemRequests.length === 0 ? (
+                      {itemRequests.filter(r => !["FULFILLED", "EXPIRED", "REJECTED", "CANCELLED"].includes(r.status)).length === 0 ? (
                         <div className="py-7 sm:py-12 text-center">
-                          <p className="text-sm text-stone-400">You haven&apos;t posted any needs yet.</p>
+                          <p className="text-sm text-stone-400">You haven&apos;t posted any active needs yet.</p>
                           <NewRequestLink href="/requests/new" className="inline-block mt-3">
                             <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">Post your first need</Button>
                           </NewRequestLink>
                         </div>
                       ) : (
                         <div className="divide-y space-y-3">
-                          {itemRequests.map((r) => {
+                          {itemRequests.filter(r => !["FULFILLED", "EXPIRED", "REJECTED", "CANCELLED"].includes(r.status)).map((r) => {
                             const badge = getRequestStatusBadge(r.status);
                             return (
                               <div key={r.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
@@ -2206,14 +2206,14 @@ export default function DashboardPage() {
                       <CardTitle className="text-sm sm:text-base font-bold">Matches &amp; Handover Status</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 sm:space-y-4 relative z-10">
-                      {doneeMatches.length === 0 ? (
+                      {doneeMatches.filter(m => !["FULFILLED", "FAILED", "CANCELLED", "REJECTED"].includes(m.status)).length === 0 ? (
                         <div className="py-7 sm:py-12 text-center">
                           <p className="text-sm text-stone-400">No active matches found for your requests yet.</p>
                           <p className="text-xs text-stone-400/80 mt-1">We are actively checking private inventory to find matching items.</p>
                         </div>
                       ) : (
                         <div className="divide-y space-y-3 sm:space-y-4">
-                          {doneeMatches.map((m) => {
+                          {doneeMatches.filter(m => !["FULFILLED", "FAILED", "CANCELLED", "REJECTED"].includes(m.status)).map((m) => {
                             const badge = getFulfilmentStatusBadge(m.status);
                             return (
                               <div key={m.id} className="pt-3 sm:pt-4 first:pt-0 space-y-2 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
@@ -2253,6 +2253,56 @@ export default function DashboardPage() {
 
                 </div>
 
+                {/* History Section */}
+                {(itemRequests.some(r => ["FULFILLED", "EXPIRED", "REJECTED", "CANCELLED"].includes(r.status)) || doneeMatches.some(m => ["FULFILLED", "FAILED", "CANCELLED", "REJECTED"].includes(m.status))) && (
+                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm overflow-hidden mt-6">
+                    <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
+                      <div className="flex items-center gap-2">
+                        <History className="w-5 h-5 text-stone-400" />
+                        <CardTitle className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-300">History</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="divide-y divide-stone-100 dark:divide-zinc-800">
+                        {itemRequests
+                          .filter(r => ["FULFILLED", "EXPIRED", "REJECTED", "CANCELLED"].includes(r.status))
+                          .map(r => {
+                            const badge = getRequestStatusBadge(r.status);
+                            return (
+                              <div key={`req-${r.id}`} className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge variant="outline" className="text-3xs uppercase tracking-wider text-stone-500 bg-stone-50 dark:bg-zinc-800">Request</Badge>
+                                    <span className="text-xs text-stone-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                  <p className="font-semibold text-stone-900 dark:text-stone-100"><TranslatedText text={r.title} /></p>
+                                </div>
+                                <Badge variant={badge.variant} className="text-xs">{badge.label}</Badge>
+                              </div>
+                            );
+                          })}
+                        {doneeMatches
+                          .filter(m => ["FULFILLED", "FAILED", "CANCELLED", "REJECTED"].includes(m.status))
+                          .map(m => {
+                            const badge = getFulfilmentStatusBadge(m.status);
+                            return (
+                              <div key={`match-${m.id}`} className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge variant="outline" className="text-3xs uppercase tracking-wider text-stone-500 bg-stone-50 dark:bg-zinc-800">Match</Badge>
+                                    <span className="text-xs text-stone-400">{new Date(m.matchedAt || Date.now()).toLocaleDateString()}</span>
+                                  </div>
+                                  <p className="font-semibold text-stone-900 dark:text-stone-100"><TranslatedText text={m.listingTitle || "Donated Item"} /></p>
+                                  <p className="text-xs text-stone-500 mt-0.5">Matched with: <TranslatedText text={m.requestTitle || ""} /></p>
+                                </div>
+                                <Badge variant={badge.variant} className="text-xs">{badge.label}</Badge>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
 
