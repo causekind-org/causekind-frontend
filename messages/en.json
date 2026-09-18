@@ -1286,7 +1286,17 @@
     "generosityNote": "Your generosity makes a real difference. The campaign organiser has been notified of your donation.",
     "viewDonations": "View my donations",
     "browseCampaigns": "Browse more campaigns",
-    "toastSuccess": "Donation confirmed! Thank you for making a difference."
+    "toastSuccess": "Donation confirmed! Thank you for making a difference.",
+    "headingNamed": "Thank you, {name}.",
+    "headingPlain": "Thank you.",
+    "trustConfirmed": "Your donation of <amount></amount> to <campaign></campaign> is confirmed.",
+    "receiptTitle": "Receipt and certificate on the way",
+    "receiptToEmail": "Your 80G receipt and donation certificate are being emailed to {email}. Check your spam folder if they do not arrive shortly.",
+    "receiptToYou": "Your 80G receipt and donation certificate are being emailed to the address you gave us. Check your spam folder if they do not arrive shortly.",
+    "guestInvite": "A free account keeps every receipt in one place and shows you verified needs near you.",
+    "joinCauseKind": "Join CauseKind",
+    "backHome": "Back home",
+    "viewMyDonations": "View my donations"
   },
   "itemWizard": {
     "titleCreate": "List an item",
