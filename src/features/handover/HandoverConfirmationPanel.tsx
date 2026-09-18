@@ -53,6 +53,7 @@ export function HandoverConfirmationPanel({
 
   if (alreadyConfirmed) {
     const qty = donor ? vm.confirmation.donorConfirmedQty : vm.confirmation.doneeConfirmedQty;
+    const waitingForDonee = donor && vm.confirmation.doneeConfirmedAt == null;
     return (
       <Panel title="Your confirmation">
         <p className="flex items-start gap-2 text-sm text-green-700 dark:text-green-400">
@@ -62,6 +63,16 @@ export function HandoverConfirmationPanel({
             {donor ? " handed over" : " received"}. Waiting on the other side to close this.
           </span>
         </p>
+
+        {waitingForDonee && (
+          <div className="mt-4 pt-4 border-t border-stone-100 dark:border-zinc-800">
+            <DonorOtpSection
+              otp={otp}
+              onGenerateOtp={onGenerateOtp}
+              disabled={false}
+            />
+          </div>
+        )}
       </Panel>
     );
   }
@@ -69,6 +80,87 @@ export function HandoverConfirmationPanel({
   return donor
     ? <DonorConfirm vm={vm} otp={otp} onGenerateOtp={onGenerateOtp} onConfirm={onDonorConfirm} />
     : <DoneeConfirm vm={vm} onConfirm={onDoneeConfirm} />;
+}
+
+function DonorOtpSection({
+  otp,
+  onGenerateOtp,
+  disabled,
+  onBusyChange,
+}: {
+  otp: string | null;
+  onGenerateOtp: () => Promise<void>;
+  disabled: boolean;
+  onBusyChange?: (busy: boolean) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function generate() {
+    if (busy || disabled) return;
+    setBusy(true); setError(null);
+    onBusyChange?.(true);
+    try { await onGenerateOtp(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Couldn't generate a code."); }
+    finally { setBusy(false); onBusyChange?.(false); }
+  }
+
+  return (
+    <div>
+      <p className="mb-2 text-sm text-stone-600 dark:text-stone-400">
+        Give the recipient this code when you hand the item over. It proves you were both there.
+      </p>
+      <AnimatePresence mode="wait" initial={false}>
+        {otp ? (
+          <motion.div
+            key="code"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-950/30"
+          >
+            <div>
+              <p className="font-mono text-lg sm:text-2xl font-bold tracking-[0.3em] text-green-700 dark:text-green-400">
+                {otp}
+              </p>
+              {/* Session-only: never written to localStorage and gone on refresh,
+                  so a shared or stolen device can't replay it. */}
+              <p className="mt-0.5 text-xs text-green-700/80 dark:text-green-400/80">
+                Share only at the moment of handover. Disappears if you reload.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(otp).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1600);
+                }).catch(() => {});
+              }}
+              aria-label="Copy code"
+              title="Copy code"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-green-700 hover:bg-green-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)] dark:text-green-400 dark:hover:bg-green-900/40"
+            >
+              {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+            </button>
+          </motion.div>
+        ) : (
+          <motion.div key="gen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
+            <Button onClick={generate} disabled={busy || disabled} className={handoverPrimary}>
+              {busy
+                ? <><Loader2 className="animate-spin" aria-hidden /> Generating</>
+                : <><KeyRound aria-hidden /> Generate code</>}
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <span className="sr-only" aria-live="polite">
+        {otp ? "A six digit handover code has been generated." : ""}
+      </span>
+      {error && <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+    </div>
+  );
 }
 
 // ── Donor ───────────────────────────────────────────────────────────────────
@@ -82,18 +174,9 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
   const [qty, setQty] = useState("");
   const [busy, setBusy] = useState<"otp" | "confirm" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const qtyNum = Number(qty);
   const qtyValid = qty.trim() !== "" && Number.isInteger(qtyNum) && qtyNum > 0;
-
-  async function generate() {
-    if (busy) return;
-    setBusy("otp"); setError(null);
-    try { await onGenerateOtp(); }
-    catch (e) { setError(e instanceof Error ? e.message : "Couldn't generate a code."); }
-    finally { setBusy(null); }
-  }
 
   async function confirm() {
     if (busy || !qtyValid) return;
@@ -106,58 +189,12 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
   return (
     <Panel title="Confirm the handover">
       <div className="space-y-3 sm:space-y-4">
-        <div>
-          <p className="mb-2 text-sm text-stone-600 dark:text-stone-400">
-            Give the recipient this code when you hand the item over. It proves you were both there.
-          </p>
-          <AnimatePresence mode="wait" initial={false}>
-            {otp ? (
-              <motion.div
-                key="code"
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-950/30"
-              >
-                <div>
-                  <p className="font-mono text-lg sm:text-2xl font-bold tracking-[0.3em] text-green-700 dark:text-green-400">
-                    {otp}
-                  </p>
-                  {/* Session-only: never written to localStorage and gone on refresh,
-                      so a shared or stolen device can't replay it. */}
-                  <p className="mt-0.5 text-xs text-green-700/80 dark:text-green-400/80">
-                    Share only at the moment of handover. Disappears if you reload.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(otp).then(() => {
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 1600);
-                    }).catch(() => {});
-                  }}
-                  aria-label="Copy code"
-                  title="Copy code"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-green-700 hover:bg-green-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)] dark:text-green-400 dark:hover:bg-green-900/40"
-                >
-                  {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
-                </button>
-              </motion.div>
-            ) : (
-              <motion.div key="gen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
-                <Button onClick={generate} disabled={busy !== null} className={handoverPrimary}>
-                  {busy === "otp"
-                    ? <><Loader2 className="animate-spin" aria-hidden /> Generating</>
-                    : <><KeyRound aria-hidden /> Generate code</>}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <span className="sr-only" aria-live="polite">
-            {otp ? "A six digit handover code has been generated." : ""}
-          </span>
-        </div>
+        <DonorOtpSection
+          otp={otp}
+          onGenerateOtp={onGenerateOtp}
+          disabled={busy === "confirm"}
+          onBusyChange={(isBusy) => setBusy(isBusy ? "otp" : null)}
+        />
 
         <div className="space-y-1.5 border-t border-stone-100 pt-4 dark:border-zinc-800">
           <label htmlFor="donor-qty" className={handoverLabel}>
