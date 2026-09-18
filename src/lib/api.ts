@@ -1014,6 +1014,8 @@ export type ItemRequest = {
   title: string;
   category: string;
   quantity: number;
+  fulfilledQuantity?: number;
+  remainingQuantity?: number;
   urgency: string;
   city: string;
   pincode: string | null;

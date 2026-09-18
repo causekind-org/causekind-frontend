@@ -2143,13 +2143,20 @@ export default function DashboardPage() {
                   <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-[var(--ck-role-accent)]" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">01</div>
-                    <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 mb-4 relative z-10">
-                      <CardTitle className="text-sm sm:text-base font-bold">My Needs & Requests</CardTitle>
-                      <NewRequestLink href="/requests/new">
-                        <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">
-                          <Plus className="w-3.5 h-3.5 mr-1" /> New Need
-                        </Button>
-                      </NewRequestLink>
+                    <CardHeader className="border-b pb-3 sm:pb-4 mb-4 relative z-10">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <CardTitle className="text-sm sm:text-base font-bold">My Needs & Requests</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Link href="/dashboard/history" className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors text-xs font-bold text-stone-600 dark:text-stone-300">
+                            <History className="w-3.5 h-3.5" /> History
+                          </Link>
+                          <NewRequestLink href="/requests/new">
+                            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-[var(--ck-role-accent)]">
+                              <Plus className="w-3.5 h-3.5 mr-1" /> New Need
+                            </Button>
+                          </NewRequestLink>
+                        </div>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3 sm:space-y-4 relative z-10">
                       {itemRequests.filter(r => r.status !== "FULFILLED").length === 0 ? (
@@ -2160,39 +2167,86 @@ export default function DashboardPage() {
                           </NewRequestLink>
                         </div>
                       ) : (
-                        <div className="divide-y space-y-3">
-                          {itemRequests.filter(r => r.status !== "FULFILLED").map((r) => {
-                            const badge = getRequestStatusBadge(r.status);
-                            return (
-                              <div key={r.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
-                                <div>
-                                  <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors"><TranslatedText text={r.title} /></p>
-                                  <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
-                                    <span><TranslatedText text={r.category} /></span>
-                                    <span>•</span>
-                                    <span>Qty: {r.quantity}</span>
-                                    <span>•</span>
-                                    <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
-                                  </div>
-                                  {r.status === "REJECTED" && r.rejectionReason && (
-                                    <p className="text-2xs text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{displayReason(r.rejectionReason)}</p>
-                                  )}
-                                </div>
-                                <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
-                                    {badge.label}
-                                  </Badge>
-                                  {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
-                                  {r.status === "DRAFT" && (
-                                    <NewRequestLink href={`/requests/new?draftId=${r.id}`}
-                                      className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-2xs font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
-                                      <Pencil className="w-3 h-3" /> Continue editing
-                                    </NewRequestLink>
-                                  )}
-                                </div>
+                        <div className="space-y-6">
+                          {/* Pending Requests */}
+                          {itemRequests.filter(r => r.status !== "FULFILLED" && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Pending</h4>
+                              <div className="divide-y space-y-3">
+                                {itemRequests.filter(r => r.status !== "FULFILLED" && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).map((r) => {
+                                  const badge = getRequestStatusBadge(r.status);
+                                  return (
+                                    <div key={r.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
+                                      <div>
+                                        <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors"><TranslatedText text={r.title} /></p>
+                                        <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
+                                          <span><TranslatedText text={r.category} /></span>
+                                          <span>•</span>
+                                          <span>Qty: {r.quantity}</span>
+                                          <span>•</span>
+                                          <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
+                                        </div>
+                                        {r.status === "REJECTED" && r.rejectionReason && (
+                                          <p className="text-2xs text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{displayReason(r.rejectionReason)}</p>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                        <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
+                                          {badge.label}
+                                        </Badge>
+                                        {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
+                                        {r.status === "DRAFT" && (
+                                          <NewRequestLink href={`/requests/new?draftId=${r.id}`}
+                                            className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-2xs font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
+                                            <Pencil className="w-3 h-3" /> Continue editing
+                                          </NewRequestLink>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          })}
+                            </div>
+                          )}
+
+                          {/* Partially Fulfilled Requests */}
+                          {itemRequests.filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0).length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Partially Fulfilled</h4>
+                              <div className="divide-y space-y-3">
+                                {itemRequests.filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0).map((r) => {
+                                  const badge = getRequestStatusBadge(r.status);
+                                  return (
+                                    <div key={r.id} className="pt-3 first:pt-0 flex flex-col gap-2 group p-3 rounded-xl border border-[var(--ck-role-accent)]/20 bg-[var(--ck-role-accent)]/5 dark:bg-[var(--ck-role-accent)]/10 hover:bg-[var(--ck-role-accent)]/10 transition-all">
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                          <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors"><TranslatedText text={r.title} /></p>
+                                          <p className="text-xs text-stone-500 mt-0.5"><TranslatedText text={r.category} /></p>
+                                        </div>
+                                        <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
+                                          {badge.label}
+                                        </Badge>
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-2 mt-1">
+                                        <div className="bg-white dark:bg-zinc-800 rounded p-1.5 text-center shadow-sm border border-stone-100 dark:border-zinc-700">
+                                          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Requested</p>
+                                          <p className="font-bold text-sm text-stone-700 dark:text-stone-300">{r.quantity}</p>
+                                        </div>
+                                        <div className="bg-white dark:bg-zinc-800 rounded p-1.5 text-center shadow-sm border border-emerald-100 dark:border-emerald-900/30">
+                                          <p className="text-[10px] text-emerald-600 uppercase tracking-wider">Fulfilled</p>
+                                          <p className="font-bold text-sm text-emerald-600">{r.fulfilledQuantity}</p>
+                                        </div>
+                                        <div className="bg-[var(--ck-role-accent)] text-white rounded p-1.5 text-center shadow-sm">
+                                          <p className="text-[10px] uppercase tracking-wider opacity-90">Remaining</p>
+                                          <p className="font-bold text-sm">{r.remainingQuantity ?? (r.quantity - (r.fulfilledQuantity ?? 0))}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </CardContent>
@@ -2253,56 +2307,6 @@ export default function DashboardPage() {
 
                 </div>
 
-                {/* History Section */}
-                {(itemRequests.some(r => r.status === "FULFILLED") || doneeMatches.some(m => m.status === "FULFILLED" || m.status === "COMPLETED")) && (
-                  <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm overflow-hidden mt-6">
-                    <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
-                      <div className="flex items-center gap-2">
-                        <History className="w-5 h-5 text-stone-400" />
-                        <CardTitle className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-300">History</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="divide-y divide-stone-100 dark:divide-zinc-800">
-                        {itemRequests
-                          .filter(r => r.status === "FULFILLED")
-                          .map(r => {
-                            const badge = getRequestStatusBadge(r.status);
-                            return (
-                              <div key={`req-${r.id}`} className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <Badge variant="outline" className="text-3xs uppercase tracking-wider text-stone-500 bg-stone-50 dark:bg-zinc-800">Request</Badge>
-                                    <span className="text-xs text-stone-400">{new Date(r.createdAt).toLocaleDateString()}</span>
-                                  </div>
-                                  <p className="font-semibold text-stone-900 dark:text-stone-100"><TranslatedText text={r.title} /></p>
-                                </div>
-                                <Badge variant={badge.variant} className="text-xs">{badge.label}</Badge>
-                              </div>
-                            );
-                          })}
-                        {doneeMatches
-                          .filter(m => m.status === "FULFILLED" || m.status === "COMPLETED")
-                          .map(m => {
-                            const badge = getFulfilmentStatusBadge(m.status);
-                            return (
-                              <div key={`match-${m.id}`} className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <Badge variant="outline" className="text-3xs uppercase tracking-wider text-stone-500 bg-stone-50 dark:bg-zinc-800">Match</Badge>
-                                    <span className="text-xs text-stone-400">{new Date(m.matchedAt || Date.now()).toLocaleDateString()}</span>
-                                  </div>
-                                  <p className="font-semibold text-stone-900 dark:text-stone-100"><TranslatedText text={m.listingTitle || "Donated Item"} /></p>
-                                  <p className="text-xs text-stone-500 mt-0.5">Matched with: <TranslatedText text={m.requestTitle || ""} /></p>
-                                </div>
-                                <Badge variant={badge.variant} className="text-xs">{badge.label}</Badge>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             )}
 
