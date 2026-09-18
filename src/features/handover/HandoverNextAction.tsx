@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { CalendarPlus, CircleCheck, Clock, MessageCircle, TriangleAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -208,6 +209,14 @@ function Completion({ vm }: { vm: HandoverViewModel }) {
           If a problem surfaces in the next few days, you can still report it below.
         </p>
       )}
+      
+      <div className="pt-2">
+        <Button asChild variant="outline" className={handoverSecondary}>
+          <Link href="/dashboard">
+            Back to dashboard
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
