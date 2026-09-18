@@ -380,7 +380,11 @@ function JourneyRail({ status }: { status: string }) {
 }
 
 function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequest; index: number; onCancelled: () => void }) {
-  const badge = getRequestStatusBadge(r.status);
+  const baseBadge = getRequestStatusBadge(r.status);
+  const badge = (r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0)
+    ? { label: "Partially Fulfilled", variant: "secondary" as const }
+    : baseBadge;
+    
   return (
     <motion.div
       layout
@@ -396,9 +400,21 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
             style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
             <TranslatedText text={r.title} />
           </p>
-          <p className="text-xs text-stone-400 mt-0.5">
-            <TranslatedText text={r.category} /> &middot; Qty {r.quantity} &middot; <span className="capitalize">{r.urgency.toLowerCase()}</span> urgency
-          </p>
+          <div className="text-xs text-stone-400 mt-1 flex flex-wrap gap-2 items-center">
+            <span><TranslatedText text={r.category} /></span>
+            <span>&middot;</span>
+            {(!r.fulfilledQuantity || r.fulfilledQuantity === 0) ? (
+              <span className="font-semibold text-stone-600 dark:text-stone-300">Requested: {r.quantity}</span>
+            ) : (
+              <>
+                <span className="font-semibold text-[var(--ck-role-accent)]">{r.fulfilledQuantity} / {r.quantity} Fulfilled</span>
+                <span>&middot;</span>
+                <span className="font-semibold text-stone-600 dark:text-stone-300">Remaining: {r.remainingQuantity ?? (r.quantity - r.fulfilledQuantity)}</span>
+              </>
+            )}
+            <span>&middot;</span>
+            <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
@@ -1378,23 +1394,7 @@ function DoneeDashboard({
                       {itemRequests
                         .filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0)
                         .map((r, i) => (
-                          <div key={r.id} className="relative group mb-4">
-                            <DoneeRequestRow request={r} index={i} onCancelled={onRefresh} />
-                            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-emerald-100 p-2 flex gap-3 sm:gap-4 z-10 text-center">
-                              <div>
-                                <p className="text-[10px] text-stone-500 uppercase tracking-wider">Req</p>
-                                <p className="font-bold text-sm text-stone-700 dark:text-stone-300">{r.quantity}</p>
-                              </div>
-                              <div>
-                                <p className="text-[10px] text-emerald-600 uppercase tracking-wider">Fulfilled</p>
-                                <p className="font-bold text-sm text-emerald-600">{r.fulfilledQuantity}</p>
-                              </div>
-                              <div>
-                                <p className="text-[10px] text-[var(--ck-role-accent)] uppercase tracking-wider">Remaining</p>
-                                <p className="font-bold text-sm text-[var(--ck-role-accent)]">{r.remainingQuantity ?? (r.quantity - r.fulfilledQuantity!)}</p>
-                              </div>
-                            </div>
-                          </div>
+                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
                         ))}
                     </AnimatePresence>
                   </div>
