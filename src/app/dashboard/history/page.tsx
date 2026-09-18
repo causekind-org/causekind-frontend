@@ -68,8 +68,8 @@ export default function DashboardHistoryPage() {
             ) : (
               <div className="divide-y divide-stone-100 dark:divide-zinc-800">
                 {requests.map(r => {
-                  // For fully fulfilled requests, the fulfilled amount = requested amount
-                  const fulfilled = r.quantity;
+                  // Use real fulfilledQuantity from the backend
+                  const fulfilled = r.fulfilledQuantity ?? r.quantity;
                   return (
                     <div key={`req-${r.id}`} className="p-4 sm:p-5 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
                       <div className="flex items-start justify-between gap-4">
