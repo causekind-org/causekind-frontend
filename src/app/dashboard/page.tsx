@@ -331,31 +331,41 @@ function DeleteDraftButton({ requestId, onDeleted }: { requestId: number; onDele
    rejection or expiry stopped it — the structure IS the status explanation. */
 const JOURNEY_STATIONS = ["Posted", "Verified", "Matched", "Received"];
 
-function journeyStage(status: string): { stage: number; state: "draft" | "active" | "done" | "broken" } {
+function journeyStage(status: string, isPartiallyFulfilled: boolean = false): { stage: number; state: "draft" | "active" | "done" | "broken" } {
   if (status === "DRAFT") return { stage: 0, state: "draft" };
   if (status === "REJECTED") return { stage: 1, state: "broken" };
   if (status === "EXPIRED") return { stage: 2, state: "broken" };
   if (status === "CANCELLED") return { stage: 2, state: "broken" };
   if (["PENDING_VERIFICATION", "ON_HOLD"].includes(status)) return { stage: 1, state: "active" };
-  if (["FULFILLED", "FULLY_FULFILLED"].includes(status)) return { stage: 3, state: "done" };
+  if (["FULFILLED", "FULLY_FULFILLED"].includes(status)) return { stage: isPartiallyFulfilled ? 4 : 3, state: "done" };
+  if (isPartiallyFulfilled) {
+    if (["RESERVED", "MATCH_IN_PROGRESS", "FULFILMENT_IN_PROGRESS"].includes(status)) return { stage: 4, state: "active" };
+    return { stage: 3, state: "done" }; // Sitting at "Partial" done, waiting for more
+  }
   if (["RESERVED", "MATCH_IN_PROGRESS", "FULFILMENT_IN_PROGRESS", "PARTIALLY_MATCHED", "PARTIALLY_FULFILLED"].includes(status)) return { stage: 3, state: "active" };
   return { stage: 2, state: "active" }; // all matching-phase statuses
 }
 
-function JourneyRail({ status }: { status: string }) {
-  const { stage, state } = journeyStage(status);
+function JourneyRail({ status, isPartiallyFulfilled = false }: { status: string; isPartiallyFulfilled?: boolean }) {
+  const { stage, state } = journeyStage(status, isPartiallyFulfilled);
+  const stations = isPartiallyFulfilled 
+    ? ["Posted", "Verified", "Matched", "Partial", "Received"]
+    : JOURNEY_STATIONS;
+    
   return (
     <div className="flex items-start mt-4 max-w-md">
-      {JOURNEY_STATIONS.map((label, i) => {
+      {stations.map((label, i) => {
         const reached = i < stage || (i === stage && state === "done");
         const current = i === stage && state !== "done";
         const brokenHere = current && state === "broken";
+        const isLast = i === stations.length - 1;
+        
         return (
           <div key={label} className="flex items-start flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1.5 shrink-0">
               <span className={`relative flex items-center justify-center w-3.5 h-3.5 rounded-full border-2 transition-colors ${
                 brokenHere ? "border-red-500 bg-red-500" :
-                reached ? (i === 3 ? "border-emerald-500 bg-emerald-500" : "border-[#1e3a60] bg-[#1e3a60] dark:border-blue-400 dark:bg-blue-400") :
+                reached ? (isLast ? "border-emerald-500 bg-emerald-500" : "border-[#1e3a60] bg-[#1e3a60] dark:border-blue-400 dark:bg-blue-400") :
                 current ? "border-[#1e3a60] dark:border-blue-400 bg-white dark:bg-zinc-900" :
                 "border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"}`}>
                 {current && !brokenHere && (
@@ -368,7 +378,7 @@ function JourneyRail({ status }: { status: string }) {
                 {label}
               </span>
             </div>
-            {i < 3 && (
+            {!isLast && (
               <div className={`flex-1 h-[2px] mx-1.5 mt-1.5 rounded-full ${
                 i < stage ? "bg-[#1e3a60] dark:bg-blue-400" : "bg-stone-200 dark:bg-zinc-800"}`} />
             )}
@@ -432,7 +442,7 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
           {canHideWithdrawnRequest(r.status) && <HideWithdrawnRequestButton requestId={r.id} onHidden={onCancelled} />}
         </div>
       </div>
-      <JourneyRail status={r.status} />
+      <JourneyRail status={r.status} isPartiallyFulfilled={(r.fulfilledQuantity ?? 0) > 0 && (r.fulfilledQuantity ?? 0) < r.quantity} />
       {r.status === "REJECTED" && r.rejectionReason && (
         <p className="text-2xs text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{displayReason(r.rejectionReason)}</p>
       )}
