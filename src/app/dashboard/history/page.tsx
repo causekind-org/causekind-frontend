@@ -2,34 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getMyItemRequests, getMyMatches, type ItemRequest, type ItemMatch } from "@/lib/api";
+import { getMyItemRequests, type ItemRequest } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, History, Package, Truck } from "lucide-react";
-import { PageSkeleton } from "@/components/skeletons";
+import { ArrowLeft, History, Package, CheckCircle } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
-
-function getFulfilmentStatusBadge(status: string) {
-  const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-    COMPLETED: { label: "Completed & Closed", variant: "default" },
-    FULFILLED: { label: "Completed & Closed", variant: "default" },
-    FAILED: { label: "Delivery Failed", variant: "destructive" },
-    CANCELLED: { label: "Match Cancelled", variant: "destructive" },
-    REJECTED: { label: "Match Rejected", variant: "destructive" },
-  };
-  return map[status] ?? { label: status, variant: "outline" as const };
-}
-
-function getRequestStatusBadge(status: string) {
-  const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-    FULFILLED: { label: "Completed", variant: "default" },
-    EXPIRED: { label: "Expired", variant: "outline" },
-    REJECTED: { label: "Rejected", variant: "destructive" },
-    CANCELLED: { label: "Withdrawn", variant: "outline" },
-  };
-  return map[status] ?? { label: status, variant: "outline" as const };
-}
 
 export default function DashboardHistoryPage() {
   const { user, isLoading } = useAuth();
@@ -55,51 +33,69 @@ export default function DashboardHistoryPage() {
   if (!user) return <div className="p-8 text-center">Please sign in to view your history.</div>;
 
   return (
-    <div className="container max-w-4xl py-6 sm:py-8 space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard" className="text-stone-400 hover:text-stone-600 transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <h1 className="text-2xl font-bold flex items-center gap-2 text-stone-900 dark:text-stone-100">
-          <History className="w-6 h-6 text-[var(--ck-role-accent)]" />
-          Request History
-        </h1>
-      </div>
+    <div className="min-h-screen bg-[#eef3f9] dark:bg-zinc-950 px-4 py-6 sm:py-10">
+      <div className="mx-auto max-w-3xl space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="h-9 w-9 rounded-lg border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 text-stone-900 dark:text-stone-100">
+              <History className="w-5 h-5 text-[var(--ck-role-accent)]" />
+              Request History
+            </h1>
+            <p className="text-xs text-stone-400 mt-0.5">Fully fulfilled requests that have been completed.</p>
+          </div>
+        </div>
 
-      <div className="space-y-6">
-        <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm overflow-hidden">
-          <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
-            <CardTitle className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-300">
+        {/* Fulfilled Requests */}
+        <Card className="bg-white/90 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-emerald-500" />
+          <CardHeader className="border-b border-stone-100 dark:border-zinc-800 pb-3 sm:pb-4">
+            <CardTitle className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-300 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-500" />
               Fully Fulfilled Requests
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {requests.length === 0 ? (
-              <div className="p-8 text-center text-stone-500 text-sm">
-                No fully fulfilled requests yet.
+              <div className="p-10 text-center space-y-2">
+                <Package className="w-10 h-10 text-stone-200 dark:text-zinc-700 mx-auto" />
+                <p className="text-sm text-stone-500">No fully fulfilled requests yet.</p>
+                <p className="text-xs text-stone-400">When all units of a request are delivered, it will appear here.</p>
               </div>
             ) : (
               <div className="divide-y divide-stone-100 dark:divide-zinc-800">
                 {requests.map(r => {
-                  const badge = getRequestStatusBadge(r.status);
+                  // For fully fulfilled requests, the fulfilled amount = requested amount
+                  const fulfilled = r.quantity;
                   return (
-                    <div key={`req-${r.id}`} className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
-                      <div className="flex gap-4 items-start">
-                        <div className="h-10 w-10 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                          <Package className="w-5 h-5 text-stone-400" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-stone-900 dark:text-stone-100"><TranslatedText text={r.title} /></p>
-                          <div className="flex flex-wrap gap-3 text-xs text-stone-400 mt-1">
-                            <span>Requested: {r.quantity}</span>
-                            <span>•</span>
-                            <span>Fulfilled: {r.fulfilledQuantity ?? r.quantity}</span>
-                            <span>•</span>
-                            <span>{new Date(r.createdAt).toLocaleDateString()}</span>
+                    <div key={`req-${r.id}`} className="p-4 sm:p-5 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex gap-3 sm:gap-4 items-start min-w-0">
+                          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center shrink-0">
+                            <Package className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+                              <TranslatedText text={r.title} />
+                            </p>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone-400 mt-1">
+                              <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                {fulfilled} / {r.quantity} Fulfilled ✓
+                              </span>
+                              <span>•</span>
+                              <span><TranslatedText text={r.category} /></span>
+                              <span>•</span>
+                              <span>{new Date(r.createdAt).toLocaleDateString()}</span>
+                            </div>
                           </div>
                         </div>
+                        <Badge variant="default" className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700">
+                          Fulfilled
+                        </Badge>
                       </div>
-                      <Badge variant={badge.variant} className="text-xs shrink-0">{badge.label}</Badge>
                     </div>
                   );
                 })}
