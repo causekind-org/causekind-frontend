@@ -120,7 +120,23 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
   // Already done your part: there is genuinely nothing to submit, so offer the
   // only useful thing left — a nudge.
   if (youConfirmed) {
-    return <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />;
+    const showConfirmationPanel = donor && vm.confirmation.doneeConfirmedAt == null;
+    return (
+      <div className="space-y-4">
+        {showConfirmationPanel && (
+          <div className="-mx-1">
+            <HandoverConfirmationPanel
+              vm={vm}
+              otp={otp}
+              onGenerateOtp={onGenerateOtp}
+              onDonorConfirm={onDonorConfirm}
+              onDoneeConfirm={onDoneeConfirm}
+            />
+          </div>
+        )}
+        <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />
+      </div>
+    );
   }
 
   return (
