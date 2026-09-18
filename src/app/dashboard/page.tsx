@@ -1335,9 +1335,14 @@ function DoneeDashboard({
                 <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
                 <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
               </div>
-              <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0">
-                <Plus className="w-3.5 h-3.5" /> New need
-              </NewRequestLink>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link href="/dashboard/history" className="text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 dark:border-zinc-700">
+                  <History className="w-3.5 h-3.5" /> History
+                </Link>
+                <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1">
+                  <Plus className="w-3.5 h-3.5" /> New need
+                </NewRequestLink>
+              </div>
             </div>
 
             {itemRequests.length === 0 ? (
@@ -1352,15 +1357,48 @@ function DoneeDashboard({
                 </NewRequestLink>
               </div>
             ) : (
-              <div>
-                {/* AnimatePresence so a removed request eases out instead of
-                    vanishing — the row leaves on the next refetch, which is when
-                    the server has actually confirmed the change. */}
-                <AnimatePresence initial={false}>
-                  {itemRequests.map((r, i) => (
-                    <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
-                  ))}
-                </AnimatePresence>
+              <div className="space-y-6 mt-4">
+                {itemRequests.filter(r => r.status !== "FULFILLED" && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">Pending</h4>
+                    <AnimatePresence initial={false}>
+                      {itemRequests
+                        .filter(r => r.status !== "FULFILLED" && (!r.fulfilledQuantity || r.fulfilledQuantity === 0))
+                        .map((r, i) => (
+                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                        ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+                
+                {itemRequests.filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0).length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">Partially Fulfilled</h4>
+                    <AnimatePresence initial={false}>
+                      {itemRequests
+                        .filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0)
+                        .map((r, i) => (
+                          <div key={r.id} className="relative group mb-4">
+                            <DoneeRequestRow request={r} index={i} onCancelled={onRefresh} />
+                            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-emerald-100 p-2 flex gap-3 sm:gap-4 z-10 text-center">
+                              <div>
+                                <p className="text-[10px] text-stone-500 uppercase tracking-wider">Req</p>
+                                <p className="font-bold text-sm text-stone-700 dark:text-stone-300">{r.quantity}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-emerald-600 uppercase tracking-wider">Fulfilled</p>
+                                <p className="font-bold text-sm text-emerald-600">{r.fulfilledQuantity}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-[var(--ck-role-accent)] uppercase tracking-wider">Remaining</p>
+                                <p className="font-bold text-sm text-[var(--ck-role-accent)]">{r.remainingQuantity ?? (r.quantity - r.fulfilledQuantity!)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </AnimatePresence>
+                  </div>
+                )}
               </div>
             )}
           </section>
