@@ -46,6 +46,10 @@ const DoneeRequestsPage = dynamic(
   () => import("./donee-view").then(m => m.DoneeRequestsPage),
   { loading: () => <PageSkeleton><CardGridSkeleton count={6} label="Loading your requests" /></PageSkeleton> },
 );
+const NgoRequestsPage = dynamic(
+  () => import("./ngo-view").then(m => m.NgoRequestsPage),
+  { loading: () => <PageSkeleton><CardGridSkeleton count={6} label="Loading NGO portal" /></PageSkeleton> },
+);
 // Props now come from src/components/MagicBento.d.ts — see the note there for
 // why this stopped being a `@ts-expect-error`.
 const MagicBento = dynamic(() => import("@/components/MagicBento"), { ssr: false });
@@ -897,6 +901,9 @@ export default function RequestsClient({
 
   // Dedicated donee portal
   if (user.role === "DONEE") return <DoneeRequestsPage />;
+
+  // Dedicated NGO portal
+  if (user.role === "NGO" || user.role === "NGO_PARTNER") return <NgoRequestsPage />;
 
   if (gpsBlocked) {
     return (

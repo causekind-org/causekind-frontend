@@ -1169,24 +1169,26 @@ export function SiteHeader() {
             {FEATURES.money && !isNgoDashboard && <Donate3DButton />}
 
             {isNgoDashboard && (
-              <Link href="/dashboard/ngo/profile">
-                {isNgoProfileIncomplete ? (
+              isNgoProfileIncomplete ? (
+                <Link href="/profile/ngo-details">
                   <Button
                     size="sm"
-                    className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
+                    className="bg-[#4338CA] hover:bg-[#6366F1] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
                   >
                     Complete Profile
                   </Button>
-                ) : (
+                </Link>
+              ) : (
+                <Link href="/profile">
                   <Button
                     size="sm"
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                    className="bg-[#4338CA] hover:bg-[#6366F1] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
                   >
-                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-[#EEF2FF] animate-pulse" />
                     Application Under Review
                   </Button>
-                )}
-              </Link>
+                </Link>
+              )
             )}
 
             {/* Auth action — login/logout, top-right */}
@@ -1194,11 +1196,11 @@ export function SiteHeader() {
               <SpecularButton
                 size="sm"
                 radius={999}
-                tint={roleColors.accent}
+                tint={isNgo ? "#4338CA" : roleColors.accent}
                 tintOpacity={1}
                 textColor="#ffffff"
-                lineColor={roleColors.highlight}
-                baseColor={roleColors.deep}
+                lineColor={isNgo ? "#6366F1" : roleColors.highlight}
+                baseColor={isNgo ? "#312E81" : roleColors.deep}
                 intensity={1}
                 shineSize={14}
                 shineFade={35}
@@ -1451,8 +1453,8 @@ export function SiteHeader() {
         open={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
-        accentColor={roleColors.accent}
-        colors={[roleColors.highlight, roleColors.accent]}
+        accentColor={isNgo ? "#4338CA" : roleColors.accent}
+        colors={isNgo ? ["#6366F1", "#4338CA"] : [roleColors.highlight, roleColors.accent]}
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
         items={[
@@ -1462,7 +1464,7 @@ export function SiteHeader() {
                 ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
                 {
                   label: "My Profile",
-                  link: isNgo ? "/dashboard/ngo/profile" : "/profile",
+                  link: "/profile",
                   ariaLabel: "View profile"
                 },
               ]

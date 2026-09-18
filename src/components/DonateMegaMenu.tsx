@@ -35,13 +35,13 @@ function NgoDonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
       <section className="col-span-6 flex flex-col justify-between" aria-labelledby="donate-mega-ngo-requests">
         <div>
           <div className="flex items-center justify-between border-b border-stone-200/70 dark:border-white/10 pb-2">
-            <h3 id="donate-mega-ngo-requests" className="text-xs font-semibold uppercase tracking-wider text-[var(--ck-role-accent)]">
+            <h3 id="donate-mega-ngo-requests" className="text-xs font-semibold uppercase tracking-wider text-[#4338CA] dark:text-[#6366F1]">
               Your Organization&apos;s Requests
             </h3>
             <Link
               href="/requests/new"
               onClick={onNavigate}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ck-role-accent)] px-3 py-1 text-2xs font-bold text-white hover:brightness-110 transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#4338CA] hover:bg-[#6366F1] px-3 py-1 text-2xs font-bold text-white transition-all shadow-xs"
             >
               <Plus className="h-3 w-3" />
               Post Request
@@ -57,10 +57,10 @@ function NgoDonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
                 key={req.id}
                 href="/requests"
                 onClick={onNavigate}
-                className="group flex items-center justify-between rounded-xl border border-stone-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-3 hover:border-[var(--ck-role-accent)]/40 hover:bg-stone-50/80 dark:hover:bg-zinc-800/60 transition-all shadow-2xs"
+                className="group flex items-center justify-between rounded-xl border border-stone-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-3 hover:border-[#4338CA]/40 hover:bg-stone-50/80 dark:hover:bg-zinc-800/60 transition-all shadow-2xs"
               >
                 <div className="min-w-0 pr-3">
-                  <p className="truncate text-xs font-bold text-stone-800 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors">
+                  <p className="truncate text-xs font-bold text-stone-800 dark:text-stone-100 group-hover:text-[#4338CA] dark:group-hover:text-[#6366F1] transition-colors">
                     {req.title}
                   </p>
                   <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
@@ -89,7 +89,7 @@ function NgoDonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
         <Link
           href="/requests"
           onClick={onNavigate}
-          className="group mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--ck-role-accent)] hover:underline"
+          className="group mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline"
         >
           View all your requests
           <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
@@ -100,7 +100,7 @@ function NgoDonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
       <section className="col-span-6 flex flex-col justify-between" aria-labelledby="donate-mega-donor-listings">
         <div>
           <div className="border-b border-stone-200/70 dark:border-white/10 pb-2">
-            <h3 id="donate-mega-donor-listings" className="text-xs font-semibold uppercase tracking-wider text-[var(--ck-role-accent)]">
+            <h3 id="donate-mega-donor-listings" className="text-xs font-semibold uppercase tracking-wider text-[#4338CA] dark:text-[#6366F1]">
               Available Donor Listings
             </h3>
           </div>
@@ -114,10 +114,10 @@ function NgoDonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
                 key={item.id}
                 href="/requests"
                 onClick={onNavigate}
-                className="group flex items-center justify-between rounded-xl border border-stone-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-3 hover:border-[var(--ck-role-accent)]/40 hover:bg-stone-50/80 dark:hover:bg-zinc-800/60 transition-all shadow-2xs"
+                className="group flex items-center justify-between rounded-xl border border-stone-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-3 hover:border-[#4338CA]/40 hover:bg-stone-50/80 dark:hover:bg-zinc-800/60 transition-all shadow-2xs"
               >
                 <div className="min-w-0 pr-3">
-                  <p className="truncate text-xs font-bold text-stone-800 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors">
+                  <p className="truncate text-xs font-bold text-stone-800 dark:text-stone-100 group-hover:text-[#4338CA] dark:group-hover:text-[#6366F1] transition-colors">
                     {item.title}
                   </p>
                   <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
@@ -146,7 +146,7 @@ function NgoDonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
         <Link
           href="/requests"
           onClick={onNavigate}
-          className="group mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--ck-role-accent)] hover:underline"
+          className="group mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline"
         >
           Explore all donor items
           <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />

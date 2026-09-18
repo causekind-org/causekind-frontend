@@ -29,7 +29,6 @@ import { useTimedFieldValidation } from "@/features/auth-validation/useTimedFiel
 import { ValidatedFieldFeedback, fieldStateClass } from "@/features/auth-validation/ValidatedFieldFeedback";
 import { AuthFormAlert } from "@/features/auth-validation/AuthFormAlert";
 import { useReducedMotion } from "framer-motion";
-import { FEATURES } from "@/lib/features";
 
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
@@ -197,20 +196,12 @@ function RegisterContent() {
   // and so a user who changes it is never overwritten by a later re-render.
   const initialRole = (() => {
     const raw = searchParams.get("role")?.toUpperCase();
-    if (FEATURES.ngoRegistration && raw === "NGO") return "NGO";
-    return raw === "DONEE" || raw === "DONOR" ? raw : "DONOR";
+    return raw === "DONEE" || raw === "DONOR" || raw === "NGO" ? raw : "DONOR";
   })();
 
   const [form, setForm] = useState({ fullName: "", email: "", password: "", role: initialRole });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-
-  // Fallback: if NGO registration is disabled, ensure form role is never NGO
-  useEffect(() => {
-    if (!FEATURES.ngoRegistration && form.role === "NGO") {
-      setForm((f) => ({ ...f, role: "DONOR" }));
-    }
-  }, [form.role]);
 
   // Email OTP verification step — shown after a successful /register/initiate,
   // not used on the Google OAuth flow (Google already verifies the email).
@@ -617,7 +608,7 @@ function RegisterContent() {
           {/* Heading */}
           <Reveal>
             <div className="space-y-1 sm:space-y-1.5">
-              <span className="text-2xs font-black uppercase tracking-widest text-[#b04a15]">
+              <span className={`text-2xs font-black uppercase tracking-widest ${form.role === "NGO" ? "text-[#4338CA] dark:text-[#6366F1]" : "text-[#b04a15]"}`}>
                 {form.role === "NGO" ? "NGO Account" : "Create account"}
               </span>
               <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -643,7 +634,7 @@ function RegisterContent() {
               <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
                 Register as
               </label>
-              <div className={`grid ${FEATURES.ngoRegistration ? "grid-cols-3" : "grid-cols-2"} gap-2 sm:gap-3`}>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => set("role", "DONOR")}
@@ -668,20 +659,18 @@ function RegisterContent() {
                   <span className="text-sm font-bold">Donee 🤝</span>
                   <span className="text-3xs opacity-85 mt-0.5 font-normal">Request support</span>
                 </button>
-                {FEATURES.ngoRegistration && (
-                  <button
-                    type="button"
-                    onClick={() => set("role", "NGO")}
-                    className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
-                      form.role === "NGO"
-                        ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
-                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
-                    }`}
-                  >
-                    <span className="text-sm font-bold">NGO 🏢</span>
-                    <span className="text-3xs opacity-85 mt-0.5 font-normal">Organization</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => set("role", "NGO")}
+                  className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
+                    form.role === "NGO"
+                      ? "border-[#4338CA] bg-[#EEF2FF] text-[#4338CA] ring-2 ring-[#4338CA]/20 font-bold dark:bg-[#4338CA]/20 dark:text-[#6366F1]"
+                      : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                  }`}
+                >
+                  <span className="text-sm font-bold">NGO 🏢</span>
+                  <span className="text-3xs opacity-85 mt-0.5 font-normal">Organization</span>
+                </button>
               </div>
             </div>
           </Reveal>
@@ -1019,7 +1008,11 @@ function RegisterContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 mt-2 animate-heartbeat"
+                className={`w-full rounded-xl disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 mt-2 animate-heartbeat ${
+                  form.role === "NGO"
+                    ? "bg-[#4338CA] hover:bg-[#6366F1] focus-visible:ring-[#4338CA]"
+                    : "bg-[#b04a15] hover:bg-[#963c0d] focus-visible:ring-[#b04a15]"
+                }`}
               >
                 {loading
                   ? (form.role === "NGO" ? "Creating account..." : t("creating"))

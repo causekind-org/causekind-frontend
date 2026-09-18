@@ -1606,6 +1606,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) { router.push("/login"); return; }
+    if (user.role === "NGO" || user.role === "NGO_PARTNER") { router.push("/dashboard/ngo"); return; }
 
     Promise.all([
       getMyProfile().then((p) => {

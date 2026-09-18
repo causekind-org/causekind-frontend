@@ -403,6 +403,7 @@ export type UserProfile = {
   id: number;
   email: string;
   fullName: string;
+  organizationName?: string;
   phone: string;
   city: string | null;
   role: string;
@@ -414,7 +415,7 @@ export function getProfile() {
   return request<UserProfile>("/api/v1/auth/me");
 }
 
-export function updateProfile(data: { fullName?: string; phone?: string; city?: string }) {
+export function updateProfile(data: { fullName?: string; organizationName?: string; phone?: string; city?: string }) {
   return request<UserProfile>("/api/v1/auth/me", {
     method: "PUT",
     body: JSON.stringify(data),
