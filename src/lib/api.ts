@@ -528,12 +528,25 @@ export function getMyDonations() {
 }
 
 export type TrustDonationPayload = {
+  /**
+   * What reaches Sahas, and what the 80G receipt is issued against. Never
+   * include the tip here — see `tipAmount`.
+   */
   amount: number;
   fullName: string;
   email: string;
   mobileNumber?: string;
   /** Optional. "" is sent as-is and understood by the backend as "no 80G receipt wanted". */
   panNumber?: string;
+  /** Optional postal address, printed in the receipt's Address box. Max 300 chars. */
+  address?: string;
+  /**
+   * Optional tip to CauseKind, charged in the same payment. Deliberately
+   * separate from `amount`: a tip to the platform is not a donation to the
+   * trust and is not 80G-eligible, so the backend charges the sum but records
+   * the two apart. 0 means the donor was offered a tip and declined.
+   */
+  tipAmount?: number;
 };
 
 /**
@@ -2030,6 +2043,17 @@ export type Certificate = {
   qrCodeUrl: string | null;
   pdfUrl: string | null;
   issuedAt: string;
+  /**
+   * Which kind of donation this certificate is for.
+   *
+   * Money donations carry their certificate number on the donation row rather
+   * than in `donation_certificates`, so the public verify endpoint looks in both
+   * places and reports which it found.
+   *
+   * Optional because certificates issued before this field existed do not carry
+   * it — absent means in-kind.
+   */
+  type?: "IN_KIND" | "MONEY";
 };
 
 export type ChatMessage = {
