@@ -23,8 +23,9 @@ export function HandoverJourneyRail({ state }: { state: HandoverState }) {
     <nav aria-label="Handover progress" className="w-full">
       <ol className="flex items-start gap-1 sm:gap-2">
         {JOURNEY_STEPS.map((step, i) => {
-          const done = !halted && i < current;
-          const isCurrent = !halted && i === current;
+          const isCompleted = state === "completed";
+          const done = !halted && (i < current || (isCompleted && i === current));
+          const isCurrent = !halted && i === current && !isCompleted;
           const state_ = halted ? "halted" : done ? "done" : isCurrent ? "current" : "upcoming";
 
           return (
