@@ -35,7 +35,6 @@ export default function DashboardHistoryPage() {
   const { user, isLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<ItemRequest[]>([]);
-  const [matches, setMatches] = useState<ItemMatch[]>([]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -44,13 +43,9 @@ export default function DashboardHistoryPage() {
       return;
     }
 
-    Promise.all([
-      getMyItemRequests(),
-      getMyMatches()
-    ])
-      .then(([reqs, mats]) => {
+    getMyItemRequests()
+      .then((reqs) => {
         setRequests(reqs.filter(r => r.status === "FULFILLED"));
-        setMatches(mats.filter(m => m.status === "FULFILLED" || m.status === "COMPLETED"));
       })
       .catch(err => console.error("Error loading history:", err))
       .finally(() => setLoading(false));
@@ -101,48 +96,6 @@ export default function DashboardHistoryPage() {
                             <span>Fulfilled: {r.fulfilledQuantity ?? r.quantity}</span>
                             <span>•</span>
                             <span>{new Date(r.createdAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Badge variant={badge.variant} className="text-xs shrink-0">{badge.label}</Badge>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm overflow-hidden">
-          <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
-            <CardTitle className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-300">
-              Fulfillment Records (Completed Matches)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {matches.length === 0 ? (
-              <div className="p-8 text-center text-stone-500 text-sm">
-                No completed fulfillment records yet.
-              </div>
-            ) : (
-              <div className="divide-y divide-stone-100 dark:divide-zinc-800">
-                {matches.map(m => {
-                  const badge = getFulfilmentStatusBadge(m.status);
-                  return (
-                    <div key={`match-${m.id}`} className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
-                      <div className="flex gap-4 items-start">
-                        <div className="h-10 w-10 rounded-xl bg-[var(--ck-role-soft)] dark:bg-[var(--ck-role-accent)]/20 flex items-center justify-center shrink-0">
-                          <Truck className="w-5 h-5 text-[var(--ck-role-accent)]" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-stone-900 dark:text-stone-100">
-                            <TranslatedText text={m.listingTitle || "Donated Item"} />
-                          </p>
-                          <div className="flex flex-col gap-1 mt-1">
-                            <p className="text-xs text-stone-500">For request: <TranslatedText text={m.requestTitle || ""} /></p>
-                            <p className="text-xs text-stone-400">
-                              Donor: {m.donorName} • Quantity: {m.requestQuantity ?? 1} • {new Date(m.createdAt || Date.now()).toLocaleDateString()}
-                            </p>
                           </div>
                         </div>
                       </div>
