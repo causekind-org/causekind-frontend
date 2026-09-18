@@ -381,7 +381,7 @@ function JourneyRail({ status }: { status: string }) {
 
 function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequest; index: number; onCancelled: () => void }) {
   const baseBadge = getRequestStatusBadge(r.status);
-  const badge = (r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0)
+  const badge = ((r.fulfilledQuantity ?? 0) > 0 && (r.fulfilledQuantity ?? 0) < r.quantity)
     ? { label: "Partially Fulfilled", variant: "secondary" as const }
     : baseBadge;
     
@@ -404,10 +404,10 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
             <span><TranslatedText text={r.category} /></span>
             <span>&middot;</span>
             {(!r.fulfilledQuantity || r.fulfilledQuantity === 0) ? (
-              <span className="font-semibold text-stone-600 dark:text-stone-300">Requested: {r.quantity}</span>
+              <span className="font-semibold text-stone-600 dark:text-stone-300">0 / {r.quantity}</span>
             ) : (
               <>
-                <span className="font-semibold text-[var(--ck-role-accent)]">{r.fulfilledQuantity} / {r.quantity} Fulfilled</span>
+                <span className="font-semibold text-[var(--ck-role-accent)]">{r.fulfilledQuantity} / {r.quantity}</span>
                 <span>&middot;</span>
                 <span className="font-semibold text-stone-600 dark:text-stone-300">Remaining: {r.remainingQuantity ?? (r.quantity - r.fulfilledQuantity)}</span>
               </>
@@ -1374,12 +1374,12 @@ function DoneeDashboard({
               </div>
             ) : (
               <div className="space-y-6 mt-4">
-                {itemRequests.filter(r => r.status !== "FULFILLED" && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).length > 0 && (
+                {itemRequests.filter(r => (r.fulfilledQuantity ?? 0) < r.quantity && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).length > 0 && (
                   <div>
                     <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">Pending</h4>
                     <AnimatePresence initial={false}>
                       {itemRequests
-                        .filter(r => r.status !== "FULFILLED" && (!r.fulfilledQuantity || r.fulfilledQuantity === 0))
+                        .filter(r => (r.fulfilledQuantity ?? 0) < r.quantity && (!r.fulfilledQuantity || r.fulfilledQuantity === 0))
                         .map((r, i) => (
                           <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
                         ))}
@@ -1387,12 +1387,12 @@ function DoneeDashboard({
                   </div>
                 )}
                 
-                {itemRequests.filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0).length > 0 && (
+                {itemRequests.filter(r => (r.fulfilledQuantity ?? 0) < r.quantity && (r.fulfilledQuantity ?? 0) > 0).length > 0 && (
                   <div>
                     <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">Partially Fulfilled</h4>
                     <AnimatePresence initial={false}>
                       {itemRequests
-                        .filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0)
+                        .filter(r => (r.fulfilledQuantity ?? 0) < r.quantity && (r.fulfilledQuantity ?? 0) > 0)
                         .map((r, i) => (
                           <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
                         ))}
@@ -2197,7 +2197,7 @@ export default function DashboardPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3 sm:space-y-4 relative z-10">
-                      {itemRequests.filter(r => r.status !== "FULFILLED").length === 0 ? (
+                      {itemRequests.filter(r => (r.fulfilledQuantity ?? 0) < r.quantity).length === 0 ? (
                         <div className="py-7 sm:py-12 text-center">
                           <p className="text-sm text-stone-400">You haven&apos;t posted any active needs yet.</p>
                           <NewRequestLink href="/requests/new" className="inline-block mt-3">
@@ -2207,11 +2207,11 @@ export default function DashboardPage() {
                       ) : (
                         <div className="space-y-6">
                           {/* Pending Requests */}
-                          {itemRequests.filter(r => r.status !== "FULFILLED" && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).length > 0 && (
+                          {itemRequests.filter(r => (r.fulfilledQuantity ?? 0) < r.quantity && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).length > 0 && (
                             <div>
                               <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Pending</h4>
                               <div className="divide-y space-y-3">
-                                {itemRequests.filter(r => r.status !== "FULFILLED" && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).map((r) => {
+                                {itemRequests.filter(r => (r.fulfilledQuantity ?? 0) < r.quantity && (!r.fulfilledQuantity || r.fulfilledQuantity === 0)).map((r) => {
                                   const badge = getRequestStatusBadge(r.status);
                                   return (
                                     <div key={r.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
@@ -2248,11 +2248,11 @@ export default function DashboardPage() {
                           )}
 
                           {/* Partially Fulfilled Requests */}
-                          {itemRequests.filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0).length > 0 && (
+                          {itemRequests.filter(r => (r.fulfilledQuantity ?? 0) < r.quantity && (r.fulfilledQuantity ?? 0) > 0).length > 0 && (
                             <div>
                               <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Partially Fulfilled</h4>
                               <div className="divide-y space-y-3">
-                                {itemRequests.filter(r => r.status !== "FULFILLED" && r.fulfilledQuantity && r.fulfilledQuantity > 0).map((r) => {
+                                {itemRequests.filter(r => (r.fulfilledQuantity ?? 0) < r.quantity && (r.fulfilledQuantity ?? 0) > 0).map((r) => {
                                   const badge = getRequestStatusBadge(r.status);
                                   return (
                                     <div key={r.id} className="pt-3 first:pt-0 flex flex-col gap-2 group p-3 rounded-xl border border-[var(--ck-role-accent)]/20 bg-[var(--ck-role-accent)]/5 dark:bg-[var(--ck-role-accent)]/10 hover:bg-[var(--ck-role-accent)]/10 transition-all">
@@ -2272,7 +2272,7 @@ export default function DashboardPage() {
                                         </div>
                                         <div className="bg-white dark:bg-zinc-800 rounded p-1.5 text-center shadow-sm border border-emerald-100 dark:border-emerald-900/30">
                                           <p className="text-[10px] text-emerald-600 uppercase tracking-wider">Fulfilled</p>
-                                          <p className="font-bold text-sm text-emerald-600">{r.fulfilledQuantity}</p>
+                                          <p className="font-bold text-sm text-emerald-600">{r.fulfilledQuantity ?? 0}</p>
                                         </div>
                                         <div className="bg-[var(--ck-role-accent)] text-white rounded p-1.5 text-center shadow-sm">
                                           <p className="text-[10px] uppercase tracking-wider opacity-90">Remaining</p>
