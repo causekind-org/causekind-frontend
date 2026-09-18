@@ -32,13 +32,13 @@ function getRequestStatusBadge(status: string) {
 }
 
 export default function DashboardHistoryPage() {
-  const { user, isLoaded } = useAuth();
+  const { user, isLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<ItemRequest[]>([]);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (isLoading) return;
     if (!user) {
       setLoading(false);
       return;
@@ -54,9 +54,9 @@ export default function DashboardHistoryPage() {
       })
       .catch(err => console.error("Error loading history:", err))
       .finally(() => setLoading(false));
-  }, [user, isLoaded]);
+  }, [user, isLoading]);
 
-  if (!isLoaded || loading) return <PageSkeleton />;
+  if (isLoading || loading) return <div className="p-8 text-center text-stone-500">Loading history...</div>;
   if (!user) return <div className="p-8 text-center">Please sign in to view your history.</div>;
 
   return (
@@ -141,7 +141,7 @@ export default function DashboardHistoryPage() {
                           <div className="flex flex-col gap-1 mt-1">
                             <p className="text-xs text-stone-500">For request: <TranslatedText text={m.requestTitle || ""} /></p>
                             <p className="text-xs text-stone-400">
-                              Donor: {m.donorName} • Quantity: {m.quantityMatched ?? 1} • {new Date(m.matchedAt || Date.now()).toLocaleDateString()}
+                              Donor: {m.donorName} • Quantity: {m.requestQuantity ?? 1} • {new Date(m.createdAt || Date.now()).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
