@@ -822,6 +822,32 @@ export function SiteHeader() {
     ...aboutMenuItems,
   ];
 
+  /**
+   * The mobile drawer's list.
+   *
+   * <p>Identical to {@link navLinks} except for one entry. On desktop the
+   * "Donate" pill is a mega-menu TRIGGER: hovering it opens both the money
+   * section (/donate/money) and the in-kind categories, and its own href is the
+   * in-kind hub. The drawer has no hover surface, so that one entry collapsed to
+   * a flat "Donate" that sent every phone donor to the in-kind requests board —
+   * never to the donation form. Here it becomes the two destinations it stands
+   * for, in the same order the mega menu presents them: money first, in-kind
+   * second.
+   *
+   * <p>DERIVED from navLinks rather than written out, so a link added there
+   * still appears here, in the same position, without a second edit. Both labels
+   * reuse existing i18n keys — `nav.donate` and `nav.requests` — so all fourteen
+   * locales already carry them and nothing degrades to English.
+   */
+  const mobileNavLinks = navLinks.flatMap((link) =>
+    link.href === "/requests"
+      ? [
+          { href: "/donate/money", label: t("nav.donate") },
+          { href: "/requests", label: t("nav.requests") },
+        ]
+      : [link],
+  );
+
   /** Whether a nav link is active, keyed by href for exactness. */
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -1459,7 +1485,7 @@ export function SiteHeader() {
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
         items={[
-          ...navLinks.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
+          ...mobileNavLinks.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
           ...(user
             ? [
                 ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
