@@ -57,6 +57,7 @@ import { WizardBorderGlow } from "@/features/wizard-kit/WizardBorderGlow";
 import { WizardField } from "@/features/wizard-kit/WizardField";
 import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import type { SaveStatus } from "@/features/wizard-kit/types";
+import { DoneeReviewStep } from "@/features/donee-request-wizard/steps/DoneeReviewStep";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const URGENCIES = [
@@ -715,7 +716,7 @@ function NewRequestForm() {
           : `${missing.length} required document(s) still missing`;
       }
     }
-    if (s === 3) {
+    if (s === 4) {
       if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted";
     }
     setFieldErrors(e);
@@ -1447,7 +1448,23 @@ function NewRequestForm() {
 
                   {step === "need-details" && step1}
                   {step === "household-situation" && <div className="space-y-6">{step2}{step3}</div>}
-
+                  {step === "review" && (
+                    <DoneeReviewStep
+                      title={title}
+                      category={category}
+                      quantity={quantity}
+                      urgency={urgency}
+                      description={description}
+                      isEmergency={isEmergency}
+                      emergencyNature={emergencyNature}
+                      incidentDate={incidentDate}
+                      city={showCityFreeText ? cityFreeText : cityValue}
+                      pincode={pincode}
+                      verification={verification}
+                      uploadedDocs={uploadedDocs}
+                      onEdit={(s) => goToStep(s, -1)}
+                    />
+                  )}
                   {step === "declarations" && step4}
                 </div>
               </motion.section>
