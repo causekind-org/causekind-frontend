@@ -536,8 +536,13 @@ export type TrustDonationPayload = {
   fullName: string;
   email: string;
   mobileNumber?: string;
-  /** Optional. "" is sent as-is and understood by the backend as "no 80G receipt wanted". */
-  panNumber?: string;
+  /**
+   * Required since 2026-09-18, and validated server-side too: five letters,
+   * four digits, one letter. The trust has to report every donor's PAN in
+   * Form 10BD, so a donation without one cannot go into that return. "" is now
+   * rejected by the API rather than meaning "no receipt wanted".
+   */
+  panNumber: string;
   /** Optional postal address, printed in the receipt's Address box. Max 300 chars. */
   address?: string;
   /**
