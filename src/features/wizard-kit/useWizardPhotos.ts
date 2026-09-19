@@ -172,13 +172,16 @@ export function useWizardPhotos(options: {
         };
       }));
       onUrlsChangedRef.current?.();
-    } catch {
+    } catch (e: any) {
       // If the donor removed it while it was uploading, a failed upload means
       // there is no server row to clean up and nothing should be restored.
       if (removedDuringUploadRef.current.delete(id)) return;
+      
+      const errorMessage = e?.message || "Upload failed";
+      
       // Keep the local preview and the File so Retry needs no re-pick.
       setPhotos(prev => prev.map(p =>
-        p.id === id ? { ...p, status: "failed", error: "Upload failed" } : p
+        p.id === id ? { ...p, status: "failed", error: errorMessage } : p
       ));
     }
   }, [setPhotos, revoke]);

@@ -98,6 +98,7 @@ export function DonationOfferWizard({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [gps, setGps] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
 
@@ -318,17 +319,22 @@ export function DonationOfferWizard({
 
     const idx = offerStepIndex(step);
     if (idx < OFFER_STEPS.length - 1) {
-      // Flush before advancing so the next step — and the compatibility check —
-      // never reason about data the server has not accepted.
-      const saved = await flush(model);
-      if (!saved) {
-        setErrors({ [step === "review" ? "declarationsConfirmed" : "quantity"]: "" });
-        toast.error("We couldn't save your changes. Check your connection and try again.");
-        return;
+      setAdvancing(true);
+      try {
+        // Flush before advancing so the next step — and the compatibility check —
+        // never reason about data the server has not accepted.
+        const saved = await flush(model);
+        if (!saved) {
+          setErrors({ [step === "review" ? "declarationsConfirmed" : "quantity"]: "" });
+          toast.error("We couldn't save your changes. Check your connection and try again.");
+          return;
+        }
+        goTo(OFFER_STEPS[idx + 1], 1);
+      } finally {
+        setAdvancing(false);
       }
-      goTo(OFFER_STEPS[idx + 1], 1);
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity]);
 
   /** Synchronous guard. Disabled UI alone loses the race on a double tap. */
   const submitLockRef = useRef(false);
@@ -580,11 +586,9 @@ export function DonationOfferWizard({
             submitting={submitting}
             submitted={submitted}
             savingExit={savingExit}
+            advancing={advancing}
             avoidBottomChrome
-            // Corner clusters rather than a full-width bar. This route keeps the
-            // global dock, so a slab here stacked a third band of chrome over
-            // the form and collided with the dock's raised centre button.
-            variant="floating"
+            // Removed variant="floating" to make it sticky, ensuring the button is always visible
           />
         </div>
       </div>
