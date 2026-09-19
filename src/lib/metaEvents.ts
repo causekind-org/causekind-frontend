@@ -58,3 +58,12 @@ export function trackListItem(params?: FbqParams): void {
 export function trackRequestItem(params?: FbqParams): void {
   trackMetaCustom("RequestItem", params);
 }
+
+/**
+ * A user completed a money donation. `value` is the amount and `currency` is
+ * the ISO code (e.g. "INR"); Meta uses these to report donation value and to
+ * optimise ads for higher-value donors.
+ */
+export function trackDonate(params: { value: number; currency: string } & FbqParams): void {
+  trackMeta("Donate", params);
+}
