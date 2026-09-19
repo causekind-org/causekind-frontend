@@ -84,7 +84,7 @@ export function HandoverScheduleDialog({
   const needsCourier = methodNeedsCourierFields(method);
   // A reschedule costs the other person a trip, so it has to say why.
   const reasonRequired = isReschedule;
-  const canSubmit = !busy && when.trim() !== "" && (!reasonRequired || reason.trim().length >= 3);
+  const canSubmit = !busy && when.trim() !== "" && address.trim() !== "" && (!reasonRequired || reason.trim().length >= 3);
 
   async function submit() {
     if (busy || !canSubmit) return;      // `disabled` lags a fast double-click
@@ -155,7 +155,7 @@ export function HandoverScheduleDialog({
             />
           </Field>
 
-          <Field label="Where?" htmlFor="ho-address">
+          <Field label="Where?" htmlFor="ho-address" required>
             <Input
               id="ho-address"
               type="text"
