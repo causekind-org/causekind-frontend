@@ -23,6 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Award, HandCoins, Loader2, Package, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
@@ -35,6 +37,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { canDeleteDraft, canWithdrawRequest, canHideWithdrawnRequest, isRequestActive } from "@/lib/requestActions";
+import { getRequestFulfilment, groupRequestsByFulfilment, type RequestFulfilment } from "@/lib/requestFulfilment";
 import { canDeleteListing, canWithdrawListing, canPauseListing, canResumeListing } from "@/lib/listingActions";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
 import { ClosedOfferCard } from "@/components/ClosedOfferCard";
@@ -143,7 +146,12 @@ function getRequestStatusBadge(status: string) {
     PUBLICATION_CONSENT_REQUIRED: { label: "Consent Needed", variant: "secondary" },
     PUBLIC_REQUEST: { label: "Public Appeal", variant: "default" },
     RESERVED: { label: "Reserved", variant: "outline" },
+    MATCH_IN_PROGRESS: { label: "Match In Progress", variant: "secondary" },
     FULFILMENT_IN_PROGRESS: { label: "Fulfilment In Progress", variant: "secondary" },
+    PARTIALLY_MATCHED: { label: "Partially Matched", variant: "secondary" },
+    PARTIALLY_FULFILLED: { label: "Partially Fulfilled", variant: "secondary" },
+    ON_HOLD: { label: "On Hold", variant: "outline" },
+    FULLY_FULFILLED: { label: "Completed", variant: "default" },
     FULFILLED: { label: "Completed", variant: "default" },
     EXPIRED: { label: "Expired", variant: "outline" },
     REJECTED: { label: "Rejected", variant: "destructive" },
@@ -331,31 +339,44 @@ function DeleteDraftButton({ requestId, onDeleted }: { requestId: number; onDele
    rejection or expiry stopped it — the structure IS the status explanation. */
 const JOURNEY_STATIONS = ["Posted", "Verified", "Matched", "Received"];
 
-function journeyStage(status: string): { stage: number; state: "draft" | "active" | "done" | "broken" } {
+function journeyStage(status: string, fulfilment: RequestFulfilment): { stage: number; state: "draft" | "active" | "done" | "broken" } {
+  const { isPartiallyFulfilled } = fulfilment;
   if (status === "DRAFT") return { stage: 0, state: "draft" };
   if (status === "REJECTED") return { stage: 1, state: "broken" };
-  if (status === "EXPIRED") return { stage: 2, state: "broken" };
-  if (status === "CANCELLED") return { stage: 2, state: "broken" };
+  // With part of it already received, the road broke at the final station, not
+  // back at matching — the Partial station it passed stays lit.
+  if (status === "EXPIRED" || status === "CANCELLED") return { stage: isPartiallyFulfilled ? 4 : 2, state: "broken" };
   if (["PENDING_VERIFICATION", "ON_HOLD"].includes(status)) return { stage: 1, state: "active" };
-  if (["FULFILLED", "FULLY_FULFILLED"].includes(status)) return { stage: 3, state: "done" };
+  // Status or counters — the counters can say "all received" before the status flips.
+  if (fulfilment.isFullyFulfilled) return { stage: 3, state: "done" };
+  if (isPartiallyFulfilled) {
+    if (["RESERVED", "MATCH_IN_PROGRESS", "FULFILMENT_IN_PROGRESS"].includes(status)) return { stage: 4, state: "active" };
+    return { stage: 3, state: "done" }; // Sitting at "Partial" done, waiting for more
+  }
   if (["RESERVED", "MATCH_IN_PROGRESS", "FULFILMENT_IN_PROGRESS", "PARTIALLY_MATCHED", "PARTIALLY_FULFILLED"].includes(status)) return { stage: 3, state: "active" };
   return { stage: 2, state: "active" }; // all matching-phase statuses
 }
 
-function JourneyRail({ status }: { status: string }) {
-  const { stage, state } = journeyStage(status);
+function JourneyRail({ status, fulfilment }: { status: string; fulfilment: RequestFulfilment }) {
+  const { stage, state } = journeyStage(status, fulfilment);
+  const stations = fulfilment.isPartiallyFulfilled
+    ? ["Posted", "Verified", "Matched", "Partial", "Received"]
+    : JOURNEY_STATIONS;
+
   return (
     <div className="flex items-start mt-4 max-w-md">
-      {JOURNEY_STATIONS.map((label, i) => {
+      {stations.map((label, i) => {
         const reached = i < stage || (i === stage && state === "done");
         const current = i === stage && state !== "done";
         const brokenHere = current && state === "broken";
+        const isLast = i === stations.length - 1;
+        
         return (
           <div key={label} className="flex items-start flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1.5 shrink-0">
               <span className={`relative flex items-center justify-center w-3.5 h-3.5 rounded-full border-2 transition-colors ${
                 brokenHere ? "border-red-500 bg-red-500" :
-                reached ? (i === 3 ? "border-emerald-500 bg-emerald-500" : "border-[#1e3a60] bg-[#1e3a60] dark:border-blue-400 dark:bg-blue-400") :
+                reached ? (isLast ? "border-emerald-500 bg-emerald-500" : "border-[#1e3a60] bg-[#1e3a60] dark:border-blue-400 dark:bg-blue-400") :
                 current ? "border-[#1e3a60] dark:border-blue-400 bg-white dark:bg-zinc-900" :
                 "border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"}`}>
                 {current && !brokenHere && (
@@ -368,7 +389,7 @@ function JourneyRail({ status }: { status: string }) {
                 {label}
               </span>
             </div>
-            {i < 3 && (
+            {!isLast && (
               <div className={`flex-1 h-[2px] mx-1.5 mt-1.5 rounded-full ${
                 i < stage ? "bg-[#1e3a60] dark:bg-blue-400" : "bg-stone-200 dark:bg-zinc-800"}`} />
             )}
@@ -380,7 +401,15 @@ function JourneyRail({ status }: { status: string }) {
 }
 
 function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequest; index: number; onCancelled: () => void }) {
-  const badge = getRequestStatusBadge(r.status);
+  const fulfilment = getRequestFulfilment(r);
+  // "Partially fulfilled" and "Remaining" both promise more is on the way, which
+  // is only true while the request is open. A withdrawn or expired one keeps its
+  // own badge, with the count beside it recording how far it got.
+  const awaitingMore = isRequestActive(r.status) && fulfilment.isPartiallyFulfilled;
+  const badge = awaitingMore
+    ? { label: "Partially Fulfilled", variant: "secondary" as const }
+    : getRequestStatusBadge(r.status);
+
   return (
     <motion.div
       layout
@@ -396,9 +425,21 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
             style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
             <TranslatedText text={r.title} />
           </p>
-          <p className="text-xs text-stone-400 mt-0.5">
-            <TranslatedText text={r.category} /> &middot; Qty {r.quantity} &middot; <span className="capitalize">{r.urgency.toLowerCase()}</span> urgency
-          </p>
+          <div className="text-xs text-stone-400 mt-1 flex flex-wrap gap-2 items-center">
+            <span><TranslatedText text={r.category} /></span>
+            <span>&middot;</span>
+            <span className={`font-semibold ${fulfilment.fulfilled > 0 ? "text-[var(--ck-role-accent)]" : "text-stone-600 dark:text-stone-300"}`}>
+              {fulfilment.fulfilled} / {fulfilment.requested}
+            </span>
+            {awaitingMore && (
+              <>
+                <span>&middot;</span>
+                <span className="font-semibold text-stone-600 dark:text-stone-300">Remaining: {fulfilment.remaining}</span>
+              </>
+            )}
+            <span>&middot;</span>
+            <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
@@ -416,7 +457,7 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
           {canHideWithdrawnRequest(r.status) && <HideWithdrawnRequestButton requestId={r.id} onHidden={onCancelled} />}
         </div>
       </div>
-      <JourneyRail status={r.status} />
+      <JourneyRail status={r.status} fulfilment={fulfilment} />
       {r.status === "REJECTED" && r.rejectionReason && (
         <p className="text-2xs text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{displayReason(r.rejectionReason)}</p>
       )}
@@ -424,6 +465,42 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
         <p className="text-2xs text-stone-400 mt-2.5">Saved as a draft &mdash; continue where you left off and submit when ready.</p>
       )}
     </motion.div>
+  );
+}
+
+/* One compact line per request on the admin's Donee tab: status badge, how much
+   has arrived, and the actions a pending or closed request can still take. */
+function CompactRequestRow({ request: r }: { request: ItemRequest }) {
+  const badge = getRequestStatusBadge(r.status);
+  const { fulfilled, requested } = getRequestFulfilment(r);
+  return (
+    <div className="pt-3 first:pt-0 flex items-start justify-between gap-3 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
+      <div>
+        <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors"><TranslatedText text={r.title} /></p>
+        <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
+          <span><TranslatedText text={r.category} /></span>
+          <span>•</span>
+          <span>{fulfilled > 0 ? `${fulfilled} / ${requested} received` : `Qty: ${requested}`}</span>
+          <span>•</span>
+          <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
+        </div>
+        {r.status === "REJECTED" && r.rejectionReason && (
+          <p className="text-2xs text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{displayReason(r.rejectionReason)}</p>
+        )}
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
+          {badge.label}
+        </Badge>
+        {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
+        {r.status === "DRAFT" && (
+          <NewRequestLink href={`/requests/new?draftId=${r.id}`}
+            className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-2xs font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
+            <Pencil className="w-3 h-3" /> Continue editing
+          </NewRequestLink>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -823,38 +900,67 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
 
 const TERMINAL_OFFER_STATUSES = ["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"];
 
+// A completed donation stays among the live offers while the donee can still
+// report a problem with it — the backend allows that until a grace period after
+// the issue window, so at least 7 days past completion — then joins the history.
+const COMPLETED_OFFER_LIVE_MS = 7 * 24 * 60 * 60 * 1000;
+
+const offerEndedAt = (o: DonationOffer) => new Date(o.closedAt ?? o.createdAt).getTime();
+
+function isPastOffer(o: DonationOffer, now: number): boolean {
+  if (TERMINAL_OFFER_STATUSES.includes(o.status)) return true;
+  return o.status === "COMPLETED" && now - offerEndedAt(o) > COMPLETED_OFFER_LIVE_MS;
+}
+
 function pastOfferLabel(status: string): { label: string; tone: string } {
   switch (status) {
+    case "COMPLETED":      return { label: "Completed",    tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" };
     case "ADMIN_REJECTED": return { label: "Not approved", tone: "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400" };
     case "DONEE_DECLINED": return { label: "You declined", tone: "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" };
     default:               return { label: "Withdrawn",    tone: "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" };
   }
 }
 
-function PastOffersStrip({ offers, activeRequestIds }: {
+const shortDate = (ms: number) => new Date(ms).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+/* The collapsible "history" row both the Offers and Matches tabs end with. */
+function HistoryToggle({ label, count, open, onToggle }: {
+  label: string; count: number; open: boolean; onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-expanded={open}
+      className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-stone-400 transition-colors hover:bg-stone-50 hover:text-stone-600 dark:hover:bg-zinc-800 dark:hover:text-stone-300"
+    >
+      <History className="h-3.5 w-3.5" />
+      {label} ({count})
+      <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+    </button>
+  );
+}
+
+function PastOffersStrip({ offers, activeRequestIds, defaultOpen = false }: {
   offers: DonationOffer[];
   activeRequestIds: Set<number>;
+  /** Open straight away when there is nothing live above it to look at. */
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
-  // Group by request, newest first within each group
+  // Group by request, most recently finished first within each group
   const groups = new Map<number, DonationOffer[]>();
-  for (const o of [...offers].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())) {
+  for (const o of [...offers].sort((a, b) => offerEndedAt(b) - offerEndedAt(a))) {
     const g = groups.get(o.requestId);
     if (g) g.push(o); else groups.set(o.requestId, [o]);
   }
-  const someRequestStillOpen = [...groups.keys()].some(id => !activeRequestIds.has(id));
+  // The "stays open to other donors" note is for offers that fell through, not
+  // for donations that were delivered.
+  const someRequestStillOpen = offers.some(o => o.status !== "COMPLETED" && !activeRequestIds.has(o.requestId));
 
   return (
     <div className="border-t border-stone-100 dark:border-zinc-800 pt-3">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-stone-400 transition-colors hover:bg-stone-50 hover:text-stone-600 dark:hover:bg-zinc-800 dark:hover:text-stone-300"
-      >
-        <History className="h-3.5 w-3.5" />
-        Past offers ({offers.length})
-        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
+      <HistoryToggle label="Offer history" count={offers.length} open={open} onToggle={() => setOpen(v => !v)} />
 
       {open && (
         <div className="mt-2 space-y-3">
@@ -872,9 +978,12 @@ function PastOffersStrip({ offers, activeRequestIds }: {
                   return (
                     <div key={o.id} className="flex items-baseline gap-2 text-xs">
                       <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
-                      <span className="flex-shrink-0 text-3xs text-stone-400">
-                        {new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                      </span>
+                      <span className="flex-shrink-0 text-3xs text-stone-400">{shortDate(offerEndedAt(o))}</span>
+                      {o.status === "COMPLETED" && o.itemDetails && (
+                        <span className="min-w-0 truncate text-stone-500 dark:text-stone-400">
+                          {o.itemDetails.quantity}× from {o.donorName || "a donor"}
+                        </span>
+                      )}
                       {o.rejectionReason && (
                         <span className="min-w-0 truncate text-stone-400 dark:text-stone-500"
                           title={o.displayRejectionReason ?? displayReason(o.rejectionReason)}>
@@ -899,6 +1008,117 @@ function PastOffersStrip({ offers, activeRequestIds }: {
   );
 }
 
+// ── Match history — the Matches tab's counterpart to the offer history ──────
+/** Matches with nothing left to do: delivered, or ended without a delivery. */
+const MATCH_HISTORY_STATUSES = new Set(["FULFILLED", "COMPLETED", "CANCELLED", "REJECTED", "FAILED", "DONOR_REJECTED"]);
+const MATCH_RECEIVED_STATUSES = new Set(["FULFILLED", "COMPLETED"]);
+
+function pastMatchLabel(status: string): { label: string; tone: string } {
+  switch (status) {
+    case "FULFILLED":
+    case "COMPLETED":      return { label: "Received",        tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" };
+    case "DONOR_REJECTED": return { label: "Donor declined",  tone: "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" };
+    case "REJECTED":       return { label: "Not approved",    tone: "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400" };
+    case "FAILED":         return { label: "Delivery failed", tone: "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400" };
+    // Includes the donee's own decline — doneeReject() records it as CANCELLED.
+    default:               return { label: "Cancelled",       tone: "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" };
+  }
+}
+
+/** When the match ended — receipt for a delivered one, else when it closed. */
+const matchEndedAt = (m: ItemMatch) =>
+  new Date((MATCH_RECEIVED_STATUSES.has(m.status) ? m.doneeConfirmedAt : null) ?? m.closedAt ?? m.createdAt).getTime();
+
+function PastMatchesStrip({ matches, defaultOpen = false }: { matches: ItemMatch[]; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const sorted = [...matches].sort((a, b) => matchEndedAt(b) - matchEndedAt(a));
+
+  return (
+    <div className="border-t border-stone-100 dark:border-zinc-800 pt-3 mt-4">
+      <HistoryToggle label="Match history" count={matches.length} open={open} onToggle={() => setOpen(v => !v)} />
+      {open && (
+        <div className="mt-2 space-y-2">
+          {sorted.map(m => {
+            const { label, tone } = pastMatchLabel(m.status);
+            const received = MATCH_RECEIVED_STATUSES.has(m.status) ? (m.doneeConfirmedQty ?? m.allocatedQuantity) : null;
+            return (
+              <div key={m.id} className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">
+                    <TranslatedText text={m.listingTitle || "Matched item"} />
+                  </p>
+                  <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
+                </div>
+                <p className="mt-1 truncate text-2xs text-stone-400">
+                  For: <TranslatedText text={m.requestTitle || "your request"} />
+                  {m.donorName && <> &middot; {m.donorName}</>}
+                  {" "}&middot; {shortDate(matchEndedAt(m))}
+                  {received != null && received > 0 && <> &middot; {received} received</>}
+                </p>
+                {m.rejectionReason && !MATCH_RECEIVED_STATUSES.has(m.status) && (
+                  <p className="mt-1 line-clamp-2 text-2xs text-stone-400 dark:text-stone-500">{displayReason(m.rejectionReason)}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Donee dashboard sections ─────────────────────────────────────────────────
+// Offers, requests and matches each get a tab instead of sharing one long page,
+// so what's waiting on the donee isn't buried under what isn't. The choice rides
+// in the URL hash (#offers / #requests / #matches) so a reload, the back link
+// from History, or a deep link lands on the same section.
+
+type DoneeSection = "offers" | "requests" | "matches";
+const DONEE_SECTIONS: readonly string[] = ["offers", "requests", "matches"];
+const isDoneeSection = (s: string): s is DoneeSection => DONEE_SECTIONS.includes(s);
+
+/** Offers waiting on the donee: review one, or close its issue window. */
+const OFFER_NEEDS_DONEE = new Set(["PENDING_DONEE_REVIEW", "ISSUE_WINDOW_OPEN"]);
+/** Matches waiting on the donee: accept one, or confirm it arrived. */
+const MATCH_NEEDS_DONEE = new Set(["AWAITING_DONEE_CONFIRMATION", "DELIVERED_PENDING_CONFIRMATION"]);
+
+function SectionTab({ value, icon: Icon, label, shortLabel, count, attention, tour }: {
+  value: DoneeSection;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  /** For phones — three full labels don't fit at 375px. */
+  shortLabel: string;
+  count: number;
+  /** Something in this section is waiting on the donee. */
+  attention: boolean;
+  /** Product-tour anchor — the sections themselves unmount when not selected. */
+  tour: string;
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      data-tour={tour}
+      className="group relative flex h-auto min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold text-stone-500 transition-colors hover:text-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a60]/40 dark:text-stone-400 dark:hover:text-stone-200 dark:focus-visible:ring-blue-400/50 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm data-[state=active]:bg-[#1e3a60] data-[state=active]:text-white data-[state=active]:shadow-md dark:data-[state=active]:bg-blue-500/25 dark:data-[state=active]:text-blue-50"
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+      <span className="truncate sm:hidden">{shortLabel}</span>
+      <span className="hidden truncate sm:inline">{label}</span>
+      <span className="shrink-0 rounded-full bg-stone-100 px-1.5 py-px text-3xs font-bold tabular-nums text-stone-500 dark:bg-zinc-800 dark:text-stone-400 group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white">
+        {count}
+      </span>
+      {attention && (
+        <>
+          <span className="absolute right-1.5 top-1.5 flex h-2 w-2" aria-hidden>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75 motion-reduce:hidden" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+          </span>
+          <span className="sr-only">(needs your attention)</span>
+        </>
+      )}
+    </TabsTrigger>
+  );
+}
+
 function DoneeDashboard({
   user,
   myProfile,
@@ -917,10 +1137,31 @@ function DoneeDashboard({
   const [offerActionLoading, setOfferActionLoading] = useState<number | null>(null);
   // Floating match chat — same thread as the Handover Hub, popped over the dashboard
   const [chatMatch, setChatMatch] = useState<ItemMatch | null>(null);
+  // Offers load after the rest of the dashboard; the default tab waits for them,
+  // since an offer awaiting review is what decides it.
+  const [offersLoaded, setOffersLoaded] = useState(false);
+  // Read once, so rows don't hop between "live" and "history" mid-visit.
+  const [now] = useState(() => Date.now());
+  // Null until the donee picks a tab (or arrives with one in the URL hash).
+  const [chosenSection, setChosenSection] = useState<DoneeSection | null>(null);
 
   useEffect(() => {
-    getOffersForMyRequests().then(setIncomingOffers).catch(() => {});
+    getOffersForMyRequests().then(setIncomingOffers).catch(() => {}).finally(() => setOffersLoaded(true));
+    const fromHash = window.location.hash.slice(1);
+    if (isDoneeSection(fromHash)) setChosenSection(fromHash);
   }, []);
+
+  // The parent refetches requests and matches on these events; offers are this
+  // component's own, and were fetched once — a new offer only showed on reload.
+  useEntityUpdates(["OFFER", "HANDOVER"], () => {
+    getOffersForMyRequests().then(setIncomingOffers).catch(() => {});
+  });
+
+  function selectSection(next: DoneeSection) {
+    setChosenSection(next);
+    // Replace, not push: switching tabs shouldn't fill the back button's history.
+    window.history.replaceState(null, "", `#${next}`);
+  }
 
   async function handleOfferAction(offerId: number, action: "ACCEPT" | "DECLINE", declineReason?: string) {
     setOfferActionLoading(offerId);
@@ -976,14 +1217,26 @@ function DoneeDashboard({
     }
   };
 
+  // Each request lands in exactly one group. Fully received ones leave the
+  // dashboard for the History page; the rest are listed below by how much arrived.
+  const requestGroups = groupRequestsByFulfilment(itemRequests);
   // "On the road" means we are actively working the request. CANCELLED and
   // FULLY_FULFILLED were missing here, so a withdrawn or completed request still
   // told the donee we were "scanning donor inventories" for it.
-  const activeRequests = itemRequests.filter(r => isRequestActive(r.status));
-  const fulfilledRequests = itemRequests.filter(r => r.status === "FULFILLED");
-  const activeMatches = doneeMatches.filter(
-    m => !["FULFILLED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)
-  );
+  const activeRequests = [...requestGroups.pending, ...requestGroups.partial];
+  const fulfilledRequests = requestGroups.fulfilled;
+  // COMPLETED and DONOR_REJECTED were missing here, so a delivered or declined
+  // match still counted as "active" and never left the list.
+  const activeMatches = doneeMatches.filter(m => !MATCH_HISTORY_STATUSES.has(m.status));
+  const pastMatches = doneeMatches.filter(m => MATCH_HISTORY_STATUSES.has(m.status));
+  const activeOffers = incomingOffers.filter(o => !isPastOffer(o, now));
+  const pastOffers = incomingOffers.filter(o => isPastOffer(o, now));
+  const offersNeedYou = activeOffers.some(o => OFFER_NEEDS_DONEE.has(o.status));
+  const matchesNeedYou = activeMatches.some(m => MATCH_NEEDS_DONEE.has(m.status));
+  // Open on whatever is waiting on the donee; otherwise on their requests. Empty
+  // until offers have loaded, so the tab doesn't jump once they arrive.
+  const section: DoneeSection | "" = chosenSection
+    ?? (!offersLoaded ? "" : offersNeedYou ? "offers" : matchesNeedYou ? "matches" : "requests");
   // True only when the backend matching engine is actually working on something:
   // a request past admin verification, in the matching phase.
   const hasRequestInMatching = itemRequests.some(r =>
@@ -1069,26 +1322,58 @@ function DoneeDashboard({
           <Link href="/profile" className="ml-auto shrink-0 font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">Edit profile</Link>
         </div>
 
+        {/* ── Sections: offers, requests, matches — one open at a time ── */}
+        <Tabs value={section} onValueChange={(v) => { if (isDoneeSection(v)) selectSection(v); }} className="space-y-4 sm:space-y-6">
+          <TabsList
+            aria-label="Dashboard sections"
+            className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
+          >
+            <SectionTab value="offers" icon={Heart} label="Offers Received" shortLabel="Offers"
+              count={activeOffers.length} attention={offersNeedYou} tour="offers" />
+            <SectionTab value="requests" icon={Package} label="Your Requests" shortLabel="Requests"
+              count={activeRequests.length} attention={false} tour="requests-list" />
+            <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
+              count={activeMatches.length} attention={matchesNeedYou} tour="matches" />
+          </TabsList>
+
+          {section === "" && (
+            <div className="space-y-3" aria-busy="true" aria-label="Loading your dashboard">
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+            </div>
+          )}
+
         {/* ── Incoming Donation Offers (Donor Flow 2) ── */}
-        {incomingOffers.length > 0 && (
-          <Card className="bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+        <TabsContent value="offers" className="mt-0">
+          <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
             <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
             <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
               <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
                 <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation Offers Received
               </CardTitle>
-              <Link href="/donee/offers">
-                <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
-              </Link>
+              {incomingOffers.length > 0 && (
+                <Link href="/donee/offers">
+                  <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
+                </Link>
+              )}
             </CardHeader>
             <CardContent className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
-              {incomingOffers.filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status)).length === 0 && (
+              {incomingOffers.length === 0 ? (
+                <div className="py-8 sm:py-12 text-center space-y-2">
+                  <div className="w-11 h-11 bg-[var(--ck-role-accent)]/10 rounded-xl flex items-center justify-center mx-auto">
+                    <Heart className="w-5 h-5 text-[var(--ck-role-accent)]" />
+                  </div>
+                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No donation offers yet</p>
+                  <p className="text-xs text-stone-400 max-w-[280px] mx-auto">
+                    Once a request is public, donors can offer to fulfil it — you&apos;ll review each offer here.
+                  </p>
+                </div>
+              ) : activeOffers.length === 0 && (
                 <p className="py-2 text-center text-xs text-stone-400">
                   No active offers right now — your requests stay visible to donors.
                 </p>
               )}
-              {incomingOffers
-                .filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status))
+              {activeOffers
                 .map(offer => {
                   const isPendingReview = offer.status === "PENDING_DONEE_REVIEW";
                   const isApproved      = offer.status === "ADMIN_APPROVED";
@@ -1314,30 +1599,35 @@ function DoneeDashboard({
                   );
                 })}
 
-              {/* Terminal offers — slim grouped history instead of full cards */}
-              {incomingOffers.some(o => TERMINAL_OFFER_STATUSES.includes(o.status)) && (
+              {/* Finished offers — slim grouped history instead of full cards:
+                  ones that fell through, and donations completed over a week ago */}
+              {pastOffers.length > 0 && (
                 <PastOffersStrip
-                  offers={incomingOffers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status))}
-                  activeRequestIds={new Set(incomingOffers.filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status)).map(o => o.requestId))}
+                  offers={pastOffers}
+                  activeRequestIds={new Set(activeOffers.map(o => o.requestId))}
+                  defaultOpen={activeOffers.length === 0}
                 />
               )}
             </CardContent>
           </Card>
-        )}
-
-        {/* ── Requests journey ledger + matches ── */}
-        <div className="space-y-7 sm:space-y-12">
+        </TabsContent>
 
           {/* Your requests — each one drawn as a journey down the pipeline */}
-          <section data-tour="requests-list">
+          <TabsContent value="requests" className="mt-0">
+          <section>
             <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
               <div>
                 <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
                 <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
               </div>
-              <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0">
-                <Plus className="w-3.5 h-3.5" /> New need
-              </NewRequestLink>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link href="/dashboard/history" className="text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 dark:border-zinc-700">
+                  <History className="w-3.5 h-3.5" /> History
+                </Link>
+                <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1">
+                  <Plus className="w-3.5 h-3.5" /> New need
+                </NewRequestLink>
+              </div>
             </div>
 
             {itemRequests.length === 0 ? (
@@ -1352,27 +1642,49 @@ function DoneeDashboard({
                 </NewRequestLink>
               </div>
             ) : (
-              <div>
-                {/* AnimatePresence so a removed request eases out instead of
-                    vanishing — the row leaves on the next refetch, which is when
-                    the server has actually confirmed the change. */}
-                <AnimatePresence initial={false}>
-                  {itemRequests.map((r, i) => (
-                    <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
-                  ))}
-                </AnimatePresence>
+              <div className="space-y-6 mt-4">
+                {([
+                  ["Pending", requestGroups.pending],
+                  ["Partially Fulfilled", requestGroups.partial],
+                  ["Closed", requestGroups.closed],
+                ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
+                  <div key={label}>
+                    <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
+                    <AnimatePresence initial={false}>
+                      {group.map((r, i) => (
+                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                ))}
+
+                {/* Fully received requests live on the History page. Say so here,
+                    or a donee whose needs were all met is left with an empty list. */}
+                {fulfilledRequests.length > 0 && (
+                  <Link href="/dashboard/history" className="flex items-center gap-2 rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>
+                      {activeRequests.length + requestGroups.closed.length === 0
+                        ? "Every request you posted has been fulfilled — see them in History"
+                        : `${fulfilledRequests.length} fulfilled request${fulfilledRequests.length !== 1 ? "s" : ""} — see History`}
+                    </span>
+                    <span className="ml-auto" aria-hidden>&rarr;</span>
+                  </Link>
+                )}
               </div>
             )}
           </section>
+          </TabsContent>
 
-          {/* Matches */}
-          <section data-tour="matches">
+          {/* Matches — live ones first, finished ones in the history below */}
+          <TabsContent value="matches" className="mt-0">
+          <section>
             <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
               <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
               <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
             </div>
             <div className="pt-3.5 sm:pt-5">
-              {doneeMatches.length === 0 ? (
+              {activeMatches.length === 0 ? (
                 /* Truthful empty state: the sweep only spins when the matching engine
                    is actually working (a request is verified and in the matching
                    phase). Drafts/pending requests get honest guidance instead. */
@@ -1413,7 +1725,7 @@ function DoneeDashboard({
                 </div>
               ) : (
                 <div className="divide-y dark:divide-zinc-800 space-y-3">
-                  {doneeMatches.map(m => {
+                  {activeMatches.map(m => {
                     const badge = getFulfilmentStatusBadge(m.status);
                     return (
                       <div key={m.id} className="pt-3 first:pt-0 space-y-2 group px-1 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all pb-1">
@@ -1481,10 +1793,14 @@ function DoneeDashboard({
                   })}
                 </div>
               )}
+              {pastMatches.length > 0 && (
+                <PastMatchesStrip matches={pastMatches} defaultOpen={activeMatches.length === 0} />
+              )}
             </div>
           </section>
+          </TabsContent>
 
-        </div>
+        </Tabs>
 
       </div>
 
@@ -1643,6 +1959,9 @@ export default function DashboardPage() {
     if (!myProfile) return [];
     return matches.filter(m => m.doneeName === myProfile.fullName);
   }, [matches, myProfile]);
+
+  // Same grouping the dedicated donee dashboard uses, for the admin's Donee tab.
+  const doneeRequestGroups = useMemo(() => groupRequestsByFulfilment(itemRequests), [itemRequests]);
 
   if (isLoading) {
     return (
@@ -2130,7 +2449,7 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <p className="text-xs text-stone-500">Fulfilled Needs</p>
-                        <p className="text-base sm:text-xl font-bold">{itemRequests.filter(r => r.status === "FULFILLED").length}</p>
+                        <p className="text-base sm:text-xl font-bold">{doneeRequestGroups.fulfilled.length}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -2143,56 +2462,96 @@ export default function DashboardPage() {
                   <Card className="bg-white/85 dark:bg-zinc-900/80 backdrop-blur-sm border-stone-100/80 dark:border-zinc-700/50 shadow-sm relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-[var(--ck-role-accent)]" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">01</div>
-                    <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 mb-4 relative z-10">
-                      <CardTitle className="text-sm sm:text-base font-bold">My Needs & Requests</CardTitle>
-                      <NewRequestLink href="/requests/new">
-                        <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">
-                          <Plus className="w-3.5 h-3.5 mr-1" /> New Need
-                        </Button>
-                      </NewRequestLink>
+                    <CardHeader className="border-b pb-3 sm:pb-4 mb-4 relative z-10">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <CardTitle className="text-sm sm:text-base font-bold">My Needs & Requests</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Link href="/dashboard/history" className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors text-xs font-bold text-stone-600 dark:text-stone-300">
+                            <History className="w-3.5 h-3.5" /> History
+                          </Link>
+                          <NewRequestLink href="/requests/new">
+                            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-[var(--ck-role-accent)]">
+                              <Plus className="w-3.5 h-3.5 mr-1" /> New Need
+                            </Button>
+                          </NewRequestLink>
+                        </div>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3 sm:space-y-4 relative z-10">
-                      {itemRequests.length === 0 ? (
+                      {doneeRequestGroups.pending.length + doneeRequestGroups.partial.length + doneeRequestGroups.closed.length === 0 ? (
                         <div className="py-7 sm:py-12 text-center">
-                          <p className="text-sm text-stone-400">You haven&apos;t posted any needs yet.</p>
+                          <p className="text-sm text-stone-400">
+                            {doneeRequestGroups.fulfilled.length > 0
+                              ? "Every need you posted has been fulfilled — see History."
+                              : <>You haven&apos;t posted any active needs yet.</>}
+                          </p>
                           <NewRequestLink href="/requests/new" className="inline-block mt-3">
-                            <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">Post your first need</Button>
+                            <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">
+                              {doneeRequestGroups.fulfilled.length > 0 ? "Post a new need" : "Post your first need"}
+                            </Button>
                           </NewRequestLink>
                         </div>
                       ) : (
-                        <div className="divide-y space-y-3">
-                          {itemRequests.map((r) => {
-                            const badge = getRequestStatusBadge(r.status);
-                            return (
-                              <div key={r.id} className="pt-3 first:pt-0 flex items-start justify-between gap-3 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">
-                                <div>
-                                  <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors"><TranslatedText text={r.title} /></p>
-                                  <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
-                                    <span><TranslatedText text={r.category} /></span>
-                                    <span>•</span>
-                                    <span>Qty: {r.quantity}</span>
-                                    <span>•</span>
-                                    <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
-                                  </div>
-                                  {r.status === "REJECTED" && r.rejectionReason && (
-                                    <p className="text-2xs text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{displayReason(r.rejectionReason)}</p>
-                                  )}
-                                </div>
-                                <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
-                                    {badge.label}
-                                  </Badge>
-                                  {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
-                                  {r.status === "DRAFT" && (
-                                    <NewRequestLink href={`/requests/new?draftId=${r.id}`}
-                                      className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-2xs font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
-                                      <Pencil className="w-3 h-3" /> Continue editing
-                                    </NewRequestLink>
-                                  )}
-                                </div>
+                        <div className="space-y-6">
+                          {/* Pending Requests */}
+                          {doneeRequestGroups.pending.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Pending</h4>
+                              <div className="divide-y space-y-3">
+                                {doneeRequestGroups.pending.map((r) => <CompactRequestRow key={r.id} request={r} />)}
                               </div>
-                            );
-                          })}
+                            </div>
+                          )}
+
+                          {/* Partially Fulfilled Requests */}
+                          {doneeRequestGroups.partial.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Partially Fulfilled</h4>
+                              <div className="divide-y space-y-3">
+                                {doneeRequestGroups.partial.map((r) => {
+                                  const badge = getRequestStatusBadge(r.status);
+                                  const f = getRequestFulfilment(r);
+                                  return (
+                                    <div key={r.id} className="pt-3 first:pt-0 flex flex-col gap-2 group p-3 rounded-xl border border-[var(--ck-role-accent)]/20 bg-[var(--ck-role-accent)]/5 dark:bg-[var(--ck-role-accent)]/10 hover:bg-[var(--ck-role-accent)]/10 transition-all">
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                          <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors"><TranslatedText text={r.title} /></p>
+                                          <p className="text-xs text-stone-500 mt-0.5"><TranslatedText text={r.category} /></p>
+                                        </div>
+                                        <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
+                                          {badge.label}
+                                        </Badge>
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-2 mt-1">
+                                        <div className="bg-white dark:bg-zinc-800 rounded p-1.5 text-center shadow-sm border border-stone-100 dark:border-zinc-700">
+                                          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Requested</p>
+                                          <p className="font-bold text-sm text-stone-700 dark:text-stone-300">{f.requested}</p>
+                                        </div>
+                                        <div className="bg-white dark:bg-zinc-800 rounded p-1.5 text-center shadow-sm border border-emerald-100 dark:border-emerald-900/30">
+                                          <p className="text-[10px] text-emerald-600 uppercase tracking-wider">Fulfilled</p>
+                                          <p className="font-bold text-sm text-emerald-600">{f.fulfilled}</p>
+                                        </div>
+                                        <div className="bg-[var(--ck-role-accent)] text-white rounded p-1.5 text-center shadow-sm">
+                                          <p className="text-[10px] uppercase tracking-wider opacity-90">Remaining</p>
+                                          <p className="font-bold text-sm">{f.remaining}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Closed Requests — rejected, expired or withdrawn */}
+                          {doneeRequestGroups.closed.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Closed</h4>
+                              <div className="divide-y space-y-3">
+                                {doneeRequestGroups.closed.map((r) => <CompactRequestRow key={r.id} request={r} />)}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </CardContent>
@@ -2206,14 +2565,14 @@ export default function DashboardPage() {
                       <CardTitle className="text-sm sm:text-base font-bold">Matches &amp; Handover Status</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 sm:space-y-4 relative z-10">
-                      {doneeMatches.length === 0 ? (
+                      {doneeMatches.filter(m => m.status !== "FULFILLED" && m.status !== "COMPLETED").length === 0 ? (
                         <div className="py-7 sm:py-12 text-center">
                           <p className="text-sm text-stone-400">No active matches found for your requests yet.</p>
                           <p className="text-xs text-stone-400/80 mt-1">We are actively checking private inventory to find matching items.</p>
                         </div>
                       ) : (
                         <div className="divide-y space-y-3 sm:space-y-4">
-                          {doneeMatches.map((m) => {
+                          {doneeMatches.filter(m => m.status !== "FULFILLED" && m.status !== "COMPLETED").map((m) => {
                             const badge = getFulfilmentStatusBadge(m.status);
                             return (
                               <div key={m.id} className="pt-3 sm:pt-4 first:pt-0 space-y-2 group p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { CalendarPlus, CircleCheck, Clock, MessageCircle, TriangleAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -120,7 +121,23 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
   // Already done your part: there is genuinely nothing to submit, so offer the
   // only useful thing left — a nudge.
   if (youConfirmed) {
-    return <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />;
+    const showConfirmationPanel = donor && vm.confirmation.doneeConfirmedAt == null;
+    return (
+      <div className="space-y-4">
+        {showConfirmationPanel && (
+          <div className="-mx-1">
+            <HandoverConfirmationPanel
+              vm={vm}
+              otp={otp}
+              onGenerateOtp={onGenerateOtp}
+              onDonorConfirm={onDonorConfirm}
+              onDoneeConfirm={onDoneeConfirm}
+            />
+          </div>
+        )}
+        <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />
+      </div>
+    );
   }
 
   return (
@@ -192,6 +209,14 @@ function Completion({ vm }: { vm: HandoverViewModel }) {
           If a problem surfaces in the next few days, you can still report it below.
         </p>
       )}
+      
+      <div className="pt-2">
+        <Button asChild variant="outline" className={handoverSecondary}>
+          <Link href="/dashboard">
+            Back to dashboard
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

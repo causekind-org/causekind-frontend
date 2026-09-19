@@ -63,13 +63,15 @@ const STEP_INTROS: Record<OfferStep, string> = {
  * `offerId` is non-null for the whole lifetime of this component.
  */
 export function DonationOfferWizard({
-  offerId, offer, requestTitle, requestedQuantity, adminNote, onSubmitted, onExit, onSaveExit,
+  offerId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
 }: {
   offerId: number;
   /** Hydration source — a resumed DRAFT or NEEDS_INFORMATION offer. */
   offer: DonationOffer | null;
   requestTitle: string | null;
   requestedQuantity: number | null;
+  /** Less than requestedQuantity once earlier donations have been delivered. */
+  stillNeededQuantity?: number | null;
   /** Rejection guidance, kept visible while editing a NEEDS_INFORMATION offer. */
   adminNote?: string | null;
   onSubmitted: (offer: DonationOffer) => void;
@@ -300,7 +302,7 @@ export function DonationOfferWizard({
   const photosBlocked = screening.kind === "prohibited";
 
   const handleContinue = useCallback(async () => {
-    const stepErrors = validateOfferStep(step, model);
+    const stepErrors = validateOfferStep(step, model, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
       setErrors({ photos: "Remove the photo we cannot accept before continuing." });
       return;
@@ -333,7 +335,7 @@ export function DonationOfferWizard({
     submitLockRef.current = true;
     setSubmitError(null);
 
-    const allErrors = validateOfferAll(model);
+    const allErrors = validateOfferAll(model, stillNeededQuantity);
     if (Object.keys(allErrors).length > 0) {
       const first = Object.keys(allErrors)[0];
       const target = offerStepForField(first);
@@ -412,7 +414,7 @@ export function DonationOfferWizard({
     const out = {} as Record<OfferStep, StepAvailability>;
     const savedSnapshot = draft.isSnapshotSaved(model);
     for (const s of OFFER_STEPS) {
-      const complete = Object.keys(validateOfferStep(s, model)).length === 0;
+      const complete = Object.keys(validateOfferStep(s, model, stillNeededQuantity)).length === 0;
       // Only a completed step whose data the server has confirmed is safe to
       // jump back to; otherwise the donor could edit an unsaved earlier answer.
       out[s] = { complete, canNavigate: complete && savedSnapshot };
@@ -531,7 +533,8 @@ export function DonationOfferWizard({
                       {step === "details" && (
                         <OfferDetailsStep
                           model={model} errors={errors} onChange={setField}
-                          requestedQuantity={requestedQuantity} showSpecNotes={showSpecNotes}
+                          requestedQuantity={requestedQuantity} stillNeededQuantity={stillNeededQuantity}
+                          showSpecNotes={showSpecNotes}
                         />
                       )}
                       {step === "condition" && (

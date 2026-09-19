@@ -422,6 +422,8 @@ export default function OfferWizardPage() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
   const [blockedByOther, setBlockedByOther] = useState(false);
+  // This donor already completed a donation to this request — they can give more.
+  const [donatedBefore, setDonatedBefore] = useState(false);
   const [nudged, setNudged] = useState<DonorFlowType | null>(null);
   const compatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -445,8 +447,13 @@ export default function OfferWizardPage() {
     // Check if the donor already has an offer for this request
     getMyDonationOffers()
       .then((offers) => {
-        const found = offers.find((o) => o.requestId === requestId &&
-          !["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(o.status));
+        const mine = offers.filter((o) => o.requestId === requestId);
+        setDonatedBefore(mine.some((o) => o.status === "COMPLETED"));
+        // Finished offers don't block a new one — neither a withdrawn/declined/rejected
+        // attempt nor a COMPLETED donation: a donor who gave 4 of 10 laptops can come
+        // back and give the other 6. Mirrors DonationOfferService.isFinishedOfferStatus.
+        const found = mine.find((o) =>
+          !["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED", "COMPLETED"].includes(o.status));
         if (!found) {
           // No offer of our own yet — check whether another donor already has one
           // actively in progress on this request before letting the donor start.
@@ -713,6 +720,10 @@ export default function OfferWizardPage() {
     );
   }
 
+  // What donors can still send once earlier donations are counted — from the
+  // request's own quantity, capped, so it can never read below zero.
+  const stillNeeded = Math.max(0, request.quantity - Math.min(request.quantityDelivered ?? 0, request.quantity));
+
   // The request/flow picker creates the server draft. Once it exists, the
   // editable item form owns the viewport so its desktop rail, stacked card and
   // mobile sticky controls are not constrained by the legacy page wrapper.
@@ -724,6 +735,7 @@ export default function OfferWizardPage() {
           offer={offer}
           requestTitle={request.title}
           requestedQuantity={request.quantity}
+          stillNeededQuantity={stillNeeded}
           adminNote={offer.status === "NEEDS_INFORMATION" ? offer.displayRejectionReason : null}
           onExit={() => {
             setExistingOffer(offer);
@@ -836,6 +848,18 @@ export default function OfferWizardPage() {
               );
             })()}
 
+            {/* A returning donor — their earlier donation is done, and the request
+                still needs more. Same left-accent style as the existing-offer banner. */}
+            {donatedBefore && !existingOffer && stillNeeded > 0 && (
+              <div className="mb-6 border-l-4 border-green-400 py-1 pl-4 dark:border-green-600">
+                <p className="text-sm font-bold text-green-800 dark:text-green-200">Thank you for donating to this request</p>
+                <p className="mt-1 text-sm leading-relaxed text-green-700 dark:text-green-300">
+                  Your earlier donation is complete. {stillNeeded} more {stillNeeded === 1 ? "is" : "are"} still
+                  needed — you can offer again below.
+                </p>
+              </div>
+            )}
+
             {/* Breadcrumb */}
             <div className="mb-4 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">
               <Link href="/requests" className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">Requests</Link>
@@ -867,7 +891,12 @@ export default function OfferWizardPage() {
                 <span className="text-gray-300 dark:text-gray-700">•</span>
                 <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {request.city}</span>
                 <span className="text-gray-300 dark:text-gray-700">•</span>
-                <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {request.quantity} unit{request.quantity === 1 ? "" : "s"} needed</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" />
+                  {stillNeeded < request.quantity
+                    ? `${stillNeeded} of ${request.quantity} still needed`
+                    : `${request.quantity} unit${request.quantity === 1 ? "" : "s"} needed`}
+                </span>
               </div>
             </header>
 
@@ -990,7 +1019,7 @@ export default function OfferWizardPage() {
                   </div>
                   <div className="flex gap-5 sm:gap-8 text-right">
                     <div>
-                      <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityDelivered} / {qty.quantityRequired}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{request.quantity - stillNeeded} / {request.quantity}</p>
                       <p className="text-2xs font-semibold uppercase tracking-wide text-gray-400">Provided</p>
                     </div>
                     <div>
@@ -1016,7 +1045,7 @@ export default function OfferWizardPage() {
             <div className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {daysAgo(request.createdAt)}</span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
-              <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {request.quantityRemaining} still needed</span>
+              <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {stillNeeded} still needed</span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
               <button
                 onClick={() => shareRequest(request.title, request.id)}

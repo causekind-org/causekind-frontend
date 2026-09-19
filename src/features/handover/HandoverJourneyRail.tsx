@@ -53,13 +53,12 @@ export function HandoverJourneyRail({ state }: { state: HandoverState }) {
               </div>
               <span
                 aria-current={isCurrent ? "step" : undefined}
-                className={`w-full truncate text-center text-3xs font-semibold sm:text-2xs ${
-                  isCurrent
+                className={`w-full truncate text-center text-3xs font-semibold sm:text-2xs ${isCurrent
                     ? "text-[var(--handover-accent)]"
                     : done
                       ? "text-stone-600 dark:text-stone-300"
                       : "text-stone-400 dark:text-stone-500"
-                }`}
+                  }`}
               >
                 {step.label}
               </span>
