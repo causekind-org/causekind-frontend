@@ -456,9 +456,18 @@ export function DonationOfferWizard({
           <p className="text-2xs text-white/35">Your name and address stay private until a match is approved.</p>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col justify-between">
+        <form
+          className="flex min-w-0 flex-1 flex-col justify-between h-[calc(100svh-var(--ck-bottom-chrome))] lg:h-[100dvh] overflow-y-auto"
+          onSubmit={e => {
+            e.preventDefault();
+            if (!advancing && !submitting && !submitted) {
+              if (isLast) handleSubmit();
+              else handleContinue();
+            }
+          }}
+        >
           {/* Mobile sticky progress — never rendered alongside the desktop rail. */}
-          <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5] dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
+          <div className="sticky top-0 z-40 border-b border-stone-200 bg-[#faf8f5] dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
             <div className="flex items-center justify-between px-4 pt-2">
               <button
                 type="button"
@@ -588,9 +597,8 @@ export function DonationOfferWizard({
             savingExit={savingExit}
             advancing={advancing}
             avoidBottomChrome
-            // Removed variant="floating" to make it sticky, ensuring the button is always visible
           />
-        </div>
+        </form>
       </div>
     </MotionConfig>
   );
