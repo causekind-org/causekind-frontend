@@ -212,8 +212,9 @@ export function resolveRole(
   doneeEmail: string | null | undefined,
 ): HandoverRole | null {
   if (!userEmail) return null;
-  if (donorEmail && userEmail === donorEmail) return "DONOR";
-  if (doneeEmail && userEmail === doneeEmail) return "DONEE";
+  const norm = userEmail.trim().toLowerCase();
+  if (donorEmail && norm === donorEmail.trim().toLowerCase()) return "DONOR";
+  if (doneeEmail && norm === doneeEmail.trim().toLowerCase()) return "DONEE";
   return null;
 }
 

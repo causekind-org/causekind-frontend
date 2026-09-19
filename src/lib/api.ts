@@ -2439,6 +2439,15 @@ export function reportPostDeliveryIssue(offerId: number, data: {
   });
 }
 
+export function reportMatchIssue(matchId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/matches/${matchId}/handover/issues`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export function confirmNoIssue(offerId: number) {
   return request<DonationOffer>(`/api/v1/offers/${offerId}/handover/confirm-no-issue`, { method: "POST" });
 }

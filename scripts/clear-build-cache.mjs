@@ -26,3 +26,4 @@ import { rmSync } from "node:fs";
  * built cleanly too.
  */
 rmSync(".next/cache", { recursive: true, force: true });
+rmSync(".next/dev", { recursive: true, force: true });
