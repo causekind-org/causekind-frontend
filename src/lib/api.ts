@@ -919,6 +919,14 @@ export async function uploadListingPhoto(listingId: number, file: File): Promise
     credentials: "include",
   });
   if (!res.ok) {
+    // A 413 is refused before any handler runs — by the servlet container, or
+    // further out by nginx, which answers with an empty body and no CORS header.
+    // That combination surfaces in the browser as a CORS error rather than a
+    // size error, so without this branch the donor is told nothing useful about
+    // a photo that never reached the server at all.
+    if (res.status === 413) {
+      throw new Error("That photo is too large to upload. Please choose another one.");
+    }
     // The server's own sentence is used when there is one: it names the actual
     // cause ("You have already added this photo", "up to 5 photos"), where a
     // generic "upload failed" was the old behaviour and named nothing.
