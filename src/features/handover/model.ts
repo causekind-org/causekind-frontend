@@ -105,11 +105,20 @@ export type HandoverViewModel = {
   certificateHref: string | null;
   closed: boolean;
   /**
+   * Timestamp when the handover reached completion. Used to enforce the 3-hour
+   * issue reporting window.
+   */
+  completedAt?: string | null;
+  /**
    * The quantity the donor committed to in the offer/match wizard.
    * Used by the confirmation panel instead of asking again at handover time.
    */
   offeredQuantity: number | null;
 };
+
+/** Window (in hours) after match completion during which participants can report an issue. */
+export const REPORT_ISSUE_WINDOW_HOURS = 3;
+export const REPORT_ISSUE_WINDOW_MS = REPORT_ISSUE_WINDOW_HOURS * 60 * 60 * 1000;
 
 // ── Journey rail ────────────────────────────────────────────────────────────
 

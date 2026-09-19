@@ -19,7 +19,7 @@ import {
   type CancellationOption, type CancellationReason,
 } from "@/lib/api";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
-import { handoverScope, type HandoverFlow, type HandoverRole, type HandoverViewModel } from "./model";
+import { handoverScope, REPORT_ISSUE_WINDOW_MS, type HandoverFlow, type HandoverRole, type HandoverViewModel } from "./model";
 import {
   handoverPrimary, handoverSecondary, handoverDestructive,
   handoverSelectTrigger, handoverSelectItem, handoverLabel,
@@ -79,9 +79,22 @@ export function HandoverSafetyActions({ vm, onChanged }: {
     return () => { alive = false; };
   }, [vm.flow, vm.id, vm.state]);
 
+  const isWithinThreeHoursOfCompletion = Boolean(
+    vm.completedAt &&
+      (() => {
+        const raw = vm.completedAt.trim();
+        const iso = raw.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : `${raw}Z`;
+        const time = new Date(iso).getTime();
+        return !isNaN(time) && Date.now() - time <= REPORT_ISSUE_WINDOW_MS;
+      })()
+  );
+
   const showCancel = option?.allowed && option.outcome !== "HIDE";
-  const disputeOnly = option?.outcome === "DISPUTE";
-  const canReportIssue = disputeOnly || vm.state === "issue_window" || vm.state === "completed";
+  const disputeOnly = option?.outcome === "DISPUTE" && (vm.state !== "completed" || isWithinThreeHoursOfCompletion);
+  const canReportIssue =
+    vm.state === "completed"
+      ? isWithinThreeHoursOfCompletion
+      : (disputeOnly || vm.state === "issue_window");
 
   if (!showCancel && !disputeOnly && !canReportIssue) return null;
 
