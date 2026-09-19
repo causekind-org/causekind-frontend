@@ -821,44 +821,62 @@ export function ItemDonationScrolly() {
                 transition: "opacity 0.15s linear, transform 0.15s linear",
               }}
             >
-              <p
-                className="ck-shine"
+              {/* The caption card. Without it the serif text sat directly on
+                  the film and read as if it were baked into the footage;
+                  this glass panel — dark fill, soft blur, a hairline border
+                  and a wide, soft shadow — gives the words their own plane
+                  in front of the video instead of blending into it. */}
+              <div
+                className={`rounded-[22px] ${alignEnd ? "items-end text-right" : "items-start text-left"} flex flex-col`}
                 style={{
-                  fontFamily: "var(--font-source-serif-4), Georgia, serif",
-                  fontSize: "clamp(2rem, 1.1rem + 3vw, 4rem)",
-                  fontWeight: 600,
-                  lineHeight: 1.05,
-                  letterSpacing: "-0.02em",
+                  padding: "clamp(1.1rem, 1.6vw + 0.6rem, 2rem) clamp(1.4rem, 2vw + 0.7rem, 2.5rem)",
+                  background: "rgba(10,9,8,0.52)",
+                  backdropFilter: "blur(14px) saturate(1.1)",
+                  WebkitBackdropFilter: "blur(14px) saturate(1.1)",
+                  border: "1px solid rgba(255,255,255,0.09)",
+                  boxShadow: "0 24px 60px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.06) inset",
                 }}
               >
-                {t(c.key)}
-              </p>
-              {/* One hand-drawn accent stroke per beat, under the line — not
-                  under a single word (the copy comes from i18n as one
-                  string), but restrained to a short mark rather than a full
-                  underline, so it reads as an accent and not decoration. */}
-              <svg
-                aria-hidden
-                width="84"
-                height="10"
-                viewBox="0 0 84 10"
-                className="mt-1.5"
-                style={{ opacity: o }}
-              >
-                <path
-                  d="M2 6.5 C 22 2, 62 2, 82 6.5"
-                  fill="none"
-                  stroke="#ff8a2b"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  pathLength={1}
+                <p
+                  className="ck-shine"
                   style={{
-                    strokeDasharray: 1,
-                    strokeDashoffset: 1 - o,
-                    transition: "stroke-dashoffset 0.2s linear",
+                    fontFamily: "var(--font-source-serif-4), Georgia, serif",
+                    fontSize: "clamp(2rem, 1.1rem + 3vw, 4rem)",
+                    fontWeight: 600,
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.02em",
                   }}
-                />
-              </svg>
+                >
+                  {t(c.key)}
+                </p>
+                {/* One hand-drawn accent stroke per beat, under the line —
+                    not under a single word (the copy comes from i18n as one
+                    string), but restrained to a short mark rather than a
+                    full underline, so it reads as an accent and not
+                    decoration. */}
+                <svg
+                  aria-hidden
+                  width="84"
+                  height="10"
+                  viewBox="0 0 84 10"
+                  className="mt-1.5"
+                  style={{ opacity: o }}
+                >
+                  <path
+                    d="M2 6.5 C 22 2, 62 2, 82 6.5"
+                    fill="none"
+                    stroke="#ff8a2b"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    pathLength={1}
+                    style={{
+                      strokeDasharray: 1,
+                      strokeDashoffset: 1 - o,
+                      transition: "stroke-dashoffset 0.2s linear",
+                    }}
+                  />
+                </svg>
+              </div>
             </div>
           );
         })}
