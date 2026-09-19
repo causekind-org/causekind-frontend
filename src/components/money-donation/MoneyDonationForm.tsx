@@ -154,7 +154,14 @@ export function MoneyDonationForm() {
       toast.error('Please enter your email so we can send your receipt.');
       return;
     }
-    if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
+    // Required since 2026-09-18. The trust reports every donor's PAN in Form
+    // 10BD, so a donation taken without one cannot be included in that return.
+    // The same rule is enforced on the DTO — this check only saves a round trip.
+    if (!formData.panNumber) {
+      toast.error('Please enter your PAN — it is required for your 80G receipt.');
+      return;
+    }
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
       toast.error('PAN must be five letters, four digits and one letter, e.g. ABCDE1234F.');
       return;
     }
@@ -184,7 +191,9 @@ export function MoneyDonationForm() {
         // load-bearing — but omitting it would fail validation before it got there.
         email: donorEmail || formData.email,
         mobileNumber: fullPhone || undefined,
-        panNumber: formData.panNumber || undefined,
+        // Sent as-is, never coerced to undefined: it is validated non-blank just
+        // above, and the DTO now rejects a missing one.
+        panNumber: formData.panNumber,
         address: formData.address.trim() || undefined,
       });
 
@@ -196,7 +205,7 @@ export function MoneyDonationForm() {
         currency: order.currency,
         name: 'CauseKind',
         description: tip > 0
-          ? 'Donation to Sahas Charitable Trust + CauseKind tip'
+          ? 'Donation to Sahas Charitable Trust + CauseKind support'
           : 'Donation to Sahas Charitable Trust',
         order_id: order.razorpayOrderId,
         prefill: {
@@ -209,9 +218,14 @@ export function MoneyDonationForm() {
         handler: () => {
           // The donation, not the total: this is what the thank-you page and the
           // 80G receipt are about.
+          // First name only. The thank-you page greets the donor by it, and a
+          // full name in a URL lingers in browser history and referrer headers
+          // for no gain. The email is never put in the URL at all.
+          const firstName = formData.fullName.trim().split(/\s+/)[0] ?? '';
           router.push(
             `/thank-you?campaign=${encodeURIComponent('Sahas Charitable Trust')}` +
-              `&amount=${encodeURIComponent(String(donation))}`
+              `&amount=${encodeURIComponent(String(donation))}` +
+              (firstName ? `&name=${encodeURIComponent(firstName)}` : '')
           );
         },
         modal: { ondismiss: () => toast.info('Payment cancelled. Nothing was charged.') },
@@ -291,7 +305,7 @@ export function MoneyDonationForm() {
               <div className={trustPill}>
                 <Heart className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
                 <span className="text-[13px] font-bold text-foreground">
-                  Zero platform fees &middot; funded by tips
+                  Zero platform fees &middot; funded by supporters
                 </span>
               </div>
             </div>
@@ -386,19 +400,19 @@ export function MoneyDonationForm() {
                     beside the total. A charge that appears at the end of a form
                     reads as a surprise fee however it is worded. */}
                 <div className="flex flex-col gap-3">
-                  <StepLabel n={2} title="Tip CauseKind" hint="optional" />
+                  <StepLabel n={2} title="Support the platform" hint="optional" />
                   {/* One line, not a paragraph. The reason to tip still has to be
                       stated — it is the whole ask — but at three lines it cost
                       more vertical space than the chips it was introducing. */}
                   <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-                    We take nothing from your donation — tips are what keep CauseKind running.
+                    We take nothing from your donation — this is what keeps CauseKind running.
                   </p>
                   {/* Same shape as step 1: the custom control is the last cell
                       of the SAME row and swaps in place, so adding it costs no
                       height and the block does not jump when it is chosen. */}
                   <div
                     role="group"
-                    aria-label="Tip to CauseKind"
+                    aria-label="Support for CauseKind"
                     className="grid grid-cols-3 gap-2.5 sm:grid-cols-6"
                   >
                     {TIP_OPTIONS.map((t) => (
@@ -415,7 +429,7 @@ export function MoneyDonationForm() {
                         }}
                         className={`${chipClasses(!isCustomTip && presetTip === t)} px-1.5`}
                       >
-                        {t === 0 ? 'No tip' : `₹${money(t)}`}
+                        {t === 0 ? 'No thanks' : `₹${money(t)}`}
                       </motion.button>
                     ))}
 
@@ -425,7 +439,7 @@ export function MoneyDonationForm() {
                           ₹
                         </span>
                         <label htmlFor="customTip" className="sr-only">
-                          Custom tip to CauseKind, in rupees
+                          Custom support for CauseKind, in rupees
                         </label>
                         <input
                           id="customTip"
@@ -474,7 +488,7 @@ export function MoneyDonationForm() {
                         value={formData.fullName}
                         onChange={handleChange}
                         className={inputClasses}
-                        placeholder="Jane Doe"
+                        placeholder="Enter your full name"
                       />
                     </div>
                     {/* Guests only — see the useAuth comment at the top of the
@@ -492,7 +506,7 @@ export function MoneyDonationForm() {
                           value={formData.email}
                           onChange={handleChange}
                           className={inputClasses}
-                          placeholder="jane@example.com"
+                          placeholder="Enter your email address"
                         />
                       </div>
                     )}
@@ -535,7 +549,7 @@ export function MoneyDonationForm() {
                             })
                           }
                           className={`${inputClasses} flex-1 min-w-0`}
-                          placeholder="98765 43210"
+                          placeholder="Enter your mobile number"
                         />
                       </div>
                     </div>
@@ -543,19 +557,20 @@ export function MoneyDonationForm() {
                       <label htmlFor="panNumber" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
                         PAN{' '}
                         <span className="font-semibold text-stone-400 dark:text-stone-500">
-                          · for 80G receipt
+                          · required for your 80G receipt
                         </span>
                       </label>
                       <input
                         type="text"
                         id="panNumber"
                         name="panNumber"
+                        required
                         value={formData.panNumber}
                         onChange={(e) =>
                           setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })
                         }
                         className={inputClasses}
-                        placeholder="ABCDE1234F"
+                        placeholder="Enter your 10-character PAN"
                         maxLength={10}
                       />
                     </div>
@@ -578,7 +593,7 @@ export function MoneyDonationForm() {
                         value={formData.address}
                         onChange={handleChange}
                         className={inputClasses}
-                        placeholder="Flat, street, city, PIN"
+                        placeholder="Enter your address — flat, street, city, PIN"
                         maxLength={300}
                         autoComplete="street-address"
                       />
@@ -615,7 +630,7 @@ export function MoneyDonationForm() {
                   </div>
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-[13px] font-semibold text-stone-600 dark:text-stone-300">
-                      Tip to CauseKind
+                      Support for CauseKind
                     </span>
                     <span className="text-[15px] font-bold tabular-nums text-foreground">
                       ₹{money(tip)}
@@ -638,7 +653,7 @@ export function MoneyDonationForm() {
                   <Check className="mt-px size-4 shrink-0 text-green-700 dark:text-green-500" aria-hidden="true" />
                   <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300">
                     All <span className="font-bold tabular-nums text-foreground">₹{money(donation)}</span>{' '}
-                    reaches Sahas. CauseKind takes no cut — only the tip you choose.
+                    reaches Sahas. CauseKind takes no cut — only the support you choose to add.
                   </p>
                 </div>
 

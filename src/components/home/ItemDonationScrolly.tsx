@@ -304,12 +304,6 @@ export function ItemDonationScrolly() {
     { v: "bottom", h: "right" },
   ] as const;
 
-  // Timecode: reads the scrub as MM:SS against the ~10s clip. Appears once the
-  // film is full bleed and steps aside for the closing brand block.
-  const tcCur = Math.min(10, Math.floor(sp * 10));
-  const timecode = `00:${String(tcCur).padStart(2, "0")} / 00:10`;
-  const tcOpacity = smoothstep(0.6, 1, expand) * (1 - brandOpacity);
-
   /* ── Reduced-motion / server fallback ────────────────────────────────────
      A single representative still with the brand block and CTA laid over it.
      No sticky, no 600vh, no scrub. */
@@ -577,25 +571,6 @@ export function ItemDonationScrolly() {
               willChange: "transform",
             }}
           />
-        </div>
-
-        {/* Timecode — the film metaphor made literal. Reads the scrub as MM:SS,
-            appears once the frame is full bleed, steps aside for the brand. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute bottom-6 left-6 flex items-center gap-2 sm:left-10 lg:left-14"
-          style={{ opacity: tcOpacity, transition: "opacity 0.2s linear" }}
-        >
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ background: "#ff5a2b", boxShadow: "0 0 8px rgba(255,90,43,0.9)" }}
-          />
-          <span
-            className="text-[12px] font-semibold tabular-nums tracking-[0.14em] text-white/70"
-            style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
-          >
-            {timecode}
-          </span>
         </div>
 
         {/* First-load hint, gone once the opening frame paints. */}
