@@ -62,6 +62,10 @@ function MetaPixelTestInner() {
           `,
         }}
       />
+      {/* suppressHydrationWarning: the Meta Pixel SDK adds aria-hidden / data-aria-hidden
+          to this element after load; those attributes are absent in SSR HTML, causing a
+          benign hydration mismatch. The noscript fallback is only meaningful when JS is
+          disabled (contradicting the React runtime), so suppressing the warning here is safe. */}
       <noscript suppressHydrationWarning>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

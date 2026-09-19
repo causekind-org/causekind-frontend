@@ -105,6 +105,11 @@ export type HandoverViewModel = {
   certificateHref: string | null;
   closed: boolean;
   /**
+   * Timestamp when the handover reached completion. Used to enforce the 3-hour
+   * issue reporting window.
+   */
+  completedAt?: string | null;
+  /**
    * The quantity the donor committed to in the offer/match wizard.
    * Used by the confirmation panel instead of asking again at handover time.
    */
@@ -112,6 +117,7 @@ export type HandoverViewModel = {
   /** Courier destination the recipient supplies; null when the backend sends none. */
   delivery: HandoverDelivery | null;
 };
+
 
 /**
  * Where a courier should deliver — same shape in both flows. `needed` is true when
@@ -173,6 +179,10 @@ function deliveryStepCopy(vm: HandoverViewModel): { title: string; body: string 
   return { title: s === "requested" ? "The donor needs your delivery address" : "Add your delivery address",
            body: "This is coming by courier. Tell the donor where to deliver it and a number the courier can call." };
 }
+
+/** Window (in hours) after match completion during which participants can report an issue. */
+export const REPORT_ISSUE_WINDOW_HOURS = 3;
+export const REPORT_ISSUE_WINDOW_MS = REPORT_ISSUE_WINDOW_HOURS * 60 * 60 * 1000;
 
 // ── Journey rail ────────────────────────────────────────────────────────────
 
@@ -280,8 +290,9 @@ export function resolveRole(
   doneeEmail: string | null | undefined,
 ): HandoverRole | null {
   if (!userEmail) return null;
-  if (donorEmail && userEmail === donorEmail) return "DONOR";
-  if (doneeEmail && userEmail === doneeEmail) return "DONEE";
+  const norm = userEmail.trim().toLowerCase();
+  if (donorEmail && norm === donorEmail.trim().toLowerCase()) return "DONOR";
+  if (doneeEmail && norm === doneeEmail.trim().toLowerCase()) return "DONEE";
   return null;
 }
 

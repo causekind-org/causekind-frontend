@@ -113,6 +113,7 @@ export function adaptOffer(
     certificateHref: role === "DONOR" && offer.status === "COMPLETED"
       ? `/certificate?offerId=${offer.id}` : null,
     closed: state === "completed" || state === "cancelled_or_failed",
+    completedAt: null,
     offeredQuantity: offer.itemDetails?.quantity ?? null,
     delivery: handover?.delivery ?? null,
   };
@@ -185,6 +186,7 @@ export function adaptMatch(
     certificateCode: match.verifiedDeliveryCertificate ?? null,
     certificateHref: null,
     closed: state === "completed" || state === "cancelled_or_failed",
+    completedAt: match.completedAt ?? null,
     offeredQuantity: matchCommittedQuantity(match),
     delivery: match.delivery ?? null,
   };

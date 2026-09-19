@@ -1568,6 +1568,7 @@ export type ItemMatch = {
   /** Server-computed XOR of the two confirmation timestamps — no status reflects it. */
   handoverPartlyConfirmed: boolean;
   closedAt: string | null;
+  completedAt?: string | null;
   hiddenByDonor: boolean;
   hiddenByDonee: boolean;
   // Delivery verification
@@ -2538,6 +2539,15 @@ export function reportPostDeliveryIssue(offerId: number, data: {
   issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
 }) {
   return request<object>(`/api/v1/offers/${offerId}/handover/issues`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function reportMatchIssue(matchId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/matches/${matchId}/handover/issues`, {
     method: "POST",
     body: JSON.stringify(data),
   });

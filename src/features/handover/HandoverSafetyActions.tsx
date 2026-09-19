@@ -14,23 +14,31 @@ import {
 import { toast } from "@/lib/toast";
 import {
   cancelMatch, getMatchCancellationOptions, getOfferCancellationOptions,
-  reportPostDeliveryIssue, confirmNoIssue,
+  reportPostDeliveryIssue, reportMatchIssue, confirmNoIssue,
   CANCELLATION_REASONS,
   type CancellationOption, type CancellationReason,
 } from "@/lib/api";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
-import { handoverScope, type HandoverRole, type HandoverViewModel } from "./model";
+import { handoverScope, REPORT_ISSUE_WINDOW_MS, type HandoverFlow, type HandoverRole, type HandoverViewModel } from "./model";
 import {
   handoverPrimary, handoverSecondary, handoverDestructive,
   handoverSelectTrigger, handoverSelectItem, handoverLabel,
 } from "./handoverStyles";
 
-const ISSUE_TYPES = [
+const DONEE_ISSUE_TYPES = [
   { value: "ITEM_NOT_RECEIVED",     label: "I never received the item" },
   { value: "ITEM_DAMAGED",          label: "The item arrived damaged" },
   { value: "ITEM_NOT_AS_DESCRIBED", label: "It isn't what was described" },
   { value: "QUANTITY_MISMATCH",     label: "The quantity was wrong" },
   { value: "OTHER",                 label: "Something else" },
+];
+
+const DONOR_ISSUE_TYPES = [
+  { value: "RECIPIENT_DENIED_DELIVERY", label: "The recipient says they didn't get the item, but I handed it over" },
+  { value: "MONEY_DEMANDED",            label: "The recipient asked for money or something extra" },
+  { value: "INAPPROPRIATE_BEHAVIOUR",   label: "The recipient behaved inappropriately or made me feel unsafe" },
+  { value: "ITEM_RESOLD_OR_MISUSED",    label: "I think the item is being resold or misused" },
+  { value: "OTHER",                     label: "Something else" },
 ];
 
 /**
@@ -71,9 +79,22 @@ export function HandoverSafetyActions({ vm, onChanged }: {
     return () => { alive = false; };
   }, [vm.flow, vm.id, vm.state]);
 
-  const canReportIssue = vm.flow === "OFFER" && (vm.state === "issue_window" || vm.state === "completed");
+  const isWithinThreeHoursOfCompletion = Boolean(
+    vm.completedAt &&
+      (() => {
+        const raw = vm.completedAt.trim();
+        const iso = raw.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : `${raw}Z`;
+        const time = new Date(iso).getTime();
+        return !isNaN(time) && Date.now() - time <= REPORT_ISSUE_WINDOW_MS;
+      })()
+  );
+
   const showCancel = option?.allowed && option.outcome !== "HIDE";
-  const disputeOnly = option?.outcome === "DISPUTE";
+  const disputeOnly = option?.outcome === "DISPUTE" && (vm.state !== "completed" || isWithinThreeHoursOfCompletion);
+  const canReportIssue =
+    vm.state === "completed"
+      ? isWithinThreeHoursOfCompletion
+      : (disputeOnly || vm.state === "issue_window");
 
   if (!showCancel && !disputeOnly && !canReportIssue) return null;
 
@@ -132,7 +153,8 @@ export function HandoverSafetyActions({ vm, onChanged }: {
 
       {canReportIssue && (
         <ReportIssueDialog
-          offerId={vm.id}
+          flow={vm.flow}
+          id={vm.id}
           role={vm.role}
           open={issueOpen}
           onOpenChange={setIssueOpen}
@@ -249,18 +271,28 @@ function CancelMatchDialog({ matchId, role, option, open, onOpenChange, onCancel
   );
 }
 
-/** Creates a real PostDeliveryIssue — not a chat message dressed up as one. */
-function ReportIssueDialog({ offerId, role, open, onOpenChange, onReported }: {
-  offerId: number;
+/** Creates a real PostDeliveryIssue or Match dispute case — not a chat message dressed up as one. */
+function ReportIssueDialog({ flow, id, role, open, onOpenChange, onReported }: {
+  flow: HandoverFlow;
+  id: number;
   role: HandoverRole;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onReported: () => void;
 }) {
-  const [issueType, setIssueType] = useState(ISSUE_TYPES[0].value);
+  const issueTypes = role === "DONOR" ? DONOR_ISSUE_TYPES : DONEE_ISSUE_TYPES;
+  const [issueType, setIssueType] = useState(issueTypes[0].value);
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setIssueType(issueTypes[0].value);
+      setDescription("");
+      setError(null);
+    }
+  }, [open, role]);
 
   const canSubmit = !busy && description.trim().length >= 10;
 
@@ -268,9 +300,15 @@ function ReportIssueDialog({ offerId, role, open, onOpenChange, onReported }: {
     if (busy || !canSubmit) return;
     setBusy(true); setError(null);
     try {
-      await reportPostDeliveryIssue(offerId, {
-        issueType, description: description.trim(), windowCategory: "GENERAL",
-      });
+      if (flow === "MATCH") {
+        await reportMatchIssue(id, {
+          issueType, description: description.trim(), windowCategory: "GENERAL",
+        });
+      } else {
+        await reportPostDeliveryIssue(id, {
+          issueType, description: description.trim(), windowCategory: "GENERAL",
+        });
+      }
       onOpenChange(false);
       toast.success("Reported. Our team will look into this and contact you both.");
       onReported();
@@ -300,9 +338,15 @@ function ReportIssueDialog({ offerId, role, open, onOpenChange, onReported }: {
               <SelectTrigger id="issue-type" className={handoverSelectTrigger}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className={scope}>
-                {ISSUE_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value} className={handoverSelectItem}>
+              <SelectContent
+                className={`${scope} z-[110] w-[var(--radix-select-trigger-width)]`}
+              >
+                {issueTypes.map((t) => (
+                  <SelectItem
+                    key={t.value}
+                    value={t.value}
+                    className={`${handoverSelectItem} whitespace-normal`}
+                  >
                     {t.label}
                   </SelectItem>
                 ))}
