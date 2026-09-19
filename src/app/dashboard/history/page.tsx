@@ -2,24 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getMyItemRequests, getOffersForMyRequests, type ItemRequest, type DonationOffer } from "@/lib/api";
+import {
+  getMyItemRequests, getMyMatches, getOffersForMyRequests,
+  type DonationOffer, type ItemMatch, type ItemRequest,
+} from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, History, Package, CheckCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, History, Package, CheckCircle } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { isRequestActive } from "@/lib/requestActions";
 import { getRequestFulfilment } from "@/lib/requestFulfilment";
+import { deliveriesForRequest, totalReceived, type Delivery } from "@/features/fulfilment-history/deliveries";
+import { DeliveryDetailsDialog } from "@/features/fulfilment-history/DeliveryDetailsDialog";
 
 const CLOSED_LABEL: Record<string, string> = { CANCELLED: "Withdrawn", EXPIRED: "Expired", REJECTED: "Rejected" };
 
-const offerDate = (o: DonationOffer) => new Date(o.closedAt || o.createdAt).getTime();
+const shortDate = (ms: number) => new Date(ms).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 export default function DashboardHistoryPage() {
   const { user, isLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<ItemRequest[]>([]);
   const [offers, setOffers] = useState<DonationOffer[]>([]);
+  const [matches, setMatches] = useState<ItemMatch[]>([]);
+  // The last delivery opened, kept while the dialog animates closed.
+  const [selected, setSelected] = useState<{ delivery: Delivery; request: ItemRequest } | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -30,22 +39,28 @@ export default function DashboardHistoryPage() {
 
     Promise.all([
       getMyItemRequests(),
-      getOffersForMyRequests()
+      getOffersForMyRequests(),
+      // Matches are optional here — a failure leaves offer deliveries showing.
+      getMyMatches().catch(() => [] as ItemMatch[]),
     ])
-      .then(([reqs, offs]) => {
-        const completed = offs.filter(o => o.status === "COMPLETED");
-        // Most recent delivery first; a request with no offer behind it (closed
-        // through the item-listing match flow) falls back to when it was posted.
+      .then(([reqs, offs, mats]) => {
+        const mine = new Set(reqs.map(r => r.id));
+        // Only matches against this donee's own requests — the same account can
+        // also be the donor on a match.
+        const myMatches = mats.filter(m => m.requestId != null && mine.has(m.requestId));
+        // Most recent delivery first; a request with no delivery on record falls
+        // back to when it was posted.
         const lastActivity = (r: ItemRequest) => Math.max(
           new Date(r.createdAt).getTime(),
-          ...completed.filter(o => o.requestId === r.id).map(offerDate),
+          ...deliveriesForRequest(r.id, offs, myMatches).map(d => d.deliveredAt),
         );
         // By what was received, not the raw counter — a request completed through
         // the match flow is FULFILLED with a counter of 0 and belongs here too.
         setRequests(reqs
           .filter(r => getRequestFulfilment(r).fulfilled > 0)
           .sort((a, b) => lastActivity(b) - lastActivity(a)));
-        setOffers(completed);
+        setOffers(offs);
+        setMatches(myMatches);
       })
       .catch(err => console.error("Error loading history:", err))
       .finally(() => setLoading(false));
@@ -67,7 +82,7 @@ export default function DashboardHistoryPage() {
               <History className="w-5 h-5 text-[var(--ck-role-accent)]" />
               Fulfillment History
             </h1>
-            <p className="text-xs text-stone-400 mt-0.5">Requests that have received fulfillments from donors.</p>
+            <p className="text-xs text-stone-400 mt-0.5">Every delivery you received, request by request. Open one for its full record.</p>
           </div>
         </div>
 
@@ -94,12 +109,14 @@ export default function DashboardHistoryPage() {
                   const { fulfilled, requested, remaining, isFullyFulfilled: isFully } = getRequestFulfilment(r);
                   // "Remaining" only means something while donors can still send it.
                   const stillOpen = isRequestActive(r.status);
-                  const reqOffers = offers
-                    .filter(o => o.requestId === r.id)
-                    .sort((a, b) => offerDate(a) - offerDate(b));
+                  const deliveries = deliveriesForRequest(r.id, offers, matches);
+                  const recordedTotal = totalReceived(deliveries);
+                  const tone = isFully
+                    ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
+                    : "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30";
 
                   return (
-                    <div key={`req-${r.id}`} className="p-4 sm:p-5 hover:bg-stone-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                    <div key={`req-${r.id}`} className="p-4 sm:p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex gap-3 sm:gap-4 items-start min-w-0">
                           <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${isFully ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-blue-50 dark:bg-blue-950/30'}`}>
@@ -117,7 +134,7 @@ export default function DashboardHistoryPage() {
                               <span>•</span>
                               <span><TranslatedText text={r.category} /></span>
                               <span>•</span>
-                              <span>Requested {new Date(r.createdAt).toLocaleDateString()}</span>
+                              <span>Requested {shortDate(new Date(r.createdAt).getTime())}</span>
                             </div>
                           </div>
                         </div>
@@ -126,24 +143,38 @@ export default function DashboardHistoryPage() {
                         </Badge>
                       </div>
 
-                      {reqOffers.length > 0 && (
+                      {deliveries.length > 0 && (
                         <div className="sm:ml-14 mt-4 space-y-2 border-l-2 border-emerald-100 dark:border-emerald-900/50 pl-4 py-1">
-                          <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Deliveries</p>
-                          {reqOffers.map((offer, idx) => (
-                            <div key={offer.id} className="bg-stone-50 dark:bg-zinc-800/50 rounded-lg p-3 border border-stone-100 dark:border-zinc-800 flex items-center justify-between gap-3">
+                          <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">
+                            Deliveries ({deliveries.length})
+                          </p>
+                          {deliveries.map((d, idx) => (
+                            <div key={d.key} className="bg-stone-50 dark:bg-zinc-800/50 rounded-lg p-3 border border-stone-100 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 <div className="h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
                                   <span className="text-3xs font-bold text-emerald-700 dark:text-emerald-400">{idx + 1}</span>
                                 </div>
-                                <span className="font-medium text-sm text-stone-700 dark:text-stone-300 truncate">
-                                  {offer.donorName || "Donor"}
-                                </span>
+                                <div className="min-w-0">
+                                  <p className="font-medium text-sm text-stone-700 dark:text-stone-300 truncate">{d.donorName}</p>
+                                  <p className="text-xs text-stone-500">
+                                    {shortDate(d.deliveredAt)}
+                                    {d.kind === "match" && " · item match"}
+                                    {/* Offered and received differ only when the donee confirmed a different count. */}
+                                    {d.received != null && d.offered != null && d.received !== d.offered && ` · ${d.offered} offered`}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-3 shrink-0">
-                                <span className="text-xs text-stone-500">{new Date(offerDate(offer)).toLocaleDateString()}</span>
-                                <span className={`text-sm font-bold px-2 py-0.5 rounded ${isFully ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30'}`}>
-                                  +{offer.itemDetails?.quantity ?? 1}
+                              <div className="flex items-center gap-2 shrink-0 ml-auto">
+                                <span className={`text-sm font-bold px-2 py-0.5 rounded tabular-nums ${tone}`}>
+                                  {d.received != null ? `+${d.received}` : "Delivered"}
                                 </span>
+                                <button
+                                  type="button"
+                                  onClick={() => { setSelected({ delivery: d, request: r }); setDetailsOpen(true); }}
+                                  className="inline-flex items-center gap-0.5 rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-xs font-bold text-stone-600 transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)]/50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300 dark:hover:bg-zinc-800"
+                                >
+                                  View details <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                                </button>
                               </div>
                             </div>
                           ))}
@@ -159,6 +190,14 @@ export default function DashboardHistoryPage() {
                               )}
                             </div>
                           </div>
+                          {/* Older records can disagree — e.g. a request closed complete by
+                              the match flow before deliveries were counted. Say so rather
+                              than show rows that silently don't add up. */}
+                          {recordedTotal !== fulfilled && (
+                            <p className="text-xs text-stone-400">
+                              The deliveries on record add up to {recordedTotal}. The request&apos;s count of {fulfilled} includes deliveries recorded before itemised tracking.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -169,6 +208,14 @@ export default function DashboardHistoryPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeliveryDetailsDialog
+        delivery={selected?.delivery ?? null}
+        open={detailsOpen}
+        requestTitle={selected?.request.title ?? ""}
+        doneeName={selected?.request.doneeName ?? "You"}
+        onOpenChange={setDetailsOpen}
+      />
     </div>
   );
 }

@@ -25,6 +25,7 @@ export function WizardNavigation({
   submitting,
   submitted,
   savingExit,
+  advancing,
   avoidBottomChrome = false,
   variant = "bar",
 }: {
@@ -37,6 +38,7 @@ export function WizardNavigation({
   submitting: boolean;
   submitted: boolean;
   savingExit: boolean;
+  advancing?: boolean;
   /** Lift the sticky bar above CauseKind's floating mobile navigation dock. */
   avoidBottomChrome?: boolean;
   /**
@@ -58,7 +60,7 @@ export function WizardNavigation({
     <motion.button
       type="button"
       onClick={onContinue}
-      disabled={submitting || submitted}
+      disabled={submitting || submitted || advancing}
       {...pressProps(reduced)}
       // whitespace-nowrap: "Submit donation offer" wrapped to two lines in the
       // corner cluster, which doubled the button's height and pushed it into
@@ -80,9 +82,9 @@ export function WizardNavigation({
         >
           <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> Submitted
         </motion.span>
-      ) : submitting ? (
+      ) : submitting || advancing ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Submitting…
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {advancing ? "Saving…" : "Submitting…"}
         </>
       ) : (
         <>

@@ -307,8 +307,13 @@ function DoneeConfirm({ vm, onConfirm }: {
               ))}
             </InputOTPGroup>
           </InputOTP>
+          {/* The code is always required (the server refuses a confirmation without
+              it) — this used to say "leave it blank" for couriers, which left a
+              courier recipient with a button that could never be pressed. */}
           <p className="text-xs text-stone-400">
-            For in-person handovers. Leave it blank if the item came by courier.
+            {vm.delivery?.needed
+              ? "Sent by courier? Once it arrives, ask the donor for the code in the chat."
+              : "The donor reads this out when you meet."}
           </p>
           {failedAttempts > 0 && !lockedOut && (
             <p role="status" className="text-xs text-amber-600 dark:text-amber-400">

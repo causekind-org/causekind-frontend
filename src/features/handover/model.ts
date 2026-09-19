@@ -109,7 +109,70 @@ export type HandoverViewModel = {
    * Used by the confirmation panel instead of asking again at handover time.
    */
   offeredQuantity: number | null;
+  /** Courier destination the recipient supplies; null when the backend sends none. */
+  delivery: HandoverDelivery | null;
 };
+
+/**
+ * Where a courier should deliver — same shape in both flows. `needed` is true when
+ * the handover method sends the item to the recipient.
+ */
+export type HandoverDelivery = {
+  needed: boolean;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  requestedAt: string | null;
+  submittedAt: string | null;
+};
+
+/**
+ * Where the delivery-address step stands. `recheck` is the donor asking again
+ * after an answer — how they say "please check this" without a separate message.
+ */
+export type DeliveryAddressState = "not_needed" | "awaiting" | "requested" | "provided" | "recheck";
+
+export function deliveryAddressState(vm: Pick<HandoverViewModel, "delivery">): DeliveryAddressState {
+  const d = vm.delivery;
+  if (!d?.needed) return "not_needed";
+  if (!d.submittedAt || !d.address) return d.requestedAt ? "requested" : "awaiting";
+  if (d.requestedAt && new Date(d.requestedAt).getTime() > new Date(d.submittedAt).getTime()) return "recheck";
+  return "provided";
+}
+
+/**
+ * True while the address is the thing holding the handover up: it's needed, not
+ * yet given (or given and questioned), and nobody has confirmed the handover yet.
+ * The next-step panel shows the address step in place of confirmation while so.
+ */
+export function deliveryAddressPending(vm: HandoverViewModel): boolean {
+  const s = deliveryAddressState(vm);
+  if (s === "not_needed" || s === "provided") return false;
+  if (vm.closed || vm.confirmation.donorConfirmedAt || vm.confirmation.doneeConfirmedAt) return false;
+  return vm.state === "scheduled" || vm.state === "ready_to_handover";
+}
+
+function deliveryStepCopy(vm: HandoverViewModel): { title: string; body: string } {
+  const s = deliveryAddressState(vm);
+  if (vm.role === "DONOR") {
+    if (s === "awaiting") {
+      return { title: "Ask for the delivery address",
+               body: "You're sending this by courier. Ask the recipient where to deliver it and for a number the courier can call." };
+    }
+    return { title: "Waiting for the delivery address",
+             body: s === "recheck"
+               ? "You've asked the recipient to check their address. You'll be notified when they send it again."
+               : "You've asked the recipient for it. You'll be notified the moment it arrives — then send the item and confirm here." };
+  }
+  if (s === "recheck") {
+    return { title: "Please check your delivery address",
+             body: "The donor asked you to confirm where to deliver this. Correct anything that's wrong and send it again." };
+  }
+  return { title: s === "requested" ? "The donor needs your delivery address" : "Add your delivery address",
+           body: "This is coming by courier. Tell the donor where to deliver it and a number the courier can call." };
+}
 
 // ── Journey rail ────────────────────────────────────────────────────────────
 
@@ -234,6 +297,10 @@ export function resolveRole(
 export function nextStepCopy(vm: HandoverViewModel): { title: string; body: string } {
   const donor = vm.role === "DONOR";
   const them = donor ? "the recipient" : "the donor";
+
+  // A courier delivery can't go anywhere without the address, so while it's
+  // missing that is the next step, whatever the schedule says.
+  if (deliveryAddressPending(vm)) return deliveryStepCopy(vm);
 
   switch (vm.state) {
     case "awaiting_schedule":

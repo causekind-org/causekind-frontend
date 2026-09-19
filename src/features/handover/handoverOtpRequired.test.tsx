@@ -43,6 +43,7 @@ function doneeVm(): HandoverViewModel {
     certificateHref: null,
     closed: false,
     offeredQuantity: 2,
+    delivery: null,
   };
 }
 

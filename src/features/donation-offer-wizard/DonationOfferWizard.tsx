@@ -85,7 +85,10 @@ export function DonationOfferWizard({
   const isRtl = locale === "ar" || locale === "ur";
 
   const showSpecNotes = needsSpecNotes(offer?.flowType);
-  const serializerOpts = useMemo(() => ({ includeSpecNotes: showSpecNotes }), [showSpecNotes]);
+  const serializerOpts = useMemo(
+    () => ({ includeSpecNotes: showSpecNotes, maxQuantity: stillNeededQuantity }),
+    [showSpecNotes, stillNeededQuantity],
+  );
 
   const [model, setModel] = useState<OfferModel>(() => offer ? offerModelFrom(offer) : emptyOfferModel);
   const [step, setStep] = useState<OfferStep>(() =>

@@ -35,13 +35,23 @@ export type OfferPatch = {
   deliveryCostBornBy?: string;
 };
 
-export function serializeOffer(model: OfferModel, opts: { includeSpecNotes: boolean }): OfferPatch {
+export type OfferSerializerOptions = {
+  includeSpecNotes: boolean;
+  /** What the request still needs — the most the backend will accept. */
+  maxQuantity?: number | null;
+};
+
+export function serializeOffer(model: OfferModel, opts: OfferSerializerOptions): OfferPatch {
   const qty = Number(model.quantity);
+  const withinNeed = opts.maxQuantity == null || opts.maxQuantity <= 0 || qty <= opts.maxQuantity;
 
   const patch: OfferPatch = {
     // Only send a quantity the backend can store. A half-typed "" or "abc"
-    // would otherwise arrive as NaN and be rejected — or worse, coerced.
-    ...(Number.isInteger(qty) && qty >= 1 ? { quantity: qty } : {}),
+    // would otherwise arrive as NaN and be rejected — or worse, coerced. One
+    // above what the request still needs is held back too: the backend refuses
+    // the whole PATCH for it, which would drop every other field's autosave while
+    // the donor reads the inline error telling them to lower it.
+    ...(Number.isInteger(qty) && qty >= 1 && withinNeed ? { quantity: qty } : {}),
 
     // Editable text: always sent, empty when cleared. See rule 1 above.
     approximateAge: model.approximateAge.trim(),
@@ -71,7 +81,7 @@ export function serializeOffer(model: OfferModel, opts: { includeSpecNotes: bool
 }
 
 /** Stable digest of everything that would be sent — the autosave dedupe key. */
-export function offerSnapshotKey(model: OfferModel, opts: { includeSpecNotes: boolean }): string {
+export function offerSnapshotKey(model: OfferModel, opts: OfferSerializerOptions): string {
   return JSON.stringify([
     serializeOffer(model, opts),
     // Photos are uploaded through their own endpoint, not this PATCH, but a

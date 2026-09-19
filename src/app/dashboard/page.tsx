@@ -37,7 +37,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { canDeleteDraft, canWithdrawRequest, canHideWithdrawnRequest, isRequestActive } from "@/lib/requestActions";
-import { getRequestFulfilment, groupRequestsByFulfilment, type RequestFulfilment } from "@/lib/requestFulfilment";
+import { getRequestFulfilment, groupRequestsByFulfilment, offerDeliveredQuantity, type RequestFulfilment } from "@/lib/requestFulfilment";
 import { canDeleteListing, canWithdrawListing, canPauseListing, canResumeListing } from "@/lib/listingActions";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
 import { ClosedOfferCard } from "@/components/ClosedOfferCard";
@@ -923,6 +923,25 @@ function pastOfferLabel(status: string): { label: string; tone: string } {
 
 const shortDate = (ms: number) => new Date(ms).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 
+/* Fewer arrived than the donor offered — say so, and point at the report, while
+   there's still time to use it. The count confirmed is what the request is
+   credited with, so a shortfall is the donee's to raise, not ours to guess. */
+function ShortDeliveryNote({ offer }: { offer: DonationOffer }) {
+  const offered = offer.itemDetails?.quantity;
+  const received = offer.receivedQuantity;
+  if (offered == null || received == null || received >= offered) return null;
+  return (
+    <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span>
+        You received {received} of the {offered} offered. If items are missing,{" "}
+        <Link href={`/offers/${offer.id}/issues`} className="font-semibold underline underline-offset-2">report an issue</Link>
+        {" "}so our team can follow up with the donor.
+      </span>
+    </p>
+  );
+}
+
 /* The collapsible "history" row both the Offers and Matches tabs end with. */
 function HistoryToggle({ label, count, open, onToggle }: {
   label: string; count: number; open: boolean; onToggle: () => void;
@@ -981,7 +1000,7 @@ function PastOffersStrip({ offers, activeRequestIds, defaultOpen = false }: {
                       <span className="flex-shrink-0 text-3xs text-stone-400">{shortDate(offerEndedAt(o))}</span>
                       {o.status === "COMPLETED" && o.itemDetails && (
                         <span className="min-w-0 truncate text-stone-500 dark:text-stone-400">
-                          {o.itemDetails.quantity}× from {o.donorName || "a donor"}
+                          {offerDeliveredQuantity(o)}× from {o.donorName || "a donor"}
                         </span>
                       )}
                       {o.rejectionReason && (
@@ -1427,7 +1446,12 @@ function DoneeDashboard({
                           <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{offer.requestTitle}</p>
                           {offer.itemDetails && (
                             <p className="text-xs text-stone-500 mt-0.5">
-                              {offer.itemDetails.quantity}× · {offer.itemDetails.condition ?? "Condition not specified"}
+                              <span className="font-semibold text-stone-700 dark:text-stone-300">
+                                {offer.receivedQuantity != null
+                                  ? `Received ${offer.receivedQuantity} of ${offer.itemDetails.quantity} offered`
+                                  : `Offering ${offer.itemDetails.quantity} of the ${offer.requestQuantity} you asked for`}
+                              </span>
+                              {" · "}{offer.itemDetails.condition ?? "Condition not specified"}
                               {offer.itemDetails.pickupCity ? ` · ${offer.itemDetails.pickupCity}` : ""}
                             </p>
                           )}
@@ -1569,6 +1593,7 @@ function DoneeDashboard({
                       )}
                       {isIssueWindow && (
                         <div className="space-y-1.5">
+                          <ShortDeliveryNote offer={offer} />
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleConfirmNoIssue(offer.id)}
@@ -1589,6 +1614,7 @@ function DoneeDashboard({
                       )}
                       {isComplete && (
                         <div className="space-y-1.5">
+                          <ShortDeliveryNote offer={offer} />
                           <Link href={`/offers/${offer.id}/issues`} className="block w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 py-2 text-center text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors">
                             Report an issue
                           </Link>

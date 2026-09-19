@@ -13,6 +13,7 @@ import { useParams } from "next/navigation";
 import {
   getDonationOffer, getHandover, scheduleHandover, rescheduleHandover,
   generateHandoverOtp, confirmHandoverDonor, confirmHandoverDonee,
+  requestOfferDeliveryAddress, submitOfferDeliveryAddress, getOfferDeliveryAddressSuggestion,
   setDoneeCallPermission,
   type DonationOffer, type HandoverRecord, type OfferHandoverMethod,
 } from "@/lib/api";
@@ -148,6 +149,11 @@ export default function OfferHandoverHubPage() {
           setCallPermission: vm.role === "DONOR"
             ? async (next) => { setOffer(await setDoneeCallPermission(offerId, next)); }
             : undefined,
+          deliveryAddress: {
+            request: async () => { applyHandover(await requestOfferDeliveryAddress(offerId)); },
+            submit: async (input) => { applyHandover(await submitOfferDeliveryAddress(offerId, input)); },
+            suggest: () => getOfferDeliveryAddressSuggestion(offerId),
+          },
         }}
       />
       <HandoverCelebration

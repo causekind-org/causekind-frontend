@@ -14,6 +14,7 @@ import { useParams } from "next/navigation";
 import {
   getMatch, saveMatchLogistics, generateDeliveryOtp,
   confirmMatchHandoverDonor, confirmMatchHandoverDonee, setMatchDoneeCallPermission,
+  requestMatchDeliveryAddress, submitMatchDeliveryAddress, getMatchDeliveryAddressSuggestion,
   type ItemMatch,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -119,6 +120,11 @@ export default function MatchHandoverHubPage() {
           setCallPermission: vm.role === "DONOR"
             ? async (next) => { setMatch(await setMatchDoneeCallPermission(matchId, next)); }
             : undefined,
+          deliveryAddress: {
+            request: async () => { setMatch(await requestMatchDeliveryAddress(matchId)); },
+            submit: async (input) => { setMatch(await submitMatchDeliveryAddress(matchId, input)); },
+            suggest: () => getMatchDeliveryAddressSuggestion(matchId),
+          },
         }}
       />
       <HandoverCelebration

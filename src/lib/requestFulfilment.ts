@@ -11,7 +11,7 @@
  * Mirrors ItemRequestResponse on the backend, and applies the same rules again
  * here so the UI stays right against a backend that predates them.
  */
-import type { ItemRequest } from "@/lib/api";
+import type { DonationOffer, ItemRequest } from "@/lib/api";
 import { isRequestActive } from "@/lib/requestActions";
 
 type QuantityFields = Pick<ItemRequest, "status" | "quantity" | "fulfilledQuantity">;
@@ -74,4 +74,13 @@ export function groupRequestsByFulfilment<T extends QuantityFields>(requests: T[
     else groups.pending.push(r);
   }
   return groups;
+}
+
+/**
+ * What a completed offer delivered: the donee's confirmed count, else what was
+ * offered — the same rule HandoverService.deliveredQuantity counts toward the
+ * request, so a list of deliveries adds up to the request's total.
+ */
+export function offerDeliveredQuantity(o: Pick<DonationOffer, "receivedQuantity" | "itemDetails">): number {
+  return o.receivedQuantity ?? o.itemDetails?.quantity ?? 0;
 }

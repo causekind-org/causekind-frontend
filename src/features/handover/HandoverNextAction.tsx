@@ -4,7 +4,8 @@ import Link from "next/link";
 import { CalendarPlus, CircleCheck, Clock, MessageCircle, TriangleAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { nextStepCopy, type HandoverViewModel } from "./model";
+import { deliveryAddressPending, nextStepCopy, type HandoverViewModel } from "./model";
+import { DeliveryAddressStep, type DeliveryAddressActions } from "./HandoverDeliveryAddress";
 import { handoverPrimary, handoverSecondary } from "./handoverStyles";
 import { ConfirmNoIssueButton } from "./HandoverSafetyActions";
 import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmPayload } from "./HandoverConfirmationPanel";
@@ -18,7 +19,7 @@ import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmP
  * transition so the change is noticed without being animated at.
  */
 export function HandoverNextAction({
-  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onOpenChat, onChanged,
+  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onOpenChat, onChanged, deliveryActions,
 }: {
   vm: HandoverViewModel;
   otp: string | null;
@@ -28,9 +29,14 @@ export function HandoverNextAction({
   onDoneeConfirm: (p: DoneeConfirmPayload) => Promise<void>;
   onOpenChat?: () => void;
   onChanged: () => void;
+  /** Absent on a flow that can't take a delivery address. */
+  deliveryActions?: DeliveryAddressActions;
 }) {
   const copy = nextStepCopy(vm);
   const donor = vm.role === "DONOR";
+  // A courier delivery can't be sent without the address — while it's missing,
+  // getting it is the action, in place of confirming the handover.
+  const addressFirst = deliveryActions != null && deliveryAddressPending(vm);
 
   return (
     <motion.section
@@ -64,11 +70,13 @@ export function HandoverNextAction({
           )
         )}
 
-        {vm.state === "scheduled" && !donor && (
+        {addressFirst && <DeliveryAddressStep vm={vm} actions={deliveryActions!} />}
+
+        {vm.state === "scheduled" && !donor && !addressFirst && (
           <WaitingRow onOpenChat={onOpenChat} label="Ask for another time" />
         )}
 
-        {(vm.state === "ready_to_handover" || vm.state === "partially_confirmed") && (
+        {!addressFirst && (vm.state === "ready_to_handover" || vm.state === "partially_confirmed") && (
           <NeedsConfirmation
             vm={vm} otp={otp}
             onGenerateOtp={onGenerateOtp}
