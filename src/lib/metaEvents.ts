@@ -28,7 +28,33 @@ export function trackMeta(event: string, params?: FbqParams): void {
   }
 }
 
+/**
+ * Fire a CUSTOM Meta event (a name that isn't one of Meta's standard events,
+ * e.g. ListItem, RequestItem). Same test-pixel routing as trackMeta.
+ */
+export function trackMetaCustom(event: string, params?: FbqParams): void {
+  if (typeof window === "undefined") return;
+  const fbq = (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq;
+  if (typeof fbq !== "function") return;
+
+  if (EVENT_PIXEL_ID) {
+    fbq("trackSingleCustom", EVENT_PIXEL_ID, event, params);
+  } else {
+    fbq("trackCustom", event, params);
+  }
+}
+
 /** A user finished creating an account (any of the registration paths). */
 export function trackCompleteRegistration(params?: FbqParams): void {
   trackMeta("CompleteRegistration", params);
+}
+
+/** A user submitted an item listing (donation) for review. */
+export function trackListItem(params?: FbqParams): void {
+  trackMetaCustom("ListItem", params);
+}
+
+/** A user submitted a request/need for items. */
+export function trackRequestItem(params?: FbqParams): void {
+  trackMetaCustom("RequestItem", params);
 }
