@@ -10,7 +10,7 @@
  *   - Set EVENT_PIXEL_ID to "" to send to ALL initialised pixels (uses `track`).
  * Only this one line changes — the call sites stay the same.
  */
-const EVENT_PIXEL_ID = "28686496047640631"; // Causekind Temp (TEST pixel)
+const EVENT_PIXEL_ID = "1618600203011745"; // Real production pixel (Causekind)
 
 type FbqParams = Record<string, unknown>;
 
