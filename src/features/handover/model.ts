@@ -104,6 +104,11 @@ export type HandoverViewModel = {
   /** OFFER only — donors get a downloadable certificate at /certificate. */
   certificateHref: string | null;
   closed: boolean;
+  /**
+   * The quantity the donor committed to in the offer/match wizard.
+   * Used by the confirmation panel instead of asking again at handover time.
+   */
+  offeredQuantity: number | null;
 };
 
 // ── Journey rail ────────────────────────────────────────────────────────────
@@ -248,7 +253,7 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
     case "ready_to_handover":
       return donor
         ? { title: "Confirm the handover",
-            body: "Generate a code for the recipient, then record how many items you handed over." }
+            body: "Generate a code for the recipient, then confirm you've handed the item over." }
         : { title: "Confirm what you received",
             body: "Enter the 6-digit code the donor gives you, then record the quantity and condition." };
 

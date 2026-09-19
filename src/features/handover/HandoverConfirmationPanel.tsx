@@ -165,23 +165,30 @@ function DonorOtpSection({
 
 // ── Donor ───────────────────────────────────────────────────────────────────
 
+/**
+ * Donor confirmation — no quantity input.
+ *
+ * <p>The donor already said how many when they made the offer. Asking again here
+ * was how the donee's history came to list deliveries that didn't add up to the
+ * total — two free-typed numbers, neither enforced. The backend already uses the
+ * offer's quantity as the primary source (see HandoverService.confirmHandoverDonor),
+ * so all this panel has to do is confirm, not collect.
+ */
 function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
   vm: HandoverViewModel;
   otp: string | null;
   onGenerateOtp: () => Promise<void>;
   onConfirm: (p: DonorConfirmPayload) => Promise<void>;
 }) {
-  const [qty, setQty] = useState("");
   const [busy, setBusy] = useState<"otp" | "confirm" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const qtyNum = Number(qty);
-  const qtyValid = qty.trim() !== "" && Number.isInteger(qtyNum) && qtyNum > 0;
+  const offered = vm.offeredQuantity;
 
   async function confirm() {
-    if (busy || !qtyValid) return;
+    if (busy) return;
     setBusy("confirm"); setError(null);
-    try { await onConfirm({ quantity: qtyNum }); }
+    try { await onConfirm({ quantity: offered ?? 1 }); }
     catch (e) { setError(e instanceof Error ? e.message : "Couldn't record your confirmation."); }
     finally { setBusy(null); }
   }
@@ -197,30 +204,20 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
         />
 
         <div className="space-y-1.5 border-t border-stone-100 pt-4 dark:border-zinc-800">
-          <label htmlFor="donor-qty" className={handoverLabel}>
-            How many items did you hand over? <span className="text-red-500" aria-hidden>*</span>
-          </label>
-          <Input
-            id="donor-qty"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-            aria-invalid={qty.trim() !== "" && !qtyValid}
-            aria-describedby={qty.trim() !== "" && !qtyValid ? "donor-qty-err" : undefined}
-            className={handoverInput}
-          />
-          {qty.trim() !== "" && !qtyValid && (
-            <p id="donor-qty-err" className="text-xs text-red-600 dark:text-red-400">
-              Enter a whole number of 1 or more.
+          {offered != null && offered > 0 && (
+            <p className="text-sm text-stone-600 dark:text-stone-300">
+              You are handing over{" "}
+              <strong className="font-semibold text-stone-800 dark:text-stone-100">
+                {offered} item{offered === 1 ? "" : "s"}
+              </strong>{" "}
+              as offered.
             </p>
           )}
 
           <p className="pt-1 text-xs text-stone-500 dark:text-stone-400">
             You can&apos;t undo this — it&apos;s the record of what was given.
           </p>
-          <Button onClick={confirm} disabled={!qtyValid || busy !== null} className={`${handoverPrimary} w-full`}>
+          <Button onClick={confirm} disabled={busy !== null} className={`${handoverPrimary} w-full`}>
             {busy === "confirm"
               ? <><Loader2 className="animate-spin" aria-hidden /> Recording</>
               : <><ShieldCheck aria-hidden /> I handed it over</>}
@@ -245,8 +242,14 @@ function DoneeConfirm({ vm, onConfirm }: {
   const [error, setError] = useState<string | null>(null);
   const [failedAttempts, setFailedAttempts] = useState(0);
 
+  const offered = vm.offeredQuantity;
   const qtyNum = Number(qty);
-  const qtyValid = qty.trim() !== "" && Number.isInteger(qtyNum) && qtyNum > 0;
+  const qtyValid = qty.trim() !== "" && Number.isInteger(qtyNum) && qtyNum > 0
+    && (offered == null || offered <= 0 || qtyNum <= offered);
+  const qtyOverOffered = qty.trim() !== "" && Number.isInteger(qtyNum) && qtyNum > 0
+    && offered != null && offered > 0 && qtyNum > offered;
+  const qtyUnderOffered = qty.trim() !== "" && Number.isInteger(qtyNum) && qtyNum > 0
+    && offered != null && offered > 0 && qtyNum < offered;
   // The code is required, not optional. It used to be sent as undefined when blank,
   // and the server skipped its check entirely on a missing OTP — so the fastest way
   // to complete a handover was to not enter the code at all.
@@ -276,6 +279,14 @@ function DoneeConfirm({ vm, onConfirm }: {
   return (
     <Panel title="Confirm what you received">
       <div className="space-y-3 sm:space-y-4">
+        {/* Show the donee what the donor offered so they know what to expect. */}
+        {offered != null && offered > 0 && (
+          <p className="flex items-start gap-2 rounded-lg bg-blue-50 px-3 py-2.5 text-sm text-blue-800 dark:bg-blue-950/30 dark:text-blue-300">
+            The donor is offering you{" "}
+            <strong className="font-semibold">{offered} item{offered === 1 ? "" : "s"}</strong>.
+          </p>
+        )}
+
         <div className="space-y-1.5">
           <label className={handoverLabel}>
             Code from the donor
@@ -320,15 +331,31 @@ function DoneeConfirm({ vm, onConfirm }: {
             type="number"
             inputMode="numeric"
             min={1}
+            {...(offered != null && offered > 0 ? { max: offered } : {})}
             value={qty}
             onChange={(e) => setQty(e.target.value)}
-            aria-invalid={qty.trim() !== "" && !qtyValid}
-            aria-describedby={qty.trim() !== "" && !qtyValid ? "donee-qty-err" : undefined}
+            aria-invalid={qty.trim() !== "" && (!qtyValid || qtyOverOffered)}
+            aria-describedby={
+              qtyOverOffered ? "donee-qty-over" :
+              qty.trim() !== "" && !qtyValid ? "donee-qty-err" :
+              qtyUnderOffered ? "donee-qty-under" : undefined
+            }
             className={handoverInput}
           />
-          {qty.trim() !== "" && !qtyValid && (
+          {qty.trim() !== "" && !Number.isInteger(qtyNum) || (qty.trim() !== "" && qtyNum < 1) ? (
             <p id="donee-qty-err" className="text-xs text-red-600 dark:text-red-400">
               Enter a whole number of 1 or more.
+            </p>
+          ) : null}
+          {qtyOverOffered && (
+            <p id="donee-qty-over" className="text-xs text-red-600 dark:text-red-400">
+              The donor offered {offered} — you cannot record receiving more than that.
+            </p>
+          )}
+          {qtyUnderOffered && (
+            <p id="donee-qty-under" className="text-xs text-amber-600 dark:text-amber-400">
+              You received fewer than the {offered} offered.
+              After this handover closes, you can report an issue if something is wrong.
             </p>
           )}
         </div>
