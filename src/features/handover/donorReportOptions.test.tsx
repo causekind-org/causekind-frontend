@@ -54,6 +54,8 @@ function createVm(role: "DONOR" | "DONEE"): HandoverViewModel {
     certificateCode: null,
     certificateHref: null,
     closed: false,
+    offeredQuantity: 1,
+    delivery: null,
   };
 }
 
@@ -205,6 +207,8 @@ function createMatchVm(role: "DONOR" | "DONEE", completedAt?: string | null): Ha
     certificateCode: "CERT-2",
     certificateHref: null,
     closed: true,
+    offeredQuantity: 1,
+    delivery: null,
     completedAt: completedAt !== undefined ? completedAt : new Date().toISOString(),
   };
 }

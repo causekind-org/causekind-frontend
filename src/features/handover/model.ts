@@ -266,14 +266,23 @@ const COMPLETED_STATUSES = new Set(["COMPLETED", "FULFILLED", "CERTIFICATE_ISSUE
  * Statuses at which the handover can physically happen now — OTP and confirmation
  * become available. Deliberately a union across both flows: the resolver is shared,
  * and a status name from one flow never appears in the other.
+ *
+ * <p><b>This set mirrors the server's, and may not be widened past it.</b> It is
+ * exactly `HandoverService`'s HANDOVER_IN_PROGRESS/HANDOVER_AT_RISK gate plus
+ * `ItemMatchService.HANDOVER_CONFIRMABLE_STATUSES`. It used to also list
+ * HANDOVER_SCHEDULED, RESCHEDULED, ARRANGEMENT_AGREED and TRANSPORT_DISCUSSION —
+ * all real FulfilmentStatus values — and the server refuses every one of them
+ * with "OTP can only be generated during handover". A match on any of those
+ * showed the donor a Generate code button and an "I handed it over" button that
+ * could only 400. They now resolve to `scheduled`, which offers the donor the
+ * schedule dialog and so has a way out.
  */
 const READY_STATUSES = new Set([
-  // OFFER
+  // OFFER — HandoverService.generateOtp / confirmHandoverDonor
   "HANDOVER_IN_PROGRESS",
-  // MATCH
+  // MATCH — ItemMatchService.HANDOVER_CONFIRMABLE_STATUSES
   "LOGISTICS_CONFIRMED", "PICKUP_SCHEDULED", "PICKED_UP", "IN_TRANSIT",
-  "DELIVERY_ATTEMPTED", "DELIVERED_PENDING_CONFIRMATION", "HANDOVER_SCHEDULED",
-  "RESCHEDULED", "ARRANGEMENT_AGREED", "TRANSPORT_DISCUSSION",
+  "DELIVERY_ATTEMPTED", "DELIVERED_PENDING_CONFIRMATION",
 ]);
 
 /**
@@ -323,8 +332,11 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
 
     case "scheduled":
       return donor
+        // No code and no confirmation here — the server issues neither until the
+        // handover details are settled. Saying "generate the code below" sent the
+        // donor looking for a button this state has never rendered.
         ? { title: "Handover scheduled",
-            body: "Nothing to do right now. When you meet, generate the code below and confirm what you handed over." }
+            body: "Confirm the time and place are right. Once they're settled, the code you give the recipient appears here." }
         : { title: "Handover scheduled",
             body: "Check the time and place below. Need a different time? Ask in the chat — only the donor can reschedule." };
 

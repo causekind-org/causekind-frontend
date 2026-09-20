@@ -58,15 +58,18 @@ const offer = (id: number, status: string, over: Record<string, unknown> = {}) =
 });
 
 const match = (id: number, status: string, over: Record<string, unknown> = {}) => ({
-  id, status, listingTitle: `Listed laptop ${id}`, requestTitle: request.title, donorName: "Ravi",
-  doneeName: "Asha Devi", createdAt: iso(10 * DAY), closedAt: null, doneeConfirmedAt: null,
+  id, status, listingTitle: `Listed laptop ${id}`, requestTitle: request.title,
+  donorId: 42, donorName: "Ravi", doneeId: 7, doneeName: "Asha Devi",
+  createdAt: iso(10 * DAY), closedAt: null, doneeConfirmedAt: null,
   doneeConfirmedQty: null, allocatedQuantity: null, matchScore: null, handoverMethod: null,
   rejectionReason: null, ...over,
 });
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/dashboard");
-  mocks.profile.mockResolvedValue({ fullName: "Asha Devi", role: "DONEE", city: "Virar" });
+  // id, not just the name: the dashboard splits donor-side from donee-side
+  // matches by user id — see matchSide in page.tsx.
+  mocks.profile.mockResolvedValue({ id: 7, fullName: "Asha Devi", role: "DONEE", city: "Virar" });
   mocks.requests.mockResolvedValue([request]);
   mocks.matches.mockResolvedValue([]);
   mocks.incomingOffers.mockResolvedValue([]);
@@ -163,6 +166,28 @@ describe("match history", () => {
 
     expect(screen.getByRole("button", { name: /Match history \(1\)/ })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Listed laptop 22")).toBeInTheDocument();
+  });
+});
+
+describe("your requests", () => {
+  it("lists every request the donee posted, fulfilled ones included", async () => {
+    // A fulfilled request used to leave this tab for the History page, which
+    // read to donees as their requests having vanished.
+    mocks.requests.mockResolvedValue([
+      request,
+      { ...request, id: 2, title: "Books for a study centre", quantity: 20, fulfilledQuantity: 20, status: "FULFILLED" },
+      // Fully delivered but the status lags behind — still reads as fulfilled.
+      { ...request, id: 3, title: "School bags", quantity: 5, fulfilledQuantity: 5, status: "PUBLIC_REQUEST" },
+    ]);
+    render(<DashboardPage />);
+    await openTab(/Your Requests/);
+
+    expect(screen.getByText("Laptops for a computer class")).toBeInTheDocument();
+    expect(screen.getByText("Fulfilled", { selector: "h4" })).toBeInTheDocument();
+    expect(screen.getByText("Books for a study centre")).toBeInTheDocument();
+    expect(screen.getByText("School bags")).toBeInTheDocument();
+    expect(screen.getByText("20 / 20")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /See who delivered what/ })).toHaveAttribute("href", "/dashboard/history");
   });
 });
 

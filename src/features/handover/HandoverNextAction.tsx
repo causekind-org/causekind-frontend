@@ -72,6 +72,15 @@ export function HandoverNextAction({
 
         {addressFirst && <DeliveryAddressStep vm={vm} actions={deliveryActions!} />}
 
+        {/* The donor's way out of a half-settled schedule. Without it this state
+            rendered no control at all, so a match left on a status the server
+            won't confirm from had nothing on the page that could move it. */}
+        {vm.state === "scheduled" && donor && !addressFirst && (
+          <Button onClick={onSchedule} variant="outline" className={handoverSecondary}>
+            <CalendarPlus aria-hidden /> Check the schedule
+          </Button>
+        )}
+
         {vm.state === "scheduled" && !donor && !addressFirst && (
           <WaitingRow onOpenChat={onOpenChat} label="Ask for another time" />
         )}

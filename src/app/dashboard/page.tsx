@@ -57,8 +57,14 @@ const HANDOVER_HUB_STATUSES = new Set([
   "DELIVERY_ATTEMPTED", "DELIVERED_PENDING_CONFIRMATION",
 ]);
 
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/);
+/**
+ * Initials for the avatar. Tolerates a missing name: UserProfile types
+ * `fullName` as a string, but the column is nullable and a Google sign-in that
+ * never completed the profile step has none — and `name.trim()` on that took
+ * the entire dashboard down with it, not just the avatar.
+ */
+function getInitials(name: string | null | undefined): string {
+  const words = (name ?? "").trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return "U";
   if (words.length === 1) return words[0][0]?.toUpperCase() ?? "U";
   return ((words[0][0] ?? "") + (words[words.length - 1][0] ?? "")).toUpperCase();
@@ -406,9 +412,13 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
   // is only true while the request is open. A withdrawn or expired one keeps its
   // own badge, with the count beside it recording how far it got.
   const awaitingMore = isRequestActive(r.status) && fulfilment.isPartiallyFulfilled;
-  const badge = awaitingMore
-    ? { label: "Partially Fulfilled", variant: "secondary" as const }
-    : getRequestStatusBadge(r.status);
+  // Fully received reads as fulfilled even when the status lags behind the counters —
+  // and there's nothing left to withdraw.
+  const badge = fulfilment.isFullyFulfilled
+    ? { label: "Fulfilled", variant: "default" as const }
+    : awaitingMore
+      ? { label: "Partially Fulfilled", variant: "secondary" as const }
+      : getRequestStatusBadge(r.status);
 
   return (
     <motion.div
@@ -453,7 +463,7 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
               <DeleteDraftButton requestId={r.id} onDeleted={onCancelled} />
             </>
           )}
-          {canWithdrawRequest(r.status) && <CancelRequestButton requestId={r.id} onCancelled={onCancelled} />}
+          {canWithdrawRequest(r.status) && !fulfilment.isFullyFulfilled && <CancelRequestButton requestId={r.id} onCancelled={onCancelled} />}
           {canHideWithdrawnRequest(r.status) && <HideWithdrawnRequestButton requestId={r.id} onHidden={onCancelled} />}
         </div>
       </div>
@@ -816,14 +826,10 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
   // same constant makes that class of bug unrepresentable.
   const terminal = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status));
   const completed = offers.filter(o => o.status === "COMPLETED");
-  const active = offers.filter(o => !TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED");
+  const active = offers.filter(isLiveDonorOffer);
   // Derived from `active`, so closed offers can never reach Action Required —
   // and neither can COMPLETED, which belongs in donation history, not a to-do.
-  const needsAction = active.filter(o =>
-    ["DRAFT", "NEEDS_INFORMATION", "DONOR_RECONFIRMATION_REQUIRED", "DONEE_ACCEPTED", "ADMIN_APPROVED"].includes(o.status)
-  );
-
-  if (offers.length === 0) return null;
+  const needsAction = active.filter(o => OFFER_NEEDS_DONOR.includes(o.status));
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -832,8 +838,27 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
           <h2 className="text-sm sm:text-base font-black text-stone-800 dark:text-stone-100">Donation Offers</h2>
           <p className="text-xs text-stone-400">Offers you made to fulfil specific requests</p>
         </div>
-        <Link href="/offers" className="text-xs font-semibold text-[var(--ck-role-accent)] hover:underline">View all</Link>
+        {offers.length > 0 && (
+          <Link href="/offers" className="text-xs font-semibold text-[var(--ck-role-accent)] hover:underline">View all</Link>
+        )}
       </div>
+
+      {/* Its own tab now, so an empty list needs somewhere to go — returning
+          null left the donor on a blank panel with no way back to the board. */}
+      {offers.length === 0 && (
+        <div className="py-8 sm:py-12 text-center space-y-2">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--ck-role-accent)]/10">
+            <Heart className="h-5 w-5 text-[var(--ck-role-accent)]" />
+          </div>
+          <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">You haven&apos;t offered anything yet</p>
+          <p className="mx-auto max-w-[280px] text-xs text-stone-400">
+            Browse verified needs and offer an item against one — every offer you make is tracked here.
+          </p>
+          <Link href="/requests" className="inline-block pt-1">
+            <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">Browse needs</Button>
+          </Link>
+        </div>
+      )}
 
       {/* Needs action — shown first and highlighted */}
       {needsAction.length > 0 && (
@@ -899,6 +924,11 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
 // once — and only for requests that have no replacement offer in play.
 
 const TERMINAL_OFFER_STATUSES = ["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"];
+
+/** Still in flight for the donor. The Offers tab counts exactly what its
+ *  Action Required / In Progress lists render, so the two can't disagree. */
+const isLiveDonorOffer = (o: DonationOffer) =>
+  !TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED";
 
 // A completed donation stays among the live offers while the donee can still
 // report a problem with it — the backend allows that until a grace period after
@@ -1032,15 +1062,20 @@ function PastOffersStrip({ offers, activeRequestIds, defaultOpen = false }: {
 const MATCH_HISTORY_STATUSES = new Set(["FULFILLED", "COMPLETED", "CANCELLED", "REJECTED", "FAILED", "DONOR_REJECTED"]);
 const MATCH_RECEIVED_STATUSES = new Set(["FULFILLED", "COMPLETED"]);
 
-function pastMatchLabel(status: string): { label: string; tone: string } {
+/** Whose dashboard the history is on — the same match reads differently per side. */
+type MatchViewer = "DONOR" | "DONEE";
+
+function pastMatchLabel(status: string, viewer: MatchViewer): { label: string; tone: string } {
+  const quiet = "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400";
   switch (status) {
     case "FULFILLED":
-    case "COMPLETED":      return { label: "Received",        tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" };
-    case "DONOR_REJECTED": return { label: "Donor declined",  tone: "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" };
+    case "COMPLETED":      return { label: viewer === "DONOR" ? "Delivered" : "Received",
+                                    tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" };
+    case "DONOR_REJECTED": return { label: viewer === "DONOR" ? "You declined" : "Donor declined", tone: quiet };
     case "REJECTED":       return { label: "Not approved",    tone: "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400" };
     case "FAILED":         return { label: "Delivery failed", tone: "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400" };
     // Includes the donee's own decline — doneeReject() records it as CANCELLED.
-    default:               return { label: "Cancelled",       tone: "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400" };
+    default:               return { label: "Cancelled",       tone: quiet };
   }
 }
 
@@ -1048,9 +1083,16 @@ function pastMatchLabel(status: string): { label: string; tone: string } {
 const matchEndedAt = (m: ItemMatch) =>
   new Date((MATCH_RECEIVED_STATUSES.has(m.status) ? m.doneeConfirmedAt : null) ?? m.closedAt ?? m.createdAt).getTime();
 
-function PastMatchesStrip({ matches, defaultOpen = false }: { matches: ItemMatch[]; defaultOpen?: boolean }) {
+function PastMatchesStrip({ matches, viewer = "DONEE", defaultOpen = false }: {
+  matches: ItemMatch[];
+  viewer?: MatchViewer;
+  defaultOpen?: boolean;
+}) {
   const [open, setOpen] = useState(defaultOpen);
   const sorted = [...matches].sort((a, b) => matchEndedAt(b) - matchEndedAt(a));
+
+  // Nothing finished yet — a "Match history (0)" toggle is just noise.
+  if (matches.length === 0) return null;
 
   return (
     <div className="border-t border-stone-100 dark:border-zinc-800 pt-3 mt-4">
@@ -1058,21 +1100,21 @@ function PastMatchesStrip({ matches, defaultOpen = false }: { matches: ItemMatch
       {open && (
         <div className="mt-2 space-y-2">
           {sorted.map(m => {
-            const { label, tone } = pastMatchLabel(m.status);
+            const { label, tone } = pastMatchLabel(m.status, viewer);
             const received = MATCH_RECEIVED_STATUSES.has(m.status) ? (m.doneeConfirmedQty ?? m.allocatedQuantity) : null;
             return (
               <div key={m.id} className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
                 <div className="flex items-center gap-2">
                   <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">
-                    <TranslatedText text={m.listingTitle || "Matched item"} />
+                    <TranslatedText text={matchItemLabel(m)} />
                   </p>
                   <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
                 </div>
                 <p className="mt-1 truncate text-2xs text-stone-400">
-                  For: <TranslatedText text={m.requestTitle || "your request"} />
-                  {m.donorName && <> &middot; {m.donorName}</>}
+                  For: <TranslatedText text={m.requestTitle || (viewer === "DONOR" ? "a request" : "your request")} />
+                  {(viewer === "DONOR" ? m.doneeName : m.donorName) && <> &middot; {viewer === "DONOR" ? m.doneeName : m.donorName}</>}
                   {" "}&middot; {shortDate(matchEndedAt(m))}
-                  {received != null && received > 0 && <> &middot; {received} received</>}
+                  {received != null && received > 0 && <> &middot; {received} {viewer === "DONOR" ? "delivered" : "received"}</>}
                 </p>
                 {m.rejectionReason && !MATCH_RECEIVED_STATUSES.has(m.status) && (
                   <p className="mt-1 line-clamp-2 text-2xs text-stone-400 dark:text-stone-500">{displayReason(m.rejectionReason)}</p>
@@ -1101,14 +1143,58 @@ const OFFER_NEEDS_DONEE = new Set(["PENDING_DONEE_REVIEW", "ISSUE_WINDOW_OPEN"])
 /** Matches waiting on the donee: accept one, or confirm it arrived. */
 const MATCH_NEEDS_DONEE = new Set(["AWAITING_DONEE_CONFIRMATION", "DELIVERED_PENDING_CONFIRMATION"]);
 
+/**
+ * What to call the item a match is for.
+ *
+ * <p>A DONATE_TO_REQUEST match has no listing — the donor offered straight from
+ * the request page, so `listingTitle` is null on every one of them. The donor's
+ * row read "Matched with item:" and then nothing at all; the other rows fell
+ * back to the generic "Matched item" when the donor had in fact written a
+ * description, which is the only thing that flow records about the item.
+ */
+function matchItemLabel(m: ItemMatch, fallback = "Matched item"): string {
+  return m.listingTitle || m.donorItemDescription || fallback;
+}
+
+/**
+ * Which side of a match the signed-in user is on.
+ *
+ * <p>By id, never by display name. `getMyMatches` returns both sides' matches
+ * and the dashboard splits them itself; it used to compare `m.donorName` with
+ * the profile's `fullName`, which put another Ravi Kumar's match on this Ravi
+ * Kumar's donor tab — with a "Confirm Donation" button on it — and, when both
+ * the profile name and the match's name were null, put the same match on both
+ * tabs at once. `donorId` and `doneeId` are always populated on MatchResponse,
+ * unlike the emails, which the list endpoint withholds.
+ */
+function matchSide(m: ItemMatch, me: UserProfile | null): "DONOR" | "DONEE" | null {
+  if (!me) return null;
+  if (m.donorId != null && m.donorId === me.id) return "DONOR";
+  if (m.doneeId != null && m.doneeId === me.id) return "DONEE";
+  return null;
+}
+
+// ── Donor dashboard sections ─────────────────────────────────────────────────
+// The same one-at-a-time treatment for the donor side: offers made, private
+// inventory, match opportunities. Hash keys are #offers / #items / #matches.
+
+type DonorSection = "offers" | "items" | "matches";
+const DONOR_SECTIONS: readonly string[] = ["offers", "items", "matches"];
+const isDonorSection = (s: string): s is DonorSection => DONOR_SECTIONS.includes(s);
+
+/** Offers waiting on the donor: finish a draft, answer a question, reconfirm. */
+const OFFER_NEEDS_DONOR = ["DRAFT", "NEEDS_INFORMATION", "DONOR_RECONFIRMATION_REQUIRED", "DONEE_ACCEPTED", "ADMIN_APPROVED"];
+/** Matches waiting on the donor: confirm the donation before it can move. */
+const MATCH_NEEDS_DONOR = new Set(["DONOR_REVIEW"]);
+
 function SectionTab({ value, icon: Icon, label, shortLabel, count, attention, tour }: {
-  value: DoneeSection;
+  value: DoneeSection | DonorSection;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   /** For phones — three full labels don't fit at 375px. */
   shortLabel: string;
   count: number;
-  /** Something in this section is waiting on the donee. */
+  /** Something in this section is waiting on this user. */
   attention: boolean;
   /** Product-tour anchor — the sections themselves unmount when not selected. */
   tour: string;
@@ -1669,9 +1755,13 @@ function DoneeDashboard({
               </div>
             ) : (
               <div className="space-y-6 mt-4">
+                {/* Every request the donee posted is listed here, fulfilled ones
+                    included — they used to leave this tab for the History page,
+                    which read as the requests having disappeared. */}
                 {([
                   ["Pending", requestGroups.pending],
                   ["Partially Fulfilled", requestGroups.partial],
+                  ["Fulfilled", requestGroups.fulfilled],
                   ["Closed", requestGroups.closed],
                 ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
                   <div key={label}>
@@ -1684,16 +1774,11 @@ function DoneeDashboard({
                   </div>
                 ))}
 
-                {/* Fully received requests live on the History page. Say so here,
-                    or a donee whose needs were all met is left with an empty list. */}
+                {/* The per-delivery breakdown (who gave what, when) lives in History. */}
                 {fulfilledRequests.length > 0 && (
                   <Link href="/dashboard/history" className="flex items-center gap-2 rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>
-                      {activeRequests.length + requestGroups.closed.length === 0
-                        ? "Every request you posted has been fulfilled — see them in History"
-                        : `${fulfilledRequests.length} fulfilled request${fulfilledRequests.length !== 1 ? "s" : ""} — see History`}
-                    </span>
+                    <span>See who delivered what for your fulfilled request{fulfilledRequests.length !== 1 ? "s" : ""} in History</span>
                     <span className="ml-auto" aria-hidden>&rarr;</span>
                   </Link>
                 )}
@@ -1758,7 +1843,7 @@ function DoneeDashboard({
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors truncate">
-                              <TranslatedText text={m.listingTitle || "Matched item"} />
+                              <TranslatedText text={matchItemLabel(m)} />
                             </p>
                             <p className="text-xs text-stone-400 mt-0.5 truncate">For: <TranslatedText text={m.requestTitle || ""} /></p>
                           </div>
@@ -1863,6 +1948,8 @@ export default function DashboardPage() {
   const [donationOffers, setDonationOffers] = useState<DonationOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"donor" | "donee">("donor");
+  // Null until the donor picks a section (or arrives with one in the URL hash).
+  const [chosenDonorSection, setChosenDonorSection] = useState<DonorSection | null>(null);
 
   // Listing action state
   const [listingActionLoading, setListingActionLoading] = useState<number | null>(null);
@@ -1976,18 +2063,49 @@ export default function DashboardPage() {
     }
   }, [itemListings]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const donorMatches = useMemo(() => {
-    if (!myProfile) return [];
-    return matches.filter(m => m.donorName === myProfile.fullName);
-  }, [matches, myProfile]);
+  // A deep link, a reload, or the back button from a handover hub should land on
+  // the section it left from — same contract as the donee dashboard's tabs.
+  useEffect(() => {
+    const fromHash = window.location.hash.slice(1);
+    if (isDonorSection(fromHash)) setChosenDonorSection(fromHash);
+  }, []);
 
-  const doneeMatches = useMemo(() => {
-    if (!myProfile) return [];
-    return matches.filter(m => m.doneeName === myProfile.fullName);
-  }, [matches, myProfile]);
+  function selectDonorSection(next: DonorSection) {
+    setChosenDonorSection(next);
+    // Replace, not push: switching tabs shouldn't fill the back button's history.
+    window.history.replaceState(null, "", `#${next}`);
+  }
+
+  const donorMatches = useMemo(
+    () => matches.filter(m => matchSide(m, myProfile) === "DONOR"),
+    [matches, myProfile],
+  );
+
+  const doneeMatches = useMemo(
+    () => matches.filter(m => matchSide(m, myProfile) === "DONEE"),
+    [matches, myProfile],
+  );
 
   // Same grouping the dedicated donee dashboard uses, for the admin's Donee tab.
   const doneeRequestGroups = useMemo(() => groupRequestsByFulfilment(itemRequests), [itemRequests]);
+
+  // ── What each donor tab holds, and which of them is waiting on the donor ──
+  // A finished match stopped being an opportunity, so it leaves the live list
+  // for the section's own history strip, exactly as on the donee side.
+  const activeDonorMatches = donorMatches.filter(m => !MATCH_HISTORY_STATUSES.has(m.status));
+  const pastDonorMatches   = donorMatches.filter(m => MATCH_HISTORY_STATUSES.has(m.status));
+  const liveDonorOffers    = donationOffers.filter(isLiveDonorOffer);
+  const donorOffersNeedYou = liveDonorOffers.some(o => OFFER_NEEDS_DONOR.includes(o.status));
+  const donorMatchesNeedYou = activeDonorMatches.some(m => MATCH_NEEDS_DONOR.has(m.status));
+  const donorItemsNeedYou  = itemListings.some(l => l.status === "NEEDS_INFORMATION");
+  // Open on whatever is waiting; then on offers for a donor with no inventory
+  // yet, since landing them on an empty ledger hides the work they have in play.
+  const donorSection: DonorSection = chosenDonorSection
+    ?? (donorOffersNeedYou ? "offers"
+      : donorMatchesNeedYou ? "matches"
+      : donorItemsNeedYou ? "items"
+      : itemListings.length === 0 && donationOffers.length > 0 ? "offers"
+      : "items");
 
   if (isLoading) {
     return (
@@ -2082,7 +2200,9 @@ export default function DashboardPage() {
           <div data-tour="ledger" className="mt-6 sm:mt-10 grid grid-cols-3 border-t border-white/10">
             {[
               { n: itemListings.length, label: "items listed" },
-              { n: donorMatches.filter(m => !["FULFILLED", "COMPLETED", "CANCELLED", "REJECTED", "FAILED", "DONOR_REJECTED"].includes(m.status)).length, label: "active matches" },
+              // Same list the Matches tab calls live, so the headline number and
+              // the tab's count can't disagree about what "active" means.
+              { n: activeDonorMatches.length, label: "active matches" },
               { n: donorMatches.filter(m => ["FULFILLED", "COMPLETED"].includes(m.status)).length, label: "donations completed" },
             ].map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
@@ -2127,12 +2247,29 @@ export default function DashboardPage() {
             
             {/* Tab Content */}
             {activeTab === "donor" ? (
-              /* DONOR DASHBOARD VIEW */
-              <div className="space-y-4 sm:space-y-6">
-                
+              /* DONOR DASHBOARD VIEW — offers, inventory and matches each get a
+                 tab, so an offer waiting on the donor isn't scrolled past below
+                 a long inventory ledger. Mirrors the donee dashboard's sections. */
+              <Tabs
+                value={donorSection}
+                onValueChange={(v) => { if (isDonorSection(v)) selectDonorSection(v); }}
+                className="space-y-4 sm:space-y-6"
+              >
+                <TabsList
+                  aria-label="Dashboard sections"
+                  className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
+                >
+                  <SectionTab value="offers" icon={Heart} label="Your Offers" shortLabel="Offers"
+                    count={liveDonorOffers.length} attention={donorOffersNeedYou} tour="offers" />
+                  <SectionTab value="items" icon={Package} label="Your Inventory" shortLabel="Inventory"
+                    count={itemListings.length} attention={donorItemsNeedYou} tour="inventory" />
+                  <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
+                    count={activeDonorMatches.length} attention={donorMatchesNeedYou} tour="matches" />
+                </TabsList>
+
                 {/* Donor Flow 2 — Offer Tracker */}
-                {donationOffers.length > 0 && (
-                  <section data-tour="offers">
+                <TabsContent value="offers" className="mt-0">
+                  <section>
                     <div className="border-b-2 border-[var(--ck-role-highlight)]/70 pb-3 mb-4 sm:mb-5">
                       <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)] dark:text-[var(--ck-role-highlight)]">Your Offers</p>
                       <p className="text-xs text-stone-400 mt-1">Items you offered directly against someone&apos;s request.</p>
@@ -2144,12 +2281,10 @@ export default function DashboardPage() {
                       onCancelled={handleOfferCancelled}
                     />
                   </section>
-                )}
+                </TabsContent>
 
-                {/* Inventory ledger + match opportunities */}
-                <div className="space-y-7 sm:space-y-12">
-
-                  {/* Your inventory — private, matched quietly */}
+                {/* Your inventory — private, matched quietly */}
+                <TabsContent value="items" className="mt-0">
                   <section>
                     <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/70 pb-3">
                       <div>
@@ -2298,15 +2433,17 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </section>
+                </TabsContent>
 
-                  {/* Donor Matches */}
-                  <section data-tour="matches">
+                {/* Donor Matches */}
+                <TabsContent value="matches" className="mt-0">
+                  <section>
                     <div className="border-b-2 border-emerald-500/60 pb-3">
                       <p className="text-3xs font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-400">Match Opportunities</p>
                       <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
                     </div>
                     <div className="pt-3.5 sm:pt-5 space-y-3 sm:space-y-4">
-                      {donorMatches.length === 0 ? (
+                      {activeDonorMatches.length === 0 && pastDonorMatches.length === 0 ? (
                         /* Truthful empty state: the sweep only spins while a listing is
                            live and the engine is actually checking incoming needs. */
                         <div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
@@ -2341,9 +2478,13 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </div>
+                      ) : activeDonorMatches.length === 0 ? (
+                        <p className="py-2 text-center text-xs text-stone-400">
+                          No live matches right now — your listed items stay in the matching engine.
+                        </p>
                       ) : (
                         <div className="divide-y space-y-3 sm:space-y-4">
-                          {donorMatches.map((m) => {
+                          {activeDonorMatches.map((m) => {
                             const badge = getFulfilmentStatusBadge(m.status);
                             const isDonorReview = m.status === "DONOR_REVIEW";
                             const isDeclining = declineMatchId === m.id;
@@ -2360,7 +2501,7 @@ export default function DashboardPage() {
                                     <p className={`font-bold text-sm text-stone-900 dark:text-stone-100 transition-colors ${isDonorReview ? "" : "group-hover:text-emerald-500"}`}>
                                       Matched need for: <TranslatedText text={m.requestTitle || "Requested Need"} />
                                     </p>
-                                    <p className="text-xs text-stone-400 mt-0.5">Matched with item: <TranslatedText text={m.listingTitle || ""} /></p>
+                                    <p className="text-xs text-stone-400 mt-0.5">Matched with item: <TranslatedText text={matchItemLabel(m)} /></p>
                                   </div>
                                   <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
                                 </div>
@@ -2442,12 +2583,18 @@ export default function DashboardPage() {
                           })}
                         </div>
                       )}
+
+                      {/* Delivered, declined and cancelled matches keep their
+                          record without competing with the live ones. */}
+                      <PastMatchesStrip
+                        matches={pastDonorMatches}
+                        viewer="DONOR"
+                        defaultOpen={activeDonorMatches.length === 0}
+                      />
                     </div>
                   </section>
-
-                </div>
-
-              </div>
+                </TabsContent>
+              </Tabs>
             ) : (
               /* DONEE DASHBOARD VIEW */
               <div className="space-y-4 sm:space-y-6">
@@ -2605,7 +2752,7 @@ export default function DashboardPage() {
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-emerald-550 transition-colors">
-                                      Matched item: <TranslatedText text={m.listingTitle || "Donated Item"} />
+                                      Matched item: <TranslatedText text={matchItemLabel(m, "Donated Item")} />
                                     </p>
                                     <p className="text-xs text-stone-400 mt-0.5">For your need: <TranslatedText text={m.requestTitle || ""} /></p>
                                   </div>
@@ -2646,16 +2793,21 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {chatMatch && user?.email && (
-        <MatchChatPopup
-          matchId={chatMatch.id}
-          partnerName={(chatMatch.doneeName === myProfile?.fullName ? chatMatch.donorName : chatMatch.doneeName) || "Match partner"}
-          itemTitle={chatMatch.listingTitle || chatMatch.requestTitle}
-          currentUserEmail={user.email}
-          accent={chatMatch.doneeName === myProfile?.fullName ? "navy" : "copper"}
-          onClose={() => setChatMatch(null)}
-        />
-      )}
+      {chatMatch && user?.email && (() => {
+        // Same id-based split as the lists: naming the wrong person in a chat
+        // header is worse than most display bugs, because the user acts on it.
+        const iAmDonee = matchSide(chatMatch, myProfile) === "DONEE";
+        return (
+          <MatchChatPopup
+            matchId={chatMatch.id}
+            partnerName={(iAmDonee ? chatMatch.donorName : chatMatch.doneeName) || "Match partner"}
+            itemTitle={chatMatch.listingTitle || chatMatch.requestTitle}
+            currentUserEmail={user.email}
+            accent={iAmDonee ? "navy" : "copper"}
+            onClose={() => setChatMatch(null)}
+          />
+        );
+      })()}
 
       <ListingDetailPanel
         listing={selectedListing}

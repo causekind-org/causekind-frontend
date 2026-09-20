@@ -712,19 +712,32 @@ export function withdrawItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
 }
 
+/**
+ * Remove a listing from the donor's inventory.
+ *
+ * <p>The local hide is a safety rail for listings the server keeps but stops
+ * showing, and it is applied <b>only after the server has agreed</b>. It used to
+ * run first, unconditionally, with both requests' errors swallowed — so a delete
+ * the server refused still cleared the row, reported success, and hid the
+ * listing in this browser's localStorage forever, while the listing itself
+ * stayed on the server where the donor could no longer reach it. A failure has
+ * to reach the caller, or the dashboard cannot tell the donor the truth.
+ */
 export async function deleteMyListing(id: number): Promise<void> {
-  // Always mark hidden locally so it is dismissed from the donor's view immediately
-  hideListingLocally(id);
   try {
     await request<void>(`/api/v1/items/${id}`, { method: "DELETE" });
-  } catch {
-    // If server rejects DELETE on terminal/audited/rejected items, try withdraw
+  } catch (deleteError) {
+    // The server keeps some listings it will not erase; withdrawing is the
+    // honest fallback, and it is still a change the donor asked for.
     try {
       await request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
     } catch {
-      /* ignore if already withdrawn/rejected */
+      // Neither worked — say so rather than pretending. Report the delete's
+      // reason: the withdraw was our idea, not the donor's.
+      throw deleteError;
     }
   }
+  hideListingLocally(id);
 }
 
 export type CreateListingPayload = {

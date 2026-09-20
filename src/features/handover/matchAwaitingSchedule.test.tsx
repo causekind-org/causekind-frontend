@@ -117,6 +117,7 @@ const { authState, mockMatch } = vi.hoisted(() => {
     closedAt: null,
     hiddenByDonor: false,
     hiddenByDonee: false,
+    delivery: null,
   };
 
   return {

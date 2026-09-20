@@ -211,17 +211,25 @@ export const DASHBOARD_TOUR: Record<TourRole, TourStep[]> = {
       body: "Items listed, active matches, donations completed — your impact, always up to date.",
       placement: "bottom",
     },
+    // The dashboard shows one section at a time, so these three anchor on its
+    // tabs — a section that isn't open isn't in the DOM for the tour to find.
     {
       anchor: "offers",
       title: "Track your offers",
-      body: "When you offer an item to a specific request, follow every step here — from AI screening to the recipient's doorstep.",
-      placement: "top",
+      body: "When you offer an item to a specific request, follow every step here — from AI screening to the recipient's doorstep. A dot means something is waiting on you.",
+      placement: "bottom",
+    },
+    {
+      anchor: "inventory",
+      title: "Your private inventory",
+      body: "Everything you've listed lives here — only our matching engine sees it, never other users.",
+      placement: "bottom",
     },
     {
       anchor: "matches",
       title: "Match opportunities",
-      body: "When someone needs what you've listed, the match appears here. Accept it and we'll guide the handover end to end.",
-      placement: "top",
+      body: "When someone needs what you've listed, the match appears here. Accept it and we'll guide the handover end to end. Finished matches move into this tab's history.",
+      placement: "bottom",
     },
   ],
   DONEE: [
