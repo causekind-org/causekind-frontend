@@ -6,6 +6,11 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { trackDonate } from '@/lib/metaEvents';
+import {
+  trackDonationStarted,
+  trackDonationPaymentSubmitted,
+  trackDonationCompleted,
+} from '@/lib/clarityEvents';
 import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight } from 'lucide-react';
 import { initiateTrustDonation } from '@/lib/api';
 import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
@@ -167,6 +172,7 @@ export function MoneyDonationForm() {
       return;
     }
 
+    trackDonationStarted();
     setSubmitting(true);
     try {
       const loaded = await loadRazorpayScript();
@@ -224,6 +230,7 @@ export function MoneyDonationForm() {
           // for no gain. The email is never put in the URL at all.
           const firstName = formData.fullName.trim().split(/\s+/)[0] ?? '';
           trackDonate({ value: Number(donation), currency: order.currency });
+          trackDonationCompleted();
           router.push(
             `/thank-you?campaign=${encodeURIComponent('Sahas Charitable Trust')}` +
               `&amount=${encodeURIComponent(String(donation))}` +
@@ -232,6 +239,7 @@ export function MoneyDonationForm() {
         },
         modal: { ondismiss: () => toast.info('Payment cancelled. Nothing was charged.') },
       });
+      trackDonationPaymentSubmitted();
       rzp.open();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
