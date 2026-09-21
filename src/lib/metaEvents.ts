@@ -2,15 +2,14 @@
  * Central place for Meta (Facebook) conversion events fired from app code,
  * e.g. CompleteRegistration, Donate, Lead.
  *
- * TEST PHASE: events are sent to the TEST pixel only (Causekind Temp), via
- * `trackSingle`, so they never touch the real pixel's data while we verify.
+ * LIVE: events are sent to the real production pixel via `trackSingle`.
  *
- * TO GO LIVE (send to the real pixel instead):
- *   - Set EVENT_PIXEL_ID to "1618600203011745" (the real pixel), or
+ * TO REVERT TO TESTING (send to the test pixel instead):
+ *   - Set EVENT_PIXEL_ID to "28686496047640631" (Causekind Temp), or
  *   - Set EVENT_PIXEL_ID to "" to send to ALL initialised pixels (uses `track`).
  * Only this one line changes — the call sites stay the same.
  */
-const EVENT_PIXEL_ID = "28686496047640631"; // Causekind Temp (TEST pixel)
+const EVENT_PIXEL_ID = "1618600203011745"; // Real production pixel (Causekind)
 
 type FbqParams = Record<string, unknown>;
 
