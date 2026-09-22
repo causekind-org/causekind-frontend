@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getDoneeNeedProfile, saveDoneeNeedProfile, importPreviousNeedProfile, uploadNeedProfileDocument, deleteNeedProfileDocument, type DoneeNeedProfile, type RequestVerification, type VerificationDocumentType } from "@/lib/api";
+import { compressImageIfNeeded } from "@/lib/imageCompression";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -72,9 +73,15 @@ function NeedProfileEditor() {
     } catch(e){toast.error(e instanceof Error?e.message:"Could not save your profile");}finally{setBusy(false);}
   }
   async function upload(type:VerificationDocumentType,file:File) {
-    if(file.size>10*1024*1024){toast.error("Please use a photo under 10 MB");return;}
+    // Shrink before the size check, not after: a phone photo of an ID is
+    // routinely over 10MB and was being turned away here without ever being
+    // offered. The gentle single-pass, not the display ladder — screeners read
+    // text off these. An undecodable file comes back unchanged and is still
+    // caught by the check below.
+    const prepared=await compressImageIfNeeded(file);
+    if(prepared.size>10*1024*1024){toast.error("Please use a photo under 10 MB");return;}
     setBusy(true); setChecking(type); setUploadErrors(v=>({...v,[type]:undefined}));
-    try {const doc=await uploadNeedProfileDocument(type,file);const p=await getDoneeNeedProfile();setProfile(p);
+    try {const doc=await uploadNeedProfileDocument(type,prepared);const p=await getDoneeNeedProfile();setProfile(p);
       if(doc.aiVerified===false) toast.error("Please replace this document. See the AI feedback below.");
       else toast.success(doc.aiVerified===true?"Saved ? AI screening passed":"Saved for admin review");}
     catch(e){const message=e instanceof Error?e.message:"Upload failed";setUploadErrors(v=>({...v,[type]:message}));toast.error(message);}
