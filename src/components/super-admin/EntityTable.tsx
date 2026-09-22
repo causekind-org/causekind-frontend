@@ -169,7 +169,7 @@ function DeleteConfirm({
 
 /* ── Main table ──────────────────────────────────────────────────────────── */
 export function EntityTable({
-  entity, title, columns, canCreate = false, createColumns, isDark = true, onView,
+  entity, title, columns, canCreate = false, createColumns, isDark = true, onView, onRowClick, enrich,
 }: {
   entity: SuperAdminEntity;
   title: string;
@@ -179,6 +179,20 @@ export function EntityTable({
   isDark?: boolean;
   /** Optional per-row "view" action (e.g. deep-link to a user's full profile). */
   onView?: (row: SuperAdminRow) => void;
+  /**
+   * Optional — makes the whole row clickable (not just an icon) to open a
+   * details view. Mutually exclusive in practice with `onView`'s icon: pass
+   * one or the other for a given table.
+   */
+  onRowClick?: (row: SuperAdminRow) => void;
+  /**
+   * The raw entity endpoint returns bare DB columns — foreign keys, not the
+   * names they point at. When a column config asks for a joined display field
+   * (e.g. `donorName`), this merges it in from a richer, purpose-built
+   * endpoint after the raw rows load, keyed by `id`. Without it those columns
+   * render as "—" for every row, not just ones actually missing data.
+   */
+  enrich?: (rows: SuperAdminRow[]) => Promise<SuperAdminRow[]>;
 }) {
   const [rows, setRows] = useState<SuperAdminRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,13 +208,16 @@ export function EntityTable({
   const load = useCallback(async (q?: string) => {
     setLoading(true);
     try {
-      setRows(await superAdminList(entity, q));
+      const raw = await superAdminList(entity, q);
+      // Enrichment is best-effort display polish — its endpoint failing
+      // shouldn't block showing the raw rows that did load.
+      setRows(enrich ? await enrich(raw).catch(() => raw) : raw);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
-  }, [entity]);
+  }, [entity, enrich]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -391,7 +408,8 @@ export function EntityTable({
                 rows.map((row, i) => (
                   <tr
                     key={String(row.id)}
-                    className={`sa-row-cascade transition-colors ${t.rowHover}`}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    className={`sa-row-cascade transition-colors ${t.rowHover} ${onRowClick ? "cursor-pointer" : ""}`}
                     style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
                   >
                     <td className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap tabular-nums ${t.cellId}`}>{i + 1}</td>
@@ -403,7 +421,7 @@ export function EntityTable({
                           : fmt(row[c.key])}
                       </td>
                     ))}
-                    <td className="px-2.5 py-2 sm:px-4 sm:py-3">
+                    <td className="px-2.5 py-2 sm:px-4 sm:py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         {onView && (
                           <button
