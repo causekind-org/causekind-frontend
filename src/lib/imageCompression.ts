@@ -81,7 +81,7 @@ function asJpegFile(blob: Blob, originalName: string): File {
  * With `targetBytes`, it walks SHRINK_LADDER until the result fits, and returns
  * the smallest encoding it managed even if nothing got under the target — a
  * smaller file is still a better upload than the original. See
- * `compressListingPhoto` for the listing-wizard caller.
+ * `compressDisplayPhoto` for the listing, offer and task callers.
  */
 export async function compressImageIfNeeded(
   file: File,
@@ -130,11 +130,12 @@ export async function compressImageIfNeeded(
   }
 }
 
-/** Listing photos are shrunk to roughly this before they leave the browser. */
-export const LISTING_PHOTO_TARGET_BYTES = 1024 * 1024;
+/** Browsed photos are shrunk to roughly this before they leave the browser. */
+export const DISPLAY_PHOTO_TARGET_BYTES = 1024 * 1024;
 
 /**
- * Shrinks a listing photo to about 1MB before upload.
+ * Shrinks a photo people browse — a listing photo, an offer photo, a task
+ * attachment — to about 1MB before upload.
  *
  * Donors pick straight out of the phone gallery, where a single shot is commonly
  * 5-12MB and a modern phone can produce far more. Those uploads were being
@@ -146,13 +147,18 @@ export const LISTING_PHOTO_TARGET_BYTES = 1024 * 1024;
  * the experience: a donee on mobile data should not be made to push 12MB to list
  * one item. So the browser shrinks first and the ceiling is only a backstop.
  *
+ * Deliberately NOT used for documents and selfies. Their screeners read text and
+ * faces off the image, and this ladder's bottom rungs reach 1280px at quality
+ * 0.45 — enough to fail a legitimate donee's ID. Those paths keep the gentler
+ * single-pass `compressImageIfNeeded`.
+ *
  * The 1MB target is not a limit — nothing rejects a file for missing it. It is
  * what the ladder aims at, and an image that cannot be decoded here (HEIC on
  * most non-Safari browsers) passes through untouched to be judged by the server.
  */
-export function compressListingPhoto(file: File): Promise<File> {
+export function compressDisplayPhoto(file: File): Promise<File> {
   return compressImageIfNeeded(file, {
-    targetBytes: LISTING_PHOTO_TARGET_BYTES,
-    skipIfUnderBytes: LISTING_PHOTO_TARGET_BYTES,
+    targetBytes: DISPLAY_PHOTO_TARGET_BYTES,
+    skipIfUnderBytes: DISPLAY_PHOTO_TARGET_BYTES,
   });
 }

@@ -2127,6 +2127,13 @@ export function uploadOfferMedia(offerId: number, files: File[]) {
     body: formData,
   }).then(async (res) => {
     if (!res.ok) {
+      // A 413 never reaches a handler — nginx answers it with an empty body and
+      // no CORS header, which the browser surfaces as a CORS error. Without this
+      // branch the .json() below finds nothing and the donor is told "Upload
+      // failed" about a request the server never received.
+      if (res.status === 413) {
+        throw new Error("Those photos are too large to upload. Please choose fewer, or smaller ones.");
+      }
       const body = await res.json().catch(() => ({}));
       throw new Error(body?.message ?? "Upload failed");
     }
@@ -4311,6 +4318,12 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
   const body = new FormData(); body.append("docType",docType); body.append("file",file);
   const res = await fetch(`${BASE_URL}/api/v1/users/me/need-profile/documents`, {method: "POST", body, credentials: "include"});
   if (!res.ok) {
+    // Refused upstream of the app, so there is no body and no screening code to
+    // read — see uploadListingPhoto. Named here rather than falling through to
+    // the generic sentence, which would blame the document's contents.
+    if (res.status === 413) {
+      throw new Error("That document is too large to upload. Please use a smaller photo.");
+    }
     const error = await res.json().catch(() => ({}));
     const screeningMessages: Record<string,string> = {
       NO_FACE: "We couldn't clearly see your face. Take a well-lit photo with your face visible.",

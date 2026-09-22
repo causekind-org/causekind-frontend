@@ -9,7 +9,7 @@ import {
   acceptAttr, describeRejectionFor, useWizardPhotos,
   type WizardPhotoLimits,
 } from "@/features/wizard-kit/useWizardPhotos";
-import { compressListingPhoto } from "@/lib/imageCompression";
+import { compressDisplayPhoto } from "@/lib/imageCompression";
 import type { WizardPhoto } from "./wizardModel";
 
 /**
@@ -93,9 +93,9 @@ export function useListingPhotos(options: {
       listingIdRef.current = listingId;
       // Shrink before the bytes leave the browser. A gallery photo is routinely
       // several MB and was being refused upstream of the app entirely; see
-      // compressListingPhoto. Never throws — a file it cannot decode is uploaded
+      // compressDisplayPhoto. Never throws — a file it cannot decode is uploaded
       // as-is and judged by the server.
-      const photo = await uploadListingPhoto(listingId, await compressListingPhoto(file));
+      const photo = await uploadListingPhoto(listingId, await compressDisplayPhoto(file));
       return {
         // A quarantined photo has no address, and that is the contract working.
         // The card renders the local object URL until an approved url arrives.
