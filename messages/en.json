@@ -1487,7 +1487,7 @@
         "screening": "Checking",
         "approved": "Approved",
         "rejected": "Needs replacing",
-        "review": "Needs a second look",
+        "review": "Check this photo",
         "failed": "Couldn't check",
         "removed": "Removed"
       },
@@ -1500,7 +1500,7 @@
         "vulgar": "This photo appears to contain offensive content, which CauseKind cannot accept.",
         "unreadable": "We couldn't read this photo. Please choose another one.",
         "unavailable": "We couldn't check this photo right now. Retry, or choose another photo.",
-        "review": "Someone needs to look at this photo before it can be used. You can retry or replace it.",
+        "review": "We couldn't confirm this photo shows the item you're donating. Use a clear photo of the item itself — screenshots, photos of screens and documents can't be used.",
         "failed": "Something went wrong checking this photo. Retry, or choose another one.",
         "generic": "This photo can't be used. Please replace it with another one."
       },
