@@ -162,7 +162,7 @@ function DoneeOffersView() {
             it actually goes. */}
         <motion.button
           type="button"
-          onClick={() => (focused ? router.replace("/donee/offers") : router.back())}
+          onClick={() => (focused ? router.replace("/donee/offers") : router.push("/dashboard#offers"))}
           initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -6 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: reducedMotion ? 0.15 : 0.35, ease: [0.22, 1, 0.36, 1] }}
@@ -185,7 +185,7 @@ function DoneeOffersView() {
             variants={{ hover: { x: -2 } }}
             transition={{ type: "spring", stiffness: 420, damping: 24 }}
           >
-            {focused ? "All offers" : "Back"}
+            {focused ? "All offers" : "Back to dashboard"}
           </motion.span>
         </motion.button>
 

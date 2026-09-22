@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { toast } from "@/lib/toast";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
@@ -102,6 +103,14 @@ export default function OffersClient() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <div className="mx-auto max-w-2xl px-4 pt-5 sm:pt-8">
+        <Link
+          href="/dashboard#offers"
+          className="group -ml-1 mb-3 inline-flex min-h-[44px] items-center gap-1.5 px-1 text-sm font-semibold text-stone-500 transition-colors hover:text-stone-900 dark:hover:text-stone-100 dark:text-stone-400"
+        >
+          <ChevronLeft className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
+          <span>Back to dashboard</span>
+        </Link>
+
         <div className="mb-6">
           <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">My Donation Offers</h1>
           <p className="text-sm text-gray-500">Track offers you have made to fulfil specific requests.</p>
