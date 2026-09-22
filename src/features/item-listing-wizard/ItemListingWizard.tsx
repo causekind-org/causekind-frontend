@@ -10,6 +10,7 @@ import {
   analyzeListingImages, getProfile, submitItemListing,
   type ItemListing, type ListingImageAnalysis,
 } from "@/lib/api";
+import { trackListItem } from "@/lib/metaEvents";
 import { resolveLocationFromGPS, detectLocationFromServer } from "@/app/actions/locations";
 
 import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
@@ -563,6 +564,7 @@ export function ItemListingWizard({
       }
       await submitItemListing(id);
       setSubmitted(true);
+      trackListItem({ mode });
       toast.success(mode === "needs-info" ? "Resubmitted for review." : "Submitted for review.");
       setTimeout(() => router.push("/dashboard"), 700);
     } catch (e) {

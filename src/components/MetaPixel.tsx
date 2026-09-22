@@ -7,6 +7,18 @@ import { useCookieConsent } from "@/hooks/useCookieConsent";
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "123456789";
 
+// Set by proxy.ts for requests from an allowlisted internal/office IP
+// (INTERNAL_TRAFFIC_IPS). Team traffic must never register as real
+// visitor/donor conversions in Meta's ad data.
+const INTERNAL_TRAFFIC_COOKIE = "ck_internal_traffic";
+
+function isInternalTraffic(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie
+    .split("; ")
+    .some((c) => c === `${INTERNAL_TRAFFIC_COOKIE}=1`);
+}
+
 // One-time bypass for pixel setup verification (e.g. Meta's automated domain
 // checker, which can't click the cookie banner). Scoped to a single visit via
 // a URL param — it does NOT touch the consent record, so it never affects any
@@ -108,6 +120,7 @@ function MetaPixelGate({ consentAccepted }: { consentAccepted: boolean }) {
     previewRef.current = hasValidPreviewToken(searchParams);
   }
 
+  if (isInternalTraffic()) return null;
   if (!consentAccepted && !previewRef.current) return null;
   return <MetaPixelInner />;
 }
