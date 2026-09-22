@@ -102,9 +102,9 @@ async function deriveNotifications(rawRole: string): Promise<IncomingNotificatio
       if (r.status === "PUBLIC_REQUEST" || r.status === "VERIFIED_PRIVATE_MATCHING" || r.status === "POTENTIAL_MATCH_FOUND") {
         notifs.push({ id: `req-approved-${r.id}`, title: "Request approved ✓", body: `"${r.title}" has been verified and is being matched`, type: "approved", link: "/dashboard#my-requests", timestamp: ts });
       }
-      if (r.status === "POTENTIAL_MATCH_FOUND") {
-        notifs.push({ id: `req-match-${r.id}`, title: "We may have found a donor", body: `We're confirming availability for "${r.title}" — we'll let you know as soon as it's confirmed.`, type: "info", link: "/dashboard#my-requests", timestamp: ts });
-      }
+      // POTENTIAL_MATCH_FOUND must look identical to VERIFIED_PRIVATE_MATCHING
+      // for the donee — a separate notification here would reveal that a
+      // specific donor has been identified, leaking need-first state.
       if (r.status === "PUBLIC_REQUEST") {
         notifs.push({ id: `req-published-${r.id}`, title: "Your request is visible to donors", body: `"${r.title}" is now published on the need board so donors can offer to help.`, type: "info", link: "/dashboard#my-requests", timestamp: ts });
       }

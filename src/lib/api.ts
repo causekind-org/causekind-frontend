@@ -2005,6 +2005,8 @@ export type DonationOffer = {
    * was offered — so anything listing deliveries beside a total must use it.
    */
   receivedQuantity: number | null;
+  /** ISO timestamp when the 48-hour issue reporting window closes, or null if not yet dual-confirmed. */
+  windowExpiresAt?: string | null;
 };
 
 export type OfferAssessmentDetails = {

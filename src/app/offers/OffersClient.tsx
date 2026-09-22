@@ -181,7 +181,7 @@ export default function OffersClient() {
                   {offer.status === "ISSUE_WINDOW_OPEN" && (
                     <Link href={`/offers/${offer.id}/issues`}
                       className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white text-center">
-                      Report Issue
+                      Report a problem
                     </Link>
                   )}
                   {offer.status === "DONOR_RECONFIRMATION_REQUIRED" && (

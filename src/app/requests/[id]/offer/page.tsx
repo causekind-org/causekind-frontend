@@ -288,7 +288,7 @@ function getOfferGuidance(offer: DonationOffer): OfferGuidance {
     case "HANDOVER_AT_RISK":
       return { title: s === "HANDOVER_AT_RISK" ? "Handover needs attention" : "Handover in progress", explanation: s === "HANDOVER_AT_RISK" ? "The handover has been rescheduled multiple times. Please contact the recipient or admin to resolve this." : "Your handover is scheduled. Go to the Handover Hub to generate the OTP and confirm the handover.", action: { label: "Open Handover Hub", href: `/offers/${offer.id}/handover` }, color: s === "HANDOVER_AT_RISK" ? "amber" : "blue" };
     case "ISSUE_WINDOW_OPEN":
-      return { title: "Delivery confirmed", explanation: "Both parties confirmed the handover. The issue reporting window is open for a short time. If there's any problem, report it now.", action: { label: "Report an issue", href: `/offers/${offer.id}/issues` }, color: "green" };
+      return { title: "Delivery confirmed", explanation: "Both parties confirmed the handover. The 48-hour problem reporting window is open. If there's any problem, report it now.", action: { label: "Report a problem", href: `/offers/${offer.id}/issues` }, color: "green" };
     case "ISSUE_RAISED":
       return { title: "Issue under review", explanation: "An issue was reported for this donation. Our team is reviewing it. We will contact you if any action is needed.", color: "amber" };
     case "COMPLETED":

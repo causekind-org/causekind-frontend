@@ -223,7 +223,7 @@ function Completion({ vm }: { vm: HandoverViewModel }) {
       )}
       {vm.role === "DONEE" && vm.flow === "OFFER" && (
         <p className="text-xs text-stone-500 dark:text-stone-400">
-          If a problem surfaces in the next few days, you can still report it below.
+          If a problem surfaces within 48 hours of handover, you can still report it below.
         </p>
       )}
       

@@ -360,7 +360,7 @@ function DoneeConfirm({ vm, onConfirm }: {
           {qtyUnderOffered && (
             <p id="donee-qty-under" className="text-xs text-amber-600 dark:text-amber-400">
               You received fewer than the {offered} offered.
-              After this handover closes, you can report an issue if something is wrong.
+              After this handover closes, you can report a problem if something is wrong.
             </p>
           )}
         </div>

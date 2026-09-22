@@ -223,11 +223,12 @@ interface Props {
   match?: ItemMatch | null;
   onClose: () => void;
   onAction: (id: number, action: "pause" | "resume" | "withdraw") => Promise<void>;
+  onWithdrawPrompt?: (id: number) => void;
   onDelete?: (id: number) => Promise<void>;
   actionLoading: number | null;
 }
 
-export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete, actionLoading }: Props) {
+export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdrawPrompt, onDelete, actionLoading }: Props) {
   // Lock body scroll while open
   useEffect(() => {
     if (listing) {
@@ -579,7 +580,13 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete
             )}
             {canWithdrawListing(listing.status) && (
               <button
-                onClick={() => { if (confirm("Withdraw this listing? This cannot be undone.")) onAction(listing.id, "withdraw"); }}
+                onClick={() => {
+                  if (onWithdrawPrompt) {
+                    onWithdrawPrompt(listing.id);
+                  } else if (confirm("Withdraw this listing? This cannot be undone.")) {
+                    onAction(listing.id, "withdraw");
+                  }
+                }}
                 disabled={actionLoading === listing.id}
                 className="text-sm font-semibold py-2.5 px-4 rounded-xl border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors disabled:opacity-50"
               >

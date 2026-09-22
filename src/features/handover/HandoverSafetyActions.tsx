@@ -19,7 +19,13 @@ import {
   type CancellationOption, type CancellationReason,
 } from "@/lib/api";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
-import { handoverScope, REPORT_ISSUE_WINDOW_MS, type HandoverFlow, type HandoverRole, type HandoverViewModel } from "./model";
+import {
+  handoverScope,
+  isIssueWindowClosed,
+  type HandoverFlow,
+  type HandoverRole,
+  type HandoverViewModel,
+} from "./model";
 import {
   handoverPrimary, handoverSecondary, handoverDestructive,
   handoverSelectTrigger, handoverSelectItem, handoverLabel,
@@ -38,7 +44,7 @@ const DONOR_ISSUE_TYPES = [
   { value: "MONEY_DEMANDED",            label: "The recipient asked for money or something extra" },
   { value: "INAPPROPRIATE_BEHAVIOUR",   label: "The recipient behaved inappropriately or made me feel unsafe" },
   { value: "ITEM_RESOLD_OR_MISUSED",    label: "I think the item is being resold or misused" },
-  { value: "OTHER",                     label: "Something else" },
+  { value: "OTHER",                 label: "Something else" },
 ];
 
 /**
@@ -79,24 +85,16 @@ export function HandoverSafetyActions({ vm, onChanged }: {
     return () => { alive = false; };
   }, [vm.flow, vm.id, vm.state]);
 
-  const isWithinThreeHoursOfCompletion = Boolean(
-    vm.completedAt &&
-      (() => {
-        const raw = vm.completedAt.trim();
-        const iso = raw.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : `${raw}Z`;
-        const time = new Date(iso).getTime();
-        return !isNaN(time) && Date.now() - time <= REPORT_ISSUE_WINDOW_MS;
-      })()
+  const hasDualConfirmation = Boolean(
+    (vm.confirmation.donorConfirmedAt && vm.confirmation.doneeConfirmedAt) || vm.completedAt
   );
+  const windowClosed = hasDualConfirmation ? isIssueWindowClosed(vm.confirmation, vm.completedAt) : true;
 
   const showCancel = option?.allowed && option.outcome !== "HIDE";
-  const disputeOnly = option?.outcome === "DISPUTE" && (vm.state !== "completed" || isWithinThreeHoursOfCompletion);
-  const canReportIssue =
-    vm.state === "completed"
-      ? isWithinThreeHoursOfCompletion
-      : (disputeOnly || vm.state === "issue_window");
+  const disputeOnly = option?.outcome === "DISPUTE";
+  const showReportButton = hasDualConfirmation && (vm.state === "completed" || vm.state === "issue_window" || disputeOnly);
 
-  if (!showCancel && !disputeOnly && !canReportIssue) return null;
+  if (!showCancel && !showReportButton) return null;
 
   return (
     <section className="border-t border-stone-200 pt-5 dark:border-zinc-800">
@@ -120,15 +118,28 @@ export function HandoverSafetyActions({ vm, onChanged }: {
             {option?.actionLabel ?? "Cancel"}
           </button>
         )}
-        {canReportIssue && (
-          <button
-            type="button"
-            onClick={() => setIssueOpen(true)}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-amber-300 px-3.5 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
-          >
-            <CircleAlert className="h-4 w-4" aria-hidden />
-            Report a problem
-          </button>
+        {showReportButton && (
+          !windowClosed ? (
+            <button
+              type="button"
+              onClick={() => setIssueOpen(true)}
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-amber-300 px-3.5 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
+            >
+              <CircleAlert className="h-4 w-4" aria-hidden />
+              Report a problem
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="inline-flex min-h-[44px] cursor-not-allowed items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-100 px-3.5 text-sm font-semibold text-stone-400 opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+              title="The 48-hour reporting window has closed."
+            >
+              <CircleAlert className="h-4 w-4" aria-hidden />
+              Report a problem
+            </button>
+          )
         )}
       </div>
 
@@ -151,7 +162,7 @@ export function HandoverSafetyActions({ vm, onChanged }: {
             />
       )}
 
-      {canReportIssue && (
+      {showReportButton && !windowClosed && (
         <ReportIssueDialog
           flow={vm.flow}
           id={vm.id}

@@ -170,9 +170,7 @@ describe("match history", () => {
 });
 
 describe("your requests", () => {
-  it("lists every request the donee posted, fulfilled ones included", async () => {
-    // A fulfilled request used to leave this tab for the History page, which
-    // read to donees as their requests having vanished.
+  it("lists pending and closed requests, excludes fulfilled ones, and shows history link", async () => {
     mocks.requests.mockResolvedValue([
       request,
       { ...request, id: 2, title: "Books for a study centre", quantity: 20, fulfilledQuantity: 20, status: "FULFILLED" },
@@ -183,18 +181,17 @@ describe("your requests", () => {
     await openTab(/Your Requests/);
 
     expect(screen.getByText("Laptops for a computer class")).toBeInTheDocument();
-    expect(screen.getByText("Fulfilled", { selector: "h4" })).toBeInTheDocument();
-    expect(screen.getByText("Books for a study centre")).toBeInTheDocument();
-    expect(screen.getByText("School bags")).toBeInTheDocument();
-    expect(screen.getByText("20 / 20")).toBeInTheDocument();
+    expect(screen.queryByText("Fulfilled", { selector: "h4" })).toBeNull();
+    expect(screen.queryByText("Books for a study centre")).toBeNull();
+    expect(screen.queryByText("School bags")).toBeNull();
     expect(screen.getByRole("link", { name: /See who delivered what/ })).toHaveAttribute("href", "/dashboard/history");
   });
 });
 
-describe("offer history", () => {
+describe("offer history and matched donations", () => {
   it("keeps a recent completed donation live, and files an older one under history", async () => {
     mocks.incomingOffers.mockResolvedValue([
-      offer(31, "COMPLETED", { closedAt: iso(2 * DAY) }),
+      offer(31, "COMPLETED", { closedAt: iso(1 * DAY) }),
       offer(32, "COMPLETED", { closedAt: iso(30 * DAY), donorName: "Meera" }),
     ]);
     render(<DashboardPage />);
@@ -202,9 +199,28 @@ describe("offer history", () => {
     await userEvent.click(await tab(/Offers Received/));
     await openTab(/Offers Received/);
 
-    // The recent one keeps its "Report an issue" window on the live list.
-    expect(screen.getByRole("link", { name: "Report an issue" })).toBeInTheDocument();
+    // The recent one keeps its "Report a problem" window on the live list.
+    expect(screen.getByRole("link", { name: "Report a problem" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Offer history \(1\)/ }));
     expect(screen.getByText(/6× from Meera/)).toBeInTheDocument();
+  });
+
+  it("shows Matched Donations Received panel with match-fulfilled requests", async () => {
+    mocks.requests.mockResolvedValue([
+      { ...request, id: 22, title: "Earbuds for study", quantity: 1, fulfilledQuantity: 1, status: "FULFILLED" },
+      { ...request, id: 20, title: "Books for school", quantity: 2, fulfilledQuantity: 2, status: "FULFILLED" },
+    ]);
+    mocks.matches.mockResolvedValue([
+      match(8, "COMPLETED", { requestId: 22, allocatedQuantity: 1, doneeConfirmedAt: iso(2 * DAY) }),
+      match(6, "COMPLETED", { requestId: 20, allocatedQuantity: 2, doneeConfirmedAt: iso(10 * DAY) }),
+    ]);
+    render(<DashboardPage />);
+    await openTab(/Your Requests/);
+    await userEvent.click(await tab(/Offers Received/));
+    await openTab(/Offers Received/);
+
+    expect(screen.getByText("Matched Donations Received")).toBeInTheDocument();
+    expect(screen.getByText("Earbuds for study")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View all" })).toHaveAttribute("href", "/dashboard/history");
   });
 });
