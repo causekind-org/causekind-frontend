@@ -36,6 +36,7 @@ import MetaPixel from "@/components/MetaPixel";
 // TEMP TEST PIXEL — remove this import and the <MetaPixelTest /> line below to
 // fully remove the throwaway test pixel. See MetaPixelTest.tsx.
 import MetaPixelTest from "@/components/MetaPixelTest";
+import ClarityAnalytics from "@/components/ClarityAnalytics";
 import { SiteBottomBlur } from "@/components/SiteBottomBlur";
 import { RoleClickSpark } from "@/components/RoleClickSpark";
 import { RoleThemeBridge } from "@/components/RoleThemeBridge";
@@ -150,6 +151,7 @@ export default async function RootLayout({
         {/* TEMP TEST PIXEL (id 28686496047640631) — isolated from the real
             pixel; delete this line + MetaPixelTest.tsx to remove completely. */}
         <MetaPixelTest />
+        <ClarityAnalytics />
         <GoogleTagManagerGated />
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>
