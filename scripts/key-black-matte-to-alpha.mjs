@@ -5,18 +5,16 @@
  *
  * Turns a PNG sequence whose subject was flattened on to a black matte into a
  * PNG sequence with a real alpha channel, ready to be encoded as VP9/WebM.
- * It exists because `ffmpeg`'s own `colorkey` cannot do this particular job:
- * see docs/ganpati-mushak-asset.md for the full recipe and the measurements
- * behind the two thresholds below.
+ * It exists because `ffmpeg`'s own `colorkey` cannot do this particular job.
  *
- * The short version of why a colour key fails: the mushak's pupils measure a
- * true 0,0,0, exactly like the matte, so any tolerance that removes the
- * background also punches two holes through his eyes. This keys by reachability
+ * The short version of why a colour key fails: a subject's own darkest pixels
+ * can measure a true 0,0,0, exactly like the matte, so any tolerance that
+ * removes the background punches holes through the subject. This keys by reachability
  * instead — black the flood fill can reach from the frame border is background,
  * black it cannot reach is enclosed by the subject and stays opaque.
  *
  * Not wired into any build. It is run by hand when a clip is (re)cut, and the
- * encoded result is committed under public/images/ganpati/.
+ * encoded result is committed under public/images/.
  */
 
 import fs from "fs";

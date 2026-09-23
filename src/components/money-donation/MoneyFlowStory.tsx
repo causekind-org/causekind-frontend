@@ -5,7 +5,6 @@ import { motion, useScroll, useTransform, useMotionValue, useSpring, useReducedM
 import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
 import { SahasLogo } from './SahasLogo';
 import Link from 'next/link';
-import { GanpatiToran, ModakIcon } from '@/components/home/GanpatiVisuals';
 
 /* ─── Step Data ─── */
 const steps = [
@@ -185,16 +184,6 @@ export function MoneyFlowStory() {
 
   return (
     <section ref={containerRef} className="relative min-h-[calc(100svh-3.5rem)] py-10 sm:py-14 lg:py-16 bg-gradient-to-b from-[#fffbf5] via-[#fff8ee] to-[#fffbf5] dark:from-[#1c0d06] dark:via-[#160a04] dark:to-[#1c0d06] overflow-hidden flex flex-col justify-center">
-      {/* Top Edge Garland Decoration */}
-      <div className="absolute top-0 inset-x-0 z-10 pointer-events-none">
-        <GanpatiToran />
-      </div>
-
-      {/* Subtle Ganpati Watermark Motif in corner */}
-      <div className="pointer-events-none absolute right-4 bottom-4 z-0 opacity-[0.06] dark:opacity-[0.08] select-none" aria-hidden="true">
-        <ModakIcon className="w-48 h-48 text-amber-600 dark:text-amber-400" />
-      </div>
-
       {/* Decorative background blobs */}
       <motion.div
         style={{ y: bgY }}

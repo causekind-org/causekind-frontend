@@ -331,28 +331,6 @@ body {
   }
 }
 
-/* ── Festive Floating Pill Badges (Ganpati Theme) ── */
-@keyframes festiveBadgeFloat {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.animate-festive-float {
-  animation: festiveBadgeFloat 3.8s ease-in-out infinite;
-}
-
-.animate-festive-float-delayed {
-  animation: festiveBadgeFloat 4.2s ease-in-out 1.2s infinite;
-}
-
-.animate-festive-float-slow {
-  animation: festiveBadgeFloat 4.6s ease-in-out 2.4s infinite;
-}
-
 .font-devanagari {
   font-family: 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Kokila', 'Utsaah', 'Arial Unicode MS', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -2218,121 +2196,6 @@ body.mobile-menu-open {
   display: flex;
 }
 
-/*
-  The festive hero runs past the fold, and the arithmetic above is half the
-  reason why.
-
-  `.ck-showcase-hero` sizes itself to the viewport minus the navbar, which is
-  right for the plain hero — it is the first thing under the nav. The festive
-  home puts `GanpatiStrip` between the two (desktop only, `hidden lg:block` in
-  HomeClient), so the hero is asked for a full nav-less viewport while standing
-  60px further down. It is over-tall by exactly the strip, by construction.
-
-  The larger half is `lg:aspect-[16/9]` on the stage. An aspect ratio takes its
-  height from the width, so at 1440 the stage demands 802px whatever the window
-  is. Measured at 1440x820: nav 112 + strip 60 + hero 979 = 1151 against 820,
-  and the 331px that fell off the bottom were the two CTAs — the one part of a
-  hero that has to be reachable.
-
-  So the stage is sized from the viewport instead, minus both the nav and the
-  strip. The image is `object-cover` at lg, so a shorter stage crops rather than
-  letterboxes or distorts.
-
-  A min-height and deliberately not a height: the copy column measures 609px
-  here and fits the 648px this leaves, but translated copy, text zoom or a short
-  laptop window can all outgrow it. Capping would clip the CTAs again in a new
-  way — growing pushes the page a little taller, which is the failure worth
-  having. `.ck-ganpati-hero`'s own min-height goes to zero for the same reason:
-  it was fighting this one and adding the strip's height back a second time.
-
-  --ck-ganpati-strip-h tracks `min-h-[3.75rem]` on GanpatiStrip's inner row.
-  The strip renders only at lg, where that content is a single line.
-*/
-:root { --ck-ganpati-strip-h: 3.75rem; }
-
-@media (min-width: 1024px) {
-  .ck-ganpati-hero { min-height: 0; }
-
-  .ck-ganpati-hero .ck-lead-hero-stage {
-    aspect-ratio: auto;
-    max-height: none;
-    min-height: calc(100dvh - var(--ck-nav-h, 0px) - var(--ck-ganpati-strip-h));
-  }
-}
-
-/*
-  The copy's vertical padding flexes with the window, and its bottom half also
-  reserves the category strip's overhang.
-
-  Two things had to be solved together. The padding is `py-12` — 96px fixed — on
-  a column measuring 609px, which is most of why a short window could not hold
-  it. And `CategoryStripGanpati` is pulled up over the stage by `lg:-mt-12`
-  (48px) / `xl:-mt-14` (56px), deliberately, so it floats over the foot of the
-  photograph.
-
-  That overhang was harmless while the stage was locked to 16:9: at 802px the
-  centred copy ended around y=705 and the strip covered 746 onward. Sizing the
-  stage to the viewport removes that accidental slack, and at 1280x700 the copy
-  grew until "Explore needs near you" sat *underneath* the strip —
-  `elementFromPoint` at the button's centre returned the EDUCATION chip, so it
-  was not merely tight, it was unclickable. Fitting a hero by burying its own
-  CTA is not fitting it.
-
-  So the bottom padding carries the overhang as well as its share of the
-  breathing room, and the strip can only ever overlap padding. The clamp gives
-  the full 3rem where there is room and yields toward 0.5rem as the window
-  shortens, which keeps the whole hero within the fold down to roughly 800px of
-  viewport. Below that the stage grows past the fold rather than clipping or
-  overlapping — the honest failure, and the one that leaves the button usable.
-*/
-:root { --ck-ganpati-catstrip-overhang: 3rem; }
-@media (min-width: 1280px) { :root { --ck-ganpati-catstrip-overhang: 3.5rem; } }
-
-/*
-  The category strip, shorter on desktop.
-
-  Nine labelled icons in a 110px band is more furniture than a set of filters
-  needs, and every pixel of it is taken from the hero above — the strip is
-  pulled up over the stage, so its height is the hero's height too.
-
-  Written here rather than as `lg:` utilities on the component because that was
-  tried and only half of it landed: the icon and gap variants applied while
-  `lg:min-h-[3.1rem]` did not, leaving the tile stuck at its base 4.25rem while
-  its contents shrank around it. This is unlayered CSS, so it outranks every
-  Tailwind layer and cannot half-apply.
-
-  `min-height: 0` on the tile is the load-bearing line. The base class pins it
-  to 4.25rem, which is what actually sets the band's height — the contents
-  measure about 52px — so shrinking the icon alone changes nothing. Released,
-  the tile sizes to its own content. The touch-target floor that min-height was
-  serving is a pointer-coarse concern, and this block is desktop only.
-*/
-@media (min-width: 1024px) {
-  .ck-ganpati-catstrip { padding-block: 0.5rem; }
-
-  .ck-ganpati-catstrip a,
-  .ck-ganpati-catstrip button {
-    min-height: 0;
-    gap: 0.25rem;
-    padding-block: 0.125rem;
-  }
-
-  .ck-ganpati-catstrip a > span:first-child,
-  .ck-ganpati-catstrip button > span:first-child {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  .ck-ganpati-catstrip svg { width: 1.25rem; height: 1.25rem; }
-}
-
-@media (min-width: 1024px) {
-  .ck-ganpati-hero .ck-ganpati-hero-copy {
-    padding-top: clamp(0.5rem, 4vh, 3rem);
-    padding-bottom: calc(clamp(0.5rem, 4vh, 3rem) + var(--ck-ganpati-catstrip-overhang));
-  }
-}
-
 .ck-hero-frame {
   align-self: stretch;
   display: flex;
@@ -2570,36 +2433,6 @@ body.mobile-menu-open {
   }
   header[data-home-hero] .ck-mobile-header > button:hover { background: rgb(255 255 255 / 0.12); }
 
-  /* ── The festive home keeps no bar on a phone ──────────────────────────────
-     Set by Navbar's `bareNav`. Only the wordmark and the menu button remain,
-     floating on the hero, so every part that draws a bar is switched off here
-     rather than in the header's class list: these have to outrank both the
-     utility classes on the header (0,1,0) and the `data-home-hero` block above,
-     which was written for the translucent-over-photo treatment this replaces.
-
-     `background: none` and not a colour — the bar's ground is a gradient, so it
-     is a background-*image*, and only the shorthand clears it. The shadow goes
-     with it: an elevation shadow under nothing is a rectangle of shade with
-     nothing casting it. */
-  header[data-bare-nav] {
-    background: none;
-    /* Prefixed first, standard last — see the note on `.glass-card`. Getting
-       this backwards here would drop the standard reset and leave the bar's
-       `backdrop-blur-xs` blurring a ground that is no longer painted. */
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    border-bottom-width: 0;
-    box-shadow: none;
-  }
-
-  header[data-bare-nav] .ck-mobile-header { background: none; }
-
-  /* Ties with the `data-home-hero` cream above on specificity and wins on
-     source order, which is the point of sitting below it. That cream was for a
-     dark photo scrim; on the pale glass pill the button now carries it would be
-     invisible. */
-  header[data-bare-nav] .ck-mobile-header > button { color: #3f2a18; }
-  .dark header[data-bare-nav] .ck-mobile-header > button { color: #fde8c8; }
   .ck-showcase-hero {
     padding: 0;
     margin-top: calc(-1 * var(--ck-nav-h, 4.25rem));
@@ -2681,7 +2514,7 @@ body.mobile-menu-open {
     on a photo behind a dark scrim, which is why every label below is #fff6ed
     and why the primary drops its fill entirely.
 
-    `:not(.ck-ganpati-hero)` is on all of it because the festive hero shares
+    `` is on all of it because the festive hero shares
     `.ck-showcase-hero` — it needs the layout half of that class, the negative
     top margin under the nav and the stage min-heights — but puts its photo in
     a separate band *above* the copy, leaving the buttons on cream #fffdf9. The
@@ -2694,7 +2527,7 @@ body.mobile-menu-open {
     hero's own `bg-gradient-to-r` and `text-[#9a3412]` never stood a chance.
     Scoping the selector is the fix; the festive hero styles its own buttons.
   */
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions { margin-top: 1.25rem; gap: 0.25rem; }
+  .ck-showcase-hero .ck-hero-actions { margin-top: 1.25rem; gap: 0.25rem; }
   /*
     Outlined, not filled.
 
@@ -2708,7 +2541,7 @@ body.mobile-menu-open {
     The ring is a box-shadow, not a border, so it does not add to the 44px
     height or shift the label off-centre.
   */
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-secondary-cta {
+  .ck-showcase-hero .ck-hero-secondary-cta {
     min-height: 2.75rem;
     padding: 0.625rem 1rem;
     border-radius: 0.75rem;
@@ -2719,12 +2552,12 @@ body.mobile-menu-open {
     font-size: 0.8125rem;
     letter-spacing: 0;
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-secondary-cta:hover {
+  .ck-showcase-hero .ck-hero-secondary-cta:hover {
     background: rgb(255 246 237 / 0.1);
     box-shadow: inset 0 0 0 1.5px rgb(255 246 237 / 0.7);
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-primary-cta,
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-auth-placeholder {
+  .ck-showcase-hero .ck-hero-primary-cta,
+  .ck-showcase-hero .ck-hero-auth-placeholder {
     order: 2;
     min-height: 2.75rem;
     flex-wrap: wrap;
@@ -2737,9 +2570,9 @@ body.mobile-menu-open {
     background: transparent;
     box-shadow: none;
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-auth-placeholder { visibility: hidden; }
+  .ck-showcase-hero .ck-hero-auth-placeholder { visibility: hidden; }
   .ck-hero-signup-prompt { font-weight: 500; color: rgb(255 246 237 / 0.7); }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-primary-cta .ck-hero-action-arrow { display: none; }
+  .ck-showcase-hero .ck-hero-primary-cta .ck-hero-action-arrow { display: none; }
   /*
     Guest CTAs sit side by side, hugging their labels.
 
@@ -2755,19 +2588,19 @@ body.mobile-menu-open {
     `width: auto` beats the buttons' `w-full`: this block is unlayered, and
     unlayered CSS outranks every Tailwind layer.
   */
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] {
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] {
     gap: 0.375rem;
     flex-direction: row;
     flex-wrap: wrap;
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta,
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-secondary-cta {
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta,
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-secondary-cta {
     width: auto;
     flex: 0 1 auto;
     padding-inline: 0.625rem;
     font-size: 0.75rem;
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta {
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta {
     order: 0;
     min-height: 2.75rem;
     /* Block padding only. The inline value and the size come from the shared
@@ -2788,8 +2621,8 @@ body.mobile-menu-open {
     font-weight: 800;
     box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: var(--ck-home-hover, #963c0d); }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-signup-prompt { display: none; }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: var(--ck-home-hover, #963c0d); }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-signup-prompt { display: none; }
   /*
     No arrows on the guest pair, and this rule has to come after the one above
     that turns the primary's back on.
@@ -2799,7 +2632,7 @@ body.mobile-menu-open {
     fits on one line down to 320px; with them it wrapped on real phones, which
     is what put these two back into a stack.
   */
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-action-arrow { display: none; }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-action-arrow { display: none; }
   .ck-showcase-hero .ck-hero-photo-image { animation: none; transform: none; object-position: 50% top; }
   .ck-showcase-hero .ck-hero-category-rail { display: none; }
   .ck-mobile-hero-trust {
