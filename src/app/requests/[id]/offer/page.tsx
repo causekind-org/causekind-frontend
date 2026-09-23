@@ -39,6 +39,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { compressDisplayPhoto } from "@/lib/imageCompression";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { toast } from "@/lib/toast";
 import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOfferWizard";
@@ -600,7 +601,11 @@ export default function OfferWizardPage() {
     setUploadingPhoto(true);
     setError(null);
     try {
-      const updated = await uploadOfferMedia(offer.id, selected);
+      // Shrink each one first. This path takes up to 8 files at once, so the
+      // whole batch shares the request's size budget — the case most likely to
+      // be refused upstream of the app.
+      const shrunk = await Promise.all(selected.map(compressDisplayPhoto));
+      const updated = await uploadOfferMedia(offer.id, shrunk);
       setOffer(updated);
       await runVisionAnalysis();
     } catch (e: unknown) {

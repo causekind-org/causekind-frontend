@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import { deleteOfferMedia, uploadOfferMedia } from "@/lib/api";
+import { compressDisplayPhoto } from "@/lib/imageCompression";
 import {
   acceptAttr, describeRejectionFor, useWizardPhotos,
   type WizardPhotoLimits,
@@ -80,7 +81,10 @@ export function useOfferPhotos(options: {
     if (offerId == null) throw new Error("No offer draft yet");
 
     const run = async () => {
-      const updated = await uploadOfferMedia(offerId, [file]);
+      // Same shrink the listing wizard applies: an offer photo is the same kind
+      // of gallery shot, and was going up whole. Never throws — an undecodable
+      // file is uploaded as-is and judged by the server.
+      const updated = await uploadOfferMedia(offerId, [await compressDisplayPhoto(file)]);
       const media = updated.media ?? [];
       const created = media.find(m => !knownIdsRef.current.has(m.id));
       // Fall back to the newest row, but never mark a photo uploaded without a
