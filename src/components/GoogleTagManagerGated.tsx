@@ -2,6 +2,7 @@
 
 import { GoogleTagManager } from "@next/third-parties/google";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
+import { isInternalTraffic } from "@/lib/internalTraffic";
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P7693M56";
 
@@ -35,6 +36,9 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P7693M56";
  *   <li><b>Admin routes never ask</b>, because `CookieConsent` skips
  *       `/admin/dashboard` and `/super-admin` — so consent stays "unset" there
  *       and the container correctly never loads.</li>
+ *   <li><b>Internal/office IPs never load it either</b> — see
+ *       `internalTraffic.ts` and `proxy.ts`. Team traffic must not pollute
+ *       Analytics/Ads data reached through this container.</li>
  * </ul>
  *
  * <p>`@next/third-parties` emits no `<noscript>` iframe, only two `next/script`
@@ -46,6 +50,7 @@ const TESTING_BYPASS = true;
 
 export default function GoogleTagManagerGated() {
   const consent = useCookieConsent();
+  if (isInternalTraffic()) return null;
   if (!TESTING_BYPASS && consent !== "accepted") return null;
 
   return <GoogleTagManager gtmId={GTM_ID} />;
