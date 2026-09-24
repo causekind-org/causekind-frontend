@@ -15,7 +15,7 @@ interface NGOProgressProps {
  * Compact step-progress indicator for the NGO registration wizard.
  *
  * <p>Styled for the auth-layout card context (cream background, no dark
- * sidebar). Uses the Governance Indigo accent (#4338CA) directly
+ * sidebar). Uses the NGO Forest Green accent (--ngo-700) directly
  * rather than the role-theme CSS variable, since the NGO flow sits in the
  * auth shell where no role theme is active.
  */
@@ -30,7 +30,7 @@ export function NGOProgress({ currentStep, completedSteps, onJump }: NGOProgress
         <p className="text-2xs font-black uppercase tracking-widest text-stone-400">
           Step {idx + 1} of {NGO_STEPS.length}
         </p>
-        <p className="text-xs font-bold text-[#4338CA] dark:text-[#6366F1] truncate">
+        <p className="text-xs font-bold text-ngo-700 dark:text-ngo-300 truncate">
           {NGO_STEP_LABELS[currentStep]}
         </p>
       </div>
@@ -56,11 +56,11 @@ export function NGOProgress({ currentStep, completedSteps, onJump }: NGOProgress
                   ${isDone
                     ? "border-green-500 bg-green-500 text-white"
                     : isCurrent
-                    ? "border-[#4338CA] bg-[#EEF2FF] text-[#4338CA]"
+                    ? "border-ngo-700 bg-ngo-50 text-ngo-700 dark:bg-ngo-900/30 dark:text-ngo-300"
                     : "border-stone-300 dark:border-zinc-700 bg-transparent text-transparent"
                   }
                   ${canJump ? "cursor-pointer" : "cursor-default"}
-                  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4338CA]
+                  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700
                 `}
               >
                 {isDone ? (

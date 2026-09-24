@@ -5,6 +5,7 @@ import { NgoCampaignPrompt } from "./NgoCampaignPrompt";
 const mockUseAuth = vi.fn();
 const mockUseIsDesktop = vi.fn();
 const mockUsePathname = vi.fn();
+const mockUseNgoStatus = vi.fn();
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => mockUseAuth(),
@@ -18,12 +19,20 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mockUsePathname(),
 }));
 
+vi.mock("./ngo-landing/useNgoStatus", () => ({
+  useNgoStatus: () => mockUseNgoStatus(),
+}));
+
 describe("NgoCampaignPrompt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     mockUseIsDesktop.mockReturnValue(true);
     mockUsePathname.mockReturnValue("/");
+    mockUseNgoStatus.mockReturnValue({
+      isVerified: true,
+      status: "verified",
+    });
     mockUseAuth.mockReturnValue({
       user: { id: "ngo-1", email: "ngo@example.com", role: "NGO" },
       isLoading: false,
@@ -32,6 +41,20 @@ describe("NgoCampaignPrompt", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("does not render when NGO is unverified (incomplete, under_review, changes_requested)", () => {
+    mockUseNgoStatus.mockReturnValue({
+      isVerified: false,
+      status: "incomplete",
+    });
+
+    render(<NgoCampaignPrompt />);
+    act(() => {
+      vi.advanceTimersByTime(20000);
+    });
+
+    expect(screen.queryByText(/NGO Portal/i)).not.toBeInTheDocument();
   });
 
   it("does not render when user is not NGO (e.g. DONOR or DONEE)", () => {
@@ -47,6 +70,7 @@ describe("NgoCampaignPrompt", () => {
 
     expect(screen.queryByText(/NGO Portal/i)).not.toBeInTheDocument();
   });
+
 
   it("does not render when isDesktop is false", () => {
     mockUseIsDesktop.mockReturnValue(false);

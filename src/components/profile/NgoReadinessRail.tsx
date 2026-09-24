@@ -54,7 +54,7 @@ export function NgoReadinessRail({
           className="h-[3px] sm:h-1 w-full max-w-xs sm:max-w-sm overflow-hidden rounded-full bg-white/15"
         >
           <motion.div
-            className="h-full origin-left rounded-full bg-[#4338CA] shadow-[0_0_12px_rgba(67,56,202,0.5)]"
+            className="h-full origin-left rounded-full bg-ngo-500 shadow-[0_0_12px_rgba(52,165,120,0.5)]"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: displayPct / 100 }}
             transition={
@@ -94,7 +94,7 @@ export function NgoReadinessRail({
       {/* Action link */}
       <Link
         href="/profile/ngo-details"
-        className="self-start rounded-sm text-2xs sm:text-xs font-bold uppercase tracking-wider text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1e1b4b] sm:self-auto sm:shrink-0 inline-flex items-center gap-1"
+        className="self-start rounded-sm text-2xs sm:text-xs font-bold uppercase tracking-wider text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ngo-900 sm:self-auto sm:shrink-0 inline-flex items-center gap-1"
       >
         {isSubmitted ? "View application →" : "Finish setup →"}
       </Link>

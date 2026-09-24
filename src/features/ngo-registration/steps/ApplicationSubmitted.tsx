@@ -48,7 +48,7 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
     <div className="space-y-6 py-2">
       {/* Top Success Badge */}
       <div className="text-center space-y-3">
-        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#4338CA] to-[#6366F1] text-white shadow-lg shadow-[#4338CA]/25">
+        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-ngo-800 to-ngo-600 text-white shadow-lg shadow-ngo-700/25">
           <ShieldCheck className="h-9 w-9" strokeWidth={2.2} />
           <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white shadow">
             <Check className="h-3 w-3" strokeWidth={3} />
@@ -56,7 +56,7 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
         </div>
 
         <div className="space-y-1">
-          <span className="text-3xs font-black uppercase tracking-widest text-[#4338CA] bg-[#EEF2FF] border border-[#6366F1]/20 dark:bg-[#4338CA]/20 dark:text-[#6366F1] px-2.5 py-1 rounded-full">
+          <span className="text-3xs font-black uppercase tracking-widest text-ngo-700 bg-ngo-50 border border-ngo-300/40 dark:bg-ngo-900/40 dark:text-ngo-300 px-2.5 py-1 rounded-full">
             Application Received
           </span>
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-stone-900 dark:text-stone-50 pt-1">
@@ -78,13 +78,13 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
           <div>
             <p className="text-3xs uppercase font-bold text-stone-400">Application Reference ID</p>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="font-mono text-base sm:text-lg font-black text-[#4338CA] dark:text-[#6366F1]">
+              <span className="font-mono text-base sm:text-lg font-black text-ngo-700 dark:text-ngo-300">
                 {data.applicationId || "—"}
               </span>
               <button
                 type="button"
                 onClick={copyAppId}
-                className="text-stone-400 hover:text-[#4338CA] dark:hover:text-[#6366F1] p-1 transition-colors rounded"
+                className="text-stone-400 hover:text-ngo-700 dark:hover:text-ngo-300 p-1 transition-colors rounded"
                 title="Copy Application ID"
                 aria-label="Copy Application ID"
               >
@@ -93,8 +93,8 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF2FF] dark:bg-[#4338CA]/20 border border-[#6366F1]/30 px-2.5 py-1 text-3xs font-black uppercase tracking-wide text-[#4338CA] dark:text-[#6366F1]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#6366F1] animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ngo-50 dark:bg-ngo-900/30 border border-ngo-300/40 px-2.5 py-1 text-3xs font-black uppercase tracking-wide text-ngo-700 dark:text-ngo-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-ngo-600 animate-pulse" />
               Under Verification
             </span>
           </div>
@@ -209,7 +209,7 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
           onClick={handleDownloadSummary}
           className="w-full flex items-center justify-center gap-2 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
         >
-          <Download className="h-4 w-4 text-[#4338CA] dark:text-[#6366F1]" />
+          <Download className="h-4 w-4 text-ngo-700 dark:text-ngo-300" />
           Download Application Summary (PDF)
         </button>
 
@@ -225,7 +225,7 @@ export function ApplicationSubmitted({ data, onReset }: ApplicationSubmittedProp
                 );
               }
             }}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#4338CA] hover:bg-[#6366F1] py-3 text-xs font-bold text-white transition-colors shadow-sm text-center"
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 py-3 text-xs font-bold text-white transition-colors shadow-sm text-center"
           >
             Return to Home
             <ArrowRight className="h-3.5 w-3.5" />

@@ -46,7 +46,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <span className="text-2xs font-black uppercase tracking-widest text-[#4338CA] dark:text-[#6366F1]">
+        <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
           Step 1 of 6
         </span>
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -61,7 +61,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
         {/* Organization Name */}
         <div className="space-y-1">
           <label htmlFor="ngo-org-name" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Organization Name <span className="text-[#4338CA] dark:text-[#6366F1]" aria-hidden>*</span>
+            Organization Name <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <input
             id="ngo-org-name"
@@ -85,7 +85,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
         {/* Legal Structure */}
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Legal Structure <span className="text-[#4338CA] dark:text-[#6366F1]" aria-hidden>*</span>
+            Legal Structure <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <div
             role="radiogroup"
@@ -110,7 +110,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
         {/* Registration Number */}
         <div className="space-y-1">
           <label htmlFor="ngo-reg-no" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Registration Number <span className="text-[#4338CA] dark:text-[#6366F1]" aria-hidden>*</span>
+            Registration Number <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <input
             id="ngo-reg-no"
@@ -133,7 +133,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
         {/* Registered Office Address */}
         <div className="space-y-1">
           <label htmlFor="ngo-address" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Registered Office Address <span className="text-[#4338CA] dark:text-[#6366F1]" aria-hidden>*</span>
+            Registered Office Address <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <textarea
             id="ngo-address"
@@ -177,7 +177,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40"
+          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
@@ -185,7 +185,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
         <button
           type="button"
           onClick={handleContinue}
-          className="flex items-center gap-1.5 rounded-xl bg-[#4338CA] hover:bg-[#6366F1] px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40"
+          className="flex items-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
         >
           Continue
           <ArrowRight className="h-4 w-4" aria-hidden />

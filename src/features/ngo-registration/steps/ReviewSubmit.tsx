@@ -41,7 +41,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <span className="text-2xs font-black uppercase tracking-widest text-[#4338CA] dark:text-[#6366F1]">
+        <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
           Step 5 of 6
         </span>
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -57,7 +57,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         <section className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
           <div className="flex items-center justify-between gap-2 border-b border-stone-200/60 dark:border-zinc-800/80 pb-2 mb-3">
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#EEF2FF] text-[#4338CA] dark:bg-[#4338CA]/20 dark:text-[#6366F1] text-xs">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-ngo-100 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300 text-xs">
                 1
               </span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
@@ -67,7 +67,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             <button
               type="button"
               onClick={() => onEditStep("org-details")}
-              className="inline-flex items-center gap-1 text-2xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2"
+              className="inline-flex items-center gap-1 text-2xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
               aria-label="Edit organization details"
             >
               <Pencil className="h-3 w-3" /> Edit
@@ -112,7 +112,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         <section className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
           <div className="flex items-center justify-between gap-2 border-b border-stone-200/60 dark:border-zinc-800/80 pb-2 mb-3">
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#EEF2FF] text-[#4338CA] dark:bg-[#4338CA]/20 dark:text-[#6366F1] text-xs">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-ngo-100 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300 text-xs">
                 2
               </span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
@@ -122,7 +122,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             <button
               type="button"
               onClick={() => onEditStep("legal-documents")}
-              className="inline-flex items-center gap-1 text-2xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2"
+              className="inline-flex items-center gap-1 text-2xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
               aria-label="Edit legal documents"
             >
               <Pencil className="h-3 w-3" /> Edit
@@ -162,7 +162,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         <section className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
           <div className="flex items-center justify-between gap-2 border-b border-stone-200/60 dark:border-zinc-800/80 pb-2 mb-3">
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#EEF2FF] text-[#4338CA] dark:bg-[#4338CA]/20 dark:text-[#6366F1] text-xs">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-ngo-100 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300 text-xs">
                 3
               </span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
@@ -172,7 +172,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             <button
               type="button"
               onClick={() => onEditStep("authorized-rep")}
-              className="inline-flex items-center gap-1 text-2xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2"
+              className="inline-flex items-center gap-1 text-2xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
               aria-label="Edit authorized representative"
             >
               <Pencil className="h-3 w-3" /> Edit
@@ -224,7 +224,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         <section className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
           <div className="flex items-center justify-between gap-2 border-b border-stone-200/60 dark:border-zinc-800/80 pb-2 mb-3">
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#EEF2FF] text-[#4338CA] dark:bg-[#4338CA]/20 dark:text-[#6366F1] text-xs">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-ngo-100 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300 text-xs">
                 4
               </span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
@@ -234,7 +234,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             <button
               type="button"
               onClick={() => onEditStep("org-photos")}
-              className="inline-flex items-center gap-1 text-2xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2"
+              className="inline-flex items-center gap-1 text-2xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
               aria-label="Edit photos"
             >
               <Pencil className="h-3 w-3" /> Edit
@@ -264,7 +264,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         </section>
 
         {/* Confirmation Checkbox */}
-        <div className="rounded-xl border border-[#6366F1]/20 bg-[#EEF2FF]/40 dark:bg-[#4338CA]/10 p-4 space-y-2">
+        <div className="rounded-xl border border-ngo-300/40 bg-ngo-50/60 dark:bg-ngo-950/20 p-4 space-y-2">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -274,7 +274,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                 onChange({ confirmationChecked: e.target.checked });
                 if (error) setError(null);
               }}
-              className="mt-1 h-4 w-4 rounded border-stone-300 accent-[#4338CA] cursor-pointer"
+              className="mt-1 h-4 w-4 rounded border-stone-300 accent-ngo-700 cursor-pointer"
             />
             <span className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed select-none">
               I hereby declare that all information and documents submitted are true, authentic, and accurate. I confirm that I am duly authorized by the organization to register and manage this CauseKind NGO account.
@@ -303,7 +303,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           type="button"
           onClick={onBack}
           disabled={isSubmitting}
-          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
@@ -312,7 +312,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           type="button"
           onClick={handleSubmit}
           disabled={!data.confirmationChecked || isSubmitting}
-          className="flex items-center gap-2 rounded-xl bg-[#4338CA] hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-bold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40 shadow-sm"
+          className="flex items-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-bold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 shadow-sm"
         >
           {isSubmitting ? (
             <>

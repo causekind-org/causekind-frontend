@@ -116,7 +116,7 @@ export function EmailVerification({ data, onChange, onBack, onVerified }: EmailV
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <span className="text-2xs font-black uppercase tracking-widest text-[#4338CA] dark:text-[#6366F1]">
+        <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
           Step 6 of 6
         </span>
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -126,7 +126,7 @@ export function EmailVerification({ data, onChange, onBack, onVerified }: EmailV
           We sent a 6-digit verification code to your account signup email:
         </p>
         <p className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-stone-800 dark:text-stone-200 mt-1">
-          <Mail className="h-3.5 w-3.5 text-[#4338CA] dark:text-[#6366F1]" />
+          <Mail className="h-3.5 w-3.5 text-ngo-700 dark:text-ngo-300" />
           {signupEmail}
         </p>
       </div>
@@ -170,9 +170,9 @@ export function EmailVerification({ data, onChange, onBack, onVerified }: EmailV
                     className={cn(
                       "flex h-12 w-10 sm:h-14 sm:w-12 items-center justify-center rounded-xl border bg-white dark:bg-zinc-900 font-mono text-lg sm:text-xl font-bold transition-all",
                       slot.isActive
-                        ? "border-[#4338CA] ring-2 ring-[#4338CA]/25 shadow-sm"
+                        ? "border-ngo-700 ring-2 ring-ngo-700/25 shadow-sm"
                         : slot.char
-                        ? "border-[#6366F1]/40 bg-[#EEF2FF]/40"
+                        ? "border-ngo-300/40 bg-ngo-50/40"
                         : "border-stone-200 dark:border-zinc-700 text-stone-400"
                     )}
                   >
@@ -202,7 +202,7 @@ export function EmailVerification({ data, onChange, onBack, onVerified }: EmailV
             type="button"
             onClick={handleResend}
             disabled={cooldown > 0 || isVerifying || isResending}
-            className="inline-flex items-center gap-1 font-semibold text-[#4338CA] dark:text-[#6366F1] hover:underline disabled:no-underline disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1 font-semibold text-ngo-700 dark:text-ngo-300 hover:underline disabled:no-underline disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw className={cn("h-3 w-3", isResending && "animate-spin")} />
             {cooldown > 0 ? `Resend code in ${cooldown}s` : isResending ? "Sending..." : "Resend code"}
@@ -226,7 +226,7 @@ export function EmailVerification({ data, onChange, onBack, onVerified }: EmailV
           type="button"
           onClick={onBack}
           disabled={isVerifying || isResending}
-          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40"
+          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
@@ -235,7 +235,7 @@ export function EmailVerification({ data, onChange, onBack, onVerified }: EmailV
           type="button"
           onClick={() => handleVerify(code)}
           disabled={code.length !== OTP_LENGTH || isVerifying}
-          className="flex items-center gap-2 rounded-xl bg-[#4338CA] hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-bold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40 shadow-sm"
+          className="flex items-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-bold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 shadow-sm"
         >
           {isVerifying ? (
             <>

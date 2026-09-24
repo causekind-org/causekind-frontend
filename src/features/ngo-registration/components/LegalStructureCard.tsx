@@ -20,9 +20,9 @@ export function LegalStructureCard({ structure, selected, onSelect }: LegalStruc
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40 focus-visible:ring-offset-1",
+        "flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 focus-visible:ring-offset-1",
         selected
-          ? "border-[#4338CA] bg-[#EEF2FF] dark:bg-[#4338CA]/20 ring-2 ring-[#4338CA]/20"
+          ? "border-ngo-700 bg-ngo-50 dark:bg-ngo-900/20 ring-2 ring-ngo-700/20"
           : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 hover:bg-stone-100/55 dark:hover:bg-zinc-800/50"
       )}
     >
@@ -32,7 +32,7 @@ export function LegalStructureCard({ structure, selected, onSelect }: LegalStruc
       <span
         className={cn(
           "text-sm font-bold",
-          selected ? "text-[#4338CA] dark:text-[#6366F1]" : "text-stone-700 dark:text-stone-300"
+          selected ? "text-ngo-700 dark:text-ngo-300" : "text-stone-700 dark:text-stone-300"
         )}
       >
         {structure.label}

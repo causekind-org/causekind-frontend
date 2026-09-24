@@ -608,7 +608,7 @@ function RegisterContent() {
           {/* Heading */}
           <Reveal>
             <div className="space-y-1 sm:space-y-1.5">
-              <span className={`text-2xs font-black uppercase tracking-widest ${form.role === "NGO" ? "text-[#4338CA] dark:text-[#6366F1]" : "text-[#b04a15]"}`}>
+              <span className={`text-2xs font-black uppercase tracking-widest ${form.role === "NGO" ? "text-ngo-700 dark:text-ngo-300" : "text-[#b04a15]"}`}>
                 {form.role === "NGO" ? "NGO Account" : "Create account"}
               </span>
               <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -664,7 +664,7 @@ function RegisterContent() {
                   onClick={() => set("role", "NGO")}
                   className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
                     form.role === "NGO"
-                      ? "border-[#4338CA] bg-[#EEF2FF] text-[#4338CA] ring-2 ring-[#4338CA]/20 font-bold dark:bg-[#4338CA]/20 dark:text-[#6366F1]"
+                      ? "border-ngo-700 bg-ngo-50 text-ngo-700 ring-2 ring-ngo-700/20 font-bold dark:bg-ngo-900/30 dark:text-ngo-300"
                       : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
                   }`}
                 >
@@ -1010,7 +1010,7 @@ function RegisterContent() {
                 disabled={loading}
                 className={`w-full rounded-xl disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 mt-2 animate-heartbeat ${
                   form.role === "NGO"
-                    ? "bg-[#4338CA] hover:bg-[#6366F1] focus-visible:ring-[#4338CA]"
+                    ? "bg-ngo-700 hover:bg-ngo-600 focus-visible:ring-ngo-700"
                     : "bg-[#b04a15] hover:bg-[#963c0d] focus-visible:ring-[#b04a15]"
                 }`}
               >

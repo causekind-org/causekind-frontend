@@ -59,7 +59,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <span className="text-2xs font-black uppercase tracking-widest text-[#4338CA] dark:text-[#6366F1]">
+        <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
           Step 3 of 6
         </span>
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -74,7 +74,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
         {/* Full Name */}
         <div className="space-y-1">
           <label htmlFor="rep-name" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Full Name <span className="text-[#4338CA] dark:text-[#6366F1]" aria-hidden>*</span>
+            Full Name <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <input
             id="rep-name"
@@ -92,7 +92,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
         {/* Designation */}
         <div className="space-y-1">
           <label htmlFor="rep-designation" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Designation <span className="text-[#4338CA] dark:text-[#6366F1]" aria-hidden>*</span>
+            Designation <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <select
             id="rep-designation"
@@ -112,7 +112,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
         {/* Mobile Number */}
         <div className="space-y-1">
           <label htmlFor="rep-mobile" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Mobile Number <span className="text-[#4338CA] dark:text-[#6366F1]" aria-hidden>*</span>
+            Mobile Number <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <input
             id="rep-mobile"
@@ -131,7 +131,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
         {/* Official Email */}
         <div className="space-y-1">
           <label htmlFor="rep-email" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Official Email Address <span className="text-[#4338CA] dark:text-[#6366F1]" aria-hidden>*</span>
+            Official Email Address <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <input
             id="rep-email"
@@ -193,7 +193,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
                 aria-label="Upload authorization letter"
                 className={cn(
                   "flex flex-col items-center justify-center gap-1.5 py-5 cursor-pointer border-2 border-dashed m-3 rounded-lg transition-colors",
-                  draggingLetter ? "border-[#4338CA] bg-[#4338CA]/5" : "border-stone-200 dark:border-zinc-700 hover:border-[#4338CA]/50"
+                  draggingLetter ? "border-ngo-700 bg-ngo-700/5" : "border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50"
                 )}
               >
                 <Upload className="h-5 w-5 text-stone-400" aria-hidden />
@@ -203,7 +203,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
               </div>
               <div className="border-t border-stone-100 dark:border-zinc-800 px-3.5 py-2 flex items-center justify-between">
                 <p className="text-3xs text-stone-400">Demo mode</p>
-                <button type="button" onClick={markLetterDemo} className="text-3xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2">Mark as uploaded ✓</button>
+                <button type="button" onClick={markLetterDemo} className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2">Mark as uploaded ✓</button>
               </div>
             </div>
           )}
@@ -212,11 +212,11 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
 
       {/* Navigation */}
       <div className="flex items-center justify-between gap-3 pt-2">
-        <button type="button" onClick={onBack} className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40">
+        <button type="button" onClick={onBack} className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
         </button>
-        <button type="button" onClick={handleContinue} className="flex items-center gap-1.5 rounded-xl bg-[#4338CA] hover:bg-[#6366F1] px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40">
+        <button type="button" onClick={handleContinue} className="flex items-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40">
           Continue
           <ArrowRight className="h-4 w-4" aria-hidden />
         </button>

@@ -66,7 +66,7 @@ export default function NgoDetailsPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#4338CA]" />
+          <Loader2 className="h-8 w-8 animate-spin text-ngo-700" />
         </div>
       }
     >
@@ -399,7 +399,7 @@ function NgoDetailsEditor() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#4338CA]" />
+        <Loader2 className="h-8 w-8 animate-spin text-ngo-700" />
       </div>
     );
   }
@@ -416,7 +416,7 @@ function NgoDetailsEditor() {
           <div className="flex flex-col gap-4 border-b border-stone-200 px-7 pb-6 pt-8 dark:border-zinc-800">
             <Link
               href="/profile"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#4338CA] hover:text-[#6366F1] transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-ngo-700 hover:text-ngo-600 dark:text-ngo-300 dark:hover:text-ngo-100 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to profile
@@ -430,7 +430,7 @@ function NgoDetailsEditor() {
               </h1>
             </div>
             <div className="flex items-baseline gap-2.5">
-              <span className="text-4xl font-black leading-none tabular-nums text-[#4338CA] dark:text-[#6366F1]">
+              <span className="text-4xl font-black leading-none tabular-nums text-ngo-700 dark:text-ngo-300">
                 {currentStep === "submitted" ? "100%" : `${progress.percent}%`}
               </span>
               <span className="text-xs font-semibold text-stone-500">
@@ -439,7 +439,7 @@ function NgoDetailsEditor() {
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-zinc-800">
               <div
-                className="h-full rounded-full bg-[#4338CA] transition-[width] duration-500"
+                className="h-full rounded-full bg-ngo-700 transition-[width] duration-500"
                 style={{ width: `${currentStep === "submitted" ? 100 : progress.percent}%` }}
               />
             </div>
@@ -464,14 +464,14 @@ function NgoDetailsEditor() {
                   onClick={() => goToStep(stepKey)}
                   className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${
                     isCurrent
-                      ? "bg-[#EEF2FF] font-bold text-[#4338CA] dark:bg-[#4338CA]/20 dark:text-[#6366F1]"
+                      ? "bg-ngo-50 font-bold text-ngo-700 dark:bg-ngo-900/30 dark:text-ngo-300"
                       : "font-semibold text-stone-600 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-zinc-800/60"
                   }`}
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-black ${
                       isCurrent
-                        ? "bg-[#4338CA] text-white"
+                        ? "bg-ngo-700 text-white"
                         : isCompleted
                         ? "bg-emerald-600 text-white"
                         : "border border-stone-300 text-stone-400 dark:border-zinc-600"
@@ -498,7 +498,7 @@ function NgoDetailsEditor() {
                       key={item}
                       className="flex items-start gap-2 text-xs font-semibold text-stone-600 dark:text-stone-300"
                     >
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#4338CA]" />
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-ngo-700" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -519,7 +519,7 @@ function NgoDetailsEditor() {
           <div className="border-b border-stone-200 bg-white px-5 py-4 lg:hidden dark:border-zinc-800 dark:bg-zinc-900">
             <Link
               href="/profile"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#4338CA] dark:text-[#6366F1]"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-ngo-700 dark:text-ngo-300"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to profile
@@ -528,13 +528,13 @@ function NgoDetailsEditor() {
               <h1 className="text-xl font-bold text-stone-900 dark:text-stone-100">
                 Your readiness
               </h1>
-              <span className="text-2xl font-black tabular-nums text-[#4338CA] dark:text-[#6366F1]">
+              <span className="text-2xl font-black tabular-nums text-ngo-700 dark:text-ngo-300">
                 {currentStep === "submitted" ? 100 : progress.percent}%
               </span>
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-zinc-800">
               <div
-                className="h-full rounded-full bg-[#4338CA] transition-[width] duration-500"
+                className="h-full rounded-full bg-ngo-700 transition-[width] duration-500"
                 style={{ width: `${currentStep === "submitted" ? 100 : progress.percent}%` }}
               />
             </div>
@@ -554,7 +554,7 @@ function NgoDetailsEditor() {
                       onClick={() => goToStep(stepKey)}
                       className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors ${
                         isCurrent
-                          ? "bg-[#4338CA] text-white"
+                          ? "bg-ngo-700 text-white"
                           : "border border-stone-300 text-stone-600 dark:border-zinc-600 dark:text-stone-300"
                       }`}
                     >
@@ -579,7 +579,7 @@ function NgoDetailsEditor() {
                 {currentStep === "submitted" ? (
                   <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900">
                     <div className="flex items-center gap-3 border-b border-stone-200 pb-5 dark:border-zinc-800">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4338CA] to-[#6366F1] flex items-center justify-center text-white shadow-md shadow-[#4338CA]/20">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-ngo-800 to-ngo-600 flex items-center justify-center text-white shadow-md shadow-ngo-700/20">
                         <ShieldCheck className="w-6 h-6" />
                       </div>
                       <div>
@@ -594,7 +594,7 @@ function NgoDetailsEditor() {
                     <div className="mt-6 flex flex-wrap gap-4">
                       <Link
                         href="/profile"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4338CA] hover:bg-[#6366F1] px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
                       >
                         Return to Profile
                         <ArrowRight className="w-3.5 h-3.5" />

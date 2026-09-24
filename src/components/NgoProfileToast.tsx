@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { X, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyNgoApplication } from "@/lib/api";
@@ -22,12 +23,18 @@ export function NgoProfileToast({
   userId,
 }: NgoProfileToastProps) {
   const { user } = useAuth();
+  const pathname = usePathname();
 
   const userIdentifier =
     userId ??
     user?.id ??
     user?.userId ??
     (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
+
+  const [sessionDismissed, setSessionDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("ngo-profile-toast-session-dismissed") === "true";
+  });
 
   const checkStatusFromStorage = useCallback(() => {
     if (typeof window === "undefined") return false;
@@ -70,15 +77,48 @@ export function NgoProfileToast({
     return checkStatusFromStorage();
   });
 
-  const isEffectivelyComplete = isProfileComplete || isApplicationUnderReview;
+  const isEffectivelyComplete = isProfileComplete || isApplicationUnderReview || sessionDismissed;
 
   const [visible, setVisible] = useState(false);
   const [entered, setEntered] = useState(false);
   const [barKey, setBarKey] = useState(0);
+  const [scrolledPastHero, setScrolledPastHero] = useState(() => pathname !== "/");
 
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Track hero visibility on landing page
+  useEffect(() => {
+    if (pathname !== "/") {
+      setScrolledPastHero(true);
+      return;
+    }
+
+    const checkScroll = () => {
+      const hero = document.getElementById("ngo-hero");
+      if (hero) {
+        const rect = hero.getBoundingClientRect();
+        if (rect.bottom < 200 || window.scrollY > 450) {
+          setScrolledPastHero(true);
+        } else {
+          setScrolledPastHero(false);
+        }
+      } else if (window.scrollY > 450) {
+        setScrolledPastHero(true);
+      } else {
+        setScrolledPastHero(false);
+      }
+    };
+
+    checkScroll();
+    window.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [pathname]);
 
   const clearAllTimers = useCallback(() => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -161,6 +201,7 @@ export function NgoProfileToast({
 
   const showToast = useCallback(() => {
     if (isEffectivelyComplete) return;
+    if (pathname === "/" && !scrolledPastHero) return;
 
     clearAllTimers();
     setVisible(true);
@@ -180,50 +221,47 @@ export function NgoProfileToast({
         }, REPEAT_INTERVAL_MS);
       }, EXIT_MS);
     }, VISIBLE_MS);
-  }, [clearAllTimers, isEffectivelyComplete]);
+  }, [clearAllTimers, isEffectivelyComplete, pathname, scrolledPastHero]);
 
   useEffect(() => {
-    if (isEffectivelyComplete) {
+    if (isEffectivelyComplete || isModalOpen || (pathname === "/" && !scrolledPastHero)) {
       clearAllTimers();
       setVisible(false);
       setEntered(false);
       return;
     }
 
-    if (isModalOpen) {
-      clearAllTimers();
-      setVisible(false);
-      setEntered(false);
-      return;
-    }
-
-    // Modal is closed (auto-dismissed or manual dismiss) and profile is incomplete:
-    // show toast immediately
     showToast();
 
     return () => {
       clearAllTimers();
     };
-  }, [isEffectivelyComplete, isModalOpen, showToast, clearAllTimers]);
+  }, [isEffectivelyComplete, isModalOpen, pathname, scrolledPastHero, showToast, clearAllTimers]);
 
   function dismiss() {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("ngo-profile-toast-session-dismissed", "true");
+    }
+    setSessionDismissed(true);
     clearAllTimers();
     setEntered(false);
     exitTimerRef.current = setTimeout(() => {
       setVisible(false);
-      loopTimerRef.current = setTimeout(() => {
-        showToast();
-      }, REPEAT_INTERVAL_MS);
     }, EXIT_MS);
   }
 
   function handleAction() {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("ngo-profile-toast-session-dismissed", "true");
+    }
+    setSessionDismissed(true);
     clearAllTimers();
     setVisible(false);
     setEntered(false);
   }
 
-  if (isEffectivelyComplete || !visible) return null;
+  if (isEffectivelyComplete || !visible || (pathname === "/" && !scrolledPastHero)) return null;
+
 
   return (
     <div className="fixed bottom-[calc(var(--ck-bottom-chrome)+1.75rem)] left-1/2 -translate-x-1/2 z-[9980] pointer-events-none w-max max-w-[calc(100vw-1.5rem)]">
@@ -238,22 +276,22 @@ export function NgoProfileToast({
         }}
       >
         {/* Pill matching site's prompt pattern */}
-        <div className="relative flex min-w-0 items-center gap-2 sm:gap-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-full pl-2 pr-1.5 py-1.5 sm:pl-2.5 sm:pr-2 sm:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(67,56,202,0.2)] overflow-hidden">
+        <div className="relative flex min-w-0 items-center gap-2 sm:gap-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-full pl-2 pr-1.5 py-1.5 sm:pl-2.5 sm:pr-2 sm:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(30,107,79,0.2)] overflow-hidden">
           {/* Progress bar — pure CSS drain animation */}
           <div
             key={barKey}
-            className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4338CA] origin-left"
+            className="absolute bottom-0 left-0 right-0 h-[2px] bg-ngo-700 origin-left"
             style={{ animation: `ck-drain ${VISIBLE_MS}ms linear forwards` }}
           />
 
           {/* Icon + pulsing dot */}
           <div className="relative shrink-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#EEF2FF] border border-[#6366F1]/25 dark:bg-[#4338CA]/20 dark:border-[#6366F1]/30 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4338CA] dark:text-[#6366F1]" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-ngo-50 border border-ngo-300 dark:bg-ngo-900/30 dark:border-ngo-700/40 flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-ngo-700 dark:text-ngo-300" />
             </div>
             <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6366F1] opacity-40" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#4338CA] border-2 border-white dark:border-zinc-900" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ngo-600 opacity-40" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ngo-700 border-2 border-white dark:border-zinc-900" />
             </span>
           </div>
 
@@ -274,7 +312,7 @@ export function NgoProfileToast({
           <Link
             href="/profile/ngo-details"
             onClick={handleAction}
-            className="flex items-center gap-1.5 bg-[#4338CA] hover:bg-[#6366F1] active:scale-95 text-white text-2xs sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 sm:px-3.5 rounded-full transition-all whitespace-nowrap shrink-0 shadow-sm"
+            className="flex items-center gap-1.5 bg-ngo-700 hover:bg-ngo-600 active:scale-95 text-white text-2xs sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 sm:px-3.5 rounded-full transition-all whitespace-nowrap shrink-0 shadow-sm"
           >
             Complete Now →
           </Link>

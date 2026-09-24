@@ -66,6 +66,7 @@ import { toast } from "@/lib/toast";
 import { IS_NGO_DEMO_MODE } from "@/features/ngo-registration/ngoRegistrationModel";
 import { NgoWelcomeModal } from "@/features/ngo-registration/components/NgoWelcomeModal";
 import { NgoProfileToast } from "@/components/NgoProfileToast";
+import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
@@ -380,26 +381,34 @@ export default function HomeClient({
     [rakshaBandhan, initialPublicRequests],
   );
 
+  if (isNgo) {
+    return (
+      <div className="ck-home-page bg-[var(--page-tint-to,#FAFDFB)] dark:bg-[var(--page-tint-from,#071D15)] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+        {/* Welcome modal & profile toast for incomplete NGO profiles */}
+        {userIdentifier && ngoAppStatus !== "SUBMITTED" && (
+          <>
+            <NgoWelcomeModal
+              userId={userIdentifier}
+              isProfileComplete={false}
+              onDismiss={handleModalDismiss}
+            />
+            <NgoProfileToast
+              userId={userIdentifier}
+              isProfileComplete={false}
+              isModalOpen={isWelcomeModalOpen}
+            />
+          </>
+        )}
+
+        <NgoLandingView />
+      </div>
+    );
+  }
+
   return (
     <div className={`ck-home-page ${isGanpati ? "ck-ganpati-active" : ""} bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
       {/* Festive Ganpati Welcome Popup on site load */}
       {isGanpati && <GanpatiWelcomeModal />}
-
-      {/* Welcome modal & profile toast for incomplete NGO profiles */}
-      {isNgo && userIdentifier && ngoAppStatus !== "SUBMITTED" && (
-        <>
-          <NgoWelcomeModal
-            userId={userIdentifier}
-            isProfileComplete={false}
-            onDismiss={handleModalDismiss}
-          />
-          <NgoProfileToast
-            userId={userIdentifier}
-            isProfileComplete={false}
-            isModalOpen={isWelcomeModalOpen}
-          />
-        </>
-      )}
 
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders

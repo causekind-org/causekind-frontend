@@ -572,7 +572,7 @@ export function NgoProfileView() {
   if (authLoading || loading) {
     return (
       <div className="bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen flex items-center justify-center">
-        <RefreshCw className="h-7 w-7 animate-spin text-[#4338CA]" />
+        <RefreshCw className="h-7 w-7 animate-spin text-ngo-700" />
       </div>
     );
   }
@@ -680,20 +680,20 @@ export function NgoProfileView() {
 
   return (
     <div className="bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen pb-28">
-      {/* ── Top Header Band: Governance Indigo gradient ── */}
+      {/* ── Top Header Band: Forest Green gradient ── */}
       <div
         className="relative overflow-hidden text-white"
         style={{
-          background: "linear-gradient(140deg, #1e1b4b 0%, #312e81 52%, #1e1b4b 100%)",
+          background: "linear-gradient(140deg, #0B2E22 0%, #123D2E 52%, #0B2E22 100%)",
         }}
       >
-        <div className="pointer-events-none absolute -top-24 right-[8%] w-[420px] h-[420px] rounded-full border border-[#6366F1]/15" />
-        <div className="pointer-events-none absolute -bottom-32 -left-16 w-72 h-72 rounded-full border border-[#6366F1]/10" />
+        <div className="pointer-events-none absolute -top-24 right-[8%] w-[420px] h-[420px] rounded-full border border-ngo-300/15" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 w-72 h-72 rounded-full border border-ngo-300/10" />
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at 75% 20%, rgba(99,102,241,0.18) 0%, transparent 55%)",
+              "radial-gradient(ellipse at 75% 20%, rgba(36,138,99,0.18) 0%, transparent 55%)",
           }}
         />
 
@@ -714,7 +714,7 @@ export function NgoProfileView() {
             transition={{ duration: 0.55, delay: 0.1 }}
             className="min-w-0"
           >
-            <p className="text-3xs font-black uppercase tracking-[0.28em] text-[#6366F1]">
+            <p className="text-3xs font-black uppercase tracking-[0.28em] text-ngo-300">
               CAUSEKIND NGO PARTNER
             </p>
             <h1
@@ -729,18 +729,18 @@ export function NgoProfileView() {
             </h1>
             <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 text-2xs sm:text-xs text-white/60">
               <span className="flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-[#6366F1] shrink-0" />
+                <Mail className="w-3.5 h-3.5 text-ngo-300 shrink-0" />
                 <span className="truncate max-w-[220px] sm:max-w-xs">{displayEmail}</span>
               </span>
               {displayPhone && (
                 <span className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-[#6366F1] shrink-0" />
+                  <Phone className="w-3.5 h-3.5 text-ngo-300 shrink-0" />
                   <span>{displayPhone}</span>
                 </span>
               )}
               {displayCity && (
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#6366F1] shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-ngo-300 shrink-0" />
                   <span className="truncate max-w-[200px]">{displayCity}</span>
                 </span>
               )}
@@ -749,7 +749,7 @@ export function NgoProfileView() {
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              className="mt-4 sm:mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#6366F1] to-[#4338CA] hover:from-[#4f46e5] hover:to-[#3730a3] px-4 py-2.5 sm:px-5 sm:py-3 text-2xs sm:text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg shadow-[#4338CA]/40 hover:shadow-xl hover:-translate-y-0.5 ring-1 ring-white/20 transition-all"
+              className="mt-4 sm:mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-ngo-600 to-ngo-700 hover:from-ngo-700 hover:to-ngo-800 px-4 py-2.5 sm:px-5 sm:py-3 text-2xs sm:text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg shadow-ngo-700/40 hover:shadow-xl hover:-translate-y-0.5 ring-1 ring-white/20 transition-all"
             >
               Edit account details
               <ChevronDown className="w-3.5 h-3.5" />
@@ -802,7 +802,7 @@ export function NgoProfileView() {
           <div className="rounded-2xl sm:rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 p-5 sm:p-8 shadow-sm backdrop-blur-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 dark:border-zinc-800 pb-5">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4338CA] to-[#6366F1] flex items-center justify-center text-white shadow-md shadow-[#4338CA]/20">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-ngo-800 to-ngo-600 flex items-center justify-center text-white shadow-md shadow-ngo-700/20">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
@@ -832,8 +832,8 @@ export function NgoProfileView() {
                     Action Required
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF2FF] dark:bg-[#4338CA]/20 border border-[#6366F1]/30 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-[#4338CA] dark:text-[#6366F1] shadow-sm">
-                    <span className="h-2 w-2 rounded-full bg-[#6366F1] animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-ngo-50 dark:bg-ngo-900/20 border border-ngo-300 dark:border-ngo-700/30 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-ngo-700 dark:text-ngo-300 shadow-sm">
+                    <span className="h-2 w-2 rounded-full bg-ngo-600 animate-pulse" />
                     Under Review
                   </span>
                 )}
@@ -845,13 +845,13 @@ export function NgoProfileView() {
               <div>
                 <span className="text-3xs uppercase font-bold text-stone-400 block">Application Reference ID</span>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="font-mono text-sm sm:text-base font-black text-[#4338CA]">
+                  <span className="font-mono text-sm sm:text-base font-black text-ngo-700">
                     {application.applicationId || "—"}
                   </span>
                   <button
                     type="button"
                     onClick={copyAppId}
-                    className="text-stone-400 hover:text-[#6366F1] p-1 transition-colors rounded"
+                    className="text-stone-400 hover:text-ngo-600 p-1 transition-colors rounded"
                     title="Copy Application ID"
                     aria-label="Copy Application ID"
                   >
@@ -966,7 +966,7 @@ export function NgoProfileView() {
                 onClick={handleDownloadSummary}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-5 py-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
               >
-                <Download className="h-4 w-4 text-[#4338CA]" />
+                <Download className="h-4 w-4 text-ngo-700" />
                 Download Application Summary (PDF)
               </button>
 
@@ -979,7 +979,7 @@ export function NgoProfileView() {
 
               <Link
                 href="/"
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-[#4338CA] hover:bg-[#6366F1] px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
               >
                 Return to Home
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -993,7 +993,7 @@ export function NgoProfileView() {
           {/* Your Journey: a chronicle of real events */}
           <section data-tour="story">
             <div className="border-b-2 border-stone-200 dark:border-zinc-800 pb-2.5 sm:pb-3">
-              <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#4338CA] dark:text-[#6366F1]">
+              <p className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-300">
                 Your Journey
               </p>
               <p className="text-xs text-stone-400 mt-1">
@@ -1003,8 +1003,8 @@ export function NgoProfileView() {
 
             {story.length === 0 ? (
               <div className="py-10 sm:py-14 text-center space-y-3">
-                <div className="w-11 h-11 sm:w-14 sm:h-14 bg-[#EEF2FF] dark:bg-[#4338CA]/20 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
-                  <BookOpen className="w-6 h-6 text-[#4338CA] dark:text-[#6366F1]" />
+                <div className="w-11 h-11 sm:w-14 sm:h-14 bg-ngo-50 dark:bg-ngo-900/20 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
+                  <BookOpen className="w-6 h-6 text-ngo-700 dark:text-ngo-300" />
                 </div>
                 <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">
                   Your story starts here
@@ -1013,7 +1013,7 @@ export function NgoProfileView() {
                   Complete your NGO profile to unlock verification, verified badges, and community campaigns.
                 </p>
                 <Link href="/profile/ngo-details" className="inline-block">
-                  <Button size="sm" className="bg-[#4338CA] hover:bg-[#6366F1] text-white mt-2">
+                  <Button size="sm" className="bg-ngo-700 hover:bg-ngo-600 text-white mt-2">
                     Complete Profile
                   </Button>
                 </Link>
@@ -1041,7 +1041,7 @@ export function NgoProfileView() {
                     </span>
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 sm:gap-x-4 gap-y-1">
                       <p
-                        className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug hover:text-[#4338CA] transition-colors"
+                        className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug hover:text-ngo-700 transition-colors"
                         style={{ fontFamily: "var(--font-source-serif-4), serif" }}
                       >
                         {ev.title}
@@ -1070,7 +1070,7 @@ export function NgoProfileView() {
           {/* Milestones: Earned by doing, never bought */}
           <aside data-tour="milestones">
             <div className="border-b-2 border-stone-200 dark:border-zinc-800 pb-2.5 sm:pb-3">
-              <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#4338CA] dark:text-[#6366F1]">
+              <p className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-300">
                 Milestones
               </p>
               <p className="text-xs text-stone-400 mt-1">Earned by doing, never bought.</p>
@@ -1088,12 +1088,12 @@ export function NgoProfileView() {
                   <div
                     className={`relative w-9 h-9 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 ${
                       earned
-                        ? "bg-gradient-to-tr from-[#4338CA] to-[#6366F1] text-white shadow-md shadow-[#4338CA]/20"
+                        ? "bg-gradient-to-tr from-ngo-800 to-ngo-600 text-white shadow-md shadow-ngo-700/20"
                         : "border-2 border-dashed border-stone-300 dark:border-zinc-700 text-stone-300 dark:text-zinc-600"
                     }`}
                   >
                     {earned && (
-                      <span className="absolute inset-[-4px] rounded-full border border-indigo-200 dark:border-indigo-800/40" />
+                      <span className="absolute inset-[-4px] rounded-full border border-ngo-300 dark:border-ngo-700/40" />
                     )}
                     <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
@@ -1120,7 +1120,7 @@ export function NgoProfileView() {
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-3xs font-black uppercase tracking-[0.24em] text-[#4338CA] dark:text-[#6366F1]">
+            <DialogTitle className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-300">
               Account settings
             </DialogTitle>
             <DialogDescription>
@@ -1150,7 +1150,7 @@ export function NgoProfileView() {
                     <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                     <Input
                       id="orgName"
-                      className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-[#4338CA]"
+                      className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-ngo-700"
                       placeholder="e.g. Hope Welfare Foundation"
                       value={editOrgName}
                       onChange={(e) => setEditOrgName(e.target.value)}
@@ -1201,7 +1201,7 @@ export function NgoProfileView() {
                     type="tel"
                     inputMode="numeric"
                     maxLength={maxPhoneLength}
-                    className="flex-1 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-[#4338CA]"
+                    className="flex-1 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-ngo-700"
                     placeholder="Phone number"
                     value={phoneNumber}
                     onChange={(e) => {
@@ -1253,7 +1253,7 @@ export function NgoProfileView() {
                       <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                       <Input
                         id="city"
-                        className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-[#4338CA]"
+                        className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-ngo-700"
                         placeholder="Enter city"
                         value={cityFreeText}
                         onChange={(e) => setCityFreeText(e.target.value)}
@@ -1305,7 +1305,7 @@ export function NgoProfileView() {
                     type="button"
                     onClick={handleUseMyLocation}
                     disabled={locStatus === "requesting"}
-                    className="shrink-0 flex items-center gap-1.5 rounded-lg bg-[#4338CA] hover:bg-[#6366F1] px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60"
+                    className="shrink-0 flex items-center gap-1.5 rounded-lg bg-ngo-700 hover:bg-ngo-600 px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60"
                   >
                     {locStatus === "requesting" ? (
                       <><Loader2 className="w-3 h-3 animate-spin" /> Getting…</>
@@ -1333,7 +1333,7 @@ export function NgoProfileView() {
               </DialogClose>
               <Button
                 type="submit"
-                className="bg-[#4338CA] hover:bg-[#6366F1] text-white rounded-xl py-4 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors"
+                className="bg-ngo-700 hover:bg-ngo-600 text-white rounded-xl py-4 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors"
                 disabled={saving}
               >
                 {saving ? (
@@ -1393,7 +1393,7 @@ function NgoMemberPass({
         style={{
           transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
           transformStyle: "preserve-3d",
-          background: "linear-gradient(135deg, #6366F1 0%, #4338CA 60%, #312E81 100%)",
+          background: "linear-gradient(135deg, #248A63 0%, #1E6B4F 60%, #123D2E 100%)",
           boxShadow: "0 24px 60px -18px rgba(0,0,0,0.55)",
         }}
       >

@@ -4,8 +4,14 @@ import { NgoProfileToast } from "./NgoProfileToast";
 import { getMyNgoApplication } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
+const mockUsePathname = vi.fn();
+
 vi.mock("@/lib/api", () => ({
   getMyNgoApplication: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => mockUsePathname(),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -25,6 +31,7 @@ describe("NgoProfileToast", () => {
     vi.useFakeTimers();
     sessionStorage.clear();
     localStorage.clear();
+    mockUsePathname.mockReturnValue("/dashboard");
     vi.mocked(useAuth).mockReturnValue({
       user: null,
       isLoading: false,
@@ -35,6 +42,7 @@ describe("NgoProfileToast", () => {
     });
     vi.mocked(getMyNgoApplication).mockResolvedValue(null);
   });
+
 
   afterEach(() => {
     vi.useRealTimers();

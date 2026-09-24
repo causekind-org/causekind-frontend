@@ -60,12 +60,12 @@ export function NgoWelcomeModal({ userId, isProfileComplete, onDismiss }: NgoWel
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleDismiss(); }}>
       <DialogContent
-        className="w-[calc(100%-2rem)] max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-[#4338CA]/30 bg-[#faf8f5] dark:bg-zinc-950 p-0 shadow-2xl overflow-hidden"
+        className="w-[calc(100%-2rem)] max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-ngo-700/30 bg-[#faf8f5] dark:bg-zinc-950 p-0 shadow-2xl overflow-hidden"
         showCloseButton={true}
       >
         {/* Top brand header bar */}
-        <div className="bg-gradient-to-r from-[#4338CA] to-[#6366F1] px-6 py-4 text-white">
-          <div className="flex items-center gap-2 text-3xs font-black uppercase tracking-widest text-[#EEF2FF]">
+        <div className="bg-gradient-to-r from-ngo-800 to-ngo-600 px-6 py-4 text-white">
+          <div className="flex items-center gap-2 text-3xs font-black uppercase tracking-widest text-ngo-100">
             <Sparkles className="h-3.5 w-3.5" /> Next Step for Your Organization
           </div>
           <DialogTitle className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
@@ -81,19 +81,19 @@ export function NgoWelcomeModal({ userId, isProfileComplete, onDismiss }: NgoWel
           {/* Value props checklist */}
           <div className="rounded-xl border border-stone-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 p-4 space-y-2.5 text-xs text-stone-600 dark:text-stone-400">
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="h-4 w-4 text-[#4338CA] dark:text-[#6366F1] shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-ngo-700 dark:text-ngo-300 shrink-0" />
               <span className="font-medium text-stone-800 dark:text-stone-200">
                 Unlock donor item match notifications & in-kind needs
               </span>
             </div>
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="h-4 w-4 text-[#4338CA] dark:text-[#6366F1] shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-ngo-700 dark:text-ngo-300 shrink-0" />
               <span className="font-medium text-stone-800 dark:text-stone-200">
                 Launch public verified donation campaigns
               </span>
             </div>
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="h-4 w-4 text-[#4338CA] dark:text-[#6366F1] shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-ngo-700 dark:text-ngo-300 shrink-0" />
               <span className="font-medium text-stone-800 dark:text-stone-200">
                 Upload legal documents (Trust / Society / Section 8) & photos
               </span>
@@ -102,7 +102,7 @@ export function NgoWelcomeModal({ userId, isProfileComplete, onDismiss }: NgoWel
 
           <div className="flex items-center justify-between text-3xs text-stone-400 pt-1">
             <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5 text-[#4338CA] dark:text-[#6366F1]" /> Takes ~3-5 minutes
+              <Clock className="h-3.5 w-3.5 text-ngo-700 dark:text-ngo-300" /> Takes ~3-5 minutes
             </span>
             <span>Progress is auto-saved as you go</span>
           </div>
@@ -120,7 +120,7 @@ export function NgoWelcomeModal({ userId, isProfileComplete, onDismiss }: NgoWel
 
           <Link href="/profile/ngo-details" className="w-full sm:w-auto" onClick={handleDismiss}>
             <Button
-              className="w-full sm:w-auto bg-[#4338CA] hover:bg-[#6366F1] text-white font-bold px-5 py-2.5 rounded-xl shadow-md shadow-[#4338CA]/20 flex items-center justify-center gap-2 text-sm transition-all"
+              className="w-full sm:w-auto bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 text-white font-bold px-5 py-2.5 rounded-xl shadow-md shadow-ngo-700/20 flex items-center justify-center gap-2 text-sm transition-all"
             >
               Complete Profile Now
               <ArrowRight className="h-4 w-4" />

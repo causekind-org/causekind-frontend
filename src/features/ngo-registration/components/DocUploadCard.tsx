@@ -117,7 +117,7 @@ export function DocUploadCard({
           <button
             type="button"
             onClick={onRemove}
-            className="shrink-0 text-2xs font-bold text-stone-400 hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40 rounded px-1"
+            className="shrink-0 text-2xs font-bold text-stone-400 hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 rounded px-1"
           >
             Remove
           </button>
@@ -135,7 +135,7 @@ export function DocUploadCard({
           className={cn(
             "shrink-0 rounded-full px-2 py-0.5 text-3xs font-black uppercase tracking-wide",
             mustHave
-              ? "bg-[#EEF2FF] text-[#4338CA] dark:bg-[#4338CA]/20 dark:text-[#6366F1]"
+              ? "bg-ngo-50 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300"
               : "bg-stone-200 text-stone-500 dark:bg-zinc-700 dark:text-stone-400"
           )}
         >
@@ -158,10 +158,10 @@ export function DocUploadCard({
         className={cn(
           "mx-3 mb-3 rounded-lg border-2 border-dashed transition-colors",
           isUploading
-            ? "border-[#4338CA]/40 bg-[#4338CA]/5 cursor-wait"
+            ? "border-ngo-700/40 bg-ngo-700/5 cursor-wait"
             : dragging
-            ? "border-[#4338CA] bg-[#4338CA]/5 cursor-pointer"
-            : "border-stone-200 dark:border-zinc-700 hover:border-[#4338CA]/50 hover:bg-[#EEF2FF]/50 cursor-pointer"
+            ? "border-ngo-700 bg-ngo-700/5 cursor-pointer"
+            : "border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50 hover:bg-ngo-50/50 cursor-pointer"
         )}
         onClick={() => {
           if (!isUploading) inputRef.current?.click();
@@ -187,8 +187,8 @@ export function DocUploadCard({
         <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 text-center">
           {isUploading ? (
             <>
-              <Loader2 className="h-5 w-5 animate-spin text-[#4338CA]" aria-hidden />
-              <p className="text-2xs font-bold text-[#4338CA]">
+              <Loader2 className="h-5 w-5 animate-spin text-ngo-700" aria-hidden />
+              <p className="text-2xs font-bold text-ngo-700">
                 Uploading & scanning document…
               </p>
               <p className="text-3xs text-stone-400 dark:text-stone-500">
@@ -227,7 +227,7 @@ export function DocUploadCard({
                 demo: true,
               });
             }}
-            className="text-3xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2"
+            className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
           >
             Mark as uploaded ✓
           </button>

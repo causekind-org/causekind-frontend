@@ -23,6 +23,17 @@
   --tertiary-fixed-dim: #fdba74;
   --on-tertiary-fixed: #7c2d12;
 
+  /* ── NGO Forest Green palette ── */
+  --ngo-50: #EEF8F2;
+  --ngo-100: #D9F2E6;
+  --ngo-300: #86CFAE;
+  --ngo-500: #34A578;
+  --ngo-600: #248A63;
+  --ngo-700: #1E6B4F;
+  --ngo-800: #185740;
+  --ngo-900: #123D2E;
+  --ngo-950: #0B2E22;
+
   /* Base */
   --background: oklch(0.98 0.012 60);
   --foreground: oklch(0.12 0.04 50);
@@ -158,6 +169,17 @@
   --color-brand-700: #762f0c;
   --color-brand-800: #5c2409;
   --color-brand-900: #451b06;
+
+  /* ── NGO Forest Green brand scale ── */
+  --color-ngo-50: var(--ngo-50);
+  --color-ngo-100: var(--ngo-100);
+  --color-ngo-300: var(--ngo-300);
+  --color-ngo-500: var(--ngo-500);
+  --color-ngo-600: var(--ngo-600);
+  --color-ngo-700: var(--ngo-700);
+  --color-ngo-800: var(--ngo-800);
+  --color-ngo-900: var(--ngo-900);
+  --color-ngo-950: var(--ngo-950);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -3885,6 +3907,36 @@ div:has(.searchable-select-open) {
   --ck-role-ring: var(--brand-terra);
   --ck-role-gradient: linear-gradient(135deg, #b04a15 0%, #e07b3a 100%);
   --ck-role-gradient-soft: linear-gradient(135deg, #e07b3a 0%, #f0b97a 100%);
+
+  /* Navigation & Page Tint CSS Variables - Default (Donor / Logged out / Public) */
+  --nav-accent: var(--ck-role-accent, #b04a15);
+  --nav-accent-hover: var(--ck-role-hover, #c45520);
+  --nav-accent-dot: var(--ck-role-highlight, #f0b97a);
+  --nav-pill-bg: rgba(255, 255, 255, 0.55);
+  --nav-pill-active-bg: rgba(255, 255, 255, 0.92);
+  --nav-border: rgba(229, 226, 213, 0.5);
+  --nav-icon-border: rgba(255, 255, 255, 0.65);
+  --nav-shadow: 0 4px 20px -6px rgba(28, 25, 23, 0.12);
+  --nav-dropdown-bg: #faf8f5;
+  --nav-dropdown-border: #e5e2d5;
+  --nav-dropdown-hover-bg: rgba(176, 74, 21, 0.08);
+  --nav-dropdown-hover-text: var(--ck-role-accent, #b04a15);
+  --nav-badge-bg: var(--ck-role-accent, #b04a15);
+  --nav-badge-text: #ffffff;
+  --nav-focus-ring: var(--ck-role-accent, #b04a15);
+  --page-tint-from: #FAF8F5;
+  --page-tint-to: #F5EFEB;
+
+  /* Header Bar Outer Wrapper Background & Border */
+  --nav-header-from: #fffbf4;
+  --nav-header-via: #fff5e6;
+  --nav-header-to: #fffbf4;
+  --nav-header-dark-from: #1b0c05;
+  --nav-header-dark-via: #240e06;
+  --nav-header-dark-to: #1b0c05;
+  --nav-header-border: rgba(252, 211, 77, 0.6);
+  --nav-header-dark-border: rgba(180, 83, 9, 0.4);
+  --nav-header-border-line: rgba(251, 191, 36, 0.8);
 }
 
 [data-ck-role-theme="donor"] {
@@ -3918,6 +3970,67 @@ div:has(.searchable-select-open) {
   --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #7fb0e8 100%);
 }
 
+/* ── NGO Forest Green role theme overrides ── */
+[data-theme-role="ngo"],
+[data-ck-role-theme="ngo"] {
+  --ck-role-accent: #1E6B4F;
+  --ck-role-deep: #123D2E;
+  --ck-role-hover: #248A63;
+  --ck-role-secondary: #34A578;
+  --ck-role-highlight: #86CFAE;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: #EEF8F2;
+  --ck-role-on-soft: #0B2E22;
+  --ck-role-ring: #1E6B4F;
+  --ck-role-gradient: linear-gradient(135deg, #1E6B4F 0%, #34A578 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #248A63 0%, #86CFAE 100%);
+
+  --nav-accent: #1E6B4F;
+  --nav-accent-hover: #248A63;
+  --nav-accent-dot: #34A578;
+  --nav-pill-bg: #EEF8F2;
+  --nav-pill-active-bg: #EEF8F2;
+  --nav-border: rgba(134, 207, 174, 0.35);
+  --nav-icon-border: rgba(134, 207, 174, 0.35);
+  --nav-shadow: 0 4px 20px -6px rgba(30, 107, 79, 0.08);
+  --nav-dropdown-bg: #FAFDFB;
+  --nav-dropdown-border: rgba(134, 207, 174, 0.35);
+  --nav-dropdown-hover-bg: #EEF8F2;
+  --nav-dropdown-hover-text: #1E6B4F;
+  --nav-badge-bg: #1E6B4F;
+  --nav-badge-text: #ffffff;
+  --nav-focus-ring: #1E6B4F;
+  --page-tint-from: #F1F9F4;
+  --page-tint-to: #FAFDFB;
+
+  --nav-header-from: #F1F9F4;
+  --nav-header-via: #FAFDFB;
+  --nav-header-to: #F1F9F4;
+  --nav-header-dark-from: #071D15;
+  --nav-header-dark-via: #0B2E22;
+  --nav-header-dark-to: #071D15;
+  --nav-header-border: rgba(134, 207, 174, 0.4);
+  --nav-header-dark-border: rgba(134, 207, 174, 0.2);
+  --nav-header-border-line: rgba(52, 165, 120, 0.6);
+
+  --primary: #1E6B4F;
+  --primary-foreground: #ffffff;
+  --ring: #1E6B4F;
+}
+
+[data-theme-role="ngo"] .glass-pill,
+[data-ck-role-theme="ngo"] .glass-pill {
+  border-color: var(--nav-icon-border);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -2.5px 4px rgba(30, 107, 79, 0.08),
+    inset 3px 0 4px -2px rgba(255, 255, 255, 0.55),
+    inset -3px 0 4px -2px rgba(255, 255, 255, 0.55),
+    0 0 12px 0 rgba(30, 107, 79, 0.12),
+    0 0 3px 0 rgba(30, 107, 79, 0.08);
+}
+
 .dark [data-ck-role-theme="donor"],
 .dark[data-ck-role-theme="donor"] {
   --ck-role-accent: #e07b3a;
@@ -3943,6 +4056,70 @@ div:has(.searchable-select-open) {
   --ck-role-ring: #7fb0e8;
   --ck-role-gradient: linear-gradient(135deg, #2d5a96 0%, #7fb0e8 100%);
   --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #a3c8f2 100%);
+}
+
+.dark[data-theme-role="ngo"],
+.dark [data-theme-role="ngo"],
+.dark[data-ck-role-theme="ngo"],
+.dark [data-ck-role-theme="ngo"] {
+  --ck-role-accent: #86CFAE;
+  --ck-role-deep: #185740;
+  --ck-role-hover: #A7DEC5;
+  --ck-role-secondary: #34A578;
+  --ck-role-highlight: #A7DEC5;
+  --ck-role-on-accent: #0B2E22;
+  --ck-role-soft: rgba(18, 61, 46, 0.35);
+  --ck-role-on-soft: #D9F2E6;
+  --ck-role-ring: #86CFAE;
+  --ck-role-gradient: linear-gradient(135deg, #185740 0%, #248A63 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #1E6B4F 0%, #86CFAE 100%);
+
+  --nav-accent: #86CFAE;
+  --nav-accent-hover: #A7DEC5;
+  --nav-accent-dot: #34A578;
+  --nav-pill-bg: rgba(18, 61, 46, 0.4);
+  --nav-pill-active-bg: rgba(18, 61, 46, 0.6);
+  --nav-border: rgba(134, 207, 174, 0.2);
+  --nav-icon-border: rgba(134, 207, 174, 0.25);
+  --nav-shadow: 0 4px 20px -6px rgba(0, 0, 0, 0.5);
+  --nav-dropdown-bg: #0B2E22;
+  --nav-dropdown-border: rgba(134, 207, 174, 0.2);
+  --nav-dropdown-hover-bg: rgba(18, 61, 46, 0.5);
+  --nav-dropdown-hover-text: #86CFAE;
+  --nav-badge-bg: #1E6B4F;
+  --nav-badge-text: #ffffff;
+  --nav-focus-ring: #86CFAE;
+  --page-tint-from: #071D15;
+  --page-tint-to: #0B2E22;
+
+  --nav-header-from: #071D15;
+  --nav-header-via: #0B2E22;
+  --nav-header-to: #071D15;
+  --nav-header-dark-from: #071D15;
+  --nav-header-dark-via: #0B2E22;
+  --nav-header-dark-to: #071D15;
+  --nav-header-border: rgba(134, 207, 174, 0.2);
+  --nav-header-dark-border: rgba(134, 207, 174, 0.2);
+  --nav-header-border-line: rgba(52, 165, 120, 0.3);
+
+  --primary: #86CFAE;
+  --primary-foreground: #0B2E22;
+  --ring: #86CFAE;
+}
+
+.dark[data-theme-role="ngo"] .glass-pill,
+.dark [data-theme-role="ngo"] .glass-pill,
+.dark[data-ck-role-theme="ngo"] .glass-pill,
+.dark [data-ck-role-theme="ngo"] .glass-pill {
+  border-color: var(--nav-icon-border);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.25),
+    inset 0 -1.5px 1px rgba(255, 255, 255, 0.14),
+    inset 0 -2.5px 4px rgba(0, 0, 0, 0.30),
+    inset 3px 0 4px -2px rgba(255, 255, 255, 0.12),
+    inset -3px 0 4px -2px rgba(255, 255, 255, 0.12),
+    0 0 12px 0 rgba(0, 0, 0, 0.45),
+    0 0 3px 0 rgba(0, 0, 0, 0.30);
 }
 
 /* shadcn's primary + focus ring follow the role, so every `ui/button`,

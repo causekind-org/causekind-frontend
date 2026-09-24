@@ -238,7 +238,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <span className="text-2xs font-black uppercase tracking-widest text-[#4338CA] dark:text-[#6366F1]">
+        <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
           Step 4 of 6
         </span>
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -333,16 +333,16 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                 className={cn(
                   "m-3 flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed py-4 transition-colors",
                   uploadingLogo
-                    ? "border-[#4338CA]/40 bg-[#4338CA]/5 cursor-wait"
+                    ? "border-ngo-700/40 bg-ngo-700/5 cursor-wait"
                     : draggingLogo
-                    ? "border-[#4338CA] bg-[#4338CA]/5 cursor-pointer"
-                    : "border-stone-200 dark:border-zinc-700 hover:border-[#4338CA]/50 cursor-pointer"
+                    ? "border-ngo-700 bg-ngo-700/5 cursor-pointer"
+                    : "border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50 cursor-pointer"
                 )}
               >
                 {uploadingLogo ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin text-[#4338CA]" aria-hidden />
-                    <p className="text-2xs font-bold text-[#4338CA]">Uploading & moderating logo…</p>
+                    <Loader2 className="h-5 w-5 animate-spin text-ngo-700" aria-hidden />
+                    <p className="text-2xs font-bold text-ngo-700">Uploading & moderating logo…</p>
                     <p className="text-3xs text-stone-400">Running AI content moderation check</p>
                   </>
                 ) : (
@@ -373,7 +373,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                         },
                       });
                     }}
-                    className="text-3xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2"
+                    className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
                   >
                     Mark as uploaded ✓
                   </button>
@@ -487,16 +487,16 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                 className={cn(
                   "m-3 flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed py-4 transition-colors",
                   uploadingOffice
-                    ? "border-[#4338CA]/40 bg-[#4338CA]/5 cursor-wait"
+                    ? "border-ngo-700/40 bg-ngo-700/5 cursor-wait"
                     : draggingOffice
-                    ? "border-[#4338CA] bg-[#4338CA]/5 cursor-pointer"
-                    : "border-stone-200 dark:border-zinc-700 hover:border-[#4338CA]/50 cursor-pointer"
+                    ? "border-ngo-700 bg-ngo-700/5 cursor-pointer"
+                    : "border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50 cursor-pointer"
                 )}
               >
                 {uploadingOffice ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin text-[#4338CA]" aria-hidden />
-                    <p className="text-2xs font-bold text-[#4338CA]">Uploading office photo…</p>
+                    <Loader2 className="h-5 w-5 animate-spin text-ngo-700" aria-hidden />
+                    <p className="text-2xs font-bold text-ngo-700">Uploading office photo…</p>
                     <p className="text-3xs text-stone-400">Running AI moderation check</p>
                   </>
                 ) : (
@@ -527,7 +527,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                         },
                       });
                     }}
-                    className="text-3xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2"
+                    className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
                   >
                     Mark as uploaded ✓
                   </button>
@@ -631,14 +631,14 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                           }
                         }}
                         className={cn(
-                          "border-2 border-dashed border-stone-200 dark:border-zinc-700 hover:border-[#4338CA]/50 rounded-lg p-3 text-center transition-colors flex-1 flex flex-col items-center justify-center min-h-[90px]",
-                          isUploadingThis ? "cursor-wait bg-[#4338CA]/5 border-[#4338CA]/40" : "cursor-pointer"
+                          "border-2 border-dashed border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50 rounded-lg p-3 text-center transition-colors flex-1 flex flex-col items-center justify-center min-h-[90px]",
+                          isUploadingThis ? "cursor-wait bg-ngo-700/5 border-ngo-700/40" : "cursor-pointer"
                         )}
                       >
                         {isUploadingThis ? (
                           <>
-                            <Loader2 className="h-4 w-4 animate-spin text-[#4338CA] mb-1" />
-                            <span className="text-3xs font-bold text-[#4338CA]">
+                            <Loader2 className="h-4 w-4 animate-spin text-ngo-700 mb-1" />
+                            <span className="text-3xs font-bold text-ngo-700">
                               Uploading…
                             </span>
                           </>
@@ -670,7 +670,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                               };
                               onChange({ activityPhotos: nextPhotos });
                             }}
-                            className="text-3xs font-bold text-[#4338CA] dark:text-[#6366F1] hover:underline underline-offset-2"
+                            className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
                           >
                             Mark demo ✓
                           </button>
@@ -707,7 +707,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40"
+          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
@@ -715,7 +715,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
         <button
           type="button"
           onClick={onContinue}
-          className="flex items-center gap-1.5 rounded-xl bg-[#4338CA] hover:bg-[#6366F1] px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]/40"
+          className="flex items-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
         >
           Continue
           <ArrowRight className="h-4 w-4" aria-hidden />

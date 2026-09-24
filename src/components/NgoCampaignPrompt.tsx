@@ -7,6 +7,8 @@ import { ArrowRight, Megaphone, Sparkles, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
+import { useNgoStatus } from "./ngo-landing/useNgoStatus";
+
 const FIRST_DELAY_MS = 10_000;
 const VISIBLE_MS = 10_000;
 const REPEAT_DELAY_MS = 10_000;
@@ -14,6 +16,7 @@ const EXIT_MS = 500;
 
 export function NgoCampaignPrompt() {
   const { user, isLoading } = useAuth();
+  const { isVerified } = useNgoStatus();
   const isDesktop = useIsDesktop();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
@@ -45,7 +48,7 @@ export function NgoCampaignPrompt() {
 
   useEffect(() => {
     if (!isDesktop) return;
-    if (isLoading || !userEmail || !isNgo || dismissed) return;
+    if (isLoading || !userEmail || !isNgo || !isVerified || dismissed) return;
 
     let cancelled = false;
 
@@ -83,7 +86,7 @@ export function NgoCampaignPrompt() {
       cancelled = true;
       clearTimers();
     };
-  }, [isDesktop, dismissed, isLoading, userEmail, isNgo]);
+  }, [isDesktop, dismissed, isLoading, userEmail, isNgo, isVerified]);
 
   function dismiss() {
     clearTimers();
@@ -100,7 +103,8 @@ export function NgoCampaignPrompt() {
     setVisible(false);
   }
 
-  if (!isDesktop || !visible || !isNgo) return null;
+  if (!isDesktop || !visible || !isNgo || !isVerified) return null;
+
 
   return (
     <div className="fixed top-[8.5rem] lg:top-[10rem] left-0 z-[9980] pointer-events-none">
@@ -118,27 +122,27 @@ export function NgoCampaignPrompt() {
             : `transform ${EXIT_MS}ms cubic-bezier(0.4, 0, 1, 1), opacity ${EXIT_MS}ms ease`,
         }}
       >
-        <div className="ck-ngo-campaign-toast relative overflow-hidden rounded-r-xl border border-l-0 border-[#6366F1]/20 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.16),0_0_0_1px_rgba(67,56,202,0.18)] dark:bg-stone-900 dark:border-stone-800">
-          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#4338CA] to-[#6366F1]" />
+        <div className="ck-ngo-campaign-toast relative overflow-hidden rounded-r-xl border border-l-0 border-ngo-600/20 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.16),0_0_0_1px_rgba(30,107,79,0.18)] dark:bg-stone-900 dark:border-stone-800">
+          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-ngo-800 to-ngo-600" />
           <div
             key={barKey}
-            className="absolute bottom-0 left-0 right-0 h-[2px] origin-left bg-[#4338CA]"
+            className="absolute bottom-0 left-0 right-0 h-[2px] origin-left bg-ngo-700"
             style={{ animation: `ck-ngo-campaign-drain ${VISIBLE_MS}ms linear forwards` }}
           />
           <div className="ck-ngo-campaign-sheen pointer-events-none absolute inset-y-0 -left-16 w-12 rotate-12 bg-gradient-to-r from-transparent via-white/75 to-transparent" />
 
           <div className="relative flex items-center gap-2.5 py-2 pl-3 pr-2">
             <div className="relative shrink-0">
-              <div className="ck-ngo-campaign-icon grid h-9 w-9 place-items-center rounded-xl border border-[#6366F1]/30 bg-[#EEF2FF] dark:bg-[#4338CA]/20 dark:border-[#6366F1]/40">
-                <Megaphone className="h-4 w-4 text-[#4338CA] dark:text-[#6366F1]" />
+              <div className="ck-ngo-campaign-icon grid h-9 w-9 place-items-center rounded-xl border border-ngo-600/30 bg-ngo-50 dark:bg-ngo-900/30 dark:border-ngo-600/40">
+                <Megaphone className="h-4 w-4 text-ngo-700 dark:text-ngo-300" />
               </div>
-              <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-white dark:border-stone-900 bg-[#4338CA] shadow-sm">
+              <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-white dark:border-stone-900 bg-ngo-700 shadow-sm">
                 <Sparkles className="h-2.5 w-2.5 text-white" />
               </span>
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="text-4xs font-black uppercase tracking-[0.16em] text-[#4338CA] dark:text-[#6366F1]">
+              <p className="text-4xs font-black uppercase tracking-[0.16em] text-ngo-700 dark:text-ngo-300">
                 NGO Portal
               </p>
               <p className="mt-0.5 truncate text-sm font-black leading-tight text-stone-950 dark:text-stone-100">
@@ -152,7 +156,7 @@ export function NgoCampaignPrompt() {
             <Link
               href="/requests/new"
               onClick={handleAction}
-              className="group flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#4338CA] hover:bg-[#6366F1] px-2.5 text-2xs font-black uppercase text-white shadow-[0_7px_14px_rgba(67,56,202,0.25)] transition-all active:scale-95"
+              className="group flex h-8 shrink-0 items-center gap-1 rounded-full bg-ngo-700 hover:bg-ngo-600 px-2.5 text-2xs font-black uppercase text-white shadow-[0_7px_14px_rgba(30,107,79,0.25)] transition-all active:scale-95"
             >
               Post
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
@@ -194,7 +198,7 @@ export function NgoCampaignPrompt() {
           }
 
           .ck-ngo-campaign-icon {
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7), 0 10px 26px rgba(99,102,241,0.2);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7), 0 10px 26px rgba(30,107,79,0.2);
           }
 
           @media (prefers-reduced-motion: reduce) {
