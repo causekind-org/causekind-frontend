@@ -927,6 +927,15 @@ export function getListingPhotos(listingId: number) {
 }
 
 /**
+ * Admin-scoped: same shape as {@link getListingPhotos}, but for any listing
+ * regardless of who owns it — the donor-facing route 401s an admin viewing
+ * someone else's listing, since it checks ownership, not just authentication.
+ */
+export function adminGetListingPhotos(listingId: number) {
+  return request<ListingPhoto[]>(`/api/v1/admin/items/${listingId}/photos`);
+}
+
+/**
  * Uploads one photo to one listing and returns the row it created.
  *
  * <p>Returns as soon as the bytes are quarantined — the row comes back
@@ -981,6 +990,19 @@ export function deleteListingPhoto(listingId: number, mediaId: number) {
  */
 export async function getCurrentListingVideo(listingId: number) {
   const res = await fetch(`${BASE_URL}/api/v1/items/${listingId}/video`, {
+    credentials: "include",
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error("Could not load the video status");
+  return (await res.json()) as OfferVideoStatus;
+}
+
+/**
+ * Admin-scoped: same contract as {@link getCurrentListingVideo}, but for any
+ * listing regardless of who owns it.
+ */
+export async function adminGetListingVideo(listingId: number) {
+  const res = await fetch(`${BASE_URL}/api/v1/admin/items/${listingId}/video`, {
     credentials: "include",
   });
   if (res.status === 204) return null;
