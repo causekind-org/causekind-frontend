@@ -331,28 +331,6 @@ body {
   }
 }
 
-/* ── Festive Floating Pill Badges (Ganpati Theme) ── */
-@keyframes festiveBadgeFloat {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.animate-festive-float {
-  animation: festiveBadgeFloat 3.8s ease-in-out infinite;
-}
-
-.animate-festive-float-delayed {
-  animation: festiveBadgeFloat 4.2s ease-in-out 1.2s infinite;
-}
-
-.animate-festive-float-slow {
-  animation: festiveBadgeFloat 4.6s ease-in-out 2.4s infinite;
-}
-
 .font-devanagari {
   font-family: 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Kokila', 'Utsaah', 'Arial Unicode MS', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -1338,6 +1316,17 @@ section:focus-within {
   padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
 }
 
+/* On the landing page the footer follows the last section, so dock clearance
+   belongs after the footer rather than in the gap before it. */
+@media (max-width: 1023px) {
+  .ck-main-bottom-pad:has(.ck-home-page):has(+ #footer) {
+    padding-bottom: 0;
+  }
+  .ck-main-bottom-pad:has(.ck-home-page) + #footer {
+    padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
+  }
+}
+
 @media (min-width: 1024px) {
   :root {
     --ck-nav-float: 0px;
@@ -2219,76 +2208,6 @@ body.mobile-menu-open {
 }
 
 /*
-  The festive hero runs past the fold, and the arithmetic above is half the
-  reason why.
-
-  `.ck-showcase-hero` sizes itself to the viewport minus the navbar, which is
-  right for the plain hero — it is the first thing under the nav. The festive
-  home puts `GanpatiStrip` between the two (desktop only, `hidden lg:block` in
-  HomeClient), so the hero is asked for a full nav-less viewport while standing
-  60px further down. It is over-tall by exactly the strip, by construction.
-
-  The larger half is `lg:aspect-[16/9]` on the stage. An aspect ratio takes its
-  height from the width, so at 1440 the stage demands 802px whatever the window
-  is. Measured at 1440x820: nav 112 + strip 60 + hero 979 = 1151 against 820,
-  and the 331px that fell off the bottom were the two CTAs — the one part of a
-  hero that has to be reachable.
-
-  So the stage is sized from the viewport instead, minus both the nav and the
-  strip. The image is `object-cover` at lg, so a shorter stage crops rather than
-  letterboxes or distorts.
-
-  A min-height and deliberately not a height: the copy column measures 609px
-  here and fits the 648px this leaves, but translated copy, text zoom or a short
-  laptop window can all outgrow it. Capping would clip the CTAs again in a new
-  way — growing pushes the page a little taller, which is the failure worth
-  having. `.ck-ganpati-hero`'s own min-height goes to zero for the same reason:
-  it was fighting this one and adding the strip's height back a second time.
-
-  --ck-ganpati-strip-h tracks `min-h-[3.75rem]` on GanpatiStrip's inner row.
-  The strip renders only at lg, where that content is a single line.
-*/
-:root { --ck-ganpati-strip-h: 3.75rem; }
-
-@media (min-width: 1024px) {
-  .ck-ganpati-hero { min-height: 0; }
-
-  .ck-ganpati-hero .ck-lead-hero-stage {
-    aspect-ratio: auto;
-    max-height: none;
-    min-height: calc(100dvh - var(--ck-nav-h, 0px) - var(--ck-ganpati-strip-h));
-  }
-}
-
-/*
-  The copy's vertical padding flexes with the window, and its bottom half also
-  reserves the category strip's overhang.
-
-  Two things had to be solved together. The padding is `py-12` — 96px fixed — on
-  a column measuring 609px, which is most of why a short window could not hold
-  it. And `CategoryStripGanpati` is pulled up over the stage by `lg:-mt-12`
-  (48px) / `xl:-mt-14` (56px), deliberately, so it floats over the foot of the
-  photograph.
-
-  That overhang was harmless while the stage was locked to 16:9: at 802px the
-  centred copy ended around y=705 and the strip covered 746 onward. Sizing the
-  stage to the viewport removes that accidental slack, and at 1280x700 the copy
-  grew until "Explore needs near you" sat *underneath* the strip —
-  `elementFromPoint` at the button's centre returned the EDUCATION chip, so it
-  was not merely tight, it was unclickable. Fitting a hero by burying its own
-  CTA is not fitting it.
-
-  So the bottom padding carries the overhang as well as its share of the
-  breathing room, and the strip can only ever overlap padding. The clamp gives
-  the full 3rem where there is room and yields toward 0.5rem as the window
-  shortens, which keeps the whole hero within the fold down to roughly 800px of
-  viewport. Below that the stage grows past the fold rather than clipping or
-  overlapping — the honest failure, and the one that leaves the button usable.
-*/
-:root { --ck-ganpati-catstrip-overhang: 3rem; }
-@media (min-width: 1280px) { :root { --ck-ganpati-catstrip-overhang: 3.5rem; } }
-
-/*
   The category strip, shorter on desktop.
 
   Nine labelled icons in a 110px band is more furniture than a set of filters
@@ -2307,31 +2226,6 @@ body.mobile-menu-open {
   the tile sizes to its own content. The touch-target floor that min-height was
   serving is a pointer-coarse concern, and this block is desktop only.
 */
-@media (min-width: 1024px) {
-  .ck-ganpati-catstrip { padding-block: 0.5rem; }
-
-  .ck-ganpati-catstrip a,
-  .ck-ganpati-catstrip button {
-    min-height: 0;
-    gap: 0.25rem;
-    padding-block: 0.125rem;
-  }
-
-  .ck-ganpati-catstrip a > span:first-child,
-  .ck-ganpati-catstrip button > span:first-child {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  .ck-ganpati-catstrip svg { width: 1.25rem; height: 1.25rem; }
-}
-
-@media (min-width: 1024px) {
-  .ck-ganpati-hero .ck-ganpati-hero-copy {
-    padding-top: clamp(0.5rem, 4vh, 3rem);
-    padding-bottom: calc(clamp(0.5rem, 4vh, 3rem) + var(--ck-ganpati-catstrip-overhang));
-  }
-}
 
 .ck-hero-frame {
   align-self: stretch;
@@ -2364,33 +2258,6 @@ body.mobile-menu-open {
     radial-gradient(circle at 8% 14%, rgb(224 123 58 / 0.10), transparent 22rem),
     radial-gradient(circle at 90% 38%, rgb(74 127 193 / 0.09), transparent 25rem),
     radial-gradient(rgb(255 255 255 / 0.045) 0.65px, transparent 0.75px);
-}
-
-/* The hand-drawn orbit echoes the giving journey in the hero artwork. It is
-   decoration only, never a focus target or a substitute for a real label. */
-.ck-hero-ornament {
-  color: rgb(var(--ck-home-shadow-rgb, 176, 74, 21) / 0.22);
-  overflow: visible;
-}
-
-.ck-hero-ornament circle,
-.ck-hero-ornament path {
-  stroke: currentColor;
-  stroke-width: 1.25;
-}
-
-.ck-hero-ornament-dot {
-  fill: var(--ck-home-accent, #b04a15);
-  stroke: #fdf5ed !important;
-  stroke-width: 3 !important;
-}
-
-.dark .ck-hero-ornament {
-  color: rgb(240 160 106 / 0.2);
-}
-
-.dark .ck-hero-ornament-dot {
-  stroke: #15110f !important;
 }
 
 .ck-hero-headline {
@@ -2581,25 +2448,11 @@ body.mobile-menu-open {
      is a background-*image*, and only the shorthand clears it. The shadow goes
      with it: an elevation shadow under nothing is a rectangle of shade with
      nothing casting it. */
-  header[data-bare-nav] {
-    background: none;
-    /* Prefixed first, standard last — see the note on `.glass-card`. Getting
-       this backwards here would drop the standard reset and leave the bar's
-       `backdrop-blur-xs` blurring a ground that is no longer painted. */
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    border-bottom-width: 0;
-    box-shadow: none;
-  }
-
-  header[data-bare-nav] .ck-mobile-header { background: none; }
 
   /* Ties with the `data-home-hero` cream above on specificity and wins on
      source order, which is the point of sitting below it. That cream was for a
      dark photo scrim; on the pale glass pill the button now carries it would be
      invisible. */
-  header[data-bare-nav] .ck-mobile-header > button { color: #3f2a18; }
-  .dark header[data-bare-nav] .ck-mobile-header > button { color: #fde8c8; }
   .ck-showcase-hero {
     padding: 0;
     margin-top: calc(-1 * var(--ck-nav-h, 4.25rem));
@@ -2618,21 +2471,6 @@ body.mobile-menu-open {
     padding-inline: max(clamp(1.25rem, 6vw, 2rem), env(safe-area-inset-left), env(safe-area-inset-right));
     padding-top: calc(var(--ck-nav-h, 4.25rem) + clamp(7rem, 25svh, 18rem));
     padding-bottom: calc(max(var(--ck-bottom-chrome, 0px), env(safe-area-inset-bottom)) + 1rem);
-  }
-  /* A feathered stage behind the lower third keeps copy sharp over bright
-     portions of the photograph without turning the image into a flat overlay. */
-  .ck-showcase-hero .ck-hero-copy::before {
-    position: absolute;
-    z-index: -1;
-    inset: 14% 0 -1.25rem;
-    border: 1px solid rgb(255 246 237 / 0.10);
-    border-bottom: 0;
-    border-radius: 1.75rem 1.75rem 0 0;
-    background:
-      linear-gradient(to top, rgb(18 12 8 / 0.54), transparent 78%),
-      radial-gradient(ellipse at 50% 100%, rgb(176 74 21 / 0.20), transparent 68%);
-    box-shadow: 0 -16px 42px rgb(0 0 0 / 0.10);
-    content: "";
   }
   .ck-mobile-hero-badge {
     display: inline-flex;
@@ -2653,20 +2491,6 @@ body.mobile-menu-open {
     text-transform: uppercase;
     backdrop-filter: blur(10px);
   }
-  .ck-mobile-hero-orbit {
-    color: rgb(255 222 193 / 0.43);
-    overflow: visible;
-  }
-  .ck-mobile-hero-orbit circle,
-  .ck-mobile-hero-orbit path {
-    stroke: currentColor;
-    stroke-width: 1.1;
-  }
-  .ck-mobile-hero-orbit-dot {
-    fill: #ffbd91;
-    stroke: rgb(61 34 20 / 0.86) !important;
-    stroke-width: 3 !important;
-  }
   .ck-showcase-hero .ck-hero-headline {
     font-family: var(--font-hero-mobile), Impact, "Arial Narrow", sans-serif;
     font-size: clamp(2.35rem, 10.6vw, 4.5rem);
@@ -2675,26 +2499,7 @@ body.mobile-menu-open {
     overflow-wrap: anywhere;
     text-shadow: 0 2px 22px rgb(0 0 0 / 0.24);
   }
-  /*
-    Everything from here to the end of the CTA group is the *plain* hero's
-    phone treatment, and it assumes that hero's ground: below lg the copy sits
-    on a photo behind a dark scrim, which is why every label below is #fff6ed
-    and why the primary drops its fill entirely.
-
-    `:not(.ck-ganpati-hero)` is on all of it because the festive hero shares
-    `.ck-showcase-hero` — it needs the layout half of that class, the negative
-    top margin under the nav and the stage min-heights — but puts its photo in
-    a separate band *above* the copy, leaving the buttons on cream #fffdf9. The
-    rules then landed near-white on near-white: the sign-up CTA measured 1.05:1
-    and "Explore needs near you" 1.53:1. Both were invisible in light mode and
-    both were fine in dark, where the ground really is dark, which is most of
-    why it survived review.
-
-    This is unlayered CSS, so it outranks every Tailwind layer — the festive
-    hero's own `bg-gradient-to-r` and `text-[#9a3412]` never stood a chance.
-    Scoping the selector is the fix; the festive hero styles its own buttons.
-  */
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions { margin-top: 1.25rem; gap: 0.25rem; }
+  .ck-showcase-hero .ck-hero-actions { margin-top: 1.25rem; gap: 0.25rem; }
   /*
     Outlined, not filled.
 
@@ -2708,7 +2513,7 @@ body.mobile-menu-open {
     The ring is a box-shadow, not a border, so it does not add to the 44px
     height or shift the label off-centre.
   */
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-secondary-cta {
+  .ck-showcase-hero .ck-hero-secondary-cta {
     min-height: 2.75rem;
     padding: 0.625rem 1rem;
     border-radius: 0.75rem;
@@ -2719,12 +2524,12 @@ body.mobile-menu-open {
     font-size: 0.8125rem;
     letter-spacing: 0;
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-secondary-cta:hover {
+  .ck-showcase-hero .ck-hero-secondary-cta:hover {
     background: rgb(255 246 237 / 0.1);
     box-shadow: inset 0 0 0 1.5px rgb(255 246 237 / 0.7);
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-primary-cta,
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-auth-placeholder {
+  .ck-showcase-hero .ck-hero-primary-cta,
+  .ck-showcase-hero .ck-hero-auth-placeholder {
     order: 2;
     min-height: 2.75rem;
     flex-wrap: wrap;
@@ -2737,9 +2542,9 @@ body.mobile-menu-open {
     background: transparent;
     box-shadow: none;
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-auth-placeholder { visibility: hidden; }
+  .ck-showcase-hero .ck-hero-auth-placeholder { visibility: hidden; }
   .ck-hero-signup-prompt { font-weight: 500; color: rgb(255 246 237 / 0.7); }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-primary-cta .ck-hero-action-arrow { display: none; }
+  .ck-showcase-hero .ck-hero-primary-cta .ck-hero-action-arrow { display: none; }
   /*
     Guest CTAs sit side by side, hugging their labels.
 
@@ -2755,19 +2560,19 @@ body.mobile-menu-open {
     `width: auto` beats the buttons' `w-full`: this block is unlayered, and
     unlayered CSS outranks every Tailwind layer.
   */
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] {
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] {
     gap: 0.375rem;
     flex-direction: row;
     flex-wrap: wrap;
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta,
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-secondary-cta {
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta,
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-secondary-cta {
     width: auto;
     flex: 0 1 auto;
     padding-inline: 0.625rem;
     font-size: 0.75rem;
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta {
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta {
     order: 0;
     min-height: 2.75rem;
     /* Block padding only. The inline value and the size come from the shared
@@ -2788,8 +2593,8 @@ body.mobile-menu-open {
     font-weight: 800;
     box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
   }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: var(--ck-home-hover, #963c0d); }
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-signup-prompt { display: none; }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta:hover { background: var(--ck-home-hover, #963c0d); }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-signup-prompt { display: none; }
   /*
     No arrows on the guest pair, and this rule has to come after the one above
     that turns the primary's back on.
@@ -2799,7 +2604,7 @@ body.mobile-menu-open {
     fits on one line down to 320px; with them it wrapped on real phones, which
     is what put these two back into a stack.
   */
-  .ck-showcase-hero:not(.ck-ganpati-hero) .ck-hero-actions[data-guest="true"] .ck-hero-action-arrow { display: none; }
+  .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-action-arrow { display: none; }
   .ck-showcase-hero .ck-hero-photo-image { animation: none; transform: none; object-position: 50% top; }
   .ck-showcase-hero .ck-hero-category-rail { display: none; }
   .ck-mobile-hero-trust {
@@ -4163,4 +3968,281 @@ div:has(.searchable-select-open) {
   --color-amber-500: #4a7fc1;
   --color-amber-600: #2d5a96;
   --color-amber-700: #1e3a60;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Donate Now — the landing page call to action
+   ═════════════════════════════════════════════════════════════════════════
+
+   One component, five placements (navbar, hero, donate band, CTA row, footer).
+   Everything here is driven by the --ck-role-* tokens rather than literals, so
+   the glow re-tints with the role instead of being the hardcoded terracotta the
+   older .donate-navbar-* rules use.
+
+   Three deliberate choices:
+
+   1. IDLE MOTION IS THE POINT. A phone has no hover, so a button whose only
+      life is :hover is inert for most visitors. The breathe / sheen / heartbeat
+      run unprompted; hover adds to them rather than starting them.
+
+   2. DONEES NEVER SEE IT. The rule below keys off [data-ck-role-theme="donee"],
+      which ROLE_THEME_BOOT_SCRIPT writes to <html> BEFORE first paint. That is
+      why this is CSS and not a React branch: a recipient never sees the button
+      render and then vanish, and no placement can forget the check.
+
+   3. GUEST DARK MODE IS LIFTED. :root has no .dark override, so a logged-out
+      visitor would otherwise get #b04a15 on a near-black surface. Donors are
+      already lifted to #e07b3a; this gives guests the same treatment.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.ck-donate-cta {
+  --ck-donate-acc: var(--ck-role-accent, #b04a15);
+  --ck-donate-hov: var(--ck-role-hover, #c45520);
+  --ck-donate-hi: var(--ck-role-highlight, #f0b97a);
+  --ck-donate-on: var(--ck-role-on-accent, #ffffff);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--ck-donate-acc);
+  color: var(--ck-donate-on);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  border-radius: 9999px;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.2s ease,
+    box-shadow 0.28s ease;
+  animation: ck-donate-breathe 3.2s ease-in-out infinite;
+}
+
+/* A logged-out visitor in dark mode. Both `dark` and the role attribute land on
+   <html>, so this is the compound form .ck-mobile-dock already uses at :1443 —
+   a signed-in donor has the attribute and keeps the accent their theme lifted. */
+.dark:not([data-ck-role-theme]) .ck-donate-cta {
+  --ck-donate-acc: #e07b3a;
+  --ck-donate-hov: #f0955a;
+  --ck-donate-on: #1a1207;
+}
+
+/* Sizes. Every one clears the 44px touch floor — the navbar pill included. */
+.ck-donate-sm { height: 44px; padding: 0 20px; font-size: 0.875rem; }
+.ck-donate-md { height: 52px; padding: 0 26px; font-size: 1rem; }
+.ck-donate-lg { height: 60px; padding: 0 34px; font-size: 1.125rem; }
+.ck-donate-block { display: flex; width: 100%; }
+
+/* The hero donation action belongs to the same button row as list/browse. */
+.ck-hero-actions .ck-hero-donate-cta {
+  height: auto;
+  min-height: 44px;
+  border-radius: 0.8rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  animation: none;
+  box-shadow: none;
+}
+.ck-hero-actions .ck-hero-donate-cta .ck-donate-sheen,
+.ck-hero-actions .ck-hero-donate-cta .ck-donate-ring { display: none; }
+.ck-hero-actions .ck-hero-donate-cta .ck-donate-heart { animation: none; }
+.ck-hero-actions .ck-hero-donate-cta:hover,
+.ck-hero-actions .ck-hero-donate-cta:focus-visible {
+  animation: none;
+  transform: translateY(-2px);
+}
+.ck-hero-actions .ck-hero-donate-cta:active { transform: scale(0.96); }
+@media (min-width: 1024px) {
+  .ck-hero-actions .ck-hero-donate-cta {
+    min-height: 3.5rem;
+    border-radius: 0.9rem;
+    padding-inline: 1.5rem;
+    gap: 0.75rem;
+    white-space: nowrap;
+    box-shadow: 0 11px 25px rgba(var(--ck-home-shadow-rgb,176,74,21),0.27);
+  }
+  .ck-hero-donate-cta .ck-donate-heart svg { width: 1rem; height: 1rem; }
+  .ck-hero-donate-cta .ck-donate-arrow svg { width: 1.25rem; height: 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-hero-actions .ck-hero-donate-cta:hover,
+  .ck-hero-actions .ck-hero-donate-cta:focus-visible,
+  .ck-hero-actions .ck-hero-donate-cta:active { transform: none; }
+}
+
+/* ── Idle ─────────────────────────────────────────────────────────────── */
+@keyframes ck-donate-breathe {
+  0%, 100% {
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--ck-donate-acc) 38%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 6px 26px color-mix(in srgb, var(--ck-donate-acc) 62%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--ck-donate-hi) 24%, transparent);
+  }
+}
+
+.ck-donate-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ck-donate-sheen::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34) 50%, transparent);
+  transform: skewX(-18deg);
+  animation: ck-donate-sweep 4.2s ease-in-out infinite;
+}
+
+@keyframes ck-donate-sweep {
+  0%   { left: -120%; opacity: 0; }
+  10%  { opacity: 1; }
+  42%  { left: 160%; opacity: 1; }
+  50%, 100% { left: 160%; opacity: 0; }
+}
+
+.ck-donate-heart {
+  display: inline-block;
+  z-index: 2;
+  transform-origin: center;
+  animation: ck-donate-beat 3.2s ease-in-out infinite;
+}
+
+@keyframes ck-donate-beat {
+  0%, 88%, 100% { transform: scale(1); }
+  92% { transform: scale(1.16); }
+  96% { transform: scale(1.04); }
+}
+
+.ck-donate-label,
+.ck-donate-arrow { position: relative; z-index: 2; }
+.ck-donate-arrow { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+.ck-donate-ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+  border: 2px solid color-mix(in srgb, var(--ck-donate-hi) 78%, transparent);
+  opacity: 0;
+}
+
+/* ── Hover / focus ────────────────────────────────────────────────────── */
+.ck-donate-cta:hover,
+.ck-donate-cta:focus-visible {
+  background: var(--ck-donate-hov);
+  transform: translateY(-2px) scale(1.025);
+  animation: ck-donate-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes ck-donate-glow {
+  0%, 100% { box-shadow: 0 10px 30px color-mix(in srgb, var(--ck-donate-acc) 55%, transparent); }
+  50%      { box-shadow: 0 12px 38px color-mix(in srgb, var(--ck-donate-acc) 78%, transparent); }
+}
+
+.ck-donate-cta:hover .ck-donate-ring,
+.ck-donate-cta:focus-visible .ck-donate-ring {
+  animation: ck-donate-ring 1s ease-out infinite;
+}
+
+@keyframes ck-donate-ring {
+  0%   { transform: scale(1); opacity: 0.85; }
+  100% { transform: scale(1.42); opacity: 0; }
+}
+
+.ck-donate-cta:hover .ck-donate-heart,
+.ck-donate-cta:focus-visible .ck-donate-heart {
+  animation: ck-donate-beat-fast 0.7s ease-in-out infinite;
+}
+
+@keyframes ck-donate-beat-fast {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  45%      { transform: scale(1.28) rotate(-9deg); }
+}
+
+.ck-donate-cta:hover .ck-donate-arrow,
+.ck-donate-cta:focus-visible .ck-donate-arrow { transform: translateX(4px); }
+
+.ck-donate-cta:active { transform: translateY(1px) scale(0.98); }
+
+.ck-donate-cta:focus-visible {
+  outline: 3px solid var(--ck-role-ring, var(--ck-donate-acc));
+  outline-offset: 3px;
+}
+
+/* ── Outline variant — where a solid pill would fight an existing CTA ── */
+.ck-donate-outline {
+  background: transparent;
+  color: var(--ck-donate-acc);
+  box-shadow: inset 0 0 0 2px var(--ck-donate-acc);
+  animation: none;
+}
+.ck-donate-outline .ck-donate-sheen { display: none; }
+.ck-donate-outline:hover,
+.ck-donate-outline:focus-visible {
+  background: var(--ck-donate-acc);
+  color: var(--ck-donate-on);
+  box-shadow:
+    inset 0 0 0 2px var(--ck-donate-acc),
+    0 8px 24px color-mix(in srgb, var(--ck-donate-acc) 45%, transparent);
+}
+
+/* ── Donees: hidden, pre-paint, everywhere at once ───────────────────── */
+[data-ck-role-theme="donee"] .ck-donate-cta,
+[data-ck-role-theme="donee"] .ck-donate-band { display: none !important; }
+
+/* ── Reduced motion ───────────────────────────────────────────────────
+   No animation at all, rather than animation with zeroed values — the rule
+   AnimatedCategoryIcon documents. Hover still changes colour, so the
+   affordance survives for anyone who cannot use the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .ck-donate-cta,
+  .ck-donate-cta:hover,
+  .ck-donate-cta:focus-visible,
+  .ck-donate-heart,
+  .ck-donate-sheen::before,
+  .ck-donate-ring {
+    animation: none !important;
+  }
+  .ck-donate-cta {
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--ck-donate-acc) 38%, transparent);
+  }
+  .ck-donate-cta:hover,
+  .ck-donate-cta:focus-visible,
+  .ck-donate-cta:active { transform: none; }
+  .ck-donate-cta:hover .ck-donate-arrow,
+  .ck-donate-cta:focus-visible .ck-donate-arrow { transform: none; }
+}
+
+/* Full-height sections on the donate page.
+   Replaces `min-h-[calc(100svh-3.5rem)]`, which subtracted the MOBILE nav
+   height (3.5rem) on every breakpoint — on desktop the bar is ~113px, so those
+   sections were consistently 57px too tall. --ck-nav-h is the measured height
+   Navbar publishes from a ResizeObserver; the max() keeps the old constant as a
+   floor for the frame before it is first written. The svh/dvh pair is the
+   house style already used at :2216 — dvh wins where supported, svh is the
+   fallback, so a phone's collapsing URL bar cannot overshoot. */
+.ck-below-nav {
+  min-height: calc(100svh - max(var(--ck-nav-h, 0px), 3.5rem));
+  min-height: calc(100dvh - max(var(--ck-nav-h, 0px), 3.5rem));
 }

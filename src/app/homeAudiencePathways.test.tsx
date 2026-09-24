@@ -98,21 +98,8 @@ vi.mock("@/components/home/CTASection", () => ({ CTASection: () => null }));
 // WebGL: `ogl` touches window on import and the section loads it through
 // next/dynamic with ssr:false. Nothing here depends on what it draws.
 vi.mock("@/components/LightRays", () => ({ default: () => null }));
-/**
- * The festive skin is pinned OFF here, deliberately.
- *
- * <p>These cases are about the *ordinary* pathways section. When the Ganpati
- * window is open, HomeClient swaps it for AudiencePathwaysSectionGanpati, so
- * without this mock the whole file's result depended on the wall clock: it
- * passed for months, then failed the moment the window actually opened on
- * 12 Sept. A guest-only gate is not a seasonal question, so the season is
- * fixed rather than left to the calendar.
- */
-vi.mock("@/lib/isGanpatiActive", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/isGanpatiActive")>()),
-  isGanpatiActive: () => false,
-}));
-vi.mock("@/components/GanpatiStrip", () => ({ GanpatiStrip: () => null }));
+
+
 
 import HomeClient from "./HomeClient";
 
@@ -140,6 +127,11 @@ async function renderHome() {
 const donorCtas = () => screen.queryAllByText(/join as a donor/i);
 const doneeCtas = () => screen.queryAllByText(/join as a donee/i);
 const guestJoinAnchors = () => document.querySelectorAll('[data-tour="guest-join"]');
+// The mobile way in, since MobileVisualStory replaced MobileDoors. Different
+// component, different copy — a guest is offered a login per role rather than
+// the old "Join as a …" doors.
+const mobileDonorEntry = () => screen.queryAllByText(/login as donor/i);
+const mobileDoneeEntry = () => screen.queryAllByText(/login as donee/i);
 const headings = () => screen.queryAllByText(/whichever side you're on/i);
 
 beforeEach(() => {
@@ -198,12 +190,22 @@ describe("a guest, once auth has resolved", () => {
     expect(headings()).toHaveLength(1);
   });
 
-  it("gives a guest both doors on mobile, without duplicating the desktop CTAs", async () => {
+  /**
+   * Same guarantee as before — a guest can get in from either tree — but the
+   * mobile half is now MobileVisualStory's entry choices rather than
+   * MobileDoors. Asserted through both components instead of a single copy
+   * match, so dropping either one still fails.
+   */
+  it("gives a guest a way in on mobile as well as on desktop", async () => {
     await renderHome();
 
-    // One from the desktop pathways section, one from the mobile doors.
-    expect(donorCtas()).toHaveLength(2);
-    expect(doneeCtas()).toHaveLength(2);
+    // Desktop pathways section: exactly one of each, never duplicated.
+    expect(donorCtas()).toHaveLength(1);
+    expect(doneeCtas()).toHaveLength(1);
+
+    // Mobile entry choices.
+    expect(mobileDonorEntry()).toHaveLength(1);
+    expect(mobileDoneeEntry()).toHaveLength(1);
   });
 
   it("puts the guest tour anchor on the mobile instance only", async () => {

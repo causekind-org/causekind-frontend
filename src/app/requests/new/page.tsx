@@ -555,6 +555,13 @@ function NewRequestForm() {
         if (r.urgency) setUrgency(r.urgency);
         if (r.description) setDescription(r.description);
         if (r.pincode) setPincode(r.pincode);
+        if (r.latitude != null && r.longitude != null) {
+          setGpsCoords({ lat: r.latitude, lng: r.longitude });
+        }
+        if (r.city) {
+          setCityFreeText(r.city);
+          setForceFreeTextCity(true);
+        }
         setIsEmergency(r.isEmergency);
         if (r.emergencyNature) setEmergencyNature(r.emergencyNature);
         if (r.rejectionReason) {
@@ -615,12 +622,7 @@ function NewRequestForm() {
       .catch(() => {});
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    if (user && needProfile?.complete) handleGPSLocation(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, needProfile?.complete]);
-
-  function handleGPSLocation(isAuto = false) {
+  function handleGPSLocation() {
     if (!navigator.geolocation) { toast.error("Your browser doesn't support GPS location"); setGpsBlocked(true); return; }
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
@@ -653,8 +655,8 @@ function NewRequestForm() {
               if (addr.postcode) setPincode(addr.postcode.replace(/\s/g, ""));
             }
           }
-          if (!isAuto) toast.success("Location updated");
-        } catch { if (!isAuto) toast.error("Could not resolve location details"); }
+          toast.success("Location updated");
+        } catch { toast.error("Could not resolve location details"); }
         finally { setGpsLoading(false); }
       },
       () => { setGpsLoading(false); setGpsBlocked(true); toast.error("Location access denied. GPS is required to post a request."); },
@@ -965,28 +967,6 @@ function NewRequestForm() {
 
   if (!profileGateUnsupported && !needProfile?.complete) return <div className="mx-auto max-w-xl px-5 py-16"><h1 className="text-2xl font-bold text-[#1e3a60] dark:text-blue-200">{profileError ? "Could not check your profile" : !needProfile ? "Checking your profile…" : "Complete your profile first"}</h1><p className="mt-3 text-sm text-slate-500">{profileError || "Save your household details and identity documents once in your profile. You can then request items without entering them again."}</p>{needProfile && <Link href={profileLink} className="mt-6 inline-flex rounded-lg bg-[#1e3a60] px-5 py-3 text-sm font-bold text-white">Complete profile →</Link>}{profileError && <button onClick={() => window.location.reload()} className="mt-5 underline">Retry</button>}</div>;
 
-  if (gpsBlocked) {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] bg-[#faf8f5] dark:bg-zinc-950 flex items-center justify-center p-3 sm:p-4">
-        <div className="max-w-md w-full text-center space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-stone-250 dark:border-zinc-800 shadow-xl">
-          <div className="mx-auto w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center text-red-500">
-            <MapPin className="w-8 h-8 animate-bounce" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Location Access Required</h1>
-            <p className="text-sm text-stone-500 dark:text-stone-400">
-              CauseKind requires your GPS location to connect your request with nearby donors. Please enable location permissions in your browser to proceed.
-            </p>
-          </div>
-          <button onClick={() => handleGPSLocation(false)} disabled={gpsLoading}
-            className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-colors">
-            {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection"}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // ── Step 1: Need Details ─────────────────────────────────────────────────
   const step1 = (
     <div className="space-y-6">
@@ -1114,13 +1094,15 @@ function NewRequestForm() {
           {/* `data-field="gps"` is the summary link's target. There is no input
               to focus for this error — GPS is a button plus derived state — so
               the button itself is the only sensible landing point. */}
-          <button type="button" data-field="gps" onClick={() => handleGPSLocation(false)} disabled={gpsLoading}
+          <button type="button" data-field="gps" onClick={() => handleGPSLocation()} disabled={gpsLoading}
             aria-describedby={fieldErrors.gps ? "gps-error" : undefined}
             aria-invalid={!!fieldErrors.gps}
             className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline disabled:opacity-50 flex items-center gap-1">
             {gpsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "📍"} {gpsLoading ? "Detecting…" : "Use GPS"}
           </button>
         </div>
+        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">{gpsCoords ? "Location added. Use GPS only if you want to update it." : "Tap Use GPS when ready. Location is needed before submitting your request."}</p>
+        {gpsBlocked && <p role="status" className="mb-3 text-xs text-red-600 dark:text-red-400">Could not get your location. You can keep filling in the form and retry Use GPS before submitting. If permission was denied, enable location for this site in your browser settings first.</p>}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label htmlFor="country" className="text-xs text-stone-500 dark:text-stone-400">Country</label>

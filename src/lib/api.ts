@@ -56,6 +56,12 @@ export type ApiConflictError = ApiError & { dependents?: SuperAdminDependent[]; 
 // Request deduplication & GET cache (3s TTL for GET requests to prevent redundant fetch cascades)
 const inFlightGetRequests = new Map<string, Promise<any>>();
 const getCacheMap = new Map<string, { data: any; timestamp: number }>();
+let requestCacheGeneration = 0;
+function invalidateRequestCache() {
+  requestCacheGeneration += 1;
+  getCacheMap.clear();
+  inFlightGetRequests.clear();
+}
 const CACHE_TTL_MS = 3000;
 
 /**
@@ -145,7 +151,7 @@ async function request<T>(
 
   // Invalidate cache on mutations
   if (!isGet) {
-    getCacheMap.clear();
+    invalidateRequestCache();
   } else if (canUseRequestCache()) {
     const cached = getCacheMap.get(path);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -156,6 +162,7 @@ async function request<T>(
     }
   }
 
+  const generation = requestCacheGeneration;
   const { silent401, ...fetchOptions } = options;
 
   const execute = async (): Promise<T> => {
@@ -237,7 +244,11 @@ async function request<T>(
     // browser error with no useful meaning, which is exactly what an admin saw on
     // the Re-run AI button. Check for a body before trying to parse one.
     const data = (await readJsonBody(res)) as T;
-    if (isGet && data !== undefined && canUseRequestCache()) {
+    if (isGet && canUseRequestCache() && generation !== requestCacheGeneration) {
+      // Existing callers must not paint a stale response over the fresh status.
+      return request<T>(path, options);
+    }
+    if (isGet && generation === requestCacheGeneration && data !== undefined && canUseRequestCache()) {
       getCacheMap.set(path, { data, timestamp: Date.now() });
     }
     return data;
@@ -248,13 +259,15 @@ async function request<T>(
   // response depends on who is asking.
   if (isGet && canUseRequestCache()) {
     const promise = execute().finally(() => {
-      inFlightGetRequests.delete(path);
+      if (inFlightGetRequests.get(path) === promise) inFlightGetRequests.delete(path);
     });
     inFlightGetRequests.set(path, promise);
     return promise;
   }
 
-  return execute();
+  // Also invalidate after completion: reads triggered while a write was in
+  // progress (including SSE refreshes) may still contain the pre-write state.
+  return isGet ? execute() : execute().finally(invalidateRequestCache);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -336,6 +349,11 @@ export type PlatformStats = {
 
 export function getPlatformStats() {
   return request<PlatformStats>("/api/v1/stats");
+}
+
+export type FulfilledNeedSummary = { category: string; needs: number };
+export function getFulfilledNeedSummaries() {
+  return request<FulfilledNeedSummary[]>("/api/v1/stats/fulfilled-needs", { silent401: true });
 }
 
 export type InKindStats = {
@@ -1981,6 +1999,37 @@ export type DonationOffer = {
   // Full AI screening detail — only populated on admin endpoints (adminGetAllOffers /
   // adminGetOfferById / adminActionOffer / adminRetryOfferScreening); null elsewhere.
   assessment: OfferAssessmentDetails | null;
+  /**
+   * What the donor promised to buy, on a WILL_PURCHASE (Flow B) offer.
+   *
+   * Null on every other flow, and null on a Flow B offer whose donor has not
+   * reached the purchase-plan step yet — so a reader must handle null even when
+   * `flowType === "WILL_PURCHASE"`.
+   */
+  purchaseCommitment: PurchaseCommitmentDetails | null;
+};
+
+/**
+ * A donor's Flow B purchase promise, as the server sends it.
+ *
+ * `purchaseTimeline` is the BAND the wizard wrote (`WITHIN_3_DAYS` /
+ * `WITHIN_7_DAYS` / `WITHIN_14_DAYS`), not a date — the real deadline is
+ * computed at donee acceptance and does not exist yet. Render it as a duration
+ * ("within 7 days"), never as a deadline. `purchaseTimelineLabel()` in
+ * `offerModel.ts` does that translation.
+ */
+export type PurchaseCommitmentDetails = {
+  id: number;
+  itemName: string;
+  proposedBrand: string | null;
+  proposedModel: string | null;
+  /** Serialized from a BigDecimal, so it arrives as a number. */
+  estimatedCost: number | null;
+  purchaseTimeline: string;
+  purchaseStatus: "INTENT_DECLARED" | "ORDER_PLACED" | "PROOF_UPLOADED" | "DELIVERED" | null;
+  intendedStore: string | null;
+  notes: string | null;
+  createdAt: string;
 };
 
 export type OfferAssessmentDetails = {
@@ -2470,6 +2519,19 @@ export function reportPostDeliveryIssue(offerId: number, data: {
 
 export function confirmNoIssue(offerId: number) {
   return request<DonationOffer>(`/api/v1/offers/${offerId}/handover/confirm-no-issue`, { method: "POST" });
+}
+
+export type ReporterIssue = {
+  id: number; issueType: string; description: string;
+  resolvedAt: string | null; resolution: string | null; canWithdraw: boolean;
+};
+export function getMyReportedIssues(offerId: number) {
+  return request<ReporterIssue[]>(`/api/v1/offers/${offerId}/handover/issues/mine`);
+}
+export function withdrawReportedIssue(offerId: number, issueId: number, reason: string | null, details: string) {
+  return request<DonationOffer>(`/api/v1/offers/${offerId}/handover/issues/${issueId}/withdraw`, {
+    method: "POST", body: JSON.stringify({ reason, details }),
+  });
 }
 
 // ── Match cancellation ───────────────────────────────────────────────────────
@@ -4315,4 +4377,3 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
   }
   return res.json();
 }
-

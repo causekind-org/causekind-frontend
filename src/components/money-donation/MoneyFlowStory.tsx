@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, useMotionValue, useSpring, useReducedM
 import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
 import { SahasLogo } from './SahasLogo';
 import Link from 'next/link';
-import { GanpatiToran, ModakIcon } from '@/components/home/GanpatiVisuals';
+
 
 /* ─── Step Data ─── */
 const steps = [
@@ -139,7 +139,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
         transition={{ duration: 0.5, delay: index * 0.18 + 0.1 }}
         className="flex-1 md:text-center mt-1 md:mt-5 pb-10 md:pb-0 md:px-2"
       >
-        <span className="inline-block text-[11px] font-bold tracking-widest uppercase text-amber-800 dark:text-amber-300 mb-1.5">
+        <span className="inline-block text-[0.6875rem] font-bold tracking-widest uppercase text-amber-800 dark:text-amber-300 mb-1.5">
           {step.label}
         </span>
         <h3 className="text-lg sm:text-xl font-extrabold text-foreground mb-2 leading-snug">
@@ -149,7 +149,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
           {step.description}
         </p>
         {step.detail && (
-          <span className="inline-block text-[11px] font-semibold text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/50 px-3 py-1 rounded-full border border-amber-300/60 dark:border-amber-700/50 shadow-xs">
+          <span className="inline-block text-[0.6875rem] font-semibold text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/50 px-3 py-1 rounded-full border border-amber-300/60 dark:border-amber-700/50 shadow-xs">
             {step.detail}
           </span>
         )}
@@ -184,25 +184,16 @@ export function MoneyFlowStory() {
   const bgX = useTransform(scrollYProgress, [0, 1], ['0%', '-15%']);
 
   return (
-    <section ref={containerRef} className="relative min-h-[calc(100svh-3.5rem)] py-10 sm:py-14 lg:py-16 bg-gradient-to-b from-[#fffbf5] via-[#fff8ee] to-[#fffbf5] dark:from-[#1c0d06] dark:via-[#160a04] dark:to-[#1c0d06] overflow-hidden flex flex-col justify-center">
-      {/* Top Edge Garland Decoration */}
-      <div className="absolute top-0 inset-x-0 z-10 pointer-events-none">
-        <GanpatiToran />
-      </div>
-
-      {/* Subtle Ganpati Watermark Motif in corner */}
-      <div className="pointer-events-none absolute right-4 bottom-4 z-0 opacity-[0.06] dark:opacity-[0.08] select-none" aria-hidden="true">
-        <ModakIcon className="w-48 h-48 text-amber-600 dark:text-amber-400" />
-      </div>
+    <section ref={containerRef} className="relative ck-below-nav py-10 sm:py-14 lg:py-16 bg-gradient-to-b from-[#fffbf5] via-[#fff8ee] to-[#fffbf5] dark:from-[#1c0d06] dark:via-[#160a04] dark:to-[#1c0d06] overflow-hidden flex flex-col justify-center">
 
       {/* Decorative background blobs */}
       <motion.div
         style={{ y: bgY }}
-        className="absolute -right-40 top-1/4 w-[500px] h-[500px] rounded-full bg-amber-500/10 blur-3xl pointer-events-none"
+        className="absolute -right-40 top-1/4 w-[min(500px,88vw)] h-[min(500px,88vw)] rounded-full bg-amber-500/10 blur-3xl pointer-events-none"
       />
       <motion.div
         style={{ y: bgX }}
-        className="absolute -left-40 bottom-1/4 w-[400px] h-[400px] rounded-full bg-orange-500/10 blur-3xl pointer-events-none"
+        className="absolute -left-40 bottom-1/4 w-[min(400px,74vw)] h-[min(400px,74vw)] rounded-full bg-orange-500/10 blur-3xl pointer-events-none"
       />
 
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-6">

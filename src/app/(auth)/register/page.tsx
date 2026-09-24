@@ -80,22 +80,6 @@ function detectCountryCode(): string {
   return "IN";
 }
 
-async function detectCountryFromIP(): Promise<string> {
-  try {
-    const res = await fetch("https://ipwho.is/?output=json&fields=country_code", {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!res.ok) throw new Error("non-200");
-    const data = await res.json();
-    if (typeof data.country_code === "string" && /^[A-Z]{2}$/.test(data.country_code)) {
-      return data.country_code;
-    }
-  } catch {
-    // ignore
-  }
-  return detectCountryCode();
-}
-
 // ── Input component ──────────────────────────────────────────────────────────────
 /**
  * Text field with timed validation feedback.
@@ -358,67 +342,11 @@ function RegisterContent() {
 
   useEffect(() => { if (user) goAfterAuth(user.role, router.replace); }, [user, router]);
 
+  // Country suggestion only; device location is requested by the GPS button.
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          try {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            const address = data.address;
-            if (address) {
-              const countryCode = address.country_code?.toUpperCase();
-              const stateName = address.state;
-              const cityName = address.city || address.town || address.village || address.suburb;
-              if (countryCode) {
-                setDialCountry(countryCode);
-                setCountryIso(countryCode);
-                const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
-                
-                if (resolvedState) {
-                  setStateIso(resolvedState);
-                  if (resolvedCity) {
-                    setCityValue(resolvedCity);
-                    setCityFreeText("");
-                    setForceFreeTextCity(false);
-                  } else if (cityName) {
-                    setCityValue("");
-                    setCityFreeText(cityName);
-                    setForceFreeTextCity(true);
-                  }
-                } else {
-                  setStateIso("");
-                  setCityValue("");
-                  if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
-                }
-                return;
-              }
-            }
-          } catch {
-            // fallback to IP
-          }
-          detectCountryFromIP().then((code) => {
-            setDialCountry(code);
-            setCountryIso(code);
-          });
-        },
-        () => {
-          detectCountryFromIP().then((code) => {
-            setDialCountry(code);
-            setCountryIso(code);
-          });
-        },
-        { enableHighAccuracy: false, timeout: 5000 }
-      );
-    } else {
-      detectCountryFromIP().then((code) => {
-        setDialCountry(code);
-        setCountryIso(code);
-      });
-    }
+    const country = detectCountryCode();
+    setDialCountry(country);
+    setCountryIso(country);
   }, []);
 
   useEffect(() => {
