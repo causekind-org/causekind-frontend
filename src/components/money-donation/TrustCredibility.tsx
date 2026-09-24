@@ -43,7 +43,7 @@ const allocationAreas = [
 
 export function TrustCredibility() {
   return (
-    <section className="min-h-[calc(100svh-3.5rem)] py-12 lg:py-16 bg-[#fff9f4] dark:bg-[#180b04] flex items-center">
+    <section className="ck-below-nav py-12 lg:py-16 bg-[#fff9f4] dark:bg-[#180b04] flex items-center">
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         
         <motion.div 
@@ -64,7 +64,7 @@ export function TrustCredibility() {
           </div>
 
           {/* Credentials grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-14">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-14">
             <CertificateCard
               title="12AA Registration Certificate"
               description="Confirms our status as a charitable institution under the Income Tax Act, 1961."

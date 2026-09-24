@@ -51,19 +51,24 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
         setGpsLoading(false);
       },
       () => { setGpsBlocked(true); setGpsLoading(false); },
-      { enableHighAccuracy: true, timeout: 10000 }
+      // Coarse, cached, bounded — same reasoning as RequestsClient: this board
+      // sorts by distance between cities, so a precise fix buys nothing and
+      // costs seconds.
+      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 8000 }
     );
   }, []);
 
-  useEffect(() => {
-    if (!authLoading && isDonor) requestGps();
-  }, [authLoading, isDonor, requestGps]);
-
+  /**
+   * Loads without waiting for a GPS fix — coordinates only change the ORDER
+   * (see ItemRequestService.getApproved), so blocking on them put a permission
+   * prompt in front of a ~150ms request, and a donor who denied location saw
+   * an empty category forever.
+   */
   const load = useCallback(() => {
-    if (!isDonor || !coords) return;
+    if (!isDonor) return;
     setLoading(true);
     setFailed(false);
-    getItemRequests(undefined, coords.lat, coords.lng)
+    getItemRequests(undefined, coords?.lat, coords?.lng)
       .then((all) => {
         const filtered = all.filter((r) => r.category === categoryName);
         setRequests(filtered);
@@ -88,6 +93,14 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
           Open {categoryName} needs{scopedToDistance ? " near you" : ""}
         </h2>
       </div>
+      {isDonor && <div className="flex flex-wrap items-center gap-2 py-2">
+        <button type="button" onClick={requestGps} disabled={gpsLoading}
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-stone-300 px-3 text-xs font-semibold disabled:opacity-50 dark:border-stone-700">
+          <LocateFixed className="h-4 w-4" />
+          {gpsLoading ? "Finding location…" : "Use GPS to sort nearby"}
+        </button>
+        {gpsBlocked && <p role="status" className="text-xs text-stone-500">Location unavailable. All needs remain available.</p>}
+      </div>}
       {renderBody()}
     </>
   );
@@ -107,21 +120,6 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
             title="You're signed in as a donee"
             body={`If you need something in ${categoryName}, post it as a request and nearby donors will see it.`}
             action={<PrimaryNewRequestLink>Post a need</PrimaryNewRequestLink>}
-          />
-        </BoardShell>
-      );
-    }
-
-    if (gpsLoading) return <BoardShell><Spinner label="Finding needs near you…" /></BoardShell>;
-
-    if (gpsBlocked) {
-      return (
-        <BoardShell>
-          <Empty
-            icon={<LocateFixed className="w-5 h-5" />}
-            title="Location needed"
-            body="Requests are matched by distance, so we need your location to show which ones you could realistically reach."
-            action={<PrimaryButton onClick={requestGps}>Allow location</PrimaryButton>}
           />
         </BoardShell>
       );
@@ -151,7 +149,7 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
         <BoardShell>
           <Empty
             icon={<AnimatedCategoryIcon category={categoryName} />}
-            title={`No open ${categoryName} needs near you right now`}
+            title={`No open ${categoryName} needs right now`}
             body="This changes often. You can list an item anyway — it stays visible and gets matched as soon as someone nearby asks."
             action={<PrimaryLink href="/items/new">List an item</PrimaryLink>}
           />
@@ -169,7 +167,7 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
     }));
 
     return (
-      <BoardShell count={requests.length} near onToggleExpand={() => setExpanded(true)}>
+      <BoardShell count={requests.length} near={scopedToDistance} onToggleExpand={() => setExpanded(true)}>
         <NeedsDisplay
           items={needItems}
           isDonor={true}

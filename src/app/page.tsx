@@ -1,5 +1,6 @@
 import {
   getCampaigns,
+  getFulfilledNeedSummaries,
   getItemRequests,
   getPlatformStats,
   getPublicItemRequests,
@@ -48,11 +49,12 @@ export default async function HomePage() {
   // logged-out visitor and the campaign would silently render nothing. The
   // public endpoint is permitAll and its projection carries everything these
   // surfaces need: title, category, city, createdAt and the donee's first name.
-  const [campaigns, stats, activity, publicRequests] = await Promise.all([
+  const [campaigns, stats, activity, publicRequests, fulfilledNeeds] = await Promise.all([
     getCampaigns().catch(emptyOnError("getCampaigns", [])),
     getPlatformStats().catch(emptyOnError("getPlatformStats", null)),
     getRecentActivity().catch(emptyOnError("getRecentActivity", [])),
-    getPublicItemRequests().catch(emptyOnError("getPublicItemRequests", []))
+    getPublicItemRequests().catch(emptyOnError("getPublicItemRequests", [])),
+    getFulfilledNeedSummaries().catch(emptyOnError("getFulfilledNeedSummaries", []))
   ]);
 
   const schemaData = {
@@ -97,6 +99,7 @@ export default async function HomePage() {
           refetches it on the client once auth resolves, which is the only
           place it can succeed. */}
       <HomeClient
+        fulfilledNeeds={fulfilledNeeds}
         initialCampaigns={campaigns}
         initialStats={stats}
         initialActivity={activity}

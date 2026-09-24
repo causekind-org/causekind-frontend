@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Image from 'next/image';
+import { DONATE_FORM_ID, scrollToSection } from '@/lib/donateScroll';
 
 const images = [
   {
@@ -41,7 +42,7 @@ export function MoneyHero() {
   }, [reduceMotion]);
 
   return (
-    <section className="relative min-h-[75svh] lg:min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center overflow-hidden pt-10 pb-8 sm:pt-16 sm:pb-12 lg:pt-20 lg:pb-16">
+    <section className="relative min-h-[75svh] lg:min-h-0 ck-below-nav flex flex-col items-center justify-center overflow-hidden pt-10 pb-8 sm:pt-16 sm:pb-12 lg:pt-20 lg:pb-16">
 
       {/* Background Image Carousel */}
       <div className="absolute inset-0 z-0">
@@ -79,7 +80,7 @@ export function MoneyHero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center gap-3 text-[10px] sm:text-xs font-bold tracking-widest uppercase text-brand-200 mb-6 sm:mb-8 bg-brand-900/60 border border-brand-500/30 pl-2 pr-4 sm:pr-5 py-1.5 sm:py-2 rounded-full backdrop-blur-md shadow-[0_0_30px_rgba(176,74,21,0.3)]"
+            className="inline-flex items-center gap-3 text-[0.625rem] sm:text-xs font-bold tracking-widest uppercase text-brand-200 mb-6 sm:mb-8 bg-brand-900/60 border border-brand-500/30 pl-2 pr-4 sm:pr-5 py-1.5 sm:py-2 rounded-full backdrop-blur-md shadow-[0_0_30px_rgba(176,74,21,0.3)]"
           >
             <Image 
               src="/images/money-donation/sahas-logo-transparent.png"
@@ -114,9 +115,10 @@ export function MoneyHero() {
                 with `components/ui/button.tsx` for a single call site. */}
             <button
               type="button"
-              onClick={() => {
-                document.getElementById('donate-form')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              // Goes through the shared helper so this honours
+              // prefers-reduced-motion — it used to hardcode 'smooth' — and so
+              // it moves keyboard focus into the form, not just the viewport.
+              onClick={() => scrollToSection(DONATE_FORM_ID)}
               className="inline-flex cursor-pointer items-center justify-center rounded-full bg-white dark:bg-zinc-900 px-8 py-4 sm:px-10 sm:py-5 text-base sm:text-lg font-bold text-stone-900 shadow-[0_0_40px_rgba(255,255,255,0.25)] transition-all duration-300 hover:scale-105 hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-stone-900 active:scale-[0.98]"
             >
               Donate Now

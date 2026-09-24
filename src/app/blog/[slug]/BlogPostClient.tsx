@@ -528,7 +528,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                         checked={boldMode}
                         onChange={(e) => setBoldMode(e.target.checked)}
                       />
-                      <div className="w-9 h-5 bg-stone-200 dark:bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#b04a15] dark:peer-checked:bg-[#e07b3a] shadow-inner" />
+                      <div className="relative w-9 h-5 bg-stone-200 dark:bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#b04a15] dark:peer-checked:bg-[#e07b3a] shadow-inner" />
                     </label>
                   </div>
                   {/* Font Selector */}
