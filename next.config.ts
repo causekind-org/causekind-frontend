@@ -34,8 +34,7 @@ const nextConfig: NextConfig = {
     // Every quality any <Image> in the app actually asks for. The optimizer
     // rejects an unlisted one outright — `/_next/image?...&q=100` answers 400,
     // not a downgraded image — so a value missing here is a blank picture, not
-    // a slightly heavier one. 90 is the Ganpati CTA section's, 100 the hero's
-    // on both phone and desktop.
+    // a slightly heavier one.
     qualities: [75, 90, 95, 100],
     remotePatterns: [
       {
@@ -47,23 +46,6 @@ const nextConfig: NextConfig = {
         hostname: "**.amazonaws.com",
       },
     ],
-  },
-  async headers() {
-    return [
-      {
-        // The Ganpati header logo is a 1.1 MB clip on every page. Public files
-        // default to revalidating on each load, which is part of why a refresh
-        // showed an empty/frozen logo for a moment. The filename is not hashed,
-        // so keep the fresh window short and serve stale while revalidating.
-        source: "/images/ganpati/:file*.webm",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=604800",
-          },
-        ],
-      },
-    ];
   },
   async redirects() {
     return [
