@@ -19,6 +19,7 @@ import {
   type CancellationOption, type CancellationReason,
 } from "@/lib/api";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
+import { WithdrawReportedIssue } from "@/components/WithdrawReportedIssue";
 import { handoverScope, type HandoverRole, type HandoverViewModel } from "./model";
 import {
   handoverPrimary, handoverSecondary, handoverDestructive,
@@ -75,7 +76,8 @@ export function HandoverSafetyActions({ vm, onChanged }: {
   const showCancel = option?.allowed && option.outcome !== "HIDE";
   const disputeOnly = option?.outcome === "DISPUTE";
 
-  if (!showCancel && !disputeOnly && !canReportIssue) return null;
+  const canWithdrawIssue = vm.flow === "OFFER" && vm.state === "issue_raised";
+  if (!showCancel && !disputeOnly && !canReportIssue && !canWithdrawIssue) return null;
 
   return (
     <section className="border-t border-stone-200 pt-5 dark:border-zinc-800">
@@ -89,6 +91,7 @@ export function HandoverSafetyActions({ vm, onChanged }: {
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
+        {canWithdrawIssue && <WithdrawReportedIssue offerId={vm.id} onChanged={onChanged} />}
         {showCancel && (
           <button
             type="button"

@@ -114,10 +114,21 @@ export function WizardNavigation({
               onClick={onBack}
               aria-label="Back"
               {...pressProps(reduced)}
-              // h-10 w-10 visually, but the touch target stays at 44 via the
-              // negative-margin padding trick — a 40px tap target is below the
+              // h-10 w-10 visually, but the touch target stays at 48 via the
+              // `after:-inset-1` trick — a 40px tap target is below the
               // accessibility floor even when the icon should look small.
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-stone-300 text-stone-500 transition-colors after:absolute after:-inset-1 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:text-stone-400 dark:hover:bg-zinc-800"
+              //
+              // `relative` IS THE WHOLE TRICK, and it was missing. `after:absolute`
+              // makes Tailwind emit `content: ""`, so the box exists; without a
+              // positioned ancestor here it resolved its containing block all the
+              // way up to ClickSpark's wrapper (position: relative, 100%x100%),
+              // which spans the entire document. This button therefore owned an
+              // invisible, click-catching box the size of the whole page +4px:
+              // every click anywhere landed on Back, the browser scrolled it into
+              // view and fired onBack, and the 4px overhang put a horizontal
+              // scrollbar on the document. It looked like "the page flickers and
+              // no buttons work". Never write `after:absolute` without it.
+              className="relative grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-stone-300 text-stone-500 transition-colors after:absolute after:-inset-1 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:text-stone-400 dark:hover:bg-zinc-800"
             >
               <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
             </motion.button>

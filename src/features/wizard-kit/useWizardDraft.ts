@@ -189,6 +189,26 @@ export function useWizardDraft<T>(options: WizardDraftOptions<T>) {
    * Used by Save & Exit and by final submit — the two places where continuing
    * with unsaved data would lose or misrepresent the user's work.
    */
+  /**
+   * Polls until no save is in flight. Resolves true if it went idle, false if it
+   * timed out or the component unmounted.
+   *
+   * <p>The ceiling is generous on purpose — it is a backstop against a request
+   * that never settles, not a latency budget. The browser's own fetch timeout is
+   * 20s (see `REQUEST_TIMEOUT_MS` in lib/api.ts), and a Flow B save is two
+   * sequential requests, so anything under ~45s could time out a save that was
+   * still legitimately in progress on a cold Neon pool.
+   */
+  const waitForIdle = useCallback(async (): Promise<boolean> => {
+    const deadline = Date.now() + 45_000;
+    while (inFlightRef.current) {
+      if (unmountedRef.current) return false;
+      if (Date.now() > deadline) return false;
+      await new Promise(r => setTimeout(r, 60));
+    }
+    return !unmountedRef.current;
+  }, []);
+
   const flush = useCallback(async (model: T): Promise<boolean> => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (opsRef.current.snapshotKey(model) !== savedKeyRef.current) {
@@ -197,15 +217,22 @@ export function useWizardDraft<T>(options: WizardDraftOptions<T>) {
     }
 
     // Wait out an active request before starting ours, so ordering holds.
-    while (inFlightRef.current) {
-      await new Promise(r => setTimeout(r, 60));
-    }
+    //
+    // BOUNDED, and it has to be. These were bare `while (inFlightRef.current)`
+    // loops: `inFlightRef` is only cleared in pump's `finally`, and the save
+    // requests carry no AbortSignal, so one hung request left every caller —
+    // Continue, Submit, Save & exit — awaiting forever with `submitting` /
+    // `savingExit` stuck true and their buttons disabled. "None of the buttons
+    // work", with no error and no way back.
+    //
+    // Returning false on timeout is the honest answer: we do not know the save
+    // landed. Every caller already handles false by showing "we couldn't save
+    // your changes" and re-enabling, which is what should happen.
+    if (!(await waitForIdle())) return false;
     await pump();
-    while (inFlightRef.current) {
-      await new Promise(r => setTimeout(r, 60));
-    }
+    if (!(await waitForIdle())) return false;
     return savedKeyRef.current === opsRef.current.snapshotKey(model);
-  }, [pump]);
+  }, [pump, waitForIdle]);
 
   const retry = useCallback(() => { void pump(); }, [pump]);
 
