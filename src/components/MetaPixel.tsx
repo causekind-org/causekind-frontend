@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef, Suspense } from "react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
+import { isInternalTraffic } from "@/lib/internalTraffic";
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "123456789";
 
@@ -108,6 +109,7 @@ function MetaPixelGate({ consentAccepted }: { consentAccepted: boolean }) {
     previewRef.current = hasValidPreviewToken(searchParams);
   }
 
+  if (isInternalTraffic()) return null;
   if (!consentAccepted && !previewRef.current) return null;
   return <MetaPixelInner />;
 }

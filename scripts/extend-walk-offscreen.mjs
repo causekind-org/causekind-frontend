@@ -4,8 +4,7 @@
  *
  * Copies a PNG sequence and appends N frames that carry the final frame further
  * in one direction, so a subject that the clip cut off mid-exit finishes leaving
- * the frame. See docs/ganpati-mushak-asset.md, "The books band: finishing the
- * walk", for why `mushak-books.webm` needed it and how the numbers were picked.
+ * the frame.
  *
  * The appended frames freeze the subject's animation, so this only works where
  * very little of it is still on screen — the point is to slide a tail or a heel
@@ -13,7 +12,7 @@
  * measured speed over the last few real frames or the seam will be visible.
  *
  * Not wired into any build. It is run by hand when a clip is (re)delivered, and
- * the encoded result is committed under public/images/ganpati/.
+ * the encoded result is committed under public/images/.
  */
 
 import fs from "fs";

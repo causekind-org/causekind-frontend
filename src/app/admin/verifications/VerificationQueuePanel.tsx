@@ -11,10 +11,17 @@ import {
 import { toast } from "@/lib/toast";
 import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
-  Check, X, ChevronDown, ChevronUp, Clock, User, FileText, Gauge,
+  Check, X, ChevronDown, ChevronUp, FileText, Gauge,
   AlertTriangle, Loader2, ShieldCheck, Pause, Play, ListChecks, ExternalLink, Sparkles, RefreshCw,
+  MapPin, Package,
 } from "lucide-react";
+
+function formatLocalDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const TIERS = [
   { key: "ALL", label: "All Tiers" },
@@ -48,10 +55,24 @@ const BLOCKER_LABEL: Record<string, string> = {
 };
 
 const STATUS_FILTERS = [
-  { key: "PENDING_VERIFICATION", label: "Needs Review" },
-  { key: "ON_HOLD", label: "On Hold" },
   { key: "ALL", label: "All" },
+  { key: "ON_HOLD", label: "On Hold" },
+  { key: "PENDING_VERIFICATION", label: "Needs Review" },
 ];
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_VERIFICATION: "Needs Review",
+  ON_HOLD: "On Hold",
+};
+
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 space-y-0.5">
+      <p className="text-2xs font-bold uppercase tracking-wide text-stone-400">{label}</p>
+      <div className="font-semibold text-stone-700 dark:text-stone-200">{children}</div>
+    </div>
+  );
+}
 
 function formatDue(dueAt: string | null): { label: string; color: string } {
   if (!dueAt) return { label: "—", color: "text-stone-400" };
@@ -102,6 +123,9 @@ export function VerificationQueuePanel() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("PENDING_VERIFICATION");
   const [tierFilter, setTierFilter] = useState("ALL");
+  const [listedSince, setListedSince] = useState("");
+  const [listedOrder, setListedOrder] = useState<"newest" | "oldest">("newest");
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [expandedData, setExpandedData] = useState<Record<number, ExpandedState>>({});
   const [acting, setActing] = useState<number | null>(null);
@@ -127,7 +151,25 @@ export function VerificationQueuePanel() {
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [statusFilter]);
 
-  const filtered = tierFilter === "ALL" ? requests : requests.filter((r) => r.verificationTier === tierFilter);
+  // Parsed as LOCAL midnight, not UTC — new Date("2026-09-17") parses date-only
+  // strings as UTC per spec, which in IST (+5:30) pushed the window 5.5 hours
+  // into the 17th and silently misplaced items from the first hours of the day.
+  const dayStartMs = listedSince ? new Date(`${listedSince}T00:00:00`).getTime() : null;
+  const dayEndMs = dayStartMs != null ? dayStartMs + 86_400_000 : null;
+
+  const filtered = requests
+    .filter((r) => {
+      if (tierFilter !== "ALL" && r.verificationTier !== tierFilter) return false;
+      if (dayStartMs != null && dayEndMs != null) {
+        const createdMs = new Date(r.createdAt).getTime();
+        if (createdMs < dayStartMs || createdMs >= dayEndMs) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return listedOrder === "newest" ? diff : -diff;
+    });
 
   async function toggleExpand(id: number) {
     if (expanded === id) { setExpanded(null); return; }
@@ -281,10 +323,50 @@ export function VerificationQueuePanel() {
             </button>
           ))}
         </div>
-        <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)}
-          className="text-xs font-bold px-3 py-1.5 rounded-full border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-stone-600 dark:text-stone-300">
-          {TIERS.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
-        </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-1.5 text-xs font-bold text-stone-500 dark:text-stone-400">
+            Listed on
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="px-3 py-1.5 rounded-full border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-stone-600 dark:text-stone-300 font-normal"
+                >
+                  {listedSince
+                    ? new Date(`${listedSince}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                    : "Any date"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-0 border-none bg-transparent shadow-none">
+                <Calendar
+                  mode="single"
+                  selected={listedSince ? new Date(`${listedSince}T00:00:00`) : undefined}
+                  onSelect={(d) => {
+                    // Local date, not UTC — toISOString() would roll a late-evening
+                    // pick in IST back to the previous day.
+                    setListedSince(d ? formatLocalDate(d) : "");
+                    setDatePickerOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </label>
+          {listedSince && (
+            <button onClick={() => setListedSince("")}
+              className="text-xs font-bold text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 underline underline-offset-2">
+              Clear
+            </button>
+          )}
+          <select value={listedOrder} onChange={(e) => setListedOrder(e.target.value as "newest" | "oldest")}
+            className="text-xs font-bold px-3 py-1.5 rounded-full border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-stone-600 dark:text-stone-300">
+            <option value="newest">Latest → Earliest</option>
+            <option value="oldest">Earliest → Latest</option>
+          </select>
+          <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)}
+            className="text-xs font-bold px-3 py-1.5 rounded-full border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-stone-600 dark:text-stone-300">
+            {TIERS.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -298,34 +380,89 @@ export function VerificationQueuePanel() {
             const isExpanded = expanded === r.id;
             const state = expandedData[r.id];
             return (
-              <div key={r.id} className={`rounded-xl sm:rounded-2xl border overflow-hidden ${r.isEmergency ? "border-red-300 dark:border-red-800" : "border-stone-200 dark:border-zinc-700"} bg-white dark:bg-zinc-900`}>
-                <div className="flex items-start justify-between gap-3 p-3 sm:p-4 cursor-pointer hover:bg-stone-50 dark:hover:bg-zinc-800/50" onClick={() => toggleExpand(r.id)}>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {r.isEmergency && (
-                        <span className="text-xs font-black px-2 py-0.5 rounded-full bg-red-600 text-white flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" /> EMERGENCY
+              <div key={r.id} className={`rounded-xl sm:rounded-2xl border overflow-hidden transition-shadow ${r.isEmergency ? "border-red-300 dark:border-red-800" : "border-[#e5e2d5] dark:border-zinc-700"} ${isExpanded ? "ring-1 ring-[#b04a15]/30 shadow-md" : ""} bg-white dark:bg-zinc-900`}>
+                <div className="p-3 sm:p-4 space-y-3">
+                  {/* Identity row — who's asking, where, and their current status at a glance */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="shrink-0 w-9 h-9 rounded-full bg-[#b04a15]/10 text-[#b04a15] dark:bg-[#b04a15]/20 flex items-center justify-center font-black text-sm">
+                        {r.doneeName.slice(0, 1).toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="font-bold text-sm truncate">{r.doneeName}</p>
+                          {r.isEmergency && (
+                            <span className="text-2xs font-black px-1.5 py-0.5 rounded-full bg-red-600 text-white flex items-center gap-1 shrink-0">
+                              <AlertTriangle className="w-2.5 h-2.5" /> EMERGENCY
+                            </span>
+                          )}
+                        </div>
+                        <span className="flex items-center gap-1 text-xs text-stone-500">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {r.city}{r.pincode ? `, ${r.pincode}` : ""}
                         </span>
-                      )}
-                      {r.verificationTier && (
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#1e3a60]/10 text-[#1e3a60] dark:text-blue-300">
-                          {TIER_LABELS[r.verificationTier] ?? r.verificationTier}
-                        </span>
-                      )}
-                      <span className={`text-xs flex items-center gap-1 ${due.color}`}><Clock className="w-3 h-3" /> {due.label}</span>
-                      <span className="text-xs text-stone-400">#{r.id}</span>
+                      </div>
                     </div>
-                    <p className="font-semibold text-sm">{r.title}</p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-stone-500">
-                      <span className="flex items-center gap-1"><User className="w-3 h-3" /> {r.doneeName}</span>
-                      <span>{r.category} · Qty {r.quantity} · {r.city}</span>
+                    <div className="shrink-0 text-right space-y-1">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span className="text-2xs text-stone-400">#{r.id}</span>
+                        {r.verificationTier && (
+                          <span className="text-2xs font-bold px-1.5 py-0.5 rounded-full bg-[#1e3a60]/10 text-[#1e3a60] dark:text-blue-300">
+                            {TIER_LABELS[r.verificationTier] ?? r.verificationTier}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-2xs font-bold text-stone-400 uppercase tracking-wide mr-1">Status:</span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#1e3a60]/10 text-[#1e3a60] dark:text-blue-300">
+                          {STATUS_LABELS[r.status] ?? r.status.replace(/_/g, " ")}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  {isExpanded ? <ChevronUp className="w-4 h-4 text-stone-400 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-stone-400 shrink-0 mt-1" />}
+
+                  {/* Stat grid — mirrors the reference layout, with "Requesting" standing in for "Sales Representee" */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-2 pt-3 border-t border-[#e5e2d5] dark:border-zinc-700 text-xs">
+                    <Stat label="Requesting">
+                      <span className="flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                        <span className="truncate">{r.title}</span>
+                      </span>
+                    </Stat>
+                    <Stat label="Category">{r.category} · Qty {r.quantity}</Stat>
+                    <Stat label="Listed">
+                      <span title={new Date(r.createdAt).toLocaleString()}>
+                        {new Date(r.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </Stat>
+                    <Stat label="Approval Expires">
+                      {r.verificationDueAt ? (
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-2xs font-bold ${
+                          due.color.includes("red") ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                          : due.color.includes("amber") ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                          : "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-300"
+                        }`}>
+                          {due.label}
+                        </span>
+                      ) : <span className="text-stone-400">{due.label}</span>}
+                    </Stat>
+                  </div>
+
+                  {/* Expand toggle — a dedicated bar rather than the whole card, so the
+                      identity/stat rows above stay readable without inviting an accidental
+                      click while scanning them. */}
+                  <button
+                    onClick={() => toggleExpand(r.id)}
+                    className={`w-full flex items-center justify-center gap-1 pt-2 -mb-1 text-xs font-bold transition-colors ${
+                      isExpanded ? "text-[#b04a15] dark:text-[#f0b97a]" : "text-stone-500 hover:text-[#b04a15] dark:text-stone-400 dark:hover:text-[#f0b97a]"
+                    }`}
+                  >
+                    Details {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t dark:border-zinc-700 p-3 sm:p-4 space-y-3 sm:space-y-4 bg-stone-50 dark:bg-zinc-900/50">
+                  <div className="border-t-2 border-[#b04a15]/20 dark:border-[#b04a15]/30 p-3 sm:p-4 space-y-3 sm:space-y-4 bg-[#faf8f5] dark:bg-zinc-950/60 shadow-inner">
                     <AiReviewPanel
                       entity="request"
                       id={r.id}

@@ -11,9 +11,24 @@ import { toast } from "@/lib/toast";
 import { saTheme } from "@/components/super-admin/saTheme";
 import { SaPagination } from "@/components/super-admin/SaPagination";
 import { User360Panel } from "@/components/super-admin/User360Panel";
-import { Loader2, Search } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Loader2, Search, CalendarDays, X } from "lucide-react";
+import type { DateRange } from "react-day-picker";
 
 const ROLES = ["DONOR", "DONEE", "REPRESENTATIVE", "NGO_PARTNER", "ADMIN", "SUPER_ADMIN"];
+
+// Local date, not UTC — toISOString() would roll a late-evening pick in IST
+// back to the previous day.
+function formatLocalDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDisplayDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+  });
+}
 
 /**
  * The user directory, and the way into User 360.
@@ -41,6 +56,8 @@ export function UserDirectoryPanel({
   const [loading, setLoading] = useState(true);
   const [queryInput, setQueryInput] = useState("");
   const [filters, setFilters] = useState<SaDirectoryFilters>({});
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // A user chosen from elsewhere (search, ⌘K) opens straight into their 360.
   useEffect(() => {
@@ -68,6 +85,19 @@ export function UserDirectoryPanel({
   function setFilter(patch: SaDirectoryFilters) {
     setPage(0);
     setFilters((f) => ({ ...f, ...patch }));
+  }
+
+  function applyDateRange(range: DateRange | undefined) {
+    setDateRange(range);
+    setFilter({
+      registeredFrom: range?.from ? formatLocalDate(range.from) : undefined,
+      registeredTo: range?.to ? formatLocalDate(range.to) : undefined,
+    });
+  }
+
+  function clearDateRange() {
+    applyDateRange(undefined);
+    setDatePickerOpen(false);
   }
 
   const control = `h-9 rounded-lg border px-2.5 text-xs transition-colors ${t.input}`;
@@ -113,6 +143,36 @@ export function UserDirectoryPanel({
           <option value="true">Suspended</option>
           <option value="false">Not suspended</option>
         </select>
+
+        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={`${control} flex items-center gap-1.5 font-normal`}
+            >
+              <CalendarDays className="size-3.5" />
+              {filters.registeredFrom || filters.registeredTo
+                ? `${filters.registeredFrom ? formatDisplayDate(filters.registeredFrom) : "…"} – ${
+                    filters.registeredTo ? formatDisplayDate(filters.registeredTo) : "…"
+                  }`
+                : "Joined date"}
+              {(filters.registeredFrom || filters.registeredTo) && (
+                <X
+                  className="size-3.5 ml-0.5 hover:opacity-70"
+                  onClick={(e) => { e.stopPropagation(); clearDateRange(); }}
+                />
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-auto p-0 border-none bg-transparent shadow-none">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={applyDateRange}
+              defaultMonth={dateRange?.from}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       {loading ? (

@@ -6,9 +6,15 @@ import { getOfferCertificate, getMatchCertificate, verifyCertificate, type Certi
 import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import QRCode from "qrcode";
-import { Dancing_Script } from "next/font/google";
+import { Dancing_Script, Playfair_Display } from "next/font/google";
 
 const dancingScript = Dancing_Script({ weight: "700", subsets: ["latin"] });
+
+// The same face the emailed PDF embeds. Georgia stood here before, and could not
+// be used server-side at all (Microsoft-licensed, not redistributable), so the page
+// and the attachment were set in different typefaces. Playfair is OFL, so both
+// can use it and the two documents finally look like the same thing.
+const playfair = Playfair_Display({ weight: ["400", "700"], subsets: ["latin"] });
 
 export default function CertificatePage() {
   const searchParams = useSearchParams();
@@ -101,6 +107,10 @@ export default function CertificatePage() {
     day: "2-digit", month: "2-digit", year: "numeric",
   });
 
+  // Absent means in-kind: certificates issued before the field existed do not
+  // carry it, and this page must keep rendering them unchanged.
+  const isMoney = cert.type === "MONEY";
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 print:bg-transparent print:p-0">
       {/* Print rules:
@@ -180,7 +190,7 @@ export default function CertificatePage() {
             alignItems: "center",
             justifyContent: "center",
             padding: "40px",
-            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontFamily: playfair.style.fontFamily,
             boxSizing: "border-box",
             boxShadow: "0 8px 40px rgba(0,0,0,0.15)",
           }}
@@ -206,7 +216,7 @@ export default function CertificatePage() {
               fontWeight: "900",
               letterSpacing: "0.15em",
               color: "#1a1008",
-              fontFamily: "'Georgia', serif",
+              fontFamily: playfair.style.fontFamily,
               lineHeight: 1,
             }}>
               CERTIFICATE
@@ -218,7 +228,9 @@ export default function CertificatePage() {
               fontWeight: "600",
               marginTop: "4px",
             }}>
-              I N - K I N D &nbsp; D O N A T I O N
+              {isMoney
+                ? "M O N E T A R Y  D O N A T I O N"
+                : "I N - K I N D   D O N A T I O N"}
             </div>
           </div>
 
@@ -232,9 +244,22 @@ export default function CertificatePage() {
             maxWidth: "580px",
             marginBottom: "20px",
           }}>
-            This is to formally certify that the individual named below<br />
-            has made a verified in-kind contribution through the<br />
-            CauseKind platform.
+            {isMoney ? (
+              /* Word for word the emailed PDF. A donor comparing the page with
+                 the attachment must not find two differently-worded documents
+                 under one certificate number. */
+              <>
+                This is to formally certify that the individual named below<br />
+                has made a verified monetary contribution through the<br />
+                CauseKind platform.
+              </>
+            ) : (
+              <>
+                This is to formally certify that the individual named below<br />
+                has made a verified in-kind contribution through the<br />
+                CauseKind platform.
+              </>
+            )}
           </p>
 
           {/* Donor name with signature style */}
@@ -261,7 +286,11 @@ export default function CertificatePage() {
             fontSize: "clamp(0.625rem, 0.5417rem + 0.4167vw, 0.875rem)",
           }}>
             <tbody>
-              <TableRow label="Item Donated" value={cert.category} />
+              {/* No amount on the money variant. This page is reachable by anyone
+                  holding a certificate number, and the verify endpoint is
+                  unauthenticated — showing what a named person gave would turn a
+                  verification check into a disclosure. */}
+              <TableRow label={isMoney ? "Contribution" : "Item Donated"} value={cert.category} />
               <TableRow label="Donation Date" value={handoverDate} />
               <TableRow label="Certificate ID" value={cert.certificateNumber} />
             </tbody>
@@ -284,6 +313,10 @@ export default function CertificatePage() {
             fontSize: "clamp(0.5rem, 0.4375rem + 0.3125vw, 0.6875rem)",
             marginBottom: "10px",
           }}>
+            {/* The PDF's only footer line, and the page carries the same one.
+                A longer tax disclaimer used to sit here; it was removed from both
+                on the owner's decision, since the Trust's design carries no such
+                line and the receipt already covers the tax position. */}
             This certificate is digitally issued and valid without a physical signature.
           </div>
 
@@ -352,15 +385,23 @@ function TableRow({ label, value }: { label: string; value: string }) {
 }
 
 function OrnamentalBorder() {
-  // Rounded flourish bracket + ring-and-dot medallion, sitting on the frame's
-  // corner joint. Replaces the earlier blocky interlocking-square lattice.
+  // A Greek-key square spiral, drawn as one unbroken polyline so the stroke stays
+  // even all the way in. This mirrors the emailed PDF's corner exactly — the two
+  // are the same certificate and should not be recognisably different objects.
+  //
+  // The path is the same sequence of points the PDF renderer walks, scaled to a
+  // 72px box: out along one edge, into the corner, out along the other, then
+  // winding inward.
   const corner = (style: React.CSSProperties) => (
-    <div style={{ position: "absolute", width: "56px", height: "56px", ...style }}>
-      <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 24 V7 Q3 3 7 3 H24" stroke="#c4501a" strokeWidth="2" strokeLinecap="round"/>
-        <path d="M11 28 V15 Q11 11 15 11 H28" stroke="#c4501a" strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
-        <circle cx="7" cy="7" r="3.5" stroke="#c4501a" strokeWidth="1.25" fill="#f5f0e8"/>
-        <circle cx="7" cy="7" r="1.25" fill="#c4501a"/>
+    <div style={{ position: "absolute", width: "72px", height: "72px", ...style }}>
+      <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M10 62 V10 H62 V23 H23 V48 H40 V36"
+          stroke="#c4501a"
+          strokeWidth="2"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        />
       </svg>
     </div>
   );
@@ -380,11 +421,12 @@ function OrnamentalBorder() {
         opacity: 0.45,
         pointerEvents: "none",
       }} />
-      {/* Corner flourish, sitting right on the frame's corner joint */}
-      {corner({ top: "0px", left: "0px" })}
-      {corner({ top: "0px", right: "0px", transform: "scaleX(-1)" })}
-      {corner({ bottom: "0px", left: "0px", transform: "scaleY(-1)" })}
-      {corner({ bottom: "0px", right: "0px", transform: "scale(-1)" })}
+      {/* Offset to 22px so the spiral's outer arm starts ON the frame line, not
+          floating outside it — the inset here must match the outer frame above. */}
+      {corner({ top: "22px", left: "22px" })}
+      {corner({ top: "22px", right: "22px", transform: "scaleX(-1)" })}
+      {corner({ bottom: "22px", left: "22px", transform: "scaleY(-1)" })}
+      {corner({ bottom: "22px", right: "22px", transform: "scale(-1)" })}
     </>
   );
 }

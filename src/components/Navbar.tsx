@@ -7,7 +7,6 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 import SpecularButton from "@/components/SpecularButton";
 import Link from "next/link";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
-import { GanpatiLogoVideo } from "@/components/brand/GanpatiLogoVideo";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -22,8 +21,6 @@ import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
-import { isGanpatiActive } from "@/lib/isGanpatiActive";
-import { ModakIcon } from "@/components/home/GanpatiVisuals";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
@@ -66,7 +63,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   // cannot outlive its window — which is exactly how the Independence Day
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
-  const isGanpati = isGanpatiActive();
   return (
     <motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
@@ -74,9 +70,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      {/* `!isGanpati`: the festive artwork draws the heart-and-hands mark
-          itself, so keeping LogoVideo beside it shows the brand mark twice. */}
-      {!hideIcon && !isGanpati && (
+      {!hideIcon && (
         <motion.div
           className="shrink-0"
           initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
@@ -106,28 +100,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
            wordmark outright rather than decorating it. Gated on the campaign
            switch, unlike the flag asset it is standing in for. */
         <RakshaBandhanWordmark size={size} />
-      ) : isGanpati ? (
-        /* Same arrangement for Ganeshotsav, and gated the same way — on
-           isGanpatiActive(), so the artwork cannot outlive its window the way
-           the Independence Day wordmark did. The modak that used to be pinned
-           after "Kind" is not rendered alongside it: this artwork already has
-           two of them.
-
-           Now the supplied animation rather than the still it shipped with.
-           Two things about the delivered file are worth knowing before this is
-           tuned further, both fixable in one re-export:
-
-             1. It is opaque. The container declares AlphaMode=1 but the content
-                behind it is a solid rgb(252,246,237) plate, so it cannot simply
-                sit on the bar — see GanpatiLogoVideo, which multiplies it away
-                on light and keeps it as a chip on dark.
-             2. It is 2.9 MB, against 67 KB for the still, and the header is on
-                every page.
-
-           Both go away with a transparent, navbar-sized encode:
-             ffmpeg -i ganpati-logo.webm -vf "chromakey=0xFCF6ED:0.10:0.04,               scale=364:-2" -c:v libvpx-vp9 -pix_fmt yuva420p -crf 38 -b:v 0                -an ganpati-logo.webm
-           `yuva420p` is the part that matters — it is what carries the alpha. */
-        <GanpatiLogoVideo size={size} />
       ) : (
         <span className="relative flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
@@ -157,11 +129,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
           >
             Kind
           </motion.span>
-          {isGanpati && (
-            <span className="ml-1 inline-flex items-center shrink-0 self-center" aria-hidden="true" title="Ganesh Chaturthi Special">
-              <ModakIcon className="size-3.5 sm:size-4 text-amber-600 drop-shadow-[0_1px_3px_rgba(217,119,6,0.35)]" />
-            </span>
-          )}
         </span>
       )}
     </motion.span>
@@ -832,6 +799,32 @@ export function SiteHeader() {
     ...aboutMenuItems,
   ];
 
+  /**
+   * The mobile drawer's list.
+   *
+   * <p>Identical to {@link navLinks} except for one entry. On desktop the
+   * "Donate" pill is a mega-menu TRIGGER: hovering it opens both the money
+   * section (/donate/money) and the in-kind categories, and its own href is the
+   * in-kind hub. The drawer has no hover surface, so that one entry collapsed to
+   * a flat "Donate" that sent every phone donor to the in-kind requests board —
+   * never to the donation form. Here it becomes the two destinations it stands
+   * for, in the same order the mega menu presents them: money first, in-kind
+   * second.
+   *
+   * <p>DERIVED from navLinks rather than written out, so a link added there
+   * still appears here, in the same position, without a second edit. Both labels
+   * reuse existing i18n keys — `nav.donate` and `nav.requests` — so all fourteen
+   * locales already carry them and nothing degrades to English.
+   */
+  const mobileNavLinks = navLinks.flatMap((link) =>
+    link.href === "/requests"
+      ? [
+          { href: "/donate/money", label: t("nav.donate") },
+          { href: "/requests", label: t("nav.requests") },
+        ]
+      : [link],
+  );
+
   /** Whether a nav link is active, keyed by href for exactness. */
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -840,22 +833,6 @@ export function SiteHeader() {
 
   // Hooks must run unconditionally — keep this above the hideChrome early return.
   const tilt = useTilt();
-  const isGanpati = isGanpatiActive();
-
-  /**
-   * The festive home page carries no bar on a phone: no ground, no blur, no
-   * hairline, no shadow — just the wordmark and the menu button floating on the
-   * hero. Everything that draws the bar is switched off in styles.css off the
-   * `data-bare-nav` marker below, because those rules have to outrank both the
-   * utility classes on this header and the `data-home-hero` block written for
-   * the old translucent-over-photo treatment.
-   *
-   * Scoped to the festive home. Every other page still needs a bar behind its
-   * controls — they scroll ordinary copy under this header, not a photograph —
-   * and the plain home's mobile bar is opaque rather than translucent, so there
-   * is no "transparent effect" there to remove.
-   */
-  const bareNav = isGanpati && pathname === "/";
 
   if (hideChrome) return null;
 
@@ -889,7 +866,6 @@ export function SiteHeader() {
       <header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
-        data-bare-nav={bareNav ? "true" : undefined}
         style={{
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
           opacity: immersive ? 0 : 1,
@@ -897,25 +873,11 @@ export function SiteHeader() {
           transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
           willChange: "transform",
         }}
-        className={`sticky top-0 z-50 w-full ${
-          isGanpati
-            ? pathname === "/"
-              ? "bg-gradient-to-r from-[var(--nav-header-from,#fffbf4)]/80 via-[var(--nav-header-via,#fff5e6)]/70 to-[var(--nav-header-to,#fffbf4)]/80 dark:from-[var(--nav-header-dark-from,#1b0c05)]/80 dark:via-[var(--nav-header-dark-via,#240e06)]/70 dark:to-[var(--nav-header-dark-to,#1b0c05)]/80 backdrop-blur-xs border-b-0"
-              : "bg-gradient-to-r from-[var(--nav-header-from,#fffbf4)] via-[var(--nav-header-via,#fff5e6)] to-[var(--nav-header-to,#fffbf4)] dark:from-[var(--nav-header-dark-from,#1b0c05)] dark:via-[var(--nav-header-dark-via,#240e06)] dark:to-[var(--nav-header-dark-to,#1b0c05)] lg:bg-gradient-to-r lg:from-[var(--nav-header-from,#fffbf4)]/92 lg:via-[var(--nav-header-via,#fff5e6)]/88 lg:to-[var(--nav-header-to,#fffbf4)]/92 lg:dark:from-[var(--nav-header-dark-from,#1b0c05)]/92 lg:dark:via-[var(--nav-header-dark-via,#240e06)]/88 lg:dark:to-[var(--nav-header-dark-to,#1b0c05)]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-[var(--nav-header-border,rgba(252,211,77,0.6))] dark:border-[var(--nav-header-dark-border,rgba(180,83,9,0.4))]"
-            : "bg-[var(--page-tint-from,#faf8f5)] dark:bg-zinc-950 lg:bg-[var(--page-tint-from,#faf8f5)]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[var(--nav-border,#e5e2d5)] dark:border-stone-850"
-        } ${
+        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
-          : pathname === "/" && isGanpati
-            ? "shadow-none"
-            : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
+          : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
-        {isGanpati && pathname !== "/" && (
-          <div
-            className="absolute bottom-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-[var(--nav-header-border-line,rgba(251,191,36,0.8))] to-transparent pointer-events-none z-10"
-            aria-hidden="true"
-          />
-        )}
         {/* One-day Raksha Bandhan dressing. Renders null on every other day, so
             the header is back to normal on its own at IST midnight. It sits at
             z-0 behind the two content rows below, which are lifted to z-[1]. */}
@@ -946,17 +908,9 @@ export function SiteHeader() {
             same colour — plus the festive layer on the one day it exists. Off
             the day, this renders pixel-identical to the opaque version.
 
-            Through Ganeshotsav the row takes the header's own warm gradient
-            instead, so it reads as part of the festive header rather than as a
-            cream band sitting on it. `ck-mobile-header` survives either branch:
-            src/styles.css hangs the whole home-hero header layout off it. */}
-        <div className={`ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 ${
-          bareNav
-            ? ""
-            : isGanpati
-              ? "bg-gradient-to-r from-[var(--nav-header-from,#fffbf4)]/95 via-[var(--nav-header-via,#fff5e6)]/95 to-[var(--nav-header-to,#fffbf4)]/95 dark:from-[var(--nav-header-dark-from,#1b0c05)]/95 dark:via-[var(--nav-header-dark-via,#240e06)]/95 dark:to-[var(--nav-header-dark-to,#1b0c05)]/95"
-              : "bg-[var(--page-tint-from,#faf8f5)]/90 dark:bg-zinc-950/90"
-        }`}>
+            `ck-mobile-header` matters: src/styles.css hangs the whole home-hero
+            header layout off it. */}
+        <div className="ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
           <div className="flex items-center gap-2 justify-self-start">
             <NotificationBell />
           </div>
@@ -980,11 +934,7 @@ export function SiteHeader() {
             aria-label="Open menu"
             aria-expanded={isSidebarOpen}
             aria-controls="staggered-menu-panel"
-            className={
-              bareNav
-                ? "glass-pill glass-3d relative justify-self-end flex items-center justify-center w-11 h-11 rounded-full transition-transform active:scale-95"
-                : "justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
-            }
+            className="justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -1201,7 +1151,9 @@ export function SiteHeader() {
               )
             )}
 
-            {/* Auth action — login/logout, top-right */}
+            {/* Auth action — login/logout, top-right. Hidden on the auth pages
+                themselves since the page already is the login/register form. */}
+            {!(pathname === "/login" || pathname === "/register") && (
             <div className="relative">
               <SpecularButton
                 size="sm"
@@ -1227,6 +1179,7 @@ export function SiteHeader() {
               </SpecularButton>
               <LoginNudgeBubble user={user} />
             </div>
+            )}
           </div>
         </div>
 
@@ -1470,6 +1423,7 @@ export function SiteHeader() {
         items={
           isNgoView
             ? [
+
                 {
                   label: t("nav.home"),
                   link: "/",

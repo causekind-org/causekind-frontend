@@ -6,6 +6,7 @@ import Link from "next/link";
 import { documentScreeningCopy } from "@/features/wizard-kit/documentScreeningCopy";
 import { RequestGuidance } from "@/components/requests/RequestGuidance";
 import { toast } from "@/lib/toast";
+import { trackRequestItem } from "@/lib/metaEvents";
 import {
   getProfile, getDoneeNeedProfile, ApiError, type DoneeNeedProfile,
   getMyItemRequests,
@@ -952,6 +953,7 @@ function NewRequestForm() {
       // the route changes, so the last thing seen is success rather than a
       // spinner blinking out.
       setSubmitted(true);
+      trackRequestItem();
       toast.success("Your request has been submitted for verification!");
       router.push("/dashboard");
     } catch (e) {

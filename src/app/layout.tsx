@@ -33,6 +33,7 @@ import { AdminRedirect } from "@/components/AdminRedirect";
 */
 import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
 import MetaPixel from "@/components/MetaPixel";
+import ClarityAnalytics from "@/components/ClarityAnalytics";
 import { SiteBottomBlur } from "@/components/SiteBottomBlur";
 import { RoleClickSpark } from "@/components/RoleClickSpark";
 import { RoleThemeBridge } from "@/components/RoleThemeBridge";
@@ -144,6 +145,7 @@ export default async function RootLayout({
             banner coming back — see the TESTING_BYPASS note in each
             component. Remove this comment once the banner is restored. */}
         <MetaPixel />
+        <ClarityAnalytics />
         <GoogleTagManagerGated />
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>

@@ -170,6 +170,11 @@ async function request<T>(
     // Caller-supplied signals win: a component aborting on unmount must not be
     // overridden by the backstop.
     const res = await fetch(`${BASE_URL}${path}`, {
+      // Without this, GET requests are subject to normal HTTP caching — a
+      // browser (or an intermediary) serving a stale cached response for an
+      // admin console is worse than a slower request, since it silently
+      // hides new rows instead of erroring.
+      cache: "no-store",
       ...fetchOptions,
       headers,
       credentials: "include",
@@ -529,12 +534,30 @@ export function getMyDonations() {
 }
 
 export type TrustDonationPayload = {
+  /**
+   * What reaches Sahas, and what the 80G receipt is issued against. Never
+   * include the tip here — see `tipAmount`.
+   */
   amount: number;
   fullName: string;
   email: string;
   mobileNumber?: string;
-  /** Optional. "" is sent as-is and understood by the backend as "no 80G receipt wanted". */
-  panNumber?: string;
+  /**
+   * Required since 2026-09-18, and validated server-side too: five letters,
+   * four digits, one letter. The trust has to report every donor's PAN in
+   * Form 10BD, so a donation without one cannot go into that return. "" is now
+   * rejected by the API rather than meaning "no receipt wanted".
+   */
+  panNumber: string;
+  /** Optional postal address, printed in the receipt's Address box. Max 300 chars. */
+  address?: string;
+  /**
+   * Optional tip to CauseKind, charged in the same payment. Deliberately
+   * separate from `amount`: a tip to the platform is not a donation to the
+   * trust and is not 80G-eligible, so the backend charges the sum but records
+   * the two apart. 0 means the donor was offered a tip and declined.
+   */
+  tipAmount?: number;
 };
 
 /**
@@ -902,6 +925,14 @@ export async function uploadListingPhoto(listingId: number, file: File): Promise
     credentials: "include",
   });
   if (!res.ok) {
+    // A 413 is refused before any handler runs — by the servlet container, or
+    // further out by nginx, which answers with an empty body and no CORS header.
+    // That combination surfaces in the browser as a CORS error rather than a
+    // size error, so without this branch the donor is told nothing useful about
+    // a photo that never reached the server at all.
+    if (res.status === 413) {
+      throw new Error("That photo is too large to upload. Please choose another one.");
+    }
     // The server's own sentence is used when there is one: it names the actual
     // cause ("You have already added this photo", "up to 5 photos"), where a
     // generic "upload failed" was the old behaviour and named nothing.
@@ -2031,6 +2062,17 @@ export type Certificate = {
   qrCodeUrl: string | null;
   pdfUrl: string | null;
   issuedAt: string;
+  /**
+   * Which kind of donation this certificate is for.
+   *
+   * Money donations carry their certificate number on the donation row rather
+   * than in `donation_certificates`, so the public verify endpoint looks in both
+   * places and reports which it found.
+   *
+   * Optional because certificates issued before this field existed do not carry
+   * it — absent means in-kind.
+   */
+  type?: "IN_KIND" | "MONEY";
 };
 
 export type ChatMessage = {
@@ -2091,6 +2133,13 @@ export function uploadOfferMedia(offerId: number, files: File[]) {
     body: formData,
   }).then(async (res) => {
     if (!res.ok) {
+      // A 413 never reaches a handler — nginx answers it with an empty body and
+      // no CORS header, which the browser surfaces as a CORS error. Without this
+      // branch the .json() below finds nothing and the donor is told "Upload
+      // failed" about a request the server never received.
+      if (res.status === 413) {
+        throw new Error("Those photos are too large to upload. Please choose fewer, or smaller ones.");
+      }
       const body = await res.json().catch(() => ({}));
       throw new Error(body?.message ?? "Upload failed");
     }
@@ -2686,6 +2735,11 @@ export function updateLocation(latitude: number, longitude: number) {
 
 // ── Admin Donations ───────────────────────────────────────────────────────────
 
+/** Which flow the donation came through — a campaign page, or the general Sahas trust page. */
+export type DonationSource = "CAMPAIGN" | "TRUST";
+/** Whether the donor had an account. GUEST only occurs with `source: "TRUST"` — campaign donations require login. */
+export type DonorMode = "LOGGED_IN" | "GUEST";
+
 export type AdminDonation = {
   id: number;
   donorName: string;
@@ -2699,6 +2753,11 @@ export type AdminDonation = {
   status: "INITIATED" | "COMPLETED" | "FAILED";
   createdAt: string;
   updatedAt: string;
+  source: DonationSource;
+  donorMode: DonorMode;
+  /** Set only when `donorMode` is GUEST — there's no user row to read a name/email from. */
+  guestName: string | null;
+  guestEmail: string | null;
 };
 
 export type DonationStats = {
@@ -3101,6 +3160,9 @@ export type SaDirectoryFilters = {
   role?: string;
   suspended?: boolean;
   active?: boolean;
+  /** Inclusive, `yyyy-MM-dd`, matched against `registeredAt`. */
+  registeredFrom?: string;
+  registeredTo?: string;
 };
 
 /**
@@ -3114,6 +3176,8 @@ export function superAdminDirectory(filters: SaDirectoryFilters = {}, page = 0, 
   if (filters.role) params.set("role", filters.role);
   if (filters.suspended !== undefined) params.set("suspended", String(filters.suspended));
   if (filters.active !== undefined) params.set("active", String(filters.active));
+  if (filters.registeredFrom) params.set("registeredFrom", filters.registeredFrom);
+  if (filters.registeredTo) params.set("registeredTo", filters.registeredTo);
   return request<SaPage<SaUserSummary>>(`/api/v1/super-admin/directory?${params.toString()}`);
 }
 
@@ -3854,7 +3918,7 @@ export function superAdminCommunicationLog(params: {
 
 // ── Phase 7: governance ──────────────────────────────────────────────────────
 
-export type SaRevealField = "EMAIL" | "PHONE";
+export type SaRevealField = "EMAIL" | "PHONE" | "PAN" | "PAN_PHOTO";
 
 /**
  * One occasion on which somebody read a private detail in full.
@@ -3867,7 +3931,10 @@ export type SaRevealLogEntry = {
   id: number;
   actorEmail: string;
   actorRole: string | null;
-  targetUserId: number;
+  /** Null for a guest-donation reveal — see `targetDonationId` instead. */
+  targetUserId: number | null;
+  /** Set instead of `targetUserId` when this was a guest PAN reveal. */
+  targetDonationId: number | null;
   field: SaRevealField;
   justification: string | null;
   caseId: number | null;
@@ -3901,11 +3968,31 @@ export function superAdminReveal(body: {
   });
 }
 
+/**
+ * PAN reveal for a guest trust donation — guests have no user row for
+ * `superAdminReveal`'s `targetUserId` to key on. Only valid where the
+ * donation's `donorMode` is GUEST; a logged-in donor's donation must go
+ * through `superAdminReveal` instead. An empty `value` means no PAN /
+ * PAN photo is on file for that donation, not an error.
+ */
+export function superAdminRevealDonation(body: {
+  donationId: number;
+  field: Extract<SaRevealField, "PAN" | "PAN_PHOTO">;
+  justification: string;
+  caseId?: number;
+}) {
+  return request<{ field: string; value: string }>("/api/v1/super-admin/governance/reveal-donation", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export function superAdminRevealLog(params: {
-  userId?: number; actor?: string; page?: number; size?: number;
+  userId?: number; donationId?: number; actor?: string; page?: number; size?: number;
 } = {}) {
   const q = new URLSearchParams();
   if (params.userId != null) q.set("userId", String(params.userId));
+  if (params.donationId != null) q.set("donationId", String(params.donationId));
   if (params.actor) q.set("actor", params.actor);
   q.set("page", String(params.page ?? 0));
   q.set("size", String(params.size ?? 25));
@@ -4275,6 +4362,12 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
   const body = new FormData(); body.append("docType",docType); body.append("file",file);
   const res = await fetch(`${BASE_URL}/api/v1/users/me/need-profile/documents`, {method: "POST", body, credentials: "include"});
   if (!res.ok) {
+    // Refused upstream of the app, so there is no body and no screening code to
+    // read — see uploadListingPhoto. Named here rather than falling through to
+    // the generic sentence, which would blame the document's contents.
+    if (res.status === 413) {
+      throw new Error("That document is too large to upload. Please use a smaller photo.");
+    }
     const error = await res.json().catch(() => ({}));
     const screeningMessages: Record<string,string> = {
       NO_FACE: "We couldn't clearly see your face. Take a well-lit photo with your face visible.",
