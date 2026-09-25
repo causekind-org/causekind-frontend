@@ -102,7 +102,7 @@ export function CertificateCard({ title, description, icon, benefits, documentUr
                 
                 {/* Page badge */}
                 <motion.div
-                  className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-md backdrop-blur-sm"
+                  className="absolute bottom-1 right-1 bg-black/80 text-white text-[0.625rem] font-bold px-2 py-0.5 rounded-md shadow-md backdrop-blur-sm"
                   variants={{
                     rest: { scale: 1 },
                     hovered: { scale: 1.1 }
@@ -166,7 +166,7 @@ export function CertificateCard({ title, description, icon, benefits, documentUr
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
-              className="relative w-full max-w-4xl bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-4xl bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90dvh]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}

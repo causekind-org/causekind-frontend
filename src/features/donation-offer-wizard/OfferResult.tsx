@@ -38,7 +38,7 @@ type Presentation = {
   icon: LucideIcon;
   /** True while the platform is still working — drives the pulse. */
   pending?: boolean;
-  primary?: { label: string; action: "offers" | "edit" };
+  primary?: { label: string; action: "offers" | "edit" | "requests" };
 };
 
 function present(status: string | undefined, rejectionReason: string | null | undefined): Presentation {
@@ -100,7 +100,10 @@ function present(status: string | undefined, rejectionReason: string | null | un
         body: rejectionReason?.trim()
           ? rejectionReason
           : "It happens, and it isn't a reflection on you. Plenty of other people are asking for things right now.",
-        primary: { label: "Browse other requests", action: "offers" },
+        // "requests", not "offers": the copy above has just told this donor
+        // that other people are asking for things, so the button has to take
+        // them to the need board — it used to send them to their own offers.
+        primary: { label: "Browse other requests", action: "requests" },
       };
 
     default:
@@ -123,12 +126,14 @@ const TONE = {
 } as const;
 
 export function OfferResult({
-  offer, requestTitle, onViewOffers, onEdit,
+  offer, requestTitle, onViewOffers, onEdit, onBrowseRequests,
 }: {
   offer: DonationOffer | null;
   requestTitle: string | null;
   onViewOffers: () => void;
   onEdit: () => void;
+  /** The need board — for the decline/reject copy, which promises other requests. */
+  onBrowseRequests: () => void;
 }) {
   const reduced = !!useReducedMotion();
   const p = present(offer?.status, offer?.rejectionReason);
@@ -234,7 +239,11 @@ export function OfferResult({
         <motion.div {...rise(5)} className="mt-7 border-t border-stone-100 p-4 dark:border-zinc-800">
           <button
             type="button"
-            onClick={p.primary?.action === "edit" ? onEdit : onViewOffers}
+            onClick={
+              p.primary?.action === "edit" ? onEdit
+                : p.primary?.action === "requests" ? onBrowseRequests
+                : onViewOffers
+            }
             className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-4 text-sm font-black text-white transition-colors hover:bg-[var(--ck-role-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
           >
             {p.primary?.label ?? "View my offers"}

@@ -5,6 +5,7 @@
  * Extracted from HomeClient.tsx. Hidden when user is logged in.
  */
 
+import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,11 @@ export function CTASection() {
                   {t("ctaSection.createAccount")}
                 </Button>
               </Link>
+
+              {/* Money donation. Solid on this dark panel for contrast, and
+                  third so the section's own primary keeps its place. */}
+              <DonateNowButton size="md" />
+
               {FEATURES.money && (
                 <Link href="/campaigns">
                   <Button size="lg" variant="outline" className="btn-3d border-stone-700 bg-transparent text-white hover:text-white hover:bg-stone-900/40 rounded-xl font-bold px-6">

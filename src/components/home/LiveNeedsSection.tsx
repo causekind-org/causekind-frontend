@@ -72,6 +72,8 @@ export function LiveNeedsSection({
    */
   const { user, isLoading: authLoading } = useAuth();
   const role = (user?.role ?? "").toUpperCase().replace(/^ROLE_/, "");
+  /** Anyone who can actually offer an item — the same test CategoryNeedsBoard uses. */
+  const isDonor = !!user && role !== "DONEE";
   const emptyStateCta = authLoading
     ? null
     : user === null
@@ -279,7 +281,12 @@ export function LiveNeedsSection({
             {displayedNeeds.map((need, idx) => {
               const visual = CATEGORY_VISUALS[need.category];
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
-              const offerUrl = loginUrlFor(`/requests/${need.id}/offer`);
+              // A signed-in donor goes straight to the offer form. This used to
+              // send everyone through loginUrlFor(), which always returns a
+              // login URL regardless of auth — so someone already signed in was
+              // bounced to /login to be sent back where they were going.
+              const offerPath = `/requests/${need.id}/offer`;
+              const offerUrl = isDonor ? offerPath : loginUrlFor(offerPath);
 
               return (
                 <motion.article
@@ -359,8 +366,12 @@ export function LiveNeedsSection({
                       href={offerUrl}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
                     >
-                      <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
-                      <span>Log in to offer this item</span>
+                      {/* The lock and the "log in" wording only make sense for
+                          someone who is not signed in. */}
+                      {!isDonor && (
+                        <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
+                      )}
+                      <span>{isDonor ? "Offer this item" : "Log in to offer this item"}</span>
                       <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
                     </Link>
                   </div>

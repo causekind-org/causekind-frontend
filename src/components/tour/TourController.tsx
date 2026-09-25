@@ -8,7 +8,7 @@ import GuidedTour from "./GuidedTour";
 import { DASHBOARD_TOUR, GUEST_HOME_TOUR, HOME_TOUR, PROFILE_TOUR, type TourRole, type TourStep } from "./tourSteps";
 
 // Orchestrates WHEN the first-time tour shows. Show-once state follows the
-// LocationGate pattern: a per-user localStorage flag, set on finish OR skip.
+// A per-user localStorage flag, set on finish OR skip.
 // Two independent parts: home/navbar (after the WelcomeOverlay closes) and
 // dashboard (on first /dashboard visit once its content has rendered).
 

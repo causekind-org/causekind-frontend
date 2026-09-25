@@ -2,15 +2,88 @@ import type { DonationOffer } from "@/lib/api";
 import type { WizardPhoto } from "@/features/wizard-kit/types";
 
 /**
- * The five editable steps. The submitted/result screen is deliberately NOT one
- * of them — it is a separate phase of the page, not "step 6". Counting it would
- * make the progress bar say "Step 6 of 6" on a screen with no form on it.
+ * Every step this wizard can render, in canonical order. This is the TYPE
+ * source only — no flow shows all of them. The submitted/result screen is
+ * deliberately not here: it is a separate phase of the page, not "step 6", and
+ * counting it would make the progress bar say "Step 6 of 6" on a screen with no
+ * form on it.
+ */
+export const ALL_OFFER_STEPS = [
+  "photos", "purchasePlan", "details", "condition", "pickup", "review",
+] as const;
+export type OfferStep = (typeof ALL_OFFER_STEPS)[number];
+
+/**
+ * The default five — a donor who has the item in their hands.
+ *
+ * <p>Still exported under its original name because it is the shape every
+ * existing caller means, and because `ALREADY_OWN` remains the only flow that
+ * screens photographs.
  */
 export const OFFER_STEPS = ["photos", "details", "condition", "pickup", "review"] as const;
-export type OfferStep = (typeof OFFER_STEPS)[number];
 
-export function offerStepIndex(step: OfferStep): number {
-  return OFFER_STEPS.indexOf(step);
+/**
+ * Flow B — the donor will buy the item. Four steps, and the two differences are
+ * both deliberate:
+ *
+ * <p>**`photos` becomes `purchasePlan`.** There is nothing to photograph yet.
+ * That also means no `ListingVisionService` screening happens here; the gate
+ * moves to proof-upload time, once the item actually exists.
+ *
+ * <p>**`condition` is dropped entirely.** The item is new by definition. Asking
+ * a donor to rate the condition of something that does not exist reads as a form
+ * written for somebody else.
+ */
+export const PURCHASE_OFFER_STEPS = ["purchasePlan", "details", "pickup", "review"] as const;
+
+export function isPurchaseFlow(flowType: string | null | undefined): boolean {
+  return flowType === "WILL_PURCHASE";
+}
+
+/** The step list for a flow. Everything that walks the wizard reads this. */
+export function offerStepsFor(flowType: string | null | undefined): readonly OfferStep[] {
+  return isPurchaseFlow(flowType) ? PURCHASE_OFFER_STEPS : OFFER_STEPS;
+}
+
+/**
+ * Position of a step within its own flow's list.
+ *
+ * <p>Takes the list rather than closing over one: with two flows, an index read
+ * from the wrong array is an off-by-one that renders as "Step 3 of 4" on the
+ * second step and is very hard to see in review.
+ */
+export function offerStepIndex(step: OfferStep, steps: readonly OfferStep[] = OFFER_STEPS): number {
+  return steps.indexOf(step);
+}
+
+/**
+ * How soon the donor commits to buying, as bounded options rather than free
+ * text.
+ *
+ * <p>Two reasons, and the second is the load-bearing one. A chip is a better
+ * control than a text box for something with three sensible answers — and a
+ * scheduler cannot act on "in a couple of weeks". The deadline that drives
+ * auto-release, the nudge ladder and the admin queue's sort order is computed
+ * from this, so it has to be a machine-readable value.
+ *
+ * <p>The clock starts when the DONEE ACCEPTS, not at submit: a donor should not
+ * be burning their window while waiting to hear back. That also makes the
+ * reservation hold and the purchase window the same window.
+ *
+ * <p>The cap is the point. An unbounded promise ties up
+ * `QuantityAllocation` headroom — and leaves the need unmet — for as long as the
+ * donor feels like.
+ */
+export const PURCHASE_TIMELINES = [
+  { value: "WITHIN_3_DAYS",  label: "Within 3 days",  days: 3 },
+  { value: "WITHIN_7_DAYS",  label: "Within a week",  days: 7 },
+  { value: "WITHIN_14_DAYS", label: "Within 2 weeks", days: 14 },
+] as const;
+
+export type PurchaseTimeline = (typeof PURCHASE_TIMELINES)[number]["value"];
+
+export function purchaseTimelineLabel(value: string): string {
+  return PURCHASE_TIMELINES.find(t => t.value === value)?.label ?? value;
 }
 
 /** Exactly the options the page offered before — deliberately unchanged. */
@@ -64,6 +137,49 @@ export const OFFER_DECLARATION_GROUPS = [
   },
 ] as const;
 
+/**
+ * The same promise, rewritten for a donor who does not own the item yet.
+ *
+ * <p>**This is not a copy change.** The default set has the donor swear "I own
+ * this item or am authorised to donate it" and "the photographs are recent and
+ * genuine". On a purchase offer the first is false and the second refers to
+ * photographs that do not exist. Showing a donor a legal declaration that
+ * cannot be true of them is worse than showing none — it makes the whole block
+ * something to click past.
+ *
+ * <p>What replaces them is the commitment itself: that they will actually buy
+ * it, within the window they chose, and evidence it.
+ */
+export const PURCHASE_DECLARATION_GROUPS = [
+  {
+    key: "ownership",
+    items: [
+      "I intend to buy this item myself, with my own money.",
+      "I will buy it within the timeframe I selected, once the recipient accepts.",
+      "The brand, model and cost above are my honest expectation.",
+    ],
+  },
+  {
+    key: "disclosure",
+    items: [
+      "I will provide a photo of the item and a receipt once I have bought it.",
+      "I will not request payment or reimbursement for the item.",
+    ],
+  },
+  {
+    key: "process",
+    items: [
+      "I understand that the donation is subject to donee and admin approval.",
+      "I understand that if I do not buy it in time, the offer may be released to someone else.",
+      "I agree to follow the CauseKind handover process.",
+    ],
+  },
+] as const;
+
+export function declarationGroupsFor(flowType: string | null | undefined) {
+  return isPurchaseFlow(flowType) ? PURCHASE_DECLARATION_GROUPS : OFFER_DECLARATION_GROUPS;
+}
+
 export const OFFER_GROUP_TITLES: Record<string, string> = {
   ownership: "Ownership & accuracy",
   disclosure: "Disclosure & conduct",
@@ -72,6 +188,21 @@ export const OFFER_GROUP_TITLES: Record<string, string> = {
 
 export type OfferModel = {
   photos: WizardPhoto[];
+
+  // Purchase plan — WILL_PURCHASE only. Collected before submit, because the
+  // donee has to know what they are accepting; the purchase itself happens
+  // after they accept.
+  //
+  // There is deliberately no item name here. PurchaseCommitment.itemName is
+  // NOT NULL on the backend, but the donor is buying the item this request
+  // asked for — so it is filled from the request title at serialization time
+  // rather than asked for a second time in a second place.
+  proposedBrand: string;
+  proposedModel: string;
+  estimatedCost: string;
+  intendedStore: string;
+  purchaseTimeline: string;
+  purchaseNotes: string;
 
   // Details
   quantity: string;
@@ -99,6 +230,12 @@ export type OfferModel = {
 
 export const emptyOfferModel: OfferModel = {
   photos: [],
+  proposedBrand: "",
+  proposedModel: "",
+  estimatedCost: "",
+  intendedStore: "",
+  purchaseTimeline: "",
+  purchaseNotes: "",
   quantity: "1",
   approximateAge: "",
   accessoriesIncluded: "",
@@ -151,14 +288,48 @@ export function photosFromOffer(offer: DonationOffer | null | undefined): Wizard
  * were none. Treating `"None"` (or blank) as "no defects" is what stops a
  * resumed draft showing the word "None" typed into the defects box.
  */
+/**
+ * The purchase plan, read back off the offer.
+ *
+ * <p>Everything in the wizard model is a string because it is bound to inputs,
+ * so the numeric `estimatedCost` is stringified here rather than at the field.
+ * An absent commitment yields empty strings, which is the same shape a brand
+ * new draft has — so the caller never has to branch on whether one existed.
+ */
+function purchasePlanFrom(offer: DonationOffer | null | undefined) {
+  const c = offer?.purchaseCommitment;
+  if (!c) return null;
+  return {
+    proposedBrand: c.proposedBrand ?? "",
+    proposedModel: c.proposedModel ?? "",
+    estimatedCost: c.estimatedCost != null ? String(c.estimatedCost) : "",
+    intendedStore: c.intendedStore ?? "",
+    purchaseTimeline: c.purchaseTimeline ?? "",
+    purchaseNotes: c.notes ?? "",
+  };
+}
+
 export function offerModelFrom(offer: DonationOffer | null | undefined): OfferModel {
   const item = offer?.itemDetails;
-  if (!item) return { ...emptyOfferModel, photos: photosFromOffer(offer) };
+  // The purchase plan IS hydrated now that the commitment rides on the offer
+  // DTO. It is read separately from `itemDetails` on purpose: the two are
+  // different tables with different lifecycles, and a Flow B draft can easily
+  // have a saved plan and no item row yet — which is exactly why the early
+  // return below carries it too, rather than falling through to empty.
+  const plan = purchasePlanFrom(offer);
+
+  if (!item) return { ...emptyOfferModel, ...(plan ?? {}), photos: photosFromOffer(offer) };
 
   const rawDefects = item.knownDefects ?? "";
   const hasDefects = rawDefects.trim() !== "" && rawDefects.trim().toLowerCase() !== "none";
 
   return {
+    // Empty model first as the floor, then the saved purchase plan over it.
+    // The spread also means the next field added to OfferModel cannot break
+    // this function the way the six purchase fields did — they were added to
+    // the type and to emptyOfferModel but missed here, and only `tsc` caught it.
+    ...emptyOfferModel,
+    ...(plan ?? {}),
     photos: photosFromOffer(offer),
     quantity: item.quantity != null ? String(item.quantity) : "1",
     approximateAge: item.approximateAge ?? "",
@@ -192,14 +363,27 @@ export function uploadedOfferPhotos(photos: WizardPhoto[]): WizardPhoto[] {
  * they still have to do. Anything already complete is behind them and reachable
  * from the progress bar.
  */
-export function firstIncompleteOfferStep(model: OfferModel): OfferStep {
-  if (uploadedOfferPhotos(model.photos).length < MIN_OFFER_PHOTOS) return "photos";
+export function firstIncompleteOfferStep(
+  model: OfferModel,
+  flowType?: string | null,
+): OfferStep {
+  const purchase = isPurchaseFlow(flowType);
+
+  if (purchase) {
+    if (!model.purchaseTimeline) return "purchasePlan";
+  } else if (uploadedOfferPhotos(model.photos).length < MIN_OFFER_PHOTOS) {
+    return "photos";
+  }
 
   const qty = Number(model.quantity);
   if (!Number.isInteger(qty) || qty < 1) return "details";
 
-  if (!model.condition) return "condition";
-  if (model.hasKnownDefects && model.knownDefects.trim().length < 3) return "condition";
+  // Condition is not a step in the purchase flow, so it can never be the answer
+  // — returning it would drop the donor onto a step the wizard does not render.
+  if (!purchase) {
+    if (!model.condition) return "condition";
+    if (model.hasKnownDefects && model.knownDefects.trim().length < 3) return "condition";
+  }
 
   if (!model.pickupCity.trim()) return "pickup";
 

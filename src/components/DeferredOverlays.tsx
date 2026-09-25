@@ -15,8 +15,7 @@ import dynamic from "next/dynamic";
  *
  * <p>What it buys: none of these components render anything on first paint.
  * Each decides whether to show itself from state that only exists in the
- * browser — `localStorage` (`WelcomeOverlay`, `CookieConsent`), a geolocation
- * permission (`LocationGate`), or a timer that deliberately waits before
+ * browser — `localStorage` (`WelcomeOverlay`, `CookieConsent`), or a timer that deliberately waits before
  * appearing (`DonorListingPrompt` waits 800ms). They were previously imported
  * statically into the root layout, which put their JS — and their transitive
  * deps, framer-motion included — into the bundle every route had to load before
@@ -37,10 +36,6 @@ import dynamic from "next/dynamic";
  * order, so reordering these would silently change which prompt wins a contest.
  */
 
-const LocationGate = dynamic(
-  () => import("@/components/LocationGate").then((m) => m.LocationGate),
-  { ssr: false },
-);
 /*
   The cookie banner is switched off at its only mount point, not deleted.
 
@@ -91,7 +86,6 @@ const DoneeRequestPrompt = dynamic(
 export function DeferredOverlays() {
   return (
     <>
-      <LocationGate />
       {/* Cookie banner switched off — see the note on the import below. */}
       <WelcomeOverlay />
       <TourController />

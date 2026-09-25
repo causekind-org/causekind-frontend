@@ -24,6 +24,8 @@ import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornmen
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
+import { DonateNowButton } from "@/components/donate/DonateNowButton";
+import { DONATE_HREF } from "@/lib/donateScroll";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -137,89 +139,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
 // Keep CareNestLogo exported and map it to CauseKindLogo to prevent any broken imports in other files
 export function CareNestLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   return <CauseKindLogo size={size} hideIcon={hideIcon} />;
-}
-
-function Donate3DButton() {
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [hovered, setHovered] = useState(false);
-  const [hearts, setHearts] = useState<{ id: number; x: number }[]>([]);
-  const heartIdRef = useRef(0);
-
-  function handleMouseMove(e: React.MouseEvent<HTMLButtonElement>) {
-    const btn = btnRef.current;
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    setTilt({
-      x: ((e.clientY - rect.top - rect.height / 2) / (rect.height / 2)) * -14,
-      y: ((e.clientX - rect.left - rect.width / 2) / (rect.width / 2)) * 14,
-    });
-  }
-
-  function spawnHeart() {
-    const id = ++heartIdRef.current;
-    setHearts(h => [...h, { id, x: Math.random() * 60 + 20 }]);
-    setTimeout(() => setHearts(h => h.filter(ht => ht.id !== id)), 800);
-  }
-
-  return (
-    <Link href="/donate">
-      <div style={{ perspective: "600px", display: "inline-block", position: "relative" }}>
-        {hearts.map(({ id, x }) => (
-          <span
-            key={id}
-            className="absolute z-50 text-2xs text-[var(--ck-role-highlight)] pointer-events-none select-none"
-            style={{
-              left: `${x}%`,
-              bottom: "110%",
-              animation: "donate-navbar-heart-float 0.8s ease-out forwards",
-            }}
-          >
-            ♥
-          </span>
-        ))}
-        <button
-          ref={btnRef}
-          onMouseMove={handleMouseMove}
-          onMouseEnter={() => { setHovered(true); spawnHeart(); }}
-          onMouseLeave={() => { setHovered(false); setTilt({ x: 0, y: 0 }); }}
-          style={{
-            transform: hovered
-              ? `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.1) translateZ(10px)`
-              : "rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px)",
-            transition: hovered
-              ? "transform 0.08s ease-out"
-              : "transform 0.55s cubic-bezier(0.34,1.56,0.64,1)",
-            transformStyle: "preserve-3d",
-            boxShadow: hovered
-              ? "0 0 0 2px rgba(240,185,122,0.5), 0 10px 36px rgba(176,74,21,0.65), 0 4px 14px rgba(0,0,0,0.18)"
-              : undefined,
-          }}
-          className="donate-navbar-3d relative bg-[var(--ck-role-accent)] text-white font-bold px-[18px] py-[6px] rounded-full text-xs sm:text-sm"
-          aria-label="Donate"
-        >
-          <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
-            <span className="donate-navbar-shimmer" />
-          </span>
-          {hovered && <span className="donate-navbar-ring" />}
-          <span className="relative z-10 flex items-center gap-1.5">
-            <span
-              style={{
-                display: "inline-block",
-                transform: hovered ? "scale(1.35) rotate(-15deg)" : "scale(1) rotate(0deg)",
-                transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
-                fontSize: "0.72em",
-                lineHeight: 1,
-              }}
-            >
-              ♥
-            </span>
-            Donate
-          </span>
-        </button>
-      </div>
-    </Link>
-  );
 }
 
 // ── Login nudge — a speech-bubble popover anchored to the navbar's Login
@@ -809,7 +728,9 @@ export function SiteHeader() {
   const mobileNavLinks = navLinks.flatMap((link) =>
     link.href === "/requests"
       ? [
-          { href: "/donate/money", label: t("nav.donate") },
+          // Same constant the button uses, so the drawer lands on the donation
+          // form too rather than at the top of the page.
+          { href: DONATE_HREF, label: t("nav.donate") },
           { href: "/requests", label: t("nav.requests") },
         ]
       : [link],
@@ -1116,7 +1037,14 @@ export function SiteHeader() {
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
             </button>
 
-            {FEATURES.money && !isNgoDashboard && <Donate3DButton />}
+            {/* Deliberately NOT behind FEATURES.money. That flag postpones
+                monetary campaigns and the old /donate page; /donate/money is
+                live and takes real payments, so gating its only always-visible
+                entry point on the same flag hid a shipped feature. The old
+                Donate3DButton pointed at /donate — the Coming Soon screen. */}
+            {!isNgoDashboard && (
+              <DonateNowButton size="sm" label="Donate" showArrow={false} />
+            )}
 
             {isNgoDashboard && (
               <Link href="/dashboard/ngo/profile">
@@ -1409,7 +1337,15 @@ export function SiteHeader() {
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
         items={[
-          ...mobileNavLinks.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
+          // `isActive` matches against the pathname, which never carries a query
+          // string — so the Donate entry (…?scroll=donate-form) has to be tested
+          // on its path alone or it could never light up.
+          ...mobileNavLinks.map((l) => ({
+            label: l.label,
+            link: l.href,
+            ariaLabel: l.label,
+            active: isActive(l.href.split("?")[0]),
+          })),
           ...(user
             ? [
                 ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
@@ -1520,6 +1456,12 @@ export function SiteFooter() {
             <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
               <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
             </span>
+          </div>
+
+          {/* Solid on this near-black ground — an outline pill's border would
+              not clear the 3:1 a control boundary needs. Donee-hidden in CSS. */}
+          <div className="pt-2">
+            <DonateNowButton size="sm" showArrow={false} />
           </div>
         </div>
         {giveBackLinks.length > 0 && (

@@ -120,13 +120,13 @@ export function OfferJourney({ status }: { status: string }) {
   const accent = atRisk ? "text-amber-600 dark:text-amber-400" : "text-[var(--ck-role-accent)]";
 
   return (
-    <div className="space-y-2.5 pt-1">
+    <div className="min-w-0 space-y-2.5 pt-1">
       {/* Step count + normalized milestone name */}
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-3xs font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
           Step {idx + 1} of {stages.length}
         </span>
-        <span className={`truncate text-2xs font-bold ${accent}`}>{current.label}</span>
+        <span className={`min-w-0 break-words text-end text-2xs font-bold ${accent}`}>{current.label}</span>
       </div>
 
       <JourneyRail stages={stages} idx={idx} atRisk={atRisk} reduce={!!reduce} />
@@ -143,7 +143,7 @@ export function OfferJourney({ status }: { status: string }) {
       </div>
 
       {next && (
-        <p className="truncate text-2xs text-stone-400 dark:text-stone-500">
+        <p className="break-words text-2xs leading-relaxed text-stone-400 dark:text-stone-500">
           <span className="font-semibold">Next:</span> {next.label} — {next.sublabel}
         </p>
       )}
@@ -160,7 +160,7 @@ export function OfferJourney({ status }: { status: string }) {
           </button>
         </DrawerTrigger>
 
-        <DrawerContent className="max-h-[85vh]">
+        <DrawerContent className="max-h-[85dvh] overflow-hidden">
           <DrawerHeader>
             <DrawerTitle>Donation journey</DrawerTitle>
             <DrawerDescription>
@@ -168,11 +168,10 @@ export function OfferJourney({ status }: { status: string }) {
             </DrawerDescription>
           </DrawerHeader>
 
-          {/* DrawerBody is overflow-hidden by design; the scroller lives inside it
-              so the drag handle and header stay put. vaul owns the body scroll
-              lock — nothing extra here. */}
-          <DrawerBody>
-            <ol className="max-h-full overflow-y-auto px-5 pb-2">
+          {/* Scroll the constrained flex body itself. A max-h-full child inside
+              an auto-height, clipped parent can extend beyond the visible sheet. */}
+          <DrawerBody className="overflow-y-auto overscroll-contain">
+            <ol className="px-5 pb-2">
               {stages.map((stage, i) => {
                 const done = i < idx;
                 const isCurrent = i === idx;

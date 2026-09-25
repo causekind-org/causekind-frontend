@@ -125,6 +125,11 @@ async function renderHome() {
 const donorCtas = () => screen.queryAllByText(/join as a donor/i);
 const doneeCtas = () => screen.queryAllByText(/join as a donee/i);
 const guestJoinAnchors = () => document.querySelectorAll('[data-tour="guest-join"]');
+// The mobile way in, since MobileVisualStory replaced MobileDoors. Different
+// component, different copy — a guest is offered a login per role rather than
+// the old "Join as a …" doors.
+const mobileDonorEntry = () => screen.queryAllByText(/login as donor/i);
+const mobileDoneeEntry = () => screen.queryAllByText(/login as donee/i);
 const headings = () => screen.queryAllByText(/whichever side you're on/i);
 
 beforeEach(() => {
@@ -183,12 +188,22 @@ describe("a guest, once auth has resolved", () => {
     expect(headings()).toHaveLength(1);
   });
 
-  it("gives a guest both doors on mobile, without duplicating the desktop CTAs", async () => {
+  /**
+   * Same guarantee as before — a guest can get in from either tree — but the
+   * mobile half is now MobileVisualStory's entry choices rather than
+   * MobileDoors. Asserted through both components instead of a single copy
+   * match, so dropping either one still fails.
+   */
+  it("gives a guest a way in on mobile as well as on desktop", async () => {
     await renderHome();
 
-    // One from the desktop pathways section, one from the mobile doors.
-    expect(donorCtas()).toHaveLength(2);
-    expect(doneeCtas()).toHaveLength(2);
+    // Desktop pathways section: exactly one of each, never duplicated.
+    expect(donorCtas()).toHaveLength(1);
+    expect(doneeCtas()).toHaveLength(1);
+
+    // Mobile entry choices.
+    expect(mobileDonorEntry()).toHaveLength(1);
+    expect(mobileDoneeEntry()).toHaveLength(1);
   });
 
   it("puts the guest tour anchor on the mobile instance only", async () => {

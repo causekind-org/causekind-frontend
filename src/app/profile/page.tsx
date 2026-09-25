@@ -94,23 +94,6 @@ function detectCountryCode(): string {
   return "IN";
 }
 
-/** IP-based country detection — falls back to detectCountryCode() on error */
-async function detectCountryFromIP(): Promise<string> {
-  try {
-    const res = await fetch("https://ipwho.is/?output=json&fields=country_code", {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!res.ok) throw new Error("non-200");
-    const data = await res.json();
-    if (typeof data.country_code === "string" && /^[A-Z]{2}$/.test(data.country_code)) {
-      return data.country_code;
-    }
-  } catch {
-    // ignore
-  }
-  return detectCountryCode();
-}
-
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/);
   if (words.length === 0) return "U";
@@ -299,9 +282,9 @@ export default function ProfilePage() {
     let activityFailed = false;
     let profileFailed = false;
 
-    // Run IP geolocation, profile fetch, donation/campaign history, and in-kind data in parallel
+    // Load the locale country suggestion, profile, donation/campaign history, and in-kind data in parallel
     Promise.all([
-      detectCountryFromIP(),
+      Promise.resolve(detectCountryCode()),
       // Caught like the activity calls: a dead /auth/me used to reject the whole
       // Promise.all, so a single backend hiccup also threw away the donations,
       // listings and matches that had already come back, and left the page

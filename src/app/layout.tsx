@@ -116,7 +116,9 @@ export default async function RootLayout({
             useEffect, which runs after paint. Reads only the non-secret
             {email, role} metadata the app already caches, and whitelists the
             role to donor|donee — see lib/roleTheme.ts. */}
-        <script suppressHydrationWarning>{ROLE_THEME_BOOT_SCRIPT}</script>
+        <Script id="causekind-role-theme" strategy="beforeInteractive">
+          {ROLE_THEME_BOOT_SCRIPT}
+        </Script>
         {/* Material Symbols, subset and pinned.
 
             This was requesting the FULL variable axis range
