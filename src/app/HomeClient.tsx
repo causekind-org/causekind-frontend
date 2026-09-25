@@ -23,6 +23,7 @@
  */
 
 import React, { useEffect, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -51,7 +52,7 @@ import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
 import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
 import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
 
-import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
+import type { Campaign, InKindStats, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
 import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-bandhan";
 import { UnclaimedSection } from "@/components/home/UnclaimedSection";
 import {
@@ -70,7 +71,15 @@ import { MobileDoors, useLandingDoor } from "@/components/audience-pathways/Mobi
 import DoneeDoorEvidence from "@/components/audience-pathways/DoneeDoorEvidence";
 import { ItemDonationScrolly } from "@/components/home/ItemDonationScrolly";
 import { CTASection } from "@/components/home/CTASection";
+import { InKindProof } from "@/components/home/InKindProof";
+import { TheGapSection } from "@/components/home/TheGapSection";
 
+
+// The parked landing film (FEATURES.cinematicLanding). A dynamic import so that
+// while it is switched off, none of its code or SVG ships with the home page.
+const CinematicOrchestrator = dynamic(() =>
+  import("@/components/cinematic/CinematicOrchestrator").then((m) => m.CinematicOrchestrator),
+);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -100,12 +109,20 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
 export default function HomeClient({
   initialCampaigns,
   initialStats,
+  initialInKindStats = null,
   initialActivity,
   initialItemRequests,
   initialPublicRequests = [],
 }: {
   initialCampaigns: Campaign[];
   initialStats: PlatformStats | null;
+  /**
+   * Real in-kind counts (items listed, needs posted, verified handovers) from
+   * `/api/v1/stats/in-kind`. Optional and defaulting to null so every existing
+   * caller and test keeps working; the proof section renders nothing when it is
+   * null rather than showing zeros it cannot vouch for.
+   */
+  initialInKindStats?: InKindStats | null;
   initialActivity: RecentActivity[];
   initialItemRequests: ItemRequest[];
   /**
@@ -156,6 +173,14 @@ export default function HomeClient({
     donor-facing renders for them unconditionally.
   */
   const { door, pick: pickDoor } = useLandingDoor();
+
+  // Development-only preview of the parked film: /?cinematic
+  const [cinematicPreview, setCinematicPreview] = useState(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    setCinematicPreview(new URLSearchParams(window.location.search).has("cinematic"));
+  }, []);
+  const showCinematic = FEATURES.cinematicLanding || cinematicPreview;
   const doorIsDonor = !showAudiencePathways || door === "donor";
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
@@ -259,6 +284,15 @@ export default function HomeClient({
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}
       <HeroComponent />
 
+      {/* The landing film — parked behind FEATURES.cinematicLanding (off).
+          Mounted once, outside both responsive trees: it pins and scrubs its
+          own stage at every width, and a hidden second copy would still
+          create pinned triggers that skew every scroll position after it.
+
+          The wavy four-step How-it-works section (HowCauseKindWorks) used to
+          follow it and was taken off the page on 2026-09-25; its file is kept. */}
+      {showCinematic && <CinematicOrchestrator />}
+
       {/* ════════════════════════════════════════════════════════════
           DESKTOP VIEW  (lg:block)
           Each section is its own extracted component — edit the
@@ -296,138 +330,36 @@ export default function HomeClient({
         )}
 
 
-        {/* "What We Provide" — 2-step dark section. Second on the page, right
-            after the hero: it is the one section that explains what actually
-            happens here, so it earns the position before the visitor is asked
-            to look at open needs. */}
-        <ItemDonationScrolly />
+        {/* ── The evidence, after the film ───────────────────────────────
+            The cinematic chapters above make the argument with a story; what
+            follows is the same argument made with live data:
 
-        {/* Donor / Donee pathways — the two sides of the platform, each with a
-            role-preselecting signup CTA. Third on the page, so the visitor is
-            told which side they are on before being shown the board.
-            ("Why CauseKind" used to follow this and was removed on 2026-08-21:
-            it advertised fundraising, which FEATURES.money gates off, and
-            repeated three claims the Be the Change band already makes.)
+              1. The gap      — real needs that have waited longest
+              2. Live needs   — the board those rows come from
+              3. Pathways     — which side of it the visitor is on (guests)
+              4. Proof        — the three real in-kind counts
 
-            Guest-only, and gated in both responsive trees — see the mobile copy
-            below. Asking someone who is already signed in to "Join as a donor"
-            is the whole reason for the condition. */}
-        {showAudiencePathways && (
-          <>
-            <AudiencePathwaysComponent />
-          </>
-        )}
+            These were dropped from the desktop tree when the cinematic
+            orchestrator was first added (2026-09-24), which left the desktop
+            page ending on the film with no board, no signup path and no CTA.
+            ItemDonationScrolly — the older frame-sequence film — is not
+            restored: two films back to back is one too many. */}
+        <TheGapSection requests={initialPublicRequests} />
 
-
-        {/* Live Needs section — real verified needs across multiple categories */}
         <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
 
-        {/* Latest campaigns carousel */}
+        {/* Donor / Donee pathways — guest-only, and desktop-only: the mobile
+            tree has MobileDoors instead. Asking someone already signed in to
+            "Join as a donor" is the whole reason for the condition. */}
+        {showAudiencePathways && <AudiencePathwaysComponent />}
+
+        <InKindProof stats={initialInKindStats} />
+
         {FEATURES.money && (
-          <>
-            <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
-          </>
+          <LatestActiveCampaignsSection campaigns={campaigns} loading={loading} error={error} />
         )}
 
-        {/* In-Kind Requests section — hidden from landing page; shown only via WelcomeOverlay filter */}
-        {false && (loading || itemRequests.length > 0) && (
-          <section id="inkind-requests-section" className="bg-white dark:bg-zinc-900 border-b border-[var(--ck-home-surface,#ffedd5)]/35 dark:border-stone-850 py-20">
-            <div className="mx-auto max-w-7xl px-6">
-              <Reveal className="mb-14">
-                <div className="grid lg:grid-cols-[1fr_auto] gap-6 items-end">
-                  <div>
-                    <div className="flex items-center gap-4 mb-3">
-                      <span className="text-2xs font-black uppercase tracking-widest text-[var(--ck-home-ink,#b04a15)]">In-Kind Giving</span>
-                      <span className="h-px flex-1 bg-[var(--ck-home-accent,#b04a15)]/20" />
-                    </div>
-                    <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
-                      {selectedCategory ? `${selectedCategory} Needs Near You` : t("inkindSection.title")}
-                    </h2>
-                    <p className="text-base text-stone-500 dark:text-stone-400 font-medium mt-3 max-w-xl">
-                      {selectedCategory ? `Showing ${(selectedCategory ?? "").toLowerCase()} requests sorted by distance.` : t("inkindSection.subtitle")}
-                    </p>
-                  </div>
-                  <Link href="/requests" className="inline-flex shrink-0">
-                    <Button variant="outline" className="btn-3d border-[var(--ck-home-soft,#fed7aa)] dark:border-stone-850 hover:bg-[var(--ck-home-surface,#fff7ed)] dark:hover:bg-zinc-800 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200">
-                      {t("inkindSection.browseAll")} <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </Reveal>
-
-              {loading ? (
-                <div className="flex justify-center py-20">
-                  <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" />
-                </div>
-              ) : (
-                <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
-                  {displayedRequests.slice(0, 6).map((req, i) => {
-                    const isFeatured = i === 0;
-                    const isTall = i === 0 || i === 3;
-                    return (
-                      <Reveal key={req.id} delay={i * 90} className={isFeatured ? "col-span-2 lg:col-span-1 row-span-2 lg:row-span-1" : ""}>
-                        <HoverCard openDelay={300}>
-                          <HoverCardTrigger asChild>
-                            <Card className={`card-glow inkind-card-featured bg-white dark:bg-zinc-900 rounded-2xl border border-[var(--ck-home-surface,#ffedd5)] dark:border-zinc-800 overflow-hidden flex flex-col cursor-pointer group transition-all duration-300 ${isFeatured ? "lg:min-h-[320px]" : isTall ? "min-h-[280px]" : "min-h-[220px]"}`}>
-                              <div className={`relative w-full bg-stone-100 dark:bg-zinc-950 shrink-0 overflow-hidden ${isFeatured ? "h-40 sm:h-52" : "h-28 sm:h-36"}`}>
-                                <Image src={req.imageUrl || getMobileCardImage(req.category, req.id)} alt={req.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 33vw" />
-                                {isFeatured && <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />}
-                                <div className="absolute top-2 right-2">
-                                  <span className={`text-5xs sm:text-4xs font-black px-1.5 py-0.5 rounded-full uppercase border ${req.urgency === "CRITICAL" ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400" : req.urgency === "HIGH" ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400" : "bg-stone-100/90 dark:bg-zinc-800/90 border-stone-200 dark:border-zinc-700 text-stone-500 dark:text-stone-400"}`}>
-                                    {tCommon("urgency" + req.urgency.charAt(0) + req.urgency.slice(1).toLowerCase())}
-                                  </span>
-                                </div>
-                                {isFeatured && (
-                                  <div className="absolute bottom-3 left-3">
-                                    <span className="text-3xs font-black text-white/80 uppercase tracking-wider bg-black/30 backdrop-blur-sm rounded-full px-2.5 py-1">{req.category}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <CardContent className={`flex flex-col flex-1 gap-2 ${isFeatured ? "p-4 sm:p-5" : "p-3 sm:p-4"}`}>
-                                <div>
-                                  <h3 className={`font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 ${isFeatured ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}>
-                                    <TranslatedText text={req.title} />
-                                  </h3>
-                                  <p className="text-3xs sm:text-xs text-stone-400 font-semibold mt-0.5 truncate">
-                                    By {req.doneeName} · <TranslatedText text={req.city} />
-                                  </p>
-                                </div>
-                                {req.description && isFeatured && (
-                                  <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium leading-relaxed line-clamp-2">
-                                    <TranslatedText text={req.description} />
-                                  </p>
-                                )}
-                                <div className="mt-auto pt-2 border-t border-[var(--ck-home-surface,#fff7ed)] dark:border-zinc-800 flex justify-between items-center">
-                                  <span className="text-3xs sm:text-xs text-stone-400 font-semibold">
-                                    Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span>
-                                  </span>
-                                  <Link href="/requests" className="inline-flex">
-                                    <span className="text-[var(--ck-home-ink,#b04a15)] font-extrabold uppercase text-4xs sm:text-3xs tracking-wider hover:underline">Give →</span>
-                                  </Link>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </HoverCardTrigger>
-                          <HoverCardContent side="top" align="center" className="w-80 z-50 p-4 shadow-xl">
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight"><TranslatedText text={req.title} /></h4>
-                              <p className="text-sm text-stone-500 dark:text-stone-400">{req.description ? <TranslatedText text={req.description} /> : `Requested by ${req.doneeName}. Qty ${req.quantity} needed.`}</p>
-                              <div className="text-xs text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] font-bold">Requested by: {req.doneeName}</div>
-                            </div>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </Reveal>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* The needs nobody has taken, oldest first. Above "Be the Change" on
-            purpose: that section is the argument for giving, and this one is the
-            specific unmet request the argument is about. */}
+        {/* The needs nobody has taken, oldest first. */}
         {rakshaBandhan && (
           <UnclaimedSection
             requests={initialPublicRequests}
@@ -435,16 +367,9 @@ export default function HomeClient({
           />
         )}
 
-
-        {/* "Be the Change" feature cards */}
         <BeTheChangeSection />
 
-
-
-        {/* Coming soon magnets */}
         <ComingSoonComponent />
-
-
 
         {/* Bottom CTA — hidden when logged in */}
         <CTAComponent />
@@ -452,13 +377,10 @@ export default function HomeClient({
 
       {/* ════════════════════════════════════════════════════════════
           MOBILE VIEW  (lg:hidden)
-          Still inline here — can be extracted to MobileView.tsx
-          in a future session if it grows.
       ════════════════════════════════════════════════════════════ */}
-      {/* `pt-11` matches this column's own `gap-11`: the join between the hero
-          and whatever follows it is a section join like every other one, and at
-          `pt-2` it was 8px against 44px everywhere else — the one odd seam on
-          the page, and it read as the next section being glued to the hero. */}
+      {/* `pt-11` matches this column's own `gap-11`: the join between the
+          previous section and whatever follows it is a section join like every
+          other one. */}
       {/* `overflow-x-clip`, never `overflow-x-hidden`. They clip identically,
           but `hidden` on one axis drags the other one with it: CSS will not let
           a box be `hidden` across and `visible` down, so `overflow-y` computes
@@ -466,10 +388,9 @@ export default function HomeClient({
           a 100vh-tall one, wrapping the whole mobile page. The footer's `-mb-2`
           then lands 8px past its content box, which is the entire scroll range,
           so a swipe anywhere over this column moved the doors 8px and stopped
-          before the page itself would take the gesture. That is what read as
-          the donor/donee spine being a separate, separately scrolling page.
-          `clip` leaves `overflow-y: visible` alone, so nothing here scrolls and
-          the horizontal bleed is still clipped exactly as before. */}
+          before the page itself would take the gesture. `clip` leaves
+          `overflow-y: visible` alone, so nothing here scrolls and the
+          horizontal bleed is still clipped exactly as before. */}
       <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-clip pt-11 bg-[#fbf9f4] dark:bg-zinc-950">
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
@@ -521,66 +442,83 @@ export default function HomeClient({
           <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
         )}
 
+        {/* Where support goes, and the three real counts.
+            Both doors get these, deliberately — "what happens after I hand it
+            over" and "has this actually worked before" are the two questions a
+            recipient asks as hard as a donor does, and neither had an answer on
+            the mobile page.
+
+            TheGapSection is desktop-only on purpose. Its argument is "look at
+            these unclaimed needs", which MobileDoors and the live board above
+            already make at this width; adding it here would be the fourth
+            surface saying the same thing, which is the exact mistake the Be the
+            Change and Coming Soon notes below record having already fixed.
+
+            The film stays desktop-only too — it always was. It lives in a
+            `hidden lg:block` tree and its 598-frame set is desktop-sized, so
+            mobile has never paid for it and still does not. */}
+        <InKindProof stats={initialInKindStats} />
+
         {/* Mobile Campaigns horizontal scroll */}
         {FEATURES.money && doorIsDonor && (
           <>
             <section className="space-y-4 relative">
-          {/* One header shape, shared with every other mobile section: a
+              {/* One header shape, shared with every other mobile section: a
                 short rule, an eyebrow, then a 24px title. This one used to be
                 16px while its neighbours were 30px, which is most of why the
                 stack read as unrelated pages. */}
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="h-0.5 w-[22px] shrink-0 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
-              <span className="text-3xs font-extrabold uppercase tracking-[0.16em] text-[var(--ck-home-ink,#b04a15)]">
-                <TranslatedText text="Money campaigns" />
-              </span>
-            </div>
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <h2 className="text-2xl font-black tracking-tight leading-[1.2] text-stone-850 dark:text-stone-100">
-                <TranslatedText text="Latest Active Campaigns" />
-              </h2>
-              <Link href="/campaigns" className="shrink-0 pb-1 text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
-                <TranslatedText text="Browse All" /> →
-              </Link>
-            </div>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 -mr-5 scrollbar-none snap-x snap-mandatory">
-            {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" /></div>}
-            {!loading && campaigns.slice(0, 5).map(campaign => {
-              const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
-              return (
-                <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.25rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0">
-                  <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
-                    <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
-                      <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
-                    </div>
-                    <p className="text-3xs font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between min-w-0">
-                    <h4 className="text-2xs font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {[campaign.city, campaign.category].map(t => (
-                        <span key={t} className="bg-[var(--ck-home-surface,#faf1e1)] dark:bg-zinc-850 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-highlight,#fb923c)] font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
-                      ))}
-                    </div>
-                    <div className="mt-2.5 space-y-1">
-                      <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
-                        <span>Progress</span><span className="text-[var(--ck-home-ink,#b04a15)]">{pct}% Funded</span>
-                      </div>
-                      <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
-                        <div className="bg-[var(--ck-home-accent,#b04a15)] h-full rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                      <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
-                    </div>
-                    <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
-                      <button className="w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
-                    </Link>
-                  </div>
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <span className="h-0.5 w-[22px] shrink-0 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
+                  <span className="text-3xs font-extrabold uppercase tracking-[0.16em] text-[var(--ck-home-ink,#b04a15)]">
+                    <TranslatedText text="Money campaigns" />
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <h2 className="text-2xl font-black tracking-tight leading-[1.2] text-stone-850 dark:text-stone-100">
+                    <TranslatedText text="Latest Active Campaigns" />
+                  </h2>
+                  <Link href="/campaigns" className="shrink-0 pb-1 text-3xs font-extrabold text-[var(--ck-home-ink,#b04a15)] uppercase tracking-wider hover:underline">
+                    <TranslatedText text="Browse All" /> →
+                  </Link>
+                </div>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-4 -mr-5 scrollbar-none snap-x snap-mandatory">
+                {loading && <div className="flex justify-center py-10 w-full"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--ck-home-accent,#b04a15)]/20 border-t-[var(--ck-home-accent,#b04a15)]" /></div>}
+                {!loading && campaigns.slice(0, 5).map(campaign => {
+                  const pct = Math.min(100, Math.round((campaign.amountRaised / campaign.targetAmount) * 100));
+                  return (
+                    <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.25rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0">
+                      <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
+                        <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
+                          <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
+                        </div>
+                        <p className="text-3xs font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
+                      </div>
+                      <div className="flex-1 flex flex-col justify-between min-w-0">
+                        <h4 className="text-2xs font-black text-stone-850 dark:text-stone-100 leading-snug truncate"><TranslatedText text={campaign.title} /></h4>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {[campaign.city, campaign.category].map(t => (
+                            <span key={t} className="bg-[var(--ck-home-surface,#faf1e1)] dark:bg-zinc-850 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-highlight,#fb923c)] font-extrabold text-5xs px-1.5 py-0.5 rounded tracking-wider uppercase"><TranslatedText text={t} /></span>
+                          ))}
+                        </div>
+                        <div className="mt-2.5 space-y-1">
+                          <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
+                            <span>Progress</span><span className="text-[var(--ck-home-ink,#b04a15)]">{pct}% Funded</span>
+                          </div>
+                          <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
+                            <div className="bg-[var(--ck-home-accent,#b04a15)] h-full rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
+                        </div>
+                        <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
+                          <button className="w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </section>
           </>
         )}

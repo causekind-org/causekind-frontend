@@ -13,8 +13,20 @@
 // in the login/signup flow UI. Temporarily switched off to keep the UI focused on
 // the core Donor/Donee flows. All NGO code and routes
 // remain intact — flip back to `true` to re-enable NGO self-registration in the UI.
-export const FEATURES: { money: boolean; bottomBlur: boolean; ngoRegistration: boolean } = {
+//
+// `cinematicLanding` is the scroll-driven film under the home hero ("One small
+// thing can become a big thing" → "It finds its person"; see
+// src/sections/landing/cinematic/README.md). Parked, not deleted: while false
+// its code is not even downloaded (HomeClient loads it with next/dynamic). In
+// development, add `?cinematic` to the home URL to preview it without flipping this.
+export const FEATURES: {
+  money: boolean;
+  bottomBlur: boolean;
+  ngoRegistration: boolean;
+  cinematicLanding: boolean;
+} = {
   money: false,
   bottomBlur: false,
   ngoRegistration: false,
+  cinematicLanding: false,
 };

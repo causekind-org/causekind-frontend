@@ -1,5 +1,6 @@
 import {
   getCampaigns,
+  getInKindStats,
   getItemRequests,
   getPlatformStats,
   getPublicItemRequests,
@@ -48,9 +49,30 @@ export default async function HomePage() {
   // logged-out visitor and the campaign would silently render nothing. The
   // public endpoint is permitAll and its projection carries everything these
   // surfaces need: title, category, city, createdAt and the donee's first name.
-  const [campaigns, stats, activity, publicRequests] = await Promise.all([
+  /*
+   * `getInKindStats` is the in-kind counterpart to `getPlatformStats`, which
+   * counts money campaigns. The homepage was publishing campaign figures while
+   * the product's actual output — items listed, needs posted, verified
+   * handovers — went unshown. Those three are what `InKindProof` states.
+   *
+   * ── INTEGRATION POINT: this endpoint is not public yet ──────────────────
+   * `/api/v1/stats/in-kind` currently answers 401. The backend's
+   * `SecurityConfig` permits `/api/v1/stats`, `/api/v1/stats/recent-activity`
+   * and `/api/v1/stats/positive-update` but not `/in-kind`, and a server render
+   * carries no session cookie — so this resolves to null on every public visit
+   * and the proof section renders nothing at all.
+   *
+   * That is the designed failure mode, not a broken state: the section refuses
+   * to show a number it could not fetch rather than falling back to zeros. But
+   * it does mean the three most credible figures on the platform are invisible
+   * to visitors until the backend adds `"/api/v1/stats/in-kind"` to that
+   * permitAll list (SecurityConfig.java:107). It is a one-line change and the
+   * DTO exposes only three aggregate counts — no per-user or PII data.
+   */
+  const [campaigns, stats, inKindStats, activity, publicRequests] = await Promise.all([
     getCampaigns().catch(emptyOnError("getCampaigns", [])),
     getPlatformStats().catch(emptyOnError("getPlatformStats", null)),
+    getInKindStats().catch(emptyOnError("getInKindStats", null)),
     getRecentActivity().catch(emptyOnError("getRecentActivity", [])),
     getPublicItemRequests().catch(emptyOnError("getPublicItemRequests", []))
   ]);
@@ -99,6 +121,7 @@ export default async function HomePage() {
       <HomeClient
         initialCampaigns={campaigns}
         initialStats={stats}
+        initialInKindStats={inKindStats}
         initialActivity={activity}
         initialItemRequests={[]}
         initialPublicRequests={publicRequests}
