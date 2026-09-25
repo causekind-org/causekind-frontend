@@ -4,7 +4,12 @@ import React, { useRef, useEffect, useCallback, useLayoutEffect, useState, useSy
 import { gsap } from 'gsap';
 import { PlayCircle } from 'lucide-react';
 
-/* ── video sources ── */
+/* ── video sources ──
+   Each clip has a matching poster frame in /videos/posters, generated from the
+   clip itself. The poster is ~10-20 KB against a 0.2-2.3 MB clip, so the fan
+   paints complete on the first frame and the video fades in behind it. */
+const POSTERS = [1, 2, 3, 4, 5, 6, 7].map((n) => `/videos/posters/impact-${n}.webp`);
+
 const VIDEOS = [
   "/videos/WhatsApp Video 2026-09-05 at 3.20.14 PM.mp4",
   "/videos/WhatsApp Video 2026-09-05 at 3.23.16 PM.mp4",
@@ -43,6 +48,22 @@ export function ImpactCarousel() {
   const innerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const reduceMotion = usePrefersReducedMotion();
+
+  /**
+   * Whether the clips may start downloading.
+   *
+   * <p>The fan mounts 12-14 slots, every one of them a <video>. With a src set
+   * at mount the browser begins fetching all of them the moment the page
+   * renders — and this section sits SECOND on the page, so it competes with the
+   * hero and the donation form for bandwidth even though the visitor may never
+   * look at it. Worse, arriving from a "Donate Now" button scrolls straight
+   * past it to the form.
+   *
+   * <p>So the src is withheld until the section is within 300px of the
+   * viewport, and the poster carries the visuals until then. Once armed it
+   * stays armed — re-hiding a loaded clip would only make it reload later.
+   */
+  const [clipsArmed, setClipsArmed] = useState(false);
 
   const total = VIDEOS.length;
 
@@ -149,6 +170,37 @@ export function ImpactCarousel() {
 
   // Video playback is now seamlessly integrated into the GSAP draw loop below,
   // eliminating the need for a separate 500ms setInterval polling loop.
+
+  // Arm the clips once the section is nearly in view. Observes the STAGE rather
+  // than the section so it works regardless of what wraps it; 300px of margin
+  // means the clips are usually ready by the time a scrolling visitor arrives.
+  useEffect(() => {
+    if (clipsArmed) return;
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (typeof IntersectionObserver === 'undefined') { setClipsArmed(true); return; }
+
+    // Dwell, not mere intersection. A "Donate Now" button scrolls the visitor
+    // from the top of the page to the form, and that journey passes straight
+    // through this section — on bare intersection it would spend ~11 MB on
+    // clips nobody stopped to watch. Requiring the section to stay in view
+    // briefly distinguishes "arrived here" from "went past here".
+    let dwell: ReturnType<typeof setTimeout> | undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const inView = entries.some((e) => e.isIntersecting);
+        if (inView && dwell === undefined) {
+          dwell = setTimeout(() => { setClipsArmed(true); io.disconnect(); }, 400);
+        } else if (!inView && dwell !== undefined) {
+          clearTimeout(dwell);
+          dwell = undefined;
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    io.observe(stage);
+    return () => { if (dwell !== undefined) clearTimeout(dwell); io.disconnect(); };
+  }, [clipsArmed]);
 
   // Render loop
   useEffect(() => {
@@ -366,7 +418,7 @@ export function ImpactCarousel() {
           phone through desktop without a media query. */}
       <div
         className="relative pb-4 lg:pb-8 mt-2 sm:mt-3"
-        style={{ height: 'clamp(300px, 52vh, 480px)' }}
+        style={{ height: 'clamp(300px, 52dvh, 480px)' }}
       >
         <div
           ref={stageRef}
@@ -402,12 +454,16 @@ export function ImpactCarousel() {
               >
                 <video
                   ref={(el) => { videoRefs.current[i] = el; }}
-                  src={videoSrc}
+                  // No src until the section is approached — see `clipsArmed`.
+                  // `undefined` rather than "" : an empty src resolves to the
+                  // page URL and the browser tries to decode the HTML as media.
+                  src={clipsArmed ? videoSrc : undefined}
+                  poster={POSTERS[i % POSTERS.length]}
                   autoPlay
                   muted
                   loop
                   playsInline
-                  preload="metadata"
+                  preload={clipsArmed ? 'metadata' : 'none'}
                   className="pointer-events-none block h-full w-full object-cover select-none"
                 />
               </div>
