@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { motion, useInView, useReducedMotion } from "framer-motion";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   MapPin,
   Lock,
@@ -120,6 +121,14 @@ export function LiveNeedsSection({
     }
     return counts;
   }, [allNeeds]);
+
+  useEffect(() => {
+    // Refresh ScrollTrigger when filtered card count changes layout height
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [selectedCategory, displayedNeeds.length]);
 
   return (
     <section

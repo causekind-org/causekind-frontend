@@ -29,8 +29,6 @@ import { useTranslations } from "next-intl";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
-import { BeTheChangeSection } from "@/components/BeTheChangeSection";
-import { ComingSoonMagnets } from "@/components/ComingSoonMagnets";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,13 +61,23 @@ import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
+import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
+import { ProblemSolutionSection } from "@/components/home/ProblemSolutionSection";
+import { HowItWorksSection } from "@/components/home/HowItWorksSection";
+import { SupportJourneySection } from "@/components/home/SupportJourneySection";
+import { TrustSafetySection } from "@/components/home/TrustSafetySection";
+import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
+import { FinalCtaSection } from "@/components/home/FinalCtaSection";
+import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
+import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
-import AudiencePathwaysSection from "@/components/audience-pathways/AudiencePathwaysSection";
-import { MobileDoors, useLandingDoor } from "@/components/audience-pathways/MobileDoors";
-import DoneeDoorEvidence from "@/components/audience-pathways/DoneeDoorEvidence";
-import { ItemDonationScrolly } from "@/components/home/ItemDonationScrolly";
-import { CTASection } from "@/components/home/CTASection";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -119,44 +127,7 @@ export default function HomeClient({
 }) {
   const t = useTranslations("landing");
   const tCommon = useTranslations("common");
-  const { user, isRestoring } = useAuth();
-
-  /**
-   * The donor/donee signup pathways are guest-only.
-   *
-   * <p><b>Waits for storage, not for the network.</b> `useAuth` starts at
-   * `{ user: null }` and only then hydrates from `localStorage["ck_user"]`, so
-   * testing `!user` alone renders "Join as a donor" to someone already signed
-   * in and takes it away a moment later. `isRestoring` closes that window.
-   *
-   * <p>It must NOT be `isLoading`. That flag is deliberately asymmetric — with
-   * no cached user it stays true until `/api/v1/users/me` answers, and that
-   * call wakes the deliberately cold Neon pool. Gating on it meant a guest saw
-   * the pre-Doors page for seconds and then watched it rearrange, which is the
-   * same bug the hero's primary CTA had. Guests are exactly who this is for.
-   *
-   * <p>The cost is the same one the hero accepts: someone holding a valid
-   * cookie but empty storage sees signup CTAs for a beat before their role
-   * resolves. That is a visible correction, not a redirect, and it corrects
-   * itself. See the two-flag table in `useAuth`.
-   *
-   * <p>Any authenticated user hides it, not just DONOR and DONEE. Role strings
-   * circulate in both `ROLE_`-prefixed and bare forms (see `normalizeRole`), and
-   * a role-by-role check would quietly start showing signup CTAs to whichever
-   * role is added next.
-   */
-  const showAudiencePathways = !isRestoring && user === null;
-
-  /*
-    Which door a guest picked on the mobile landing. Drives what renders below
-    the switcher there; the desktop tree ignores it entirely.
-
-    `doorIsDonor` collapses the two cases a section actually cares about: a
-    signed-in visitor has no doors at all and keeps today's page, so everything
-    donor-facing renders for them unconditionally.
-  */
-  const { door, pick: pickDoor } = useLandingDoor();
-  const doorIsDonor = !showAudiencePathways || door === "donor";
+  const { user } = useAuth();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -180,8 +151,23 @@ export default function HomeClient({
   // empty. Re-fetch client-side once a logged-in user's cookie is available.
   useEffect(() => {
     if (!user) return;
-    getItemRequests().then(setItemRequests).catch(() => { });
+    getItemRequests()
+      .then((data) => {
+        setItemRequests(data);
+        ScrollTrigger.refresh();
+      })
+      .catch(() => {
+        ScrollTrigger.refresh();
+      });
   }, [user]);
+
+  useEffect(() => {
+    // Refresh ScrollTrigger after initial mount and layout settling
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [initialPublicRequests, stats, loading, error]);
 
   useEffect(() => {
     const handleFilter = async (e: Event) => {
@@ -229,11 +215,7 @@ export default function HomeClient({
 
   const HeroComponent = HeroSection;
   const LiveNeedsComponent = LiveNeedsSection;
-  const ComingSoonComponent = ComingSoonMagnets;
-  const CTAComponent = CTASection;
-  const AudiencePathwaysComponent = AudiencePathwaysSection;
-  const MobileDoorsComponent = MobileDoors;
-  const DoneeDoorEvidenceComponent = DoneeDoorEvidence;
+  const FinalCtaComponent = FinalCtaSection;
 
   // The single need that has gone unclaimed longest. It ends the hero's thread,
   // and is excluded from the section below so the same request does not appear
@@ -255,73 +237,41 @@ export default function HomeClient({
 
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
+      <SmoothScroll />
+      {/* Continuous dashed road across whole desktop page */}
+      <DashedJourneyRoad />
       {/* One responsive front door. Keeping it outside the two legacy layout
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}
       <HeroComponent />
 
-      {/* ════════════════════════════════════════════════════════════
-          DESKTOP VIEW  (lg:block)
-          Each section is its own extracted component — edit the
-          file in src/components/home/ to change that section.
-      ════════════════════════════════════════════════════════════ */}
-      {/* One paper for the whole desktop page. Sections are transparent over
-          it — see PageSection for why they no longer bring their own. */}
+      {/* SECTION 1 — WHO ARE WE */}
+      <WhoAreWeSection />
+
+      {/* SECTION 2 — WHAT PROBLEM DO WE SOLVE */}
+      <ProblemSolutionSection />
+
+      {/* SECTION 3 — HOW DO WE WORK */}
+      <HowItWorksSection />
+
+      {/* SECTION 4 — WHERE DOES MY SUPPORT GO */}
+      <SupportJourneySection />
+
+      {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       <div className="ck-home-paper hidden lg:block relative z-10">
-        {/* Mobile stats strip (inside desktop wrapper but sm:hidden) */}
-        {FEATURES.money && (
-          <div className="sm:hidden overflow-hidden border-b border-[var(--ck-home-surface,#ffedd5)] bg-white dark:bg-zinc-950">
-            <div className="stats-ticker-track py-3.5">
-              {[0, 1].map(copy => (
-                <div key={copy} className="flex items-center shrink-0">
-                  {statItems.map(s => (
-                    <div key={s.label} className="flex items-center gap-2 px-5">
-                      <s.icon className={`h-4 w-4 shrink-0 ${s.color}`} />
-                      <span className="text-stone-900 dark:text-stone-100 font-black text-sm tabular-nums">{s.value}</span>
-                      <span className="text-stone-500 font-bold text-3xs uppercase tracking-wider whitespace-nowrap">{s.label}</span>
-                      <span className="text-stone-200 dark:text-zinc-700 ml-3 select-none">·</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Stats bar + live ticker — only when money feature enabled */}
-        {FEATURES.money && (
-          <>
-            <DesktopStatsBar stats={stats} />
-            <LiveTicker activity={activity} />
-          </>
-        )}
-
-
-        {/* "What We Provide" — 2-step dark section. Second on the page, right
-            after the hero: it is the one section that explains what actually
-            happens here, so it earns the position before the visitor is asked
-            to look at open needs. */}
-        <ItemDonationScrolly />
-
-        {/* Donor / Donee pathways — the two sides of the platform, each with a
-            role-preselecting signup CTA. Third on the page, so the visitor is
-            told which side they are on before being shown the board.
-            ("Why CauseKind" used to follow this and was removed on 2026-08-21:
-            it advertised fundraising, which FEATURES.money gates off, and
-            repeated three claims the Be the Change band already makes.)
-
-            Guest-only, and gated in both responsive trees — see the mobile copy
-            below. Asking someone who is already signed in to "Join as a donor"
-            is the whole reason for the condition. */}
-        {showAudiencePathways && (
-          <>
-            <AudiencePathwaysComponent />
-          </>
-        )}
-
-
-        {/* Live Needs section — real verified needs across multiple categories */}
         <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+      </div>
 
+      {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
+      <div className="hidden lg:block">
+        <TrustSafetySection variant="desktop" />
+      </div>
+
+      {/* FOUNDER'S NOTE (Desktop) */}
+      <div className="hidden lg:block">
+        <FoundersNoteSection variant="desktop" />
+      </div>
+
+      <div className="ck-home-paper hidden lg:block relative z-10">
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
           <>
@@ -436,18 +386,8 @@ export default function HomeClient({
         )}
 
 
-        {/* "Be the Change" feature cards */}
-        <BeTheChangeSection />
-
-
-
-        {/* Coming soon magnets */}
-        <ComingSoonComponent />
-
-
-
-        {/* Bottom CTA — hidden when logged in */}
-        <CTAComponent />
+        {/* SECTION 8 — FINAL CTA */}
+        <FinalCtaComponent variant="desktop" />
       </div>
 
       {/* ════════════════════════════════════════════════════════════
@@ -498,31 +438,21 @@ export default function HomeClient({
           </div>
         )}
 
-        {/* Doors — the guest spine. One question, two cards, then a switcher;
-            everything after this point is the answer to it.
+        {/* SECTION 6 — LIVE NEEDS */}
+        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
 
-            This replaces AudiencePathwaysSection in the mobile tree only. The
-            desktop tree still renders that section in its old position, and a
-            signed-in visitor still gets today's page in both trees — the donor
-            and donee variants are a separate piece of work. */}
-        {showAudiencePathways && <MobileDoorsComponent door={door} pick={pickDoor} />}
+        {/* SECTION 5 — CAN I TRUST YOU */}
+        <div className="-mx-5">
+          <TrustSafetySection variant="mobile" />
+        </div>
 
-        {/* The donee door's evidence. The one genuinely new surface here:
-            everything else below the hero is donor-facing, so a visitor who
-            says "I need something" had nothing to read. */}
-        {showAudiencePathways && door === "donee" && <DoneeDoorEvidenceComponent />}
-
-        {/* Live Needs — the donor door's first piece of evidence, so it leads
-            now rather than sitting below the campaigns rail.
-            No bleed wrapper below lg: the section drops its own horizontal
-            padding and background at this width (see LiveNeedsSection), so it
-            sits on this column's px-5 gutter like everything else. */}
-        {doorIsDonor && (
-          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-        )}
+        {/* FOUNDER'S NOTE */}
+        <div className="-mx-5">
+          <FoundersNoteSection variant="mobile" />
+        </div>
 
         {/* Mobile Campaigns horizontal scroll */}
-        {FEATURES.money && doorIsDonor && (
+        {FEATURES.money && (
           <>
             <section className="space-y-4 relative">
           {/* One header shape, shared with every other mobile section: a
@@ -585,41 +515,18 @@ export default function HomeClient({
           </>
         )}
 
-        {/* The needs nobody has taken. Repeated here rather than shared, because
-            HomeClient keeps two separate trees and a component placed in one is
-            simply absent from the other — the mistake the pathways section
-            below records having made. The section's own grid collapses to a
-            single column at this width. */}
-        {rakshaBandhan && doorIsDonor && (
+        {/* The needs nobody has taken */}
+        {rakshaBandhan && (
           <UnclaimedSection
             requests={initialPublicRequests}
             excludeId={longestWaitingRequest?.id ?? null}
           />
         )}
 
-        {/* Be the Change — cut from the guest page. It restates "here are needs
-            and here is proof", which the doors and the live board already do;
-            leaving it in is how the mobile stack got to four sections saying
-            the same two things. Signed-in visitors keep it until their own
-            layout is designed. */}
-        {!showAudiencePathways && <BeTheChangeSection tourAnchors />}
-
-        {/* AudiencePathwaysSection used to sit here, guest-only. MobileDoors
-            took its job at the top of this tree and its `tourAnchors` with it,
-            so rendering it again would put the same two signup CTAs on the page
-            twice. The desktop tree still renders it in its own position. */}
-
-
-        {/* Coming soon magnets — previously desktop-only. The section sizes
-            itself down through its own CSS vars, so the same component serves
-            both branches rather than a mobile-specific copy. Below lg it zeroes
-            --ck-magnets-pad and drops its background, so it aligns to this
-            column's px-5 gutter with no bleed wrapper.
-
-            Cut from the guest page for the same reason as Be the Change: it is
-            a fourth restatement of what the doors and the board already say.
-            Signed-in visitors keep it. */}
-        {!showAudiencePathways && <ComingSoonComponent />}
+        {/* SECTION 8 — FINAL CTA */}
+        <div className="-mx-5">
+          <FinalCtaComponent variant="mobile" />
+        </div>
 
       </div>
     </div>
