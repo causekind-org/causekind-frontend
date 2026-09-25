@@ -18,6 +18,7 @@ import {
   User,
   Calendar,
   Layers,
+  Smile,
 } from "lucide-react";
 
 // Illustrated Handover Icons (2 hands meeting)
@@ -276,12 +277,7 @@ export function SupportJourneySection() {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
-          start: "top top",
-          end: "+=200%", // ~2 screen heights of smooth scroll
-          pin: pinTargetRef.current,
-          scrub: 0.8,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
+          start: "top 60%", // Play automatically without scrub
         },
       });
 
@@ -290,8 +286,8 @@ export function SupportJourneySection() {
         track,
         {
           x: () => -(track.scrollWidth - window.innerWidth + 80),
-          ease: "none",
-          duration: 2.0,
+          ease: "power1.inOut",
+          duration: 3.5,
         },
         0
       );
@@ -302,8 +298,8 @@ export function SupportJourneySection() {
           parcelRef.current,
           {
             x: () => track.scrollWidth * 0.58,
-            ease: "none",
-            duration: 1.5,
+            ease: "power1.inOut",
+            duration: 3.0,
           },
           0
         );
@@ -314,8 +310,8 @@ export function SupportJourneySection() {
         tl.fromTo(
           pin,
           { y: -25, opacity: 0, scale: 0.6 },
-          { y: 0, opacity: 1, scale: 1, duration: 0.25, ease: "back.out(2)" },
-          i * 0.35 + 0.1
+          { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" },
+          i * 0.7 + 0.2
         );
       });
 
@@ -323,18 +319,28 @@ export function SupportJourneySection() {
         tl.fromTo(
           card,
           { opacity: 0, scale: 0.88, y: 15 },
-          { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: "power2.out" },
-          i * 0.35 + 0.15
+          { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "power2.out" },
+          i * 0.7 + 0.3
         );
       });
 
-      // 4. Handover Glow Burst at Stop 3
+      // 4. Handover Glow Burst & Happy Face at Stop 3 (i = 2 -> 1.6s)
       if (glowBurst) {
         tl.fromTo(
           glowBurst,
           { scale: 0, opacity: 0 },
-          { scale: 1.4, opacity: 0.85, duration: 0.25, yoyo: true, repeat: 1, ease: "sine.inOut" },
-          0.9
+          { scale: 1.4, opacity: 0.85, duration: 0.4, yoyo: true, repeat: 1, ease: "sine.inOut" },
+          1.6
+        );
+      }
+      
+      const happyRecipient = document.querySelector<HTMLElement>(".ck-happy-recipient");
+      if (happyRecipient) {
+        tl.fromTo(
+          happyRecipient,
+          { opacity: 0, scale: 0, y: 10, rotate: -20 },
+          { opacity: 1, scale: 1.2, y: 0, rotate: 10, duration: 0.5, ease: "back.out(2)" },
+          1.8
         );
       }
 
@@ -343,8 +349,8 @@ export function SupportJourneySection() {
         tl.fromTo(
           certCard,
           { rotateX: 30, rotateY: -10, scale: 0.85, opacity: 0 },
-          { rotateX: 0, rotateY: 0, scale: 1, opacity: 1, duration: 0.45, ease: "power2.out" },
-          1.3
+          { rotateX: 0, rotateY: 0, scale: 1, opacity: 1, duration: 0.6, ease: "power2.out" },
+          2.6
         );
       }
 
@@ -353,15 +359,15 @@ export function SupportJourneySection() {
         tl.fromTo(
           certStamp,
           { scale: 2.5, opacity: 0, rotate: -30 },
-          { scale: 1, opacity: 1, rotate: -12, duration: 0.3, ease: "back.out(2.2)" },
-          1.65
+          { scale: 1, opacity: 1, rotate: -12, duration: 0.4, ease: "back.out(2.2)" },
+          3.2
         );
 
         if (certCard) {
           tl.to(
             certCard,
-            { x: 3, yoyo: true, repeat: 3, duration: 0.04, ease: "linear" },
-            1.72
+            { x: 4, yoyo: true, repeat: 3, duration: 0.05, ease: "linear" },
+            3.3
           );
         }
       }
@@ -371,8 +377,8 @@ export function SupportJourneySection() {
         tl.fromTo(
           point,
           { opacity: 0, x: 25 },
-          { opacity: 1, x: 0, duration: 0.25, ease: "power2.out" },
-          1.75 + i * 0.1
+          { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" },
+          2.8 + i * 0.2
         );
       });
     }, containerRef);
@@ -506,8 +512,12 @@ export function SupportJourneySection() {
               {/* Warm Glow Burst on Handover */}
               <div className="ck-handover-glow absolute -top-4 w-20 h-20 rounded-full bg-amber-500/25 blur-xl pointer-events-none" />
 
-              <div className="ck-stop-pin w-11 h-11 rounded-2xl bg-[#E5F1E9] dark:bg-[#0E2618] border-2 border-[#1F6B3F] flex items-center justify-center text-[#1F6B3F] shadow-md mb-3">
+              <div className="ck-stop-pin relative w-11 h-11 rounded-2xl bg-[#E5F1E9] dark:bg-[#0E2618] border-2 border-[#1F6B3F] flex items-center justify-center text-[#1F6B3F] shadow-md mb-3">
                 <HandsMeetingIcon className="w-7 h-7" />
+                {/* The Happy Face popping up */}
+                <div className="ck-happy-recipient absolute -top-4 -right-4 opacity-0 scale-50 z-20">
+                  <Smile className="w-7 h-7 text-emerald-600 dark:text-emerald-400 fill-emerald-100 dark:fill-emerald-950" />
+                </div>
               </div>
               <div className="ck-stop-card w-full p-3.5 rounded-2xl bg-white dark:bg-[#1A1310] border border-stone-200/90 dark:border-stone-800 shadow-xs text-center">
                 <span className="text-4xs font-extrabold uppercase tracking-widest text-[#1F6B3F] px-2 py-0.5 rounded-full bg-[#E5F1E9] dark:bg-[#0E2618] mb-1.5 inline-block">

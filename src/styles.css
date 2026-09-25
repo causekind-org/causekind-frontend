@@ -3998,6 +3998,7 @@ div:has(.searchable-select-open) {
       already lifted to #e07b3a; this gives guests the same treatment.
    ═════════════════════════════════════════════════════════════════════════ */
 
+@layer components {
 .ck-donate-cta {
   --ck-donate-acc: var(--ck-role-accent, #b04a15);
   --ck-donate-hov: var(--ck-role-hover, #c45520);
@@ -4248,4 +4249,6 @@ div:has(.searchable-select-open) {
 .ck-below-nav {
   min-height: calc(100svh - max(var(--ck-nav-h, 0px), 3.5rem));
   min-height: calc(100dvh - max(var(--ck-nav-h, 0px), 3.5rem));
+}
+
 }

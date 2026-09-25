@@ -134,7 +134,7 @@ export function TrustSafetySection({
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 75%",
+          start: "top 85%",
           toggleActions: "play none none none",
           once: true,
         },
@@ -147,7 +147,7 @@ export function TrustSafetySection({
         rotation: 0,
         scale: 1,
         opacity: 1,
-        duration: 0.7,
+        duration: 0.5,
         stagger: 0.05,
         ease: "back.out(1.8)",
       });
@@ -158,7 +158,7 @@ export function TrustSafetySection({
           shieldCheck,
           {
             strokeDashoffset: 0,
-            duration: 0.45,
+            duration: 0.35,
             ease: "power2.out",
           },
           "-=0.2"
@@ -170,16 +170,16 @@ export function TrustSafetySection({
           {
             scale: 1.6,
             opacity: 0.8,
-            duration: 0.35,
+            duration: 0.3,
             ease: "power1.out",
           },
-          "-=0.4"
+          "-=0.3"
         ).to(
           shieldGlow,
           {
             scale: 2.2,
             opacity: 0,
-            duration: 0.45,
+            duration: 0.4,
             ease: "power2.out",
           },
           "-=0.1"
@@ -193,13 +193,13 @@ export function TrustSafetySection({
           scale: 0.55,
           opacity: 0.9,
           y: -20,
-          duration: 0.5,
+          duration: 0.4,
           ease: "power3.inOut",
         },
-        "+=0.1"
+        "-=0.2"
       );
 
-      // Step D: Cards Fan Out / Deal
+      // Step D: Cards Fan Out / Deal - START MUCH EARLIER
       cardsRef.current.forEach((card, index) => {
         if (!card) return;
         const rotOffset = index === 0 ? -4 : index === 2 ? 4 : 0;
@@ -223,7 +223,7 @@ export function TrustSafetySection({
             duration: 0.65,
             ease: "power3.out",
           },
-          index === 0 ? "-=0.3" : "-=0.5"
+          0.3 + (index * 0.1) // Start at 0.3s, stagger by 0.1s
         );
       });
 
@@ -232,7 +232,7 @@ export function TrustSafetySection({
         ".card-point-check",
         { scale: 0, opacity: 0 },
         { scale: 1, opacity: 1, duration: 0.25, stagger: 0.04, ease: "back.out(2)" },
-        "-=0.3"
+        0.7
       );
 
       // Step F: Animate Counter Stats

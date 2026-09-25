@@ -49,7 +49,7 @@ import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
 import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
 import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
 
-import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
+import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity, FulfilledNeedSummary } from "@/lib/api";
 import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-bandhan";
 import { UnclaimedSection } from "@/components/home/UnclaimedSection";
 import {
@@ -111,6 +111,7 @@ export default function HomeClient({
   initialActivity,
   initialItemRequests,
   initialPublicRequests = [],
+  fulfilledNeeds = [],
 }: {
   initialCampaigns: Campaign[];
   initialStats: PlatformStats | null;
@@ -124,6 +125,7 @@ export default function HomeClient({
    * test keeps working untouched.
    */
   initialPublicRequests?: PublicItemRequest[];
+  fulfilledNeeds?: FulfilledNeedSummary[];
 }) {
   const t = useTranslations("landing");
   const tCommon = useTranslations("common");
