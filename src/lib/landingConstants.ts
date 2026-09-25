@@ -15,8 +15,8 @@ export const CONTACT_INFO = {
   phone: "+91 7719938619",
   whatsappUrl: "https://wa.me/917719938619",
   socials: {
-    instagram: "https://instagram.com/causekind", // placeholder
-    linkedin: "https://linkedin.com/company/causekind", // placeholder
+    instagram: "https://www.instagram.com/causekind",
+    linkedin: "https://www.linkedin.com/company/causekind/",
     twitter: "https://x.com/causekind", // placeholder
     youtube: "https://youtube.com/@causekind", // placeholder
   },
@@ -55,9 +55,25 @@ export const LANDING_ROUTES = {
  */
 export const FOUNDER = {
   isPlaceholder: true,
-  name: "Founder Name",
+  name: "Ramzan Hasnani",
   title: "Founder, CauseKind",
-  photo: null as string | null, // later: "/images/founder.jpg"
+  photo: "/images/ramzan-hasnani.webp",
+  photoDimensions: {
+    width: 1856,
+    height: 1986,
+    aspectRatio: "4 / 5",
+  },
   signature: null as string | null, // later: "/images/founder-signature.svg"
+  signatureDimensions: {
+    width: 240,
+    height: 80,
+  },
   personalLine: "", // later: my personal reason, 1–2 sentences
 };
+
+/**
+ * Scroll animation for the "Where your support goes" section.
+ * true  = full pinned horizontal scroll animation
+ * false = static layout with simple fade-ins
+ */
+export const ENABLE_SUPPORT_JOURNEY_ANIMATION = true;
