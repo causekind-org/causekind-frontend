@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Anton } from "next/font/google";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
+import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import { MotionConfig, motion } from "framer-motion";
 import { ArrowRight, Heart, MapPin, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -190,22 +191,7 @@ export function HeroSection() {
         className="ck-showcase-hero relative isolate overflow-hidden bg-[#fdf5ed] px-3 pb-3 pt-3 text-[#100c06] dark:bg-[#15110f] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
       >
         <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
-        {/* A quiet, screen-size ornament gives the paper side of the hero some
-            ceremony without adding another message competing with the CTA. It
-            stays behind the content and is deliberately absent on phones,
-            where the photograph is already the full visual field. */}
-        <svg
-          className="ck-hero-ornament pointer-events-none absolute left-0 top-0 hidden h-full w-[43%] lg:block"
-          viewBox="0 0 520 700"
-          fill="none"
-          aria-hidden
-        >
-          <circle cx="38" cy="102" r="158" />
-          <circle cx="38" cy="102" r="122" strokeDasharray="3 13" />
-          <path d="M0 370C119 302 188 321 298 412" />
-          <path d="M0 396C108 334 183 353 278 430" strokeDasharray="2 12" />
-          <circle className="ck-hero-ornament-dot" cx="298" cy="412" r="5" />
-        </svg>
+
 
         <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full max-w-[1920px]">
           {/* Below lg the photograph becomes the hero's ground rather than a
@@ -229,12 +215,7 @@ export function HeroSection() {
               className="pointer-events-none absolute inset-0 z-[6] bg-[linear-gradient(to_top,rgba(20,14,9,0.93)_0%,rgba(20,14,9,0.66)_38%,rgba(20,14,9,0.12)_70%,rgba(20,14,9,0.38)_100%)] lg:hidden"
               aria-hidden
             />
-            <svg className="ck-mobile-hero-orbit pointer-events-none absolute right-0 top-[10%] z-[7] h-[15rem] w-[15rem] lg:hidden" viewBox="0 0 240 240" fill="none" aria-hidden>
-              <circle cx="178" cy="62" r="72" />
-              <circle cx="178" cy="62" r="53" strokeDasharray="2 11" />
-              <path d="M66 164C108 126 145 123 187 150" />
-              <circle className="ck-mobile-hero-orbit-dot" cx="66" cy="164" r="4" />
-            </svg>
+
             <div className="ck-hero-copy relative z-10 mt-auto flex min-w-0 flex-col px-5 pb-[calc(var(--ck-bottom-chrome,5rem)+1rem)] pt-10 sm:px-7 lg:mt-0 lg:justify-center lg:px-0 lg:pb-[clamp(2.6rem,5vh,5.5rem)] lg:pl-[clamp(0.75rem,1.2vw,1.75rem)] lg:pr-[clamp(3rem,6vw,8rem)] lg:pt-[clamp(1.2rem,2.4vh,2.5rem)]">
               {/* The flanking rules here and the heart divider below are
                   desktop ornament: on a phone the two pairs cost roughly 70px
@@ -307,6 +288,12 @@ export function HeroSection() {
                   <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
                   <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                 </Link>
+
+                {/* Money donation stays last on desktop and is hidden for donees. */}
+                <DonateNowButton
+                  size="sm"
+                  className="ck-hero-donate-cta order-3 w-full lg:w-auto lg:shrink-0"
+                />
               </div>
               <div className="ck-mobile-hero-trust lg:hidden">
                 <TrustBand />

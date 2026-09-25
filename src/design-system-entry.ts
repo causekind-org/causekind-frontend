@@ -38,8 +38,6 @@ export { HeroCampaignSlider } from "./components/HeroCampaignSlider";
 export { Interactive3dHero } from "./components/Interactive3dHero";
 export { LanguageSwitcher } from "./components/LanguageSwitcher";
 export { ListingDetailPanel } from "./components/ListingDetailPanel";
-// LocationGate excluded: calls detectLocationFromServer, a Next.js Server
-// Action ("use server") — same non-bundlable-outside-Next issue as HeroSection.
 
 export { LogoSVG } from "./components/LogoSVG";
 export { LogoVideo } from "./components/LogoVideo";

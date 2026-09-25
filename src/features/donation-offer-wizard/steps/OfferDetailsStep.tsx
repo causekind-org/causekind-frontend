@@ -12,7 +12,7 @@ import type { OfferModel } from "../offerModel";
  * dressed up as a redesign.
  */
 export function OfferDetailsStep({
-  model, errors, onChange, requestedQuantity, showSpecNotes,
+  model, errors, onChange, requestedQuantity, showSpecNotes, purchase = false,
 }: {
   model: OfferModel;
   errors: Record<string, string>;
@@ -20,6 +20,15 @@ export function OfferDetailsStep({
   /** Shown as context only — never enforced here. */
   requestedQuantity?: number | null;
   showSpecNotes: boolean;
+  /**
+   * Flow B — the donor has not bought the item yet.
+   *
+   * <p>This step was written for a donor describing something already in their
+   * hands, and Flow B reused it whole. Two of its three fields then read as
+   * written for somebody else, which is the same objection that got `condition`
+   * dropped from the purchase flow entirely.
+   */
+  purchase?: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -40,6 +49,12 @@ export function OfferDetailsStep({
         )}
       </WizardField>
 
+      {/* Age is a property of an item that exists. On a purchase offer the item
+          has not been bought yet and will be new, so "roughly how old is it?"
+          has no answer — the field invites a number that means nothing and is
+          then stored against the offer. Dropped for that flow, exactly as
+          `condition` already is. */}
+      {!purchase && (
       <WizardField label="Approximate age" hint="Optional — roughly how old is it?" error={errors.approximateAge}>
         {({ id, describedBy, invalid }) => (
           <input
@@ -51,10 +66,15 @@ export function OfferDetailsStep({
           />
         )}
       </WizardField>
+      )}
 
+      {/* Same field, but the question is different depending on whether the
+          donor is looking at the item or planning to buy it. */}
       <WizardField
-        label="Accessories included"
-        hint="Optional — cables, remote, parts, original box."
+        label={purchase ? "What will it come with?" : "Accessories included"}
+        hint={purchase
+          ? "Optional — cables, parts or extras you intend to buy alongside it."
+          : "Optional — cables, remote, parts, original box."}
         error={errors.accessoriesIncluded}
       >
         {({ id, describedBy, invalid }) => (

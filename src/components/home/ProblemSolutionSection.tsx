@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useInView } from "framer-motion";
-import { ArrowRight, MapPin, Sparkles, CheckCircle2, AlertCircle, Package } from "lucide-react";
+import { ArrowRight, MapPin, Sparkles, CheckCircle2, AlertCircle, Package, Smile, HeartHandshake } from "lucide-react";
 
 // Inline illustrated SVG icons for the 5 items
 function BookIllustration({ className = "", color = "currentColor" }: { className?: string; color?: string }) {
@@ -123,12 +123,7 @@ export function ProblemSolutionSection() {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
-          start: "top top",
-          end: "+=140%", // Smooth scrub distance
-          pin: pinTargetRef.current,
-          scrub: 0.8,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
+          start: "top 60%", // Play automatically when section enters view
         },
       });
 
@@ -142,13 +137,13 @@ export function ProblemSolutionSection() {
         // Crossfade from grey dust to active color
         tl.to(
           dustLayer,
-          { opacity: 0, duration: 0.18 },
-          index * 0.2
+          { opacity: 0, duration: 0.3 },
+          index * 0.25
         );
         tl.to(
           activeIcon,
-          { opacity: 1, duration: 0.18 },
-          index * 0.2
+          { opacity: 1, duration: 0.3 },
+          index * 0.25
         );
 
         // Fly item across to exact target slot position
@@ -169,10 +164,10 @@ export function ProblemSolutionSection() {
             },
             scale: 1,
             rotation: 0,
-            duration: 0.38,
+            duration: 0.8,
             ease: "power2.inOut",
           },
-          index * 0.2 + 0.05
+          index * 0.25 + 0.1
         );
       });
 
@@ -181,18 +176,47 @@ export function ProblemSolutionSection() {
         tl.fromTo(
           distanceTagRef.current,
           { scale: 0.95, opacity: 0.8 },
-          { scale: 1.06, opacity: 1, duration: 0.3, yoyo: true, repeat: 1, ease: "sine.inOut" },
-          0.4
+          { scale: 1.06, opacity: 1, duration: 0.4, yoyo: true, repeat: 1, ease: "sine.inOut" },
+          0.8
         );
       }
+
+      // The "Next part of the story" - Reaches the person in need
+      tl.to(".ck-target-bg-active", {
+        opacity: 1,
+        duration: 0.4,
+      }, 2.0);
+      
+      // Title swaps to "Received with Joy"
+      tl.to(".ck-target-text", {
+        opacity: 0,
+        y: -10,
+        duration: 0.2,
+      }, 2.0);
+      
+      tl.to(".ck-target-text-received", {
+        opacity: 1,
+        y: 0,
+        duration: 0.3,
+      }, 2.2);
+
+      // Smiling faces pop up on each slot
+      tl.to(".ck-smile-icon", {
+        opacity: 1,
+        scale: 1,
+        rotation: 0,
+        duration: 0.4,
+        ease: "back.out(2)",
+        stagger: 0.08,
+      }, 2.1);
 
       // Closing line reveal at the end
       if (closingRef.current) {
         tl.fromTo(
           closingRef.current,
           { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.35, ease: "power2.out" },
-          ">+=0.1"
+          { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" },
+          2.6
         );
       }
     }, containerRef);
@@ -347,20 +371,30 @@ export function ProblemSolutionSection() {
             </div>
 
             {/* ROW 2, COL 3: Receiving Box (Needed nearby) */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-[#E3F2EF]/60 dark:bg-[#0F7A6C]/10 border-2 border-dashed border-[#0F7A6C]/40 flex flex-col justify-between">
-              <div className="text-3xs font-extrabold uppercase tracking-widest text-[#0F7A6C] dark:text-[#5ec7b6] flex items-center gap-1.5 mb-2.5">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>Needed nearby</span>
+            <div className="ck-target-box p-4 sm:p-5 rounded-2xl bg-[#E3F2EF]/60 dark:bg-[#0F7A6C]/10 border-2 border-dashed border-[#0F7A6C]/40 flex flex-col justify-between relative overflow-hidden transition-colors">
+              {/* Highlight layer for when items are received */}
+              <div className="ck-target-bg-active absolute inset-0 bg-[#0F7A6C]/15 dark:bg-[#0F7A6C]/30 opacity-0 pointer-events-none" />
+              
+              <div className="relative text-3xs font-extrabold uppercase tracking-widest text-[#0F7A6C] dark:text-[#5ec7b6] flex items-center mb-2.5 h-4 z-10">
+                <MapPin className="w-3.5 h-3.5 shrink-0 mr-1.5" />
+                <span className="ck-target-text absolute left-5 top-0">Needed nearby</span>
+                <span className="ck-target-text-received absolute left-5 top-0 opacity-0 translate-y-2 text-emerald-600 dark:text-emerald-400 flex items-center gap-1 w-max">
+                  Received with Joy <HeartHandshake className="w-3 h-3 ml-0.5" />
+                </span>
               </div>
 
               {/* 5 Equal Target Slots */}
-              <div className="grid grid-cols-5 gap-2 items-center justify-items-center">
+              <div className="grid grid-cols-5 gap-2 items-center justify-items-center relative z-10">
                 {items.map((item) => (
                   <div
                     key={item.id}
                     className="ck-target-slot relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 border-dashed border-[#0F7A6C]/35 bg-white/40 dark:bg-stone-900/40 flex items-center justify-center"
                   >
                     <MapPin className="w-4 h-4 text-[#0F7A6C]/35" />
+                    {/* Smile that pops up after landing */}
+                    <div className="ck-smile-icon absolute -top-3 -right-2 opacity-0 scale-50 rotate-[-20deg]">
+                       <Smile className="w-5 h-5 text-emerald-600 dark:text-emerald-400 fill-emerald-100 dark:fill-emerald-950" />
+                    </div>
                   </div>
                 ))}
               </div>
