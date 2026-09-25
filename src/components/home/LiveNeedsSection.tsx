@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { motion, useInView, useReducedMotion } from "framer-motion";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   MapPin,
   Lock,
@@ -50,19 +51,6 @@ export function LiveNeedsSection({
    */
   stats?: PlatformStats | null;
 }) {
-  /*
-   * HomeClient renders this section in BOTH responsive trees. Only one is
-   * visible at a time, but both are in the DOM, so a hardcoded heading id
-   * appeared twice on every homepage load — invalid HTML, and it left the two
-   * `aria-labelledby` references pointing at an ambiguous target.
-   *
-   * The section's own `id="live-needs-section"` is deliberately left hardcoded:
-   * nothing in this repo links to it, but it is the kind of id an external deep
-   * link or campaign URL uses, and silently changing it could break one. It is
-   * still duplicated; removing it needs a decision about outside callers rather
-   * than a rename here.
-   */
-  const headingId = useId();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
@@ -85,8 +73,6 @@ export function LiveNeedsSection({
    */
   const { user, isLoading: authLoading } = useAuth();
   const role = (user?.role ?? "").toUpperCase().replace(/^ROLE_/, "");
-  /** Anyone who can actually offer an item — the same test CategoryNeedsBoard uses. */
-  const isDonor = !!user && role !== "DONEE";
   const emptyStateCta = authLoading
     ? null
     : user === null
@@ -136,11 +122,19 @@ export function LiveNeedsSection({
     return counts;
   }, [allNeeds]);
 
+  useEffect(() => {
+    // Refresh ScrollTrigger when filtered card count changes layout height
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [selectedCategory, displayedNeeds.length]);
+
   return (
     <section
       ref={sectionRef}
       id="live-needs-section"
-      aria-labelledby={headingId}
+      aria-labelledby="live-needs-heading"
       // Was #fbf9f4 — a shade off the sections either side. Same one cream.
       className="relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
     >
@@ -154,7 +148,7 @@ export function LiveNeedsSection({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
           <div className="max-w-2xl min-w-0">
             <h2
-              id={headingId}
+              id="live-needs-heading"
               className="text-2xl lg:text-5xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-[1.12]"
             >
               {/* Two runs, not one: the accent half has to keep its own colour,
@@ -201,10 +195,11 @@ export function LiveNeedsSection({
             <button
               type="button"
               onClick={() => setSelectedCategory("All")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${selectedCategory === "All"
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                selectedCategory === "All"
                   ? "bg-[var(--ck-home-accent,#b04a15)] text-white shadow-sm shadow-[var(--ck-home-deep,#431407)]/20 ring-2 ring-[var(--ck-home-accent,#b04a15)]/30"
                   : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
-                }`}
+              }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
               All Categories
@@ -223,24 +218,27 @@ export function LiveNeedsSection({
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${isSelected
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                    isSelected
                       ? "bg-[var(--ck-home-accent,#b04a15)] text-white shadow-sm shadow-[var(--ck-home-deep,#431407)]/20 ring-2 ring-[var(--ck-home-accent,#b04a15)]/30"
                       : isEmpty
                         ? "bg-transparent text-stone-400 dark:text-stone-600 border border-stone-200/70 dark:border-zinc-800/70 hover:bg-stone-50 dark:hover:bg-zinc-900"
                         : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
-                    }`}
+                  }`}
                 >
                   <span
-                    className={`inline-flex items-center justify-center ${isSelected ? "text-white" : isEmpty ? "text-stone-300 dark:text-stone-700" : visual?.text ?? "text-stone-500"
-                      }`}
+                    className={`inline-flex items-center justify-center ${
+                      isSelected ? "text-white" : isEmpty ? "text-stone-300 dark:text-stone-700" : visual?.text ?? "text-stone-500"
+                    }`}
                   >
                     <AnimatedCategoryIcon category={cat} iconClassName="w-3.5 h-3.5" />
                   </span>
                   {cat}
                   {count > 0 && (
                     <span
-                      className={`rounded-full px-1.5 text-3xs font-black tabular-nums ${isSelected ? "bg-white/25 text-white" : "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400"
-                        }`}
+                      className={`rounded-full px-1.5 text-3xs font-black tabular-nums ${
+                        isSelected ? "bg-white/25 text-white" : "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400"
+                      }`}
                     >
                       {count}
                     </span>
@@ -290,12 +288,7 @@ export function LiveNeedsSection({
             {displayedNeeds.map((need, idx) => {
               const visual = CATEGORY_VISUALS[need.category];
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
-              // A signed-in donor goes straight to the offer form. This used to
-              // send everyone through loginUrlFor(), which always returns a
-              // login URL regardless of auth — so someone already signed in was
-              // bounced to /login to be sent back where they were going.
-              const offerPath = `/requests/${need.id}/offer`;
-              const offerUrl = isDonor ? offerPath : loginUrlFor(offerPath);
+              const offerUrl = loginUrlFor(`/requests/${need.id}/offer`);
 
               return (
                 <motion.article
@@ -309,8 +302,9 @@ export function LiveNeedsSection({
                     {/* Top Bar: Category Pill & Urgent Tag */}
                     <div className="flex items-center justify-between gap-2 mb-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-3xs font-extrabold uppercase tracking-wider ${visual?.iconBg ?? "bg-stone-100"
-                          } ${visual?.text ?? "text-stone-700"}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-3xs font-extrabold uppercase tracking-wider ${
+                          visual?.iconBg ?? "bg-stone-100"
+                        } ${visual?.text ?? "text-stone-700"}`}
                       >
                         <AnimatedCategoryIcon category={need.category} iconClassName="w-3.5 h-3.5" />
                         {need.category}
@@ -374,12 +368,8 @@ export function LiveNeedsSection({
                       href={offerUrl}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
                     >
-                      {/* The lock and the "log in" wording only make sense for
-                          someone who is not signed in. */}
-                      {!isDonor && (
-                        <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
-                      )}
-                      <span>{isDonor ? "Offer this item" : "Log in to offer this item"}</span>
+                      <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
+                      <span>Log in to offer this item</span>
                       <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
                     </Link>
                   </div>

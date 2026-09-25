@@ -13,7 +13,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, Phone, MessageCircle, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
 import { getMyProfile, getMyMatches, getMyNgoApplication, type UserProfile, type ItemMatch } from "@/lib/api";
@@ -43,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { handleWhatsAppShare } from "@/components/home/WhatsAppTellAFriend";
 
 
 /** "Cause" reveals a letter at a time; the container only sets the cadence. */
@@ -1446,15 +1447,29 @@ export function SiteFooter() {
             <CareNestLogo size="md" />
           </div>
           <p className="text-stone-400 leading-relaxed font-medium">{t("tagline")}</p>
-          <div className="text-stone-400 font-medium text-xs">
-            <span className="text-white font-semibold">{t("contact")}:</span> +91 7719938619
+          <div className="space-y-1 text-xs text-stone-400 font-medium pt-0.5">
+            <div className="flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
+              <a href="tel:+917719938619" className="hover:text-white transition-colors">
+                +91 7719938619
+              </a>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
+              <a href="mailto:support@causekind.com" className="hover:text-white transition-colors">
+                support@causekind.com
+              </a>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />
+              <a href="https://wa.me/917719938619" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                WhatsApp Support
+              </a>
+            </div>
           </div>
           <div className="flex gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
             <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
               <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ck-role-accent)]" /> {t("adminVerified")}
-            </span>
-            <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
-              <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
             </span>
           </div>
 
@@ -1485,12 +1500,23 @@ export function SiteFooter() {
             {[
               { href: "/register", l: t("createAccount") },
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
+              { href: "/register?role=NGO", l: "Register your NGO" },
+              { href: "/give-safely", l: "Safety guidelines" },
               ...(FEATURES.money ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
               { href: "/faq", l: t("helpFaq") },
               { href: "/blog", l: t("blog") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
+            <li>
+              <button
+                type="button"
+                onClick={() => handleWhatsAppShare()}
+                className="hover:text-white hover:underline underline-offset-4 transition duration-200 text-left cursor-pointer"
+              >
+                Invite a friend
+              </button>
+            </li>
           </ul>
         </div>
         <div className="space-y-2 sm:space-y-2.5">
@@ -1499,7 +1525,7 @@ export function SiteFooter() {
               narrow column and a centred dot then floats beside the gap. */}
           <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
             <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("adminVerifiedFull")}</li>
-            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("zeroFees")}</li>
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0F7A6C]" /> OTP-confirmed handovers</li>
             <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
           </ul>
         </div>

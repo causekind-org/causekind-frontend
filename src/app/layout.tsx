@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono, Anton } from "next/font/google";
+import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
 import Script from "next/script";
 import { RouteProgressBar } from "@/components/RouteProgressBar";
 import "@/styles.css";
@@ -94,20 +94,6 @@ const robotoMono = Roboto_Mono({
   preload: false,
 });
 
-/*
- * The landing page's cinematic chapters set their title cards in Anton, the
- * same condensed display face the hero uses. Declared here rather than in the
- * chapter because `next/font` only works through the Next compiler — under
- * Vitest the module is empty, and every test that renders the home page would
- * crash on import. Not preloaded: it is used on one page, below the fold.
- */
-const anton = Anton({
-  variable: "--font-anton",
-  subsets: ["latin"],
-  weight: "400",
-  preload: false,
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.causekind.com"),
   title: "CauseKind — Give With Purpose",
@@ -130,9 +116,10 @@ export default async function RootLayout({
             useEffect, which runs after paint. Reads only the non-secret
             {email, role} metadata the app already caches, and whitelists the
             role to donor|donee — see lib/roleTheme.ts. */}
-        <Script id="causekind-role-theme" strategy="beforeInteractive">
-          {ROLE_THEME_BOOT_SCRIPT}
-        </Script>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: ROLE_THEME_BOOT_SCRIPT }}
+        />
         {/* Material Symbols, subset and pinned.
 
             This was requesting the FULL variable axis range
@@ -156,7 +143,7 @@ export default async function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=check,expand_more,format_bold,link,mail,pause,play_arrow,replay&display=swap"
         />
       </head>
-      <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} ${anton.variable} antialiased`} suppressHydrationWarning>
+      <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
         {/* TEMP: MetaPixel + GTM mounted for testing, ahead of the consent
             banner coming back — see the TESTING_BYPASS note in each
             component. Remove this comment once the banner is restored. */}
