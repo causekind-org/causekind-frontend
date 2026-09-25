@@ -11,6 +11,8 @@ import {
   adminGetAllOffers,
   adminGetAllAiAssessments, type AiAssessmentResponse,
   adminGetMyPermissions,
+  adminGetListingVideo, type OfferVideoStatus,
+  adminGetListingPhotos, type ListingPhoto,
 } from "@/lib/api";
 import { displayReason } from "@/lib/rejectionReason";
 import { useAuth } from "@/hooks/useAuth";
@@ -1118,6 +1120,61 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
   const recBadge = REC_BADGE[a.recommendation] ?? "bg-stone-100 text-stone-700 border-stone-300";
   const fraudBadge = a.fraudRisk ? (FRAUD_BADGE[a.fraudRisk] ?? "") : "";
 
+  // Fetched lazily on first expand — the assessment payload itself doesn't carry
+  // the donor's video, since it's optional and lives on the listing, not the AI log.
+  // Both this and the photos below come back as S3 presigned URLs that expire
+  // after 300s, so while the card stays open we re-fetch fresh ones well before
+  // that — otherwise a card left open (or opened, ignored, revisited) shows
+  // broken images/video instead of a slow-but-working reload.
+  const PRESIGNED_REFRESH_MS = 4 * 60 * 1000; // 4 min: refresh before the 5 min expiry
+  const [video, setVideo] = useState<OfferVideoStatus | null | "loading">(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!expanded) return;
+    let cancelled = false;
+    const load = () => {
+      setVideo((prev) => (prev === null ? "loading" : prev));
+      adminGetListingVideo(a.listingId)
+        .then((v) => { if (!cancelled) { setVideo(v); setVideoError(null); } })
+        .catch((err) => {
+          if (cancelled) return;
+          setVideo(null);
+          setVideoError(err instanceof Error ? err.message : "Could not load video");
+        });
+    };
+    load();
+    const id = setInterval(load, PRESIGNED_REFRESH_MS);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [expanded, a.listingId]);
+
+  // The assessment's own `images` is a snapshot taken when the AI ran — empty
+  // when screening was bypassed. Fall back to the listing's live current
+  // photos so approved-but-unmatched listings still show something here.
+  const needsLivePhotos = !a.images || a.images.length === 0;
+  const [livePhotos, setLivePhotos] = useState<ListingPhoto[] | null>(null);
+  const [livePhotosError, setLivePhotosError] = useState<string | null>(null);
+  const [livePhotosLoaded, setLivePhotosLoaded] = useState(false);
+  useEffect(() => {
+    if (!expanded || !needsLivePhotos) return;
+    let cancelled = false;
+    const load = () => {
+      adminGetListingPhotos(a.listingId)
+        .then((p) => { if (!cancelled) { setLivePhotos(p); setLivePhotosError(null); setLivePhotosLoaded(true); } })
+        .catch((err) => {
+          if (cancelled) return;
+          setLivePhotos(null);
+          setLivePhotosError(err instanceof Error ? err.message : "Could not load listing photos");
+          setLivePhotosLoaded(true);
+        });
+    };
+    load();
+    const id = setInterval(load, PRESIGNED_REFRESH_MS);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [expanded, needsLivePhotos, a.listingId]);
+  const livePhotoUrls = (livePhotos ?? [])
+    .filter((p) => p.status === "APPROVED" && p.url)
+    .map((p) => p.url as string);
+
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
       <button className="w-full text-left p-3 sm:p-4 hover:bg-stone-50 transition" onClick={onToggle}>
@@ -1203,6 +1260,34 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
 
           {/* Photos the AI assessed — click any thumbnail for a full-size preview */}
           {a.images && a.images.length > 0 && <PhotoStrip images={a.images} label="Photos assessed" />}
+          {(!a.images || a.images.length === 0) && livePhotoUrls.length > 0 && (
+            <PhotoStrip images={livePhotoUrls} label="Listing photos (live)" />
+          )}
+          {(!a.images || a.images.length === 0) && livePhotosLoaded && livePhotoUrls.length === 0 && livePhotosError && (
+            <p className="text-2xs text-red-500">Could not load listing photos: {livePhotosError}</p>
+          )}
+
+          {/* Donor-uploaded video, if any — optional, so absence is normal, not an error */}
+          {video === "loading" ? (
+            <div className="flex items-center gap-1.5 text-2xs text-stone-400">
+              <Loader2 className="h-3 w-3 animate-spin" /> Checking for donor video…
+            </div>
+          ) : video && video.available && video.playbackUrl ? (
+            <div>
+              <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1">Donor video</p>
+              <video
+                src={video.playbackUrl}
+                controls
+                className="max-h-64 w-full max-w-sm rounded-lg border border-stone-200 bg-black"
+              />
+            </div>
+          ) : video ? (
+            <p className="text-2xs text-stone-400">
+              Donor uploaded a video, but it isn&apos;t available yet ({video.status.replace(/_/g, " ").toLowerCase()}).
+            </p>
+          ) : videoError ? (
+            <p className="text-2xs text-red-500">Could not load donor video: {videoError}</p>
+          ) : null}
 
           {a.evidenceNotes && <p className="text-xs italic text-stone-600">{a.evidenceNotes}</p>}
 
