@@ -13,9 +13,7 @@ interface Milestone {
 
 const SECTION_IDS = [
   { id: "about-causekind", name: "About CauseKind" },
-  { id: "problem-solution-section", name: "The Problem & Solution" },
   { id: "how-it-works", name: "How It Works" },
-  { id: "where-support-goes", name: "Where Support Goes" },
   { id: "live-needs-section", name: "Live Needs" },
   { id: "trust", name: "Trust & Safety" },
   { id: "founders-note", name: "Founder's Note" },
@@ -185,7 +183,7 @@ export function DashedJourneyRoad() {
         <defs>
           <linearGradient id="ck-road-glow" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#B5480F" stopOpacity="0.8" />
-            <stop offset="50%" stopColor="#0F7A6C" stopOpacity="0.8" />
+            <stop offset="50%" stopColor="#1E3A60" stopOpacity="0.8" />
             <stop offset="100%" stopColor="#B5480F" stopOpacity="0.9" />
           </linearGradient>
           <filter id="road-blur" x="-20%" y="-20%" width="140%" height="140%">

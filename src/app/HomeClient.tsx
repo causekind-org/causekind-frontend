@@ -62,9 +62,7 @@ import { toast } from "@/lib/toast";
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
-import { ProblemSolutionSection } from "@/components/home/ProblemSolutionSection";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
-import { SupportJourneySection } from "@/components/home/SupportJourneySection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
@@ -246,17 +244,11 @@ export default function HomeClient({
           trees prevents CTA, image and tour-anchor drift between breakpoints. */}
       <HeroComponent />
 
-      {/* SECTION 1 — WHO ARE WE */}
+      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
       <WhoAreWeSection />
-
-      {/* SECTION 2 — WHAT PROBLEM DO WE SOLVE */}
-      <ProblemSolutionSection />
 
       {/* SECTION 3 — HOW DO WE WORK */}
       <HowItWorksSection />
-
-      {/* SECTION 4 — WHERE DOES MY SUPPORT GO */}
-      <SupportJourneySection />
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       <div className="ck-home-paper hidden lg:block relative z-10">

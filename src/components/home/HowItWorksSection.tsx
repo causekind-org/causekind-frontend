@@ -15,7 +15,7 @@ import {
   PackageCheck,
   ArrowRight,
 } from "lucide-react";
-import { LANDING_ROUTES } from "@/lib/landingConstants";
+import { LANDING_ROUTES, HOME_ROLE_COLORS, HOW_IT_WORKS_AUTOPLAY_MS } from "@/lib/landingConstants";
 
 type RoleTab = "donor" | "donee" | "ngo";
 
@@ -43,12 +43,12 @@ interface TabConfig {
 const TABS: TabConfig[] = [
   {
     id: "donor",
-    label: "I want to give",
-    roleColor: "#B5480F",
-    roleColorHover: "#8F3708",
-    roleBgSoft: "#FBEDE3",
-    roleBorder: "rgba(181, 72, 15, 0.25)",
-    roleGlow: "rgba(181, 72, 15, 0.15)",
+    label: HOME_ROLE_COLORS.donor.label,
+    roleColor: HOME_ROLE_COLORS.donor.main,
+    roleColorHover: HOME_ROLE_COLORS.donor.hover,
+    roleBgSoft: HOME_ROLE_COLORS.donor.softBg,
+    roleBorder: HOME_ROLE_COLORS.donor.border,
+    roleGlow: HOME_ROLE_COLORS.donor.glow,
     buttonText: "Join as Donor",
     buttonHref: LANDING_ROUTES.donorRegister,
     steps: [
@@ -84,12 +84,12 @@ const TABS: TabConfig[] = [
   },
   {
     id: "donee",
-    label: "I need help",
-    roleColor: "#0F7A6C",
-    roleColorHover: "#095349",
-    roleBgSoft: "#E3F2EF",
-    roleBorder: "rgba(15, 122, 108, 0.25)",
-    roleGlow: "rgba(15, 122, 108, 0.15)",
+    label: HOME_ROLE_COLORS.donee.label,
+    roleColor: HOME_ROLE_COLORS.donee.main,
+    roleColorHover: HOME_ROLE_COLORS.donee.hover,
+    roleBgSoft: HOME_ROLE_COLORS.donee.softBg,
+    roleBorder: HOME_ROLE_COLORS.donee.border,
+    roleGlow: HOME_ROLE_COLORS.donee.glow,
     buttonText: "Join as a Donee",
     buttonHref: LANDING_ROUTES.doneeRegister,
     steps: [
@@ -125,12 +125,12 @@ const TABS: TabConfig[] = [
   },
   {
     id: "ngo",
-    label: "I'm an NGO",
-    roleColor: "#1F6B3F",
-    roleColorHover: "#14482a",
-    roleBgSoft: "#E5F1E9",
-    roleBorder: "rgba(31, 107, 63, 0.25)",
-    roleGlow: "rgba(31, 107, 63, 0.15)",
+    label: HOME_ROLE_COLORS.ngo.label,
+    roleColor: HOME_ROLE_COLORS.ngo.main,
+    roleColorHover: HOME_ROLE_COLORS.ngo.hover,
+    roleBgSoft: HOME_ROLE_COLORS.ngo.softBg,
+    roleBorder: HOME_ROLE_COLORS.ngo.border,
+    roleGlow: HOME_ROLE_COLORS.ngo.glow,
     buttonText: "Register your NGO",
     buttonHref: LANDING_ROUTES.ngoRegister,
     steps: [
@@ -211,12 +211,12 @@ function StepCard({
     <motion.div
       ref={cardRef}
       className="relative z-10 w-full h-full"
-      initial={{ opacity: 0, y: 18, scale: 0.96 }}
+      initial={{ opacity: 0, y: 14, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -12, scale: 0.97 }}
+      exit={{ opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.16 } }}
       transition={{
-        duration: 0.4,
-        delay: reduceMotion ? 0 : index * 0.08,
+        duration: 0.3,
+        delay: reduceMotion ? 0 : index * 0.05,
         ease: [0.22, 1, 0.36, 1],
       }}
       onMouseMove={handleMouseMove}
@@ -289,34 +289,118 @@ function StepCard({
 export function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const tabListRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(sectionRef, { once: true, amount: 0.15 });
+  const isSectionVisible = useInView(sectionRef, { amount: 0.15 });
+  const hasScrolledIn = useInView(sectionRef, { once: true, amount: 0.15 });
   const reduceMotion = useReducedMotion();
 
   const [activeTab, setActiveTab] = useState<RoleTab>("donor");
-  const [hasScrolledIn, setHasScrolledIn] = useState(false);
+  const [isStoppedPermanently, setIsStoppedPermanently] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+  const [pressedHref, setPressedHref] = useState<string | null>(null);
 
+  const autoTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerStartRef = useRef<number>(Date.now());
+  const remainingMsRef = useRef<number>(HOW_IT_WORKS_AUTOPLAY_MS);
+
+  // Advance to next tab in rotation order (Donor -> Donee -> NGO -> Donor)
+  const advanceTab = useCallback(() => {
+    setActiveTab((current) => {
+      const idx = TABS.findIndex((t) => t.id === current);
+      const nextIdx = (idx + 1) % TABS.length;
+      return TABS[nextIdx].id;
+    });
+    remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
+  }, []);
+
+  // Monitor document visibility (pause when browser tab is inactive)
   useEffect(() => {
-    if (isInView && !hasScrolledIn) {
-      setHasScrolledIn(true);
+    const handleVisibilityChange = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  // Compute pause state (only off-screen, hidden browser tab, permanent stop, or reduced-motion)
+  const isPaused =
+    isStoppedPermanently ||
+    Boolean(reduceMotion) ||
+    !isSectionVisible ||
+    !isPageVisible;
+
+  // Master continuous timer management
+  useEffect(() => {
+    if (isPaused) {
+      if (autoTimerRef.current) {
+        clearTimeout(autoTimerRef.current);
+        autoTimerRef.current = null;
+        // Compute and store remaining milliseconds
+        const elapsed = Date.now() - timerStartRef.current;
+        remainingMsRef.current = Math.max(100, remainingMsRef.current - elapsed);
+      }
+      return;
     }
-  }, [isInView, hasScrolledIn]);
 
-  const currentTabConfig = TABS.find((t) => t.id === activeTab) || TABS[0];
-  const labelText = "HOW IT WORKS";
+    // Active - arm timeout for remaining duration
+    timerStartRef.current = Date.now();
+    const timeoutDuration = remainingMsRef.current;
 
-  // Keyboard navigation for accessible tabs (Left/Right Arrow)
+    autoTimerRef.current = setTimeout(() => {
+      advanceTab();
+    }, timeoutDuration);
+
+    return () => {
+      if (autoTimerRef.current) {
+        clearTimeout(autoTimerRef.current);
+        autoTimerRef.current = null;
+      }
+    };
+  }, [isPaused, activeTab, advanceTab]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
+    };
+  }, []);
+
+  // Manual tab click: switch immediately, restart 2s timer from this tab, KEEP rotating
+  const handleTabClick = (tabId: RoleTab) => {
+    setActiveTab(tabId);
+    remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
+    timerStartRef.current = Date.now();
+  };
+
+  // Keyboard navigation: switch immediately, restart 2s timer, KEEP rotating
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = TABS.findIndex((t) => t.id === activeTab);
     if (e.key === "ArrowRight") {
       e.preventDefault();
       const nextIndex = (currentIndex + 1) % TABS.length;
       setActiveTab(TABS[nextIndex].id);
+      remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
+      timerStartRef.current = Date.now();
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       const prevIndex = (currentIndex - 1 + TABS.length) % TABS.length;
       setActiveTab(TABS[prevIndex].id);
+      remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
+      timerStartRef.current = Date.now();
     }
   };
+
+  // Join button: capture role immediately on pointer down & stop rotation permanently
+  const handlePointerDownJoin = (href: string) => {
+    setIsStoppedPermanently(true);
+    setPressedHref(href);
+  };
+
+  const handleJoinClick = () => {
+    setIsStoppedPermanently(true);
+  };
+
+  const currentTabConfig = TABS.find((t) => t.id === activeTab) || TABS[0];
+  const labelText = "HOW IT WORKS";
 
   return (
     <section
@@ -357,7 +441,7 @@ export function HowItWorksSection() {
               <motion.span
                 key={index}
                 initial={{ opacity: 0, y: 4 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                animate={hasScrolledIn ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.03, delay: 0.05 + index * 0.02 }}
               >
                 {char === " " ? "\u00A0" : char}
@@ -399,7 +483,7 @@ export function HowItWorksSection() {
                   aria-selected={isActive}
                   aria-controls={`tabpanel-${tab.id}`}
                   tabIndex={isActive ? 0 : -1}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabClick(tab.id)}
                   className={`relative px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-bold tracking-tight transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 shrink-0 ${
                     isActive
                       ? "text-white shadow-xs"
@@ -411,7 +495,7 @@ export function HowItWorksSection() {
                       layoutId="activeTabPill"
                       className="absolute inset-0 rounded-full"
                       style={{ backgroundColor: tab.roleColor }}
-                      transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                      transition={{ type: "spring", stiffness: 450, damping: 32 }}
                     />
                   )}
                   <span className="relative z-10">{tab.label}</span>
@@ -440,14 +524,21 @@ export function HowItWorksSection() {
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 key={activeTab} // redraws when tab switches
-                transition={{ duration: hasScrolledIn ? 0.6 : 1.0, ease: "easeInOut" }}
+                transition={{ duration: 0.35, ease: "easeInOut" }}
               />
             </svg>
           </div>
 
-          {/* 4 Symmetrically Centred Steps Cards Grid */}
-          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4 items-stretch justify-items-stretch w-full">
-            <AnimatePresence mode="wait">
+          {/* 4 Symmetrically Centred Steps Cards Grid (wrapped in single animated motion container) */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.12 } }}
+              transition={{ duration: 0.2 }}
+              className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4 items-stretch justify-items-stretch w-full"
+            >
               {currentTabConfig.steps.map((step, idx) => (
                 <StepCard
                   key={`${activeTab}-step-${step.number}`}
@@ -458,8 +549,8 @@ export function HowItWorksSection() {
                   roleBorder={currentTabConfig.roleBorder}
                 />
               ))}
-            </AnimatePresence>
-          </div>
+            </motion.div>
+          </AnimatePresence>
 
           {/* Role CTA Button at the bottom of the active tab */}
           <motion.div
@@ -467,9 +558,13 @@ export function HowItWorksSection() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             key={`cta-${activeTab}`}
-            transition={{ duration: 0.35, delay: 0.2 }}
+            transition={{ duration: 0.25, delay: 0.1 }}
           >
-            <Link href={currentTabConfig.buttonHref}>
+            <Link
+              href={pressedHref || currentTabConfig.buttonHref}
+              onPointerDown={() => handlePointerDownJoin(currentTabConfig.buttonHref)}
+              onClick={handleJoinClick}
+            >
               <motion.button
                 className="group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-7 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm text-white shadow-sm hover:shadow-md transition-all duration-300 active:scale-98 cursor-pointer"
                 style={{
@@ -489,4 +584,5 @@ export function HowItWorksSection() {
     </section>
   );
 }
+
 

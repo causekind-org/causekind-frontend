@@ -18,7 +18,7 @@ import {
   Calendar,
   Smile,
 } from "lucide-react";
-import { ENABLE_SUPPORT_JOURNEY_ANIMATION } from "@/lib/landingConstants";
+import { ENABLE_SUPPORT_JOURNEY_ANIMATION, HOME_ROLE_COLORS } from "@/lib/landingConstants";
 
 // Illustrated Handover Icons (2 hands meeting prominently with warm orange tone)
 function HandsMeetingIcon({ className = "" }: { className?: string }) {
@@ -217,32 +217,32 @@ export function SupportJourneySection() {
       title: "Your item",
       desc: "Books, clothes, or appliances you no longer use",
       icon: Package,
-      color: "#B5480F",
-      bgSoft: "#FBEDE3",
+      color: HOME_ROLE_COLORS.donor.main,
+      bgSoft: HOME_ROLE_COLORS.donor.softBg,
     },
     {
       step: "02",
       title: "Verified person nearby",
       desc: "Govt-ID & address checked before matching",
       icon: ShieldCheck,
-      color: "#0F7A6C",
-      bgSoft: "#E3F2EF",
+      color: HOME_ROLE_COLORS.donee.main,
+      bgSoft: HOME_ROLE_COLORS.donee.softBg,
     },
     {
       step: "03",
       title: "Handed over in person",
       desc: "Direct handover within 10 km, no middlemen",
       icon: HeartHandshake,
-      color: "#1F6B3F",
-      bgSoft: "#E5F1E9",
+      color: HOME_ROLE_COLORS.ngo.main,
+      bgSoft: HOME_ROLE_COLORS.ngo.softBg,
     },
     {
       step: "04",
       title: "Impact certificate",
       desc: "Instant digital proof of your direct contribution",
       icon: Award,
-      color: "#B5480F",
-      bgSoft: "#FBEDE3",
+      color: HOME_ROLE_COLORS.donor.main,
+      bgSoft: HOME_ROLE_COLORS.donor.softBg,
     },
   ];
 
@@ -627,11 +627,11 @@ export function SupportJourneySection() {
 
             {/* STOP 2: Verified person nearby */}
             <div className="relative z-10 flex flex-col items-center w-[230px] shrink-0">
-              <div className="ck-stop-pin w-11 h-11 rounded-2xl bg-[#E3F2EF] dark:bg-[#0D2421] border-2 border-[#0F7A6C] flex items-center justify-center text-[#0F7A6C] shadow-md mb-3">
+              <div className="ck-stop-pin w-11 h-11 rounded-2xl bg-[#EBF2FA] dark:bg-[#0E1B2A] border-2 border-[#1E3A60] dark:border-[#7FB0E8] flex items-center justify-center text-[#1E3A60] dark:text-[#7FB0E8] shadow-md mb-3">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="ck-stop-card w-full h-[116px] p-3.5 rounded-2xl bg-white dark:bg-[#1A1310] border border-stone-200/90 dark:border-stone-800 shadow-xs flex flex-col justify-center text-center">
-                <span className="text-4xs font-extrabold uppercase tracking-widest text-[#0F7A6C] px-2 py-0.5 rounded-full bg-[#E3F2EF] dark:bg-[#0D2421] mb-1.5 self-center inline-block">
+                <span className="text-4xs font-extrabold uppercase tracking-widest text-[#1E3A60] dark:text-[#7FB0E8] px-2 py-0.5 rounded-full bg-[#EBF2FA] dark:bg-[#0E1B2A] mb-1.5 self-center inline-block">
                   Stop 02
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">

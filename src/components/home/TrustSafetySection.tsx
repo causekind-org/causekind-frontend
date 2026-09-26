@@ -11,6 +11,7 @@ import {
   KeyRound,
   ShieldCheck,
 } from "lucide-react";
+import { HOME_ROLE_COLORS } from "@/lib/landingConstants";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -31,12 +32,12 @@ interface TrustCardData {
 const TRUST_CARDS: TrustCardData[] = [
   {
     id: "donor",
-    roleTitle: "FOR DONORS",
-    roleSubtitle: "Give with absolute confidence",
-    roleColor: "#B5480F",
-    accentBg: "bg-[#B5480F]/10 text-[#B5480F] dark:bg-[#B5480F]/20 dark:text-[#E07A5F]",
-    borderHover: "hover:border-[#B5480F]/50 hover:shadow-[#B5480F]/10",
-    glowColor: "rgba(181, 72, 15, 0.15)",
+    roleTitle: HOME_ROLE_COLORS.donor.roleTitle,
+    roleSubtitle: HOME_ROLE_COLORS.donor.roleSubtitle,
+    roleColor: HOME_ROLE_COLORS.donor.main,
+    accentBg: HOME_ROLE_COLORS.donor.accentBgClass,
+    borderHover: HOME_ROLE_COLORS.donor.borderHoverClass,
+    glowColor: HOME_ROLE_COLORS.donor.glow,
     icon: Heart,
     points: [
       "Every donee and NGO is verified before their need goes live.",
@@ -46,12 +47,12 @@ const TRUST_CARDS: TrustCardData[] = [
   },
   {
     id: "donee",
-    roleTitle: "FOR DONEES",
-    roleSubtitle: "Receive with safety and dignity",
-    roleColor: "#0F7A6C",
-    accentBg: "bg-[#0F7A6C]/10 text-[#0F7A6C] dark:bg-[#0F7A6C]/20 dark:text-[#2EC4B6]",
-    borderHover: "hover:border-[#0F7A6C]/50 hover:shadow-[#0F7A6C]/10",
-    glowColor: "rgba(15, 122, 108, 0.15)",
+    roleTitle: HOME_ROLE_COLORS.donee.roleTitle,
+    roleSubtitle: HOME_ROLE_COLORS.donee.roleSubtitle,
+    roleColor: HOME_ROLE_COLORS.donee.main,
+    accentBg: HOME_ROLE_COLORS.donee.accentBgClass,
+    borderHover: HOME_ROLE_COLORS.donee.borderHoverClass,
+    glowColor: HOME_ROLE_COLORS.donee.glow,
     icon: HandHeart,
     points: [
       "Your exact address is never shown publicly.",
@@ -61,12 +62,12 @@ const TRUST_CARDS: TrustCardData[] = [
   },
   {
     id: "ngo",
-    roleTitle: "FOR NGOS",
-    roleSubtitle: "Legitimate community partners",
-    roleColor: "#1F6B3F",
-    accentBg: "bg-[#1F6B3F]/10 text-[#1F6B3F] dark:bg-[#1F6B3F]/20 dark:text-[#52B788]",
-    borderHover: "hover:border-[#1F6B3F]/50 hover:shadow-[#1F6B3F]/10",
-    glowColor: "rgba(31, 107, 63, 0.15)",
+    roleTitle: HOME_ROLE_COLORS.ngo.roleTitle,
+    roleSubtitle: HOME_ROLE_COLORS.ngo.roleSubtitle,
+    roleColor: HOME_ROLE_COLORS.ngo.main,
+    accentBg: HOME_ROLE_COLORS.ngo.accentBgClass,
+    borderHover: HOME_ROLE_COLORS.ngo.borderHoverClass,
+    glowColor: HOME_ROLE_COLORS.ngo.glow,
     icon: Building2,
     points: [
       "Every NGO is checked with official documents before it can post.",
@@ -116,11 +117,13 @@ export function TrustSafetySection({
       const shieldGlow = document.querySelector<SVGCircleElement>(".shield-glow");
 
       // Initial positions for shield pieces (scattered)
-      gsap.set(shieldPieces[0], { x: -60, y: -40, rotation: -25, opacity: 0, transformOrigin: "center" });
-      gsap.set(shieldPieces[1], { x: 60, y: -40, rotation: 25, opacity: 0, transformOrigin: "center" });
-      gsap.set(shieldPieces[2], { x: -50, y: 50, rotation: -15, opacity: 0, transformOrigin: "center" });
-      gsap.set(shieldPieces[3], { x: 50, y: 50, rotation: 15, opacity: 0, transformOrigin: "center" });
-      gsap.set(shieldPieces[4], { scale: 0, opacity: 0, transformOrigin: "center" }); // center core
+      if (shieldPieces.length >= 5) {
+        gsap.set(shieldPieces[0], { x: -60, y: -40, rotation: -25, opacity: 0, transformOrigin: "center" });
+        gsap.set(shieldPieces[1], { x: 60, y: -40, rotation: 25, opacity: 0, transformOrigin: "center" });
+        gsap.set(shieldPieces[2], { x: -50, y: 50, rotation: -15, opacity: 0, transformOrigin: "center" });
+        gsap.set(shieldPieces[3], { x: 50, y: 50, rotation: 15, opacity: 0, transformOrigin: "center" });
+        gsap.set(shieldPieces[4], { scale: 0, opacity: 0, transformOrigin: "center" }); // center core
+      }
 
       if (shieldCheck) {
         const length = shieldCheck.getTotalLength ? shieldCheck.getTotalLength() : 60;
@@ -282,7 +285,7 @@ export function TrustSafetySection({
     >
       {/* Background Subtle Gradient Glows */}
       <div
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-b from-[#B5480F]/5 via-[#0F7A6C]/5 to-transparent rounded-full blur-3xl pointer-events-none"
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-b from-[#B5480F]/5 via-[#1E3A60]/5 to-transparent rounded-full blur-3xl pointer-events-none"
         aria-hidden="true"
       />
 
@@ -320,17 +323,17 @@ export function TrustSafetySection({
                 d="M50 8 L82 22 V50 C82 50 82 58 76 67 L50 50 Z"
                 fill="#D4602C"
               />
-              {/* Piece 3: Bottom-Left Wing */}
+              {/* Piece 3: Bottom-Left Wing (Donee Blue) */}
               <path
                 className="shield-piece"
                 d="M24 67 C32 80 50 92 50 92 V50 L24 67 Z"
-                fill="#0F7A6C"
+                fill={HOME_ROLE_COLORS.donee.main}
               />
-              {/* Piece 4: Bottom-Right Wing */}
+              {/* Piece 4: Bottom-Right Wing (NGO Green) */}
               <path
                 className="shield-piece"
                 d="M76 67 C68 80 50 92 50 92 V50 L76 67 Z"
-                fill="#1F6B3F"
+                fill={HOME_ROLE_COLORS.ngo.main}
               />
               {/* Piece 5: Center Core Star/Emblem */}
               <circle
@@ -459,7 +462,7 @@ export function TrustSafetySection({
 
           {/* Stat 2: 10 km */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-l border-stone-200/60 dark:border-stone-800/60">
-            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#0F7A6C] font-mono tracking-tight">
+            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#1E3A60] dark:text-[#7FB0E8] font-mono tracking-tight">
               {stat2} km
             </div>
             <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">

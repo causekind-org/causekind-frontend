@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
-import { CONTACT_INFO, LANDING_ROUTES } from "@/lib/landingConstants";
+import { CONTACT_INFO, LANDING_ROUTES, HOME_ROLE_COLORS } from "@/lib/landingConstants";
 import { WhatsAppTellAFriendButton } from "@/components/home/WhatsAppTellAFriend";
 
 if (typeof window !== "undefined") {
@@ -217,8 +217,8 @@ export function FinalCtaSection({
             <div className="aurora-blob-1 absolute top-[-10%] left-[20%] w-[320px] h-[320px] rounded-full bg-[#B5480F]/25 blur-3xl" />
             {/* Blob 2: Peach Glow */}
             <div className="aurora-blob-2 absolute bottom-[-10%] right-[25%] w-[340px] h-[340px] rounded-full bg-[#F4A25B]/20 blur-3xl" />
-            {/* Blob 3: Subtle Teal Depth */}
-            <div className="aurora-blob-3 absolute top-[30%] left-[55%] w-[260px] h-[260px] rounded-full bg-[#0F7A6C]/15 blur-3xl" />
+            {/* Blob 3: Subtle Blue Depth */}
+            <div className="aurora-blob-3 absolute top-[30%] left-[55%] w-[260px] h-[260px] rounded-full bg-[#1E3A60]/20 dark:bg-[#7FB0E8]/15 blur-3xl" />
             {/* Dark vignette overlay */}
             <div className="absolute inset-0 bg-radial from-transparent via-[#1C1410]/40 to-[#1C1410]/80 dark:via-[#241A15]/40 dark:to-[#241A15]/80" />
           </div>
@@ -275,7 +275,7 @@ export function FinalCtaSection({
               {/* Button 2: Donee */}
               <Link
                 href={LANDING_ROUTES.doneeRegister}
-                className="cta-action-btn relative group overflow-hidden flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#0F7A6C] hover:bg-[#139181] text-white font-bold text-xs sm:text-[13px] tracking-wide shadow-md transition-all duration-200 active:scale-95"
+                className="cta-action-btn relative group overflow-hidden flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#1E3A60] hover:bg-[#2D5A96] text-white font-bold text-xs sm:text-[13px] tracking-wide shadow-md transition-all duration-200 active:scale-95"
               >
                 {/* Periodic Shimmer sweep */}
                 <span

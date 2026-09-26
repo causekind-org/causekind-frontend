@@ -663,7 +663,8 @@ export function Chapter2TheEcosystem() {
           const syncLoops = () => {
             const p = tl.progress();
             loops.forEach((l, i) => {
-              const on = isActive && p >= windows[i][0] && p <= windows[i][1];
+              const win = windows[i];
+              const on = isActive && win && p >= win[0] && p <= win[1];
               if (on === playing[i]) return;
               playing[i] = on;
               if (on) l.play();
