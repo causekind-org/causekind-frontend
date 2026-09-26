@@ -30,9 +30,17 @@
  *
  * <p><b>Reduced motion</b> gets a still: the room, her holding the bag, and
  * both lines of copy. No pin, no scrub.
+ *
+ * <p><b>Lead-in (`leadInRef`).</b> On the home page the stage sits *underneath*
+ * the hero, in the same grid cell (see `.ck-hero-film` in styles.css). With a
+ * lead-in the stage pins from the first scroll, the hero scrolls off it like
+ * a sheet, the title card rises as the hero's bottom edge climbs, and the
+ * scrubbed film only starts once the hero has fully cleared the header — so
+ * nothing plays unseen behind it. Without one, the stage behaves as it always
+ * has: a section below the hero that pins when it reaches the top.
  */
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
@@ -40,6 +48,7 @@ import { CustomEase } from "gsap/CustomEase";
 import { CustomWiggle } from "gsap/CustomWiggle";
 
 import styles from "./cinematic/cinematic.module.css";
+import { cineFonts } from "./cinematic/fonts";
 import { RoomDefs, RoomScene } from "./cinematic/RoomScene";
 import { BAG, GIVER, GIVER_HOLDING } from "./cinematic/cutouts";
 import { P } from "./cinematic/palette";
@@ -50,7 +59,11 @@ import {
   clamp,
   lerp,
   measureStage,
+  pointAt,
+  samplePath,
   setT,
+  warmTimeline,
+  type PathLUT,
   toScreen,
   type Stage,
 } from "./cinematic/rig";
@@ -93,17 +106,84 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 const place = (t: { x: number; y: number; s: number }) =>
   `translate(${r1(t.x)} ${r1(t.y)}) scale(${t.s.toFixed(4)})`;
 
-// Thought cloud, above-left of her head.
-const CLOUD = { cx: 1142, cy: 322, rx: 134, ry: 28 };
-const PUFFS = Array.from({ length: 12 }, (_, i) => {
-  const a = (i / 12) * Math.PI * 2;
-  return {
-    x: r1(CLOUD.cx + Math.cos(a) * CLOUD.rx),
-    y: r1(CLOUD.cy + Math.sin(a) * CLOUD.ry),
-    r: 29 + ((i * 7) % 3) * 5,
-  };
-});
-const THOUGHT = ["“I", "don’t", "use", "this", "anymore.”"];
+// ── The thought cloud ──
+//
+// One continuous scalloped outline, not a pile of overlapping circles: points
+// are spaced evenly along an ellipse (by arc length, so the bumps are even all
+// the way round) and joined by outward-bulging arcs. The same path is the fill
+// and the ink line, so the DrawSVG pass sketches a single stroke.
+type CloudSpec = {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+  bumps: number;
+  /** The three "thinking" dots from her head to the cloud, smallest first. */
+  dots: [number, number][];
+};
+
+function cloudPath({ cx, cy, rx, ry, bumps }: CloudSpec) {
+  const N = 360;
+  const ring = Array.from({ length: N + 1 }, (_, i) => {
+    const a = -Math.PI / 2 + (i / N) * Math.PI * 2;
+    return [cx + Math.cos(a) * rx, cy + Math.sin(a) * ry] as const;
+  });
+  const acc = [0];
+  for (let i = 1; i <= N; i++) {
+    acc.push(acc[i - 1] + Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]));
+  }
+  const total = acc[N];
+  const pts: (readonly [number, number])[] = [];
+  let j = 0;
+  for (let b = 0; b < bumps; b++) {
+    const want = (b / bumps) * total;
+    while (acc[j + 1] < want) j++;
+    const t = (want - acc[j]) / (acc[j + 1] - acc[j] || 1);
+    pts.push([
+      ring[j][0] + (ring[j + 1][0] - ring[j][0]) * t,
+      ring[j][1] + (ring[j + 1][1] - ring[j][1]) * t,
+    ]);
+  }
+  let d = `M ${r1(pts[0][0])} ${r1(pts[0][1])}`;
+  pts.forEach((p, i) => {
+    const n = pts[(i + 1) % pts.length];
+    // Slightly uneven bumps read as drawn, not generated.
+    const r = (Math.hypot(n[0] - p[0], n[1] - p[1]) / 2) * (1.04 + ((i * 5) % 3) * 0.07);
+    d += ` A ${r1(r)} ${r1(r)} 0 0 1 ${r1(n[0])} ${r1(n[1])}`;
+  });
+  return `${d} Z`;
+}
+
+/** Landscape: to the left of her head, dots trailing right to it. */
+const CLOUD_L: CloudSpec = {
+  cx: 1112,
+  cy: 318,
+  rx: 128,
+  ry: 50,
+  bumps: 11,
+  dots: [
+    [1318, 378],
+    [1302, 364],
+    [1282, 348],
+  ],
+};
+/** Portrait: above her head, so cloud + girl fit a phone-width frame. */
+const CLOUD_P: CloudSpec = {
+  cx: 1238,
+  cy: 262,
+  rx: 118,
+  ry: 50,
+  bumps: 10,
+  dots: [
+    [1330, 372],
+    [1318, 356],
+    [1302, 338],
+  ],
+};
+const THOUGHT_LINES = [
+  ["“I", "don’t", "use"],
+  ["this", "anymore.”"],
+];
 
 // Dust kicked up when the bag leaves the box.
 const DUST = Array.from({ length: 14 }, (_, i) => {
@@ -121,7 +201,67 @@ const smooth = (a: number, b: number, v: number) => {
   return t * t * (3 - 2 * t);
 };
 
-export function Chapter1TheUnusedThing() {
+function ThoughtBubble({ spec, variant }: { spec: CloudSpec; variant: "l" | "p" }) {
+  const d = cloudPath(spec);
+  const dotR = [4.5, 7, 10];
+  return (
+    <g className={`c1-bubble c1-bubble-${variant}`} opacity="0">
+      {spec.dots.map(([x, y], i) => (
+        <circle
+          key={i}
+          className="c1-bdot"
+          cx={x}
+          cy={y}
+          r={dotR[i]}
+          fill={P.cream}
+          stroke={P.inkSoft}
+          strokeWidth="2.5"
+        />
+      ))}
+      <g className="c1-cloud">
+        {/* Soft offset shadow, then paper, then one continuous ink line. */}
+        <path d={d} transform="translate(4 6)" fill={P.inkSoft} opacity="0.12" className="c1-cloud-fill" />
+        <path d={d} fill={P.cream} className="c1-cloud-fill" />
+        <path
+          d={d}
+          className="c1-cloud-line"
+          fill="none"
+          stroke={P.inkSoft}
+          strokeWidth="3.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        <text
+          x={spec.cx}
+          y={spec.cy - 6}
+          textAnchor="middle"
+          fontSize="27"
+          fontStyle="italic"
+          fontWeight="600"
+          fill={P.ink}
+          style={{ fontFamily: "var(--font-cine-serif), Georgia, serif" }}
+        >
+          {THOUGHT_LINES.map((line, li) => (
+            <tspan key={li} x={spec.cx} dy={li ? 32 : 0}>
+              {line.map((w, i) => (
+                <tspan key={i} className="c1-thought-w">
+                  {i ? ` ${w}` : w}
+                </tspan>
+              ))}
+            </tspan>
+          ))}
+        </text>
+      </g>
+    </g>
+  );
+}
+
+export function Chapter1TheUnusedThing({
+  leadInRef,
+}: {
+  /** The element laid over the stage's first screen (the hero), if any. */
+  leadInRef?: RefObject<HTMLElement | null>;
+} = {}) {
   const rootRef = useRef<HTMLElement>(null);
 
   useIsoLayoutEffect(() => {
@@ -146,6 +286,8 @@ export function Chapter1TheUnusedThing() {
 
       let st: Stage = measureStage(root);
       let exitLen = 0;
+      /** The exit arc, sampled at measure time — see `samplePath`. */
+      let exitLut: PathLUT = samplePath(null);
       /** Motion blur is an SVG filter re-run every frame — desktop with a mouse only. */
       let heavyFx = false;
       const roomSvg = one<SVGSVGElement>(".c1-room-svg");
@@ -186,13 +328,16 @@ export function Chapter1TheUnusedThing() {
        */
       const camKeys = () => {
         const p = st.portrait;
-        const k3 = frame(p ? 420 : 620);
+        const k3 = frame(p ? 460 : 620);
+        // Portrait frames are centred on her (x ≈ 1200–1490) so she is never
+        // cut at the right edge, and the thought shot also holds the cloud,
+        // which sits above her head on a phone (CLOUD_P).
         return [
-          { s: p ? frame(1250) : frame(1600) * 0.98, x: p ? 900 : 800, y: 470 },
-          { s: frame(p ? 520 : 840), x: p ? 1235 : 1215, y: p ? 470 : 480 },
-          { s: frame(p ? 470 : 740), x: p ? 1196 : 1225, y: 452 },
-          { s: k3, x: p ? 1270 : 1265, y: 500 },
-          { s: k3 * 1.35, x: p ? 1270 : 1265, y: 500 },
+          { s: p ? frame(1120) : frame(1600) * 0.98, x: p ? 930 : 800, y: p ? 510 : 470 },
+          { s: frame(p ? 540 : 840), x: p ? 1270 : 1215, y: 480 },
+          { s: frame(p ? 480 : 740), x: p ? 1290 : 1225, y: p ? 440 : 452 },
+          { s: k3, x: p ? 1300 : 1265, y: 500 },
+          { s: k3 * 1.35, x: p ? 1290 : 1265, y: 500 },
         ];
       };
       const camNow = () => {
@@ -220,7 +365,8 @@ export function Chapter1TheUnusedThing() {
           `C ${r1(rx)} ${r1(sy + h * 0.24)} ${r1(seam)} ${r1(sy + h * 0.14)} ${r1(seam)} ${r1(sy + h * 0.4)} ` +
           `L ${r1(seam)} ${r1(bottom + 700)}`;
         exitPaths.forEach((p) => p.setAttribute("d", d));
-        exitLen = exitRef?.getTotalLength?.() ?? 0;
+        exitLut = samplePath(exitRef);
+        exitLen = exitLut.len;
         exitPaths.forEach((p) => {
           if (p.classList.contains("c1-trail-pulse")) return;
           p.style.strokeDasharray = `${exitLen} ${exitLen + 10}`;
@@ -229,6 +375,9 @@ export function Chapter1TheUnusedThing() {
 
       const measure = () => {
         st = measureStage(root);
+        // One thought cloud per orientation; the other is never painted.
+        one<SVGGElement>(".c1-bubble-l")?.setAttribute("visibility", st.portrait ? "hidden" : "visible");
+        one<SVGGElement>(".c1-bubble-p")?.setAttribute("visibility", st.portrait ? "visible" : "hidden");
         heavyFx = !st.portrait && window.matchMedia("(pointer: fine)").matches;
         root.style.setProperty("--hdr", `${st.headerPx}px`);
         buildExit();
@@ -274,8 +423,8 @@ export function Chapter1TheUnusedThing() {
         // …then flung along the exit path.
         if (R.exit > 0 && exitLen > 0 && exitRef) {
           const at = exitLen * R.exit;
-          const p = exitRef.getPointAtLength(at);
-          const p2 = exitRef.getPointAtLength(Math.min(exitLen, at + 6));
+          const p = pointAt(exitLut, at);
+          const p2 = pointAt(exitLut, Math.min(exitLen, at + 6));
           const vx = p2.x - p.x;
           const vy = p2.y - p.y;
           const ang = (Math.atan2(vy, vx) * 180) / Math.PI;
@@ -303,7 +452,7 @@ export function Chapter1TheUnusedThing() {
               s.setAttribute("opacity", "0");
               return;
             }
-            const sp = exitRef.getPointAtLength(back);
+            const sp = pointAt(exitLut, back);
             const jitter = Math.sin(clock * 9 + i * 2.3) * (4 + i);
             s.setAttribute("cx", `${r1(sp.x + jitter)}`);
             s.setAttribute("cy", `${r1(sp.y - jitter * 0.6)}`);
@@ -404,7 +553,10 @@ export function Chapter1TheUnusedThing() {
           const portrait = st.portrait;
           const lite = portrait || window.matchMedia("(pointer: coarse)").matches;
 
-          // Title card reveal as the section scrolls up under the hero.
+          const leadEl = leadInRef?.current ?? null;
+
+          // Title card reveal: as the section scrolls up under the hero or, with
+          // a lead-in, as the hero's bottom edge climbs off the pinned stage.
           gsap.fromTo(
             q(".c1-t-w"),
             { yPercent: 110 },
@@ -412,21 +564,53 @@ export function Chapter1TheUnusedThing() {
               yPercent: 0,
               stagger: 0.08,
               ease: "power3.out",
-              scrollTrigger: { trigger: root, start: "top 85%", end: "top 25%", scrub: 0.6 },
+              scrollTrigger: leadEl
+                ? { trigger: leadEl, start: "bottom bottom", end: "bottom 30%", scrub: 0.6 }
+                : { trigger: root, start: "top 85%", end: "top 25%", scrub: 0.6 },
             },
           );
 
-          const tl = gsap.timeline({
-            defaults: { ease: "power2.inOut" },
-            onUpdate: apply,
-            scrollTrigger: {
+          /** Scroll the film itself is scrubbed over. */
+          const filmPx = () => window.innerHeight * (portrait ? 5.6 : 7.2);
+          let filmTrigger: ScrollTrigger.Vars;
+          if (leadEl) {
+            /*
+             * Pinned from the moment the stage reaches the top — which, sitting
+             * under the hero, is the first scroll — for the lead-in plus the
+             * film. The lead-in is how far the hero still has to travel from
+             * there until it is gone under the header: both start at the same
+             * top, so that is its height less the header's. Measured at refresh
+             * (pins are reverted then), so it follows the hero's real height.
+             */
+            const lead = () => Math.max(0, leadEl.offsetHeight - st.headerPx);
+            const pinST = ScrollTrigger.create({
+              trigger: root,
+              start: "top top",
+              end: () => `+=${lead() + filmPx()}`,
+              pin: true,
+              anticipatePin: 1,
+            });
+            filmTrigger = {
+              trigger: root,
+              start: () => pinST.start + lead(),
+              end: () => pinST.start + lead() + filmPx(),
+              scrub: 0.9,
+            };
+          } else {
+            filmTrigger = {
               trigger: root,
               start: "top top",
               end: portrait ? "+=560%" : "+=720%",
               pin: true,
               scrub: 0.9,
               anticipatePin: 1,
-            },
+            };
+          }
+
+          const tl = gsap.timeline({
+            defaults: { ease: "power2.inOut" },
+            onUpdate: apply,
+            scrollTrigger: filmTrigger,
           });
 
           apply();
@@ -441,12 +625,19 @@ export function Chapter1TheUnusedThing() {
             q(`.r-${name}`).forEach((obj) => {
               const ink = obj.querySelector(":scope > .ink");
               const paint = obj.querySelector(":scope > .paint");
-              if (!ink || !paint) return;
+              if (!paint) return;
               // Phones: no ink pass. It doubles the room's shapes and redraws
               // hundreds of outlines per frame — the costliest part of the film
               // on a phone CPU. Objects simply fade in there.
-              if (lite) {
-                ink.remove();
+              //
+              // The ink is taken out of rendering with a reversible
+              // `display: none`, never deleted. It used to be `ink.remove()`,
+              // and a second run of this setup on the same DOM (React Strict
+              // Mode in development, Fast Refresh) then found no ink and
+              // returned before scheduling the paint — so every sketched object
+              // (sofa, shelf, window, lamp, door, box) stayed invisible.
+              if (lite || !ink) {
+                if (ink) gsap.set(ink, { display: "none" });
                 tl.to(paint, { autoAlpha: 1, duration: dur * 0.5, ease: "power1.out" }, at + dur * 0.2);
                 return;
               }
@@ -733,20 +924,15 @@ export function Chapter1TheUnusedThing() {
             24.4,
           );
           tl.fromTo(
-            q(".c1-cloud-line circle"),
+            q(".c1-cloud-line"),
             { drawSVG: "0%" },
-            { drawSVG: "100%", duration: 1.6, stagger: { amount: 0.8 }, ease: "power1.inOut" },
+            { drawSVG: "100%", duration: 2, ease: "power1.inOut" },
             25.4,
           );
-          tl.from(q(".c1-cloud-fill"), { opacity: 0, duration: 1 }, 26.6);
+          tl.from(q(".c1-cloud-fill"), { opacity: 0, duration: 1 }, 26.4);
           tl.from(
             q(".c1-cloud"),
-            {
-              scale: 0.7,
-              svgOrigin: `${CLOUD.cx} ${CLOUD.cy}`,
-              duration: 1.6,
-              ease: "back.out(1.8)",
-            },
+            { scale: 0.82, transformOrigin: "50% 50%", duration: 1.6, ease: "back.out(1.6)" },
             25.4,
           );
           tl.fromTo(
@@ -759,7 +945,7 @@ export function Chapter1TheUnusedThing() {
           // ── 34–48: pick-up ───────────────────────────────────────────────
           tl.to(
             q(".c1-cloud"),
-            { scale: 1.2, svgOrigin: `${CLOUD.cx} ${CLOUD.cy}`, duration: 0.6, ease: "power2.in" },
+            { scale: 1.12, transformOrigin: "50% 50%", duration: 0.6, ease: "power2.in" },
             33.6,
           );
           tl.to(q(".c1-bubble"), { opacity: 0, duration: 0.6 }, 33.8);
@@ -848,7 +1034,8 @@ export function Chapter1TheUnusedThing() {
           );
           tl.fromTo(
             q(".c1-l1"),
-            { letterSpacing: "0.2em" },
+            // A phone has no room for the wide tracking; it would spill off both edges.
+            { letterSpacing: portrait ? "0.05em" : "0.2em" },
             { letterSpacing: "0.01em", duration: 6, ease: "power3.out" },
             56,
           );
@@ -857,7 +1044,7 @@ export function Chapter1TheUnusedThing() {
           tl.to(
             q(".c1-l1"),
             {
-              scale: 1.18,
+              scale: portrait ? 1.03 : 1.18,
               opacity: 0.55,
               color: "rgba(243,230,207,0)",
               "--ghost": "rgba(251,241,221,0.5)",
@@ -1065,7 +1252,16 @@ export function Chapter1TheUnusedThing() {
           });
 
           ScrollTrigger.addEventListener("refreshInit", measure);
+          // Initialise every tween now, in idle time, rather than mid-scroll.
+          // Under the hero the stage is hidden only while the page is at rest;
+          // otherwise it is hidden while it is still below the fold.
+          const stopWarm = warmTimeline(
+            tl,
+            () => !!tl.scrollTrigger?.isActive,
+            () => (leadEl ? window.scrollY < 2 : root.getBoundingClientRect().top >= window.innerHeight),
+          );
           return () => {
+            stopWarm();
             ScrollTrigger.removeEventListener("refreshInit", measure);
             gsap.ticker.remove(tick);
             active.kill();
@@ -1084,7 +1280,7 @@ export function Chapter1TheUnusedThing() {
     <section
       ref={rootRef}
       aria-labelledby="ck-ch1-title"
-      className={`${styles.stage} ${styles.ch1} ck-cine-ch1`}
+      className={`${styles.stage} ${styles.ch1} ${cineFonts} ck-cine-ch1`}
     >
       <div className="c1-shake absolute inset-0">
         {/* ── Room ───────────────────────────────────────────────────────── */}
@@ -1139,65 +1335,9 @@ export function Chapter1TheUnusedThing() {
               <path d="M 1298 398 L 1276 410" />
             </g>
 
-            {/* The thought. */}
-            <g className="c1-bubble" opacity="0">
-              <circle
-                className="c1-bdot"
-                cx="1318"
-                cy="376"
-                r="4.5"
-                fill={P.cream}
-                stroke={P.inkSoft}
-                strokeWidth="2"
-              />
-              <circle
-                className="c1-bdot"
-                cx="1302"
-                cy="364"
-                r="7"
-                fill={P.cream}
-                stroke={P.inkSoft}
-                strokeWidth="2"
-              />
-              <circle
-                className="c1-bdot"
-                cx="1282"
-                cy="350"
-                r="10"
-                fill={P.cream}
-                stroke={P.inkSoft}
-                strokeWidth="2"
-              />
-              <g className="c1-cloud">
-                <g className="c1-cloud-line" fill="none" stroke={P.inkSoft} strokeWidth="4">
-                  {PUFFS.map((p, i) => (
-                    <circle key={i} cx={p.x} cy={p.y} r={p.r} />
-                  ))}
-                </g>
-                <g className="c1-cloud-fill" fill={P.cream}>
-                  {PUFFS.map((p, i) => (
-                    <circle key={i} cx={p.x} cy={p.y} r={p.r - 2} />
-                  ))}
-                  <ellipse cx={CLOUD.cx} cy={CLOUD.cy} rx={CLOUD.rx} ry={CLOUD.ry + 8} />
-                </g>
-                <text
-                  x={CLOUD.cx}
-                  y={CLOUD.cy + 9}
-                  textAnchor="middle"
-                  fontSize="26"
-                  fontStyle="italic"
-                  fontWeight="600"
-                  fill={P.ink}
-                  style={{ fontFamily: "var(--font-source-serif-4), Georgia, serif" }}
-                >
-                  {THOUGHT.map((w, i) => (
-                    <tspan key={i} className="c1-thought-w">
-                      {i ? ` ${w}` : w}
-                    </tspan>
-                  ))}
-                </text>
-              </g>
-            </g>
+            {/* The thought — one cloud per orientation (see CLOUD_L / CLOUD_P). */}
+            <ThoughtBubble spec={CLOUD_L} variant="l" />
+            <ThoughtBubble spec={CLOUD_P} variant="p" />
 
             <g className="c1-dust" fill="#e9d3ad" opacity="0">
               {DUST.map((_, i) => (
@@ -1296,15 +1436,15 @@ export function Chapter1TheUnusedThing() {
           style={{ paddingTop: "var(--hdr, 0px)" }}
         >
           <p
-            className={`c1-t-eyebrow ${styles.mono} mb-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.3em] text-[#b04a15] dark:text-[#ff9a5c]`}
+            className={`c1-t-eyebrow ${styles.mono} mb-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.3em] max-md:tracking-[0.2em] text-[#b04a15] dark:text-[#ff9a5c]`}
           >
-            <span className="h-px w-8 bg-current" />
+            <span className="h-px w-8 bg-current max-md:hidden" />
             Chapter one · The unused thing
-            <span className="h-px w-8 bg-current" />
+            <span className="h-px w-8 bg-current max-md:hidden" />
           </p>
           <h2
             id="ck-ch1-title"
-            className={`${styles.display} text-[clamp(2.6rem,9vw,8.5rem)] text-stone-900 dark:text-stone-100`}
+            className={`${styles.display} text-[clamp(2.6rem,9vw,8.5rem)] max-md:text-[clamp(2.6rem,12.5vw,3.4rem)] text-stone-900 dark:text-stone-100`}
           >
             <span className={`c1-t-m ${styles.mask}`}>
               <span className={`c1-t-w ${styles.word}`}>One small thing</span>
@@ -1336,7 +1476,7 @@ export function Chapter1TheUnusedThing() {
             style={{ opacity: 0 }}
           />
           <p
-            className={`c1-l1 ${styles.display} absolute left-0 right-0 -translate-y-1/2 text-[clamp(3rem,11.5vw,12.5rem)]`}
+            className={`c1-l1 ${styles.display} absolute left-0 right-0 -translate-y-1/2 text-[clamp(3rem,11.5vw,12.5rem)] max-md:px-5 max-md:text-[12.5vw]`}
             style={{
               WebkitTextStroke: "1.5px var(--ghost, transparent)",
               top: "calc(50% + var(--hdr, 0px) / 2)",
@@ -1350,7 +1490,7 @@ export function Chapter1TheUnusedThing() {
             ))}
           </p>
           <p
-            className={`c1-l2 ${styles.display} ${styles.glowText} absolute left-0 right-0 translate-y-[-10%] text-[clamp(3.4rem,12.5vw,13.5rem)]`}
+            className={`c1-l2 ${styles.display} ${styles.glowText} absolute left-0 right-0 translate-y-[-10%] text-[clamp(3.4rem,12.5vw,13.5rem)] max-md:px-5 max-md:text-[15vw]`}
             style={{ top: "calc(50% + var(--hdr, 0px) / 2)" }}
           >
             {LINE_2.map((w, i) => (

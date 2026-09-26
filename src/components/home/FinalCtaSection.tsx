@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { CONTACT_INFO, LANDING_ROUTES } from "@/lib/landingConstants";
 import { WhatsAppTellAFriendButton } from "@/components/home/WhatsAppTellAFriend";
+import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -96,10 +97,129 @@ function FloatingItems({ mousePos }: { mousePos: { x: number; y: number } }) {
   );
 }
 
+const WHATSAPP_NOTIFY_URL = `https://wa.me/917719938619?text=${encodeURIComponent(
+  "Hi CauseKind! Please notify me when online donations and fundraising launch."
+)}`;
+
+const HEADING_WORDS: { text: string; accent?: boolean }[] = [
+  { text: "Someone" },
+  { text: "nearby" },
+  { text: "is" },
+  { text: "waiting" },
+  { text: "for" },
+  { text: "what", accent: true },
+  { text: "you", accent: true },
+  { text: "already", accent: true },
+  { text: "have.", accent: true },
+];
+
+/**
+ * Phone version (< 768px). Same dark card, same words, at content height
+ * rather than a full screen. The aurora blobs are blurred, so on a phone they
+ * stay put — a moving 320px blur is exactly the repaint a mid-range Android
+ * drops frames on — and the three joins sit in one row instead of three.
+ */
+function FinalCtaMobile() {
+  const ref = useRevealOnce<HTMLElement>();
+  const joins = [
+    { href: LANDING_ROUTES.donorRegister, label: "Join as Donor", icon: Heart, bg: "bg-[#B5480F] active:bg-[#C95413]" },
+    { href: LANDING_ROUTES.doneeRegister, label: "Join as a Donee", icon: HandHeart, bg: "bg-[#0F7A6C] active:bg-[#139181]" },
+    { href: LANDING_ROUTES.ngoRegister, label: "Register your NGO", icon: Building2, bg: "bg-[#1F6B3F] active:bg-[#27824D]" },
+  ];
+  return (
+    <section ref={ref} id="join" aria-label="Join CauseKind" className="ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] px-4">
+      <div
+        data-reveal-item="scale"
+        style={stagger(0)}
+        className="relative w-full rounded-3xl bg-[#1C1410] dark:bg-[#241A15] border border-stone-800/80 dark:border-stone-700/60 shadow-2xl overflow-hidden px-5 py-6 text-center"
+      >
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          <div className="absolute -top-16 left-[10%] w-56 h-56 rounded-full bg-[#B5480F]/25 blur-3xl" />
+          <div className="absolute -bottom-16 right-[5%] w-56 h-56 rounded-full bg-[#F4A25B]/15 blur-3xl" />
+          <div className="absolute top-1/3 left-1/2 w-40 h-40 rounded-full bg-[#0F7A6C]/15 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center">
+          <div data-reveal-item style={stagger(1)} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase bg-white/10 text-amber-200 border border-white/15 mb-3">
+            <Sparkles className="w-3.5 h-3.5 text-[#F4A25B]" aria-hidden="true" />
+            <span>START IN 60 SECONDS</span>
+          </div>
+          <h2 data-reveal-item style={stagger(2)} className="text-2xl font-extrabold text-white tracking-tight leading-tight">
+            {HEADING_WORDS.map((w, i) => (
+              <span key={i} className={w.accent ? "text-[#F4A25B]" : undefined}>
+                {w.text}
+                {i < HEADING_WORDS.length - 1 ? " " : ""}
+              </span>
+            ))}
+          </h2>
+          <p data-reveal-item style={stagger(3)} className="mt-2 text-xs text-stone-300 leading-relaxed">
+            Join free in a minute. Give, ask, or help your community — whichever side you&apos;re on.
+          </p>
+
+          <div className="grid grid-cols-3 gap-2 w-full mt-5">
+            {joins.map((j, i) => {
+              const Icon = j.icon;
+              return (
+                <Link
+                  key={j.href}
+                  href={j.href}
+                  data-reveal-item
+                  style={stagger(4 + i)}
+                  className={`flex flex-col items-center justify-center gap-1.5 min-h-[4.25rem] px-1.5 py-2.5 rounded-xl text-white font-bold text-[11px] leading-tight shadow-md active:scale-95 transition-transform ${j.bg}`}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span>{j.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div data-reveal-item style={stagger(6)} className="mt-5 flex flex-col items-center gap-2">
+            <p className="text-xs font-semibold text-stone-300">Know someone who&apos;d love this?</p>
+            <WhatsAppTellAFriendButton variant="outline" />
+            <p className="mt-1 text-[11px] font-medium text-stone-400">Free for everyone · Verified · Local</p>
+          </div>
+        </div>
+
+        <div className="relative z-10 mt-5 pt-4 border-t border-stone-800 dark:border-stone-700/60 flex flex-col items-center gap-2.5">
+          <p className="text-stone-300 text-xs text-center">Fundraising, online donations and CSR partnerships are coming soon.</p>
+          <a
+            href={WHATSAPP_NOTIFY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/90 active:bg-emerald-600 text-white text-xs font-semibold active:scale-95 transition-transform"
+          >
+            <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Get updates on WhatsApp</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function FinalCtaSection({
   variant = "desktop",
 }: {
   variant?: "desktop" | "mobile";
+}) {
+  if (variant === "desktop") return <FinalCtaFull variant="desktop" />;
+  return (
+    <>
+      <div className="md:hidden">
+        <FinalCtaMobile />
+      </div>
+      <div className="hidden md:block">
+        <FinalCtaFull variant="mobile" />
+      </div>
+    </>
+  );
+}
+
+function FinalCtaFull({
+  variant,
+}: {
+  variant: "desktop" | "mobile";
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -122,7 +242,8 @@ export function FinalCtaSection({
     if (reduce) return;
 
     const mm = gsap.matchMedia();
-    const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(max-width: 1023px)";
+    // Tablet only for the "mobile" variant — phones render FinalCtaMobile.
+    const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(min-width: 768px) and (max-width: 1023px)";
 
     mm.add(mediaQuery, () => {
       // 1. Aurora background gradient blobs drift
@@ -193,9 +314,7 @@ export function FinalCtaSection({
   }, [reduce, variant]);
 
   // WhatsApp Notify URL with pre-filled message
-  const whatsappNotifyUrl = `https://wa.me/917719938619?text=${encodeURIComponent(
-    "Hi CauseKind! Please notify me when online donations and fundraising launch."
-  )}`;
+  const whatsappNotifyUrl = WHATSAPP_NOTIFY_URL;
 
   return (
     <section

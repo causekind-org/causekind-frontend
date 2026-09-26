@@ -86,6 +86,10 @@ function detectSvgBackdropSupport(): boolean {
   const isWebkit = /Safari/.test(ua) && !/Chrome/.test(ua);
   const isFirefox = /Firefox/.test(ua);
   if (isWebkit || isFirefox) return false;
+  // Touch devices get the CSS surface. The SVG path re-runs three displacement
+  // passes over the backdrop every frame the page moves beneath it — on a
+  // phone GPU that is the single most expensive thing on screen while scrolling.
+  if (window.matchMedia("(pointer: coarse)").matches) return false;
 
   const probe = document.createElement("div");
   probe.style.backdropFilter = "url(#ck-glass-probe)";

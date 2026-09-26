@@ -122,6 +122,24 @@
   }
 }
 
+/* Touch devices: no backdrop blur either. A fixed bar blurring whatever
+   scrolls beneath it re-filters the backdrop on every frame of every scroll;
+   at 0.94 the surface reads the same without it. */
+@media (pointer: coarse) {
+  .ck-glass--fallback {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background:
+      radial-gradient(120% 180% at 50% -80%, rgba(255, 255, 255, 0.9) 0%, transparent 54%),
+      rgba(250, 248, 245, 0.96);
+  }
+  .dark .ck-glass--fallback {
+    background:
+      radial-gradient(120% 180% at 50% -80%, rgba(255, 255, 255, 0.16) 0%, transparent 54%),
+      rgba(9, 9, 11, 0.96);
+  }
+}
+
 /* Users asking for less transparency get an opaque surface, not a blur. */
 @media (prefers-reduced-transparency: reduce) {
   .ck-glass--svg,

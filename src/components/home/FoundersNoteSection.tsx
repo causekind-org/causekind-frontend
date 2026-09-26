@@ -6,6 +6,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Quote } from "lucide-react";
 import { FOUNDER } from "@/lib/landingConstants";
+import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -56,17 +57,106 @@ function FounderAvatarPlaceholder() {
   );
 }
 
+/**
+ * Phone version (< 768px). The 190×237 portrait on its own row, then the note
+ * below it, made a centred column most of a screen tall. Here the portrait
+ * shrinks and sits beside the heading — a letterhead — and the note reads
+ * straight on underneath. The clip-path wipe becomes a plain fade-up.
+ */
+function FoundersNoteMobile() {
+  const ref = useRevealOnce<HTMLElement>();
+  const isDev = process.env.NODE_ENV === "development";
+  return (
+    <section
+      ref={ref}
+      id="founders-note"
+      aria-label="Why We Built CauseKind"
+      className="ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 px-5"
+    >
+      {FOUNDER.isPlaceholder && isDev && (
+        <div className="mb-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-4xs font-black tracking-widest uppercase bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          PLACEHOLDER (Hidden in Production)
+        </div>
+      )}
+
+      <div className="flex items-center gap-4">
+        <div data-reveal-item="scale" style={stagger(0)} className="relative shrink-0">
+          <div className="absolute inset-0 rounded-2xl bg-[#FCEADE] dark:bg-[#2A170F] translate-x-1 translate-y-1" aria-hidden="true" />
+          <div className="relative w-[84px] aspect-[4/5] rounded-2xl overflow-hidden border border-stone-200/90 dark:border-stone-800 bg-white dark:bg-zinc-900">
+            {FOUNDER.photo ? (
+              <Image src={FOUNDER.photo} alt={`${FOUNDER.name}, founder of CauseKind`} fill sizes="84px" className="object-cover object-top" />
+            ) : (
+              <FounderAvatarPlaceholder />
+            )}
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div data-reveal-item style={stagger(1)} className="flex items-center gap-2 mb-1.5">
+            <span className="h-0.5 w-5 rounded-full bg-[#B5480F]" />
+            <p className="text-3xs font-black uppercase tracking-[0.2em] text-[#B5480F] dark:text-[#F4A25B]">WHY WE BUILT CAUSEKIND</p>
+          </div>
+          <h2 data-reveal-item style={stagger(2)} className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
+            Neighbours helping neighbours.
+          </h2>
+        </div>
+      </div>
+
+      <div data-reveal-item style={stagger(3)} className="relative mt-4 pl-4 border-l-2 border-[#B5480F]/25">
+        <Quote className="absolute -left-2 -top-1 w-4 h-4 fill-current rotate-180 text-[#B5480F]/40 bg-[#FAF8F5] dark:bg-[#0E0C0A]" aria-hidden="true" />
+        <div className="space-y-2.5 text-[15px] text-stone-700 dark:text-stone-300 font-medium leading-relaxed">
+          <p>
+            Every home has things it no longer needs. And just a few streets away, someone is waiting for exactly those things.
+            {FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}
+          </p>
+          <p>
+            We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
+          </p>
+        </div>
+      </div>
+
+      <div data-reveal-item style={stagger(4)} className="mt-4 pt-3 border-t border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-base font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">{FOUNDER.name}</p>
+          <p className="text-xs font-semibold text-[#B5480F] dark:text-[#F4A25B] mt-0.5">{FOUNDER.title}</p>
+        </div>
+        {FOUNDER.signature && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={FOUNDER.signature} alt="" aria-hidden className="h-9 w-auto max-w-[45%] dark:invert" />
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function FoundersNoteSection({
   variant = "desktop",
 }: {
   variant?: "desktop" | "mobile";
 }) {
-  const isDev = process.env.NODE_ENV === "development";
-
   // Visibility safety: Hide in production if isPlaceholder is true
-  if (FOUNDER.isPlaceholder && !isDev) {
+  if (FOUNDER.isPlaceholder && process.env.NODE_ENV !== "development") {
     return null;
   }
+  if (variant === "desktop") return <FoundersNoteFull variant="desktop" />;
+  return (
+    <>
+      <div className="md:hidden">
+        <FoundersNoteMobile />
+      </div>
+      <div className="hidden md:block">
+        <FoundersNoteFull variant="mobile" />
+      </div>
+    </>
+  );
+}
+
+function FoundersNoteFull({
+  variant,
+}: {
+  variant: "desktop" | "mobile";
+}) {
+  const isDev = process.env.NODE_ENV === "development";
 
   const sectionRef = useRef<HTMLElement>(null);
   const photoFrameRef = useRef<HTMLDivElement>(null);
@@ -115,7 +205,8 @@ export function FoundersNoteSection({
     if (prefersReducedMotion) return;
 
     const mm = gsap.matchMedia();
-    const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(max-width: 1023px)";
+    // Tablet only for the "mobile" variant — phones render FoundersNoteMobile.
+    const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(min-width: 768px) and (max-width: 1023px)";
 
     mm.add(mediaQuery, () => {
       const tl = gsap.timeline({

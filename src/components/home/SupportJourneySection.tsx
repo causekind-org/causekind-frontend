@@ -20,6 +20,7 @@ import {
   Layers,
   Smile,
 } from "lucide-react";
+import { FlipCard, SnapCarousel, useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 
 // Illustrated Handover Icons (2 hands meeting)
 function HandsMeetingIcon({ className = "" }: { className?: string }) {
@@ -178,6 +179,102 @@ function ImpactCertificateSample() {
           <CheckCircle2 className="w-3.5 h-3.5 text-[#B5480F]" />
           <span>HANDOVER VERIFIED</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+type Stop = {
+  step: string;
+  title: string;
+  desc: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  bgSoft: string;
+};
+type Point = { title: string; text: string; icon: React.ComponentType<{ className?: string }> };
+
+/**
+ * Phone version (< 768px).
+ *
+ * <p>The vertical timeline, certificate and three points were stacked into
+ * about a screen and a half. The stops become a horizontal timeline — the
+ * dashed road runs from each stop's node into the next slide, so the swipe
+ * *is* the journey — and the certificate and the three promises it stands for
+ * share one flip card.
+ */
+function SupportJourneyMobile({ stops, points }: { stops: Stop[]; points: Point[] }) {
+  const ref = useRevealOnce<HTMLDivElement>();
+  return (
+    <div ref={ref} className="md:hidden px-5 mt-5 flex flex-col gap-5">
+      <div data-reveal-item="left" style={stagger(0)}>
+        <SnapCarousel label="Where your item goes" dotsClassName="mt-1">
+          {stops.map((st, i) => {
+            const IconComp = st.icon;
+            const last = i === stops.length - 1;
+            return (
+              <div key={st.step} className="relative flex flex-col">
+                <div className="relative flex items-center h-10 mb-2">
+                  <span
+                    className="relative z-10 w-9 h-9 rounded-full border-2 flex items-center justify-center shadow-xs"
+                    style={{ backgroundColor: st.bgSoft, borderColor: st.color, color: st.color }}
+                  >
+                    <IconComp className="w-4 h-4" />
+                  </span>
+                  {/* The road: runs past this slide's edge, across the gap, to the next node. */}
+                  {!last && (
+                    <span
+                      aria-hidden
+                      className="absolute left-10 -right-3 top-1/2 border-t-2 border-dashed"
+                      style={{ borderColor: `${st.color}66` }}
+                    />
+                  )}
+                </div>
+                <div className="flex-1 p-3.5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-xs">
+                  <span
+                    className="text-4xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: st.bgSoft, color: st.color }}
+                  >
+                    Stop {st.step}
+                  </span>
+                  <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 mt-1.5">{st.title}</h3>
+                  <p className="text-xs text-stone-600 dark:text-stone-300 font-medium mt-0.5 leading-snug">{st.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </SnapCarousel>
+      </div>
+
+      <div data-reveal-item style={stagger(1)}>
+        <FlipCard
+          className="mx-auto w-full max-w-[340px]"
+          toBackLabel="Why it matters"
+          toFrontLabel="Show the certificate"
+          front={
+            <div className="flex justify-center">
+              <ImpactCertificateSample />
+            </div>
+          }
+          back={
+            <div className="h-full rounded-2xl bg-[#FCFAF6] dark:bg-[#1A130E] border-2 border-[#B5480F]/30 shadow-xl p-4 flex flex-col justify-center gap-3">
+              {points.map((pt) => {
+                const IconComp = pt.icon;
+                return (
+                  <div key={pt.title} className="flex items-start gap-2.5">
+                    <span className="w-7 h-7 rounded-lg bg-[#FBEDE3] dark:bg-[#2A150D] text-[#B5480F] flex items-center justify-center shrink-0 mt-0.5">
+                      <IconComp className="w-3.5 h-3.5" />
+                    </span>
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100">{pt.title}</h4>
+                      <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium mt-0.5 leading-snug">{pt.text}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          }
+        />
       </div>
     </div>
   );
@@ -398,7 +495,7 @@ export function SupportJourneySection() {
       <section
         ref={pinTargetRef}
         id="where-support-goes"
-        className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-between py-6 sm:py-8 lg:py-6 overflow-hidden border-b border-stone-200/80 dark:border-stone-850/70"
+        className="ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-between py-6 sm:py-8 lg:py-6 overflow-hidden border-b border-stone-200/80 dark:border-stone-850/70"
       >
         {/* Decorative background ambient radial glow */}
         <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-15">
@@ -567,8 +664,11 @@ export function SupportJourneySection() {
           </div>
         </div>
 
-        {/* MOBILE & TABLET (<1024px) Vertical Timeline & Stacked Layout */}
-        <div className="lg:hidden flex flex-col gap-6 px-5 sm:px-8 mt-4">
+        {/* PHONE (< 768px): horizontal timeline + certificate flip card */}
+        <SupportJourneyMobile stops={stops} points={threePoints} />
+
+        {/* TABLET (768–1023px) Vertical Timeline & Stacked Layout */}
+        <div className="hidden md:flex lg:hidden flex-col gap-6 px-5 sm:px-8 mt-4">
           {/* Vertical Timeline for the 4 Stops */}
           <div className="relative pl-6 border-l-2 border-dashed border-[#B5480F]/40 space-y-4 ml-2">
             {stops.map((st, i) => {

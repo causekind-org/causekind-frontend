@@ -13,7 +13,6 @@ interface Milestone {
 
 const SECTION_IDS = [
   { id: "about-causekind", name: "About CauseKind" },
-  { id: "problem-solution-section", name: "The Problem & Solution" },
   { id: "how-it-works", name: "How It Works" },
   { id: "where-support-goes", name: "Where Support Goes" },
   { id: "live-needs-section", name: "Live Needs" },

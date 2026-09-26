@@ -11,6 +11,7 @@ import {
   KeyRound,
   ShieldCheck,
 } from "lucide-react";
+import { SnapCarousel, useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -76,10 +77,136 @@ const TRUST_CARDS: TrustCardData[] = [
   },
 ];
 
+const TRUST_STATS = [
+  { value: "100%", label: "Admin-verified listings", color: "text-[#B5480F]" },
+  { value: "10 km", label: "Local matching radius", color: "text-[#0F7A6C]" },
+  { value: "₹0", label: "Platform or hidden fees", color: "text-[#1F6B3F]" },
+  { value: "Zero", label: "Middlemen or warehouses", color: "text-stone-800 dark:text-stone-100" },
+];
+
+/**
+ * Phone version (< 768px).
+ *
+ * <p>Three full-width cards stacked were most of the section's 1.4 screens.
+ * They become a swipe row (one card of height), the stats a single row of
+ * four, and the scroll-scrubbed shield assembly and per-frame counters give
+ * way to one IntersectionObserver reveal — the numbers are shown as they are
+ * rather than counted up, which on a phone meant a React render every frame.
+ */
+function TrustSafetyMobile() {
+  const ref = useRevealOnce<HTMLElement>();
+  return (
+    <section
+      ref={ref}
+      id="trust"
+      aria-label="Trust and Safety"
+      className="ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] border-t border-stone-200/80 dark:border-stone-800/80 px-5"
+    >
+      <div className="flex flex-col items-center text-center">
+        <svg data-reveal-item="scale" style={stagger(0)} viewBox="0 0 100 100" className="w-11 h-11 mb-2" fill="none" aria-hidden>
+          <path d="M50 8 L18 22 V50 C18 50 18 58 24 67 L50 50 Z" fill="#B5480F" />
+          <path d="M50 8 L82 22 V50 C82 50 82 58 76 67 L50 50 Z" fill="#D4602C" />
+          <path d="M24 67 C32 80 50 92 50 92 V50 L24 67 Z" fill="#0F7A6C" />
+          <path d="M76 67 C68 80 50 92 50 92 V50 L76 67 Z" fill="#1F6B3F" />
+          <circle className="fill-white dark:fill-[#1A1412]" cx="50" cy="50" r="18" />
+          <path d="M42 50 L48 56 L59 44" stroke="#B5480F" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <div
+          data-reveal-item
+          style={stagger(1)}
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 mb-1.5"
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
+          <span>TRUST & SAFETY</span>
+        </div>
+        <h2 data-reveal-item style={stagger(2)} className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+          Built on trust, for everyone.
+        </h2>
+        <p data-reveal-item style={stagger(3)} className="mt-1 text-xs text-stone-600 dark:text-stone-400">
+          Clear verification, complete privacy protection, and transparent community handovers.
+        </p>
+      </div>
+
+      <div data-reveal-item="left" style={stagger(4)} className="mt-4">
+        <SnapCarousel label="Trust and safety for each role">
+          {TRUST_CARDS.map((card, idx) => {
+            const IconComponent = card.icon;
+            return (
+              <div
+                key={card.id}
+                className="relative flex flex-col justify-between p-4 rounded-2xl bg-white dark:bg-[#181411] border border-stone-200/90 dark:border-stone-800 shadow-sm overflow-hidden"
+              >
+                <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: card.roleColor }} aria-hidden="true" />
+                <div>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wider ${card.accentBg}`}>
+                    <IconComponent className="w-3.5 h-3.5" aria-hidden="true" />
+                    {card.roleTitle}
+                  </span>
+                  <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-200 mt-2.5 mb-2.5">{card.roleSubtitle}</h3>
+                  <ul className="space-y-2 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+                    {card.points.map((point) => (
+                      <li key={point} className="flex items-start gap-2">
+                        <span
+                          className="flex-shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white"
+                          style={{ backgroundColor: card.roleColor }}
+                          aria-hidden="true"
+                        >
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        </span>
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-3 pt-2.5 border-t border-stone-100 dark:border-stone-800/80 flex items-center justify-between text-[11px] font-medium text-stone-600 dark:text-stone-300">
+                  <span>Guaranteed protocol</span>
+                  <span className="font-mono text-[10px]">0{idx + 1}/03</span>
+                </div>
+              </div>
+            );
+          })}
+        </SnapCarousel>
+      </div>
+
+      <dl className="mt-3 grid grid-cols-4 rounded-xl bg-white/70 dark:bg-[#14100E]/70 border border-stone-200/80 dark:border-stone-800 shadow-xs divide-x divide-stone-200/60 dark:divide-stone-800/60">
+        {TRUST_STATS.map((st, i) => (
+          <div key={st.label} data-reveal-item style={stagger(5 + i)} className="flex flex-col-reverse items-center text-center px-1 py-2.5">
+            <dt className="text-[10px] leading-tight font-medium text-stone-600 dark:text-stone-400 mt-0.5">{st.label}</dt>
+            <dd className={`text-base font-extrabold font-mono tracking-tight ${st.color}`}>{st.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div data-reveal-item style={stagger(6)} className="mt-3 flex items-start gap-2.5 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs leading-snug">
+        <KeyRound className="w-4 h-4 mt-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0" aria-hidden="true" />
+        <span>Every handover is confirmed in the app with a one-time code. We recommend meeting in a public place.</span>
+      </div>
+    </section>
+  );
+}
+
 export function TrustSafetySection({
   variant = "desktop",
 }: {
   variant?: "desktop" | "mobile";
+}) {
+  if (variant === "desktop") return <TrustSafetyFull variant="desktop" />;
+  return (
+    <>
+      <div className="md:hidden">
+        <TrustSafetyMobile />
+      </div>
+      <div className="hidden md:block">
+        <TrustSafetyFull variant="mobile" />
+      </div>
+    </>
+  );
+}
+
+function TrustSafetyFull({
+  variant,
+}: {
+  variant: "desktop" | "mobile";
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const shieldStageRef = useRef<HTMLDivElement>(null);
@@ -107,7 +234,9 @@ export function TrustSafetySection({
     }
 
     const mm = gsap.matchMedia();
-    const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(max-width: 1023px)";
+    // The "mobile" variant of this layout now only serves tablets; phones get
+    // TrustSafetyMobile, so its timeline must not run below 768px.
+    const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(min-width: 768px) and (max-width: 1023px)";
 
     mm.add(mediaQuery, () => {
       // 1. Initial State Setup

@@ -1,0 +1,214 @@
+/*
+ * How it works — phone (< 768px) scroll stack.
+ *
+ * The four step cards are sticky siblings: each one pins a little lower than
+ * the one before, so as the page scrolls they slide up and pile onto each
+ * other like a deck. No JavaScript and no scroll listener — `position: sticky`
+ * does the stacking.
+ *
+ * Depth (earlier cards easing back as the next one covers them) is a CSS
+ * scroll-driven animation: each card is driven by the *next* card's view
+ * timeline, so it sinks exactly while that card travels up to meet it.
+ * Browsers without scroll-driven animations just get the plain stack.
+ * Everything that moves is transform/opacity.
+ */
+
+.stack {
+  position: relative;
+  timeline-scope: --hiw-1, --hiw-2, --hiw-3, --hiw-4, --hiw-5;
+  padding-bottom: 0.5rem;
+}
+
+.item {
+  position: sticky;
+  /* Stuck just under the header, each card 14px lower than the last so the
+     edges of the ones beneath stay visible — that sliver is the "stack". */
+  top: calc(var(--ck-nav-h, 3.5rem) + 1rem + var(--i) * 14px);
+  z-index: calc(var(--i) + 1);
+  /* The scroll distance each card holds before the next arrives. */
+  margin-bottom: 18svh;
+}
+.item:last-child {
+  margin-bottom: 0;
+}
+.item:nth-child(1) { view-timeline-name: --hiw-0; }
+.item:nth-child(2) { view-timeline-name: --hiw-1; }
+.item:nth-child(3) { view-timeline-name: --hiw-2; }
+.item:nth-child(4) { view-timeline-name: --hiw-3; }
+.item:nth-child(5) { view-timeline-name: --hiw-4; }
+.item:nth-child(6) { view-timeline-name: --hiw-5; }
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: #fffdf9;
+  border: 1px solid rgb(28 20 16 / 0.09);
+  box-shadow:
+    0 1px 1px rgb(40 25 10 / 0.05),
+    0 14px 30px -18px rgb(40 25 10 / 0.35);
+  padding: 1.15rem 1.15rem 1.25rem;
+  transform-origin: 50% 0;
+}
+:global(.dark) .card {
+  background: #1a1310;
+  border-color: rgb(255 255 255 / 0.08);
+}
+
+/* Sink: driven by the following card's approach. */
+@supports (animation-timeline: view()) {
+  .item:nth-child(1) .card { animation-timeline: --hiw-1; }
+  .item:nth-child(2) .card { animation-timeline: --hiw-2; }
+  .item:nth-child(3) .card { animation-timeline: --hiw-3; }
+  .item:nth-child(4) .card { animation-timeline: --hiw-4; }
+  .item:nth-child(5) .card { animation-timeline: --hiw-5; }
+  .item:nth-child(1) .shade { animation-timeline: --hiw-1; }
+  .item:nth-child(2) .shade { animation-timeline: --hiw-2; }
+  .item:nth-child(3) .shade { animation-timeline: --hiw-3; }
+  .item:nth-child(4) .shade { animation-timeline: --hiw-4; }
+  .item:nth-child(5) .shade { animation-timeline: --hiw-5; }
+  .item:not(:last-child) .card,
+  .item:not(:last-child) .shade {
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    animation-duration: auto;
+    animation-range: entry 40% cover 45%;
+  }
+  .item:not(:last-child) .card {
+    animation-name: hiw-sink;
+  }
+  .item:not(:last-child) .shade {
+    animation-name: hiw-shade;
+  }
+}
+/* The card itself stays opaque — only its scale changes — so nothing beneath
+   ever shows through; the dimming is a separate layer on top of it. */
+@keyframes hiw-sink {
+  to {
+    transform: scale(0.94);
+  }
+}
+@keyframes hiw-shade {
+  to {
+    opacity: 1;
+  }
+}
+.shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: rgb(244 238 228 / 0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+:global(.dark) .shade {
+  background: rgb(10 7 5 / 0.55);
+}
+
+/* Entry on tab change / first view (the stack is keyed by role). */
+.stack[data-in="true"] .item {
+  animation: hiw-rise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(min(var(--i), 3) * 70ms);
+}
+@keyframes hiw-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+
+/* ── Card typography ─────────────────────────────────────────────────────── */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.label {
+  font-family: var(--font-roboto-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--role);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+.label::before {
+  content: "";
+  width: 1.4em;
+  height: 1.5px;
+  background: currentColor;
+}
+.of {
+  color: rgb(28 20 16 / 0.4);
+}
+:global(.dark) .of {
+  color: rgb(255 255 255 / 0.4);
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  background: var(--soft);
+  color: var(--role);
+  flex-shrink: 0;
+}
+.title {
+  margin: 0.9rem 0 0;
+  max-width: 15ch;
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: #1c1410;
+  text-wrap: balance;
+}
+:global(.dark) .title {
+  color: #f5eee8;
+}
+.desc {
+  margin: 0.5rem 0 0;
+  max-width: 30ch;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #5b4a3f;
+  text-wrap: pretty;
+}
+:global(.dark) .desc {
+  color: #c8b6a4;
+}
+/* The big step numeral, set into the corner like a folio. */
+.numeral {
+  position: absolute;
+  right: 0.9rem;
+  bottom: -0.9rem;
+  font-family: var(--font-source-serif-4), Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 5.5rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--role);
+  opacity: 0.12;
+  pointer-events: none;
+  user-select: none;
+}
+.bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--role);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stack[data-in="true"] .item,
+  .item .card,
+  .item .shade {
+    animation: none !important;
+  }
+}

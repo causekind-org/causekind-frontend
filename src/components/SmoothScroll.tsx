@@ -10,6 +10,10 @@ export function SmoothScroll() {
     // Respect prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return;
+    // Touch devices: Lenis leaves touch scrolling native anyway, so on a phone it
+    // only added a per-frame ticker callback and a second ScrollTrigger.update()
+    // per scroll. Wheel smoothing is the whole point, and phones have no wheel.
+    if (window.matchMedia("(pointer: coarse)").matches) return;
 
     gsap.registerPlugin(ScrollTrigger);
 

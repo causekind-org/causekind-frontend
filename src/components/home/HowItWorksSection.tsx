@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { LANDING_ROUTES } from "@/lib/landingConstants";
+import stackStyles from "./HowItWorksStack.module.css";
 
 type RoleTab = "donor" | "donee" | "ngo";
 
@@ -286,6 +287,39 @@ function StepCard({
   );
 }
 
+/**
+ * Phone step card (< 768px), one layer of the scroll stack — see
+ * HowItWorksStack.module.css. Editorial hierarchy: a small mono folio
+ * ("STEP 01 / 04"), a large tight title, a readable description, and the step
+ * number set big and faint in the corner. No pointer tilt, no looping icon.
+ */
+function MobileStepCard({ step, total, tab }: { step: StepData; total: number; tab: TabConfig }) {
+  const IconComp = step.icon;
+  return (
+    <article
+      className={stackStyles.card}
+      style={{ ["--role" as string]: tab.roleColor, ["--soft" as string]: tab.roleBgSoft } as React.CSSProperties}
+    >
+      <span className={stackStyles.bar} aria-hidden />
+      <span className={stackStyles.shade} aria-hidden />
+      <span className={stackStyles.numeral} aria-hidden>
+        {step.number}
+      </span>
+      <div className={stackStyles.top}>
+        <span className={stackStyles.label}>
+          Step {step.number}
+          <span className={stackStyles.of}>/ {String(total).padStart(2, "0")}</span>
+        </span>
+        <span className={stackStyles.icon}>
+          <IconComp className="w-[1.15rem] h-[1.15rem]" />
+        </span>
+      </div>
+      <h3 className={stackStyles.title}>{step.title}</h3>
+      <p className={stackStyles.desc}>{step.description}</p>
+    </article>
+  );
+}
+
 export function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const tabListRef = useRef<HTMLDivElement>(null);
@@ -323,7 +357,7 @@ export function HowItWorksSection() {
       ref={sectionRef}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
-      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] border-b border-stone-200/80 dark:border-stone-850/70 overflow-hidden transition-colors duration-500"
+      className="ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] border-b border-stone-200/80 dark:border-stone-850/70 overflow-hidden max-md:[overflow:clip_visible] transition-colors duration-500"
       style={
         {
           "--role-color": currentTabConfig.roleColor,
@@ -335,7 +369,7 @@ export function HowItWorksSection() {
       }
     >
       {/* Morphing ambient background glow */}
-      <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-all duration-700">
+      <div className="max-md:hidden absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-all duration-700">
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[450px] rounded-full blur-3xl transition-colors duration-700"
           style={{ backgroundColor: currentTabConfig.roleGlow }}
@@ -445,8 +479,8 @@ export function HowItWorksSection() {
             </svg>
           </div>
 
-          {/* 4 Symmetrically Centred Steps Cards Grid */}
-          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4 items-stretch justify-items-stretch w-full">
+          {/* DESKTOP: 4 Symmetrically Centred Steps Cards Grid */}
+          <div className="relative z-10 hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 items-stretch justify-items-stretch w-full">
             <AnimatePresence mode="wait">
               {currentTabConfig.steps.map((step, idx) => (
                 <StepCard
@@ -461,6 +495,25 @@ export function HowItWorksSection() {
             </AnimatePresence>
           </div>
 
+          {/* PHONE (< 768px): scroll stack — the cards pin under the header
+              and pile up as the page scrolls. Keyed by role so a tab switch
+              replays the entry and starts the stack again from step 1. */}
+          <ol
+            key={activeTab}
+            className={`${stackStyles.stack} relative z-10 md:hidden list-none m-0 p-0`}
+            data-in={hasScrolledIn ? "true" : "false"}
+            aria-label={`${currentTabConfig.label}: steps`}
+          >
+            {currentTabConfig.steps.map((step, idx) => (
+              <li
+                key={step.number}
+                className={stackStyles.item}
+                style={{ ["--i" as string]: idx } as React.CSSProperties}
+              >
+                <MobileStepCard step={step} total={currentTabConfig.steps.length} tab={currentTabConfig} />
+              </li>
+            ))}
+          </ol>
           {/* Role CTA Button at the bottom of the active tab */}
           <motion.div
             className="flex justify-center mt-5 sm:mt-6"

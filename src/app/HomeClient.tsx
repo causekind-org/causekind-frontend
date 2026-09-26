@@ -61,10 +61,10 @@ import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
+import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
-import { ProblemSolutionSection } from "@/components/home/ProblemSolutionSection";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
-import { SupportJourneySection } from "@/components/home/SupportJourneySection";
+import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
@@ -243,20 +243,23 @@ export default function HomeClient({
       {/* Continuous dashed road across whole desktop page */}
       <DashedJourneyRoad />
       {/* One responsive front door. Keeping it outside the two legacy layout
-          trees prevents CTA, image and tour-anchor drift between breakpoints. */}
-      <HeroComponent />
+          trees prevents CTA, image and tour-anchor drift between breakpoints.
+          With the film on, the same hero is laid over the film's first screen
+          and slides off it on scroll — see HeroFilm. */}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
-      {/* SECTION 1 — WHO ARE WE */}
+      {/* WHERE DOES MY SUPPORT GO — real photographs from our drives, straight
+          after the film: the film is scroll-driven; this is still and tactile.
+          It replaces SupportJourneySection (file kept) on the page. */}
+      <SupportGallery />
+
+      {/* SECTION 1 — WHO ARE WE. The planned "What is CauseKind?" typographic
+          section (components/home/whatIsCauseKind/) has no component yet — only
+          its CSS and fonts — so this slot keeps WhoAreWeSection until it exists. */}
       <WhoAreWeSection />
-
-      {/* SECTION 2 — WHAT PROBLEM DO WE SOLVE */}
-      <ProblemSolutionSection />
 
       {/* SECTION 3 — HOW DO WE WORK */}
       <HowItWorksSection />
-
-      {/* SECTION 4 — WHERE DOES MY SUPPORT GO */}
-      <SupportJourneySection />
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       <div className="ck-home-paper hidden lg:block relative z-10">
@@ -412,7 +415,10 @@ export default function HomeClient({
           the donor/donee spine being a separate, separately scrolling page.
           `clip` leaves `overflow-y: visible` alone, so nothing here scrolls and
           the horizontal bleed is still clipped exactly as before. */}
-      <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-clip pt-11 bg-[#fbf9f4] dark:bg-zinc-950">
+      {/* Below 768px every section pads itself (`.ck-m-section`, with room for
+          the bottom dock), so the column's own 44px gap and top pad drop out
+          there rather than stacking on top of it. */}
+      <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 

@@ -33,6 +33,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 
 import styles from "./cinematic/cinematic.module.css";
+import { cineFonts } from "./cinematic/fonts";
 import { BAG } from "./cinematic/cutouts";
 import { P } from "./cinematic/palette";
 import { STUDENT_PETALS, Student } from "./cinematic/Student";
@@ -43,7 +44,11 @@ import {
   clamp,
   lerp,
   measureStage,
+  pointAt,
+  samplePath,
   setT,
+  warmTimeline,
+  type PathLUT,
   type Stage,
 } from "./cinematic/rig";
 
@@ -164,6 +169,9 @@ export function Chapter2TheEcosystem() {
       let f0 = 0;
       let f1 = 0;
       let routeLen = 0;
+      /** The line and the route, sampled at measure time — see `samplePath`. */
+      let lineLut: PathLUT = samplePath(null);
+      let routeLut: PathLUT = samplePath(null);
 
       const R = { entry: 0, trace: 0, cam: 0, ride: 0, portal: 0 };
 
@@ -173,16 +181,42 @@ export function Chapter2TheEcosystem() {
         st.portrait
           ? { x: st.cx, y: st.y0 + st.top + (st.visH - st.top) * 0.38 }
           : { x: st.cx + st.visW * 0.14, y: st.cy };
-      const aim = (w: { x: number; y: number }, s: number) => {
-        const f = focus();
-        return { s, x: w.x - (f.x - st.cx) / s, y: w.y - (f.y - st.cy) / s };
+      const aimAt = (w: { x: number; y: number }, s: number, f: { x: number; y: number }) => ({
+        s,
+        x: w.x - (f.x - st.cx) / s,
+        y: w.y - (f.y - st.cy) / s,
+      });
+      const aim = (w: { x: number; y: number }, s: number) => aimAt(w, s, focus());
+      /*
+       * Where the map shots sit. On a phone the captions own the lower ~40% of
+       * the screen, so the map is framed in the space above them; on desktop
+       * it sits right of the captions, vertically centred under the header.
+       */
+      const mapFocus = () => {
+        const avail = st.visH - st.top;
+        return st.portrait
+          ? { x: st.cx, y: st.y0 + st.top + avail * 0.32 }
+          : { x: st.cx + st.visW * 0.14, y: st.y0 + st.top + avail * 0.5 };
       };
       const camKeys = () => {
         const p = st.portrait;
+        const avail = st.visH - st.top;
+        // The whole 10 km ring (+ its label and the pulse overshoot) in view,
+        // with a margin — first establishing shot of the neighbourhood.
+        const ring = RING_R * 2 + 160;
+        const ringFit = p
+          ? Math.min((st.visW * 0.96) / ring, (avail * 0.6) / ring)
+          : Math.min(frame(2000), (avail * 0.9) / ring, (st.visW * 0.62) / ring);
+        // Then push in on the route from the hub to the match while the bag rides it.
+        const routeMid = { x: (HUB.x + MATCH.x) / 2 + 20, y: (HUB.y + MATCH.y) / 2 - 20 };
+        const routeFit = p
+          ? Math.min((st.visW * 0.92) / 620, (avail * 0.58) / 560)
+          : Math.min(ringFit * 1.45, (avail * 0.8) / 560);
         return [
           { s: 1, x: HUB.x, y: HUB.y },
           aim(HUB, p ? 0.74 : 1),
-          aim({ x: HUB.x + 60, y: HUB.y + 90 }, p ? st.visW / 980 : frame(2000)),
+          aimAt(HUB, ringFit, mapFocus()),
+          aimAt(routeMid, routeFit, mapFocus()),
           aim(MATCH, p ? 2.2 : frame(560)),
         ];
       };
@@ -208,14 +242,16 @@ export function Chapter2TheEcosystem() {
           `A 34 34 0 0 0 915 666 V 274 A 34 34 0 0 0 881 240 H 826`;
         lines.forEach((l) => l.setAttribute("d", d));
         entryMeasure?.setAttribute("d", entryD);
-        lineLen = lineRef?.getTotalLength?.() ?? 0;
+        lineLut = samplePath(lineRef);
+        lineLen = lineLut.len;
         const entryLen = entryMeasure?.getTotalLength?.() ?? 0;
         // The visible top edge, in world y, while the camera is at rest.
         const topWorld = st.y0 - st.cy + HUB.y;
         f0 = lineLen ? clamp((topWorld + 1400) / lineLen, 0, 1) : 0;
         f1 = lineLen ? entryLen / lineLen : 0;
         lines.forEach((l) => (l.style.strokeDasharray = `${lineLen} ${lineLen + 10}`));
-        routeLen = route?.getTotalLength?.() ?? 0;
+        routeLut = samplePath(route);
+        routeLen = routeLut.len;
       };
 
       let clock = 0;
@@ -228,7 +264,7 @@ export function Chapter2TheEcosystem() {
         const at = lineLen * f;
         lines.forEach((l) => (l.style.strokeDashoffset = `${r1(lineLen - at)}`));
         if (head && lineRef && lineLen) {
-          const p = lineRef.getPointAtLength(at);
+          const p = pointAt(lineLut, at);
           setT(head, `translate(${r1(p.x)} ${r1(p.y)})`);
           head.setAttribute("opacity", R.trace >= 0.999 ? "0" : "1");
         }
@@ -236,7 +272,7 @@ export function Chapter2TheEcosystem() {
         // The bag riding the route.
         if (token && route && routeLen) {
           const L = routeLen * R.ride;
-          const p = route.getPointAtLength(L);
+          const p = pointAt(routeLut, L);
           setT(
             token,
             `translate(${r1(p.x)} ${r1(p.y - 30)}) rotate(${r1(Math.sin(clock * 6) * 4 * (R.ride > 0 && R.ride < 1 ? 1 : 0))}) scale(0.26)`,
@@ -247,7 +283,7 @@ export function Chapter2TheEcosystem() {
               s.setAttribute("opacity", "0");
               return;
             }
-            const sp = route.getPointAtLength(back);
+            const sp = pointAt(routeLut, back);
             const j = Math.sin(clock * 11 + i) * (3 + i * 0.6);
             s.setAttribute("cx", `${r1(sp.x + j)}`);
             s.setAttribute("cy", `${r1(sp.y + j * 0.7)}`);
@@ -511,6 +547,8 @@ export function Chapter2TheEcosystem() {
           );
 
           // ── 47–56: the route, and the bag riding it ─────────────────────
+          // The whole ring has been on screen since ~31; now move in on the route.
+          tl.to(R, { cam: 3, duration: 6, ease: "power2.inOut" }, 46.5);
           tl.to(q(".c2-route"), { opacity: 1, duration: 0.2 }, 47);
           tl.to(q(".c2-route path"), { drawSVG: "100%", duration: 5, ease: "power2.inOut" }, 47);
           tl.to(q(".c2-token"), { opacity: 1, duration: 0.6 }, 48);
@@ -523,7 +561,7 @@ export function Chapter2TheEcosystem() {
           tl.to(q(".c2-cap-2"), { opacity: 0, duration: 1.2 }, 54);
 
           // ── 55–84: into the pin; she gets it ────────────────────────────
-          tl.to(R, { cam: 3, duration: 7, ease: "power3.inOut" }, 55);
+          tl.to(R, { cam: 4, duration: 7, ease: "power3.inOut" }, 55);
           tl.to(
             q(".c2-map, .c2-far, .c2-pin-other, .c2-ring-g"),
             { opacity: 0.18, duration: 5 },
@@ -697,7 +735,15 @@ export function Chapter2TheEcosystem() {
           });
 
           ScrollTrigger.addEventListener("refreshInit", measure);
+          // Initialise every tween now, in idle time, rather than mid-scroll —
+          // only while this stage is still below the fold.
+          const stopWarm = warmTimeline(
+            tl,
+            () => !!tl.scrollTrigger?.isActive,
+            () => root.getBoundingClientRect().top >= window.innerHeight,
+          );
           return () => {
+            stopWarm();
             ScrollTrigger.removeEventListener("refreshInit", measure);
             gsap.ticker.remove(tick);
             active.kill();
@@ -744,7 +790,7 @@ export function Chapter2TheEcosystem() {
     <section
       ref={rootRef}
       aria-labelledby="ck-ch2-title"
-      className={`${styles.stage} ${styles.ch2} ck-cine-ch2`}
+      className={`${styles.stage} ${styles.ch2} ${cineFonts} ck-cine-ch2`}
     >
       <h2 id="ck-ch2-title" className="sr-only">
         CauseKind finds the person who needs it

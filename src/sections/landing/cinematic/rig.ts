@@ -105,3 +105,97 @@ export function toScreen(stage: Stage, s: number, camX: number, camY: number, p:
 export function setT(el: Element | null | undefined, t: string) {
   if (el && el.getAttribute("transform") !== t) el.setAttribute("transform", t);
 }
+
+/**
+ * A path sampled once into a lookup table.
+ *
+ * `getPointAtLength` is a DOM geometry query; the film used to call it several
+ * times per frame (the bag on its exit arc, the sparks behind it, the line's
+ * head, the bag riding the map route) and each call is a synchronous trip into
+ * the SVG engine on the scroll path. Sampling at measure time — every `step`
+ * units, a few hundred points — turns each per-frame lookup into two array
+ * reads and a lerp. Four units is well under a pixel at any stage scale.
+ */
+export type PathLUT = { len: number; step: number; xs: Float32Array; ys: Float32Array };
+
+export function samplePath(path: SVGGeometryElement | null | undefined, step = 4): PathLUT {
+  const len = path?.getTotalLength?.() ?? 0;
+  const n = Math.max(2, Math.ceil(len / step) + 1);
+  const xs = new Float32Array(n);
+  const ys = new Float32Array(n);
+  if (path && len > 0) {
+    for (let i = 0; i < n; i++) {
+      const p = path.getPointAtLength(Math.min(len, i * step));
+      xs[i] = p.x;
+      ys[i] = p.y;
+    }
+  }
+  return { len, step, xs, ys };
+}
+
+/** The point `at` units along a sampled path (clamped to its ends). */
+export function pointAt(lut: PathLUT, at: number): Vec {
+  const f = clamp(at, 0, lut.len) / lut.step;
+  const i = Math.min(lut.xs.length - 2, Math.floor(f));
+  const t = f - i;
+  return {
+    x: lut.xs[i] + (lut.xs[i + 1] - lut.xs[i]) * t,
+    y: lut.ys[i] + (lut.ys[i + 1] - lut.ys[i]) * t,
+  };
+}
+
+/**
+ * Initialise every tween of a scrubbed timeline ahead of time, in idle slices.
+ *
+ * GSAP initialises a tween the first time the playhead reaches it, and init
+ * reads `getComputedStyle` — a forced style recalculation. A scrubbed film has
+ * hundreds of tweens, so scrolling through it the first time paid that cost
+ * frame after frame. This walks the playhead to the end in small steps while
+ * the reader is still above the stage (each step its own idle callback, so no
+ * single long task), then puts it back. It stops for good the moment the
+ * stage's own trigger goes active — from then on scrubbing owns the playhead —
+ * and only steps while `canStep()` says the stage cannot be seen; otherwise it
+ * waits for the next idle slot rather than flash later frames on screen.
+ */
+export function warmTimeline(
+  tl: gsap.core.Timeline,
+  isLive: () => boolean,
+  canStep: () => boolean,
+  steps = 12,
+) {
+  const ric: (cb: () => void) => number =
+    typeof window.requestIdleCallback === "function"
+      ? (cb) => window.requestIdleCallback(cb, { timeout: 1500 })
+      : (cb) => window.setTimeout(cb, 120);
+  const cancel =
+    typeof window.cancelIdleCallback === "function" ? window.cancelIdleCallback : window.clearTimeout;
+  const home = tl.progress();
+  let i = 0;
+  let id = 0;
+  let done = false;
+  const step = () => {
+    if (done) return;
+    if (isLive()) {
+      done = true;
+      return;
+    }
+    if (!canStep()) {
+      id = ric(step);
+      return;
+    }
+    i++;
+    tl.progress(Math.min(1, i / steps), true);
+    if (i < steps) id = ric(step);
+    else {
+      tl.progress(home, true);
+      done = true;
+    }
+  };
+  id = ric(step);
+  return () => {
+    if (done) return;
+    done = true;
+    cancel(id);
+    if (!isLive()) tl.progress(home, true);
+  };
+}

@@ -1,0 +1,551 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   ABOUT CAUSEKIND — Living Ecosystem
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.section {
+  --eco-orange: #B5480F;
+  --eco-orange-light: #F4A25B;
+  --eco-teal: #0F7A6C;
+  --eco-teal-light: #5ec7b6;
+  --eco-green: #1F6B3F;
+  --eco-green-light: #6cc98f;
+  --eco-cream: #F8F6F2;
+  --eco-ink: #1C1410;
+  position: relative;
+  overflow: hidden;
+  background: var(--eco-cream);
+  transition: background-color 300ms;
+}
+:global(.dark) .section {
+  --eco-cream: #140E0B;
+  --eco-ink: #F5EEE8;
+  background: var(--eco-cream);
+}
+
+/* Subtle paper grain overlay */
+.section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Soft radial lighting */
+.ambientGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.ambientGlow::before {
+  content: "";
+  position: absolute;
+  top: 30%;
+  right: 20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(181, 72, 15, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.ambientGlow::after {
+  content: "";
+  position: absolute;
+  bottom: 20%;
+  left: 35%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(15, 122, 108, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+}
+:global(.dark) .ambientGlow::before {
+  background: radial-gradient(circle, rgba(244, 162, 91, 0.04) 0%, transparent 70%);
+}
+:global(.dark) .ambientGlow::after {
+  background: radial-gradient(circle, rgba(94, 199, 182, 0.03) 0%, transparent 70%);
+}
+
+/* ── Layout ────────────────────────────────────────────────────────────────── */
+
+.inner {
+  position: relative;
+  z-index: 1;
+  max-width: 76rem;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+@media (min-width: 768px) {
+  .inner {
+    padding: 0 2rem;
+    grid-template-columns: 42% 58%;
+    gap: 2.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .inner {
+    grid-template-columns: 43% 57%;
+    gap: 3rem;
+  }
+}
+
+/* ── Typography column ─────────────────────────────────────────────────────── */
+
+.textCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.eyebrowLine {
+  height: 2px;
+  width: 1.5rem;
+  border-radius: 99px;
+  background: var(--eco-orange);
+}
+.eyebrowText {
+  font-size: 0.6875rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--eco-orange);
+}
+:global(.dark) .eyebrowText {
+  color: var(--eco-orange-light);
+}
+
+.headline {
+  font-size: clamp(1.65rem, 2.5vw + 0.5rem, 2.75rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--eco-ink);
+  max-width: 560px;
+}
+.headlineHighlight {
+  color: var(--eco-orange);
+  position: relative;
+}
+:global(.dark) .headlineHighlight {
+  color: var(--eco-orange-light);
+}
+
+.subhead {
+  margin-top: 1.25rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #57534e;
+  font-weight: 500;
+  max-width: 520px;
+}
+:global(.dark) .subhead {
+  color: #a8a29e;
+}
+
+.detail {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: #78716c;
+  max-width: 500px;
+}
+:global(.dark) .detail {
+  color: #78716c;
+}
+
+/* ── Ecosystem canvas ──────────────────────────────────────────────────────── */
+
+.ecosystem {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.92;
+  user-select: none;
+  /* Parallax vars — written by JS */
+  --px: 0;
+  --py: 0;
+}
+/* Mobile: slightly taller aspect to fit the vertical arrangement */
+@media (max-width: 767px) {
+  .ecosystem {
+    aspect-ratio: 1 / 1.1;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}
+
+/* ── SVG layer: network lines ──────────────────────────────────────────────── */
+
+.networkSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+
+/* Connection lines — organic curves */
+.connectionLine {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0.6;
+  transition: opacity 0.4s ease;
+}
+.connectionLine[data-active="true"] {
+  opacity: 1;
+  stroke-width: 3;
+}
+
+/* Flowing particles along paths */
+.flowParticle {
+  opacity: 0.7;
+  filter: blur(0.5px);
+}
+
+/* ── Hub ───────────────────────────────────────────────────────────────────── */
+
+.hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) translate(
+    calc(var(--px) * 2px),
+    calc(var(--py) * 2px)
+  );
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease-out;
+}
+
+.hubKnot {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (min-width: 768px) {
+  .hubKnot {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+.hubCore {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--eco-orange) 0%, #D4690A 100%);
+  box-shadow:
+    0 0 0 4px rgba(181, 72, 15, 0.15),
+    0 8px 32px -8px rgba(181, 72, 15, 0.4),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.3s ease;
+}
+.hubCore[data-pulse="true"] {
+  box-shadow:
+    0 0 0 8px rgba(181, 72, 15, 0.25),
+    0 8px 40px -4px rgba(181, 72, 15, 0.5),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.hubPulseRing {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(181, 72, 15, 0.15);
+  animation: hubPulse 3s ease-in-out infinite;
+}
+@keyframes hubPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.15); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hubPulseRing { animation: none; opacity: 0.2; }
+}
+
+.hubHeart {
+  position: relative;
+  z-index: 1;
+  color: white;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.hubLabel {
+  margin-top: 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--eco-orange);
+  white-space: nowrap;
+}
+:global(.dark) .hubLabel {
+  color: var(--eco-orange-light);
+}
+
+/* ── Characters ────────────────────────────────────────────────────────────── */
+
+.character {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: default;
+  transition: transform 0.3s ease-out;
+}
+
+.characterBody {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+}
+@media (min-width: 768px) {
+  .characterBody {
+    width: 64px;
+    height: 64px;
+  }
+}
+.character:hover .characterBody,
+.character[data-highlighted="true"] .characterBody {
+  transform: scale(1.08);
+  filter: brightness(1.08);
+}
+
+.characterName {
+  font-size: 0.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.characterTooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #44403c;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 30;
+}
+:global(.dark) .characterTooltip {
+  background: #1c1410;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #d6d3d1;
+}
+.character:hover .characterTooltip,
+.character[data-highlighted="true"] .characterTooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Character positions — desktop */
+.charDonor {
+  left: 14%;
+  top: 10%;
+  transform: translate(
+    calc(var(--px) * 6px),
+    calc(var(--py) * 4px)
+  );
+}
+.charDonee {
+  right: 14%;
+  top: 14%;
+  transform: translate(
+    calc(var(--px) * 5px),
+    calc(var(--py) * 3px)
+  );
+}
+.charNgo {
+  left: 50%;
+  bottom: 4%;
+  transform: translateX(-50%) translate(
+    calc(var(--px) * 3px),
+    calc(var(--py) * 5px)
+  );
+}
+
+/* Character positions — mobile */
+@media (max-width: 767px) {
+  .charDonor { left: 6%; top: 6%; }
+  .charDonee { right: 6%; top: 6%; }
+  .charNgo { bottom: 4%; }
+}
+
+/* ── Floating objects ──────────────────────────────────────────────────────── */
+
+.floatingObject {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  transition: transform 0.3s ease-out;
+}
+
+.objectInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: objectFloat 4s ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes objectFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(var(--float-rot, 1deg)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .objectInner { animation: none; }
+}
+
+/* ── Micro labels ──────────────────────────────────────────────────────────── */
+
+.microLabel {
+  position: absolute;
+  z-index: 6;
+  font-size: 0.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(120, 113, 108, 0.55);
+  pointer-events: none;
+  white-space: nowrap;
+  transition: transform 0.3s ease-out;
+}
+:global(.dark) .microLabel {
+  color: rgba(168, 162, 158, 0.4);
+}
+
+/* ── Traveling object (the protagonist) ────────────────────────────────────── */
+
+.traveler {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.travelerInner {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.travelerInner[data-visible="true"] {
+  opacity: 1;
+}
+
+/* ── Entrance animation ────────────────────────────────────────────────────── */
+
+.ecosystem[data-entered="false"] .character,
+.ecosystem[data-entered="false"] .hub,
+.ecosystem[data-entered="false"] .floatingObject,
+.ecosystem[data-entered="false"] .microLabel {
+  opacity: 0;
+  transform: scale(0.85) translateY(12px);
+}
+
+.ecosystem[data-entered="true"] .floatingObject {
+  animation: ecoEnterObj 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--enter-delay, 0s);
+}
+.ecosystem[data-entered="true"] .character {
+  animation: ecoEnterChar 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--enter-delay, 0.2s);
+}
+.ecosystem[data-entered="true"] .hub {
+  animation: ecoEnterHub 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: 0.7s;
+}
+.ecosystem[data-entered="true"] .microLabel {
+  animation: ecoEnterLabel 0.4s ease forwards;
+  animation-delay: var(--enter-delay, 1s);
+}
+
+@keyframes ecoEnterObj {
+  from { opacity: 0; transform: scale(0.7) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes ecoEnterChar {
+  from { opacity: 0; transform: scale(0.8) translateY(15px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes ecoEnterHub {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes ecoEnterLabel {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ecosystem[data-entered="false"] .character,
+  .ecosystem[data-entered="false"] .hub,
+  .ecosystem[data-entered="false"] .floatingObject,
+  .ecosystem[data-entered="false"] .microLabel {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Mobile: compact ecosystem ─────────────────────────────────────────────── */
+
+.mobileSection {
+  display: block;
+}
+@media (min-width: 768px) {
+  .mobileSection { display: none; }
+}
+
+.desktopSection {
+  display: none;
+}
+@media (min-width: 768px) {
+  .desktopSection { display: block; }
+}
+
+/* ── Faint background network ──────────────────────────────────────────────── */
+
+.bgNetwork {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.bgNetwork svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}

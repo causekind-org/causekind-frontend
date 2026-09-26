@@ -1,6 +1,6 @@
-# The landing film (parked)
+# The landing film
 
-A two-chapter, scroll-scrubbed film for the space under the home hero:
+A two-chapter, scroll-scrubbed film hidden underneath the home hero:
 
 1. **Chapter 1 — "One small thing can become a big thing."**
    (`../Chapter1TheUnusedThing.tsx`) An SVG apartment sketches itself in ink and
@@ -14,14 +14,26 @@ A two-chapter, scroll-scrubbed film for the space under the home hero:
 
 `src/components/cinematic/CinematicOrchestrator.tsx` mounts both, back to back.
 
-## Status: switched off
+## Status: on, under the hero
 
-`FEATURES.cinematicLanding` in `src/lib/features.ts` is `false`. `HomeClient`
-loads the orchestrator with `next/dynamic`, so while the flag is off none of this
-code, SVG or imagery is downloaded.
+`FEATURES.cinematicLanding` in `src/lib/features.ts` is `true`.
+`src/components/cinematic/HeroFilm.tsx` puts the hero and the film in one grid
+cell (`.ck-hero-film` in `styles.css`), hero on top, and loads the film
+client-side (`next/dynamic`, `ssr: false`), so nothing about the hero's first
+paint changes.
 
-- **Preview in development:** open `http://localhost:3000/?cinematic`.
-- **Turn it on:** set `cinematicLanding: true`.
+- At rest the hero covers the film's first screen completely.
+- On scroll the hero leaves by native scrolling while Chapter 1's stage is
+  pinned beneath it (`leadInRef`): the hero slides off the film, the title
+  card rises as the hero's edge climbs, and the scrubbed film starts only once
+  the hero has cleared the header.
+- Reduced motion stacks the two instead — the film is a still then.
+- **Turn it off:** set `cinematicLanding: false`; the hero renders alone and
+  none of the film is downloaded.
+
+Measured on a production build (2026-09-25): desktop 11.7 ms median frame while
+the film scrubs; a phone at 4× CPU throttle 37 ms median (62% of frames over
+33 ms) — still heavy on mid-range phones.
 
 ## Files
 

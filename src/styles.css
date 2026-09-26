@@ -4252,3 +4252,333 @@ div:has(.searchable-select-open) {
 }
 
 }
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE LANDING (< 768px) — shared primitives
+   Used by src/components/home/mobile/primitives.tsx. Everything that moves
+   here moves on transform and opacity only; nothing animates a box's size or
+   position, and nothing listens to scroll — reveals and carousel dots are
+   IntersectionObserver-driven, carousels are native scroll-snap.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ck-m-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ck-m-dur: 500ms;
+  --ck-m-stagger: 70ms;
+  --ck-fab-size: 48px;
+}
+
+/* Section rhythm. The 100svh min-heights the sections carry for desktop are
+   dropped — on a phone they were most of the empty scroll — and every section
+   ends with room for the bottom dock — its height plus the safe-area inset —
+   so its last line is never under the nav. */
+@media (max-width: 767.98px) {
+  .ck-m-section {
+    min-height: 0 !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: calc(var(--ck-dock-h) + var(--ck-bottom-inset)) !important;
+  }
+}
+
+/* ── Reveal once ─────────────────────────────────────────────────────────
+   `armed` is only ever set by JS, so without JS (or before hydration) the
+   content is simply visible. will-change exists only in the `in` state, i.e.
+   while the transition runs; `done` drops it again. */
+[data-reveal="armed"] [data-reveal-item] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+[data-reveal="armed"] [data-reveal-item="scale"] {
+  transform: scale(0.94);
+}
+[data-reveal="armed"] [data-reveal-item="left"] {
+  transform: translate3d(24px, 0, 0);
+}
+[data-reveal="in"] [data-reveal-item] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--ck-m-dur) var(--ck-m-ease),
+    transform var(--ck-m-dur) var(--ck-m-ease);
+  transition-delay: calc(min(var(--i, 0), 6) * var(--ck-m-stagger));
+  will-change: transform, opacity;
+}
+
+/* ── Scroll-snap carousel ────────────────────────────────────────────────
+   Full-bleed inside a 20px-gutter section; each slide is 85% wide so ~15% of
+   the next one peeks in. The peek also lands under the support button, so the
+   button sits over the edge of the next card, not the text being read. */
+.ck-snap {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1.25rem;
+  padding-inline: 1.25rem;
+  margin-inline: -1.25rem;
+  padding-block: 0.25rem 0.5rem;
+  scrollbar-width: none;
+  position: relative;
+}
+.ck-snap::-webkit-scrollbar {
+  display: none;
+}
+.ck-snap > .ck-snap-item {
+  flex: 0 0 85%;
+  max-width: 22rem;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+}
+.ck-snap > .ck-snap-item > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* The same row, but only below 768px — for a list that is a grid everywhere
+   else (Live needs), so its cards render once and the grid is untouched. */
+@media (max-width: 767.98px) {
+  .ck-snap-m {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1.25rem;
+    padding-inline: 1.25rem;
+    margin-inline: -1.25rem;
+    padding-block: 0.25rem 0.5rem;
+    scrollbar-width: none;
+    position: relative;
+  }
+  .ck-snap-m::-webkit-scrollbar {
+    display: none;
+  }
+  .ck-snap-m > * {
+    flex: 0 0 85%;
+    max-width: 22rem;
+    min-width: 0;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+}
+.ck-snap:focus-visible,
+.ck-snap-m:focus-visible {
+  outline: 2px solid var(--ck-home-accent, #b5470f);
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+.ck-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+.ck-dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+.ck-dot::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.25;
+  transform: scale(0.75);
+  transition:
+    opacity 300ms var(--ck-m-ease),
+    transform 300ms var(--ck-m-ease);
+}
+.ck-dot[aria-current="true"]::before {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* ── Segmented tabs ──────────────────────────────────────────────────────
+   The thumb slides on translateX(index * 100%) — never on width or left. */
+.ck-seg {
+  position: relative;
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  padding: 0.25rem;
+  border-radius: 9999px;
+}
+.ck-seg-thumb {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  width: calc((100% - 0.5rem) / var(--n, 2));
+  border-radius: 9999px;
+  transform: translate3d(calc(var(--idx, 0) * 100%), 0, 0);
+  transition: transform 400ms var(--ck-m-ease), background-color 300ms ease;
+}
+
+/* ── Stacked panels ──────────────────────────────────────────────────────
+   All panels share one grid cell, so the box is always as tall as the tallest
+   panel and switching never changes the page height — it only cross-fades. */
+.ck-stack {
+  display: grid;
+}
+.ck-stack > * {
+  grid-area: 1 / 1;
+  transition:
+    opacity 400ms var(--ck-m-ease),
+    transform 400ms var(--ck-m-ease),
+    visibility 0s linear 0s;
+}
+.ck-stack > [data-active="false"] {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 300ms var(--ck-m-ease),
+    transform 300ms var(--ck-m-ease),
+    visibility 0s linear 300ms;
+}
+
+/* ── Flip card ───────────────────────────────────────────────────────────── */
+.ck-flip {
+  perspective: 1200px;
+}
+.ck-flip-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 600ms var(--ck-m-ease);
+}
+.ck-flip[data-animating="true"] .ck-flip-inner {
+  will-change: transform;
+}
+.ck-flip-inner > * {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.ck-flip-back {
+  transform: rotateY(180deg);
+}
+.ck-flip[data-flipped="true"] .ck-flip-inner {
+  transform: rotateY(180deg);
+}
+/* The hidden face leaves the accessibility tree once the turn is over. */
+.ck-flip-inner > [aria-hidden="true"] {
+  visibility: hidden;
+  transition: visibility 0s linear 300ms;
+}
+
+/* Honour reduced motion: no transitions, content in its final state at once. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] [data-reveal-item] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .ck-dot::before,
+  .ck-seg-thumb,
+  .ck-stack > *,
+  .ck-flip-inner {
+    transition: none !important;
+  }
+  .ck-stack > [data-active="false"] {
+    transform: none;
+  }
+}
+
+/* ── Support button: 48px, parked directly above the dock ──────────────────
+   It used to sit at a fixed 7.25rem that ignored the safe-area inset, so on a
+   notched phone it drifted into the dock and, everywhere else, floated over
+   card text. It is now derived from the same --ck-bottom-chrome the dock and
+   the page padding use. Desktop keeps its own classes (lg:). */
+@media (max-width: 1023.98px) {
+  .ck-support-fab {
+    width: var(--ck-fab-size);
+    height: var(--ck-fab-size);
+    right: 1rem;
+    bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
+  }
+  .ck-support-panel {
+    right: 1rem;
+    bottom: calc(var(--ck-bottom-chrome) + var(--ck-fab-size) + 1rem);
+  }
+}
+/* The idle ripple animated box-shadow forever — a repaint every frame on a
+   fixed layer. Phones get the button still. */
+@media (max-width: 767.98px) {
+  .ck-support-fab.support-btn-ripple {
+    animation: none;
+  }
+}
+
+/* ── Hero with the landing film underneath (HeroFilm) ──────────────────────
+   One grid cell, two layers: the film (its pinned Chapter 1 stage first) and
+   the hero on top of it. The cell is as tall as the film, the hero keeps its
+   own height at the top, and the film's stage — pinned from the first scroll —
+   is revealed as the hero scrolls off it. The shadow is the hero's trailing
+   edge as it slides away; it never moves on its own. Wired in HeroFilm.tsx. */
+.ck-hero-film {
+  display: grid;
+}
+.ck-hero-film > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.ck-hero-film-hero {
+  position: relative;
+  z-index: 20;
+  align-self: start;
+  box-shadow: 0 22px 40px -22px rgb(28 20 16 / 0.45);
+}
+.ck-hero-film-stage {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+/* Reduced motion: the film is a still, so it follows the hero instead of
+   hiding under it. */
+@media (prefers-reduced-motion: reduce) {
+  .ck-hero-film > * {
+    grid-area: auto;
+  }
+  .ck-hero-film-hero {
+    box-shadow: none;
+  }
+}
+
+/* ── Compositor-only loops ─────────────────────────────────────────────────
+   These replace Framer Motion `repeat: Infinity` loops, which ran JavaScript on
+   every frame for the life of the page — including inside elements hidden at
+   the current breakpoint. A CSS transform animation runs on the compositor and
+   does not run at all under display:none. Timings match the originals. */
+@keyframes ck-cat-loop {
+  0%, 60%, 100% { transform: none; }
+  30% { transform: scale(1.1) rotate(-5deg); }
+}
+.ck-cat-icon-loop {
+  animation: ck-cat-loop 4s ease-in-out infinite;
+}
+@keyframes ck-float-4 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.ck-hero-callout-float {
+  animation: ck-float-4 3.8s ease-in-out infinite;
+}
+@keyframes ck-heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.ck-heartbeat {
+  animation: ck-heartbeat 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-cat-icon-loop,
+  .ck-hero-callout-float,
+  .ck-heartbeat {
+    animation: none;
+  }
+}

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useInView } from "framer-motion";
 import { ArrowRight, MapPin, Sparkles, CheckCircle2, AlertCircle, Package, Smile, HeartHandshake } from "lucide-react";
+import { SegmentedTabs, StackedPanels, useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 
 // Inline illustrated SVG icons for the 5 items
 function BookIllustration({ className = "", color = "currentColor" }: { className?: string; color?: string }) {
@@ -65,6 +66,124 @@ function TeddyIllustration({ className = "", color = "currentColor" }: { classNa
       <circle cx="16" cy="40" r="5" fill={color} fillOpacity="0.8" stroke={color} strokeWidth="2" />
       <circle cx="48" cy="40" r="5" fill={color} fillOpacity="0.8" stroke={color} strokeWidth="2" />
     </svg>
+  );
+}
+
+type ItemIllustration = {
+  id: string;
+  name: string;
+  comp: (props: { className?: string; color?: string }) => React.JSX.Element;
+  activeColor: string;
+};
+
+/**
+ * Phone version (< 768px): one card, two states.
+ *
+ * <p>The stacked Problem card, badge and Solution card were three blocks and
+ * most of a screen. Here the same content is a segmented switch over two
+ * panels that share one grid cell, so flipping between them never moves the
+ * page — the item row greys out or comes alive with the panel.
+ */
+function ProblemSolutionMobile({
+  problemPoints,
+  solutionPoints,
+  items,
+}: {
+  problemPoints: string[];
+  solutionPoints: string[];
+  items: ItemIllustration[];
+}) {
+  const [tab, setTab] = useState<"problem" | "solution">("problem");
+  const idBase = useId();
+  const ref = useRevealOnce<HTMLDivElement>();
+
+  const bullets = (points: string[], dot: string) => (
+    <ul className="space-y-2 text-[13px] leading-snug text-stone-600 dark:text-stone-300 font-medium">
+      {points.map((point) => (
+        <li key={point} className="flex items-start gap-2">
+          <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${dot}`} />
+          <span>{point}</span>
+        </li>
+      ))}
+    </ul>
+  );
+
+  return (
+    <div ref={ref} className="md:hidden my-1">
+      <div data-reveal-item style={stagger(0)}>
+        <SegmentedTabs
+          label="The problem and our solution"
+          idBase={idBase}
+          value={tab}
+          onChange={setTab}
+          thumbColor={tab === "problem" ? "#B5480F" : "#0F7A6C"}
+          tabs={[
+            { id: "problem", label: "The Problem", icon: <AlertCircle className="w-3.5 h-3.5" /> },
+            { id: "solution", label: "Our Solution", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+          ]}
+        />
+      </div>
+
+      <div data-reveal-item style={stagger(1)} className="mt-3">
+        <StackedPanels
+          value={tab}
+          idBase={idBase}
+          panels={[
+            {
+              id: "problem",
+              content: (
+                <div className="h-full p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-xs flex flex-col gap-3">
+                  {bullets(problemPoints, "bg-red-500")}
+                  <div className="mt-auto">
+                    <p className="text-4xs font-extrabold uppercase tracking-widest text-stone-500 dark:text-stone-400 flex items-center gap-1.5 mb-1.5">
+                      <Package className="w-3 h-3" /> Unused at home
+                    </p>
+                    <div className="p-2 rounded-xl bg-stone-100 dark:bg-stone-950 grid grid-cols-5 gap-1.5 justify-items-center">
+                      {items.map((item) => {
+                        const IconComp = item.comp;
+                        return (
+                          <div key={item.id} className="w-10 h-10 p-1.5 rounded-xl bg-white dark:bg-stone-900 shadow-2xs grayscale opacity-75">
+                            <IconComp className="w-full h-full" color="#777" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              id: "solution",
+              content: (
+                <div className="h-full p-4 rounded-2xl bg-[#E3F2EF]/70 dark:bg-[#0F7A6C]/10 border border-[#0F7A6C]/30 shadow-xs flex flex-col gap-3">
+                  {bullets(solutionPoints, "bg-emerald-600")}
+                  <div className="mt-auto">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-4xs font-extrabold uppercase tracking-widest text-[#0F7A6C] dark:text-[#5ec7b6] flex items-center gap-1">
+                        Received with Joy <HeartHandshake className="w-3 h-3" />
+                      </p>
+                      <span className="px-2 py-0.5 rounded-full bg-[#FBEDE3] dark:bg-[#B5480F]/20 border border-[#B5480F]/40 text-4xs font-black uppercase text-[#B5480F] dark:text-[#F4A25B] flex items-center gap-1">
+                        <MapPin className="w-2.5 h-2.5" /> Handover within 10 km
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white/80 dark:bg-stone-900/80 grid grid-cols-5 gap-1.5 justify-items-center">
+                      {items.map((item) => {
+                        const IconComp = item.comp;
+                        return (
+                          <div key={item.id} className="w-10 h-10 p-1.5 rounded-xl bg-white dark:bg-stone-900 shadow-2xs">
+                            <IconComp className="w-full h-full" color={item.activeColor} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -237,7 +356,7 @@ export function ProblemSolutionSection() {
       <section
         ref={pinTargetRef}
         id="problem-solution-section"
-        className="relative w-full py-6 sm:py-8 lg:py-6 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center overflow-hidden border-b border-stone-200/80 dark:border-stone-850/70"
+        className="ck-m-section relative w-full py-6 sm:py-8 lg:py-6 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center overflow-hidden border-b border-stone-200/80 dark:border-stone-850/70"
       >
         {/* Decorative background subtle radial glow */}
         <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-15">
@@ -401,8 +520,11 @@ export function ProblemSolutionSection() {
             </div>
           </div>
 
-          {/* Mobile Stacked View (<1024px) */}
-          <div className="lg:hidden flex flex-col gap-4 my-2">
+          {/* PHONE (< 768px): segmented Problem / Solution card */}
+          <ProblemSolutionMobile problemPoints={problemPoints} solutionPoints={solutionPoints} items={items} />
+
+          {/* Tablet Stacked View (768–1023px) */}
+          <div className="hidden md:flex lg:hidden flex-col gap-4 my-2">
             {/* The Problem Card */}
             <div className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-xs">
               <div className="flex items-center gap-2 mb-2">
