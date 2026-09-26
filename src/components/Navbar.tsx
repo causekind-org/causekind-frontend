@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
 import SpecularButton from "@/components/SpecularButton";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";

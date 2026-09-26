@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Anton } from "next/font/google";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import { MotionConfig, motion } from "framer-motion";

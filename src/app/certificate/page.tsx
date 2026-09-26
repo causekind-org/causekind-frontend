@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getOfferCertificate, getMatchCertificate, verifyCertificate, type Certificate } from "@/lib/api";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { ArrowLeft, Download } from "lucide-react";
 import QRCode from "qrcode";
 import { normalizeCertificateColors } from "@/lib/certificateCaptureColors";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { ChevronDown, EyeOff, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {

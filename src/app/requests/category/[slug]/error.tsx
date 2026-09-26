@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { AlertTriangle } from "lucide-react";
 
 export default function CategoryError({ reset }: { error: Error; reset: () => void }) {

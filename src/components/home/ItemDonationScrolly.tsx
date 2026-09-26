@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useTranslations } from "next-intl";
 import { useReducedMotion } from "framer-motion";
 import {

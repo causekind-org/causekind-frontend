@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, useReducedMotion } from "framer-motion";
 import { CheckCircle2, RefreshCw } from "lucide-react";
 

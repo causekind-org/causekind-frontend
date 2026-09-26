@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { Reveal } from "@/components/Reveal";
