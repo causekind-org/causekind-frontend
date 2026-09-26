@@ -72,20 +72,25 @@
 }
 
 /* ── Copy ─────────────────────────────────────────────────────────────────── */
+/* Faces come from ./fonts.ts, set on each stage root. */
 .display {
-  font-family: var(--font-anton), Impact, "Arial Narrow", sans-serif;
-  font-weight: 400;
+  font-family: var(--font-cine-display), Impact, "Arial Narrow", sans-serif;
+  font-weight: 800;
+  font-optical-sizing: auto;
   text-transform: uppercase;
-  letter-spacing: 0.01em;
-  line-height: 0.92;
+  letter-spacing: 0.005em;
+  line-height: 0.9;
 }
 
 .serif {
-  font-family: var(--font-source-serif-4), Georgia, serif;
+  font-family: var(--font-cine-serif), Georgia, serif;
+  font-variation-settings: "SOFT" 100;
+  font-optical-sizing: auto;
 }
 
 .mono {
-  font-family: var(--font-roboto-mono), ui-monospace, monospace;
+  font-family: var(--font-cine-mono), ui-monospace, monospace;
+  font-weight: 500;
 }
 
 .mask {
@@ -112,7 +117,8 @@
 .hud {
   position: absolute;
   z-index: 40;
-  font-family: var(--font-roboto-mono), ui-monospace, monospace;
+  font-family: var(--font-cine-mono), ui-monospace, monospace;
+  font-weight: 500;
   font-size: 10px;
   letter-spacing: 0.22em;
   text-transform: uppercase;

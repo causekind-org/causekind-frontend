@@ -1,0 +1,619 @@
+/*
+ * "Where does my support go?" — a table of photographs.
+ *
+ * Every photo is four nested layers, each owning one kind of movement so they
+ * never fight over one `transform`:
+ *
+ *   .slot   position on the table (left/top/width in % of the stage) + z-order
+ *   .par    cursor + scroll parallax, scaled by depth (--d, --ds)
+ *   .enter  the one-time arrival
+ *   .pose   resting rotation, or lifted / pushed aside (inline transform)
+ *   .photo  the button: hover straightens it and brings it forward
+ *
+ * Only transform, opacity (and, on desktop, a static filter on background
+ * photos) change. Nothing animates a size or a position property.
+ */
+
+.section {
+  position: relative;
+  overflow-x: clip;
+  background: #f4eee4;
+  color: #1c1410;
+  --sg-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --sg-accent: #b5470f;
+  --sg-ink: #5b4636;
+  --sg-paper: #fcfaf5;
+}
+:global(.dark) .section {
+  background: #17110c;
+  color: #f5eee8;
+  --sg-ink: #c8b6a4;
+  --sg-paper: #efe9df;
+}
+/* The table: a fine paper grain, painted once. */
+.section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.15 0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ── Shared type ─────────────────────────────────────────────────────────── */
+.mono {
+  font-family: var(--font-sg-mono), ui-monospace, monospace;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.hand {
+  font-family: var(--font-sg-hand), "Segoe Print", cursive;
+  font-weight: 600;
+  color: var(--sg-ink);
+  line-height: 1;
+}
+.serif {
+  font-family: var(--font-sg-serif), Georgia, serif;
+  font-variation-settings: "SOFT" 60;
+}
+
+/* ══ Desktop / tablet table (≥ 768px) ═══════════════════════════════════════ */
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 10;
+  container-type: inline-size;
+  --px: 0;
+  --py: 0;
+  --sy: 0;
+}
+
+.title {
+  position: absolute;
+  left: 6cqw;
+  top: 27%;
+  z-index: 20;
+  margin: 0;
+  font-family: var(--font-sg-serif), Georgia, serif;
+  font-weight: 650;
+  font-size: 8.6cqw;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  font-variation-settings: "SOFT" 40, "opsz" 144;
+  pointer-events: none;
+  transition: opacity 500ms var(--sg-ease), transform 700ms var(--sg-ease);
+}
+.title span {
+  display: block;
+}
+.title em {
+  font-style: italic;
+  color: var(--sg-accent);
+  letter-spacing: -0.02em;
+}
+.stage[data-lifted="true"] .title {
+  opacity: 0.16;
+}
+
+.intro {
+  position: absolute;
+  left: 6cqw;
+  top: 5%;
+  z-index: 25;
+  max-width: 30cqw;
+  transition: opacity 500ms var(--sg-ease), transform 700ms var(--sg-ease);
+}
+.eyebrow {
+  font-size: max(10px, 0.72cqw);
+  color: var(--sg-accent);
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+}
+.eyebrow::before {
+  content: "";
+  width: 2.2em;
+  height: 1px;
+  background: currentColor;
+}
+.counter {
+  margin-top: 1.1cqw;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6em;
+  font-size: max(10px, 0.72cqw);
+  color: var(--sg-ink);
+}
+.counterNum {
+  font-family: var(--font-sg-serif), Georgia, serif;
+  font-size: 2.4cqw;
+  letter-spacing: -0.02em;
+  color: #1c1410;
+  display: inline-block;
+  min-width: 1.4em;
+}
+:global(.dark) .counterNum {
+  color: #f5eee8;
+}
+.hint {
+  display: block;
+  margin-top: 0.4cqw;
+  font-size: max(18px, 1.6cqw);
+  transform: rotate(-3deg);
+  transform-origin: left center;
+}
+
+/* ── Index ── */
+.index {
+  position: absolute;
+  left: 1.6cqw;
+  bottom: 7%;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15cqw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.indexBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.25em 0.2em;
+  font-size: max(10px, 0.72cqw);
+  color: var(--sg-ink);
+  opacity: 0.6;
+  transition: opacity 250ms ease, color 250ms ease;
+}
+.indexBtn:hover,
+.indexBtn:focus-visible,
+.indexBtn[aria-current="true"] {
+  opacity: 1;
+}
+.indexBtn[aria-current="true"] {
+  color: var(--sg-accent);
+}
+.indexLine {
+  width: 2.6em;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 400ms var(--sg-ease);
+}
+.indexBtn[aria-current="true"] .indexLine {
+  transform: scaleX(1);
+}
+.indexBtn:focus-visible {
+  outline: 2px solid var(--sg-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── A photo on the table ── */
+.slot {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1%);
+  width: calc(var(--w) * 1%);
+  z-index: var(--z);
+}
+.slot:hover,
+.slot:focus-within {
+  z-index: 45;
+}
+.slot[data-active="true"] {
+  z-index: 60;
+}
+
+.par {
+  transform: translate3d(
+    calc(var(--px) * var(--d) * 1px),
+    calc(var(--py) * var(--d) * 1px + var(--sy) * var(--ds) * 1px),
+    0
+  );
+  transition: transform 450ms var(--sg-ease);
+}
+
+.enter {
+  transition:
+    transform 750ms var(--sg-ease),
+    opacity 450ms ease;
+  transition-delay: calc(var(--i) * 90ms + 150ms);
+}
+.stage[data-in="false"] .enter {
+  opacity: 0;
+}
+.stage[data-in="false"] .enter[data-enter="rise"] { transform: translate3d(0, 70px, 0); }
+.stage[data-in="false"] .enter[data-enter="side"] { transform: translate3d(-110px, 10px, 0) rotate(-16deg); }
+.stage[data-in="false"] .enter[data-enter="drop"] { transform: translate3d(0, -60px, 0) scale(1.04); }
+.stage[data-in="false"] .enter[data-enter="forward"] { transform: scale(0.78); }
+.stage[data-in="false"] .enter[data-enter="under"] { transform: translate3d(90px, 0, 0); }
+.stage[data-in="false"] .enter[data-enter="turn"] { transform: rotate(18deg) scale(0.94); }
+.stage[data-in="false"] .enter[data-enter="last"] { transform: scale(1.1); }
+.stage[data-in="false"] .title,
+.stage[data-in="false"] .intro {
+  opacity: 0;
+  transform: translate3d(0, 20px, 0);
+}
+
+.pose {
+  transform-origin: 50% 50%;
+  transition: transform 700ms var(--sg-ease);
+}
+
+.photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 380ms var(--sg-ease);
+}
+.photo:focus-visible {
+  outline: 3px solid var(--sg-accent);
+  outline-offset: 6px;
+}
+/* Focus: straighten, come forward. The others step back a few pixels. */
+@media (hover: hover) {
+  .stage[data-lifted="false"] .slot:hover .photo {
+    transform: translate3d(0, -6px, 0) rotate(calc(var(--rot) * -0.75deg)) scale(1.06);
+  }
+  .stage[data-lifted="false"]:has(.slot:hover) .slot:not(:hover) .photo {
+    transform: scale(0.975);
+  }
+}
+.stage[data-lifted="false"] .photo:focus-visible {
+  transform: translate3d(0, -6px, 0) rotate(calc(var(--rot) * -0.75deg)) scale(1.06);
+}
+
+/* ── Frames ── */
+.frame {
+  position: relative;
+  display: block;
+  background: var(--sg-paper);
+  box-shadow:
+    0 1px 1px rgb(40 25 10 / 0.12),
+    0 10px 22px -12px rgb(40 25 10 / 0.45);
+}
+.frame[data-depth="front"] {
+  box-shadow:
+    0 1px 1px rgb(40 25 10 / 0.14),
+    0 22px 40px -18px rgb(40 25 10 / 0.55);
+}
+/* The lifted / hovered shadow is a second layer that fades in — never an
+   animated box-shadow. */
+.frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: 0 34px 60px -22px rgb(40 25 10 / 0.6);
+  opacity: 0;
+  transition: opacity 380ms var(--sg-ease);
+}
+.slot:hover .frame::after,
+.slot[data-active="true"] .frame::after {
+  opacity: 1;
+}
+.frame[data-frame="print"] {
+  padding: 4.2% 4.2% 15%;
+}
+.frame[data-frame="tape"] {
+  padding: 3%;
+}
+.frame[data-frame="bare"] {
+  padding: 0;
+  background: none;
+}
+.frame[data-frame="corners"] {
+  padding: 0;
+  outline: 1px solid rgb(40 25 10 / 0.12);
+  outline-offset: -1px;
+}
+.img {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: #d9cfc1;
+}
+.img img {
+  object-fit: cover;
+}
+/* Print grain + a faint warm cast, so the six read as one set of prints. */
+.img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='1' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0.16 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>"),
+    linear-gradient(180deg, rgb(255 236 210 / 0.12), rgb(120 70 30 / 0.08));
+}
+/* Background photos: a touch soft and quiet; they sharpen when picked up. */
+.img[data-depth="back"] {
+  filter: blur(0.6px) saturate(0.88) brightness(0.97);
+  transition: filter 380ms ease;
+}
+.slot:hover .img[data-depth="back"],
+.slot[data-active="true"] .img[data-depth="back"] {
+  filter: none;
+}
+/* Tape strip across the top edge. */
+.frame[data-frame="tape"]::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -9px;
+  left: 50%;
+  width: 34%;
+  height: 22px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgb(236 222 196 / 0.78);
+  box-shadow: 0 1px 2px rgb(40 25 10 / 0.12);
+  clip-path: polygon(3% 0, 97% 4%, 100% 50%, 96% 100%, 2% 96%, 0 45%);
+}
+/* Photo corners. */
+.corner {
+  position: absolute;
+  z-index: 2;
+  width: 9%;
+  aspect-ratio: 1;
+  background: #2a211b;
+  opacity: 0.85;
+}
+.corner:nth-of-type(1) { top: -2px; left: -2px; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.corner:nth-of-type(2) { top: -2px; right: -2px; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.corner:nth-of-type(3) { bottom: -2px; left: -2px; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+.corner:nth-of-type(4) { bottom: -2px; right: -2px; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+
+/* Hover label — category and caption on a paper tab under the print. */
+.tab {
+  position: absolute;
+  left: 4%;
+  top: calc(100% + 10px);
+  width: max(92%, 15rem);
+  padding: 0.55rem 0.7rem 0.6rem;
+  background: var(--sg-paper);
+  box-shadow: 0 8px 18px -10px rgb(40 25 10 / 0.5);
+  opacity: 0;
+  transform: translate3d(0, -6px, 0);
+  transition:
+    opacity 300ms ease,
+    transform 380ms var(--sg-ease);
+  pointer-events: none;
+}
+.tab .mono {
+  font-size: 10px;
+  color: var(--sg-accent);
+}
+.tab .mono {
+  display: block;
+}
+.tabCaption {
+  display: block;
+  margin: 0.25rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.3;
+  color: #2a211b;
+}
+.stage[data-lifted="false"] .slot:hover .tab,
+.stage[data-lifted="false"] .photo:focus-visible .tab {
+  opacity: 1;
+  transform: none;
+}
+
+/* Handwritten notes — they drift with their photo's parallax, not its lift. */
+.note {
+  position: absolute;
+  z-index: 3;
+  white-space: nowrap;
+  font-size: max(17px, 1.45cqw);
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+.note svg {
+  display: inline-block;
+  width: 2.2em;
+  height: 1em;
+  vertical-align: middle;
+  color: var(--sg-accent);
+}
+.note[data-pos="below-left"] { left: -2%; top: calc(100% + 0.6cqw); transform: rotate(-4deg); }
+.note[data-pos="below-right"] { right: -4%; top: calc(100% + 0.6cqw); transform: rotate(3deg); }
+.note[data-pos="above-left"] { left: 0; bottom: calc(100% + 0.6cqw); transform: rotate(-3deg); }
+.note[data-pos="above-right"] { right: 6%; bottom: calc(100% + 0.8cqw); transform: rotate(4deg); }
+.note[data-pos="left"] { right: calc(100% + 0.8cqw); top: 38%; transform: rotate(-6deg); }
+.slot[data-active="true"] .note,
+.stage[data-lifted="false"] .slot:hover .note {
+  opacity: 0;
+}
+
+/* ── The picked-up photo's card ── */
+.card {
+  position: absolute;
+  z-index: 70;
+  width: min(21rem, 30cqw);
+  padding: 1rem 1.1rem 1.05rem;
+  background: var(--sg-paper);
+  color: #2a211b;
+  box-shadow: 0 24px 44px -22px rgb(40 25 10 / 0.6);
+  transform: rotate(-2deg);
+  animation: sg-card-in 520ms var(--sg-ease) both;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 18%;
+  width: 28%;
+  height: 20px;
+  transform: rotate(4deg);
+  background: rgb(236 222 196 / 0.8);
+  clip-path: polygon(3% 0, 97% 4%, 100% 50%, 96% 100%, 2% 96%, 0 45%);
+}
+@keyframes sg-card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) rotate(1deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-2deg);
+  }
+}
+.cardCat {
+  font-size: 11px;
+  color: var(--sg-accent);
+}
+.cardCaption {
+  margin: 0.45rem 0 0;
+  font-size: 1.28rem;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+}
+.cardDetail {
+  margin: 0.55rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #5b4636;
+}
+.cardClose {
+  margin-top: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 10px;
+  color: #5b4636;
+  padding: 0.35rem 0;
+}
+.cardClose:hover,
+.cardClose:focus-visible {
+  color: var(--sg-accent);
+}
+.cardClose:focus-visible {
+  outline: 2px solid var(--sg-accent);
+  outline-offset: 3px;
+}
+
+/* ══ Phone pile (< 768px) ═══════════════════════════════════════════════════ */
+.mTitle {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-family: var(--font-sg-serif), Georgia, serif;
+  font-weight: 650;
+  font-size: clamp(2.7rem, 13.5vw, 3.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  font-variation-settings: "SOFT" 40, "opsz" 144;
+}
+.mTitle span {
+  display: block;
+}
+.mTitle em {
+  font-style: italic;
+  color: var(--sg-accent);
+}
+.pile {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  aspect-ratio: 1 / 1.02;
+  margin-top: -2.2rem;
+  container-type: size;
+  touch-action: pan-y;
+}
+.card2 {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(74cqw, calc(80cqh * var(--ar)));
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -50%) translate3d(var(--tx), var(--ty), 0) rotate(var(--r)) scale(var(--s));
+  opacity: var(--o);
+  z-index: var(--z);
+  transition:
+    transform 520ms var(--sg-ease),
+    opacity 380ms ease;
+}
+.card2:focus-visible {
+  outline: 3px solid var(--sg-accent);
+  outline-offset: 5px;
+}
+.mCaption {
+  min-height: 7.5rem;
+}
+.mCaption > div {
+  animation: sg-caption-in 420ms var(--sg-ease) both;
+}
+@keyframes sg-caption-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+}
+.mIndex {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mIndexBtn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 2.6rem;
+  padding: 0.55rem 0.2rem;
+  font-size: 11px;
+  color: var(--sg-ink);
+  opacity: 0.55;
+}
+.mIndexBtn[aria-current="true"] {
+  opacity: 1;
+  color: var(--sg-accent);
+}
+.mIndexBtn .indexLine {
+  width: 1.4rem;
+}
+.mIndexBtn[aria-current="true"] .indexLine {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .par,
+  .enter,
+  .pose,
+  .photo,
+  .card2,
+  .title,
+  .tab,
+  .img[data-depth="back"] {
+    transition: none !important;
+  }
+  .stage[data-in="false"] .enter,
+  .stage[data-in="false"] .title,
+  .stage[data-in="false"] .intro {
+    opacity: 1;
+    transform: none;
+  }
+  .card,
+  .mCaption > div {
+    animation: none;
+  }
+}

@@ -61,6 +61,7 @@ import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
+import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
@@ -240,9 +241,9 @@ export default function HomeClient({
       <SmoothScroll />
       {/* Continuous dashed road across whole desktop page */}
       <DashedJourneyRoad />
-      {/* One responsive front door. Keeping it outside the two legacy layout
-          trees prevents CTA, image and tour-anchor drift between breakpoints. */}
-      <HeroComponent />
+      {/* One responsive front door. With cinematicLanding on, the film sits
+          pinned underneath it and slides off it on scroll — see HeroFilm. */}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
       <WhoAreWeSection />
@@ -404,7 +405,10 @@ export default function HomeClient({
           the donor/donee spine being a separate, separately scrolling page.
           `clip` leaves `overflow-y: visible` alone, so nothing here scrolls and
           the horizontal bleed is still clipped exactly as before. */}
-      <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-clip pt-11 bg-[#fbf9f4] dark:bg-zinc-950">
+      {/* Below 768px every section pads itself (`.ck-m-section`, with room for
+          the bottom dock), so the column's own 44px gap and top pad drop out
+          there rather than stacking on top of it. */}
+      <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 

@@ -12,6 +12,7 @@ import { useNearFooter } from "@/hooks/useNearFooter";
 import { useDraggableBubble } from "@/hooks/useDraggableBubble";
 import { RequestNudge } from "@/components/RequestNudge";
 import GlassSurface from "@/components/GlassSurface";
+import { useImmersiveNav } from "@/hooks/useImmersiveNav";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
 type MobileNavItem = {
@@ -38,6 +39,10 @@ export function MobileBottomNav() {
   // Shared with SiteBottomBlur, so the two bottom-anchored elements agree about
   // when the footer is near and leave/return together instead of drifting.
   const nearFooter = useNearFooter();
+  // The landing film owns the whole screen while it plays; the dock parks
+  // exactly as it does near the footer.
+  const immersive = useImmersiveNav();
+  const parked = nearFooter || immersive;
 
   // Centre + button — smart routing based on feature flag + role
   const centerHref = FEATURES.money
@@ -154,18 +159,18 @@ export function MobileBottomNav() {
     <nav
       // `inert` while parked: the links leave the tab order too, so keyboard
       // focus cannot land on a bar that is off-screen.
-      inert={nearFooter}
+      inert={parked}
       className="ck-mobile-dock fixed left-1/2 z-50 h-[3.75rem] w-[calc(100%-2rem)] max-w-[27rem] lg:hidden"
       style={{
         bottom: "calc(var(--ck-nav-float) + var(--ck-bottom-inset))",
         // Travel derived from --ck-bottom-chrome (float + safe-area inset + bar
         // height) rather than a guessed pixel value, so the bar clears itself
         // exactly on a notched phone and on a plain one alike.
-        transform: nearFooter
+        transform: parked
           ? "translate(-50%, calc(var(--ck-bottom-chrome) + 1.5rem))"
           : "translate(-50%, 0)",
-        opacity: nearFooter ? 0 : 1,
-        pointerEvents: nearFooter ? "none" : "auto",
+        opacity: parked ? 0 : 1,
+        pointerEvents: parked ? "none" : "auto",
       }}
       aria-label={t("mobileNavAriaLabel")}
       dir={isRtl ? "rtl" : "ltr"}
@@ -482,7 +487,7 @@ export function FloatingSupportButton() {
         ref={panelRef}
         style={panelStyle}
         className={`floating-support-item fixed z-50 w-60
-          ${panelStyle ? "" : "bottom-[9.5rem] right-5 lg:bottom-24"}
+          ${panelStyle ? "" : "ck-support-panel lg:bottom-24 lg:right-5"}
           bg-white/75 dark:bg-zinc-900/70 backdrop-blur-md
           rounded-2xl shadow-2xl border border-white/50 dark:border-white/10
           transition-all duration-300 origin-bottom-right
@@ -522,6 +527,10 @@ export function FloatingSupportButton() {
 
       {/* Trigger button.
 
+          Below lg, `.ck-support-fab` (styles.css) makes it 48px and parks it
+          directly above the dock from --ck-bottom-chrome, so it tracks the
+          dock and the safe-area inset instead of a fixed 7.25rem guess.
+
           Draggable. `position` is null until the viewer actually moves it, and
           while it is null the button keeps its Tailwind corner classes — so the
           default placement stays exactly where it was and only a viewer who has
@@ -535,9 +544,9 @@ export function FloatingSupportButton() {
         aria-label={open ? t("closeSupport") : t("openSupport")}
         style={bubblePosition ? { left: bubblePosition.x, top: bubblePosition.y, right: "auto", bottom: "auto" } : undefined}
         className={`floating-support-item fixed z-50 touch-none
-                   ${bubblePosition ? "" : "bottom-[7.25rem] right-5 lg:bottom-8"}
+                   ${bubblePosition ? "" : "lg:bottom-8 lg:right-5"}
                    ${dragging ? "cursor-grabbing" : "cursor-grab"}
-                   w-13 h-13 rounded-full
+                   ck-support-fab lg:w-13 lg:h-13 rounded-full
                    bg-[#1e3a60]/65 backdrop-blur-md
                    shadow-[0_8px_32px_-4px_rgba(30,58,96,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]
                    border border-white/20 dark:border-white/12

@@ -379,6 +379,8 @@ export function SiteHeader() {
       if (hero && hero !== observedHero) {
         resize.disconnect();
         resize.observe(hero);
+        crossing.disconnect();
+        crossing.observe(hero);
         observedHero = hero;
         mounted.disconnect();
       }
@@ -387,24 +389,37 @@ export function SiteHeader() {
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
+    // Scroll only matters when the hero crosses the top edge of the viewport,
+    // so watch that line instead of reading the hero's rect on every scroll
+    // event (a forced layout mid-scroll, right after the page's animations
+    // have written their styles). The root is shrunk to a 0px line along the
+    // top; intersection is edge-inclusive, so a hero spanning it counts.
+    const crossing = new IntersectionObserver(schedule, { rootMargin: "0px 0px -100% 0px" });
     // The homepage may arrive after the shared header during client navigation.
     const mounted = new MutationObserver(schedule);
     mounted.observe(document.body, { childList: true, subtree: true });
     update();
-    window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     mobile.addEventListener("change", schedule);
     return () => {
       cancelAnimationFrame(frame);
       resize.disconnect();
+      crossing.disconnect();
       mounted.disconnect();
-      window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       mobile.removeEventListener("change", schedule);
     };
   }, [pathname]);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    // Set state only when the answer flips, not on every scroll event.
+    let last: boolean | null = null;
+    const onScroll = () => {
+      const next = window.scrollY > 8;
+      if (next !== last) {
+        last = next;
+        setScrolled(next);
+      }
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
