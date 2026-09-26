@@ -12,7 +12,6 @@
  *   src/components/home/
  *     HeroSection.tsx         — shared responsive front door + category rail
  *     StatsBars.tsx           — desktop stats row + live activity ticker
- *     ItemDonationScrolly.tsx — scroll-scrubbed film hero ("How it works")
  *     CTASection.tsx          — bottom "Get started" CTA (hidden when logged in)
  *
  * This file keeps only:
@@ -59,7 +58,6 @@ import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import AudiencePathwaysSection from "@/components/audience-pathways/AudiencePathwaysSection";
 import { MobileVisualStory } from "@/components/home/MobileVisualStory";
 
-import { ItemDonationScrolly } from "@/components/home/ItemDonationScrolly";
 import { CTASection } from "@/components/home/CTASection";
 
 
@@ -268,12 +266,6 @@ export default function HomeClient({
           </>
         )}
 
-
-        {/* "What We Provide" — 2-step dark section. Second on the page, right
-            after the hero: it is the one section that explains what actually
-            happens here, so it earns the position before the visitor is asked
-            to look at open needs. */}
-        <ItemDonationScrolly />
 
         {/* Donor / Donee pathways — the two sides of the platform, each with a
             role-preselecting signup CTA. Third on the page, so the visitor is
