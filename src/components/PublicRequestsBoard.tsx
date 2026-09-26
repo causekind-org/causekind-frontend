@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion } from "framer-motion";
 import { MapPin, AlertTriangle, Loader2, Inbox, RefreshCw, LogIn, Search } from "lucide-react";
 import { getPublicItemRequests, type PublicItemRequest } from "@/lib/api";

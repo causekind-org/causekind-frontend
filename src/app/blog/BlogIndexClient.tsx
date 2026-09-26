@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CategoryDropdown } from "@/components/blog/CategoryDropdown";

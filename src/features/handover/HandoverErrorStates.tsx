@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { CircleAlert, Lock, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Campaign } from "@/lib/api";

@@ -4,7 +4,7 @@ import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Heart, Zap, Shield, ChevronRight, ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import { getCampaigns, type Campaign } from "@/lib/api";

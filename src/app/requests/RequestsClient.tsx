@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ImagePlus, Loader2, MapPin, Sparkles, X, ShieldCheck, Heart, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 
 
 

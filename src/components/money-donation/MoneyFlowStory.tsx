@@ -4,7 +4,7 @@ import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
 import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
 import { SahasLogo } from './SahasLogo';
-import Link from 'next/link';
+import Link from "@/components/AppLink";
 
 /* ─── Step Data ─── */
 const steps = [

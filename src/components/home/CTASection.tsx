@@ -6,7 +6,7 @@
  */
 
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/Reveal";

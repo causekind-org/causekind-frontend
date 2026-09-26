@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
+import Link from "@/components/AppLink";
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { ArrowLeft, ArrowRight, HeartHandshake } from 'lucide-react';
 import { useRef } from 'react';

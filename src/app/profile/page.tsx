@@ -60,7 +60,7 @@ import {
   Star,
   RefreshCw,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { RequestReadinessRail } from "@/components/RequestReadinessRail";
 import { progressOf, needProfileItemLabel } from "@/lib/needProfileDocs";

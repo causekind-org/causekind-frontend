@@ -5,7 +5,7 @@ import { ComingSoon } from "@/components/ComingSoon";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { toast } from "@/lib/toast";
 import { createCampaign, getProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
