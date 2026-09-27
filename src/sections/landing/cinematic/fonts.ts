@@ -20,6 +20,9 @@ const display = Big_Shoulders({
   weight: "variable",
   axes: ["opsz"],
   display: "swap",
+  // The title-card stand-in is server-rendered under the hero; its faces load
+  // when laid out, without a preload competing with the hero image.
+  preload: false,
   variable: "--font-cine-display",
 });
 
@@ -28,6 +31,9 @@ const serif = Fraunces({
   style: ["normal", "italic"],
   axes: ["SOFT", "opsz"],
   display: "swap",
+  // The title-card stand-in is server-rendered under the hero; its faces load
+  // when laid out, without a preload competing with the hero image.
+  preload: false,
   variable: "--font-cine-serif",
 });
 
@@ -35,6 +41,9 @@ const mono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["500"],
   display: "swap",
+  // The title-card stand-in is server-rendered under the hero; its faces load
+  // when laid out, without a preload competing with the hero image.
+  preload: false,
   variable: "--font-cine-mono",
 });
 

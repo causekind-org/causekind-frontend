@@ -430,7 +430,7 @@ export function SupportJourneySection() {
           1.6
         );
       }
-      
+
       const happyRecipient = document.querySelector<HTMLElement>(".ck-happy-recipient");
       if (happyRecipient) {
         tl.fromTo(

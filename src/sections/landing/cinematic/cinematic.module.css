@@ -16,6 +16,47 @@
   --cine-night: #0f0a07;
 }
 
+/* ── Scroll tracks ──
+   The film's scroll length is plain CSS, so it is part of the server-rendered
+   page before any chapter code has loaded. Each stage is sticky inside its
+   track, which does what a GSAP pin did without inserting spacer height after
+   load — that late insertion let a quick early scroll skip past the film and
+   made a refresh restore into the film instead of the section the reader was
+   on. The chapters script over whatever length the track has, so these set
+   the pacing: Chapter 1 = stage + hero lead-in + title hold + 7.2 / 5.6
+   screens; Chapter 2 = stage + 6.4 / 5.2 screens (landscape / portrait). */
+.track {
+  position: relative;
+}
+.track > .stage {
+  position: sticky;
+  top: 0;
+}
+.track1 {
+  height: calc(max(100svh, 560px) + 100svh + 60svh + 720svh);
+}
+.track2 {
+  height: calc(max(100svh, 560px) + 640svh);
+}
+@media (orientation: portrait) {
+  .track1 {
+    height: calc(max(100svh, 560px) + 100svh + 60svh + 560svh);
+  }
+  .track2 {
+    height: calc(max(100svh, 560px) + 520svh);
+  }
+}
+/* Reduced motion: the chapters are stills, so there is nothing to scroll through. */
+@media (prefers-reduced-motion: reduce) {
+  .track1,
+  .track2 {
+    height: auto;
+  }
+  .track > .stage {
+    position: relative;
+  }
+}
+
 .ch1 {
   background: var(--cine-cream);
 }
@@ -97,13 +138,64 @@
   display: inline-block;
   overflow: hidden;
   vertical-align: top;
-  padding: 0.06em 0.04em 0.02em;
-  margin: -0.06em -0.04em -0.02em;
+  padding: 0.14em 0.06em 0.12em;
+  margin: -0.14em -0.06em -0.12em;
 }
 
 .word {
   display: inline-block;
   will-change: transform;
+}
+
+/*
+ * Chapter 1's title card. `data-state` is set from the page's position (see
+ * `syncTitle` in Chapter1TheUnusedThing.tsx): "before" while the hero covers
+ * the stage (words wait below their masks, instantly — nobody can see them),
+ * "in" once the hero starts to lift (words rise), "after" once the film has
+ * started (words lift away). No state means visible. Transform and opacity
+ * only, so the transitions run on the compositor even while the page is busy.
+ */
+.titleCard .word {
+  transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 55ms);
+}
+.titleCard[data-state="before"] .word {
+  transform: translate3d(0, 110%, 0);
+  transition: none;
+}
+/* Back from the film: the words return quickly, nearly together. */
+.titleCard .mask {
+  transition:
+    opacity 0.22s ease-out,
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 15ms);
+}
+.titleCard[data-state="before"] .mask {
+  transition: none;
+}
+.titleCard[data-state="after"] .mask {
+  opacity: 0;
+  transform: translate3d(0, -40%, 0);
+  transition:
+    opacity 0.45s ease-in,
+    transform 0.55s cubic-bezier(0.55, 0, 0.8, 0.2);
+  transition-delay: calc(var(--i, 0) * 40ms);
+}
+.titleEyebrow {
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+}
+.titleCard[data-state="after"] .titleEyebrow {
+  opacity: 0;
+  transform: translate3d(0, -20px, 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .titleCard .word,
+  .titleCard .mask,
+  .titleEyebrow {
+    transition: none !important;
+  }
 }
 
 .glowText {
@@ -216,5 +308,34 @@
   .grain,
   .rec {
     animation: none;
+  }
+}
+
+/*
+ * Chapter 2's captions and final line. `data-on` is set from the scroll
+ * position (see `syncCaps` in Chapter2TheEcosystem.tsx): on, the caption fades
+ * in and its words rise; off, it fades out. Never scrubbed, so a paused scroll
+ * can't leave words half-cut by their masks.
+ */
+.cap {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+.cap[data-on="true"] {
+  opacity: 1;
+}
+.cap .word {
+  transform: translate3d(0, 110%, 0);
+  transition: transform 0.55s ease-in;
+}
+.cap[data-on="true"] .word {
+  transform: none;
+  transition: transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(0.08s + var(--i, 0) * 0.14s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cap,
+  .cap .word {
+    transition: none !important;
   }
 }

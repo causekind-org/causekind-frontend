@@ -67,6 +67,7 @@ import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
+import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
@@ -276,6 +277,11 @@ export default function HomeClient({
         <FoundersNoteSection variant="desktop" />
       </div>
 
+      {/* GOOGLE REVIEWS (Desktop) */}
+      <div className="hidden lg:block">
+        <GoogleReviewsSection />
+      </div>
+
       <div className="ck-home-paper hidden lg:block relative z-10">
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
@@ -457,6 +463,11 @@ export default function HomeClient({
         {/* FOUNDER'S NOTE */}
         <div className="-mx-5">
           <FoundersNoteSection variant="mobile" />
+        </div>
+
+        {/* GOOGLE REVIEWS (Mobile) */}
+        <div className="-mx-5">
+          <GoogleReviewsSection />
         </div>
 
         {/* Mobile Campaigns horizontal scroll */}

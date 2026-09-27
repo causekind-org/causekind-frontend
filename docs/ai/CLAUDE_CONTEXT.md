@@ -35,11 +35,11 @@ npm (`package-lock.json`). **Next 16 has breaking changes — read
 
 ## Landing page — current order (desktop ≥1024 / phone)
 1. **Hero** (`HeroSection`) — LOCKED. With `FEATURES.cinematicLanding` it is wrapped by `HeroFilm`.
-2. **Cinematic film** (Chapter 1 + 2) — hidden under the hero, pinned GSAP scrub, ~13 screens of scroll.
+2. **Cinematic film** (Chapter 1 + 2) — hidden under the hero, GSAP scrub over CSS-sticky tracks (length is server-rendered), ~13 screens of scroll.
 3. **Where does my support go?** (`SupportGallery`) — photo table / phone pile, 6 real photos.
-4. **About CauseKind** (`WhoAreWeSection`) — placeholder in the slot planned for "What is CauseKind?" (component not built yet).
+4. **About CauseKind** (`WhoAreWeSection`) — in the slot planned for "What is CauseKind?" (not built); phone view = `AboutJourneyMobile` illustration.
 5. ~~The problem we solve~~ — removed from the page 2026-09-26 (file kept).
-6. **How it works** (`HowItWorksSection`, donor/donee/NGO tabs).
+6. **How it works** (`HowItWorksSection`, donor/donee/NGO tabs; phone = auto-advancing horizontal carousel).
 7. **Live needs** (`LiveNeedsSection`, backend data).
 8. **Trust & safety** (`TrustSafetySection`).
 9. **Founder's note** (`FoundersNoteSection`) — renders `null` in production (placeholder founder).
@@ -48,11 +48,9 @@ npm (`package-lock.json`). **Next 16 has breaking changes — read
 Sections 1–6 render once (responsive); 7–11 render in two trees: `hidden lg:block` (desktop) and `lg:hidden` (mobile/tablet) with `variant` props.
 
 ## Current state — read before touching the landing page
-- **BLOCKER:** `HomeClient.tsx:65` imports `@/components/home/whatIsCauseKind/WhatIsCauseKind`,
-  which does not exist (only `fonts.ts` + `WhatIsCauseKind.module.css` exist). `next dev`
-  answers HTTP 500 on every route ("Module not found"); `next build` will fail.
-- All landing redesign work since commit `cf02eb3` is uncommitted (26 modified + 16 untracked paths at audit time).
-- `WhoAreWeSection.tsx` (reworked ecosystem version) and `SupportJourneySection.tsx` are no longer rendered.
+- The missing `WhatIsCauseKind` import was replaced by `WhoAreWeSection` (2026-09-26); the page compiles. `whatIsCauseKind/` holds only `fonts.ts` + a CSS module (not built).
+- The landing redesign up to the removal of "The problem we solve" was committed and pushed as `ae65051`; later changes (see AI_CHANGELOG.md) are uncommitted.
+- `SupportJourneySection.tsx` is not rendered. `WhoAreWeSection.tsx` is rendered (About CauseKind).
 
 ## Design language (details: CAUSEKIND_DESIGN_SYSTEM.md)
 Warm cream paper (`#FAF8F5`, `#F7F2EA`, `#FDF5ED`), dark brown ink (`#1C1410`),

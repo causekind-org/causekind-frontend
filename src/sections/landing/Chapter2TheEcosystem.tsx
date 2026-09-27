@@ -62,6 +62,12 @@ const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : use
 const HUB = { x: 800, y: 470 };
 const MATCH = { x: 1140, y: 800 };
 const RING_R = 540;
+/** Radar trail: [start angle, end angle, opacity], leading edge first. */
+const SWEEP_TRAIL: [number, number, number][] = [
+  [0, -0.22, 1],
+  [-0.22, -0.46, 0.55],
+  [-0.46, -0.75, 0.25],
+];
 const XS = [-500, -170, 170, 480, 800, 1140, 1460, 1780, 2100];
 const YS = [-560, -220, 130, 470, 800, 1130, 1460];
 
@@ -332,9 +338,6 @@ export function Chapter2TheEcosystem() {
         gsap.set(q(".c2-ring"), { drawSVG: "0%" });
         gsap.set(q(".c2-pin-inner"), { scale: 0, svgOrigin: "0 0" });
         gsap.set(q(".c2-v-shield, .c2-v-check"), { drawSVG: "0%" });
-        gsap.set(q(".c2-cap"), { opacity: 0 });
-        gsap.set(q(".c2-cap .c2-cap-w"), { yPercent: 110 });
-        gsap.set(q(".c2-final-w"), { yPercent: 110 });
         gsap.set(q(".c2-final-line"), { scaleY: 0 });
         gsap.set(q(".st-worn-bag"), { opacity: 0, y: -300, scale: 1.3, svgOrigin: "28 150" });
         gsap.set(q(".st-strap"), { drawSVG: "0%" });
@@ -358,40 +361,78 @@ export function Chapter2TheEcosystem() {
             Object.assign(R, { entry: 1, trace: 1, cam: 2, ride: 1, portal: 1 });
             gsap.set(
               q(
-                ".c2-phone, .c2-token, .c2-head, .c2-line, .c2-sweep, .c2-pulse, .st-wonder, .c2-cap-1, .c2-cap-3, .c2-final",
+                ".c2-phone, .c2-token, .c2-head, .c2-line, .c2-sweep, .c2-pulse, .st-wonder",
               ),
               { opacity: 0 },
             );
             gsap.set(q(".c2-far"), { opacity: 0.35 });
-            gsap.set(q(".st-worn-bag, .st-happy, .c2-cap-2"), { opacity: 1 });
+            gsap.set(q(".st-worn-bag, .st-happy"), { opacity: 1 });
+            q(".c2-cap-2").forEach((el) => ((el as HTMLElement).dataset.on = "true"));
             apply();
             return;
           }
 
           hideAll();
-          const portrait = st.portrait;
+          /*
+           * Sticky inside its track like Chapter 1 (cinematic.module.css): the
+           * track's CSS height is this chapter's scroll length, and triggers
+           * measure the track, never the sticky stage.
+           */
+          const track = (root.parentElement as HTMLElement | null) ?? root;
 
           // The line keeps drawing while the section scrolls up to meet it.
           const entry = gsap.to(R, {
             entry: 1,
             ease: "none",
             onUpdate: apply,
-            scrollTrigger: { trigger: root, start: "top bottom", end: "top top", scrub: true },
+            scrollTrigger: { trigger: track, start: "top bottom", end: "top top", scrub: true },
           });
 
           const tl = gsap.timeline({
             defaults: { ease: "power2.inOut" },
             onUpdate: apply,
             scrollTrigger: {
-              trigger: root,
+              trigger: track,
               start: "top top",
-              end: portrait ? "+=520%" : "+=640%",
-              pin: true,
+              end: () => `+=${Math.max(1, track.offsetHeight - root.offsetHeight)}`,
               scrub: 0.9,
-              anticipatePin: 1,
             },
           });
           apply();
+
+          /*
+           * Captions are not scrubbed. Each is on while the reader's scroll
+           * position is inside its window of the timeline (in timeline units),
+           * read live from the trigger — never from the smoothed playhead —
+           * and CSS transitions do the rise and the fade (`.cap` in
+           * cinematic.module.css). A scrubbed rise stops wherever the scroll
+           * stops, which left words half-cut by their masks.
+           */
+          const capWindows: [HTMLElement | undefined, number, number][] = [
+            [q(".c2-cap-1")[0] as HTMLElement, 8, 21.8],
+            [q(".c2-cap-2")[0] as HTMLElement, 30, 54],
+            [q(".c2-cap-3")[0] as HTMLElement, 63, 81],
+            [q(".c2-final")[0] as HTMLElement, 89.5, Infinity],
+          ];
+          let capRaf = 0;
+          const syncCaps = () => {
+            capRaf = 0;
+            const stt = tl.scrollTrigger;
+            if (!stt) return;
+            const span = Math.max(1, stt.end - stt.start);
+            const p = Math.min(1, Math.max(0, (stt.scroll() - stt.start) / span));
+            const time = p * 100;
+            for (const [el, from, to] of capWindows) {
+              if (!el) continue;
+              const on = String(time >= from && time < to);
+              if (el.dataset.on !== on) el.dataset.on = on;
+            }
+          };
+          const queueCaps = () => {
+            if (!capRaf) capRaf = requestAnimationFrame(syncCaps);
+          };
+          window.addEventListener("scroll", queueCaps, { passive: true });
+          ScrollTrigger.addEventListener("refresh", queueCaps);
 
           // ── 0–22: the line becomes a phone; the bag is listed ────────────
           tl.to(R, { trace: 1, duration: 8, ease: "power2.inOut" }, 0.2);
@@ -401,12 +442,6 @@ export function Chapter2TheEcosystem() {
             q(".c2-screen-glow"),
             { opacity: 0 },
             { opacity: 0.7, duration: 2, immediateRender: false },
-            8,
-          );
-          tl.to(q(".c2-cap-1"), { opacity: 1, duration: 0.4 }, 8);
-          tl.to(
-            q(".c2-cap-1 .c2-cap-w"),
-            { yPercent: 0, duration: 1.4, stagger: 0.25, ease: "expo.out" },
             8,
           );
           tl.to(
@@ -452,7 +487,6 @@ export function Chapter2TheEcosystem() {
             },
             19.4,
           );
-          tl.to(q(".c2-cap-1"), { opacity: 0, duration: 1.2 }, 21.8);
 
           // ── 23–47: out to the neighbourhood ─────────────────────────────
           tl.to(q(".c2-hud-a"), { opacity: 0, duration: 0.5 }, 23);
@@ -485,12 +519,6 @@ export function Chapter2TheEcosystem() {
           );
           tl.from(q(".c2-river"), { opacity: 0, duration: 3 }, 25);
 
-          tl.to(q(".c2-cap-2"), { opacity: 1, duration: 0.4 }, 30);
-          tl.to(
-            q(".c2-cap-2 .c2-cap-w"),
-            { yPercent: 0, duration: 1.4, stagger: 0.25, ease: "expo.out" },
-            30,
-          );
 
           q(".c2-pulse").forEach((p, i) => {
             tl.fromTo(
@@ -522,10 +550,19 @@ export function Chapter2TheEcosystem() {
           );
           tl.to(q(".c2-far"), { opacity: 0.35, duration: 1.5, stagger: 0.2 }, 36);
           tl.to(q(".c2-sweep"), { opacity: 1, duration: 0.6 }, 37);
+          // Turned about the hub with SVG's own `rotate(a cx cy)`, which is in
+          // the map's local coordinates. GSAP's `svgOrigin` is in the root SVG's
+          // coordinates, and inside the moving camera that put the pivot off
+          // the hub — the beam swung round the ring instead of from its centre.
+          const sweepRot = q(".c2-sweep-rot")[0];
+          const sweep = { a: -90 };
+          const turnSweep = () =>
+            sweepRot?.setAttribute("transform", `rotate(${sweep.a.toFixed(2)} ${HUB.x} ${HUB.y})`);
+          turnSweep();
           tl.fromTo(
-            q(".c2-sweep-rot"),
-            { rotation: -90 },
-            { rotation: 270, svgOrigin: `${HUB.x} ${HUB.y}`, duration: 6, ease: "power1.inOut" },
+            sweep,
+            { a: -90 },
+            { a: 270, duration: 6, ease: "power1.inOut", onUpdate: turnSweep },
             37,
           );
           tl.to(q(".c2-sweep"), { opacity: 0, duration: 1 }, 42.5);
@@ -558,7 +595,6 @@ export function Chapter2TheEcosystem() {
             { ride: 1, duration: 8, ease: "power2.inOut", immediateRender: false },
             48,
           );
-          tl.to(q(".c2-cap-2"), { opacity: 0, duration: 1.2 }, 54);
 
           // ── 55–84: into the pin; she gets it ────────────────────────────
           tl.to(R, { cam: 4, duration: 7, ease: "power3.inOut" }, 55);
@@ -579,12 +615,6 @@ export function Chapter2TheEcosystem() {
           );
           tl.to(q(".c2-portal-ring"), { opacity: 1, duration: 0.6 }, 58.6);
 
-          tl.to(q(".c2-cap-3"), { opacity: 1, duration: 0.4 }, 63);
-          tl.to(
-            q(".c2-cap-3 .c2-cap-w"),
-            { yPercent: 0, duration: 1.4, stagger: 0.25, ease: "expo.out" },
-            63,
-          );
 
           tl.to(q(".st-worn-bag"), { opacity: 1, duration: 0.3 }, 63);
           tl.to(
@@ -635,7 +665,7 @@ export function Chapter2TheEcosystem() {
           tl.from(q(".c2-v-label"), { opacity: 0, x: -12, duration: 0.8 }, 68.6);
 
           // ── 84–100: it fills the frame ──────────────────────────────────
-          tl.to(q(".c2-cap-3, .c2-verified, .c2-cap-bg"), { opacity: 0, duration: 1.4 }, 81);
+          tl.to(q(".c2-verified, .c2-cap-bg"), { opacity: 0, duration: 1.4 }, 81);
           tl.to(q(".c2-vignette"), { opacity: 0, duration: 3 }, 85);
           tl.to(R, { portal: 2, duration: 6, ease: "power2.inOut" }, 83);
           tl.to(q(".c2-portal-ring"), { opacity: 0, duration: 3 }, 85);
@@ -643,11 +673,6 @@ export function Chapter2TheEcosystem() {
           // The window covers the whole screen by now: stop painting the map.
           tl.set(q(".c2-cam"), { visibility: "hidden" }, 89.2);
           tl.to(q(".c2-hud"), { opacity: 0, duration: 1.5 }, 87);
-          tl.to(
-            q(".c2-final-w"),
-            { yPercent: 0, duration: 1.6, stagger: 0.2, ease: "expo.out" },
-            89.5,
-          );
           tl.to(q(".c2-final-line"), { scaleY: 1, duration: 4, ease: "power2.inOut" }, 92);
           tl.set({}, {}, 100);
 
@@ -721,11 +746,11 @@ export function Chapter2TheEcosystem() {
               if (tc.textContent !== txt) tc.textContent = txt;
             }
           };
+          // Loops may run while any part of the track can be on screen.
           const active = ScrollTrigger.create({
-            trigger: root,
+            trigger: track,
             start: "top bottom",
-            end: () =>
-              `+=${(tl.scrollTrigger?.end ?? 0) - (tl.scrollTrigger?.start ?? 0) + window.innerHeight * 2}`,
+            end: "bottom top",
             onToggle: (self) => {
               isActive = self.isActive;
               syncLoops();
@@ -735,15 +760,15 @@ export function Chapter2TheEcosystem() {
           });
 
           ScrollTrigger.addEventListener("refreshInit", measure);
-          // Initialise every tween now, in idle time, rather than mid-scroll —
-          // only while this stage is still below the fold.
-          const stopWarm = warmTimeline(
-            tl,
-            () => !!tl.scrollTrigger?.isActive,
-            () => root.getBoundingClientRect().top >= window.innerHeight,
-          );
+          // Initialise every tween now, in idle time, rather than mid-scroll.
+          const stopWarm = warmTimeline(tl, () => !!tl.scrollTrigger?.isActive || tl.progress() > 0);
+          syncCaps();
           return () => {
             stopWarm();
+            cancelAnimationFrame(capRaf);
+            window.removeEventListener("scroll", queueCaps);
+            ScrollTrigger.removeEventListener("refresh", queueCaps);
+            capWindows.forEach(([el]) => el && delete el.dataset.on);
             ScrollTrigger.removeEventListener("refreshInit", measure);
             gsap.ticker.remove(tick);
             active.kill();
@@ -758,7 +783,7 @@ export function Chapter2TheEcosystem() {
   }, []);
 
   const caption = (cls: string, eyebrow: string, big: string[], small: string) => (
-    <div className={`c2-cap ${cls} absolute left-0 right-0`}>
+    <div className={`c2-cap ${styles.cap} ${cls} absolute left-0 right-0`}>
       <p
         className={`${styles.mono} mb-4 text-[10px] uppercase tracking-[0.3em] text-[#ff9a5c] sm:text-[11px]`}
       >
@@ -768,7 +793,7 @@ export function Chapter2TheEcosystem() {
         {big.map((w, i) => (
           <span key={i}>
             {i ? <br /> : null}
-            <span className={styles.mask}>
+            <span className={styles.mask} style={{ ["--i" as string]: i } as React.CSSProperties}>
               <span
                 className={`c2-cap-w ${styles.word} ${i === big.length - 1 ? "text-[#ff8a4c]" : ""}`}
               >
@@ -812,9 +837,31 @@ export function Chapter2TheEcosystem() {
             <stop offset="0" stopColor={P.glowHot} stopOpacity="0.7" />
             <stop offset="1" stopColor={P.glow} stopOpacity="0" />
           </radialGradient>
-          <linearGradient id="c2-sweep-g" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor={P.glow} stopOpacity="0" />
-            <stop offset="1" stopColor={P.glow} stopOpacity="0.35" />
+          {/* Radar light: brightest at the centre, fading out to the ring.
+              User-space and centred on the pivot, so it turns with the beam
+              without sliding along it. */}
+          <radialGradient
+            id="c2-sweep-g"
+            gradientUnits="userSpaceOnUse"
+            cx={HUB.x}
+            cy={HUB.y}
+            r={RING_R}
+          >
+            <stop offset="0" stopColor={P.glowHot} stopOpacity="0.55" />
+            <stop offset="0.45" stopColor={P.glow} stopOpacity="0.28" />
+            <stop offset="1" stopColor={P.glow} stopOpacity="0.04" />
+          </radialGradient>
+          <linearGradient
+            id="c2-sweep-edge"
+            gradientUnits="userSpaceOnUse"
+            x1={HUB.x}
+            y1={HUB.y}
+            x2={HUB.x + RING_R}
+            y2={HUB.y}
+          >
+            <stop offset="0" stopColor="#fff4dc" stopOpacity="0.95" />
+            <stop offset="0.6" stopColor={P.glowHot} stopOpacity="0.5" />
+            <stop offset="1" stopColor={P.glow} stopOpacity="0.05" />
           </linearGradient>
           <linearGradient id="c2-screen-g" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#fffaf2" />
@@ -937,10 +984,26 @@ export function Chapter2TheEcosystem() {
           ))}
           <g className="c2-sweep">
             <g className="c2-sweep-rot">
-              <path
-                d={`M ${HUB.x} ${HUB.y} L ${HUB.x + RING_R} ${HUB.y} A ${RING_R} ${RING_R} 0 0 0 ${r1(HUB.x + RING_R * Math.cos(-0.7))} ${r1(HUB.y + RING_R * Math.sin(-0.7))} Z`}
-                fill="url(#c2-sweep-g)"
+              {/* The beam turns clockwise: its leading edge is at angle 0 and
+                  the light trails off behind it in three steps. */}
+              {SWEEP_TRAIL.map(([a0, a1, o]) => (
+                <path
+                  key={a0}
+                  d={`M ${HUB.x} ${HUB.y} L ${r1(HUB.x + RING_R * Math.cos(a0))} ${r1(HUB.y + RING_R * Math.sin(a0))} A ${RING_R} ${RING_R} 0 0 0 ${r1(HUB.x + RING_R * Math.cos(a1))} ${r1(HUB.y + RING_R * Math.sin(a1))} Z`}
+                  fill="url(#c2-sweep-g)"
+                  opacity={o}
+                />
+              ))}
+              <line
+                x1={HUB.x}
+                y1={HUB.y}
+                x2={HUB.x + RING_R}
+                y2={HUB.y}
+                stroke="url(#c2-sweep-edge)"
+                strokeWidth="3"
+                strokeLinecap="round"
               />
+              <circle cx={HUB.x} cy={HUB.y} r="7" fill="#fff4dc" opacity="0.9" />
             </g>
           </g>
 
@@ -1362,7 +1425,7 @@ export function Chapter2TheEcosystem() {
 
       {/* ── Final line ───────────────────────────────────────────────────── */}
       <div
-        className="c2-final pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
+        className={`c2-final ${styles.cap} pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center`}
         style={{ paddingTop: "var(--hdr, 0px)" }}
       >
         <p
@@ -1372,7 +1435,7 @@ export function Chapter2TheEcosystem() {
           {["The item", "finds its person."].map((w, i) => (
             <span key={i}>
               {i ? <br /> : null}
-              <span className={styles.mask}>
+              <span className={styles.mask} style={{ ["--i" as string]: i } as React.CSSProperties}>
                 <span
                   className={`c2-final-w ${styles.word} ${i === 1 ? "text-[#b04a15] dark:text-[#ff8a4c]" : ""}`}
                 >
@@ -1388,28 +1451,6 @@ export function Chapter2TheEcosystem() {
       {/* ── Film furniture ───────────────────────────────────────────────── */}
       <div className={`c2-vignette ${styles.vignette}`} style={{ opacity: 1 }} />
       <div className={styles.grain} aria-hidden="true" />
-      <div
-        className={`c2-hud ${styles.hud} ${styles.pill} left-4 sm:left-8`}
-        style={{ top: "calc(var(--hdr, 0px) + 16px)" }}
-        aria-hidden="true"
-      >
-        <span className={styles.rec} />
-        Scene 02
-      </div>
-      <div
-        className={`c2-hud ${styles.hud} ${styles.pill} bottom-4 left-4 hidden sm:bottom-6 sm:left-8 md:block`}
-        aria-hidden="true"
-      >
-        <span className="c2-hud-a">Insert: the listing</span>
-        <span className="c2-hud-b absolute left-3">Ext. The neighbourhood — night</span>
-        <span className="c2-hud-c absolute left-3">Close on: her</span>
-      </div>
-      <div
-        className={`c2-hud ${styles.hud} ${styles.pill} bottom-4 right-4 hidden sm:bottom-6 sm:right-8 md:block`}
-        aria-hidden="true"
-      >
-        TC <span className="c2-timecode">00:00:24:00</span>
-      </div>
     </section>
   );
 }

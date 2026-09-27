@@ -150,26 +150,23 @@ export function pointAt(lut: PathLUT, at: number): Vec {
  * GSAP initialises a tween the first time the playhead reaches it, and init
  * reads `getComputedStyle` — a forced style recalculation. A scrubbed film has
  * hundreds of tweens, so scrolling through it the first time paid that cost
- * frame after frame. This walks the playhead to the end in small steps while
- * the reader is still above the stage (each step its own idle callback, so no
- * single long task), then puts it back. It stops for good the moment the
- * stage's own trigger goes active — from then on scrubbing owns the playhead —
- * and only steps while `canStep()` says the stage cannot be seen; otherwise it
- * waits for the next idle slot rather than flash later frames on screen.
+ * frame after frame.
+ *
+ * Each idle slice pushes the playhead a little further and brings it straight
+ * back *within the same task*: the tweens up to that point initialise, no
+ * in-between frame is ever painted, and the timeline is always left exactly
+ * where it was. (The first version parked the playhead mid-film between
+ * slices; a visitor who scrolled while it was running met the film part-way
+ * through, with the title card already gone.) It stops for good once the
+ * timeline is live — being scrubbed, or already moved off its start.
  */
-export function warmTimeline(
-  tl: gsap.core.Timeline,
-  isLive: () => boolean,
-  canStep: () => boolean,
-  steps = 12,
-) {
+export function warmTimeline(tl: gsap.core.Timeline, isLive: () => boolean, steps = 12) {
   const ric: (cb: () => void) => number =
     typeof window.requestIdleCallback === "function"
       ? (cb) => window.requestIdleCallback(cb, { timeout: 1500 })
       : (cb) => window.setTimeout(cb, 120);
   const cancel =
     typeof window.cancelIdleCallback === "function" ? window.cancelIdleCallback : window.clearTimeout;
-  const home = tl.progress();
   let i = 0;
   let id = 0;
   let done = false;
@@ -179,23 +176,16 @@ export function warmTimeline(
       done = true;
       return;
     }
-    if (!canStep()) {
-      id = ric(step);
-      return;
-    }
     i++;
+    const home = tl.progress();
     tl.progress(Math.min(1, i / steps), true);
+    tl.progress(home, true);
     if (i < steps) id = ric(step);
-    else {
-      tl.progress(home, true);
-      done = true;
-    }
+    else done = true;
   };
   id = ric(step);
   return () => {
-    if (done) return;
     done = true;
     cancel(id);
-    if (!isLive()) tl.progress(home, true);
   };
 }

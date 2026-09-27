@@ -9,13 +9,15 @@
  * school bag — continuously travels the network as a visual protagonist.
  *
  * Desktop: text left (43%), ecosystem right (57%) with parallax.
- * Mobile: text first, compact ecosystem below.
+ * Phone (< 768px): text first, then `AboutJourneyMobile` — the headline acted
+ * out: unused things on a shelf at home travel through CauseKind to a verified
+ * person or an NGO nearby.
  */
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { Heart } from "lucide-react";
-import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
+import { AboutJourneyMobile, type JourneyItem } from "./AboutJourneyMobile";
 import styles from "./WhoAreWeSection.module.css";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -545,114 +547,15 @@ function Ecosystem() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MOBILE ECOSYSTEM — compact version
+   PHONE JOURNEY — the things on the shelf, and where each one goes
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function MobileEcosystem() {
-  const ref = useRevealOnce<HTMLDivElement>();
-
-  return (
-    <div ref={ref} className="md:hidden select-none mt-4">
-      <div className="relative mx-auto" style={{ maxWidth: 360, aspectRatio: "1 / 1.15" }}>
-        {/* Background network */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" viewBox="0 0 360 414">
-          <defs>
-            <linearGradient id="m-eco-orange" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#B5480F" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#F4A25B" stopOpacity="0.2" />
-            </linearGradient>
-            <linearGradient id="m-eco-teal" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#0F7A6C" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#5ec7b6" stopOpacity="0.2" />
-            </linearGradient>
-            <linearGradient id="m-eco-green" x1="50%" y1="100%" x2="50%" y2="0%">
-              <stop offset="0%" stopColor="#1F6B3F" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#6cc98f" stopOpacity="0.2" />
-            </linearGradient>
-          </defs>
-
-          {/* Connection paths */}
-          <path d="M 70 70 C 100 140, 140 170, 180 200" stroke="url(#m-eco-orange)" strokeWidth="1.5" strokeDasharray="4 4" fill="none" opacity="0.6" data-reveal-item style={stagger(4)} />
-          <path d="M 290 70 C 260 140, 220 170, 180 200" stroke="url(#m-eco-teal)" strokeWidth="1.5" strokeDasharray="4 4" fill="none" opacity="0.6" data-reveal-item style={stagger(4)} />
-          <path d="M 180 340 L 180 200" stroke="url(#m-eco-green)" strokeWidth="1.5" strokeDasharray="4 4" fill="none" opacity="0.6" data-reveal-item style={stagger(4)} />
-
-          {/* Subtle flowing particles */}
-          <circle r="2.5" fill="#B5480F" opacity="0.5">
-            <animateMotion path="M 70 70 C 100 140, 140 170, 180 200" dur="3s" repeatCount="indefinite" />
-          </circle>
-          <circle r="2.5" fill="#0F7A6C" opacity="0.5">
-            <animateMotion path="M 290 70 C 260 140, 220 170, 180 200" dur="3.2s" repeatCount="indefinite" />
-          </circle>
-          <circle r="2" fill="#1F6B3F" opacity="0.5">
-            <animateMotion path="M 180 340 L 180 200" dur="2.8s" repeatCount="indefinite" />
-          </circle>
-        </svg>
-
-        {/* Floating objects */}
-        <div data-reveal-item style={stagger(1)} className="absolute" aria-hidden>
-          <div className="absolute" style={{ left: "15%", top: "35%" }}>
-            <BookIcon size={22} />
-          </div>
-          <div className="absolute" style={{ right: "12%", top: "42%" }}>
-            <ShirtIcon size={20} />
-          </div>
-          <div className="absolute" style={{ left: "25%", bottom: "22%" }}>
-            <LaptopIcon size={22} />
-          </div>
-          <div className="absolute" style={{ right: "25%", bottom: "20%" }}>
-            <BoxIcon size={20} />
-          </div>
-        </div>
-
-        {/* Micro labels */}
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", left: "8%", top: "48%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>GIVE</span>
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", right: "8%", top: "50%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>VERIFY</span>
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", left: "42%", top: "70%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>MATCH</span>
-
-        {/* Donor */}
-        <div data-reveal-item style={stagger(2)} className="absolute flex flex-col items-center" aria-hidden>
-          <div className="absolute flex flex-col items-center" style={{ left: "8%", top: "4%" }}>
-            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FBEDE3, #F9DCC4)", boxShadow: "0 3px 12px -3px rgba(181,72,15,0.2)" }}>
-              <DonorSvg size={38} />
-            </div>
-            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#B5480F]">Donor</span>
-          </div>
-        </div>
-
-        {/* Donee */}
-        <div data-reveal-item style={stagger(2)} className="absolute flex flex-col items-center" aria-hidden>
-          <div className="absolute flex flex-col items-center" style={{ right: "8%", top: "4%" }}>
-            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #E3F2EF, #C5E8E0)", boxShadow: "0 3px 12px -3px rgba(15,122,108,0.2)" }}>
-              <DoneeSvg size={38} />
-            </div>
-            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#0F7A6C]">Donee</span>
-          </div>
-        </div>
-
-        {/* Hub */}
-        <div data-reveal-item="scale" style={stagger(3)} className="absolute flex flex-col items-center" aria-hidden>
-          <div className="absolute flex flex-col items-center" style={{ left: "50%", top: "44%", transform: "translateX(-50%)" }}>
-            <div className="relative w-14 h-14 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full" style={{ background: "linear-gradient(135deg, #B5480F 0%, #D4690A 100%)", boxShadow: "0 0 0 3px rgba(181,72,15,0.12), 0 6px 24px -6px rgba(181,72,15,0.35)" }} />
-              <Heart className="relative z-10" style={{ width: 24, height: 24 }} fill="white" strokeWidth={0} />
-            </div>
-            <span className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-[#B5480F]">CauseKind</span>
-          </div>
-        </div>
-
-        {/* NGO */}
-        <div data-reveal-item style={stagger(2)} className="absolute flex flex-col items-center" aria-hidden>
-          <div className="absolute flex flex-col items-center" style={{ left: "50%", bottom: "4%", transform: "translateX(-50%)" }}>
-            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #E5F1E9, #C4E0CD)", boxShadow: "0 3px 12px -3px rgba(31,107,63,0.2)" }}>
-              <NgoSvg size={38} />
-            </div>
-            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#1F6B3F]">NGO</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+const JOURNEY_ITEMS: JourneyItem[] = [
+  { id: "book", Icon: BookIcon, name: "A book", to: "person" },
+  { id: "bag", Icon: BagIcon, name: "A school bag", to: "ngo" },
+  { id: "shirt", Icon: ShirtIcon, name: "A shirt", to: "person" },
+  { id: "laptop", Icon: LaptopIcon, name: "A laptop", to: "ngo" },
+];
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION EXPORT
@@ -739,8 +642,8 @@ export function WhoAreWeSection() {
           <Ecosystem />
         </div>
 
-        {/* ── MOBILE: Compact ecosystem ───────────────────── */}
-        <MobileEcosystem />
+        {/* ── PHONE: the journey ──────────────────────────── */}
+        <AboutJourneyMobile items={JOURNEY_ITEMS} Person={DoneeSvg} Ngo={NgoSvg} />
       </div>
     </section>
   );

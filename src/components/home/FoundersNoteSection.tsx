@@ -65,7 +65,6 @@ function FounderAvatarPlaceholder() {
  */
 function FoundersNoteMobile() {
   const ref = useRevealOnce<HTMLElement>();
-  const isDev = process.env.NODE_ENV === "development";
   return (
     <section
       ref={ref}
@@ -73,13 +72,6 @@ function FoundersNoteMobile() {
       aria-label="Why We Built CauseKind"
       className="ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 px-5"
     >
-      {FOUNDER.isPlaceholder && isDev && (
-        <div className="mb-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-4xs font-black tracking-widest uppercase bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          PLACEHOLDER (Hidden in Production)
-        </div>
-      )}
-
       <div className="flex items-center gap-4">
         <div data-reveal-item="scale" style={stagger(0)} className="relative shrink-0">
           <div className="absolute inset-0 rounded-2xl bg-[#FCEADE] dark:bg-[#2A170F] translate-x-1 translate-y-1" aria-hidden="true" />
@@ -156,8 +148,6 @@ function FoundersNoteFull({
 }: {
   variant: "desktop" | "mobile";
 }) {
-  const isDev = process.env.NODE_ENV === "development";
-
   const sectionRef = useRef<HTMLElement>(null);
   const photoFrameRef = useRef<HTMLDivElement>(null);
   const quoteMarkRef = useRef<HTMLDivElement>(null);
@@ -296,14 +286,6 @@ function FoundersNoteFull({
       aria-label="Why We Built CauseKind"
       className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-10 sm:py-14 lg:py-16 overflow-hidden transition-colors"
     >
-      {/* Dev-only placeholder tag */}
-      {FOUNDER.isPlaceholder && isDev && (
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full text-4xs font-black tracking-widest uppercase bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 backdrop-blur-sm shadow-xs pointer-events-none">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          PLACEHOLDER (Hidden in Production)
-        </div>
-      )}
-
       {/* Ambient background glow */}
       <div
         className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] bg-[radial-gradient(circle,_rgba(181,72,15,0.08)_0%,_transparent_70%)] blur-3xl pointer-events-none"

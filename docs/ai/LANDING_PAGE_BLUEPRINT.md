@@ -43,9 +43,9 @@ Section order below = render order in `HomeClient.tsx`.
 
 ## 2. Cinematic film — "One small thing can become a big thing" / "It finds its person"
 - **Current purpose:** emotional scroll-driven story: an unused school bag in a home → "You don't need it. But someone might." → a listing → a 10 km night map → handed to a verified student.
-- **Components / files:** `src/components/cinematic/HeroFilm.tsx` (wrapper, dynamic `ssr:false`), `CinematicOrchestrator.tsx`, `src/sections/landing/Chapter1TheUnusedThing.tsx`, `Chapter2TheEcosystem.tsx`, `src/sections/landing/cinematic/{RoomScene,Student,cutouts,rig,palette,fonts}.ts(x)`, `cinematic.module.css`, `README.md`; styles.css `.ck-hero-film*` (≈4541–4575).
+- **Components / files:** `src/components/cinematic/HeroFilm.tsx` (wrapper), `CinematicOrchestrator.tsx` (server-rendered tracks + title-card stand-in; chapters `next/dynamic` `ssr:false`), `src/sections/landing/Chapter1TheUnusedThing.tsx`, `Chapter2TheEcosystem.tsx`, `src/sections/landing/cinematic/{RoomScene,Student,cutouts,rig,palette,fonts}.ts(x)`, `cinematic.module.css`, `README.md`; styles.css `.ck-hero-film*` (≈4541–4575).
 - **Assets:** 3 cut-out WebPs (see ASSET_INVENTORY §1); inline SVG art.
-- **Animations:** GSAP pin + scrub (Ch1 `innerHeight×5.6|7.2` after hero lead-in; Ch2 `+=520%|640%`), DrawSVG ink, CustomWiggle shake, path LUTs, idle warm-up, loop windows, `ck:immersive-nav` (header + dock hide).
+- **Animations:** GSAP scrub over CSS-sticky stages inside CSS-height tracks (`.track1`/`.track2`; no GSAP pin); Ch1 starts after the hero lead-in + a title hold; title card rise/exit are CSS transitions keyed off scroll position (`syncTitle`, never scrubbed); portrait puts "YOU DON'T NEED IT." below the bag; DrawSVG ink, CustomWiggle shake, path LUTs, idle warm-up, loop windows, `ck:immersive-nav` (header + dock hide).
 - **Data:** none. Flag: `FEATURES.cinematicLanding` (true).
 - **Responsive:** same film all widths; portrait = shorter scroll; phones/touch = "lite" (no ink pass, no motion blur, no grain); reduced motion = still frames stacked after the hero.
 - **SAFE files:** everything listed under "Components / files" except `HeroFilm.tsx` layering (changing `.ck-hero-film-hero` affects the hero at rest — verify hero pixel-identical).
@@ -64,11 +64,14 @@ Section order below = render order in `HomeClient.tsx`.
 - **DO NOT TOUCH:** global list; other sections; `photos.ts` captions must not gain impact claims.
 - **FUTURE DESIGN SPECIFICATION:** Not specified yet.
 
-## 4. What is CauseKind? — UNDER DEVELOPMENT (BROKEN)
+## 4. About CauseKind (`WhoAreWeSection`) — in the slot planned for "What is CauseKind?"
+- **On the page:** `WhoAreWeSection` (id `about-causekind`): "Good things shouldn't sit unused." Desktop/tablet: text left, ecosystem right (Donor/Donee/NGO, CauseKind hub, travelling bag, parallax). Phone (<768): text, then `AboutJourneyMobile` — shelf of unused things → CauseKind (matched) → verified person / NGO nearby, NEEDS bubbles turn into ticks, caption per item.
+- **SAFE files:** `WhoAreWeSection.tsx`, `WhoAreWeSection.module.css`, `AboutJourneyMobile.tsx`.
+
+### What is CauseKind? — NOT BUILT
 - **Current purpose (intended):** typographic installation explaining CauseKind (EXTRA + NEED → CAUSEKIND), per a user brief given in chat on 2026-09-25 (brief text is not stored in the repo).
 - **Component / file:** `WhatIsCauseKind` expected at `src/components/home/whatIsCauseKind/WhatIsCauseKind.tsx` — **file does not exist**. Present: `fonts.ts` (Archivo wdth + gallery fonts), `WhatIsCauseKind.module.css` (sticky stage 250svh/240svh, carriers, thread, concept words, phone layout, reduced-motion static mode; last edited 2026-09-26 10:27).
-- **Imported by:** `HomeClient.tsx:65` → page does not compile.
-- **Replaced on the page:** `WhoAreWeSection` ("About CauseKind — The Living Ecosystem", 747 lines + `WhoAreWeSection.module.css`, id `about-causekind`) — still in the repo, not rendered.
+- **Imported by:** nothing (the HomeClient import was replaced by `WhoAreWeSection` on 2026-09-26).
 - **SAFE files:** `src/components/home/whatIsCauseKind/*`; the `<WhatIsCauseKind />` line in HomeClient.
 - **DO NOT TOUCH:** global list; `supportGallery/fonts.ts` is imported by `whatIsCauseKind/fonts.ts` — change it only additively.
 - **FUTURE DESIGN SPECIFICATION:** Not specified yet.
@@ -88,10 +91,10 @@ Section order below = render order in `HomeClient.tsx`.
 ## 6. How it works
 - **Current purpose:** "Simple steps. Whoever you are." — 4 steps for each role tab: "I want to give" (#B5480F), "I need help" (#0F7A6C), "I'm an NGO" (#1F6B3F), role CTA to register.
 - **Component / file:** `HowItWorksSection` — `src/components/home/HowItWorksSection.tsx` (ids `how-it-works`, `how-it-works-heading`).
-- **Animations:** Framer tab swap (`AnimatePresence`), `useInView`, StepCard pointer tilt, looping icon bounce/pulse (desktop); phone **scroll stack** — sticky cards pinned under the header with 14 px offsets, earlier cards scale to 0.94 + shade via CSS scroll-driven animations (next card's view timeline); plain sticky stack where unsupported; keyed by tab with a staggered rise.
+- **Animations:** Framer tab swap (`AnimatePresence`), `useInView`, StepCard pointer tilt, looping icon bounce/pulse (desktop); phone **horizontal role carousel** — all role panels in one grid cell, active centred / next right / previous left, cards slide in with a stagger; auto-advances every 2 s while on screen, stops on tab tap / swipe / arrow keys; progress segments; none with reduced motion.
 - **Data:** static steps; `LANDING_ROUTES` for CTAs.
-- **Responsive:** ≥768 grid (2 cols md, 4 cols lg); <768 scroll stack (section uses `overflow: clip visible` below md so `sticky` works).
-- **SAFE files:** `HowItWorksSection.tsx`, `HowItWorksStack.module.css`.
+- **Responsive:** ≥768 grid (2 cols md, 4 cols lg); <768 compact step rows in the carousel (constant height).
+- **SAFE files:** `HowItWorksSection.tsx`, `HowItWorksMobile.module.css`.
 - **DO NOT TOUCH:** global list; `lib/landingConstants.ts` routes (shared).
 - **Unrelated leftover:** `src/sections/landing/HowCauseKindWorks.tsx` (+ `howItWorksData.ts`, `SlotNumber.tsx`, `StepMotifIcon.tsx`) — not rendered.
 - **FUTURE DESIGN SPECIFICATION:** Not specified yet.
@@ -108,9 +111,9 @@ Section order below = render order in `HomeClient.tsx`.
 - **FUTURE DESIGN SPECIFICATION:** Not specified yet.
 
 ## 8. Trust & safety
-- **Current purpose:** "Built on trust, for everyone." — for donors / donees / NGOs, stats (100% admin-verified listings, 10 km, ₹0 fees, zero middlemen), one-time-code handover note.
+- **Current purpose:** "Built on trust, for everyone." — for donors / donees / NGOs, stats (100% admin-verified listings, 10 km, ₹0 fees, zero middlemen). No shield graphic, no handover note (removed 2026-09-26).
 - **Component / file:** `TrustSafetySection` (`variant` desktop|mobile) — `src/components/home/TrustSafetySection.tsx` (id `trust`); phone view `TrustSafetyMobile` inside the same file.
-- **Animations:** desktop/tablet GSAP (shield assembly, cards dealt, check pops, counters via React state, "Zero" typewriter); phone: IO reveal, `SnapCarousel`, static stats.
+- **Animations:** desktop/tablet GSAP (cards dealt, check pops, counters via React state, "Zero" typewriter); phone: IO reveal, `SnapCarousel`, static stats.
 - **Responsive:** ≥768 3-column cards (md) + 4-stat row; <768 swipe cards + 4-up stat row.
 - **SAFE files:** `TrustSafetySection.tsx`.
 - **DO NOT TOUCH:** global list. Stats are product facts — do not change numbers without the user.
@@ -119,7 +122,7 @@ Section order below = render order in `HomeClient.tsx`.
 ## 9. Founder's note
 - **Current purpose:** "Why we built CauseKind — Neighbours helping neighbours." Founder letter.
 - **Component / file:** `FoundersNoteSection` (`variant`) — `src/components/home/FoundersNoteSection.tsx` (id `founders-note`); data in `FOUNDER` (`lib/landingConstants.ts`).
-- **Status:** `FOUNDER.isPlaceholder = true` → **renders null in production**, shows with a "PLACEHOLDER" badge in development.
+- **Status:** `FOUNDER.isPlaceholder = true` → **renders null in production**, shows in development (no badge).
 - **Animations:** desktop/tablet GSAP clip-path photo wipe, quote pop, text stagger, SVG signature draw; phone IO reveal (letterhead layout).
 - **SAFE files:** `FoundersNoteSection.tsx`; `FOUNDER` values only when the user supplies real details.
 - **DO NOT TOUCH:** global list.
@@ -144,7 +147,7 @@ Section order below = render order in `HomeClient.tsx`.
 ---
 
 ## Components in the repo that are NOT on the page
-`WhoAreWeSection.tsx` (+module.css), `SupportJourneySection.tsx`, `sections/landing/HowCauseKindWorks.tsx`,
+`SupportJourneySection.tsx`, `sections/landing/HowCauseKindWorks.tsx`,
 `ItemDonationScrolly.tsx`, `MobileVisualStory.tsx`, `HandoverJourney.tsx`, `InKindProof.tsx`, `TheGapSection.tsx`,
 `ThreadOfProtection.tsx`, `NearbyNeedsPanel.tsx`, `HeroGiveCTA.tsx`, `IndependenceHero.tsx`, `FaqSection.tsx`,
 `CTASection.tsx`/`WhatWeProvideSection.tsx`/`StatsBars.tsx` (exported by the design-system package only),

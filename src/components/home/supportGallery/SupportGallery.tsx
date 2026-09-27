@@ -75,25 +75,14 @@ function Print({ photo, depth, sizes }: { photo: Photo; depth: string; sizes: st
   );
 }
 
-function Counter({ unseen, total }: { unseen: number; total: number }) {
-  return (
-    <p className={`${styles.counter} ${styles.mono}`} aria-live="polite">
-      <span className={styles.counterNum}>{two(unseen)}</span>
-      <span>{unseen === 0 ? `all ${two(total)} seen` : unseen === total ? "moments to explore" : "left to explore"}</span>
-    </p>
-  );
-}
+
 
 /* ══ Desktop / tablet: the table ══════════════════════════════════════════ */
 
 function Table({
   photos,
-  viewed,
-  onView,
 }: {
   photos: Photo[];
-  viewed: Set<string>;
-  onView: (id: string) => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0, vw: 1440, vh: 900 });
@@ -185,9 +174,8 @@ function Table({
   const pick = useCallback(
     (i: number) => {
       setActive((cur) => (cur === i ? null : i));
-      onView(photos[i].id);
     },
-    [onView, photos],
+    [],
   );
 
   // Esc puts the print back.
@@ -266,7 +254,6 @@ function Table({
   };
 
   const activePhoto = active === null ? null : photos[active];
-  const unseen = photos.length - photos.filter((p) => viewed.has(p.id)).length;
 
   return (
     <div
@@ -278,11 +265,7 @@ function Table({
         if (e.target === e.currentTarget) setActive(null);
       }}
     >
-      <div className={styles.intro}>
-        <p className={`${styles.eyebrow} ${styles.mono}`}>From our drives</p>
-        <Counter unseen={unseen} total={photos.length} />
-        <span className={`${styles.hint} ${styles.hand}`}>pick one up —</span>
-      </div>
+
 
       <h2 className={styles.title}>
         <span>Where does</span>
@@ -396,12 +379,8 @@ const PILE_GONE = { tx: "-115%", ty: "6%", r: "-16deg", s: 0.9, o: 0 };
 
 function Pile({
   photos,
-  viewed,
-  onView,
 }: {
   photos: Photo[];
-  viewed: Set<string>;
-  onView: (id: string) => void;
 }) {
   const n = photos.length;
   const [active, setActive] = useState(0);
@@ -418,29 +397,13 @@ function Pile({
     [active, n],
   );
 
-  // The top print counts as seen once the pile is actually on screen.
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) onView(photos[active].id);
-      },
-      { threshold: 0.5 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [active, onView, photos]);
 
-  const unseen = n - photos.filter((p) => viewed.has(p.id)).length;
+
   const top = photos[active];
 
   return (
     <div ref={rootRef}>
-      <div className="flex items-end justify-between gap-3">
-        <p className={`${styles.eyebrow} ${styles.mono}`}>From our drives</p>
-        <Counter unseen={unseen} total={n} />
-      </div>
+
       <h2 className={`${styles.mTitle} mt-3`}>
         <span>Where does</span>
         <span>my support</span>
@@ -537,11 +500,6 @@ function Pile({
 /* ══ Section ═════════════════════════════════════════════════════════════ */
 
 export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
-  const [viewed, setViewed] = useState<Set<string>>(() => new Set());
-  const onView = useCallback((id: string) => {
-    setViewed((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
-  }, []);
-
   return (
     <section
       id="where-support-goes"
@@ -549,10 +507,10 @@ export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
       className={`${styles.section} ${galleryFonts} ck-m-section`}
     >
       <div className="relative hidden px-4 py-14 md:block lg:px-8 lg:py-20">
-        <Table photos={photos} viewed={viewed} onView={onView} />
+        <Table photos={photos} />
       </div>
       <div className="relative px-5 md:hidden">
-        <Pile photos={photos} viewed={viewed} onView={onView} />
+        <Pile photos={photos} />
       </div>
     </section>
   );

@@ -549,3 +549,304 @@
   width: 100%;
   height: 100%;
 }
+
+/* ── Phone: "Good things shouldn't sit unused" journey (AboutJourneyMobile) ──
+   A shelf of unused things at home → CauseKind → a verified person / NGO
+   nearby. Only the travelling item moves per frame (from JS); everything
+   else is a state attribute animated here with transform/opacity. */
+
+.journey {
+  position: relative;
+}
+.jSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 380px;
+  margin: 0 auto;
+  overflow: visible;
+}
+.jPanel {
+  fill: #f3e9dc;
+  stroke: rgb(120 90 60 / 0.12);
+}
+.jMap {
+  fill: #eef0ea;
+  stroke: rgb(31 107 63 / 0.1);
+}
+.jStreet {
+  fill: none;
+  stroke: rgb(120 113 108 / 0.13);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.jRing {
+  fill: none;
+  stroke: rgb(15 122 108 / 0.2);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 5;
+}
+.jPlank {
+  fill: #d8b68c;
+}
+.jPlankEdge {
+  fill: #b9936a;
+}
+.jLabel {
+  font-family: var(--font-roboto-mono), ui-monospace, monospace;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  fill: rgb(87 75 66 / 0.62);
+}
+.jHubLabel {
+  fill: #b5480f;
+  font-size: 9px;
+}
+:global(.dark) .jPanel {
+  fill: #1f1813;
+  stroke: rgb(255 255 255 / 0.06);
+}
+:global(.dark) .jMap {
+  fill: #141a16;
+  stroke: rgb(255 255 255 / 0.06);
+}
+:global(.dark) .jStreet {
+  stroke: rgb(255 255 255 / 0.06);
+}
+:global(.dark) .jPlank {
+  fill: #6b4a2e;
+}
+:global(.dark) .jPlankEdge {
+  fill: #4d3421;
+}
+:global(.dark) .jLabel {
+  fill: rgb(231 220 208 / 0.55);
+}
+:global(.dark) .jHubLabel {
+  fill: #ff9a5c;
+}
+
+/* Routes: faint dashes; the one in use lights up and marches. */
+.jGuide {
+  fill: none;
+  stroke: rgb(150 120 95 / 0.3);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+  transition: stroke 0.3s ease;
+}
+.jGuide[data-live="true"] {
+  stroke: #b5480f;
+  stroke-width: 2;
+  animation: jMarch 0.8s linear infinite;
+}
+.jGuide[data-live="true"][data-dest="person"] {
+  stroke: #0f7a6c;
+}
+.jGuide[data-live="true"][data-dest="ngo"] {
+  stroke: #1f6b3f;
+}
+@keyframes jMarch {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+/* Things on the shelf: dim while unused, lift when it's their turn, and
+   leave a dashed outline where they sat. */
+.jSlotIcon {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  opacity: 0.5;
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.jSlot[data-s="wake"] .jSlotIcon {
+  opacity: 1;
+  transform: translateY(-7px) scale(1.14);
+}
+.jSlot[data-s="gone"] .jSlotIcon {
+  opacity: 0;
+  transform: translateY(-12px) scale(0.9);
+  transition-duration: 0.2s;
+}
+.jSlotGlow {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.jSlot[data-s="wake"] .jSlotGlow {
+  opacity: 1;
+}
+.jSlotGhost {
+  fill: none;
+  stroke: rgb(150 120 95 / 0.45);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 3;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.15s;
+}
+.jSlot[data-s="gone"] .jSlotGhost {
+  opacity: 1;
+}
+
+/* Dust drifting off the shelf. */
+.jDust circle {
+  fill: #c9a27a;
+  opacity: 0;
+  transform-box: fill-box;
+  animation: jDust 4.6s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+@keyframes jDust {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  30% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 4px), -14px);
+  }
+}
+
+.jTraveler {
+  opacity: 0;
+}
+
+/* CauseKind: a soft halo, and a pulse when a match is made. */
+.jHubHalo {
+  fill: rgb(181 72 15 / 0.1);
+}
+.jHubPulse {
+  fill: none;
+  stroke: #b5480f;
+  stroke-width: 2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.journey[data-phase="match"] .jHubPulse {
+  animation: jPulse 0.75s ease-out;
+}
+@keyframes jPulse {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+/* The people who need them. */
+.jAvatarPerson {
+  fill: #dcefeb;
+}
+.jAvatarNgo {
+  fill: #dfeee4;
+}
+:global(.dark) .jAvatarPerson {
+  fill: #173430;
+}
+:global(.dark) .jAvatarNgo {
+  fill: #183322;
+}
+.jDestHalo {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.jDest[data-dest="person"] .jDestHalo {
+  fill: rgb(15 122 108 / 0.14);
+}
+.jDest[data-dest="ngo"] .jDestHalo {
+  fill: rgb(31 107 63 / 0.14);
+}
+.jDest[data-hot="true"] .jDestHalo {
+  opacity: 1;
+}
+.jDestAvatar,
+.jBadge {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.jBadge {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.jDest[data-hot="true"] .jBadge {
+  transform: scale(1.3);
+}
+.jDest[data-got="true"] .jDestAvatar {
+  animation: jGot 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes jGot {
+  40% {
+    transform: scale(1.13);
+  }
+}
+.jBubble {
+  fill: #fff;
+  stroke: rgb(120 90 60 / 0.16);
+}
+:global(.dark) .jBubble {
+  fill: #241c17;
+  stroke: rgb(255 255 255 / 0.08);
+}
+.jBubbleLabel {
+  font-family: var(--font-roboto-mono), ui-monospace, monospace;
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  fill: rgb(87 75 66 / 0.6);
+}
+:global(.dark) .jBubbleLabel {
+  fill: rgb(231 220 208 / 0.55);
+}
+.jBubbleIcon {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: jPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes jPop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+.jCaption {
+  margin: 0.5rem auto 0;
+  max-width: 34ch;
+  min-height: 2.6em;
+  text-align: center;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: #6b5a4d;
+  animation: jCap 0.45s ease both;
+}
+:global(.dark) .jCaption {
+  color: #c8b6a4;
+}
+@keyframes jCap {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.journey[data-playing="false"] * {
+  animation-play-state: paused !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .journey *,
+  .journey {
+    animation: none !important;
+    transition: none !important;
+  }
+}

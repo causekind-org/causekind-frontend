@@ -42,8 +42,8 @@ No shared parallax, magnetic, or scroll-progress hook exists.
 
 ## Scroll architecture
 - **Native document scroll** everywhere. Lenis wraps wheel scrolling on fine-pointer devices only (`SmoothScroll.tsx` exits on `pointer: coarse` and reduced motion); it drives `ScrollTrigger.update` through `gsap.ticker`.
-- **Film (HeroFilm):** `.ck-hero-film` grid puts the hero over the film. Chapter 1 pins from the first scroll (`ScrollTrigger.create({pin:true})` for lead-in + film), the hero scrolls off natively, Chapter 1's scrubbed timeline starts after the hero has cleared the header (`leadInRef`). Chapter 1 film length `innerHeight × 5.6` (portrait) / `× 7.2`; Chapter 2 pins `+=520%` / `+=640%` after an entry scrub. Everything is one timeline of plain numbers → one `apply()` that writes SVG attributes/transforms.
-- `CinematicOrchestrator` calls `ScrollTrigger.sort(); ScrollTrigger.refresh()` after mount (the film mounts client-only after other triggers exist) and dispatches `ck:immersive-nav` while the film owns the screen.
+- **Film (HeroFilm):** `.ck-hero-film` grid puts the hero over the film. Each chapter's stage is `position: sticky` inside a track whose height is CSS (`.track1`/`.track2` in cinematic.module.css), so the film's scroll length is in the server HTML. No GSAP pin. The hero scrolls off natively; Chapter 1's scrubbed timeline starts after the hero has cleared the header (`leadInRef`) plus a title hold. Triggers measure the track, never the sticky stage. The title card is not scrubbed: `syncTitle` sets `data-state` (before/in/after) from live scroll measurements and CSS transitions animate it (`.titleCard` in cinematic.module.css), so it cannot be left half-revealed by a lagging GSAP clock. Everything is one timeline of plain numbers → one `apply()` that writes SVG attributes/transforms.
+- `CinematicOrchestrator` is server-rendered (tracks + `Chapter1Poster` title card); chapters load client-only via `next/dynamic`. It dispatches `ck:immersive-nav` while the film owns the screen.
 - **Desktop section timelines** (ProblemSolution ≥1024, Trust/Founders/FinalCta desktop ≥1024 and tablet 768–1023) are `gsap.timeline({scrollTrigger:{start:"top 60–85%", once}})` — play once, not scrubbed.
 - **HomeClient** calls `ScrollTrigger.refresh()` 150 ms after data/state changes; LiveNeeds refreshes on filter change.
 - **Sticky CSS** (no GSAP pin) is the approach specified for the in-progress WhatIsCauseKind (`.sticky` in its CSS module).
@@ -75,7 +75,7 @@ NO ACTIVE PAGE-TRANSITION SYSTEM. `lib/animations.ts` defines page variants but 
 ## Reduced motion
 - CSS: `@media (prefers-reduced-motion: reduce)` blocks in styles.css (global list at ≈1896, mobile primitives, hero, donate CTA, loops) and module CSS.
 - `Reveal` renders static; `useRevealOnce` marks content done immediately; GSAP sections check `matchMedia("(prefers-reduced-motion: reduce)")` and set final states.
-- Film: still frame, no pin; HeroFilm stacks the film under the hero instead of hiding it; nav is not hidden.
+- Film: still frame, tracks auto height; HeroFilm stacks the film under the hero instead of hiding it; nav is not hidden.
 - Hero: `MotionConfig reducedMotion="user"`.
 
 ## Reusable patterns
