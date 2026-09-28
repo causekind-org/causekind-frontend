@@ -26,6 +26,7 @@ import {
   type DoneeNeedProfile,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { NgoProfileView } from "./ngo-view";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -269,6 +270,11 @@ export default function ProfilePage() {
     if (authLoading) return;
     if (!user) {
       router.push("/login");
+      return;
+    }
+
+    if (user.role?.toUpperCase() === "NGO" || user.role?.toUpperCase() === "NGO_PARTNER") {
+      setLoading(false);
       return;
     }
 
@@ -588,6 +594,11 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  const isNgo = user?.role?.toUpperCase() === "NGO" || user?.role?.toUpperCase() === "NGO_PARTNER";
+  if (!authLoading && isNgo) {
+    return <NgoProfileView />;
   }
 
   // Loading skeleton

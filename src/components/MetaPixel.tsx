@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef, Suspense } from "react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
+import { isInternalTraffic } from "@/lib/internalTraffic";
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "123456789";
 
@@ -82,13 +83,19 @@ function MetaPixelInner() {
  *       consent stays "unset" there and the pixel correctly never loads.</li>
  * </ul>
  */
+// TEMP: no consent banner is mounted yet, so `consent` can never become
+// "accepted" on its own. This bypass fires the pixel unconditionally for
+// testing. Remove TESTING_BYPASS (revert to `consent === "accepted"`) once
+// the banner is back — see DeferredOverlays.tsx and layout.tsx.
+const TESTING_BYPASS = true;
+
 export default function MetaPixel() {
   const consent = useCookieConsent();
 
   // Wrap in Suspense to avoid Next.js deoptimizing layout to client-side rendering due to searchParams
   return (
     <Suspense fallback={null}>
-      <MetaPixelGate consentAccepted={consent === "accepted"} />
+      <MetaPixelGate consentAccepted={TESTING_BYPASS || consent === "accepted"} />
     </Suspense>
   );
 }
@@ -102,6 +109,7 @@ function MetaPixelGate({ consentAccepted }: { consentAccepted: boolean }) {
     previewRef.current = hasValidPreviewToken(searchParams);
   }
 
+  if (isInternalTraffic()) return null;
   if (!consentAccepted && !previewRef.current) return null;
   return <MetaPixelInner />;
 }

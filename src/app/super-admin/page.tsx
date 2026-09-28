@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { superAdminOverview, type SuperAdminOverview } from "@/lib/api";
+import {
+  superAdminOverview, type SuperAdminOverview,
+  adminGetAllDonations, type SuperAdminRow,
+} from "@/lib/api";
 import { EntityTable, type Column } from "@/components/super-admin/EntityTable";
 import { SqlConsole } from "@/components/super-admin/SqlConsole";
 import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
@@ -18,6 +21,7 @@ import { InterventionsPanel } from "@/components/super-admin/InterventionsPanel"
 import { CommunicationsPanel } from "@/components/super-admin/CommunicationsPanel";
 import { GovernancePanel } from "@/components/super-admin/GovernancePanel";
 import { OperationsPanel } from "@/components/super-admin/OperationsPanel";
+import { DonationDetailModal } from "@/components/super-admin/DonationDetailModal";
 import type { SaInterventionEntity } from "@/lib/api";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
@@ -145,6 +149,10 @@ const CAMPAIGN_COLS: Column[] = [
 const DONATION_COLS: Column[] = [
   { key: "donorName", label: "Donor" },
   { key: "campaignTitle", label: "Campaign" },
+  { key: "source", label: "Source" },
+  { key: "donorMode", label: "Donor type" },
+  { key: "guestName", label: "Guest name", inTable: false },
+  { key: "guestEmail", label: "Guest email", inTable: false },
   { key: "amount", label: "Amount", editable: true, type: "number" },
   { key: "currency", label: "Cur", editable: true },
   { key: "status", label: "Status", editable: true, type: "select", options: DONATION_STATUS },
@@ -175,6 +183,35 @@ const LISTING_COLS: Column[] = [
   { key: "description", label: "Description", editable: true, type: "textarea", inTable: false },
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];
+/**
+ * The raw `/super-admin/donations` rows carry `donorId`/`campaignId`, not
+ * names — `donorName`/`campaignTitle` come from the purpose-built
+ * `/admin/donations` endpoint instead. Module-level (not a component
+ * function) so its identity is stable across renders; EntityTable's fetch
+ * effect depends on this reference and would refetch every render otherwise.
+ */
+async function enrichDonations(rows: SuperAdminRow[]): Promise<SuperAdminRow[]> {
+  const joined = await adminGetAllDonations();
+  const byId = new Map(joined.map(d => [d.id, d]));
+  return rows.map(row => {
+    const match = byId.get(Number(row.id));
+    if (!match) return row;
+    return {
+      ...row,
+      // A guest trust donation has no donor/campaign row to join against —
+      // fall back to the name captured at donation time so the row isn't
+      // just blank.
+      donorName: match.donorName ?? match.guestName,
+      donorEmail: match.donorEmail ?? match.guestEmail,
+      campaignTitle: match.campaignTitle,
+      source: match.source,
+      donorMode: match.donorMode,
+      guestName: match.guestName,
+      guestEmail: match.guestEmail,
+    };
+  });
+}
+
 const MATCH_COLS: Column[] = [
   { key: "matchType", label: "Type" },
   { key: "donorName", label: "Donor" },
@@ -444,6 +481,9 @@ export default function SuperAdminPage() {
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [sqlAck, setSqlAck] = useState(false);
 
+  // Donation details modal — opened by clicking a row in the Donations table.
+  const [viewingDonation, setViewingDonation] = useState<SuperAdminRow | null>(null);
+
   function handleNavClick(key: SectionKey) {
     if (key === "sql" && !sqlAck) {
       setSqlModalOpen(true);
@@ -512,7 +552,8 @@ export default function SuperAdminPage() {
       case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
                               onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
-      case "donations":     return <EntityTable entity="donations"     title="Donations"     columns={DONATION_COLS} isDark={isDark} />;
+      case "donations":     return <EntityTable entity="donations"     title="Donations"     columns={DONATION_COLS} isDark={isDark} enrich={enrichDonations}
+                              onRowClick={(row) => setViewingDonation(row)} />;
       case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS}   isDark={isDark} />;
       case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS}   isDark={isDark} />;
       case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
@@ -683,6 +724,15 @@ export default function SuperAdminPage() {
       {/* ⌘K from anywhere in the console. Mounted once, outside the section
           switch, so it survives navigation and does not remount on every tab. */}
       <CommandPalette onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} />
+
+      {viewingDonation && (
+        <DonationDetailModal
+          row={viewingDonation}
+          isDark={isDark}
+          onClose={() => setViewingDonation(null)}
+          onOpenProfile={(donorId) => { setViewingDonation(null); openUser(donorId); }}
+        />
+      )}
 
       {/* ── SQL Warning Modal ─────────────────────────────────────────────── */}
       {sqlModalOpen && (

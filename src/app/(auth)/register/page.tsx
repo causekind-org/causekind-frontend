@@ -10,6 +10,7 @@ import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, registerNgo, googleAuth, googleComplete } from "@/lib/api";
+import { trackCompleteRegistration } from "@/lib/metaEvents";
 import { Eye, EyeOff, MapPin, Package, HandHeart, Building2, Check, ArrowRight, ArrowLeft, type LucideIcon } from "lucide-react";
 import { AnimatedEmailOtp } from "@/components/auth/AnimatedEmailOtp";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -306,6 +307,7 @@ function RegisterContent() {
       setForm((f) => ({ ...f, role: "DONOR" }));
     }
   }, [form.role]);
+
 
   // Email OTP verification step — shown after a successful /register/initiate,
   // not used on the Google OAuth flow (Google already verifies the email).
@@ -629,6 +631,7 @@ function RegisterContent() {
         });
         if (!auth.succeed(id)) return;
         setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role });
+        trackCompleteRegistration({ method: "ngo" });
         toast.success("NGO account created! Welcome to CauseKind.");
         router.replace("/");
       } else if (isSocialFlow && googleToken) {
@@ -640,6 +643,7 @@ function RegisterContent() {
           sessionStorage.removeItem("ck_google_token");
           sessionStorage.removeItem("ck_google_profile");
           setUser({ email: res.email, role: res.role });
+          trackCompleteRegistration({ method: "google" });
           toast.success("Account created! Welcome to CauseKind.");
           goAfterAuth(res.role, router.push);
         }
@@ -689,6 +693,7 @@ function RegisterContent() {
   function completeRegistration(res: { email: string; role: string }) {
     auth.lockAuthenticated();
     setUser({ email: res.email, role: res.role });
+    trackCompleteRegistration({ method: "email" });
     toast.success("Account created!");
     // The end of the email/OTP path — and the one that matters most for the
     // guest journey, since a new donor reaches the offer wizard through here.

@@ -29,6 +29,7 @@ import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import { DONATE_HREF } from "@/lib/donateScroll";
+import { useNgoStatus, triggerNgoLockedToast } from "@/components/ngo-landing/useNgoStatus";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -602,6 +603,7 @@ export function SiteHeader() {
     isNgo ||
     pathname?.startsWith("/dashboard/ngo") ||
     pathname?.startsWith("/ngo");
+  const isNgoView = isNgoDashboard;
 
   const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(() => {
     if (typeof window === "undefined" || !user) return true;
@@ -700,6 +702,14 @@ export function SiteHeader() {
     }
   }, [checkNgoApplicationStatus, pathname]);
 
+  const {
+    status: ngoHookStatus,
+    isVerified: isNgoVerified,
+    isPhotosDue: isNgoPhotosDue,
+    photosDueRequestName: ngoPhotosDueRequestName,
+    canPostRequest: canNgoPostRequest,
+  } = useNgoStatus();
+
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
@@ -709,7 +719,7 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    { href: "/requests", label: t("nav.donate") },
+    { href: "/requests", label: isNgo ? "My Requests" : t("nav.donate") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -843,7 +853,7 @@ export function SiteHeader() {
           </Link>
 
           {/* Center navigation capsule */}
-          <nav className="glass-liquid hidden lg:flex items-center gap-1 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <nav className="glass-liquid hidden lg:flex items-center gap-1 bg-[var(--nav-pill-bg,rgba(255,255,255,0.55))] dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[var(--nav-border,#e5e2d5)]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[var(--nav-shadow,0_4px_20px_-6px_rgba(28,25,23,0.12))] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
             {navLinks.map((link) => {
               // FAQ and Contact live inside the "About Us" dropdown on desktop
               // instead of as separate pills — skip them here.
@@ -869,8 +879,8 @@ export function SiteHeader() {
                       aria-expanded={isAboutMegaMenuOpen}
                       className={`group relative text-sm px-4 py-2 transition-all duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none cursor-pointer ${
                         groupActive || isAboutMegaMenuOpen
-                          ? "text-[var(--ck-role-accent)]"
-                          : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
+                          ? "text-[var(--nav-accent,var(--ck-role-accent))]"
+                          : "text-stone-500 hover:text-[var(--nav-accent,var(--ck-role-accent))] dark:text-stone-400 dark:hover:text-[var(--nav-accent,var(--ck-role-accent))]"
                       }`}
                     >
                       {/* Releases the pill while a plain link is hovered, so
@@ -884,11 +894,11 @@ export function SiteHeader() {
                           className="glass-pill absolute inset-0 rounded-full"
                         />
                       )}
-                      {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
+                      {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--nav-accent-dot,var(--ck-role-highlight))] shrink-0" />}
                       <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
                         className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
-                          isAboutMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
+                          isAboutMegaMenuOpen ? "rotate-180 text-[var(--nav-accent,var(--ck-role-accent))]" : ""
                         }`}
                       />
                     </button>
@@ -923,8 +933,8 @@ export function SiteHeader() {
                       aria-expanded={isInKindMegaMenuOpen}
                       className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold ${
                         active || isInKindMegaMenuOpen
-                          ? "text-[var(--ck-role-accent)]"
-                          : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
+                          ? "text-[var(--nav-accent,var(--ck-role-accent))]"
+                          : "text-stone-500 hover:text-[var(--nav-accent,var(--ck-role-accent))] dark:text-stone-400 dark:hover:text-[var(--nav-accent,var(--ck-role-accent))]"
                       }`}
                     >
                       {(isInKindMegaMenuOpen || (active && !hoveredHref)) && (
@@ -934,11 +944,11 @@ export function SiteHeader() {
                           className="glass-pill absolute inset-0 rounded-full"
                         />
                       )}
-                      {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
+                      {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--nav-accent-dot,var(--ck-role-highlight))] shrink-0" />}
                       <span className="relative z-10">{link.label}</span>
                       <ChevronDown
                         className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
-                          isInKindMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
+                          isInKindMegaMenuOpen ? "rotate-180 text-[var(--nav-accent,var(--ck-role-accent))]" : ""
                         }`}
                         aria-hidden="true"
                       />
@@ -962,8 +972,8 @@ export function SiteHeader() {
                   onFocus={() => { setHoveredHref(link.href); setOpenMegaMenu(null); }}
                   onBlur={() => setHoveredHref(null)}
                   className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
-                      ? "text-[var(--ck-role-accent)]"
-                      : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
+                      ? "text-[var(--nav-accent,var(--ck-role-accent))]"
+                      : "text-stone-500 hover:text-[var(--nav-accent,var(--ck-role-accent))] dark:text-stone-400 dark:hover:text-[var(--nav-accent,var(--ck-role-accent))]"
                     }`}
                 >
                   {/* The one travelling glass pill, shared with both dropdown
@@ -983,7 +993,7 @@ export function SiteHeader() {
                       className="glass-pill absolute inset-0 rounded-full"
                     />
                   )}
-                  {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
+                  {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--nav-accent-dot,var(--ck-role-highlight))] shrink-0" />}
                   <span className="relative z-10">{link.label}</span>
                 </Link>
               );
@@ -1032,36 +1042,40 @@ export function SiteHeader() {
             )}
 
             {isNgoDashboard && (
-              <Link href="/dashboard/ngo/profile">
-                {isNgoProfileIncomplete ? (
+              isNgoProfileIncomplete ? (
+                <Link href="/profile/ngo-details">
                   <Button
                     size="sm"
-                    className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
+                    className="bg-ngo-700 hover:bg-ngo-600 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
                   >
                     Complete Profile
                   </Button>
-                ) : (
+                </Link>
+              ) : (
+                <Link href="/profile">
                   <Button
                     size="sm"
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                    className="bg-ngo-700 hover:bg-ngo-600 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
                   >
-                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-ngo-50 animate-pulse" />
                     Application Under Review
                   </Button>
-                )}
-              </Link>
+                </Link>
+              )
             )}
 
-            {/* Auth action — login/logout, top-right */}
+            {/* Auth action — login/logout, top-right. Hidden on the auth pages
+                themselves since the page already is the login/register form. */}
+            {!(pathname === "/login" || pathname === "/register") && (
             <div className="relative">
               <SpecularButton
                 size="sm"
                 radius={999}
-                tint={roleColors.accent}
+                tint={isNgo ? "#1E6B4F" : roleColors.accent}
                 tintOpacity={1}
                 textColor="#ffffff"
-                lineColor={roleColors.highlight}
-                baseColor={roleColors.deep}
+                lineColor={isNgo ? "#248A63" : roleColors.highlight}
+                baseColor={isNgo ? "#123D2E" : roleColors.deep}
                 intensity={1}
                 shineSize={14}
                 shineFade={35}
@@ -1078,6 +1092,7 @@ export function SiteHeader() {
               </SpecularButton>
               <LoginNudgeBubble user={user} />
             </div>
+            )}
           </div>
         </div>
 
@@ -1113,7 +1128,7 @@ export function SiteHeader() {
                 the honest fix; adding the blur back would need the panel moved
                 out of the header, which is a bigger change than this earns.
               */
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[var(--nav-dropdown-bg,#faf8f5)] dark:bg-stone-900 border-b border-[var(--nav-dropdown-border,#e5e2d5)] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <DonateMegaMenu onNavigate={() => setOpenMegaMenu(null)} />
@@ -1153,7 +1168,7 @@ export function SiteHeader() {
                 the honest fix; adding the blur back would need the panel moved
                 out of the header, which is a bigger change than this earns.
               */
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[var(--nav-dropdown-bg,#faf8f5)] dark:bg-stone-900 border-b border-[var(--nav-dropdown-border,#e5e2d5)] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <div className="grid grid-cols-12 gap-6">
@@ -1163,25 +1178,25 @@ export function SiteHeader() {
                     <Link
                       href="/about"
                       onClick={() => setOpenMegaMenu(null)}
-                      className="group flex flex-col justify-between p-5 rounded-2xl bg-white/70 dark:bg-black/55 hover:bg-white dark:hover:bg-black/75 border border-stone-200/70 dark:border-stone-800 hover:border-[var(--ck-role-accent)]/40 dark:hover:border-[var(--ck-role-accent)]/40 transition-all duration-300 shadow-2xs hover:shadow-md"
+                      className="group flex flex-col justify-between p-5 rounded-2xl bg-white/70 dark:bg-black/55 hover:bg-white dark:hover:bg-black/75 border border-stone-200/70 dark:border-stone-800 hover:border-[var(--nav-accent,var(--ck-role-accent))]/40 dark:hover:border-[var(--nav-accent,var(--ck-role-accent))]/40 transition-all duration-300 shadow-2xs hover:shadow-md"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-orange-500/10 dark:bg-orange-400/15 flex items-center justify-center text-[var(--ck-role-accent)] group-hover:scale-110 transition-transform duration-200">
+                          <div className="w-10 h-10 rounded-xl bg-[var(--nav-dropdown-hover-bg,rgba(249,115,22,0.1))] dark:bg-orange-400/15 flex items-center justify-center text-[var(--nav-accent,var(--ck-role-accent))] group-hover:scale-110 transition-transform duration-200">
                             <HeartHandshake className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-orange-500/10 text-[var(--ck-role-accent)] border border-orange-500/20">
+                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-[var(--nav-dropdown-hover-bg,rgba(249,115,22,0.1))] text-[var(--nav-accent,var(--ck-role-accent))] border border-[var(--nav-border,rgba(249,115,22,0.2))]">
                             Story
                           </span>
                         </div>
-                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors mb-1.5 flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--nav-accent,var(--ck-role-accent))] transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.about")}
                         </h4>
                         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
                           Our story, mission, and transparent model for direct peer-to-peer giving.
                         </p>
                       </div>
-                      <div className="mt-4 flex items-center text-xs font-semibold text-[var(--ck-role-accent)] opacity-80 group-hover:opacity-100 transition-opacity">
+                      <div className="mt-4 flex items-center text-xs font-semibold text-[var(--nav-accent,var(--ck-role-accent))] opacity-80 group-hover:opacity-100 transition-opacity">
                         <span>Read our story</span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
                       </div>
@@ -1247,10 +1262,10 @@ export function SiteHeader() {
                   </div>
 
                   {/* Right Column: Featured Direct-Giving Impact Card (4 cols) */}
-                  <div className="col-span-4 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-[var(--ck-home-accent,#b04a15)]/10 via-amber-500/5 to-stone-100/50 dark:from-orange-500/15 dark:via-stone-850 dark:to-stone-900 border border-[var(--ck-home-accent,#b04a15)]/20 dark:border-orange-500/20 shadow-2xs flex flex-col justify-between">
+                  <div className="col-span-4 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-[var(--nav-dropdown-hover-bg,rgba(176,74,21,0.1))] via-amber-500/5 to-stone-100/50 dark:from-orange-500/15 dark:via-stone-850 dark:to-stone-900 border border-[var(--nav-border,rgba(176,74,21,0.2))] dark:border-orange-500/20 shadow-2xs flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-[var(--ck-role-accent)] text-white shadow-2xs">
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-[var(--nav-accent,var(--ck-role-accent))] text-white shadow-2xs">
                           <Heart className="w-3 h-3 fill-current" />
                           100% Direct Giving
                         </span>
@@ -1266,7 +1281,7 @@ export function SiteHeader() {
                     <Link
                       href="/requests"
                       onClick={() => setOpenMegaMenu(null)}
-                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[var(--ck-role-accent)] hover:brightness-110 shadow-sm hover:shadow-md transition-all duration-200"
+                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[var(--nav-accent,var(--ck-role-accent))] hover:brightness-110 shadow-sm hover:shadow-md transition-all duration-200"
                     >
                       <span>Explore Community Needs</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -1275,14 +1290,14 @@ export function SiteHeader() {
                 </div>
 
                 {/* Bottom Trust & Verification Footer Strip */}
-                <div className="mt-6 pt-4 border-t border-[#e5e2d5]/80 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+                <div className="mt-6 pt-4 border-t border-[var(--nav-dropdown-border,#e5e2d5)]/80 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
                   <div className="flex items-center gap-6 flex-wrap">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span className="font-medium">Verified Beneficiaries</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" />
+                      <Heart className="w-4 h-4 text-[var(--nav-accent,var(--ck-role-accent))]" />
                       <span className="font-medium">100% Free Peer Giving</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1293,7 +1308,7 @@ export function SiteHeader() {
                   <Link
                     href="/about"
                     onClick={() => setOpenMegaMenu(null)}
-                    className="flex items-center gap-1 font-semibold text-[var(--ck-role-accent)] hover:underline"
+                    className="flex items-center gap-1 font-semibold text-[var(--nav-accent,var(--ck-role-accent))] hover:underline"
                   >
                     <span>Learn about CauseKind verification</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -1314,56 +1329,214 @@ export function SiteHeader() {
         open={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
-        accentColor={roleColors.accent}
-        colors={[roleColors.highlight, roleColors.accent]}
+        accentColor={isNgoView ? "#1E6B4F" : roleColors.accent}
+        colors={isNgoView ? ["#248A63", "#1E6B4F"] : [roleColors.highlight, roleColors.accent]}
         displayItemNumbering
         onNavigate={(link: string) => router.push(link, { scroll: link !== DONATE_HREF })}
-        items={[
-          // `isActive` matches against the pathname, which never carries a query
-          // string — so the Donate entry (…?scroll=donate-form) has to be tested
-          // on its path alone or it could never light up.
-          ...mobileNavLinks.map((l) => ({
-            label: l.label,
-            link: l.href,
-            ariaLabel: l.label,
-            active: isActive(l.href.split("?")[0]),
-          })),
-          ...(user
+        items={
+          isNgoView
             ? [
-                ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
+
                 {
-                  label: "My Profile",
-                  link: isNgo ? "/dashboard/ngo/profile" : "/profile",
-                  ariaLabel: "View profile"
+                  label: t("nav.home"),
+                  link: "/",
+                  ariaLabel: t("nav.home"),
+                  active:
+                    isActive("/") &&
+                    !pathname?.startsWith("/ngo") &&
+                    !pathname?.startsWith("/requests") &&
+                    pathname !== "/blog" &&
+                    pathname !== "/about" &&
+                    pathname !== "/faq" &&
+                    pathname !== "/contact" &&
+                    pathname !== "/dashboard" &&
+                    !pathname?.startsWith("/dashboard/ngo") &&
+                    !pathname?.startsWith("/profile"),
+                },
+                {
+                  label: "My Requests",
+                  ariaLabel: "My Requests",
+                  active:
+                    isActive("/ngo/requests/new") ||
+                    isActive("/requests") ||
+                    isActive("/ngo/handovers"),
+                  children: [
+                    {
+                      label: "Post a Request",
+                      ariaLabel: "Post a Request",
+                      active: isActive("/ngo/requests/new"),
+                      isLocked: !user || !canNgoPostRequest,
+                      ...(user && canNgoPostRequest
+                        ? { link: "/ngo/requests/new" }
+                        : {
+                            onClick: () => {
+                              triggerNgoLockedToast(
+                                ngoHookStatus,
+                                isNgoPhotosDue,
+                                ngoPhotosDueRequestName,
+                                router,
+                                !user
+                              );
+                            },
+                          }),
+                    },
+                    {
+                      label: "Active Requests",
+                      ariaLabel: "Active Requests",
+                      active: isActive("/requests"),
+                      isLocked: !user || !isNgoVerified,
+                      ...(user && isNgoVerified
+                        ? { link: "/requests" }
+                        : {
+                            onClick: () => {
+                              triggerNgoLockedToast(
+                                ngoHookStatus,
+                                isNgoPhotosDue,
+                                ngoPhotosDueRequestName,
+                                router,
+                                !user
+                              );
+                            },
+                          }),
+                    },
+                    {
+                      label: "Handovers & Photos",
+                      ariaLabel: "Handovers & Photos",
+                      active: isActive("/ngo/handovers"),
+                      isLocked: !user || !isNgoVerified,
+                      ...(user && isNgoVerified
+                        ? { link: "/ngo/handovers" }
+                        : {
+                            onClick: () => {
+                              triggerNgoLockedToast(
+                                ngoHookStatus,
+                                isNgoPhotosDue,
+                                ngoPhotosDueRequestName,
+                                router,
+                                !user
+                              );
+                            },
+                          }),
+                    },
+                  ],
+                },
+                { label: t("nav.blog"), link: "/blog", ariaLabel: t("nav.blog"), active: isActive("/blog") },
+                { label: t("nav.about"), link: "/about", ariaLabel: t("nav.about"), active: isActive("/about") },
+                { label: t("nav.faq"), link: "/faq", ariaLabel: t("nav.faq"), active: isActive("/faq") },
+                { label: t("nav.contact"), link: "/contact", ariaLabel: t("nav.contact"), active: isActive("/contact") },
+                {
+                  label: "My Dashboard",
+                  ariaLabel: "My Dashboard",
+                  active: isActive("/dashboard/ngo") || isActive("/dashboard"),
+                  isLocked: !user,
+                  ...(user
+                    ? { link: "/dashboard/ngo" }
+                    : {
+                        onClick: () => {
+                          triggerNgoLockedToast(
+                            ngoHookStatus,
+                            isNgoPhotosDue,
+                            ngoPhotosDueRequestName,
+                            router,
+                            true
+                          );
+                        },
+                      }),
+                },
+                {
+                  label: "Profile",
+                  ariaLabel: "Profile",
+                  active: isActive("/profile"),
+                  isLocked: !user,
+                  ...(user
+                    ? { link: "/profile" }
+                    : {
+                        onClick: () => {
+                          triggerNgoLockedToast(
+                            ngoHookStatus,
+                            isNgoPhotosDue,
+                            ngoPhotosDueRequestName,
+                            router,
+                            true
+                          );
+                        },
+                      }),
                 },
               ]
             : [
-                { label: t("nav.logIn"), link: "/login", ariaLabel: "Log in" },
-                { label: t("nav.signUp"), link: "/register", ariaLabel: "Sign up" },
-              ]),
-        ]}
+                // `isActive` matches against the pathname, which never carries a query
+                // string — so the Donate entry (…?scroll=donate-form) has to be tested
+                // on its path alone or it could never light up.
+                ...mobileNavLinks.map((l) => ({
+                  label: l.label,
+                  link: l.href,
+                  ariaLabel: l.label,
+                  active: isActive(l.href.split("?")[0]),
+                })),
+                ...(user
+                  ? [
+                      ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
+                      {
+                        label: "My Profile",
+                        link: isNgo ? "/dashboard/ngo/profile" : "/profile",
+                        ariaLabel: "View profile"
+                      },
+                    ]
+                  : [
+                      { label: t("nav.logIn"), link: "/login", ariaLabel: "Log in" },
+                      { label: t("nav.signUp"), link: "/register", ariaLabel: "Sign up" },
+                    ]),
+              ]
+        }
         header={
           user ? (
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shrink-0">
-                {avatarDataUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
-                    {user.email[0]}
-                  </div>
-                )}
+            isNgo ? (
+              <Link
+                href="/profile"
+                onClick={() => setIsSidebarOpen(false)}
+                className="flex items-center gap-3 group -m-1.5 p-1.5 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <div className="w-11 h-11 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shrink-0 group-hover:border-ngo-500 transition-colors">
+                  {avatarDataUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
+                      {user.email[0]}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-stone-850 dark:text-white truncate group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors">
+                    {profile?.fullName || user.email.split("@")[0]}
+                  </p>
+                  <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+                    {(roleLabel[user.role] ?? user.role)} · {livesTouched === 0 ? "New on CauseKind" : `${livesTouched} lives touched`}
+                  </p>
+                </div>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shrink-0">
+                  {avatarDataUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
+                      {user.email[0]}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-stone-850 dark:text-white truncate">
+                    {profile?.fullName || user.email.split("@")[0]}
+                  </p>
+                  <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+                    {(roleLabel[user.role] ?? user.role)} · {livesTouched} lives touched
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-stone-850 dark:text-white truncate">
-                  {profile?.fullName || user.email.split("@")[0]}
-                </p>
-                <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                  {(roleLabel[user.role] ?? user.role)} · {livesTouched} lives touched
-                </p>
-              </div>
-            </div>
+            )
           ) : null
         }
         footer={

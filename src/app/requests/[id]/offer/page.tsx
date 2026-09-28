@@ -11,6 +11,11 @@ import {
   getMyDonationOffers,
   getOfferAvailability,
   createOfferDraft,
+  updateOfferItemDetails,
+  uploadOfferMedia,
+  deleteOfferMedia,
+  analyzeOfferImages,
+  submitOffer,
   type AnonymizedRequest,
   type QuantityAllocation,
   type DonationOffer,
@@ -29,6 +34,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { compressDisplayPhoto } from "@/lib/imageCompression";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { toast } from "@/lib/toast";
 import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOfferWizard";
@@ -402,6 +408,12 @@ export default function OfferWizardPage() {
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
   const [blockedByOther, setBlockedByOther] = useState(false);
   const [nudged, setNudged] = useState<DonorFlowType | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiUnavailableNote, setAiUnavailableNote] = useState<string | null>(null);
+  const [prohibited, setProhibited] = useState(false);
+  const [prohibitedCode, setProhibitedCode] = useState<string | null>(null);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
@@ -517,6 +529,156 @@ export default function OfferWizardPage() {
     }
   }
 
+  // ── Step 2: Save item details ──────────────────────────────────────────────
+  // Photos are uploaded immediately on selection (see handleFileChange) —
+  // offer.media is the source of truth by the time this runs, nothing to upload here.
+  async function saveDetails() {
+    if (!offer) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await updateOfferItemDetails(offer.id, {
+        approximateAge: form.approximateAge || undefined,
+        condition: form.condition || undefined,
+        workingStatus: form.workingStatus || undefined,
+        knownDefects: form.hasKnownDefects ? (form.knownDefects || undefined) : "None",
+        accessoriesIncluded: form.accessoriesIncluded || undefined,
+        quantity: Number(form.quantity),
+        specNotes: form.specNotes || undefined,
+        pickupCity: form.pickupCity || undefined,
+        pickupPincode: form.pickupPincode || undefined,
+        pickupLocality: form.pickupLocality || undefined,
+        maxTravelDistanceKm: form.maxTravelDistanceKm ? Number(form.maxTravelDistanceKm) : undefined,
+        deliveryCostBornBy: form.deliveryCostBornBy || undefined,
+        donorDropOffAvailable: form.donorDropOffAvailable,
+      });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to save details");
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleItemDetailsSubmit() {
+    if (!form.condition) { setError("Please select item condition"); return; }
+    if (!form.pickupCity) { setError("Pickup city is required"); return; }
+    if ((offer?.media?.length ?? 0) < 2) { setError("Please upload at least 2 photos"); return; }
+    if (prohibited) { setError("Please remove the flagged photo before continuing"); return; }
+    if (!form.declarationsAccepted) { setError("Please accept all declarations"); return; }
+    setError(null);
+    try {
+      await saveDetails();
+      setStep(3);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      await handleSubmit();
+    } catch {}
+  }
+
+  async function handleSubmit() {
+    if (!offer) return;
+    setLoading(true);
+    try {
+      const submitted = await submitOffer(offer.id, true);
+      setOffer(submitted);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Submission failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Uploads immediately (mirrors items/new/page.tsx's handlePhotoAdd) so the vision
+  // call below has real S3 URLs to analyze, instead of deferring to final submit.
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files ?? []).slice(0, 8 - (offer?.media?.length ?? 0));
+    if (!offer || selected.length === 0) return;
+    setUploadingPhoto(true);
+    setError(null);
+    try {
+      // Shrink each one first. This path takes up to 8 files at once, so the
+      // whole batch shares the request's size budget — the case most likely to
+      // be refused upstream of the app.
+      const shrunk = await Promise.all(selected.map(compressDisplayPhoto));
+      const updated = await uploadOfferMedia(offer.id, shrunk);
+      setOffer(updated);
+      await runVisionAnalysis();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Photo upload failed");
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleRemovePhoto(mediaId: number) {
+    if (!offer) return;
+    try {
+      await deleteOfferMedia(offer.id, mediaId);
+      setOffer({ ...offer, media: offer.media?.filter((m) => m.id !== mediaId) });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to remove photo");
+    }
+  }
+
+  // Prohibited-content check only. Deliberately does not touch any form field —
+  // condition/age/working status/known defects are entered manually by the donor.
+  async function runVisionAnalysis() {
+    if (!offer) return;
+    setAnalyzing(true);
+    try {
+      const r = await analyzeOfferImages(offer.id);
+      if (!r.aiAvailable) { setAiUnavailableNote(r.note ?? "AI photo screening is unavailable right now."); return; }
+      setAiUnavailableNote(null);
+      if (r.prohibited) {
+        setProhibited(true);
+        setProhibitedCode(r.prohibitedCode);
+      } else {
+        setProhibited(false);
+        setProhibitedCode(null);
+      }
+    } catch {
+      setAiUnavailableNote("AI photo screening failed — you can still continue.");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  function handleUseMyLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser doesn't support location detection");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=en`
+          );
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          const address = data.address ?? {};
+          const city = address.city || address.town || address.village || address.suburb || "";
+          const locality = address.suburb || address.neighbourhood || address.road || "";
+          const pincode = address.postcode || "";
+          if (city) set("pickupCity", city);
+          if (locality) set("pickupLocality", locality);
+          if (pincode) set("pickupPincode", pincode);
+          toast.success("Location filled in");
+        } catch {
+          toast.error("Couldn't detect address details — please enter manually");
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error("Location access denied");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
   if (requestLoadFailed) {
     return (

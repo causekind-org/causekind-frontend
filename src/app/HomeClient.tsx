@@ -49,9 +49,14 @@ import { UnclaimedSection } from "@/components/home/UnclaimedSection";
 import {
   getMyProfile,
   getItemRequests,
+  getMyNgoApplication,
   type UserProfile,
+  type NgoApplicationStatusResponse,
 } from "@/lib/api";
-
+import { IS_NGO_DEMO_MODE } from "@/features/ngo-registration/ngoRegistrationModel";
+import { NgoWelcomeModal } from "@/features/ngo-registration/components/NgoWelcomeModal";
+import { NgoProfileToast } from "@/components/NgoProfileToast";
+import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
@@ -231,11 +236,135 @@ export default function HomeClient({
   // The single need that has gone unclaimed longest. It ends the hero's thread,
   // and is excluded from the section below so the same request does not appear
   // twice within one screen of itself.
+  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const [ngoAppStatus, setNgoAppStatus] = useState<"LOADING" | "NOT_SUBMITTED" | "SUBMITTED">(() => {
+    if (typeof window === "undefined" || !user) return "NOT_SUBMITTED";
+    const userIdentifier =
+      user.id ?? user.userId ?? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    try {
+      const demo = localStorage.getItem(`ngo-demo-application-${userIdentifier}`);
+      const real = localStorage.getItem(`ngo-application-${userIdentifier}`);
+      const raw = demo || real;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed?.status === "UNDER_REVIEW" ||
+          parsed?.status === "APPROVED" ||
+          parsed?.status === "PENDING_VERIFICATION"
+        ) {
+          return "SUBMITTED";
+        }
+      }
+    } catch {}
+    return "NOT_SUBMITTED";
+  });
+  const [ngoApplication, setNgoApplication] = useState<NgoApplicationStatusResponse | null>(null);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(true);
+
+  const handleModalDismiss = React.useCallback(() => {
+    setIsWelcomeModalOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const handleSubmitted = () => {
+      setNgoAppStatus("SUBMITTED");
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("ngo-application-submitted", handleSubmitted);
+      window.addEventListener("storage", handleSubmitted);
+      return () => {
+        window.removeEventListener("ngo-application-submitted", handleSubmitted);
+        window.removeEventListener("storage", handleSubmitted);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user || (user.role !== "NGO" && user.role !== "NGO_PARTNER")) {
+      return;
+    }
+
+    const userIdentifier =
+      user.id ?? user.userId ?? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+
+    if (IS_NGO_DEMO_MODE) {
+      try {
+        const demoAppRaw = localStorage.getItem(`ngo-demo-application-${userIdentifier}`);
+        if (demoAppRaw) {
+          const parsed = JSON.parse(demoAppRaw);
+          if (parsed?.applicationId) {
+            setNgoApplication({
+              applicationId: parsed.applicationId,
+              organizationName: parsed.organizationName || "",
+              status: parsed.status || "UNDER_REVIEW",
+              submittedAt: parsed.submittedAt || new Date().toISOString(),
+              verifiedAt: null,
+              updatedAt: null,
+              rejectionReason: null,
+              needsInformationDetails: null,
+            });
+            setNgoAppStatus("SUBMITTED");
+            return;
+          }
+        }
+      } catch {}
+      setNgoAppStatus("NOT_SUBMITTED");
+      return;
+    }
+
+    getMyNgoApplication()
+      .then((app) => {
+        if (
+          app &&
+          (app.status === "UNDER_REVIEW" ||
+            app.status === "APPROVED" ||
+            app.status === "PENDING_VERIFICATION" ||
+            app.status === "REJECTED" ||
+            app.status === "NEEDS_INFORMATION")
+        ) {
+          setNgoApplication(app);
+          setNgoAppStatus("SUBMITTED");
+        } else {
+          setNgoAppStatus("NOT_SUBMITTED");
+        }
+      })
+      .catch(() => {
+        setNgoAppStatus("NOT_SUBMITTED");
+      });
+  }, [user]);
+
+  const userIdentifier = user
+    ? String(user.id ?? user.userId ?? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_"))
+    : "";
+
   const longestWaitingRequest = useMemo(
     () => (rakshaBandhan ? longestWaiting(initialPublicRequests, 1)[0] ?? null : null),
     [rakshaBandhan, initialPublicRequests],
   );
 
+  if (isNgo) {
+    return (
+      <div className="ck-home-page bg-[var(--page-tint-to,#FAFDFB)] dark:bg-[var(--page-tint-from,#071D15)] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+        {/* Welcome modal & profile toast for incomplete NGO profiles */}
+        {userIdentifier && ngoAppStatus !== "SUBMITTED" && (
+          <>
+            <NgoWelcomeModal
+              userId={userIdentifier}
+              isProfileComplete={false}
+              onDismiss={handleModalDismiss}
+            />
+            <NgoProfileToast
+              userId={userIdentifier}
+              isProfileComplete={false}
+              isModalOpen={isWelcomeModalOpen}
+            />
+          </>
+        )}
+
+        <NgoLandingView />
+      </div>
+    );
+  }
 
   return (
     <div className={`ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>

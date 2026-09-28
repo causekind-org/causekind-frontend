@@ -51,35 +51,19 @@ export function MobileBottomNav() {
         ? dashboardT("requestItem")
         : navT("signUp");
 
+  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+
   const items: MobileNavItem[] = [
     { href: "/", icon: Home, label: t("home") },
     ...(FEATURES.money
       ? [{ href: "/campaigns", icon: Megaphone, label: t("campaigns") }]
       : []),
-    // Signed-in donors and donees don't get the centre "+". For a donee it pointed
-    // at /requests/new, which the Requests tab already covers (isActive() treats
-    // /requests/* as Requests, so both entries lit the same tab). Removed for
-    // donors too on request, leaving Home / Requests / Profile for both roles.
-    //
-    // Logged-out visitors don't get it either, also on request. It used to be
-    // their sign-up call to action, but the Profile tab already routes a guest
-    // to /login, so the bar keeps a route into auth without spending a quarter
-    // of it on a second one. Guests now see the same Home / Requests / Profile
-    // as everyone else.
-    //
-    // Note for whoever flips FEATURES.money back on: with money enabled this
-    // entry becomes "Donate now" rather than "Sign up", and a guest arguably
-    // should see that. Revisit this condition then rather than assuming it
-    // still says what you want.
-    ...(!user || user.role === "DONEE" || user.role === "DONOR"
+    // Signed-in donors, donees, and NGOs don't get the centre "+".
+    ...(!user || user.role === "DONEE" || user.role === "DONOR" || isNgo
       ? []
       : [{ href: centerHref, icon: Plus, label: centerLabel }]),
-    // Requests is public now — browsing needs no account, only offering does.
-    // This used to be gated on `user`, so a logged-out visitor had no route to
-    // the board from the bottom bar at all: the destination was reachable from
-    // the desktop navbar and simply missing on a phone, which is where most
-    // guests arrive.
-    { href: "/requests", icon: ClipboardList, label: t("requests") },
+    // Requests tab — shows "My Requests" for logged-in NGO users, "Requests" for others
+    { href: "/requests", icon: ClipboardList, label: isNgo ? "My Requests" : t("requests") },
     { href: user ? "/profile" : "/login", icon: User, label: t("profile") },
   ];
 
