@@ -1317,7 +1317,7 @@ export function SiteHeader() {
         accentColor={roleColors.accent}
         colors={[roleColors.highlight, roleColors.accent]}
         displayItemNumbering
-        onNavigate={(link: string) => router.push(link)}
+        onNavigate={(link: string) => router.push(link, { scroll: link !== DONATE_HREF })}
         items={[
           // `isActive` matches against the pathname, which never carries a query
           // string — so the Donate entry (…?scroll=donate-form) has to be tested

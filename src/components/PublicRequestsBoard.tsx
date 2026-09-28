@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { MapPin, AlertTriangle, Loader2, Inbox, RefreshCw, LogIn, Search } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { MapPin, AlertTriangle, Inbox, RefreshCw, LogIn, Search, ArrowRight, SlidersHorizontal, Package, ChevronLeft, ChevronRight } from "lucide-react";
 import { getPublicItemRequests, type PublicItemRequest } from "@/lib/api";
-import { CardGridSkeleton } from "@/components/skeletons";
+import { CardGridSkeleton, EditorialListSkeleton } from "@/components/skeletons";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
+import styles from "./PublicRequestsBoard.module.css";
 import { loginUrlFor } from "@/lib/safeRedirect";
 
 /**
@@ -42,8 +43,19 @@ const SORTS = [
 ] as const;
 type SortValue = (typeof SORTS)[number]["value"];
 
-/** Urgency values in severity order, so the filter row reads worst-first. */
-const URGENCIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
+/**
+ * Urgency values in severity order, so the filter row reads worst-first.
+ *
+ * <p>Must mirror the backend `ItemUrgency` enum (NORMAL, HIGH, CRITICAL). This
+ * list used to carry MEDIUM and LOW, which the API never returns — those chips
+ * always emptied the board, and NORMAL needs could not be filtered at all.
+ */
+const URGENCIES = ["CRITICAL", "HIGH", "NORMAL"] as const;
+const URGENCY_LABELS: Record<(typeof URGENCIES)[number], string> = {
+  CRITICAL: "Critical",
+  HIGH: "High",
+  NORMAL: "Normal",
+};
 
 /** Rank for the "most urgent" sort. Emergency outranks every urgency label. */
 function urgencyRank(r: PublicItemRequest): number {
@@ -52,6 +64,36 @@ function urgencyRank(r: PublicItemRequest): number {
   // Unknown or absent urgency sorts after everything known rather than
   // silently ranking as most urgent, which is what `indexOf` -1 would do.
   return i === -1 ? URGENCIES.length + 1 : i + 1;
+}
+
+/**
+ * Needs per page. Pagination is client-side over the already-filtered list —
+ * the board fetches every public need anyway (counts and filters need the full
+ * set), so paging only limits how many cards render. 12 divides evenly into the
+ * 1-, 2- and 3-column grids.
+ */
+const PAGE_SIZE = 12;
+
+/** `?page=N` from the current URL; anything missing or invalid is page 1. */
+function readPageParam(): number {
+  if (typeof window === "undefined") return 1;
+  const n = Number(new URLSearchParams(window.location.search).get("page"));
+  return Number.isInteger(n) && n > 1 ? n : 1;
+}
+
+/**
+ * Mirror the page into the URL without a Next navigation (no refetch, no
+ * scroll reset). Deliberately not `useSearchParams`, which would need a new
+ * Suspense boundary on this route. `push` gives Back/Forward per page click;
+ * filter resets `replace` so they do not litter history.
+ */
+function writePageParam(page: number, mode: "push" | "replace") {
+  const url = new URL(window.location.href);
+  if (page <= 1) url.searchParams.delete("page");
+  else url.searchParams.set("page", String(page));
+  if (url.href === window.location.href) return;
+  if (mode === "push") window.history.pushState(window.history.state, "", url);
+  else window.history.replaceState(window.history.state, "", url);
 }
 
 export default function PublicRequestsBoard({
@@ -79,6 +121,7 @@ export default function PublicRequestsBoard({
   const [urgencies, setUrgencies] = useState<string[]>([]);
   const [sort, setSort] = useState<SortValue>("newest");
   const [query, setQuery] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -140,6 +183,44 @@ export default function PublicRequestsBoard({
     });
   }, [requests, selected, urgencies, query, sort]);
 
+  // ── Pagination ──
+  const [page, setPage] = useState(1);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  // Read the URL after mount (not in the initializer) so server and client
+  // render the same first page; follow Back/Forward afterwards.
+  useEffect(() => {
+    setPage(readPageParam());
+    const onPop = () => setPage(readPageParam());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // Any change to what is being listed starts again at page 1. Skips the
+  // first run so a shared `?page=3` link is not immediately reset.
+  const listKey = `${selected.join("|")}::${urgencies.join("|")}::${query.trim()}::${sort}`;
+  const lastListKey = useRef(listKey);
+  useEffect(() => {
+    if (lastListKey.current === listKey) return;
+    lastListKey.current = listKey;
+    setPage(1);
+    writePageParam(1, "replace");
+  }, [listKey]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp rather than store: a stale `?page=9` on a shorter list shows the last page.
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const visible = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  const goToPage = (n: number) => {
+    const next = Math.min(Math.max(1, n), totalPages);
+    setPage(next);
+    writePageParam(next, "push");
+    resultsRef.current?.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  };
+
   const toggle = (cat: string) =>
     setSelected(prev => (prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]));
 
@@ -149,25 +230,30 @@ export default function PublicRequestsBoard({
   const hasFilters = selected.length > 0 || urgencies.length > 0 || query.trim().length > 0;
 
   return (
-    <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
+    <div className={`${styles.board} min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100`}>
+      <div className={`${styles.content} mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12`}>
 
         {/* ── Header ── */}
-        <header>
+        <header className={styles.header}>
           <p className="text-xs font-bold uppercase tracking-wider text-[var(--ck-role-accent)]">
             Open needs
           </p>
           <h1 className="mt-2 text-[clamp(1.6rem,1.3rem+1.5vw,2.5rem)] font-bold leading-tight">
-            In-Kind Requests
+            {/* Phones get the editorial headline; the real title stays in the
+                accessibility tree (visually hidden there, not display:none). */}
+            <span className={styles.title}>In-Kind Requests</span>
+            <span className={styles.mobileTitle} aria-hidden="true">A little help.<br />A new beginning.</span>
           </h1>
-          <p className="mt-2 max-w-2xl text-[clamp(0.9rem,0.87rem+0.15vw,1rem)] leading-relaxed text-stone-600 dark:text-stone-300">
+          <p className={`${styles.intro} mt-2 max-w-2xl text-[clamp(0.9rem,0.87rem+0.15vw,1rem)] leading-relaxed text-stone-600 dark:text-stone-300`}>
             Real, verified needs posted by people and organisations near you.
             Browse freely — you only need an account when you decide to give.
           </p>
+          <p className={styles.mobileIntro}>Browse freely. Log in when you&apos;re ready to help.</p>
         </header>
 
         {/* ── Sign-in nudge. A note, not a wall: the board below is fully readable. ── */}
-        <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--ck-role-accent)]/25 bg-[var(--ck-role-accent)]/[0.06] px-4 py-3">
+        {/* Desktop only — phones get the compact nudge after the results. */}
+        <div className={`${styles.nudge} mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--ck-role-accent)]/25 bg-[var(--ck-role-accent)]/[0.06] px-4 py-3`}>
           <LogIn className="w-4 h-4 shrink-0 text-[var(--ck-role-accent)]" aria-hidden="true" />
           {/* States what browsing costs (nothing) before what login adds. The
               previous copy led with what the visitor was missing, which reads
@@ -185,8 +271,8 @@ export default function PublicRequestsBoard({
         </div>
 
         {/* ── Search + category filters ── */}
-        <div className="mt-6 space-y-3">
-          <div className="relative max-w-md">
+        <div className={`${styles.searchArea} mt-6 space-y-3`}>
+          <div className={`${styles.searchBox} relative max-w-md`}>
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
             <input
               type="search"
@@ -200,7 +286,21 @@ export default function PublicRequestsBoard({
             />
           </div>
 
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
+          {/* Categories. On desktop this is the existing chip row; below 768px
+              the same buttons become a contained horizontal rail. One set of
+              controls and one `selected` state serve both widths. */}
+          <div className={`${styles.categoryRail} flex flex-wrap gap-2`} role="group" aria-label="Filter by category">
+            {/* Phone-only reset. Clears categories only — search and urgency
+                are left alone. Hidden (display:none) on desktop, which also
+                removes it from the accessibility tree there. */}
+            <button
+              type="button"
+              onClick={() => setSelected([])}
+              aria-pressed={selected.length === 0}
+              className={styles.allNeeds}
+            >
+              All needs
+            </button>
             {ALL_REQUEST_CATEGORIES.map(cat => {
               const n = counts[cat] ?? 0;
               const on = selected.includes(cat);
@@ -226,10 +326,30 @@ export default function PublicRequestsBoard({
             })}
           </div>
 
+          {/* Phone-only: result count and the urgency-filter toggle. The count
+              is not a live region — the results container already is. */}
+          <div className={styles.mobileToolbar}>
+            <span>{loading ? "Loading needs…" : failed ? "Needs unavailable" : `${filtered.length} open ${filtered.length === 1 ? "need" : "needs"}`}</span>
+            <button
+              type="button"
+              aria-expanded={filtersOpen}
+              aria-controls="guest-needs-urgency"
+              onClick={() => setFiltersOpen(open => !open)}
+              className="inline-flex items-center gap-2"
+            >
+              <SlidersHorizontal size={14} aria-hidden="true" />
+              {urgencies.length > 0
+                ? `Urgency: ${URGENCIES.filter(u => urgencies.includes(u)).map(u => URGENCY_LABELS[u]).join(", ")}`
+                : "Filters"}
+            </button>
+          </div>
+
           {/* Urgency + sort. One row, wrapping — on a 320px screen the sort
-              select drops below the urgency chips rather than squeezing them. */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by urgency">
+              select drops below the urgency chips rather than squeezing them.
+              On phones sort and "Clear filters" stay visible; only the urgency
+              group collapses behind the Filters toggle. */}
+          <div className={`${styles.filters} flex flex-wrap items-center gap-2`} data-open={filtersOpen}>
+            <div id="guest-needs-urgency" className={`${styles.urgencyGroup} flex flex-wrap gap-2`} role="group" aria-label="Filter by urgency">
               {URGENCIES.map(u => {
                 const on = urgencies.includes(u);
                 return (
@@ -238,19 +358,19 @@ export default function PublicRequestsBoard({
                     type="button"
                     onClick={() => toggleUrgency(u)}
                     aria-pressed={on}
-                    className={`inline-flex min-h-11 items-center rounded-full border px-3.5 text-sm font-semibold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] ${
+                    className={`inline-flex min-h-11 items-center rounded-full border px-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] ${
                       on
                         ? "border-[var(--ck-role-accent)] bg-[var(--ck-role-accent)] text-white"
                         : "border-stone-200 bg-white text-stone-600 hover:border-stone-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-stone-300"
                     }`}
                   >
-                    {u.toLowerCase()}
+                    {URGENCY_LABELS[u]}
                   </button>
                 );
               })}
             </div>
 
-            <div className="ms-auto flex items-center gap-2">
+            <div className={`${styles.sortGroup} ms-auto flex items-center gap-2`}>
               <label
                 htmlFor="public-requests-sort"
                 className="text-xs font-semibold text-stone-500 dark:text-stone-400"
@@ -285,10 +405,19 @@ export default function PublicRequestsBoard({
         </div>
 
         {/* ── Results ── */}
-        <div className="mt-7" aria-live="polite">
+        <div ref={resultsRef} className={`${styles.results} mt-7 scroll-mt-24`} aria-live="polite">
           {loading ? (
-            // Same grid the results land in, so nothing shifts when they do.
-            <CardGridSkeleton count={6} label="Loading open needs" />
+            // Same shape the results land in, so nothing shifts when they do.
+            // Two variants, one shown per width; the hidden one is display:none
+            // and so never announced.
+            <>
+              <div className={styles.skeletonDesktop}>
+                <CardGridSkeleton count={6} label="Loading open needs" />
+              </div>
+              <div className={styles.skeletonMobile}>
+                <EditorialListSkeleton count={4} label="Loading open needs" />
+              </div>
+            </>
           ) : failed ? (
             <Shell>
               <AlertTriangle className="w-4 h-4 text-amber-600" aria-hidden="true" />
@@ -332,14 +461,50 @@ export default function PublicRequestsBoard({
             </Shell>
           ) : (
             <>
-              <p className="mb-3 text-xs text-stone-500 dark:text-stone-400">
+              <p className={`${styles.resultCount} mb-3 text-xs text-stone-500 dark:text-stone-400`}>
                 {filtered.length} open {filtered.length === 1 ? "need" : "needs"}
               </p>
-              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.map(r => <PublicRequestCard key={r.id} req={r} />)}
+              <ul className={`${styles.list} grid gap-3 sm:grid-cols-2 lg:grid-cols-3`}>
+                {visible.map(r => <PublicRequestCard key={r.id} req={r} />)}
               </ul>
+
+              {totalPages > 1 && (
+                <nav aria-label="Pages of open needs" className={`${styles.pager} mt-6 flex items-center justify-between gap-3`}>
+                  <button
+                    type="button"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-stone-200 bg-white px-4 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-400 disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-white/10 dark:bg-white/[0.04] dark:text-stone-200"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Previous
+                  </button>
+                  <p className="text-center text-xs text-stone-500 dark:text-stone-400">
+                    Page {currentPage} of {totalPages}
+                    <span className={styles.pagerRange}>
+                      {" "}· {pageStart + 1}–{pageStart + visible.length} of {filtered.length}
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-stone-200 bg-white px-4 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-400 disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-white/10 dark:bg-white/[0.04] dark:text-stone-200"
+                  >
+                    Next <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </nav>
+              )}
             </>
           )}
+        </div>
+
+        {/* Phone-only sign-in nudge, after the list so browsing stays first.
+            It is a plain login link: the wording does not pick or change a role. */}
+        <div className={styles.mobileNudge}>
+          <span>Have something to give?</span>
+          <Link href={loginUrlFor("/requests")}>
+            Log in as donor <ArrowRight aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </div>
@@ -357,50 +522,64 @@ export default function PublicRequestsBoard({
 function PublicRequestCard({ req }: { req: PublicItemRequest }) {
   const visual = CATEGORY_VISUALS[req.category];
   const urgent = req.urgency === "CRITICAL" || req.emergency;
+  // Reduced motion: render in place, never held invisible waiting for a
+  // scroll-triggered entrance.
+  const reduceMotion = useReducedMotion();
 
   return (
     <motion.li
-      initial={{ opacity: 0, y: 8 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
       <Link
         href={loginUrlFor(`/requests/${req.id}/offer`)}
-        className="group flex h-full flex-col gap-2.5 rounded-2xl border border-stone-200/80 bg-white/80 p-4 transition-colors hover:border-[var(--ck-role-accent)]/40 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+        className={`${styles.card} group flex h-full flex-col gap-2.5 rounded-2xl border border-stone-200/80 bg-white/80 p-4 transition-colors hover:border-[var(--ck-role-accent)]/40 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]`}
       >
-        <div className="flex items-start justify-between gap-2">
+        <span className={styles.cardIcon} aria-hidden="true">{visual ? <visual.Icon /> : <Package />}</span>
+        <div className={`${styles.titleRow} flex items-start justify-between gap-2`}>
           <h2 className="min-w-0 text-sm font-semibold line-clamp-2">{req.title}</h2>
           {urgent && (
-            <span className="shrink-0 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+            <span className="shrink-0 self-start rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
               Urgent
             </span>
           )}
         </div>
 
         {req.description && (
-          <p className="text-xs leading-relaxed text-stone-500 line-clamp-2 dark:text-stone-400">
+          <p className={`${styles.description} text-xs leading-relaxed text-stone-500 line-clamp-2 dark:text-stone-400`}>
             {req.description}
           </p>
         )}
 
-        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-stone-500 dark:text-stone-400">
-          {visual && (
-            <span className={`inline-flex items-center gap-1 ${visual.text}`}>
-              <visual.Icon className="w-3 h-3" aria-hidden="true" />
+        <div className={`${styles.metadata} mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-stone-500 dark:text-stone-400`}>
+          {/* Category is always rendered, known or not, and carries its own
+              class: phones hide it visually (the corner icon stands in) but
+              keep it for screen readers. Nothing here is hidden by position,
+              which used to drop the city whenever the category was unknown. */}
+          {req.category && (
+            <span className={visual ? `${styles.metaCategory} inline-flex items-center gap-1 ${visual.text}` : "sr-only"}>
+              {visual && <visual.Icon className="w-3 h-3" aria-hidden="true" />}
               {req.category}
             </span>
           )}
           {/* City only — the public payload carries no pincode or coordinates. */}
-          <span className="inline-flex items-center gap-1">
-            <MapPin className="w-3 h-3" aria-hidden="true" />
-            {req.city}
-          </span>
+          {req.city && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="w-3 h-3" aria-hidden="true" />
+              {req.city}
+            </span>
+          )}
           <span>Qty {req.quantity}</span>
         </div>
 
-        <p className="text-xs font-semibold text-[var(--ck-role-accent)]">
-          Log in to offer an item
+        {/* One action label per width; the other is display:none, so the
+            link's accessible name never contains both. */}
+        <p className={`${styles.cardAction} text-xs font-semibold text-[var(--ck-role-accent)]`}>
+          <span className={styles.actionDesktop}>Log in to offer an item</span>
+          <span className={styles.actionMobile}>I can help</span>
+          <ArrowRight aria-hidden="true" />
         </p>
       </Link>
     </motion.li>

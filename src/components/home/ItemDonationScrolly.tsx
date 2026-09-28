@@ -330,7 +330,7 @@ export function ItemDonationScrolly() {
     <section
       ref={sectionRef}
       id="how"
-      className="relative w-full bg-[#0e0f10]"
+      className="relative w-full bg-[var(--surface-cream)]"
       style={{ height: `${SECTION_VH}vh` }}
       aria-label={t("a11y")}
     >
@@ -338,7 +338,7 @@ export function ItemDonationScrolly() {
           no gutter and no corners — and while it is pinned the site header is
           hidden (see the `ck:immersive-nav` dispatch below), so the film really
           does own the whole screen. */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#0e0f10]">
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[var(--surface-cream)]">
         
         
         {/* Scoped keyframes for the caption chrome. Kept local (unique ck-scrolly-*
@@ -407,6 +407,7 @@ export function ItemDonationScrolly() {
           style={{
             background:
               "radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.5) 100%)",
+            opacity: expand,
           }}
         />
         {/* Film grain — a faint SVG-noise plane, oversized so its drift never
@@ -421,7 +422,7 @@ export function ItemDonationScrolly() {
             height: "150%",
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-            opacity: 0.08,
+            opacity: 0.08 * expand,
             mixBlendMode: "overlay",
             animation: "ck-scrolly-grain 0.7s steps(5) infinite",
           }}
@@ -462,11 +463,11 @@ export function ItemDonationScrolly() {
           className="pointer-events-none absolute inset-x-0 bottom-7 flex flex-col items-center gap-2"
           style={{ opacity: 1 - hintOut, transform: `translateY(${8 * hintOut}px)` }}
         >
-          <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-stone-600 dark:text-stone-400">
             Scroll
           </span>
           <span
-            className="block h-4 w-4 rotate-45 border-b border-r border-white/50"
+            className="block h-4 w-4 rotate-45 border-b border-r border-stone-500 dark:border-stone-400"
             style={{ animation: "ck-scrolly-bob 1.8s ease-in-out infinite" }}
           />
         </div>
@@ -546,25 +547,10 @@ export function ItemDonationScrolly() {
           <BrandBlock t={t} />
         </div>
 
-        {/* Scroll-progress rail — a thin glowing line along the top edge that
-            fills as you move through the whole section. Top, not bottom, so it
-            is never lost under the OS taskbar. */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[3px]">
-          <div
-            className="h-full origin-left"
-            style={{
-              transform: `scaleX(${progress})`,
-              background: "linear-gradient(90deg, #b04a15 0%, #ff8a2b 100%)",
-              boxShadow: "0 0 12px rgba(255,138,43,0.6)",
-              willChange: "transform",
-            }}
-          />
-        </div>
-
         {/* First-load hint, gone once the opening frame paints. */}
         {!ready && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-600 dark:text-stone-400">
               Loading…
             </span>
           </div>

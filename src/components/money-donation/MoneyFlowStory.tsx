@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform, useMotionValue, useSpring, useReducedM
 import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
 import { SahasLogo } from './SahasLogo';
 import Link from 'next/link';
+import { MobileInitiatives } from './MobileInitiatives';
 
 
 /* ─── Step Data ─── */
@@ -249,13 +250,15 @@ export function MoneyFlowStory() {
           </div>
         </div>
 
-        {/* ── Supporting Core Initiatives with 3D Tilt ── */}
+        <MobileInitiatives areas={impactAreas} />
+
+        {/* Desktop initiatives retain their existing tilt presentation. */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="w-full"
+          className="hidden w-full md:block"
         >
           <h4 className="text-sm font-bold uppercase tracking-widest text-amber-800 dark:text-amber-300 text-center mb-8">
             Supporting Core Initiatives
@@ -292,4 +295,3 @@ export function MoneyFlowStory() {
     </section>
   );
 }
-

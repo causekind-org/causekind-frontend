@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocale, useTranslations } from "next-intl";
 import { FEATURES } from "@/lib/features";
 import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
-import { useNearFooter } from "@/hooks/useNearFooter";
 import { useDraggableBubble } from "@/hooks/useDraggableBubble";
 import { RequestNudge } from "@/components/RequestNudge";
 import GlassSurface from "@/components/GlassSurface";
@@ -35,9 +34,6 @@ export function MobileBottomNav() {
   const [dragPosition, setDragPosition] = useState<number | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  // Shared with SiteBottomBlur, so the two bottom-anchored elements agree about
-  // when the footer is near and leave/return together instead of drifting.
-  const nearFooter = useNearFooter();
 
   // Centre + button — smart routing based on feature flag + role
   const centerHref = FEATURES.money
@@ -137,35 +133,19 @@ export function MobileBottomNav() {
     return { x, index };
   }
 
-  // Hidden inside super-admin, admin dashboard, and wizard flows (which have their own navigation).
-  const isWizardRoute =
-    pathname === "/items/new" ||
-    (pathname?.startsWith("/items/") && pathname?.endsWith("/edit")) ||
-    (pathname?.startsWith("/requests/") && pathname?.endsWith("/offer")) ||
-    pathname === "/donations/offer";
+  // Public and donation flows always retain a route Home, including wizards.
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
-    isWizardRoute ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 
   return (
     <nav
-      // `inert` while parked: the links leave the tab order too, so keyboard
-      // focus cannot land on a bar that is off-screen.
-      inert={nearFooter}
       className="ck-mobile-dock fixed left-1/2 z-50 h-[3.75rem] w-[calc(100%-2rem)] max-w-[27rem] lg:hidden"
       style={{
         bottom: "calc(var(--ck-nav-float) + var(--ck-bottom-inset))",
-        // Travel derived from --ck-bottom-chrome (float + safe-area inset + bar
-        // height) rather than a guessed pixel value, so the bar clears itself
-        // exactly on a notched phone and on a plain one alike.
-        transform: nearFooter
-          ? "translate(-50%, calc(var(--ck-bottom-chrome) + 1.5rem))"
-          : "translate(-50%, 0)",
-        opacity: nearFooter ? 0 : 1,
-        pointerEvents: nearFooter ? "none" : "auto",
+        transform: "translate(-50%, 0)",
       }}
       aria-label={t("mobileNavAriaLabel")}
       dir={isRtl ? "rtl" : "ltr"}

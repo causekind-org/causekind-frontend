@@ -237,6 +237,17 @@ body {
   color: var(--color-foreground);
 }
 
+/* Page-level horizontal guard. On phones, any element wider than the screen
+   widens the *layout* viewport: the browser then zooms the whole site out
+   (everything tiny) or lets it pan in every direction. `clip` — not `hidden` —
+   because `hidden` turns html/body into scroll containers and breaks the
+   sticky header. Components should still fit on their own (minmax(0,1fr),
+   min-w-0); this only stops one stray element from shrinking every page. */
+html,
+body {
+  overflow-x: clip;
+}
+
 .font-hero-display {
   font-family: var(--font-plus-jakarta-sans), sans-serif;
 }
