@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { motion, useInView, useReducedMotion } from "framer-motion";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   MapPin,
   Lock,
@@ -19,6 +20,7 @@ import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import LetterSwap from "@/components/LetterSwap";
+import { CarouselDots } from "@/components/home/mobile/primitives";
 
 /**
  * How many needs the homepage grid shows before handing off to /requests.
@@ -52,6 +54,7 @@ export function LiveNeedsSection({
 }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const sectionRef = useRef<HTMLElement>(null);
+  const needsRowRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
   const reduceMotion = useReducedMotion();
 
@@ -72,8 +75,6 @@ export function LiveNeedsSection({
    */
   const { user, isLoading: authLoading } = useAuth();
   const role = (user?.role ?? "").toUpperCase().replace(/^ROLE_/, "");
-  /** Anyone who can actually offer an item — the same test CategoryNeedsBoard uses. */
-  const isDonor = !!user && role !== "DONEE";
   const emptyStateCta = authLoading
     ? null
     : user === null
@@ -123,13 +124,26 @@ export function LiveNeedsSection({
     return counts;
   }, [allNeeds]);
 
+  // Below 768px the needs are a swipe row; a new filter starts it from the first card.
+  useEffect(() => {
+    if (needsRowRef.current) needsRowRef.current.scrollLeft = 0;
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    // Refresh ScrollTrigger when filtered card count changes layout height
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [selectedCategory, displayedNeeds.length]);
+
   return (
     <section
       ref={sectionRef}
       id="live-needs-section"
       aria-labelledby="live-needs-heading"
       // Was #fbf9f4 — a shade off the sections either side. Same one cream.
-      className="relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
+      className="ck-m-section relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
     >
       {/* The two warm ambient blurs are gone — see the note in
           ComingSoonMagnets. Every section was tinting its own background a
@@ -277,23 +291,30 @@ export function LiveNeedsSection({
             ) : null}
           </div>
         ) : (
-          <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <>
+          {/* A grid from 768px up; below that `.ck-snap-m` turns the same
+              element into a native scroll-snap row with a peek of the next
+              card, so six needs cost one card of height, not six. */}
+          <div
+            ref={needsRowRef}
+            className="ck-snap-m grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
+            role="region"
+            aria-label="Open needs"
+            tabIndex={-1}
+          >
             {displayedNeeds.map((need, idx) => {
               const visual = CATEGORY_VISUALS[need.category];
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
-              // A signed-in donor goes straight to the offer form. This used to
-              // send everyone through loginUrlFor(), which always returns a
-              // login URL regardless of auth — so someone already signed in was
-              // bounced to /login to be sent back where they were going.
-              const offerPath = `/requests/${need.id}/offer`;
-              const offerUrl = isDonor ? offerPath : loginUrlFor(offerPath);
+              const isDonor = role === "DONOR";
+              const isDonee = role === "DONEE";
+              const offerUrl = isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
 
               return (
                 <motion.article
                   key={need.id}
                   initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
                   animate={isInView ? { opacity: 1, y: 0 } : undefined}
-                  transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06 }}
+                  transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
                   className="flex flex-col rounded-[1.25rem] bg-white dark:bg-zinc-900/95 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 p-4 lg:p-6 lg:bg-white/95 lg:border-stone-200/90 lg:shadow-sm lg:shadow-[var(--ck-home-deep,#431407)]/5 dark:lg:shadow-black/20"
                 >
                   <div className="grow">
@@ -362,23 +383,29 @@ export function LiveNeedsSection({
                     {/* Every card is now fully visible, so every CTA is live and
                         keyboard-reachable — the carousel had to disable the
                         blurred neighbours' links. */}
+                    {!isDonee && (
                     <Link
                       href={offerUrl}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
                     >
-                      {/* The lock and the "log in" wording only make sense for
-                          someone who is not signed in. */}
-                      {!isDonor && (
-                        <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
-                      )}
+                      {!isDonor && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
                       <span>{isDonor ? "Offer this item" : "Log in to offer this item"}</span>
                       <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
                     </Link>
+                    )}
                   </div>
                 </motion.article>
               );
             })}
           </div>
+          <CarouselDots
+            scrollerRef={needsRowRef}
+            count={cardCount}
+            label="Open needs"
+            resetKey={selectedCategory}
+            className="md:hidden mt-1"
+          />
+          </>
         )}
 
         {/* The grid is a sample, so it says so. Without this the eyebrow

@@ -5,7 +5,7 @@ import { Anton } from "next/font/google";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
-import { MotionConfig, motion } from "framer-motion";
+import { MotionConfig } from "framer-motion";
 import { ArrowRight, Heart, MapPin, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -134,12 +134,10 @@ function ConnectionPins() {
       </svg>
 
       {callouts.map(({ lead, rest, className, delay }) => (
-        <motion.div
+        <div
           key={lead}
-          className={`ck-hero-callout absolute hidden w-[clamp(5.6rem,6.4vw,6.9rem)] text-center lg:block ${className}`}
-          initial={false}
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 3.8, ease: "easeInOut", repeat: Infinity, delay }}
+          className={`ck-hero-callout ck-hero-callout-float absolute hidden w-[clamp(5.6rem,6.4vw,6.9rem)] text-center lg:block ${className}`}
+          style={{ animationDelay: `${delay}s` }}
         >
           <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 drop-shadow-[0_5px_8px_rgba(var(--ck-home-shadow-rgb,114,43,8),0.25)]">
             <LocationMarker />
@@ -153,7 +151,7 @@ function ConnectionPins() {
             </p>
             <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-[#fffdf9] dark:bg-stone-900" aria-hidden />
           </div>
-        </motion.div>
+        </div>
       ))}
 
       {/* Desktop-only now. These were the phone's version of the callouts, sat

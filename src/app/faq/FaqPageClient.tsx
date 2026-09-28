@@ -25,20 +25,27 @@ export function FaqPageClient() {
       items: [
         { num: "01", q: t("q1"), a: t("a1") },
         { num: "02", q: t("q2"), a: t("a2") },
+        { num: "03", q: t("q7"), a: t("a7") },
+        { num: "04", q: t("q8"), a: t("a8") },
       ],
     },
     {
       label: "Giving & Receiving",
       items: [
-        { num: "03", q: t("q3"), a: t("a3") },
-        { num: "04", q: t("q6"), a: t("a6") },
+        { num: "05", q: t("q3"), a: t("a3") },
+        { num: "06", q: t("q6"), a: t("a6") },
+        { num: "07", q: t("q9"), a: t("a9") },
+        { num: "08", q: t("q10"), a: t("a10") },
+        { num: "09", q: t("q11"), a: t("a11") },
+        { num: "10", q: t("q12"), a: t("a12") },
       ],
     },
     {
       label: "Money & Tracking",
       items: [
-        { num: "05", q: t("q4"), a: t("a4") },
-        { num: "06", q: t("q5"), a: t("a5") },
+        { num: "11", q: t("q4"), a: t("a4") },
+        { num: "12", q: t("q5"), a: t("a5") },
+        { num: "13", q: t("q13"), a: t("a13") },
       ],
     },
   ];
@@ -86,11 +93,10 @@ export function FaqPageClient() {
               <button
                 key={cat.label}
                 onClick={() => selectCategory(i)}
-                className={`relative py-6 text-sm font-bold whitespace-nowrap transition-colors ${
-                  activeCategory === i
+                className={`relative py-6 text-sm font-bold whitespace-nowrap transition-colors ${activeCategory === i
                     ? "text-stone-900 dark:text-white"
                     : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
-                }`}
+                  }`}
               >
                 {cat.label}
                 {activeCategory === i && (

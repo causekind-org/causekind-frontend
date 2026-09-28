@@ -29,8 +29,6 @@ import { useTranslations } from "next-intl";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { LatestActiveCampaignsSection } from "@/components/CampaignCarousel";
-import { BeTheChangeSection } from "@/components/BeTheChangeSection";
-import { ComingSoonMagnets } from "@/components/ComingSoonMagnets";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,31 +49,37 @@ import { IndependenceDayStrip } from "@/components/IndependenceDayStrip";
 import { RakshaBandhanStrip } from "@/components/RakshaBandhanStrip";
 import { RakshaBandhanIntro } from "@/components/RakshaBandhanIntro";
 
-import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity } from "@/lib/api";
+import type { Campaign, ItemRequest, PlatformStats, PublicItemRequest, RecentActivity, FulfilledNeedSummary } from "@/lib/api";
 import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-bandhan";
 import { UnclaimedSection } from "@/components/home/UnclaimedSection";
 import {
   getMyProfile,
   getItemRequests,
-  getMyNgoApplication,
   type UserProfile,
-  type NgoApplicationStatusResponse,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
-import { IS_NGO_DEMO_MODE } from "@/features/ngo-registration/ngoRegistrationModel";
-import { NgoWelcomeModal } from "@/features/ngo-registration/components/NgoWelcomeModal";
-import { NgoProfileToast } from "@/components/NgoProfileToast";
-import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
+import { HeroFilm } from "@/components/cinematic/HeroFilm";
+import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
+import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
+import { HowItWorksSection } from "@/components/home/HowItWorksSection";
+import { TrustSafetySection } from "@/components/home/TrustSafetySection";
+import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
+import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
+import { FinalCtaSection } from "@/components/home/FinalCtaSection";
+import { RoleHome } from "@/components/home/RoleHome";
+import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
+import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
-import AudiencePathwaysSection from "@/components/audience-pathways/AudiencePathwaysSection";
-import { MobileDoors, useLandingDoor } from "@/components/audience-pathways/MobileDoors";
-import DoneeDoorEvidence from "@/components/audience-pathways/DoneeDoorEvidence";
-import { ItemDonationScrolly } from "@/components/home/ItemDonationScrolly";
-import { CTASection } from "@/components/home/CTASection";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -109,6 +113,7 @@ export default function HomeClient({
   initialActivity,
   initialItemRequests,
   initialPublicRequests = [],
+  fulfilledNeeds = [],
 }: {
   initialCampaigns: Campaign[];
   initialStats: PlatformStats | null;
@@ -122,47 +127,11 @@ export default function HomeClient({
    * test keeps working untouched.
    */
   initialPublicRequests?: PublicItemRequest[];
+  fulfilledNeeds?: FulfilledNeedSummary[];
 }) {
   const t = useTranslations("landing");
   const tCommon = useTranslations("common");
   const { user, isRestoring } = useAuth();
-
-  /**
-   * The donor/donee signup pathways are guest-only.
-   *
-   * <p><b>Waits for storage, not for the network.</b> `useAuth` starts at
-   * `{ user: null }` and only then hydrates from `localStorage["ck_user"]`, so
-   * testing `!user` alone renders "Join as a donor" to someone already signed
-   * in and takes it away a moment later. `isRestoring` closes that window.
-   *
-   * <p>It must NOT be `isLoading`. That flag is deliberately asymmetric — with
-   * no cached user it stays true until `/api/v1/users/me` answers, and that
-   * call wakes the deliberately cold Neon pool. Gating on it meant a guest saw
-   * the pre-Doors page for seconds and then watched it rearrange, which is the
-   * same bug the hero's primary CTA had. Guests are exactly who this is for.
-   *
-   * <p>The cost is the same one the hero accepts: someone holding a valid
-   * cookie but empty storage sees signup CTAs for a beat before their role
-   * resolves. That is a visible correction, not a redirect, and it corrects
-   * itself. See the two-flag table in `useAuth`.
-   *
-   * <p>Any authenticated user hides it, not just DONOR and DONEE. Role strings
-   * circulate in both `ROLE_`-prefixed and bare forms (see `normalizeRole`), and
-   * a role-by-role check would quietly start showing signup CTAs to whichever
-   * role is added next.
-   */
-  const showAudiencePathways = !isRestoring && user === null;
-
-  /*
-    Which door a guest picked on the mobile landing. Drives what renders below
-    the switcher there; the desktop tree ignores it entirely.
-
-    `doorIsDonor` collapses the two cases a section actually cares about: a
-    signed-in visitor has no doors at all and keeps today's page, so everything
-    donor-facing renders for them unconditionally.
-  */
-  const { door, pick: pickDoor } = useLandingDoor();
-  const doorIsDonor = !showAudiencePathways || door === "donor";
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -186,8 +155,23 @@ export default function HomeClient({
   // empty. Re-fetch client-side once a logged-in user's cookie is available.
   useEffect(() => {
     if (!user) return;
-    getItemRequests().then(setItemRequests).catch(() => { });
+    getItemRequests()
+      .then((data) => {
+        setItemRequests(data);
+        ScrollTrigger.refresh();
+      })
+      .catch(() => {
+        ScrollTrigger.refresh();
+      });
   }, [user]);
+
+  useEffect(() => {
+    // Refresh ScrollTrigger after initial mount and layout settling
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [initialPublicRequests, stats, loading, error]);
 
   useEffect(() => {
     const handleFilter = async (e: Event) => {
@@ -235,144 +219,31 @@ export default function HomeClient({
 
   const HeroComponent = HeroSection;
   const LiveNeedsComponent = LiveNeedsSection;
-  const ComingSoonComponent = ComingSoonMagnets;
-  const CTAComponent = CTASection;
-  const AudiencePathwaysComponent = AudiencePathwaysSection;
-  const MobileDoorsComponent = MobileDoors;
-  const DoneeDoorEvidenceComponent = DoneeDoorEvidence;
+  const FinalCtaComponent = FinalCtaSection;
 
   // The single need that has gone unclaimed longest. It ends the hero's thread,
   // and is excluded from the section below so the same request does not appear
   // twice within one screen of itself.
-  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
-  const [ngoAppStatus, setNgoAppStatus] = useState<"LOADING" | "NOT_SUBMITTED" | "SUBMITTED">(() => {
-    if (typeof window === "undefined" || !user) return "NOT_SUBMITTED";
-    const userIdentifier =
-      user.id ?? user.userId ?? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
-    try {
-      const demo = localStorage.getItem(`ngo-demo-application-${userIdentifier}`);
-      const real = localStorage.getItem(`ngo-application-${userIdentifier}`);
-      const raw = demo || real;
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          return "SUBMITTED";
-        }
-      }
-    } catch {}
-    return "NOT_SUBMITTED";
-  });
-  const [ngoApplication, setNgoApplication] = useState<NgoApplicationStatusResponse | null>(null);
-  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(true);
-
-  const handleModalDismiss = React.useCallback(() => {
-    setIsWelcomeModalOpen(false);
-  }, []);
-
-  useEffect(() => {
-    const handleSubmitted = () => {
-      setNgoAppStatus("SUBMITTED");
-    };
-    if (typeof window !== "undefined") {
-      window.addEventListener("ngo-application-submitted", handleSubmitted);
-      window.addEventListener("storage", handleSubmitted);
-      return () => {
-        window.removeEventListener("ngo-application-submitted", handleSubmitted);
-        window.removeEventListener("storage", handleSubmitted);
-      };
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!user || (user.role !== "NGO" && user.role !== "NGO_PARTNER")) {
-      return;
-    }
-
-    const userIdentifier =
-      user.id ?? user.userId ?? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
-
-    if (IS_NGO_DEMO_MODE) {
-      try {
-        const demoAppRaw = localStorage.getItem(`ngo-demo-application-${userIdentifier}`);
-        if (demoAppRaw) {
-          const parsed = JSON.parse(demoAppRaw);
-          if (parsed?.applicationId) {
-            setNgoApplication({
-              applicationId: parsed.applicationId,
-              organizationName: parsed.organizationName || "",
-              status: parsed.status || "UNDER_REVIEW",
-              submittedAt: parsed.submittedAt || new Date().toISOString(),
-              verifiedAt: null,
-              updatedAt: null,
-              rejectionReason: null,
-              needsInformationDetails: null,
-            });
-            setNgoAppStatus("SUBMITTED");
-            return;
-          }
-        }
-      } catch {}
-      setNgoAppStatus("NOT_SUBMITTED");
-      return;
-    }
-
-    getMyNgoApplication()
-      .then((app) => {
-        if (
-          app &&
-          (app.status === "UNDER_REVIEW" ||
-            app.status === "APPROVED" ||
-            app.status === "PENDING_VERIFICATION" ||
-            app.status === "REJECTED" ||
-            app.status === "NEEDS_INFORMATION")
-        ) {
-          setNgoApplication(app);
-          setNgoAppStatus("SUBMITTED");
-        } else {
-          setNgoAppStatus("NOT_SUBMITTED");
-        }
-      })
-      .catch(() => {
-        setNgoAppStatus("NOT_SUBMITTED");
-      });
-  }, [user]);
-
-  const userIdentifier = user
-    ? String(user.id ?? user.userId ?? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_"))
-    : "";
-
   const longestWaitingRequest = useMemo(
     () => (rakshaBandhan ? longestWaiting(initialPublicRequests, 1)[0] ?? null : null),
     [rakshaBandhan, initialPublicRequests],
   );
 
-  if (isNgo) {
-    return (
-      <div className="ck-home-page bg-[var(--page-tint-to,#FAFDFB)] dark:bg-[var(--page-tint-from,#071D15)] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
-        {/* Welcome modal & profile toast for incomplete NGO profiles */}
-        {userIdentifier && ngoAppStatus !== "SUBMITTED" && (
-          <>
-            <NgoWelcomeModal
-              userId={userIdentifier}
-              isProfileComplete={false}
-              onDismiss={handleModalDismiss}
-            />
-            <NgoProfileToast
-              userId={userIdentifier}
-              isProfileComplete={false}
-              isModalOpen={isWelcomeModalOpen}
-            />
-          </>
-        )}
 
-        <NgoLandingView />
-      </div>
-    );
-  }
+  const roleStr = user?.role?.replace(/^ROLE_/, "");
+  const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
+  
+  const [isDesktop, setIsDesktop] = useState(true);
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
+  const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
 
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
@@ -385,73 +256,44 @@ export default function HomeClient({
 
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
-      {/* One responsive front door. Keeping it outside the two legacy layout
-          trees prevents CTA, image and tour-anchor drift between breakpoints. */}
-      <HeroComponent />
+      <SmoothScroll />
+      {/* SHARED / GUEST DESKTOP TREE */}
+      {showGuestDesktopTree && (
+        <div className="ck-guest-desktop">
+          {/* Continuous dashed road across whole desktop page */}
+          <DashedJourneyRoad />
+      {/* One responsive front door. With cinematicLanding on, the film sits
+          pinned underneath it and slides off it on scroll — see HeroFilm. */}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
-      {/* ════════════════════════════════════════════════════════════
-          DESKTOP VIEW  (lg:block)
-          Each section is its own extracted component — edit the
-          file in src/components/home/ to change that section.
-      ════════════════════════════════════════════════════════════ */}
-      {/* One paper for the whole desktop page. Sections are transparent over
-          it — see PageSection for why they no longer bring their own. */}
+      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
+      <WhoAreWeSection />
+
+      <SupportGallery />
+
+      {/* SECTION 3 — HOW DO WE WORK */}
+      <HowItWorksSection />
+
+      {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       <div className="ck-home-paper hidden lg:block relative z-10">
-        {/* Mobile stats strip (inside desktop wrapper but sm:hidden) */}
-        {FEATURES.money && (
-          <div className="sm:hidden overflow-hidden border-b border-[var(--ck-home-surface,#ffedd5)] bg-white dark:bg-zinc-950">
-            <div className="stats-ticker-track py-3.5">
-              {[0, 1].map(copy => (
-                <div key={copy} className="flex items-center shrink-0">
-                  {statItems.map(s => (
-                    <div key={s.label} className="flex items-center gap-2 px-5">
-                      <s.icon className={`h-4 w-4 shrink-0 ${s.color}`} />
-                      <span className="text-stone-900 dark:text-stone-100 font-black text-sm tabular-nums">{s.value}</span>
-                      <span className="text-stone-500 font-bold text-3xs uppercase tracking-wider whitespace-nowrap">{s.label}</span>
-                      <span className="text-stone-200 dark:text-zinc-700 ml-3 select-none">·</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Stats bar + live ticker — only when money feature enabled */}
-        {FEATURES.money && (
-          <>
-            <DesktopStatsBar stats={stats} />
-            <LiveTicker activity={activity} />
-          </>
-        )}
-
-
-        {/* "What We Provide" — 2-step dark section. Second on the page, right
-            after the hero: it is the one section that explains what actually
-            happens here, so it earns the position before the visitor is asked
-            to look at open needs. */}
-        <ItemDonationScrolly />
-
-        {/* Donor / Donee pathways — the two sides of the platform, each with a
-            role-preselecting signup CTA. Third on the page, so the visitor is
-            told which side they are on before being shown the board.
-            ("Why CauseKind" used to follow this and was removed on 2026-08-21:
-            it advertised fundraising, which FEATURES.money gates off, and
-            repeated three claims the Be the Change band already makes.)
-
-            Guest-only, and gated in both responsive trees — see the mobile copy
-            below. Asking someone who is already signed in to "Join as a donor"
-            is the whole reason for the condition. */}
-        {showAudiencePathways && (
-          <>
-            <AudiencePathwaysComponent />
-          </>
-        )}
-
-
-        {/* Live Needs section — real verified needs across multiple categories */}
         <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+      </div>
 
+      {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
+      <div className="hidden lg:block">
+        <TrustSafetySection variant="desktop" />
+      </div>
+
+      {/* FOUNDER'S NOTE (Desktop) */}
+      <div className="hidden lg:block">
+        <FoundersNoteSection variant="desktop" />
+      </div>
+
+      <div className="hidden lg:block">
+        <GoogleReviewsSection />
+      </div>
+
+      <div className="ck-home-paper hidden lg:block relative z-10">
         {/* Latest campaigns carousel */}
         {FEATURES.money && (
           <>
@@ -566,19 +408,27 @@ export default function HomeClient({
         )}
 
 
-        {/* "Be the Change" feature cards */}
-        <BeTheChangeSection />
-
-
-
-        {/* Coming soon magnets */}
-        <ComingSoonComponent />
-
-
-
-        {/* Bottom CTA — hidden when logged in */}
-        <CTAComponent />
+        {/* SECTION 8 — FINAL CTA */}
+        <FinalCtaComponent variant="desktop" />
       </div>
+      </div>
+      )}
+
+      {/* ROLE HOME FOR DESKTOP */}
+      {isDonorOrDonee && !isRestoring && isDesktop && (
+        <div className="max-lg:hidden w-full">
+          <RoleHome 
+            role={roleStr?.toLowerCase() as "donor" | "donee"} 
+            initialPublicRequests={initialPublicRequests} 
+            stats={stats} 
+          />
+        </div>
+      )}
+
+      {/* PLACEHOLDER FOR DONOR/DONEE WHILE RESTORING */}
+      {isRestoring && (
+        <div className="ck-role-restoring-placeholder hidden max-lg:hidden w-full h-[85vh] bg-[var(--ck-role-soft)]" />
+      )}
 
       {/* ════════════════════════════════════════════════════════════
           MOBILE VIEW  (lg:hidden)
@@ -600,7 +450,10 @@ export default function HomeClient({
           the donor/donee spine being a separate, separately scrolling page.
           `clip` leaves `overflow-y: visible` alone, so nothing here scrolls and
           the horizontal bleed is still clipped exactly as before. */}
-      <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 overflow-x-clip pt-11 bg-[#fbf9f4] dark:bg-zinc-950">
+      {/* Below 768px every section pads itself (`.ck-m-section`, with room for
+          the bottom dock), so the column's own 44px gap and top pad drop out
+          there rather than stacking on top of it. */}
+      <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 
@@ -628,31 +481,25 @@ export default function HomeClient({
           </div>
         )}
 
-        {/* Doors — the guest spine. One question, two cards, then a switcher;
-            everything after this point is the answer to it.
+        {/* SECTION 6 — LIVE NEEDS */}
+        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
 
-            This replaces AudiencePathwaysSection in the mobile tree only. The
-            desktop tree still renders that section in its old position, and a
-            signed-in visitor still gets today's page in both trees — the donor
-            and donee variants are a separate piece of work. */}
-        {showAudiencePathways && <MobileDoorsComponent door={door} pick={pickDoor} />}
+        {/* SECTION 5 — CAN I TRUST YOU */}
+        <div className="-mx-5">
+          <TrustSafetySection variant="mobile" />
+        </div>
 
-        {/* The donee door's evidence. The one genuinely new surface here:
-            everything else below the hero is donor-facing, so a visitor who
-            says "I need something" had nothing to read. */}
-        {showAudiencePathways && door === "donee" && <DoneeDoorEvidenceComponent />}
+        {/* FOUNDER'S NOTE */}
+        <div className="-mx-5">
+          <FoundersNoteSection variant="mobile" />
+        </div>
 
-        {/* Live Needs — the donor door's first piece of evidence, so it leads
-            now rather than sitting below the campaigns rail.
-            No bleed wrapper below lg: the section drops its own horizontal
-            padding and background at this width (see LiveNeedsSection), so it
-            sits on this column's px-5 gutter like everything else. */}
-        {doorIsDonor && (
-          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-        )}
+        <div className="-mx-5">
+          <GoogleReviewsSection />
+        </div>
 
         {/* Mobile Campaigns horizontal scroll */}
-        {FEATURES.money && doorIsDonor && (
+        {FEATURES.money && (
           <>
             <section className="space-y-4 relative">
           {/* One header shape, shared with every other mobile section: a
@@ -715,41 +562,18 @@ export default function HomeClient({
           </>
         )}
 
-        {/* The needs nobody has taken. Repeated here rather than shared, because
-            HomeClient keeps two separate trees and a component placed in one is
-            simply absent from the other — the mistake the pathways section
-            below records having made. The section's own grid collapses to a
-            single column at this width. */}
-        {rakshaBandhan && doorIsDonor && (
+        {/* The needs nobody has taken */}
+        {rakshaBandhan && (
           <UnclaimedSection
             requests={initialPublicRequests}
             excludeId={longestWaitingRequest?.id ?? null}
           />
         )}
 
-        {/* Be the Change — cut from the guest page. It restates "here are needs
-            and here is proof", which the doors and the live board already do;
-            leaving it in is how the mobile stack got to four sections saying
-            the same two things. Signed-in visitors keep it until their own
-            layout is designed. */}
-        {!showAudiencePathways && <BeTheChangeSection tourAnchors />}
-
-        {/* AudiencePathwaysSection used to sit here, guest-only. MobileDoors
-            took its job at the top of this tree and its `tourAnchors` with it,
-            so rendering it again would put the same two signup CTAs on the page
-            twice. The desktop tree still renders it in its own position. */}
-
-
-        {/* Coming soon magnets — previously desktop-only. The section sizes
-            itself down through its own CSS vars, so the same component serves
-            both branches rather than a mobile-specific copy. Below lg it zeroes
-            --ck-magnets-pad and drops its background, so it aligns to this
-            column's px-5 gutter with no bleed wrapper.
-
-            Cut from the guest page for the same reason as Be the Change: it is
-            a fourth restatement of what the doors and the board already say.
-            Signed-in visitors keep it. */}
-        {!showAudiencePathways && <ComingSoonComponent />}
+        {/* SECTION 8 — FINAL CTA */}
+        <div className="-mx-5">
+          <FinalCtaComponent variant="mobile" />
+        </div>
 
       </div>
     </div>

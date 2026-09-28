@@ -58,7 +58,7 @@ export function InitiativeStory({ initiative }: { initiative: Initiative }) {
         </div>
       </section>
 
-      <section className="border-t border-stone-200 bg-[#fff7ed] px-4 py-20 text-center dark:border-white/10 dark:bg-zinc-900 sm:px-6 lg:py-28">
+      <section className="bg-[#fff7ed] px-4 py-20 text-center dark:bg-zinc-900 sm:px-6 lg:py-28">
         <h2 className="text-balance font-serif text-4xl sm:text-5xl">Small acts can keep a bigger story moving.</h2>
         <p className="mx-auto mt-5 max-w-xl text-pretty leading-relaxed text-stone-600 dark:text-stone-300">Choose how you would like to help CauseKind connect people with practical, accountable support.</p>
         <Link href="/donate/money#donate-form" className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow-[0_10px_24px_rgba(176,74,21,0.22)] transition-[transform,background-color] hover:-translate-y-0.5 hover:bg-brand-600 active:scale-[0.96]">Donate through CauseKind <ArrowRight className="h-4 w-4" /></Link>
