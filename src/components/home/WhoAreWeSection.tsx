@@ -1,38 +1,43 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback, useId } from "react";
-import Link from "next/link";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  Gift,
-  HeartHandshake,
-  Building2,
-  Heart,
-  ArrowRight,
-  BookOpen,
-  Shirt,
-  Wind,
-  Armchair,
-  MapPin,
-  ShieldCheck,
-} from "lucide-react";
-import { HOME_ROLE_COLORS } from "@/lib/landingConstants";
-import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
-import FlipCard from "@/components/FlipCard";
+/**
+ * "About CauseKind" — The Living Ecosystem.
+ *
+ * A visual composition of illustrated characters (Donor, Donee, NGO),
+ * floating objects (book, bag, shirt, laptop, chair, box), organic
+ * connection curves, and a central CauseKind hub. One object — the
+ * school bag — continuously travels the network as a visual protagonist.
+ *
+ * Desktop: text left (43%), ecosystem right (57%) with parallax.
+ * Phone (< 768px): text first, then `AboutJourneyMobile` — the headline acted
+ * out: unused things on a shelf at home travel through CauseKind to a verified
+ * person or an NGO nearby.
+ */
 
-/* ════════════════════════════════════════════════════════════════════════════════
-   SVG INLINE ILLUSTRATIONS FOR MOBILE ECOSYSTEM
-   ════════════════════════════════════════════════════════════════════════════════ */
+import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { Heart } from "lucide-react";
+import { AboutJourneyMobile, type JourneyItem } from "./AboutJourneyMobile";
+import styles from "./WhoAreWeSection.module.css";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SVG INLINE ILLUSTRATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// Stylised characters — editorial, warm, subtle Indian context
 function DonorSvg({ size = 56 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 56 56" fill="none" aria-hidden>
+      {/* Head */}
       <circle cx="28" cy="16" r="8" fill="#E8C4A0" />
+      {/* Hair */}
       <path d="M20 14c0-6 4-10 8-10s8 4 8 10c0 0-2-4-8-4s-8 4-8 4z" fill="#3D2B1F" />
+      {/* Body — kurta */}
       <path d="M16 32c0-6 5-10 12-10s12 4 12 10v8c0 2-1 3-3 3H19c-2 0-3-1-3-3v-8z" fill="#F4A25B" />
+      {/* Hands with gift */}
       <rect x="22" y="35" width="12" height="10" rx="2" fill="#B5480F" opacity="0.85" />
       <path d="M28 35v10M22 40h12" stroke="white" strokeWidth="1.5" />
+      {/* Warm smile */}
       <path d="M25 18c1.5 1.5 4.5 1.5 6 0" stroke="#8B5E3C" strokeWidth="1" strokeLinecap="round" fill="none" />
     </svg>
   );
@@ -41,13 +46,19 @@ function DonorSvg({ size = 56 }: { size?: number }) {
 function DoneeSvg({ size = 56 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 56 56" fill="none" aria-hidden>
+      {/* Head */}
       <circle cx="28" cy="16" r="8" fill="#D4A574" />
+      {/* Hair — longer, with bindi */}
       <path d="M20 13c0-5 3.5-9 8-9s8 4 8 9c0 0-1-3-4-4h-8c-3 1-4 4-4 4z" fill="#1A1A2E" />
       <circle cx="28" cy="10.5" r="1" fill="#E53E3E" />
-      <path d="M16 32c0-6 5-10 12-10s12 4 12 10v8c0 2-1 3-3 3H19c-2 0-3-1-3-3v-8z" fill="#7fb0e8" />
-      <path d="M20 22c2 3 6 4 8 4" stroke="#1e3a60" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+      {/* Body — salwar */}
+      <path d="M16 32c0-6 5-10 12-10s12 4 12 10v8c0 2-1 3-3 3H19c-2 0-3-1-3-3v-8z" fill="#5EC7B6" />
+      {/* Dupatta accent */}
+      <path d="M20 22c2 3 6 4 8 4" stroke="#0F7A6C" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+      {/* Open palms — receiving */}
       <ellipse cx="23" cy="42" rx="3" ry="2" fill="#D4A574" />
       <ellipse cx="33" cy="42" rx="3" ry="2" fill="#D4A574" />
+      {/* Gentle smile */}
       <path d="M25 18c1.5 1.5 4.5 1.5 6 0" stroke="#8B5E3C" strokeWidth="1" strokeLinecap="round" fill="none" />
     </svg>
   );
@@ -56,20 +67,27 @@ function DoneeSvg({ size = 56 }: { size?: number }) {
 function NgoSvg({ size = 56 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 56 56" fill="none" aria-hidden>
+      {/* Head */}
       <circle cx="28" cy="16" r="8" fill="#C9A882" />
+      {/* Short hair */}
       <path d="M20 14c0-6 3.5-10 8-10s8 4 8 10c-1-3-4-5-8-5s-7 2-8 5z" fill="#2D1B10" />
+      {/* Body — professional */}
       <path d="M16 32c0-6 5-10 12-10s12 4 12 10v8c0 2-1 3-3 3H19c-2 0-3-1-3-3v-8z" fill="#6CC98F" />
+      {/* Collar */}
       <path d="M24 22l4 3 4-3" stroke="#1F6B3F" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      {/* Clipboard */}
       <rect x="24" y="32" width="8" height="11" rx="1.5" fill="white" opacity="0.9" />
       <line x1="26" y1="35" x2="30" y2="35" stroke="#1F6B3F" strokeWidth="1" />
       <line x1="26" y1="37.5" x2="30" y2="37.5" stroke="#1F6B3F" strokeWidth="1" />
       <line x1="26" y1="40" x2="29" y2="40" stroke="#1F6B3F" strokeWidth="1" />
+      {/* Smile */}
       <path d="M25 18c1.5 1.5 4.5 1.5 6 0" stroke="#8B5E3C" strokeWidth="1" strokeLinecap="round" fill="none" />
     </svg>
   );
 }
 
-function BookIcon2({ size = 28 }: { size?: number }) {
+// Floating object icons — items that can be donated
+function BookIcon({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" fill="none" aria-hidden>
       <rect x="5" y="4" width="18" height="20" rx="2" fill="#B5480F" opacity="0.85" />
@@ -80,7 +98,16 @@ function BookIcon2({ size = 28 }: { size?: number }) {
     </svg>
   );
 }
-function ShirtIcon2({ size = 26 }: { size?: number }) {
+function BagIcon({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" aria-hidden>
+      <path d="M7 10h14v14a2 2 0 01-2 2H9a2 2 0 01-2-2V10z" fill="#0F7A6C" opacity="0.85" />
+      <path d="M10 10V7a4 4 0 018 0v3" stroke="#0F7A6C" strokeWidth="2" fill="none" />
+      <rect x="11" y="14" width="6" height="4" rx="1" fill="white" opacity="0.4" />
+    </svg>
+  );
+}
+function ShirtIcon({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden>
       <path d="M8 4l-5 4 3 3 2-2v13h10V9l2 2 3-3-5-4c-1 2-3 3-5 3s-4-1-5-3z" fill="#F4A25B" opacity="0.8" />
@@ -97,6 +124,16 @@ function LaptopIcon({ size = 28 }: { size?: number }) {
     </svg>
   );
 }
+function ChairIcon({ size = 26 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden>
+      <rect x="7" y="4" width="12" height="10" rx="2" fill="#B5480F" opacity="0.7" />
+      <rect x="8" y="14" width="10" height="3" rx="1" fill="#8B3A0A" opacity="0.5" />
+      <line x1="9" y1="17" x2="9" y2="23" stroke="#57534E" strokeWidth="1.5" />
+      <line x1="17" y1="17" x2="17" y2="23" stroke="#57534E" strokeWidth="1.5" />
+    </svg>
+  );
+}
 function BoxIcon({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden>
@@ -108,515 +145,505 @@ function BoxIcon({ size = 26 }: { size?: number }) {
   );
 }
 
-function HoverFlipCard({ title, desc, icon: Icon }: { title: string, desc: string, icon: any }) {
-  const [isHovered, setIsHovered] = useState(false);
-  return (
-    <div
-      className="w-full h-full min-h-[160px] cursor-default"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onFocus={() => setIsHovered(true)}
-      onBlur={() => setIsHovered(false)}
-    >
-      <FlipCard
-        flipped={isHovered}
-        axis="y"
-        flipOnClick={false}
-        width="100%"
-        height="100%"
-        background="transparent"
-        shadow={false}
-        front={
-          <div className="w-full h-full flex flex-col items-start text-left bg-white dark:bg-[#1C1410] rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-shadow">
-            <div className="w-10 h-10 rounded-xl bg-[#B5480F] flex items-center justify-center mb-4">
-              <Icon className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">
-              {title}
-            </h3>
-          </div>
-        }
-        back={
-          <div className="w-full h-full flex flex-col items-start justify-center text-left bg-white dark:bg-[#1C1410] rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-shadow">
-            <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-snug">
-              {desc}
-            </p>
-          </div>
-        }
-      />
-    </div>
-  );
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONFIGURATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+interface FloatingObj {
+  id: string;
+  icon: React.FC<{ size?: number }>;
+  size: number;
+  // Position as percentage of container
+  x: number;
+  y: number;
+  depth: "front" | "mid" | "back";
+  floatRotation: number;
+  animDelay: number;
+  enterDelay: number;
 }
 
-/* ════════════════════════════════════════════════════════════════════════════════
-   MOBILE ECOSYSTEM (Varun's branch)
-   ════════════════════════════════════════════════════════════════════════════════ */
-function MobileEcosystem() {
-  const ref = useRevealOnce<HTMLDivElement>();
+const FLOATING_OBJECTS: FloatingObj[] = [
+  { id: "book", icon: BookIcon, size: 30, x: 22, y: 25, depth: "front", floatRotation: 1.5, animDelay: 0, enterDelay: 0 },
+  { id: "bag", icon: BagIcon, size: 28, x: 68, y: 25, depth: "mid", floatRotation: -1, animDelay: 0.8, enterDelay: 0.05 },
+  { id: "shirt", icon: ShirtIcon, size: 26, x: 75, y: 55, depth: "back", floatRotation: 2, animDelay: 1.6, enterDelay: 0.1 },
+  { id: "laptop", icon: LaptopIcon, size: 28, x: 12, y: 58, depth: "mid", floatRotation: -0.5, animDelay: 2.4, enterDelay: 0.15 },
+  { id: "chair", icon: ChairIcon, size: 24, x: 35, y: 76, depth: "back", floatRotation: 1, animDelay: 1.2, enterDelay: 0.2 },
+  { id: "box", icon: BoxIcon, size: 26, x: 60, y: 73, depth: "front", floatRotation: -1.5, animDelay: 2, enterDelay: 0.08 },
+];
+
+interface MicroLabelData {
+  text: string;
+  x: number;
+  y: number;
+  enterDelay: number;
+}
+
+const MICRO_LABELS: MicroLabelData[] = [
+  { text: "GIVE", x: 15, y: 33, enterDelay: 1.1 },
+  { text: "MATCH", x: 42, y: 42, enterDelay: 1.2 },
+  { text: "VERIFY", x: 55, y: 64, enterDelay: 1.3 },
+  { text: "HAND OVER", x: 28, y: 68, enterDelay: 1.15 },
+  { text: "IMPACT", x: 68, y: 42, enterDelay: 1.25 },
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PARALLAX DEPTH MULTIPLIERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const DEPTH_MUL = { front: 8, mid: 4, back: 2 } as const;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NETWORK PATHS — organic Bézier curves
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// Paths connect: Donor ↔ Hub, Donee ↔ Hub, NGO ↔ Hub
+// All in a 500×460 viewBox
+const PATHS = {
+  donorToHub: "M 95 90 C 110 140, 160 185, 250 230",
+  doneeToHub: "M 395 100 C 380 155, 330 195, 250 230",
+  ngoToHub: "M 250 390 C 245 340, 248 290, 250 230",
+  // Secondary/decorative curves (items flowing)
+  donorItem: "M 110 130 C 140 170, 190 200, 250 230",
+  doneeItem: "M 370 160 C 345 195, 300 215, 250 230",
+} as const;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESKTOP ECOSYSTEM COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function Ecosystem() {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+  const isInView = useInView(ref, { once: true, amount: 0.25 });
+  const [entered, setEntered] = useState(false);
+  const [hoveredChar, setHoveredChar] = useState<string | null>(null);
+  const [hubPulse, setHubPulse] = useState(false);
+  const [travelerPhase, setTravelerPhase] = useState<"idle" | "donorToHub" | "hubToDonee">("idle");
+
+  // Entrance trigger
+  useEffect(() => {
+    if (isInView && !entered) {
+      const t = setTimeout(() => setEntered(true), reduceMotion ? 0 : 100);
+      return () => clearTimeout(t);
+    }
+  }, [isInView, entered, reduceMotion]);
+
+  // Parallax: track cursor position relative to ecosystem container
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reduceMotion) return;
+    let frame = 0;
+    let px = 0, py = 0;
+
+    const write = () => {
+      frame = 0;
+      el.style.setProperty("--px", px.toFixed(3));
+      el.style.setProperty("--py", py.toFixed(3));
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(write);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const r = el.getBoundingClientRect();
+      px = ((e.clientX - r.left) / r.width - 0.5) * 2;
+      py = ((e.clientY - r.top) / r.height - 0.5) * 2;
+      schedule();
+    };
+    const onLeave = () => {
+      px = 0; py = 0;
+      schedule();
+    };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+    };
+  }, [reduceMotion]);
+
+  // Traveler animation cycle — every 6 seconds, bag travels donor → hub → donee
+  useEffect(() => {
+    if (!entered || reduceMotion) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const cycle = () => {
+      setTravelerPhase("donorToHub");
+      timer = setTimeout(() => {
+        setHubPulse(true);
+        setTimeout(() => setHubPulse(false), 600);
+        setTravelerPhase("hubToDonee");
+        timer = setTimeout(() => {
+          setTravelerPhase("idle");
+          timer = setTimeout(cycle, 4000);
+        }, 2000);
+      }, 2000);
+    };
+    timer = setTimeout(cycle, 2000);
+    return () => clearTimeout(timer);
+  }, [entered, reduceMotion]);
+
+  const charTooltips: Record<string, string> = {
+    donor: "Gives what they no longer need",
+    donee: "Requests what they genuinely need",
+    ngo: "Requests items for the people they serve",
+  };
 
   return (
-    <div ref={ref} className="lg:hidden select-none mt-8 w-full max-w-[360px] mx-auto">
-      <div className="relative mx-auto" style={{ maxWidth: 360, aspectRatio: "1 / 1.15" }}>
-        {/* Background network */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" viewBox="0 0 360 414">
-          <defs>
-            <linearGradient id="m-eco-orange" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#B5480F" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#F4A25B" stopOpacity="0.2" />
-            </linearGradient>
-            <linearGradient id="m-eco-teal" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#1e3a60" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#7fb0e8" stopOpacity="0.2" />
-            </linearGradient>
-            <linearGradient id="m-eco-green" x1="50%" y1="100%" x2="50%" y2="0%">
-              <stop offset="0%" stopColor="#1F6B3F" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#6cc98f" stopOpacity="0.2" />
-            </linearGradient>
-          </defs>
-
-          {/* Connection paths */}
-          <path d="M 70 70 C 100 140, 140 170, 180 200" stroke="url(#m-eco-orange)" strokeWidth="1.5" strokeDasharray="4 4" fill="none" opacity="0.6" data-reveal-item style={stagger(4)} />
-          <path d="M 290 70 C 260 140, 220 170, 180 200" stroke="url(#m-eco-teal)" strokeWidth="1.5" strokeDasharray="4 4" fill="none" opacity="0.6" data-reveal-item style={stagger(4)} />
-          <path d="M 180 340 L 180 200" stroke="url(#m-eco-green)" strokeWidth="1.5" strokeDasharray="4 4" fill="none" opacity="0.6" data-reveal-item style={stagger(4)} />
-
-          {/* Subtle flowing particles */}
-          <circle r="2.5" fill="#B5480F" opacity="0.5">
-            <animateMotion path="M 70 70 C 100 140, 140 170, 180 200" dur="3s" repeatCount="indefinite" />
-          </circle>
-          <circle r="2.5" fill="#1e3a60" opacity="0.5">
-            <animateMotion path="M 290 70 C 260 140, 220 170, 180 200" dur="3.2s" repeatCount="indefinite" />
-          </circle>
-          <circle r="2" fill="#1F6B3F" opacity="0.5">
-            <animateMotion path="M 180 340 L 180 200" dur="2.8s" repeatCount="indefinite" />
-          </circle>
+    <div
+      ref={ref}
+      className={styles.ecosystem}
+      data-entered={entered}
+      aria-hidden
+    >
+      {/* Background network faint lines */}
+      <div className={styles.bgNetwork}>
+        <svg viewBox="0 0 500 460" fill="none" aria-hidden>
+          <circle cx="250" cy="230" r="120" stroke="rgba(181,72,15,0.04)" strokeWidth="1" fill="none" />
+          <circle cx="250" cy="230" r="200" stroke="rgba(15,122,108,0.03)" strokeWidth="0.8" fill="none" />
+          <line x1="50" y1="100" x2="450" y2="100" stroke="rgba(120,113,108,0.03)" strokeWidth="0.5" />
+          <line x1="50" y1="360" x2="450" y2="360" stroke="rgba(120,113,108,0.03)" strokeWidth="0.5" />
         </svg>
+      </div>
 
-        {/* Floating objects */}
-        <div data-reveal-item style={stagger(1)} className="absolute" aria-hidden>
-          <div className="absolute" style={{ left: "15%", top: "35%" }}>
-            <BookIcon2 size={22} />
-          </div>
-          <div className="absolute" style={{ right: "12%", top: "42%" }}>
-            <ShirtIcon2 size={20} />
-          </div>
-          <div className="absolute" style={{ left: "25%", bottom: "22%" }}>
-            <LaptopIcon size={22} />
-          </div>
-          <div className="absolute" style={{ right: "25%", bottom: "20%" }}>
-            <BoxIcon size={20} />
-          </div>
-        </div>
+      {/* Network SVG — organic connection curves */}
+      <svg className={styles.networkSvg} viewBox="0 0 500 460">
+        <defs>
+          <linearGradient id="eco-grad-orange" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#B5480F" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#F4A25B" stopOpacity="0.3" />
+          </linearGradient>
+          <linearGradient id="eco-grad-teal" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#0F7A6C" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#5ec7b6" stopOpacity="0.3" />
+          </linearGradient>
+          <linearGradient id="eco-grad-green" x1="50%" y1="100%" x2="50%" y2="0%">
+            <stop offset="0%" stopColor="#1F6B3F" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#6cc98f" stopOpacity="0.3" />
+          </linearGradient>
+        </defs>
 
-        {/* Micro labels */}
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", left: "8%", top: "48%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>GIVE</span>
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", right: "8%", top: "50%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>VERIFY</span>
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", left: "42%", top: "70%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>MATCH</span>
+        {/* Donor → Hub */}
+        <motion.path
+          d={PATHS.donorToHub}
+          className={styles.connectionLine}
+          stroke="url(#eco-grad-orange)"
+          strokeDasharray="5 5"
+          data-active={hoveredChar === "donor"}
+          initial={{ pathLength: 0 }}
+          animate={entered ? { pathLength: 1 } : {}}
+          transition={{ duration: 1.2, delay: 0.8, ease: "easeInOut" }}
+        />
 
-        {/* Donor */}
-        <div data-reveal-item style={stagger(2)} className="absolute flex flex-col items-center" aria-hidden>
-          <div className="absolute flex flex-col items-center" style={{ left: "8%", top: "4%" }}>
-            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FBEDE3, #F9DCC4)", boxShadow: "0 3px 12px -3px rgba(181,72,15,0.2)" }}>
-              <DonorSvg size={38} />
+        {/* Donee → Hub */}
+        <motion.path
+          d={PATHS.doneeToHub}
+          className={styles.connectionLine}
+          stroke="url(#eco-grad-teal)"
+          strokeDasharray="5 5"
+          data-active={hoveredChar === "donee"}
+          initial={{ pathLength: 0 }}
+          animate={entered ? { pathLength: 1 } : {}}
+          transition={{ duration: 1.2, delay: 0.9, ease: "easeInOut" }}
+        />
+
+        {/* NGO → Hub */}
+        <motion.path
+          d={PATHS.ngoToHub}
+          className={styles.connectionLine}
+          stroke="url(#eco-grad-green)"
+          strokeDasharray="5 5"
+          data-active={hoveredChar === "ngo"}
+          initial={{ pathLength: 0 }}
+          animate={entered ? { pathLength: 1 } : {}}
+          transition={{ duration: 1.0, delay: 1.0, ease: "easeInOut" }}
+        />
+
+        {/* Flowing particles along paths */}
+        {entered && !reduceMotion && (
+          <>
+            <circle r="3" className={styles.flowParticle} fill="#B5480F">
+              <animateMotion
+                path={PATHS.donorToHub}
+                dur="3.5s"
+                repeatCount="indefinite"
+              />
+            </circle>
+            <circle r="3" className={styles.flowParticle} fill="#0F7A6C">
+              <animateMotion
+                path={PATHS.doneeToHub}
+                dur="3.8s"
+                repeatCount="indefinite"
+              />
+            </circle>
+            <circle r="2.5" className={styles.flowParticle} fill="#1F6B3F">
+              <animateMotion
+                path={PATHS.ngoToHub}
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            </circle>
+          </>
+        )}
+
+        {/* Traveling protagonist — school bag */}
+        {entered && !reduceMotion && (
+          <g className={styles.traveler}>
+            {travelerPhase === "donorToHub" && (
+              <g>
+                <animateMotion
+                  path={PATHS.donorToHub}
+                  dur="2s"
+                  fill="freeze"
+                />
+                <BagIcon size={22} />
+              </g>
+            )}
+            {travelerPhase === "hubToDonee" && (
+              <g>
+                <animateMotion
+                  path="M 250 230 C 310 210, 370 170, 410 95"
+                  dur="2s"
+                  fill="freeze"
+                />
+                <BagIcon size={22} />
+              </g>
+            )}
+          </g>
+        )}
+      </svg>
+
+      {/* Floating objects */}
+      {FLOATING_OBJECTS.map((obj) => {
+        const Ic = obj.icon;
+        const depthMul = DEPTH_MUL[obj.depth];
+        return (
+          <div
+            key={obj.id}
+            className={styles.floatingObject}
+            style={{
+              left: `${obj.x}%`,
+              top: `${obj.y}%`,
+              transform: `translate(calc(var(--px) * ${depthMul}px), calc(var(--py) * ${depthMul}px))`,
+              ["--enter-delay" as string]: `${obj.enterDelay}s`,
+            } as React.CSSProperties}
+          >
+            <div
+              className={styles.objectInner}
+              style={{
+                animationDelay: `${obj.animDelay}s`,
+                ["--float-rot" as string]: `${obj.floatRotation}deg`,
+                ["--delay" as string]: `${obj.animDelay}s`,
+              } as React.CSSProperties}
+            >
+              <Ic size={obj.size} />
             </div>
-            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#B5480F]">Donor</span>
           </div>
-        </div>
+        );
+      })}
 
-        {/* Donee */}
-        <div data-reveal-item style={stagger(2)} className="absolute flex flex-col items-center" aria-hidden>
-          <div className="absolute flex flex-col items-center" style={{ right: "8%", top: "4%" }}>
-            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #E3F2EF, #C5E8E0)", boxShadow: "0 3px 12px -3px rgba(30,58,96,0.2)" }}>
-              <DoneeSvg size={38} />
-            </div>
-            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#1e3a60]">Donee</span>
-          </div>
-        </div>
+      {/* Micro labels */}
+      {MICRO_LABELS.map((label) => (
+        <span
+          key={label.text}
+          className={styles.microLabel}
+          style={{
+            left: `${label.x}%`,
+            top: `${label.y}%`,
+            ["--enter-delay" as string]: `${label.enterDelay}s`,
+          } as React.CSSProperties}
+        >
+          {label.text}
+        </span>
+      ))}
 
-        {/* Hub */}
-        <div data-reveal-item="scale" style={stagger(3)} className="absolute flex flex-col items-center" aria-hidden>
-          <div className="absolute flex flex-col items-center" style={{ left: "50%", top: "44%", transform: "translateX(-50%)" }}>
-            <div className="relative w-14 h-14 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full" style={{ background: "linear-gradient(135deg, #B5480F 0%, #D4690A 100%)", boxShadow: "0 0 0 3px rgba(181,72,15,0.12), 0 6px 24px -6px rgba(181,72,15,0.35)" }} />
-              <Heart className="relative z-10" style={{ width: 24, height: 24 }} fill="white" strokeWidth={0} />
-            </div>
-            <span className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-[var(--ck-role-accent,#B5480F)]">CauseKind</span>
-          </div>
-        </div>
+      {/* ── Characters ───────────────────────────────────────────── */}
 
-        {/* NGO */}
-        <div data-reveal-item style={stagger(2)} className="absolute flex flex-col items-center" aria-hidden>
-          <div className="absolute flex flex-col items-center" style={{ left: "50%", bottom: "4%", transform: "translateX(-50%)" }}>
-            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #E5F1E9, #C4E0CD)", boxShadow: "0 3px 12px -3px rgba(31,107,63,0.2)" }}>
-              <NgoSvg size={38} />
-            </div>
-            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#1F6B3F]">NGO</span>
-          </div>
+      {/* Donor */}
+      <div
+        className={`${styles.character} ${styles.charDonor}`}
+        data-highlighted={hoveredChar === "donor"}
+        onMouseEnter={() => setHoveredChar("donor")}
+        onMouseLeave={() => setHoveredChar(null)}
+        style={{ ["--enter-delay" as string]: "0.3s" } as React.CSSProperties}
+      >
+        <div className={styles.characterTooltip}>{charTooltips.donor}</div>
+        <div
+          className={styles.characterBody}
+          style={{
+            background: "linear-gradient(135deg, #FBEDE3 0%, #F9DCC4 100%)",
+            boxShadow: "0 4px 16px -4px rgba(181,72,15,0.25)",
+          }}
+        >
+          <DonorSvg size={52} />
         </div>
+        <span className={styles.characterName} style={{ color: "#B5480F" }}>
+          Donor
+        </span>
+      </div>
+
+      {/* Donee */}
+      <div
+        className={`${styles.character} ${styles.charDonee}`}
+        data-highlighted={hoveredChar === "donee"}
+        onMouseEnter={() => setHoveredChar("donee")}
+        onMouseLeave={() => setHoveredChar(null)}
+        style={{ ["--enter-delay" as string]: "0.45s" } as React.CSSProperties}
+      >
+        <div className={styles.characterTooltip}>{charTooltips.donee}</div>
+        <div
+          className={styles.characterBody}
+          style={{
+            background: "linear-gradient(135deg, #E3F2EF 0%, #C5E8E0 100%)",
+            boxShadow: "0 4px 16px -4px rgba(15,122,108,0.25)",
+          }}
+        >
+          <DoneeSvg size={52} />
+        </div>
+        <span className={styles.characterName} style={{ color: "#0F7A6C" }}>
+          Donee
+        </span>
+      </div>
+
+      {/* NGO */}
+      <div
+        className={`${styles.character} ${styles.charNgo}`}
+        data-highlighted={hoveredChar === "ngo"}
+        onMouseEnter={() => setHoveredChar("ngo")}
+        onMouseLeave={() => setHoveredChar(null)}
+        style={{ ["--enter-delay" as string]: "0.55s" } as React.CSSProperties}
+      >
+        <div className={styles.characterTooltip}>{charTooltips.ngo}</div>
+        <div
+          className={styles.characterBody}
+          style={{
+            background: "linear-gradient(135deg, #E5F1E9 0%, #C4E0CD 100%)",
+            boxShadow: "0 4px 16px -4px rgba(31,107,63,0.25)",
+          }}
+        >
+          <NgoSvg size={52} />
+        </div>
+        <span className={styles.characterName} style={{ color: "#1F6B3F" }}>
+          NGO
+        </span>
+      </div>
+
+      {/* ── CauseKind Hub ──────────────────────────────────────── */}
+      <div className={styles.hub}>
+        <div className={styles.hubKnot}>
+          <div className={styles.hubCore} data-pulse={hubPulse} />
+          <div className={styles.hubPulseRing} />
+          <Heart
+            className={styles.hubHeart}
+            style={{ width: 28, height: 28 }}
+            fill="white"
+            strokeWidth={0}
+          />
+        </div>
+        <span className={styles.hubLabel}>CauseKind</span>
       </div>
     </div>
   );
 }
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHONE JOURNEY — the things on the shelf, and where each one goes
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-// Custom Teddy Bear SVG Icon matching causekind item icons
-function TeddyBearIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <circle cx="6.5" cy="6.5" r="2.5" />
-      <circle cx="17.5" cy="6.5" r="2.5" />
-      <circle cx="12" cy="10" r="5" />
-      <circle cx="10.2" cy="9.5" r="0.7" fill="currentColor" />
-      <circle cx="13.8" cy="9.5" r="0.7" fill="currentColor" />
-      <ellipse cx="12" cy="11.5" rx="1.5" ry="1.1" />
-      <path d="M8.5 15c-1.2 1.8-1.2 4-0.5 5.5h8c0.7-1.5 0.7-3.7-0.5-5.5" />
-      <ellipse cx="12" cy="17.5" rx="2.2" ry="1.8" />
-    </svg>
-  );
-}
+const JOURNEY_ITEMS: JourneyItem[] = [
+  { id: "book", Icon: BookIcon, name: "A book", to: "person" },
+  { id: "bag", Icon: BagIcon, name: "A school bag", to: "ngo" },
+  { id: "shirt", Icon: ShirtIcon, name: "A shirt", to: "person" },
+  { id: "laptop", Icon: LaptopIcon, name: "A laptop", to: "ngo" },
+];
 
-// Interactive floating icon item definition for hover bursts on living words
-interface PopItem {
-  id: number;
-  icon: React.ComponentType<{ className?: string }>;
-  x: number;
-  y: number;
-  rotate: number;
-  color: string;
-}
-
-// Orbit Planet configuration
-interface PlanetData {
-  id: "donor" | "donee" | "ngo";
-  name: string;
-  roleDescription: string;
-  shortDesc: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  darkColor: string;
-  bgSoft: string;
-  bgSoftDark: string;
-  borderColor: string;
-  glowColor: string;
-  radiusX: number;
-  radiusY: number;
-  tiltDeg: number;
-  speedSec: number;
-  initialAngle: number; // in radians
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION EXPORT
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 export function WhoAreWeSection() {
   const sectionRef = useRef<HTMLElement>(null);
-  const giantLabelFillRef = useRef<HTMLDivElement>(null);
-  const orbitContainerRef = useRef<HTMLDivElement>(null);
-  const orbitStageRef = useRef<HTMLDivElement>(null);
-  const heartSunRef = useRef<HTMLDivElement>(null);
-
+  const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
   const reduceMotion = useReducedMotion();
-  const textPathId = useId();
 
-  const [isInView, setIsInView] = useState(false);
-  const [activeHoverPlanet, setActiveHoverPlanet] = useState<string | null>(null);
-  const [extraThingsPops, setExtraThingsPops] = useState<PopItem[]>([]);
-  const [needThemPops, setNeedThemPops] = useState<PopItem[]>([]);
-
-  // 3D Mouse Parallax state
-  const [mouseTilt, setMouseTilt] = useState({ x: 0, y: 0 });
-
-  // Orbit planet refs & elements for 60fps RAF transforms (no React re-renders)
-  const planetRefs = useRef<Record<string, HTMLDivElement | null>>({
-    donor: null,
-    donee: null,
-    ngo: null,
-  });
-
-  const flowCanvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Orbit parameters reading directly from centralised HOME_ROLE_COLORS
-  const planetsConfig: PlanetData[] = [
-    {
-      id: "donor",
-      name: "Donors",
-      roleDescription: "Donors — give items they no longer need",
-      shortDesc: "give items they no longer need",
-      icon: Gift,
-      color: HOME_ROLE_COLORS.donor.main,
-      darkColor: HOME_ROLE_COLORS.donor.darkAccent,
-      bgSoft: HOME_ROLE_COLORS.donor.softBg,
-      bgSoftDark: HOME_ROLE_COLORS.donor.softBgDark,
-      borderColor: HOME_ROLE_COLORS.donor.main,
-      glowColor: HOME_ROLE_COLORS.donor.glow,
-      radiusX: 180,
-      radiusY: 105,
-      tiltDeg: 12,
-      speedSec: 18,
-      initialAngle: 0,
-    },
-    {
-      id: "donee",
-      name: "Donees",
-      roleDescription: "Donees — ask for what they genuinely need",
-      shortDesc: "ask for what they genuinely need",
-      icon: HeartHandshake,
-      color: HOME_ROLE_COLORS.donee.main,
-      darkColor: HOME_ROLE_COLORS.donee.darkAccent, // #7FB0E8 for dark mode visibility
-      bgSoft: HOME_ROLE_COLORS.donee.softBg,
-      bgSoftDark: HOME_ROLE_COLORS.donee.softBgDark,
-      borderColor: HOME_ROLE_COLORS.donee.main,
-      glowColor: HOME_ROLE_COLORS.donee.glow,
-      radiusX: 235,
-      radiusY: 135,
-      tiltDeg: -22,
-      speedSec: 24,
-      initialAngle: (2 * Math.PI) / 3,
-    },
-    {
-      id: "ngo",
-      name: "NGOs",
-      roleDescription: "NGOs — request items for the people they serve",
-      shortDesc: "request items for the people they serve",
-      icon: Building2,
-      color: HOME_ROLE_COLORS.ngo.main,
-      darkColor: HOME_ROLE_COLORS.ngo.darkAccent,
-      bgSoft: HOME_ROLE_COLORS.ngo.softBg,
-      bgSoftDark: HOME_ROLE_COLORS.ngo.softBgDark,
-      borderColor: HOME_ROLE_COLORS.ngo.main,
-      glowColor: HOME_ROLE_COLORS.ngo.glow,
-      radiusX: 285,
-      radiusY: 160,
-      tiltDeg: 35,
-      speedSec: 30,
-      initialAngle: (4 * Math.PI) / 3,
-    },
-  ];
-
-  // 1. Living Words Hover Bursts ("extra things" with book, shirt, fan, teddy bear, chair)
-  const triggerExtraThingsBurst = useCallback(() => {
-    const burstIcons = [BookOpen, Shirt, Wind, TeddyBearIcon, Armchair];
-    const colors = [
-      HOME_ROLE_COLORS.donor.main,
-      HOME_ROLE_COLORS.donee.main,
-      HOME_ROLE_COLORS.ngo.main,
-      "#D95D24",
-      HOME_ROLE_COLORS.donee.darkAccent,
-    ];
-    const newPops: PopItem[] = Array.from({ length: 5 }).map((_, i) => ({
-      id: Date.now() + i,
-      icon: burstIcons[i % burstIcons.length],
-      x: (i - 2) * 26 + (Math.random() * 12 - 6),
-      y: -20 - Math.random() * 25,
-      rotate: (Math.random() - 0.5) * 40,
-      color: colors[i % colors.length],
-    }));
-    setExtraThingsPops(newPops);
-    setTimeout(() => {
-      setExtraThingsPops([]);
-    }, 900);
-  }, []);
-
-  // 2. Living Words Hover Bursts ("need them" with 3 bouncing map pins)
-  const triggerNeedThemBurst = useCallback(() => {
-    const newPops: PopItem[] = Array.from({ length: 3 }).map((_, i) => ({
-      id: Date.now() + i,
-      icon: MapPin,
-      x: (i - 1) * 28 + (Math.random() * 8 - 4),
-      y: -24 - Math.random() * 20,
-      rotate: (i - 1) * 15,
-      color: HOME_ROLE_COLORS.donor.main,
-    }));
-    setNeedThemPops(newPops);
-    setTimeout(() => {
-      setNeedThemPops([]);
-    }, 900);
-  }, []);
-
-  // 3. Mouse Parallax for Orbit Container
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (typeof window === "undefined" || window.matchMedia("(pointer: coarse)").matches) return;
-    if (!orbitContainerRef.current) return;
-    const rect = orbitContainerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setMouseTilt({
-      x: y * -10, // tilt X (max ~8-10deg)
-      y: x * 10,  // tilt Y
-    });
-  }, []);
-
-  const handleMouseLeave = () => {
-    setMouseTilt({ x: 0, y: 0 });
-  };
-
-  // Unused GSAP and RAF hooks removed
+  const labelText = "ABOUT CAUSEKIND";
 
   return (
     <section
       ref={sectionRef}
       id="about-causekind"
-      aria-label="About CauseKind"
-      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-8 sm:py-12 lg:py-10 bg-[#F8F6F2] dark:bg-[#0E0C0A] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-300"
+      className={`${styles.section} ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex items-center py-10 sm:py-12 lg:py-8 border-b border-stone-200/80 dark:border-stone-850/70`}
     >
-      {/* Decorative ambient background subtle radial glows */}
-      <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20" aria-hidden="true">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle,_rgba(181,72,15,0.18)_0%,_transparent_70%)] blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-[550px] h-[550px] bg-[radial-gradient(circle,_rgba(127,176,232,0.18)_0%,_transparent_70%)] blur-3xl" />
-      </div>
+      <div className={styles.ambientGlow} />
 
-      <div className="relative mx-auto max-w-7xl w-full px-5 sm:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center w-full">
-          {/* LEFT COLUMN: Text Content */}
-          <div className="flex flex-col items-start text-left w-full">
-            {/* =========================================================================
-                1. LABEL: "ABOUT CAUSEKIND"
-            ========================================================================= */}
-            <div className="relative w-full select-none py-1 flex items-center justify-start gap-3 mb-6">
-              <span className="w-10 sm:w-12 h-[3px] bg-[var(--ck-role-accent,#B5480F)] rounded-full" />
-              <h2 className="text-xl sm:text-2xl font-extrabold uppercase tracking-[0.2em] text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)]">
-                About CauseKind
-              </h2>
-            </div>
-
-            {/* Heading with Living Words & Marker Underlines */}
-            <h2 className="text-2xl sm:text-3xl lg:text-[clamp(1.75rem,2.2vw+0.2rem,2.6rem)] font-extrabold tracking-tight leading-[1.3] text-stone-900 dark:text-stone-100 max-w-3xl">
-              <span>We connect people who have </span>
-              {/* Interactive Living Word: "extra things" */}
-              <span
-                onMouseEnter={triggerExtraThingsBurst}
-                onFocus={triggerExtraThingsBurst}
-                tabIndex={0}
-                className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold cursor-pointer group/living select-none outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring,#B5480F)]"
-              >
-                extra things
-                {/* Underline */}
-                <span className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full group-hover/living:bg-[var(--ck-role-accent,#B5480F)] transition-colors" />
-                {/* Pop-up item particles */}
-                <AnimatePresence>
-                  {extraThingsPops.map((pop) => {
-                    const IconComp = pop.icon;
-                    return (
-                      <motion.span
-                        key={pop.id}
-                        className="absolute pointer-events-none z-30"
-                        initial={{ opacity: 1, scale: 0.4, x: 0, y: 0, rotate: 0 }}
-                        animate={{
-                          opacity: 0,
-                          scale: 1.15,
-                          x: pop.x,
-                          y: pop.y,
-                          rotate: pop.rotate,
-                        }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.75, ease: "easeOut" }}
-                      >
-                        <span
-                          className="w-6 h-6 rounded-lg p-1 shadow-sm flex items-center justify-center text-white"
-                          style={{ backgroundColor: pop.color }}
-                        >
-                          <IconComp className="w-4 h-4" />
-                        </span>
-                      </motion.span>
-                    );
-                  })}
-                </AnimatePresence>
-              </span>
-              <span> with people nearby who </span>
-              {/* Interactive Living Word: "need them" */}
-              <span
-                onMouseEnter={triggerNeedThemBurst}
-                onFocus={triggerNeedThemBurst}
-                tabIndex={0}
-                className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold cursor-pointer group/need select-none outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring,#B5480F)]"
-              >
-                need them.
-                {/* Underline */}
-                <span className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full group-hover/need:bg-[var(--ck-role-accent,#B5480F)] transition-colors" />
-                {/* Pop-up map pin particles */}
-                <AnimatePresence>
-                  {needThemPops.map((pop) => (
-                    <motion.span
-                      key={pop.id}
-                      className="absolute pointer-events-none z-30"
-                      initial={{ opacity: 1, scale: 0.5, x: 0, y: 0, rotate: 0 }}
-                      animate={{
-                        opacity: 0,
-                        scale: 1.2,
-                        x: pop.x,
-                        y: pop.y,
-                        rotate: pop.rotate,
-                      }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.7, ease: "backOut" }}
-                    >
-                      <span className="w-6 h-6 rounded-full bg-[var(--ck-role-accent,#B5480F)] shadow-sm flex items-center justify-center text-white">
-                        <MapPin className="w-3.5 h-3.5" />
-                      </span>
-                    </motion.span>
-                  ))}
-                </AnimatePresence>
-              </span>
-            </h2>
-
-            {/* Paragraph Text (Exact unaltered wording) */}
-            <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 font-normal sm:font-medium leading-relaxed mt-6 max-w-2xl">
-              CauseKind is a free platform in India where donors give useful items — books, clothes,
-              furniture, electronics and more — directly to verified people and NGOs near them. No cash.
-              No middlemen. Just real things reaching real people.
+      <div className={styles.inner}>
+        {/* ── LEFT: Typography ──────────────────────────────── */}
+        <div className={styles.textCol}>
+          {/* Eyebrow */}
+          <div className={styles.eyebrow}>
+            <span className={styles.eyebrowLine} />
+            <p className={styles.eyebrowText} style={{ display: "flex", overflow: "hidden" }}>
+              {labelText.split("").map((char, index) => (
+                <motion.span
+                  key={index}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{
+                    duration: 0.03,
+                    delay: reduceMotion ? 0 : 0.05 + index * 0.025,
+                  }}
+                >
+                  {char === " " ? "\u00A0" : char}
+                </motion.span>
+              ))}
             </p>
-
-            {/* ── "Know More" Button ── */}
-            <div className="mt-8 sm:mt-10 flex justify-start w-full">
-              {/* Primary Action Button */}
-              <Link
-                href="/about"
-                className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full bg-[var(--ck-role-accent,#B5480F)] hover:bg-[var(--ck-role-hover,#C95413)] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg transition-all duration-200 group active:scale-95"
-              >
-                <span>Know more</span>
-                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-              </Link>
-            </div>
           </div>
 
-          {/* RIGHT COLUMN: 2x2 Grid of Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full mt-10 lg:mt-0">
-            {/* Card 1 */}
-            <HoverFlipCard
-              title="Direct Giving"
-              desc="Donors give items directly to people or NGOs nearby — no warehouses, no delays."
-              icon={Gift}
-            />
+          {/* Headline — editorial, punchy */}
+          <motion.h2
+            className={styles.headline}
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: reduceMotion ? 0 : 0.15, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span className={styles.headlineHighlight}>Good things</span>{" "}
+            shouldn&apos;t sit unused.
+          </motion.h2>
 
-            {/* Card 2 */}
-            <HoverFlipCard
-              title="Verified & Safe"
-              desc="Every request is admin-reviewed, and every handover is confirmed with a one-time code."
-              icon={ShieldCheck}
-            />
+          {/* Subhead */}
+          <motion.p
+            className={styles.subhead}
+            initial={{ opacity: 0, y: 15 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.3 }}
+          >
+            CauseKind connects people who have useful things with verified
+            people and NGOs nearby who{" "}
+            <span className={styles.headlineHighlight} style={{ fontWeight: 600 }}>
+              need them
+            </span>.
+          </motion.p>
 
-            {/* Card 3 */}
-            <HoverFlipCard
-              title="Zero Cash, No Middlemen"
-              desc="Only in-kind items change hands — books, clothes, furniture, electronics, and more."
-              icon={HeartHandshake}
-            />
-
-            {/* Card 4 */}
-            <HoverFlipCard
-              title="Local Matching"
-              desc="Donors and recipients are matched within 10km, so help reaches people nearby, fast."
-              icon={MapPin}
-            />
-          </div>
+          {/* Supporting detail */}
+          <motion.p
+            className={styles.detail}
+            initial={{ opacity: 0, y: 12 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.4 }}
+          >
+            A free platform in India. Books, clothes, furniture, electronics and
+            more — given directly. No cash. No middlemen. Just real things
+            reaching real people.
+          </motion.p>
         </div>
+
+        {/* ── RIGHT: Ecosystem (Desktop) ──────────────────── */}
+        <div className={styles.desktopSection}>
+          <Ecosystem />
+        </div>
+
+        {/* ── PHONE: the journey ──────────────────────────── */}
+        <AboutJourneyMobile items={JOURNEY_ITEMS} Person={DoneeSvg} Ngo={NgoSvg} />
       </div>
     </section>
   );

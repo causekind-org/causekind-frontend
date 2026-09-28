@@ -40,7 +40,7 @@
  * has: a section below the hero that pins when it reaches the top.
  */
 
-import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
@@ -380,6 +380,10 @@ export function Chapter1TheUnusedThing({
         one<SVGGElement>(".c1-bubble-p")?.setAttribute("visibility", st.portrait ? "visible" : "hidden");
         heavyFx = !st.portrait && window.matchMedia("(pointer: fine)").matches;
         root.style.setProperty("--hdr", `${st.headerPx}px`);
+        // Where the two headline lines sit. A phone is too narrow for the
+        // line to read around the bag, so there the bag floats in the upper
+        // part of the frame and the words sit in the lower third, below it.
+        root.style.setProperty("--c1-line-y", st.portrait ? "63%" : "50%");
         buildExit();
         const shock = root.querySelector(".c1-shock");
         shock?.setAttribute("cx", `${r1(st.cx)}`);
@@ -515,7 +519,7 @@ export function Chapter1TheUnusedThing({
         gsap.set(q(".c1-sheen"), { x: -260 });
         gsap.set(q(".c1-w1"), { yPercent: 115, rotate: 6 });
         gsap.set(q(".c1-w2"), { opacity: 0, scale: 2.6, filter: "blur(22px)" });
-        gsap.set(q(".c1-l1"), { "--ghost": "rgba(251,241,221,0)", color: "#f3e6cf" });
+        gsap.set(q(".c1-l1"), { autoAlpha: 0, "--ghost": "rgba(251,241,221,0)", color: "#f3e6cf" });
         gsap.set(q(".c1-sub"), { opacity: 0, y: 14 });
         gsap.set(q(".c1-hud-scene-b"), { opacity: 0 });
       };
@@ -554,58 +558,31 @@ export function Chapter1TheUnusedThing({
           const lite = portrait || window.matchMedia("(pointer: coarse)").matches;
 
           const leadEl = leadInRef?.current ?? null;
+          /*
+           * The stage is sticky inside its track (see `.track` in
+           * cinematic.module.css), so the track's CSS height — present in the
+           * server-rendered page — is the film's scroll length. Nothing here
+           * pins, so nothing inserts height after load. Every trigger measures
+           * the track, never the sticky stage (a sticky element's position
+           * changes as it sticks).
+           */
+          const track = (root.parentElement as HTMLElement | null) ?? root;
 
-          // Title card reveal: as the section scrolls up under the hero or, with
-          // a lead-in, as the hero's bottom edge climbs off the pinned stage.
-          gsap.fromTo(
-            q(".c1-t-w"),
-            { yPercent: 110 },
-            {
-              yPercent: 0,
-              stagger: 0.08,
-              ease: "power3.out",
-              scrollTrigger: leadEl
-                ? { trigger: leadEl, start: "bottom bottom", end: "bottom 30%", scrub: 0.6 }
-                : { trigger: root, start: "top 85%", end: "top 25%", scrub: 0.6 },
-            },
-          );
-
-          /** Scroll the film itself is scrubbed over. */
-          const filmPx = () => window.innerHeight * (portrait ? 5.6 : 7.2);
-          let filmTrigger: ScrollTrigger.Vars;
-          if (leadEl) {
-            /*
-             * Pinned from the moment the stage reaches the top — which, sitting
-             * under the hero, is the first scroll — for the lead-in plus the
-             * film. The lead-in is how far the hero still has to travel from
-             * there until it is gone under the header: both start at the same
-             * top, so that is its height less the header's. Measured at refresh
-             * (pins are reverted then), so it follows the hero's real height.
-             */
-            const lead = () => Math.max(0, leadEl.offsetHeight - st.headerPx);
-            const pinST = ScrollTrigger.create({
-              trigger: root,
-              start: "top top",
-              end: () => `+=${lead() + filmPx()}`,
-              pin: true,
-              anticipatePin: 1,
-            });
-            filmTrigger = {
-              trigger: root,
-              start: () => pinST.start + lead(),
-              end: () => pinST.start + lead() + filmPx(),
-              scrub: 0.9,
-            };
-          } else {
-            filmTrigger = {
-              trigger: root,
-              start: "top top",
-              end: portrait ? "+=560%" : "+=720%",
-              pin: true,
-              scrub: 0.9,
-              anticipatePin: 1,
-            };
-          }
+          /*
+           * With a hero over the stage, the film waits for it to clear the
+           * header (`lead`: both start at the same top, so that is the hero's
+           * height less the header's), then holds the title card for most of a
+           * screen (`hold`) so a quick scroll cannot skip it, then plays over
+           * the rest of the track. Functions, so a refresh re-measures them.
+           */
+          const lead = () => (leadEl ? Math.max(0, leadEl.offsetHeight - st.headerPx) : 0);
+          const hold = () => (leadEl ? root.offsetHeight * 0.6 : 0);
+          const filmTrigger: ScrollTrigger.Vars = {
+            trigger: track,
+            start: () => `top+=${Math.round(lead() + hold())} top`,
+            end: () => `+=${Math.max(1, track.offsetHeight - root.offsetHeight - lead() - hold())}`,
+            scrub: 0.9,
+          };
 
           const tl = gsap.timeline({
             defaults: { ease: "power2.inOut" },
@@ -614,6 +591,52 @@ export function Chapter1TheUnusedThing({
           });
 
           apply();
+
+          /*
+           * ── Title card ─────────────────────────────────────────────────
+           * The title is never scrubbed. Its state is read straight from the
+           * page's position on every scroll — "before" while the hero still
+           * covers the stage, "in" from the moment it starts to lift, "after"
+           * once the film has started — and the words move with CSS
+           * transitions (`.titleCard` in cinematic.module.css), which run on
+           * the compositor. A scrubbed reveal only moves when GSAP's clock
+           * does, and on a phone busy with a fresh load that clock crawls
+           * (lag smoothing), which left the words half-risen or hidden. Here
+           * nothing depends on the clock or on a cached trigger position, and
+           * with no state at all (before this runs, or if it never does) the
+           * words are simply visible.
+           */
+          const titleEl = q(".c1-title")[0] as HTMLElement | undefined;
+          let titleState = "";
+          let titleRaf = 0;
+          const syncTitle = () => {
+            titleRaf = 0;
+            if (!titleEl) return;
+            const vh = window.innerHeight;
+            const trackTop = track.getBoundingClientRect().top;
+            const next =
+              -trackTop > lead() + hold() + vh * 0.02
+                ? "after"
+                : (leadEl ? leadEl.getBoundingClientRect().bottom > vh * 0.92 : trackTop > vh * 0.85)
+                  ? "before"
+                  : "in";
+            if (next === titleState) return;
+            const prev = titleState;
+            titleState = next;
+            titleEl.dataset.state = next;
+            // Back on the title card from inside the film: put the film on its
+            // first frame at once, rather than letting the scrub ease back
+            // behind the title (on a dark frame the words would be unreadable
+            // until it caught up).
+            if (prev === "after") tl.scrollTrigger?.getTween()?.progress(1);
+          };
+          const queueTitle = () => {
+            if (!titleRaf) titleRaf = requestAnimationFrame(syncTitle);
+          };
+          syncTitle();
+          window.addEventListener("scroll", queueTitle, { passive: true });
+          window.addEventListener("resize", queueTitle);
+          ScrollTrigger.addEventListener("refresh", queueTitle);
 
           // ── Helpers ──────────────────────────────────────────────────────
           const drawables = (scope: Element) =>
@@ -662,20 +685,8 @@ export function Chapter1TheUnusedThing({
             });
           };
 
-          // ── 0–4: title out, horizon in ───────────────────────────────────
-          tl.to(
-            q(".c1-t-m"),
-            {
-              yPercent: -40,
-              opacity: 0,
-              filter: "blur(8px)",
-              stagger: 0.12,
-              duration: 1.6,
-              ease: "power3.in",
-            },
-            0,
-          );
-          tl.to(q(".c1-t-eyebrow"), { opacity: 0, y: -20, duration: 1.2 }, 0.4);
+          // ── 0–4: horizon in (the title card leaves on its own — see
+          // `syncTitle` below) ─────────────────────────────────────────────
           tl.to(q(".r-horizon"), { drawSVG: "0% 100%", duration: 2.6, ease: "power3.out" }, 0.6);
           tl.to(q(".r-shell"), { opacity: 1, duration: 2.4, ease: "none" }, 2);
           tl.fromTo(
@@ -1000,6 +1011,11 @@ export function Chapter1TheUnusedThing({
           // ── 48–64: it comes to camera ───────────────────────────────────
           tl.to(q(".c1-giver-hold, .c1-hands"), { opacity: 0, duration: 1.4 }, 47.6);
           tl.to(R, { float: 1, duration: 8, ease: "power3.inOut" }, 47.8);
+          if (portrait) {
+            // On a phone the bag rises straight to its upper spot, so "YOU
+            // DON'T NEED IT." (56) has clear space below it from the start.
+            tl.to(R, { fyN: 1, fs: 0.74, duration: 7, ease: "power3.inOut" }, 48.4);
+          }
           tl.to(R, { cam: 4, duration: 12, ease: "power1.in" }, 48);
           tl.to(R, { idle: 1, shadow: 0.55, duration: 4 }, 52);
           tl.to(q(".c1-aura"), { opacity: 1, duration: 5 }, 49);
@@ -1027,6 +1043,7 @@ export function Chapter1TheUnusedThing({
           tl.to(q(".c1-sheen"), { x: 620, duration: 3.4, ease: "power2.inOut" }, 57);
 
           // "YOU DON'T NEED IT." — each word rises out of its own mask.
+          tl.set(q(".c1-l1"), { autoAlpha: 1 }, 55.8);
           tl.to(
             q(".c1-w1"),
             { yPercent: 0, rotate: 0, duration: 1.8, stagger: 0.9, ease: "expo.out" },
@@ -1238,11 +1255,11 @@ export function Chapter1TheUnusedThing({
               if (tc.textContent !== txt) tc.textContent = txt;
             }
           };
+          // Loops may run while any part of the track can be on screen.
           const active = ScrollTrigger.create({
-            trigger: root,
+            trigger: track,
             start: "top bottom",
-            end: () =>
-              `+=${(tl.scrollTrigger?.end ?? 0) - (tl.scrollTrigger?.start ?? 0) + window.innerHeight * 2}`,
+            end: "bottom top",
             onToggle: (self) => {
               isActive = self.isActive;
               syncLoops();
@@ -1253,15 +1270,14 @@ export function Chapter1TheUnusedThing({
 
           ScrollTrigger.addEventListener("refreshInit", measure);
           // Initialise every tween now, in idle time, rather than mid-scroll.
-          // Under the hero the stage is hidden only while the page is at rest;
-          // otherwise it is hidden while it is still below the fold.
-          const stopWarm = warmTimeline(
-            tl,
-            () => !!tl.scrollTrigger?.isActive,
-            () => (leadEl ? window.scrollY < 2 : root.getBoundingClientRect().top >= window.innerHeight),
-          );
+          const stopWarm = warmTimeline(tl, () => !!tl.scrollTrigger?.isActive || tl.progress() > 0);
           return () => {
             stopWarm();
+            cancelAnimationFrame(titleRaf);
+            window.removeEventListener("scroll", queueTitle);
+            window.removeEventListener("resize", queueTitle);
+            ScrollTrigger.removeEventListener("refresh", queueTitle);
+            if (titleEl) delete titleEl.dataset.state;
             ScrollTrigger.removeEventListener("refreshInit", measure);
             gsap.ticker.remove(tick);
             active.kill();
@@ -1432,11 +1448,11 @@ export function Chapter1TheUnusedThing({
 
         {/* ── Title card ────────────────────────────────────────────────── */}
         <div
-          className="c1-title absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
+          className={`c1-title ${styles.titleCard} absolute inset-0 flex flex-col items-center justify-center px-6 text-center`}
           style={{ paddingTop: "var(--hdr, 0px)" }}
         >
           <p
-            className={`c1-t-eyebrow ${styles.mono} mb-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.3em] max-md:tracking-[0.2em] text-[#b04a15] dark:text-[#ff9a5c]`}
+            className={`c1-t-eyebrow ${styles.titleEyebrow} ${styles.mono} mb-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.3em] max-md:tracking-[0.2em] text-[#b04a15] dark:text-[#ff9a5c]`}
           >
             <span className="h-px w-8 bg-current max-md:hidden" />
             Chapter one · The unused thing
@@ -1446,15 +1462,25 @@ export function Chapter1TheUnusedThing({
             id="ck-ch1-title"
             className={`${styles.display} text-[clamp(2.6rem,9vw,8.5rem)] max-md:text-[clamp(2.6rem,12.5vw,3.4rem)] text-stone-900 dark:text-stone-100`}
           >
-            <span className={`c1-t-m ${styles.mask}`}>
-              <span className={`c1-t-w ${styles.word}`}>One small thing</span>
-            </span>
+            {["One", "small", "thing"].map((w, i) => (
+              <Fragment key={w}>
+                <span className={`c1-t-m ${styles.mask}`} style={{ ["--i" as string]: i } as React.CSSProperties}>
+                  <span className={`c1-t-w ${styles.word}`}>{w}</span>
+                </span>
+                {i < 2 ? " " : null}
+              </Fragment>
+            ))}
             <br />
-            <span className={`c1-t-m ${styles.mask}`}>
-              <span className={`c1-t-w ${styles.word} text-[#b04a15] dark:text-[#ff8a4c]`}>
-                can become a big thing.
-              </span>
-            </span>
+            {["can", "become", "a", "big", "thing."].map((w, i) => (
+              <Fragment key={w}>
+                <span className={`c1-t-m ${styles.mask}`} style={{ ["--i" as string]: i + 3 } as React.CSSProperties}>
+                  <span className={`c1-t-w ${styles.word} text-[#b04a15] dark:text-[#ff8a4c]`}>
+                    {w}
+                  </span>
+                </span>
+                {i < 4 ? " " : null}
+              </Fragment>
+            ))}
           </h2>
         </div>
 
@@ -1479,19 +1505,21 @@ export function Chapter1TheUnusedThing({
             className={`c1-l1 ${styles.display} absolute left-0 right-0 -translate-y-1/2 text-[clamp(3rem,11.5vw,12.5rem)] max-md:px-5 max-md:text-[12.5vw]`}
             style={{
               WebkitTextStroke: "1.5px var(--ghost, transparent)",
-              top: "calc(50% + var(--hdr, 0px) / 2)",
+              top: "calc(var(--c1-line-y, 50%) + var(--hdr, 0px) / 2)",
             }}
           >
             {LINE_1.map((w, i) => (
-              <span key={i} className={styles.mask}>
-                <span className={`c1-w1 ${styles.word}`}>{w}</span>
+              <Fragment key={i}>
+                <span className={styles.mask}>
+                  <span className={`c1-w1 ${styles.word}`}>{w}</span>
+                </span>
                 {i < LINE_1.length - 1 ? " " : null}
-              </span>
+              </Fragment>
             ))}
           </p>
           <p
             className={`c1-l2 ${styles.display} ${styles.glowText} absolute left-0 right-0 translate-y-[-10%] text-[clamp(3.4rem,12.5vw,13.5rem)] max-md:px-5 max-md:text-[15vw]`}
-            style={{ top: "calc(50% + var(--hdr, 0px) / 2)" }}
+            style={{ top: "calc(var(--c1-line-y, 50%) + var(--hdr, 0px) / 2)" }}
           >
             {LINE_2.map((w, i) => (
               <span key={i} className="relative inline-block">
@@ -1690,32 +1718,6 @@ export function Chapter1TheUnusedThing({
       {/* ── Film furniture ─────────────────────────────────────────────── */}
       <div className={`c1-vignette ${styles.vignette}`} />
       <div className={styles.grain} aria-hidden="true" />
-      <div
-        className={`c1-hud ${styles.hud} ${styles.pill} left-4 sm:left-8`}
-        style={{ top: "calc(var(--hdr, 0px) + 16px)", opacity: 0 }}
-        aria-hidden="true"
-      >
-        <span className={styles.rec} />
-        Scene 01
-      </div>
-      <div
-        className={`c1-hud ${styles.hud} ${styles.pill} bottom-4 left-4 hidden sm:bottom-6 sm:left-8 md:block`}
-        style={{ opacity: 0 }}
-        aria-hidden="true"
-      >
-        <span className="c1-hud-scene-a">Int. Apartment — Dusk</span>
-        <span className="c1-hud-scene-b absolute left-3">Close on: the bag</span>
-      </div>
-      <div
-        className={`c1-hud ${styles.hud} ${styles.pill} bottom-4 right-4 hidden sm:bottom-6 sm:right-8 md:block`}
-        style={{ opacity: 0 }}
-        aria-hidden="true"
-      >
-        <span className="c1-hud-cut mr-4" style={{ opacity: 0 }}>
-          Cut to →
-        </span>
-        TC <span className="c1-timecode">00:00:00:00</span>
-      </div>
     </section>
   );
 }

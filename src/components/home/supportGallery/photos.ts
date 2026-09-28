@@ -122,7 +122,7 @@ export type Slot = {
 export const SLOTS: Slot[] = [
   { x: 63, y: 4, w: 24, rot: 4, depth: "front", over: true, note: "above-left", enter: "rise" },
   { x: 44, y: -4, w: 12.5, rot: -4, depth: "mid", over: false, note: "left", enter: "side" },
-  { x: 53, y: 39, w: 15, rot: 6, depth: "front", over: true, note: "below-left", enter: "drop" },
+  { x: 53, y: 39, w: 15, rot: 6, depth: "front", over: false, note: "below-left", enter: "drop" },
   { x: 16, y: 61, w: 20, rot: -5, depth: "back", over: false, note: "below-left", enter: "forward" },
   { x: 79, y: 35, w: 23, rot: -3, depth: "mid", over: false, note: "above-right", enter: "under" },
   { x: 63, y: 72, w: 21, rot: 3, depth: "front", over: true, note: "below-right", enter: "turn" },

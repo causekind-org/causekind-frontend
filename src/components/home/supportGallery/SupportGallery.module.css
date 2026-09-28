@@ -82,6 +82,7 @@
   font-size: 8.6cqw;
   line-height: 0.9;
   letter-spacing: -0.035em;
+  word-spacing: 0.15em;
   text-transform: uppercase;
   font-variation-settings: "SOFT" 40, "opsz" 144;
   pointer-events: none;
@@ -99,53 +100,7 @@
   opacity: 0.16;
 }
 
-.intro {
-  position: absolute;
-  left: 6cqw;
-  top: 5%;
-  z-index: 25;
-  max-width: 30cqw;
-  transition: opacity 500ms var(--sg-ease), transform 700ms var(--sg-ease);
-}
-.eyebrow {
-  font-size: max(10px, 0.72cqw);
-  color: var(--sg-accent);
-  display: flex;
-  align-items: center;
-  gap: 0.9em;
-}
-.eyebrow::before {
-  content: "";
-  width: 2.2em;
-  height: 1px;
-  background: currentColor;
-}
-.counter {
-  margin-top: 1.1cqw;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.6em;
-  font-size: max(10px, 0.72cqw);
-  color: var(--sg-ink);
-}
-.counterNum {
-  font-family: var(--font-sg-serif), Georgia, serif;
-  font-size: 2.4cqw;
-  letter-spacing: -0.02em;
-  color: #1c1410;
-  display: inline-block;
-  min-width: 1.4em;
-}
-:global(.dark) .counterNum {
-  color: #f5eee8;
-}
-.hint {
-  display: block;
-  margin-top: 0.4cqw;
-  font-size: max(18px, 1.6cqw);
-  transform: rotate(-3deg);
-  transform-origin: left center;
-}
+
 
 /* ── Index ── */
 .index {
@@ -236,8 +191,7 @@
 .stage[data-in="false"] .enter[data-enter="under"] { transform: translate3d(90px, 0, 0); }
 .stage[data-in="false"] .enter[data-enter="turn"] { transform: rotate(18deg) scale(0.94); }
 .stage[data-in="false"] .enter[data-enter="last"] { transform: scale(1.1); }
-.stage[data-in="false"] .title,
-.stage[data-in="false"] .intro {
+.stage[data-in="false"] .title {
   opacity: 0;
   transform: translate3d(0, 20px, 0);
 }
@@ -516,6 +470,7 @@
   font-size: clamp(2.7rem, 13.5vw, 3.6rem);
   line-height: 0.9;
   letter-spacing: -0.035em;
+  word-spacing: 0.15em;
   text-transform: uppercase;
   font-variation-settings: "SOFT" 40, "opsz" 144;
 }
@@ -607,8 +562,7 @@
     transition: none !important;
   }
   .stage[data-in="false"] .enter,
-  .stage[data-in="false"] .title,
-  .stage[data-in="false"] .intro {
+  .stage[data-in="false"] .title {
     opacity: 1;
     transform: none;
   }

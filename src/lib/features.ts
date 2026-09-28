@@ -27,6 +27,6 @@ export const FEATURES: {
 } = {
   money: false,
   bottomBlur: false,
-  ngoRegistration: false,
+  ngoRegistration: true,
   cinematicLanding: true,
 };

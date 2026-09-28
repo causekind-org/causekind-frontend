@@ -89,6 +89,9 @@ vi.mock("@/components/BeTheChangeSection", () => ({ BeTheChangeSection: () => nu
 vi.mock("@/components/ComingSoonMagnets", () => ({ ComingSoonMagnets: () => null }));
 vi.mock("@/components/IndependenceDayStrip", () => ({ IndependenceDayStrip: () => null }));
 vi.mock("@/components/home/HeroSection", () => ({ HeroSection: () => null }));
+// Loads its faces through next/font, which does not run under Vitest.
+vi.mock("@/components/home/supportGallery/SupportGallery", () => ({ SupportGallery: () => null }));
+vi.mock("@/components/home/whatIsCauseKind/WhatIsCauseKind", () => ({ WhatIsCauseKind: () => null }));
 vi.mock("@/components/home/StatsBars", () => ({
   DesktopStatsBar: () => null,
   LiveTicker: () => null,

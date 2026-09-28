@@ -15,7 +15,8 @@ import {
   PackageCheck,
   ArrowRight,
 } from "lucide-react";
-import { LANDING_ROUTES, HOME_ROLE_COLORS, HOW_IT_WORKS_AUTOPLAY_MS } from "@/lib/landingConstants";
+import { LANDING_ROUTES } from "@/lib/landingConstants";
+import mStyles from "./HowItWorksMobile.module.css";
 
 type RoleTab = "donor" | "donee" | "ngo";
 
@@ -43,12 +44,12 @@ interface TabConfig {
 const TABS: TabConfig[] = [
   {
     id: "donor",
-    label: HOME_ROLE_COLORS.donor.label,
-    roleColor: HOME_ROLE_COLORS.donor.main,
-    roleColorHover: HOME_ROLE_COLORS.donor.hover,
-    roleBgSoft: HOME_ROLE_COLORS.donor.softBg,
-    roleBorder: HOME_ROLE_COLORS.donor.border,
-    roleGlow: HOME_ROLE_COLORS.donor.glow,
+    label: "I want to give",
+    roleColor: "#B5480F",
+    roleColorHover: "#8F3708",
+    roleBgSoft: "#FBEDE3",
+    roleBorder: "rgba(181, 72, 15, 0.25)",
+    roleGlow: "rgba(181, 72, 15, 0.15)",
     buttonText: "Join as Donor",
     buttonHref: LANDING_ROUTES.donorRegister,
     steps: [
@@ -84,12 +85,12 @@ const TABS: TabConfig[] = [
   },
   {
     id: "donee",
-    label: HOME_ROLE_COLORS.donee.label,
-    roleColor: HOME_ROLE_COLORS.donee.main,
-    roleColorHover: HOME_ROLE_COLORS.donee.hover,
-    roleBgSoft: HOME_ROLE_COLORS.donee.softBg,
-    roleBorder: HOME_ROLE_COLORS.donee.border,
-    roleGlow: HOME_ROLE_COLORS.donee.glow,
+    label: "I need help",
+    roleColor: "#0F7A6C",
+    roleColorHover: "#095349",
+    roleBgSoft: "#E3F2EF",
+    roleBorder: "rgba(15, 122, 108, 0.25)",
+    roleGlow: "rgba(15, 122, 108, 0.15)",
     buttonText: "Join as a Donee",
     buttonHref: LANDING_ROUTES.doneeRegister,
     steps: [
@@ -125,12 +126,12 @@ const TABS: TabConfig[] = [
   },
   {
     id: "ngo",
-    label: HOME_ROLE_COLORS.ngo.label,
-    roleColor: HOME_ROLE_COLORS.ngo.main,
-    roleColorHover: HOME_ROLE_COLORS.ngo.hover,
-    roleBgSoft: HOME_ROLE_COLORS.ngo.softBg,
-    roleBorder: HOME_ROLE_COLORS.ngo.border,
-    roleGlow: HOME_ROLE_COLORS.ngo.glow,
+    label: "I'm an NGO",
+    roleColor: "#1F6B3F",
+    roleColorHover: "#14482a",
+    roleBgSoft: "#E5F1E9",
+    roleBorder: "rgba(31, 107, 63, 0.25)",
+    roleGlow: "rgba(31, 107, 63, 0.15)",
     buttonText: "Register your NGO",
     buttonHref: LANDING_ROUTES.ngoRegister,
     steps: [
@@ -211,12 +212,12 @@ function StepCard({
     <motion.div
       ref={cardRef}
       className="relative z-10 w-full h-full"
-      initial={{ opacity: 0, y: 14, scale: 0.96 }}
+      initial={{ opacity: 0, y: 18, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.16 } }}
+      exit={{ opacity: 0, y: -12, scale: 0.97 }}
       transition={{
-        duration: 0.3,
-        delay: reduceMotion ? 0 : index * 0.05,
+        duration: 0.4,
+        delay: reduceMotion ? 0 : index * 0.08,
         ease: [0.22, 1, 0.36, 1],
       }}
       onMouseMove={handleMouseMove}
@@ -262,13 +263,12 @@ function StepCard({
               }}
             >
               <IconComp
-                className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                  step.microAnimation === "bounce"
+                className={`w-4 h-4 sm:w-5 sm:h-5 ${step.microAnimation === "bounce"
                     ? "animate-bounce"
                     : step.microAnimation === "pulse"
-                    ? "animate-pulse"
-                    : ""
-                }`}
+                      ? "animate-pulse"
+                      : ""
+                  }`}
               />
             </div>
           </div>
@@ -286,132 +286,119 @@ function StepCard({
   );
 }
 
+/**
+ * Phone step card (< 768px): a compact row — big italic step number, title and
+ * description, role icon — so a role's four steps fit on one screen and can be
+ * read at a glance while the carousel moves between roles.
+ */
+function MobileStepCard({ step }: { step: StepData }) {
+  const IconComp = step.icon;
+  return (
+    <article className={mStyles.card}>
+      <span className={mStyles.numeral} aria-hidden>
+        {step.number}
+      </span>
+      <div>
+        <h3 className={mStyles.title}>
+          <span className="sr-only">Step {step.number}: </span>
+          {step.title}
+        </h3>
+        <p className={mStyles.desc}>{step.description}</p>
+      </div>
+      <span className={mStyles.icon} aria-hidden>
+        <IconComp className="w-[1.05rem] h-[1.05rem]" />
+      </span>
+    </article>
+  );
+}
+
+/** How long each role stays up on phones before the carousel moves on. */
+const AUTO_ADVANCE_MS = 2000;
+
 export function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const tabListRef = useRef<HTMLDivElement>(null);
-  const isSectionVisible = useInView(sectionRef, { amount: 0.15 });
-  const hasScrolledIn = useInView(sectionRef, { once: true, amount: 0.15 });
+  const isInView = useInView(sectionRef, { once: true, amount: 0.15 });
   const reduceMotion = useReducedMotion();
 
   const [activeTab, setActiveTab] = useState<RoleTab>("donor");
-  const [isStoppedPermanently, setIsStoppedPermanently] = useState(false);
-  const [isPageVisible, setIsPageVisible] = useState(true);
-  const [pressedHref, setPressedHref] = useState<string | null>(null);
-  const [isHoveredSection, setIsHoveredSection] = useState(false);
+  const [hasScrolledIn, setHasScrolledIn] = useState(false);
 
-  const autoTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const timerStartRef = useRef<number>(Date.now());
-  const remainingMsRef = useRef<number>(HOW_IT_WORKS_AUTOPLAY_MS);
+  // Phones only: the roles advance on their own while the section is on
+  // screen, until the reader picks a role or swipes — then it is theirs.
+  const onScreen = useInView(sectionRef, { amount: 0.35 });
+  const [isPhone, setIsPhone] = useState(false);
+  const [userDriven, setUserDriven] = useState(false);
+  const touchRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Advance to next tab in rotation order (Donor -> Donee -> NGO -> Donor)
-  const advanceTab = useCallback(() => {
-    setActiveTab((current) => {
-      const idx = TABS.findIndex((t) => t.id === current);
-      const nextIdx = (idx + 1) % TABS.length;
-      return TABS[nextIdx].id;
-    });
-    remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767.98px)");
+    const sync = () => setIsPhone(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
-  // Monitor document visibility (pause when browser tab is inactive)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPageVisible(document.visibilityState === "visible");
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
+  const autoplay = isPhone && onScreen && !reduceMotion && !userDriven;
+  const activeIndex = TABS.findIndex((t) => t.id === activeTab);
 
-  // Compute pause state (only off-screen, hidden browser tab, permanent stop, reduced-motion, or hovered)
-  const isPaused =
-    isStoppedPermanently ||
-    Boolean(reduceMotion) ||
-    !isSectionVisible ||
-    !isPageVisible ||
-    isHoveredSection;
-
-  // Master continuous timer management
   useEffect(() => {
-    if (isPaused) {
-      if (autoTimerRef.current) {
-        clearTimeout(autoTimerRef.current);
-        autoTimerRef.current = null;
-        // Compute and store remaining milliseconds
-        const elapsed = Date.now() - timerStartRef.current;
-        remainingMsRef.current = Math.max(100, remainingMsRef.current - elapsed);
-      }
-      return;
+    if (!autoplay) return;
+    const id = window.setTimeout(() => {
+      setActiveTab(TABS[(activeIndex + 1) % TABS.length].id);
+    }, AUTO_ADVANCE_MS);
+    return () => window.clearTimeout(id);
+  }, [autoplay, activeIndex]);
+
+  const selectTab = (id: RoleTab) => {
+    setUserDriven(true);
+    setActiveTab(id);
+  };
+
+  const go = (dir: 1 | -1) => {
+    selectTab(TABS[(activeIndex + dir + TABS.length) % TABS.length].id);
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchRef.current;
+    touchRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) go(dx < 0 ? 1 : -1);
+  };
+
+  useEffect(() => {
+    if (isInView && !hasScrolledIn) {
+      setHasScrolledIn(true);
     }
-
-    // Active - arm timeout for remaining duration
-    timerStartRef.current = Date.now();
-    const timeoutDuration = remainingMsRef.current;
-
-    autoTimerRef.current = setTimeout(() => {
-      advanceTab();
-    }, timeoutDuration);
-
-    return () => {
-      if (autoTimerRef.current) {
-        clearTimeout(autoTimerRef.current);
-        autoTimerRef.current = null;
-      }
-    };
-  }, [isPaused, activeTab, advanceTab]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
-    };
-  }, []);
-
-  // Manual tab click: switch immediately, restart 2s timer from this tab, KEEP rotating
-  const handleTabClick = (tabId: RoleTab) => {
-    setActiveTab(tabId);
-    remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
-    timerStartRef.current = Date.now();
-  };
-
-  // Keyboard navigation: switch immediately, restart 2s timer, KEEP rotating
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const currentIndex = TABS.findIndex((t) => t.id === activeTab);
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      const nextIndex = (currentIndex + 1) % TABS.length;
-      setActiveTab(TABS[nextIndex].id);
-      remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
-      timerStartRef.current = Date.now();
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      const prevIndex = (currentIndex - 1 + TABS.length) % TABS.length;
-      setActiveTab(TABS[prevIndex].id);
-      remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
-      timerStartRef.current = Date.now();
-    }
-  };
-
-  // Join button: capture role immediately on pointer down & stop rotation permanently
-  const handlePointerDownJoin = (href: string) => {
-    setIsStoppedPermanently(true);
-    setPressedHref(href);
-  };
-
-  const handleJoinClick = () => {
-    setIsStoppedPermanently(true);
-  };
+  }, [isInView, hasScrolledIn]);
 
   const currentTabConfig = TABS.find((t) => t.id === activeTab) || TABS[0];
   const labelText = "HOW IT WORKS";
+
+  // Keyboard navigation for accessible tabs (Left/Right Arrow)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      go(1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      go(-1);
+    }
+  };
 
   return (
     <section
       ref={sectionRef}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
-      onMouseEnter={() => setIsHoveredSection(true)}
-      onMouseLeave={() => setIsHoveredSection(false)}
-      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
+      className="ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] border-b border-stone-200/80 dark:border-stone-850/70 overflow-hidden transition-colors duration-500"
       style={
         {
           "--role-color": currentTabConfig.roleColor,
@@ -423,7 +410,7 @@ export function HowItWorksSection() {
       }
     >
       {/* Morphing ambient background glow */}
-      <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-all duration-700">
+      <div className="max-md:hidden absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-all duration-700">
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[450px] rounded-full blur-3xl transition-colors duration-700"
           style={{ backgroundColor: currentTabConfig.roleGlow }}
@@ -445,7 +432,7 @@ export function HowItWorksSection() {
               <motion.span
                 key={index}
                 initial={{ opacity: 0, y: 4 }}
-                animate={hasScrolledIn ? { opacity: 1, y: 0 } : {}}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.03, delay: 0.05 + index * 0.02 }}
               >
                 {char === " " ? "\u00A0" : char}
@@ -469,7 +456,7 @@ export function HowItWorksSection() {
         </div>
 
         {/* Three Accessible Tabs Switcher */}
-        <div className="flex justify-center mb-5 sm:mb-6">
+        <div className="flex justify-center mb-3 md:mb-6">
           <div
             ref={tabListRef}
             role="tablist"
@@ -487,19 +474,18 @@ export function HowItWorksSection() {
                   aria-selected={isActive}
                   aria-controls={`tabpanel-${tab.id}`}
                   tabIndex={isActive ? 0 : -1}
-                  onClick={() => handleTabClick(tab.id)}
-                  className={`relative px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-bold tracking-tight transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 shrink-0 ${
-                    isActive
+                  onClick={() => selectTab(tab.id)}
+                  className={`relative px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-bold tracking-tight transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 shrink-0 ${isActive
                       ? "text-white shadow-xs"
                       : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200"
-                  }`}
+                    }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="activeTabPill"
                       className="absolute inset-0 rounded-full"
                       style={{ backgroundColor: tab.roleColor }}
-                      transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                      transition={{ type: "spring", stiffness: 380, damping: 28 }}
                     />
                   )}
                   <span className="relative z-10">{tab.label}</span>
@@ -507,6 +493,21 @@ export function HowItWorksSection() {
               );
             })}
           </div>
+        </div>
+
+        {/* Phone: one progress segment per role; the active one fills while
+            the carousel waits to move on. */}
+        <div className={`${mStyles.segs} md:hidden mb-4`} aria-hidden>
+          {TABS.map((tab, i) => (
+            <span key={tab.id} className={mStyles.seg}>
+              <span
+                key={i === activeIndex && autoplay ? `run-${activeTab}` : "idle"}
+                className={mStyles.fill}
+                data-s={i === activeIndex ? (autoplay ? "run" : "on") : "off"}
+                style={{ ["--dur" as string]: `${AUTO_ADVANCE_MS}ms` } as React.CSSProperties}
+              />
+            </span>
+          ))}
         </div>
 
         {/* Steps Grid with Connecting Path */}
@@ -528,21 +529,14 @@ export function HowItWorksSection() {
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 key={activeTab} // redraws when tab switches
-                transition={{ duration: 0.35, ease: "easeInOut" }}
+                transition={{ duration: hasScrolledIn ? 0.6 : 1.0, ease: "easeInOut" }}
               />
             </svg>
           </div>
 
-          {/* 4 Symmetrically Centred Steps Cards Grid (wrapped in single animated motion container) */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.12 } }}
-              transition={{ duration: 0.2 }}
-              className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4 items-stretch justify-items-stretch w-full"
-            >
+          {/* DESKTOP: 4 Symmetrically Centred Steps Cards Grid */}
+          <div className="relative z-10 hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 items-stretch justify-items-stretch w-full">
+            <AnimatePresence mode="wait">
               {currentTabConfig.steps.map((step, idx) => (
                 <StepCard
                   key={`${activeTab}-step-${step.number}`}
@@ -553,22 +547,47 @@ export function HowItWorksSection() {
                   roleBorder={currentTabConfig.roleBorder}
                 />
               ))}
-            </motion.div>
-          </AnimatePresence>
+            </AnimatePresence>
+          </div>
 
+          {/* PHONE (< 768px): the roles on a horizontal track — current in
+              the middle, next waiting on the right, previous on the left.
+              Swipe to move between them. */}
+          <div
+            className={`${mStyles.viewport} relative z-10 md:hidden`}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
+            {TABS.map((tab, ti) => {
+              const rel = (ti - activeIndex + TABS.length) % TABS.length;
+              const state = rel === 0 ? "active" : rel === 1 ? "after" : "before";
+              return (
+                <ol
+                  key={tab.id}
+                  className={mStyles.panel}
+                  data-state={state}
+                  aria-hidden={rel !== 0}
+                  aria-label={`${tab.label}: steps`}
+                  style={{ ["--role" as string]: tab.roleColor, ["--soft" as string]: tab.roleBgSoft } as React.CSSProperties}
+                >
+                  {tab.steps.map((step, idx) => (
+                    <li key={step.number} className={mStyles.row} style={{ ["--i" as string]: idx } as React.CSSProperties}>
+                      <MobileStepCard step={step} />
+                    </li>
+                  ))}
+                </ol>
+              );
+            })}
+          </div>
           {/* Role CTA Button at the bottom of the active tab */}
           <motion.div
             className="flex justify-center mt-5 sm:mt-6"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             key={`cta-${activeTab}`}
-            transition={{ duration: 0.25, delay: 0.1 }}
+            transition={{ duration: 0.35, delay: 0.2 }}
           >
-            <Link
-              href={pressedHref || currentTabConfig.buttonHref}
-              onPointerDown={() => handlePointerDownJoin(currentTabConfig.buttonHref)}
-              onClick={handleJoinClick}
-            >
+            <Link href={currentTabConfig.buttonHref}>
               <motion.button
                 className="group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-7 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm text-white shadow-sm hover:shadow-md transition-all duration-300 active:scale-98 cursor-pointer"
                 style={{
@@ -588,5 +607,4 @@ export function HowItWorksSection() {
     </section>
   );
 }
-
 
