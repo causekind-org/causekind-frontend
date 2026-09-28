@@ -70,6 +70,7 @@ import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { RoleHome } from "@/components/home/RoleHome";
+import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
@@ -244,6 +245,11 @@ export default function HomeClient({
 
   // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
   const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
+
+  // The general landing redesign must not replace the NGO-specific home.
+  if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
+    return <NgoLandingView />;
+  }
 
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
