@@ -22,80 +22,6 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-// Floating Background SVG Items (book, shirt, teddy bear, fan, chair)
-function FloatingItems({ mousePos }: { mousePos: { x: number; y: number } }) {
-  const reduce = useReducedMotion();
-  if (reduce) return null;
-
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden hidden lg:block" aria-hidden="true">
-      {/* 1. Book (Top Left) */}
-      <div
-        className="absolute top-8 left-10 w-10 h-10 text-amber-200/20 transition-transform duration-700 ease-out"
-        style={{ transform: `translate(${mousePos.x * -15}px, ${mousePos.y * -15}px)` }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-        </svg>
-      </div>
-
-      {/* 2. Shirt (Top Right) */}
-      <div
-        className="absolute top-10 right-12 w-10 h-10 text-orange-200/20 transition-transform duration-700 ease-out"
-        style={{ transform: `translate(${mousePos.x * 20}px, ${mousePos.y * -12}px)` }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
-          <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" />
-        </svg>
-      </div>
-
-      {/* 3. Teddy Bear (Bottom Left) */}
-      <div
-        className="absolute bottom-16 left-12 w-11 h-11 text-amber-300/15 transition-transform duration-700 ease-out"
-        style={{ transform: `translate(${mousePos.x * -25}px, ${mousePos.y * 18}px)` }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
-          <circle cx="7" cy="5" r="2.5" />
-          <circle cx="17" cy="5" r="2.5" />
-          <circle cx="12" cy="13" r="7" />
-          <circle cx="9.5" cy="11.5" r="1" fill="currentColor" />
-          <circle cx="14.5" cy="11.5" r="1" fill="currentColor" />
-          <path d="M11 14.5c.5.5 1.5.5 2 0" />
-        </svg>
-      </div>
-
-      {/* 4. Fan (Bottom Right) */}
-      <div
-        className="absolute bottom-14 right-14 w-11 h-11 text-teal-200/20 transition-transform duration-700 ease-out"
-        style={{ transform: `translate(${mousePos.x * 22}px, ${mousePos.y * 20}px)` }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 12c-2-2-2-5 0-5s2 3 0 5z" />
-          <path d="M12 12c2-2 5-2 5 0s-3 2-5 0z" />
-          <path d="M12 12c2 2 2 5 0 5s-2-3 0-5z" />
-          <path d="M12 12c-2 2-5 2-5 0s3-2 5 0z" />
-          <circle cx="12" cy="12" r="2" fill="currentColor" />
-        </svg>
-      </div>
-
-      {/* 5. Chair (Far Right Center) */}
-      <div
-        className="absolute top-1/2 right-6 -translate-y-1/2 w-9 h-9 text-orange-300/15 transition-transform duration-700 ease-out"
-        style={{ transform: `translate(${mousePos.x * 15}px, ${mousePos.y * 5}px)` }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
-          <path d="M6 4h12v7H6z" />
-          <path d="M4 11h16v3H4z" />
-          <path d="M6 14v7" />
-          <path d="M18 14v7" />
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 export function FinalCtaSection({
   variant = "desktop",
 }: {
@@ -104,19 +30,7 @@ export function FinalCtaSection({
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const reduce = useReducedMotion();
-
-  // Mouse move handler for subtle parallax
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (reduce) return;
-    const { clientX, clientY } = e;
-    const { innerWidth, innerHeight } = window;
-    setMousePos({
-      x: (clientX / innerWidth - 0.5) * 2,
-      y: (clientY / innerHeight - 0.5) * 2,
-    });
-  };
 
   useEffect(() => {
     if (reduce) return;
@@ -202,7 +116,6 @@ export function FinalCtaSection({
       ref={sectionRef}
       id="join"
       aria-label="Join CauseKind"
-      onMouseMove={handleMouseMove}
       className="relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
     >
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 w-full flex flex-col justify-center h-full">
@@ -222,9 +135,6 @@ export function FinalCtaSection({
             {/* Dark vignette overlay */}
             <div className="absolute inset-0 bg-radial from-transparent via-[#1C1410]/40 to-[#1C1410]/80 dark:via-[#241A15]/40 dark:to-[#241A15]/80" />
           </div>
-
-          {/* Floating Subtle Items for Parallax */}
-          <FloatingItems mousePos={mousePos} />
 
           {/* Card Inner Content */}
           <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center">

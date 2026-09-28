@@ -441,7 +441,7 @@ export function ProblemSolutionSection() {
       <section
         ref={pinTargetRef}
         id="problem-solution-section"
-        className="relative w-full py-6 sm:py-8 lg:py-6 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center overflow-visible border-b border-stone-200/80 dark:border-stone-850/70"
+        className="relative w-full py-6 sm:py-8 lg:py-6 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center overflow-visible"
       >
         {/* Decorative background subtle radial glow */}
         <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-15">

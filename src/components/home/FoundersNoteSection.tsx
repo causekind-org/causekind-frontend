@@ -242,15 +242,8 @@ export function FoundersNoteSection({
       ref={sectionRef}
       id="founders-note"
       aria-label="Why we built CauseKind"
-      className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-10 sm:py-14 lg:py-16 overflow-hidden transition-colors"
+      className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-10 sm:py-14 lg:py-16 overflow-hidden transition-colors"
     >
-      {/* Dev-only placeholder tag */}
-      {FOUNDER.isPlaceholder && isDev && (
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 backdrop-blur-sm shadow-sm pointer-events-none">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          PLACEHOLDER (Hidden in Production)
-        </div>
-      )}
 
       {/* Ambient background glow */}
       <div

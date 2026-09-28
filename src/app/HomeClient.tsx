@@ -63,9 +63,11 @@ import { toast } from "@/lib/toast";
 import { HeroSection } from "@/components/home/HeroSection";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
+import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
+import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { RoleHome } from "@/components/home/RoleHome";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
@@ -267,6 +269,8 @@ export default function HomeClient({
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
       <WhoAreWeSection />
 
+      <SupportGallery />
+
       {/* SECTION 3 — HOW DO WE WORK */}
       <HowItWorksSection />
 
@@ -283,6 +287,10 @@ export default function HomeClient({
       {/* FOUNDER'S NOTE (Desktop) */}
       <div className="hidden lg:block">
         <FoundersNoteSection variant="desktop" />
+      </div>
+
+      <div className="hidden lg:block">
+        <GoogleReviewsSection />
       </div>
 
       <div className="ck-home-paper hidden lg:block relative z-10">
@@ -484,6 +492,10 @@ export default function HomeClient({
         {/* FOUNDER'S NOTE */}
         <div className="-mx-5">
           <FoundersNoteSection variant="mobile" />
+        </div>
+
+        <div className="-mx-5">
+          <GoogleReviewsSection />
         </div>
 
         {/* Mobile Campaigns horizontal scroll */}
