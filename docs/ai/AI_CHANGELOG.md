@@ -277,3 +277,29 @@ Pre-existing state recorded by the audit (uncommitted on branch
 
 ### Status
 - 4x CPU, 1440x900 and 390x844: parked 0.6 units into each caption window → words fully visible; outside a window → hidden. Radar screenshots show the beam from the hub. How it works: 1440/1024/800 show only the desktop grid, 390 only the carousel. Type-check clean.
+
+## 2026-09-28 — Trust & safety and Founder's note: new phone designs (< 768 only)
+
+### Files Changed
+- `src/components/home/TrustSafetySection.tsx` — `TrustSafetyMobile` rewritten: the `SnapCarousel` swipe row is replaced by a scroll-stacking deck (each role card CSS-sticky one 3rem tab row lower than the last, so the cards pile into a coloured donor/donee/NGO index and leave together); the 4-up stat strip becomes a 2×2 "ticket" with a dashed tear line and notches. Left-aligned editorial header ("for everyone." in Fraunces italic). `SnapCarousel` import dropped; `BadgeCheck` and `galleryFonts` added.
+- `src/components/home/TrustSafetyMobile.module.css` — new, phone styles for the above.
+- `src/components/home/FoundersNoteSection.tsx` — `FoundersNoteMobile` rewritten as a letter: founder photo (or the placeholder avatar) as a taped print beside the heading, hanging over the corner of a folded sheet on an envelope; "Dear neighbour,", the unchanged two paragraphs in Fraunces, a two-homes route doodle ("just a few streets away"), "With warmth," + handwritten name (or `FOUNDER.signature`), a CauseKind ₹0 stamp with a "within 10 km" postmark, typed name + title.
+- `src/components/home/FoundersNoteMobile.module.css` — new, phone styles for the above.
+
+### Animation Changes
+- Trust: CSS `position: sticky` only (no JS, no scroll listener); one `useRevealOnce` reveal.
+- Founder: section reveal (print scale-in, sheet rise); the doodle and the sign-off have their own `useRevealOnce`, so the route "draws" (a paper-coloured cover slides off on scaleX), the heart pops and the postmark stamps on (scale + opacity) when each reaches the screen. Transform/opacity only; reduced motion = final state.
+
+### Responsive Changes
+- Phone components only (`md:hidden` branch). Desktop (`TrustSafetyFull`/`FoundersNoteFull` desktop) and tablet (768–1023) untouched. Heading and print scale with `clamp()` so 360px phones keep "Neighbours" clear of the photo.
+
+### Important Decisions
+- Trust copy and stats unchanged. Founder copy unchanged apart from letter conventions ("Dear neighbour,", "With warmth,", "just a few streets away").
+- The photo is sized for a real portrait (≈140px wide print, `object-top`); set `FOUNDER.photo` to show it. The section still renders `null` in production while `FOUNDER.isPlaceholder` is true.
+- Trust on phones is now longer than the old swipe row (the three cards are read in turn instead of swiped): ≈1,370px at 390px wide, about 1.6 screens.
+
+### Known Issues
+- None
+
+### Status
+- Headless Edge at 390x844 and 360x844 (light + dark) and 1440x900: deck stacks and releases, ticket and letter render, no horizontal overflow; desktop Trust unchanged. Type-check clean.

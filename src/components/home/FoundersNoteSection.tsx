@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useId, useRef } from "react";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Quote } from "lucide-react";
 import { FOUNDER } from "@/lib/landingConstants";
 import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
+import { galleryFonts } from "@/components/home/supportGallery/fonts";
+import fm from "./FoundersNoteMobile.module.css";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -58,64 +60,143 @@ function FounderAvatarPlaceholder() {
 }
 
 /**
- * Phone version (< 768px). The 190×237 portrait on its own row, then the note
- * below it, made a centred column most of a screen tall. Here the portrait
- * shrinks and sits beside the heading — a letterhead — and the note reads
- * straight on underneath. The clip-path wipe becomes a plain fade-up.
+ * Phone version (< 768px). A letterhead — small portrait beside the heading,
+ * the note in a quote rule underneath — read like a pull quote. Here the note
+ * is what it says it is: a letter to the neighbourhood. The founder's photo is
+ * a taped print beside the heading, hanging over the corner of a folded sheet
+ * on its envelope; "Dear neighbour,", a doodle of two homes a few streets
+ * apart, and a signed sign-off with a CauseKind stamp and postmark. The sheet
+ * and print rise on the section's reveal; the route and the signature draw in
+ * and the postmark lands when each of them reaches the screen — all
+ * transform/opacity (styles in FoundersNoteMobile.module.css).
  */
 function FoundersNoteMobile() {
   const ref = useRevealOnce<HTMLElement>();
+  const doodleRef = useRevealOnce<HTMLDivElement>();
+  const signoffRef = useRevealOnce<HTMLElement>();
+  const ringId = useId();
   return (
     <section
       ref={ref}
       id="founders-note"
       aria-label="Why We Built CauseKind"
-      className="ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 px-5"
+      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 px-5`}
     >
-      <div className="flex items-center gap-4">
-        <div data-reveal-item="scale" style={stagger(0)} className="relative shrink-0">
-          <div className="absolute inset-0 rounded-2xl bg-[#FCEADE] dark:bg-[#2A170F] translate-x-1 translate-y-1" aria-hidden="true" />
-          <div className="relative w-[84px] aspect-[4/5] rounded-2xl overflow-hidden border border-stone-200/90 dark:border-stone-800 bg-white dark:bg-zinc-900">
+      <p data-reveal-item style={stagger(0)} className={fm.eyebrow}>
+        Why we built CauseKind
+      </p>
+      <div className={fm.masthead}>
+        <h2 data-reveal-item style={stagger(1)} className={fm.title}>
+          Neighbours helping <em>neighbours.</em>
+        </h2>
+        <figure data-reveal-item="scale" style={stagger(3)} className={fm.print}>
+          <div className={fm.printPhoto}>
             {FOUNDER.photo ? (
-              <Image src={FOUNDER.photo} alt={`${FOUNDER.name}, founder of CauseKind`} fill sizes="84px" className="object-cover object-top" />
+              <Image src={FOUNDER.photo} alt={`${FOUNDER.name}, founder of CauseKind`} fill sizes="130px" className="object-cover object-top" />
             ) : (
-              <FounderAvatarPlaceholder />
+              <div className="absolute inset-0" aria-hidden="true">
+                <FounderAvatarPlaceholder />
+              </div>
             )}
           </div>
-        </div>
-        <div className="min-w-0">
-          <div data-reveal-item style={stagger(1)} className="flex items-center gap-2 mb-1.5">
-            <span className="h-0.5 w-5 rounded-full bg-[#B5480F]" />
-            <p className="text-3xs font-black uppercase tracking-[0.2em] text-[#B5480F] dark:text-[#F4A25B]">WHY WE BUILT CAUSEKIND</p>
+        </figure>
+      </div>
+
+      <div className={fm.desk}>
+        <div data-reveal-item style={stagger(2)} className={fm.envelope} aria-hidden="true" />
+        <article data-reveal-item style={stagger(2)} className={fm.letter}>
+          <span className={fm.printSpacer} aria-hidden="true" />
+          <p className={fm.salutation}>Dear neighbour,</p>
+
+          <div className={fm.body}>
+            <p>
+              Every home has things it no longer needs. And just a few streets away, someone is waiting for exactly those things.
+              {FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}
+            </p>
+
+            <div ref={doodleRef} className={fm.doodle} aria-hidden="true">
+              <div className="relative">
+                <svg viewBox="0 0 240 66" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  {/* a home with things to give */}
+                  <path d="M8 36 30 16l22 20M13 32v28h34V32M26 60V47h8v13M38 40h6v6h-6zM40 25v-6h5v10M4 60.5h56" />
+                  {/* a few streets */}
+                  <path className={fm.route} d="M56 55c24 0 28-24 52-20s24 22 42 15s22-12 36 3" strokeWidth="2" strokeDasharray="2 5.5" />
+                  {/* a home that needed them */}
+                  <path d="M188 36l22-18 22 18M193 32v28h34V32M206 60V48h8v12M196 40h6v6h-6zM180 60.5h56" />
+                  <path
+                    className={fm.heart}
+                    d="M210 13c-6-4-7-8-4-9.5c2-.9 3.5.1 4 1.5c.5-1.4 2-2.4 4-1.5c3 1.5 2 5.5-4 9.5z"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                </svg>
+                <span className={fm.ink} />
+              </div>
+              <span className={fm.doodleNote}>just a few streets away</span>
+            </div>
+
+            <p>
+              We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
+            </p>
           </div>
-          <h2 data-reveal-item style={stagger(2)} className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
-            Neighbours helping neighbours.
-          </h2>
-        </div>
-      </div>
 
-      <div data-reveal-item style={stagger(3)} className="relative mt-4 pl-4 border-l-2 border-[#B5480F]/25">
-        <Quote className="absolute -left-2 -top-1 w-4 h-4 fill-current rotate-180 text-[#B5480F]/40 bg-[#FAF8F5] dark:bg-[#0E0C0A]" aria-hidden="true" />
-        <div className="space-y-2.5 text-[15px] text-stone-700 dark:text-stone-300 font-medium leading-relaxed">
-          <p>
-            Every home has things it no longer needs. And just a few streets away, someone is waiting for exactly those things.
-            {FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}
-          </p>
-          <p>
-            We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
-          </p>
-        </div>
-      </div>
+          <footer ref={signoffRef} className={fm.signoff}>
+            <div className={fm.signRow}>
+              <div className="min-w-0">
+                <p className={fm.valediction}>With warmth,</p>
+                <span className={fm.sig}>
+                  {FOUNDER.signature ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={FOUNDER.signature} alt="" aria-hidden className={fm.sigImg} />
+                  ) : (
+                    <span aria-hidden="true">{FOUNDER.name}</span>
+                  )}
+                  <span className={fm.ink} aria-hidden="true" />
+                </span>
+              </div>
 
-      <div data-reveal-item style={stagger(4)} className="mt-4 pt-3 border-t border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-base font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">{FOUNDER.name}</p>
-          <p className="text-xs font-semibold text-[#B5480F] dark:text-[#F4A25B] mt-0.5">{FOUNDER.title}</p>
-        </div>
-        {FOUNDER.signature && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={FOUNDER.signature} alt="" aria-hidden className="h-9 w-auto max-w-[45%] dark:invert" />
-        )}
+              <div className={fm.stampWrap} aria-hidden="true">
+                <div className={fm.stamp}>
+                  <div className={fm.stampArt}>
+                    <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 19 20 7l14 12M10 16v17h20V16" />
+                      <path
+                        d="M20 29c-4-2.6-5.5-5-3.8-6.8c1.1-1.1 2.8-.8 3.8.6c1-1.4 2.7-1.7 3.8-.6c1.7 1.8.2 4.2-3.8 6.8z"
+                        fill="currentColor"
+                        stroke="none"
+                      />
+                    </svg>
+                    <span className={fm.stampValue}>₹0</span>
+                  </div>
+                </div>
+                <svg className={fm.postmark} viewBox="0 0 120 80" fill="none">
+                  <defs>
+                    <path id={ringId} d="M12 40a28 28 0 1 1 56 0a28 28 0 1 1 -56 0" />
+                  </defs>
+                  <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="2" />
+                  <circle cx="40" cy="40" r="21.5" stroke="currentColor" strokeWidth="1.2" />
+                  <text fontSize="7.2" letterSpacing="0.6">
+                    <textPath href={`#${ringId}`} textLength="168" lengthAdjust="spacingAndGlyphs">
+                      NEIGHBOURHOOD POST • CAUSEKIND •
+                    </textPath>
+                  </text>
+                  <text x="40" y="38" fontSize="6.5" textAnchor="middle" letterSpacing="0.8">WITHIN</text>
+                  <text x="40" y="50" fontSize="10.5" fontWeight="700" textAnchor="middle">10 KM</text>
+                  <path
+                    d="M76 28q5.25-4 10.5 0t10.5 0t10.5 0t10.5 0M76 40q5.25-4 10.5 0t10.5 0t10.5 0t10.5 0M76 52q5.25-4 10.5 0t10.5 0t10.5 0t10.5 0"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            </div>
+            <p className={fm.nameLine}>
+              <span className={fm.name}>{FOUNDER.name}</span>
+              <span className={fm.role}>{FOUNDER.title}</span>
+            </p>
+          </footer>
+        </article>
       </div>
     </section>
   );
