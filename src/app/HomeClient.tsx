@@ -69,6 +69,12 @@ import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
+// PC view (>= 1024px) of these four sections comes from feature/landing-page-redesign;
+// the mobile view (< 1024px) keeps the components above.
+import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
+import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
+import { FoundersNoteDesktop } from "@/components/home/desktop/FoundersNoteDesktop";
+import { FinalCtaDesktop } from "@/components/home/desktop/FinalCtaDesktop";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
@@ -257,10 +263,21 @@ export default function HomeClient({
       {/* SECTION 1 — WHO ARE WE. The planned "What is CauseKind?" typographic
           section (components/home/whatIsCauseKind/) has no component yet — only
           its CSS and fonts — so this slot keeps WhoAreWeSection until it exists. */}
-      <WhoAreWeSection />
+      {/* PC first, so id lookups (DashedJourneyRoad) find the visible one. */}
+      <div className="hidden lg:block">
+        <WhoAreWeDesktop />
+      </div>
+      <div className="lg:hidden">
+        <WhoAreWeSection />
+      </div>
 
       {/* SECTION 3 — HOW DO WE WORK */}
-      <HowItWorksSection />
+      <div className="hidden lg:block">
+        <HowItWorksDesktop />
+      </div>
+      <div className="lg:hidden">
+        <HowItWorksSection />
+      </div>
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       <div className="ck-home-paper hidden lg:block relative z-10">
@@ -274,7 +291,7 @@ export default function HomeClient({
 
       {/* FOUNDER'S NOTE (Desktop) */}
       <div className="hidden lg:block">
-        <FoundersNoteSection variant="desktop" />
+        <FoundersNoteDesktop variant="desktop" />
       </div>
 
       {/* GOOGLE REVIEWS (Desktop) */}
@@ -398,7 +415,7 @@ export default function HomeClient({
 
 
         {/* SECTION 8 — FINAL CTA */}
-        <FinalCtaComponent variant="desktop" />
+        <FinalCtaDesktop variant="desktop" />
       </div>
 
       {/* ════════════════════════════════════════════════════════════
