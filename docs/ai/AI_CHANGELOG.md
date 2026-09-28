@@ -303,3 +303,14 @@ Pre-existing state recorded by the audit (uncommitted on branch
 
 ### Status
 - Headless Edge at 390x844 and 360x844 (light + dark) and 1440x900: deck stacks and releases, ticket and letter render, no horizontal overflow; desktop Trust unchanged. Type-check clean.
+
+## 2026-09-28 — Merge feature/landing-page-redesign (PC sections only) + phone About crash fix
+
+### Files Changed
+- Merge commit `5b376b4` (`-s ours` base: this branch's tree). PC view (>= 1024px) of four sections comes from `feature/landing-page-redesign`, copied to `src/components/home/desktop/`: `WhoAreWeDesktop`, `HowItWorksDesktop` (layoutId `activeTabPillDesktop`, tab ids `tab-d-*`/`tabpanel-d-*`), `FoundersNoteDesktop`, `FinalCtaDesktop`. `HomeClient.tsx` renders them in `hidden lg:block` (PC first, so DashedJourneyRoad's id lookups hit the visible copy) and this branch's components in `lg:hidden`.
+- From the redesign as dependencies/data: `src/components/FlipCard.tsx`, `src/lib/landingConstants.ts` (HOME_ROLE_COLORS, HOW_IT_WORKS_AUTOPLAY_MS, founder Ramzan Hasnani + `/images/ramzan-hasnani.webp`, real Instagram/LinkedIn), `public/images/ramzan-hasnani.webp`.
+- Not taken (per the merge rules): RoleHome/logged-in desktop home, their mobile views, Google reviews, Navbar/MobileUI/Hero/film changes, causekind-way pages, package.json (matter-js, playwright), loose .py/prompt files.
+- `src/components/home/AboutJourneyMobile.tsx` — clamp the frame delta at 0: rAF's timestamp can precede the `performance.now()` taken in `start()`, making time negative → item index -1 → TypeError that took down the rest of the phone page.
+
+### Status
+- Verified hydrated (use http://localhost:3000 — Next 16 dev blocks 127.0.0.1, so pages load un-hydrated there) at 1440x900 and 390x844: PC shows the redesign's About / How it works / Founder / Final CTA; phone shows this branch's; Google reviews on both; no page errors. Type-check clean.

@@ -164,7 +164,10 @@ export function AboutJourneyMobile({
     const frame = (now: number) => {
       raf = 0;
       if (!visible || document.hidden) return;
-      elapsed = (elapsed + Math.min(64, now - last)) % loop;
+      // rAF's timestamp is the frame's start, which can be earlier than the
+      // performance.now() taken in start() — clamp so time never runs backwards
+      // (a negative time gave item index -1 and crashed the section).
+      elapsed = (elapsed + Math.max(0, Math.min(64, now - last))) % loop;
       last = now;
       render(elapsed);
       raf = requestAnimationFrame(frame);
