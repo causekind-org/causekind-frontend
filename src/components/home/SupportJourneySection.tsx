@@ -86,7 +86,7 @@ function ImpactCertificateSample() {
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="ck-cert-card relative w-full max-w-[340px] sm:max-w-[360px] lg:max-w-[370px] rounded-2xl bg-[#FCFAF6] dark:bg-[#1A130E] border-2 border-[#B5480F]/40 dark:border-[#B5480F]/60 shadow-xl p-4 sm:p-5 select-none transition-transform duration-150 ease-out will-change-transform"
+      className="ck-cert-card relative w-full max-w-[340px] sm:max-w-[360px] lg:max-w-[370px] rounded-2xl bg-[#FCFAF6] dark:bg-[#1A130E] border-2 border-[var(--ck-role-accent,#B5480F)]/40 dark:border-[#B5480F]/60 shadow-xl p-4 sm:p-5 select-none transition-transform duration-150 ease-out will-change-transform"
       style={{
         transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
       }}
@@ -100,7 +100,7 @@ function ImpactCertificateSample() {
       />
 
       {/* Decorative inner ornamental border */}
-      <div className="absolute inset-2 border border-[#B5480F]/20 dark:border-[#B5480F]/30 rounded-xl pointer-events-none" />
+      <div className="absolute inset-2 border border-[var(--ck-role-accent,#B5480F)]/20 dark:border-[var(--ck-role-accent,#B5480F)]/30 rounded-xl pointer-events-none" />
 
       {/* Diagonal SAMPLE Watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
@@ -112,10 +112,10 @@ function ImpactCertificateSample() {
       {/* Certificate Header */}
       <div className="relative z-10 flex items-center justify-between border-b border-stone-200/80 dark:border-stone-800/80 pb-2.5 mb-3">
         <div className="flex items-center gap-1.5">
-          <div className="w-6 h-6 rounded-full bg-[#B5480F] flex items-center justify-center text-white shadow-2xs">
+          <div className="w-6 h-6 rounded-full bg-[var(--ck-role-accent,#B5480F)] flex items-center justify-center text-white shadow-2xs">
             <Heart className="w-3.5 h-3.5 fill-white" />
           </div>
-          <span className="text-3xs font-extrabold tracking-widest uppercase text-[#B5480F] dark:text-[#F4A25B]">
+          <span className="text-3xs font-extrabold tracking-widest uppercase text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)]">
             CauseKind
           </span>
         </div>
@@ -129,7 +129,7 @@ function ImpactCertificateSample() {
         <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-stone-900 dark:text-stone-100">
           Certificate of Impact
         </h4>
-        <p className="text-4xs text-[#B5480F] dark:text-[#F4A25B] font-bold uppercase tracking-widest">
+        <p className="text-4xs text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-bold uppercase tracking-widest">
           Verified In-Kind Handover
         </p>
       </div>
@@ -138,14 +138,14 @@ function ImpactCertificateSample() {
       <div className="relative z-10 space-y-2 text-3xs sm:text-2xs text-stone-700 dark:text-stone-300 font-medium">
         <div className="flex items-center justify-between bg-stone-100/70 dark:bg-stone-900/60 p-1.5 rounded-lg">
           <span className="text-stone-400 font-semibold flex items-center gap-1">
-            <User className="w-3 h-3 text-[#B5480F]" /> Donor
+            <User className="w-3 h-3 text-[var(--ck-role-accent,#B5480F)]" /> Donor
           </span>
           <span className="font-bold text-stone-900 dark:text-stone-100">Sample Donor</span>
         </div>
 
         <div className="flex items-center justify-between bg-stone-100/70 dark:bg-stone-900/60 p-1.5 rounded-lg">
           <span className="text-stone-400 font-semibold flex items-center gap-1">
-            <Package className="w-3 h-3 text-[#B5480F]" /> Item
+            <Package className="w-3 h-3 text-[var(--ck-role-accent,#B5480F)]" /> Item
           </span>
           <span className="font-bold text-stone-900 dark:text-stone-100 truncate max-w-[180px]">
             School textbooks (set of 5)
@@ -154,7 +154,7 @@ function ImpactCertificateSample() {
 
         <div className="flex items-center justify-between bg-stone-100/70 dark:bg-stone-900/60 p-1.5 rounded-lg">
           <span className="text-stone-400 font-semibold flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-[#B5480F]" /> Handed to
+            <MapPin className="w-3 h-3 text-[var(--ck-role-accent,#B5480F)]" /> Handed to
           </span>
           <span className="font-bold text-stone-900 dark:text-stone-100">Verified Student, Mumbai</span>
         </div>
@@ -180,8 +180,8 @@ function ImpactCertificateSample() {
 
       {/* "HANDOVER VERIFIED" Rubber Stamp (positioned in lower corner over watermark, leaving footer readable) */}
       <div className="ck-cert-stamp absolute right-2.5 sm:right-3.5 bottom-3.5 sm:bottom-4.5 z-30 pointer-events-none">
-        <div className="px-2.5 py-1 rounded-md border-2 border-[#B5480F] text-[#B5480F] bg-[#FBEDE3]/95 dark:bg-[#2A150D]/95 font-black uppercase text-3xs sm:text-2xs tracking-wider shadow-md transform -rotate-12 flex items-center gap-1">
-          <CheckCircle2 className="w-3.5 h-3.5 text-[#B5480F]" />
+        <div className="px-2.5 py-1 rounded-md border-2 border-[var(--ck-role-accent,#B5480F)] text-[var(--ck-role-accent,#B5480F)] bg-[#FBEDE3]/95 dark:bg-[#2A150D]/95 font-black uppercase text-3xs sm:text-2xs tracking-wider shadow-md transform -rotate-12 flex items-center gap-1">
+          <CheckCircle2 className="w-3.5 h-3.5 text-[var(--ck-role-accent,#B5480F)]" />
           <span>HANDOVER VERIFIED</span>
         </div>
       </div>
@@ -191,7 +191,7 @@ function ImpactCertificateSample() {
         {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
           <span
             key={i}
-            className="ck-stamp-dust-particle absolute w-1.5 h-1.5 rounded-full bg-[#B5480F] opacity-0"
+            className="ck-stamp-dust-particle absolute w-1.5 h-1.5 rounded-full bg-[var(--ck-role-accent,#B5480F)] opacity-0"
           />
         ))}
       </div>
@@ -534,8 +534,8 @@ export function SupportJourneySection() {
         {/* Top Fixed Header */}
         <div className="relative mx-auto max-w-6xl px-5 sm:px-8 w-full text-center shrink-0">
           <div className="flex items-center justify-center gap-2 mb-1.5">
-            <span className="h-0.5 w-6 rounded-full bg-[#B5480F]" />
-            <p className="text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] text-[#B5480F] dark:text-[#F4A25B] flex overflow-hidden">
+            <span className="h-0.5 w-6 rounded-full bg-[var(--ck-role-accent,#B5480F)]" />
+            <p className="text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] flex overflow-hidden">
               {labelText.split("").map((char, index) => (
                 <motion.span
                   key={index}
@@ -547,7 +547,7 @@ export function SupportJourneySection() {
                 </motion.span>
               ))}
             </p>
-            <span className="h-0.5 w-6 rounded-full bg-[#B5480F]" />
+            <span className="h-0.5 w-6 rounded-full bg-[var(--ck-role-accent,#B5480F)]" />
           </div>
 
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-snug max-w-2xl mx-auto">
@@ -609,11 +609,11 @@ export function SupportJourneySection() {
 
             {/* STOP 1: Your item */}
             <div className="relative z-10 flex flex-col items-center w-[230px] shrink-0">
-              <div className="ck-stop-pin w-11 h-11 rounded-2xl bg-[#FBEDE3] dark:bg-[#2A150D] border-2 border-[#B5480F] flex items-center justify-center text-[#B5480F] shadow-md mb-3">
+              <div className="ck-stop-pin w-11 h-11 rounded-2xl bg-[#FBEDE3] dark:bg-[#2A150D] border-2 border-[#B5480F] flex items-center justify-center text-[var(--ck-role-accent,#B5480F)] shadow-md mb-3">
                 <Package className="w-5 h-5" />
               </div>
               <div className="ck-stop-card w-full h-[116px] p-3.5 rounded-2xl bg-white dark:bg-[#1A1310] border border-stone-200/90 dark:border-stone-800 shadow-xs flex flex-col justify-center text-center">
-                <span className="text-4xs font-extrabold uppercase tracking-widest text-[#B5480F] px-2 py-0.5 rounded-full bg-[#FBEDE3] dark:bg-[#2A150D] mb-1.5 self-center inline-block">
+                <span className="text-4xs font-extrabold uppercase tracking-widest text-[var(--ck-role-accent,#B5480F)] px-2 py-0.5 rounded-full bg-[#FBEDE3] dark:bg-[#2A150D] mb-1.5 self-center inline-block">
                   Stop 01
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
@@ -646,17 +646,17 @@ export function SupportJourneySection() {
             {/* STOP 3: Handed over in person */}
             <div className="relative z-10 flex flex-col items-center w-[230px] shrink-0">
               {/* Soft Warm Orange Glow Burst on Handover */}
-              <div className="ck-handover-glow absolute -top-4 w-24 h-24 rounded-full bg-[#B5480F]/30 blur-xl pointer-events-none" />
+              <div className="ck-handover-glow absolute -top-4 w-24 h-24 rounded-full bg-[var(--ck-role-accent,#B5480F)]/30 blur-xl pointer-events-none" />
 
-              <div className="ck-stop-pin relative w-12 h-12 rounded-2xl bg-[#FBEDE3] dark:bg-[#2A150D] border-2 border-[#B5480F] flex items-center justify-center text-[#B5480F] shadow-md mb-3">
+              <div className="ck-stop-pin relative w-12 h-12 rounded-2xl bg-[#FBEDE3] dark:bg-[#2A150D] border-2 border-[#B5480F] flex items-center justify-center text-[var(--ck-role-accent,#B5480F)] shadow-md mb-3">
                 <HandsMeetingIcon className="w-8 h-8" />
                 {/* Happy Face Pop-up */}
                 <div className="ck-happy-recipient absolute -top-3.5 -right-3.5 opacity-0 scale-50 z-20">
-                  <Smile className="w-7 h-7 text-[#B5480F] dark:text-[#F4A25B] fill-[#FBEDE3] dark:fill-[#2A150D]" />
+                  <Smile className="w-7 h-7 text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] fill-[#FBEDE3] dark:fill-[#2A150D]" />
                 </div>
               </div>
               <div className="ck-stop-card w-full h-[116px] p-3.5 rounded-2xl bg-white dark:bg-[#1A1310] border border-stone-200/90 dark:border-stone-800 shadow-xs flex flex-col justify-center text-center">
-                <span className="text-4xs font-extrabold uppercase tracking-widest text-[#B5480F] px-2 py-0.5 rounded-full bg-[#FBEDE3] dark:bg-[#2A150D] mb-1.5 self-center inline-block">
+                <span className="text-4xs font-extrabold uppercase tracking-widest text-[var(--ck-role-accent,#B5480F)] px-2 py-0.5 rounded-full bg-[#FBEDE3] dark:bg-[#2A150D] mb-1.5 self-center inline-block">
                   Stop 03
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
@@ -684,7 +684,7 @@ export function SupportJourneySection() {
                       key={i}
                       className="ck-benefit-point p-3.5 rounded-2xl bg-white/95 dark:bg-[#1A1310]/95 border border-stone-200/90 dark:border-stone-800 shadow-xs flex items-start gap-3 backdrop-blur-xs"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-[#FBEDE3] dark:bg-[#2A150D] text-[#B5480F] flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                      <div className="w-8 h-8 rounded-xl bg-[#FBEDE3] dark:bg-[#2A150D] text-[var(--ck-role-accent,#B5480F)] flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
                         <IconComp className="w-4 h-4" />
                       </div>
                       <div>
@@ -706,7 +706,7 @@ export function SupportJourneySection() {
         {/* MOBILE & TABLET (<1024px) Vertical Timeline & Stacked Layout */}
         <div className="lg:hidden flex flex-col gap-6 px-5 sm:px-8 mt-4">
           {/* Vertical Timeline for the 4 Stops with Orange Dashed Line */}
-          <div className="relative pl-6 border-l-2 border-dashed border-[#B5480F]/40 space-y-4 ml-2">
+          <div className="relative pl-6 border-l-2 border-dashed border-[var(--ck-role-accent,#B5480F)]/40 space-y-4 ml-2">
             {stops.map((st, i) => {
               const IconComp = st.icon;
               return (
@@ -754,7 +754,7 @@ export function SupportJourneySection() {
                   key={i}
                   className="p-3 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-xs flex items-start gap-2.5"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-[#FBEDE3] dark:bg-[#2A150D] text-[#B5480F] flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#FBEDE3] dark:bg-[#2A150D] text-[var(--ck-role-accent,#B5480F)] flex items-center justify-center shrink-0 mt-0.5">
                     <IconComp className="w-3.5 h-3.5" />
                   </div>
                   <div>

@@ -2,16 +2,14 @@
 
 import React, { useEffect } from "react";
 import { SmoothScroll } from "@/components/SmoothScroll";
-import { CauseKindWayHero } from "@/components/causekind-way/CauseKindWayHero";
 import { ManifestoSection } from "@/components/causekind-way/ManifestoSection";
 import { ProblemSolutionSection } from "@/components/home/ProblemSolutionSection";
 import { SupportJourneySection } from "@/components/home/SupportJourneySection";
-import { WayFinalCtaSection } from "@/components/causekind-way/WayFinalCtaSection";
 import { WayVerticalRoad } from "@/components/causekind-way/WayVerticalRoad";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-export function TheCauseKindWayClient() {
+export function CauseKindWaySections() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       gsap.registerPlugin(ScrollTrigger);
@@ -40,20 +38,14 @@ export function TheCauseKindWayClient() {
       {/* Vertical Road connecting all sections along the left milestone gutter */}
       <WayVerticalRoad />
 
-      {/* 1. Hero */}
-      <CauseKindWayHero />
-
-      {/* 2. Why We Exist / Manifesto */}
+      {/* 1. Why We Exist / Manifesto */}
       <ManifestoSection />
 
-      {/* 3. The Problem We Solve */}
+      {/* 2. The Problem We Solve */}
       <ProblemSolutionSection />
 
-      {/* 4. Where Your Support Goes */}
+      {/* 3. Where Your Support Goes */}
       <SupportJourneySection />
-
-      {/* 5. Final CTA */}
-      <WayFinalCtaSection />
     </div>
   );
 }

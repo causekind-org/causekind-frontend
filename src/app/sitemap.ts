@@ -35,7 +35,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/faq',
     '/contact',
     '/give-safely',
-    '/the-causekind-way',
     '/items',
     '/offers',
     '/requests',

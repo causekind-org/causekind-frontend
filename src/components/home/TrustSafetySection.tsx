@@ -9,7 +9,6 @@ import {
   Building2,
   Check,
   KeyRound,
-  ShieldCheck,
 } from "lucide-react";
 import { SnapCarousel, useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 
@@ -35,7 +34,7 @@ const TRUST_CARDS: TrustCardData[] = [
     roleTitle: "FOR DONORS",
     roleSubtitle: "Give with absolute confidence",
     roleColor: "#B5480F",
-    accentBg: "bg-[#B5480F]/10 text-[#B5480F] dark:bg-[#B5480F]/20 dark:text-[#E07A5F]",
+    accentBg: "bg-[var(--ck-role-accent,#B5480F)]/10 text-[var(--ck-role-accent,#B5480F)] dark:bg-[var(--ck-role-accent,#B5480F)]/20 dark:text-[#E07A5F]",
     borderHover: "hover:border-[#B5480F]/50 hover:shadow-[#B5480F]/10",
     glowColor: "rgba(181, 72, 15, 0.15)",
     icon: Heart,
@@ -49,9 +48,9 @@ const TRUST_CARDS: TrustCardData[] = [
     id: "donee",
     roleTitle: "FOR DONEES",
     roleSubtitle: "Receive with safety and dignity",
-    roleColor: "#0F7A6C",
-    accentBg: "bg-[#0F7A6C]/10 text-[#0F7A6C] dark:bg-[#0F7A6C]/20 dark:text-[#2EC4B6]",
-    borderHover: "hover:border-[#0F7A6C]/50 hover:shadow-[#0F7A6C]/10",
+    roleColor: "#1e3a60",
+    accentBg: "bg-[#1e3a60]/10 text-[#1e3a60] dark:bg-[#1e3a60]/20 dark:text-[#2EC4B6]",
+    borderHover: "hover:border-[#1e3a60]/50 hover:shadow-[#1e3a60]/10",
     glowColor: "rgba(15, 122, 108, 0.15)",
     icon: HandHeart,
     points: [
@@ -78,8 +77,8 @@ const TRUST_CARDS: TrustCardData[] = [
 ];
 
 const TRUST_STATS = [
-  { value: "100%", label: "Admin-verified listings", color: "text-[#B5480F]" },
-  { value: "10 km", label: "Local matching radius", color: "text-[#0F7A6C]" },
+  { value: "100%", label: "Admin-verified listings", color: "text-[var(--ck-role-accent,#B5480F)]" },
+  { value: "10 km", label: "Local matching radius", color: "text-[#1e3a60]" },
   { value: "₹0", label: "Platform or hidden fees", color: "text-[#1F6B3F]" },
   { value: "Zero", label: "Middlemen or warehouses", color: "text-stone-800 dark:text-stone-100" },
 ];
@@ -100,24 +99,15 @@ function TrustSafetyMobile() {
       ref={ref}
       id="trust"
       aria-label="Trust and Safety"
-      className="ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] border-t border-stone-200/80 dark:border-stone-800/80 px-5"
+      className="ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] px-5"
     >
       <div className="flex flex-col items-center text-center">
-        <svg data-reveal-item="scale" style={stagger(0)} viewBox="0 0 100 100" className="w-11 h-11 mb-2" fill="none" aria-hidden>
-          <path d="M50 8 L18 22 V50 C18 50 18 58 24 67 L50 50 Z" fill="#B5480F" />
-          <path d="M50 8 L82 22 V50 C82 50 82 58 76 67 L50 50 Z" fill="#D4602C" />
-          <path d="M24 67 C32 80 50 92 50 92 V50 L24 67 Z" fill="#0F7A6C" />
-          <path d="M76 67 C68 80 50 92 50 92 V50 L76 67 Z" fill="#1F6B3F" />
-          <circle className="fill-white dark:fill-[#1A1412]" cx="50" cy="50" r="18" />
-          <path d="M42 50 L48 56 L59 44" stroke="#B5480F" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
         <div
           data-reveal-item
-          style={stagger(1)}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 mb-1.5"
+          style={stagger(0)}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] border border-[var(--ck-role-accent,#B5480F)]/20 bg-[var(--ck-role-accent,#B5480F)]/5 mb-3 sm:mb-4 mt-2"
         >
-          <ShieldCheck className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
-          <span>TRUST & SAFETY</span>
+          TRUST & SAFETY
         </div>
         <h2 data-reveal-item style={stagger(2)} className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
           Built on trust, for everyone.
@@ -177,10 +167,6 @@ function TrustSafetyMobile() {
         ))}
       </dl>
 
-      <div data-reveal-item style={stagger(6)} className="mt-3 flex items-start gap-2.5 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs leading-snug">
-        <KeyRound className="w-4 h-4 mt-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0" aria-hidden="true" />
-        <span>Every handover is confirmed in the app with a one-time code. We recommend meeting in a public place.</span>
-      </div>
     </section>
   );
 }
@@ -209,7 +195,6 @@ function TrustSafetyFull({
   variant: "desktop" | "mobile";
 }) {
   const sectionRef = useRef<HTMLElement>(null);
-  const shieldStageRef = useRef<HTMLDivElement>(null);
   const badgeShieldRef = useRef<HTMLDivElement>(null);
   const cardsContainerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -240,25 +225,6 @@ function TrustSafetyFull({
 
     mm.add(mediaQuery, () => {
       // 1. Initial State Setup
-      const shieldPieces = gsap.utils.toArray<SVGPathElement>(".shield-piece");
-      const shieldCheck = document.querySelector<SVGPathElement>(".shield-check-path");
-      const shieldGlow = document.querySelector<SVGCircleElement>(".shield-glow");
-
-      // Initial positions for shield pieces (scattered)
-      gsap.set(shieldPieces[0], { x: -60, y: -40, rotation: -25, opacity: 0, transformOrigin: "center" });
-      gsap.set(shieldPieces[1], { x: 60, y: -40, rotation: 25, opacity: 0, transformOrigin: "center" });
-      gsap.set(shieldPieces[2], { x: -50, y: 50, rotation: -15, opacity: 0, transformOrigin: "center" });
-      gsap.set(shieldPieces[3], { x: 50, y: 50, rotation: 15, opacity: 0, transformOrigin: "center" });
-      gsap.set(shieldPieces[4], { scale: 0, opacity: 0, transformOrigin: "center" }); // center core
-
-      if (shieldCheck) {
-        const length = shieldCheck.getTotalLength ? shieldCheck.getTotalLength() : 60;
-        gsap.set(shieldCheck, { strokeDasharray: length, strokeDashoffset: length });
-      }
-      if (shieldGlow) {
-        gsap.set(shieldGlow, { scale: 0, opacity: 0, transformOrigin: "center" });
-      }
-
       // Master ScrollTrigger Timeline
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -269,63 +235,14 @@ function TrustSafetyFull({
         },
       });
 
-      // Step A: Shield Assembly
-      tl.to(shieldPieces, {
-        x: 0,
-        y: 0,
-        rotation: 0,
-        scale: 1,
-        opacity: 1,
-        duration: 0.5,
-        stagger: 0.05,
-        ease: "back.out(1.8)",
-      });
-
-      // Step B: Shield Checkmark Draws & Glow Pulse
-      if (shieldCheck) {
-        tl.to(
-          shieldCheck,
-          {
-            strokeDashoffset: 0,
-            duration: 0.35,
-            ease: "power2.out",
-          },
-          "-=0.2"
-        );
-      }
-      if (shieldGlow) {
-        tl.to(
-          shieldGlow,
-          {
-            scale: 1.6,
-            opacity: 0.8,
-            duration: 0.3,
-            ease: "power1.out",
-          },
-          "-=0.3"
-        ).to(
-          shieldGlow,
-          {
-            scale: 2.2,
-            opacity: 0,
-            duration: 0.4,
-            ease: "power2.out",
-          },
-          "-=0.1"
-        );
-      }
-
-      // Step C: Shield shrinks & moves to top badge
-      tl.to(
-        shieldStageRef.current,
+      // Step: Badge Reveal
+      tl.from(
+        badgeShieldRef.current,
         {
-          scale: 0.55,
-          opacity: 0.9,
-          y: -20,
-          duration: 0.4,
-          ease: "power3.inOut",
-        },
-        "-=0.2"
+          opacity: 0,
+          y: 10,
+          duration: 0.3,
+        }
       );
 
       // Step D: Cards Fan Out / Deal - START MUCH EARLIER
@@ -407,86 +324,23 @@ function TrustSafetyFull({
       ref={sectionRef}
       id="trust"
       aria-label="Trust and Safety"
-      className="relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] border-t border-stone-200/80 dark:border-stone-800/80 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
+      className="relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
     >
       {/* Background Subtle Gradient Glows */}
       <div
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-b from-[#B5480F]/5 via-[#0F7A6C]/5 to-transparent rounded-full blur-3xl pointer-events-none"
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-b from-[#B5480F]/5 via-[#1e3a60]/5 to-transparent rounded-full blur-3xl pointer-events-none"
         aria-hidden="true"
       />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 w-full flex flex-col justify-between h-full gap-4 sm:gap-6 lg:gap-5">
-        {/* ================= HEADER & SHIELD ASSEMBLY STAGE ================= */}
-        <div className="flex flex-col items-center text-center relative">
-          {/* Animated Shield Assembly Graphic */}
-          <div
-            ref={shieldStageRef}
-            className="w-14 h-14 sm:w-16 sm:h-16 mb-2 relative flex items-center justify-center pointer-events-none"
-          >
-            <svg
-              viewBox="0 0 100 100"
-              className="w-full h-full drop-shadow-md overflow-visible"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle
-                className="shield-glow"
-                cx="50"
-                cy="50"
-                r="35"
-                fill="#B5480F"
-                opacity="0"
-              />
-              {/* Piece 1: Top-Left Crest */}
-              <path
-                className="shield-piece"
-                d="M50 8 L18 22 V50 C18 50 18 58 24 67 L50 50 Z"
-                fill="#B5480F"
-              />
-              {/* Piece 2: Top-Right Crest */}
-              <path
-                className="shield-piece"
-                d="M50 8 L82 22 V50 C82 50 82 58 76 67 L50 50 Z"
-                fill="#D4602C"
-              />
-              {/* Piece 3: Bottom-Left Wing */}
-              <path
-                className="shield-piece"
-                d="M24 67 C32 80 50 92 50 92 V50 L24 67 Z"
-                fill="#0F7A6C"
-              />
-              {/* Piece 4: Bottom-Right Wing */}
-              <path
-                className="shield-piece"
-                d="M76 67 C68 80 50 92 50 92 V50 L76 67 Z"
-                fill="#1F6B3F"
-              />
-              {/* Piece 5: Center Core Star/Emblem */}
-              <circle
-                className="shield-piece fill-white dark:fill-[#1A1412]"
-                cx="50"
-                cy="50"
-                r="18"
-              />
-              {/* Checkmark Path */}
-              <path
-                className="shield-check-path"
-                d="M42 50 L48 56 L59 44"
-                stroke="#B5480F"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-
+        {/* ================= HEADER ================= */}
+        <div className="flex flex-col items-center text-center relative mt-2 sm:mt-4">
           {/* Section Eyebrow Badge */}
           <div
             ref={badgeShieldRef}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 mb-1.5"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] border border-[var(--ck-role-accent,#B5480F)]/20 bg-[var(--ck-role-accent,#B5480F)]/5 mb-3 sm:mb-4"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
-            <span>TRUST & SAFETY</span>
+            TRUST & SAFETY
           </div>
 
           {/* Section Heading */}
@@ -578,7 +432,7 @@ function TrustSafetyFull({
         >
           {/* Stat 1: 100% */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2">
-            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#B5480F] font-mono tracking-tight">
+            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[var(--ck-role-accent,#B5480F)] font-mono tracking-tight">
               {stat1}%
             </div>
             <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">
@@ -588,7 +442,7 @@ function TrustSafetyFull({
 
           {/* Stat 2: 10 km */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-l border-stone-200/60 dark:border-stone-800/60">
-            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#0F7A6C] font-mono tracking-tight">
+            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#1e3a60] font-mono tracking-tight">
               {stat2} km
             </div>
             <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">
@@ -617,15 +471,6 @@ function TrustSafetyFull({
           </div>
         </div>
 
-        {/* ================= SAFETY NOTE BANNER ================= */}
-        <div className="w-full flex items-center justify-center">
-          <div className="inline-flex items-center gap-2.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs sm:text-[13px] leading-snug shadow-xs max-w-2xl text-center sm:text-left">
-            <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" aria-hidden="true" />
-            <span>
-              Every handover is confirmed in the app with a one-time code. We recommend meeting in a public place.
-            </span>
-          </div>
-        </div>
       </div>
     </section>
   );

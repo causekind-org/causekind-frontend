@@ -67,6 +67,7 @@ import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
+import { RoleHome } from "@/components/home/RoleHome";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
@@ -128,7 +129,7 @@ export default function HomeClient({
 }) {
   const t = useTranslations("landing");
   const tCommon = useTranslations("common");
-  const { user } = useAuth();
+  const { user, isRestoring } = useAuth();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -227,6 +228,21 @@ export default function HomeClient({
   );
 
 
+  const roleStr = user?.role?.replace(/^ROLE_/, "");
+  const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
+  
+  const [isDesktop, setIsDesktop] = useState(true);
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
+  const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
+
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
@@ -239,8 +255,11 @@ export default function HomeClient({
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
       <SmoothScroll />
-      {/* Continuous dashed road across whole desktop page */}
-      <DashedJourneyRoad />
+      {/* SHARED / GUEST DESKTOP TREE */}
+      {showGuestDesktopTree && (
+        <div className="ck-guest-desktop">
+          {/* Continuous dashed road across whole desktop page */}
+          <DashedJourneyRoad />
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
@@ -384,6 +403,24 @@ export default function HomeClient({
         {/* SECTION 8 — FINAL CTA */}
         <FinalCtaComponent variant="desktop" />
       </div>
+      </div>
+      )}
+
+      {/* ROLE HOME FOR DESKTOP */}
+      {isDonorOrDonee && !isRestoring && isDesktop && (
+        <div className="max-lg:hidden w-full">
+          <RoleHome 
+            role={roleStr?.toLowerCase() as "donor" | "donee"} 
+            initialPublicRequests={initialPublicRequests} 
+            stats={stats} 
+          />
+        </div>
+      )}
+
+      {/* PLACEHOLDER FOR DONOR/DONEE WHILE RESTORING */}
+      {isRestoring && (
+        <div className="ck-role-restoring-placeholder hidden max-lg:hidden w-full h-[85vh] bg-[var(--ck-role-soft)]" />
+      )}
 
       {/* ════════════════════════════════════════════════════════════
           MOBILE VIEW  (lg:hidden)

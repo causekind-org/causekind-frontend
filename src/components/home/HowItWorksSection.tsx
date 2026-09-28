@@ -297,6 +297,7 @@ export function HowItWorksSection() {
   const [isStoppedPermanently, setIsStoppedPermanently] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [pressedHref, setPressedHref] = useState<string | null>(null);
+  const [isHoveredSection, setIsHoveredSection] = useState(false);
 
   const autoTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timerStartRef = useRef<number>(Date.now());
@@ -321,12 +322,13 @@ export function HowItWorksSection() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // Compute pause state (only off-screen, hidden browser tab, permanent stop, or reduced-motion)
+  // Compute pause state (only off-screen, hidden browser tab, permanent stop, reduced-motion, or hovered)
   const isPaused =
     isStoppedPermanently ||
     Boolean(reduceMotion) ||
     !isSectionVisible ||
-    !isPageVisible;
+    !isPageVisible ||
+    isHoveredSection;
 
   // Master continuous timer management
   useEffect(() => {
@@ -407,6 +409,8 @@ export function HowItWorksSection() {
       ref={sectionRef}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
+      onMouseEnter={() => setIsHoveredSection(true)}
+      onMouseLeave={() => setIsHoveredSection(false)}
       className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] border-b border-stone-200/80 dark:border-stone-850/70 overflow-hidden transition-colors duration-500"
       style={
         {

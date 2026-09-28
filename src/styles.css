@@ -3704,6 +3704,9 @@ div:has(.searchable-select-open) {
   --ck-role-on-accent: #ffffff;
   --ck-role-soft: oklch(0.96 0.035 55);
   --ck-role-on-soft: oklch(0.28 0.10 45);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(176, 74, 21, 0.4);
+  --ck-role-shadow-rgb: 176, 74, 21;
   --ck-role-ring: #b04a15;
   --ck-role-gradient: linear-gradient(135deg, #b04a15 0%, #e07b3a 100%);
   --ck-role-gradient-soft: linear-gradient(135deg, #e07b3a 0%, #f0b97a 100%);
@@ -3719,6 +3722,9 @@ div:has(.searchable-select-open) {
   --ck-role-soft: oklch(0.95 0.03 250);
   /* Readable text ON --ck-role-soft. Dark navy on the pale blue: ~13:1. */
   --ck-role-on-soft: oklch(0.26 0.08 255);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(30, 58, 96, 0.4);
+  --ck-role-shadow-rgb: 30, 58, 96;
   /* Ring is the HOVER blue, not the accent: #1e3a60 against a white page is a
      dark ring that reads as a border, and focus must be unmistakable. */
   --ck-role-ring: #2d5a96;
@@ -3734,6 +3740,9 @@ div:has(.searchable-select-open) {
   --ck-role-on-accent: #1a1207;
   --ck-role-soft: oklch(0.26 0.05 50);
   --ck-role-on-soft: oklch(0.94 0.03 60);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(224, 123, 58, 0.4);
+  --ck-role-shadow-rgb: 224, 123, 58;
   --ck-role-ring: #e07b3a;
 }
 
@@ -3748,6 +3757,9 @@ div:has(.searchable-select-open) {
   --ck-role-on-accent: #0b1929;
   --ck-role-soft: oklch(0.26 0.05 250);
   --ck-role-on-soft: oklch(0.93 0.02 250);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(127, 176, 232, 0.4);
+  --ck-role-shadow-rgb: 127, 176, 232;
   --ck-role-ring: #7fb0e8;
   --ck-role-gradient: linear-gradient(135deg, #2d5a96 0%, #7fb0e8 100%);
   --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #a3c8f2 100%);
@@ -4582,3 +4594,16 @@ div:has(.searchable-select-open) {
     animation: none;
   }
 }
+
+@media (min-width: 1024px) {
+  [data-ck-role-theme="donor"] .ck-guest-desktop,
+  [data-ck-role-theme="donee"] .ck-guest-desktop {
+    display: none !important;
+  }
+
+  [data-ck-role-theme="donor"] .ck-role-restoring-placeholder,
+  [data-ck-role-theme="donee"] .ck-role-restoring-placeholder {
+    display: block !important;
+  }
+}
+

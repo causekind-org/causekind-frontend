@@ -305,7 +305,9 @@ export function LiveNeedsSection({
             {displayedNeeds.map((need, idx) => {
               const visual = CATEGORY_VISUALS[need.category];
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
-              const offerUrl = loginUrlFor(`/requests/${need.id}/offer`);
+              const isDonor = role === "DONOR";
+              const isDonee = role === "DONEE";
+              const offerUrl = isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
 
               return (
                 <motion.article
@@ -381,14 +383,16 @@ export function LiveNeedsSection({
                     {/* Every card is now fully visible, so every CTA is live and
                         keyboard-reachable — the carousel had to disable the
                         blurred neighbours' links. */}
+                    {!isDonee && (
                     <Link
                       href={offerUrl}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
                     >
-                      <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
-                      <span>Log in to offer this item</span>
+                      {!isDonor && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
+                      <span>{isDonor ? "Offer this item" : "Log in to offer this item"}</span>
                       <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
                     </Link>
+                    )}
                   </div>
                 </motion.article>
               );

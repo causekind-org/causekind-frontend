@@ -27,7 +27,7 @@ function FounderAvatarPlaceholder() {
         viewBox="0 0 200 240"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-3/4 h-3/4 object-contain text-[#B5480F] dark:text-[#E07A5F] opacity-90 transition-transform duration-500 hover:scale-105"
+        className="w-3/4 h-3/4 object-contain text-[var(--ck-role-accent,#B5480F)] dark:text-[#E07A5F] opacity-90 transition-transform duration-500 hover:scale-105"
         aria-hidden="true"
       >
         {/* Head */}
@@ -302,11 +302,11 @@ export function FoundersNoteSection({
           <div ref={textBlockRef} className="flex flex-col text-center lg:text-left">
             {/* Eyebrow label */}
             <div className="founder-anim-item flex items-center justify-center lg:justify-start gap-2 mb-2">
-              <span className="h-0.5 w-6 rounded-full bg-[#B5480F]" />
-              <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-[#B5480F] dark:text-[#F4A25B]">
+              <span className="h-0.5 w-6 rounded-full bg-[var(--ck-role-accent,#B5480F)]" />
+              <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)]">
                 WHY WE BUILT CAUSEKIND
               </p>
-              <span className="h-0.5 w-6 rounded-full bg-[#B5480F] lg:hidden" />
+              <span className="h-0.5 w-6 rounded-full bg-[var(--ck-role-accent,#B5480F)] lg:hidden" />
             </div>
 
             {/* Section heading */}
@@ -317,7 +317,7 @@ export function FoundersNoteSection({
             {/* Large decorative quote icon */}
             <div
               ref={quoteMarkRef}
-              className="flex justify-center lg:justify-start my-3 sm:my-4 text-[#B5480F]/25 dark:text-[#E07A5F]/30"
+              className="flex justify-center lg:justify-start my-3 sm:my-4 text-[var(--ck-role-accent,#B5480F)]/25 dark:text-[#E07A5F]/30"
               aria-hidden="true"
             >
               <Quote className="w-8 h-8 sm:w-10 sm:h-10 fill-current rotate-180" />
@@ -354,7 +354,7 @@ export function FoundersNoteSection({
               </p>
 
               {/* Founder title */}
-              <p className="text-xs sm:text-sm font-semibold text-[#B5480F] dark:text-[#F4A25B] mt-0.5">
+              <p className="text-xs sm:text-sm font-semibold text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] mt-0.5">
                 {FOUNDER.title}
               </p>
             </div>
