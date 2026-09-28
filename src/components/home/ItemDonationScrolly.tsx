@@ -5,16 +5,13 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useReducedMotion } from "framer-motion";
 import {
+  Shirt,
   PackageOpen,
-  Smartphone,
   MapPin,
-  HeartHandshake,
   HandHeart,
-  ShieldCheck,
+  HeartHandshake,
   type LucideIcon,
 } from "lucide-react";
-
-
 
 /* ─── The film ─────────────────────────────────────────────────────────────
    A ~10-second, 60fps clip (598 frames) exported to still WebPs and scrubbed by
@@ -90,6 +87,108 @@ const CAPTIONS: Caption[] = [
 /** The brand + CTA block, held on the dark left space of the closing frames. */
 const BRAND_FROM = 0.8;
 
+/* ─── Journey accents ────────────────────────────────────────────────────
+   A handful of tiny, editorial touches layered onto the same eased `sp`
+   progress used everywhere else in the section — nothing here runs on its
+   own clock, so scrolling backward reverses it exactly like the film does. */
+
+/** One flung donation item per caption beat, drawn as a clean lucide glyph in
+    a soft brand-orange badge rather than emoji — matches the rest of the
+    section's line-icon language instead of dropping in a different art
+    style. */
+const FLY_ITEMS: { key: Caption["key"]; icon: LucideIcon; side: Side }[] = [
+  { key: "p1", icon: Shirt, side: "left" }, // the donor's item, packed
+  { key: "p2", icon: PackageOpen, side: "left" }, // the listing goes up
+  { key: "p3", icon: MapPin, side: "right" }, // searching nearby
+  { key: "p4", icon: HandHeart, side: "right" }, // a match found
+  { key: "p5", icon: HeartHandshake, side: "right" }, // handed over
+];
+
+/** Rise-curve-overshoot-fade for a flung item, local to its own caption
+    window so it only ever appears while that beat is on screen. */
+function flyStyle(sp: number, c: Caption) {
+  const lp = clamp01((sp - c.from) / (c.to - c.from || 1e-6));
+  const rise = smoothstep(0, 0.6, lp);
+  const overshoot = Math.sin(clamp01((lp - 0.5) / 0.4) * Math.PI) * 10;
+  const y = 130 - rise * 160 - overshoot;
+  const x = Math.sin(lp * Math.PI) * 24;
+  const rot = -16 + rise * 24;
+  const opacity =
+    lp <= 0 || lp >= 1
+      ? 0
+      : Math.min(smoothstep(0, 0.16, lp), 1 - smoothstep(0.82, 1, lp));
+  return { x, y, rot, opacity };
+}
+
+/** The donor → photo → listing → nearby match → recipient waypoints the
+    orange dot travels between, as % of the panel. A gentle zig-zag reads as
+    a path rather than a ruler-straight progress bar. */
+const JOURNEY_STOPS: { x: number; y: number }[] = [
+  { x: 9, y: 46 },
+  { x: 29, y: 30 },
+  { x: 50, y: 50 },
+  { x: 71, y: 28 },
+  { x: 91, y: 46 },
+];
+const JOURNEY_END = BRAND_FROM - 0.04; // dot completes its walk just before the brand fades in
+
+function journeyPoint(sp: number) {
+  const t = clamp01(sp / JOURNEY_END) * (JOURNEY_STOPS.length - 1);
+  const i = Math.min(JOURNEY_STOPS.length - 2, Math.floor(t));
+  const local = t - i;
+  const a = JOURNEY_STOPS[i];
+  const b = JOURNEY_STOPS[i + 1];
+  return { x: a.x + (b.x - a.x) * local, y: a.y + (b.y - a.y) * local };
+}
+
+/** Small transient status labels, each a brief triangular pulse of opacity
+    centred on a point in the scrub — never more than one on screen. */
+const STATUS_BEATS: { at: number; label: string }[] = [
+  { at: 0.24, label: "PHOTO TAKEN ✓" },
+  { at: 0.33, label: "LISTED ✓" },
+  { at: 0.42, label: "SEARCHING NEARBY…" },
+  { at: 0.53, label: "MATCH FOUND ✓" },
+  { at: 0.67, label: "CONNECTED ✓" },
+];
+function pulseOpacity(sp: number, at: number, w: number) {
+  const d = Math.abs(sp - at);
+  if (d > w) return 0;
+  const t = 1 - d / w;
+  return t * t * (3 - 2 * t);
+}
+
+/* ─── Testing accents (2026-09-19) ───────────────────────────────────────
+   Everything below is explicitly experimental — the user wants to try it
+   live and may ask for any piece to be pulled back out. All of it is driven
+   off the same `sp`/`expand`/`brandOpacity` values as the rest of the file,
+   so it scrubs forward and backward with scroll and never runs on its own
+   timer. */
+
+/** The gaps between caption windows, where the story visibly steps to the
+    next stage — each gets a brief darken + blur on the film so the cut reads
+    as a scene change rather than just new words appearing over the same
+    shot. */
+const SCENE_TRANSITIONS: number[] = [0.165, 0.335, 0.51, 0.65];
+function transitionPulse(sp: number, at: number, w: number) {
+  const d = Math.abs(sp - at);
+  if (d > w) return 0;
+  const t = 1 - d / w;
+  return t * t * (3 - 2 * t);
+}
+
+/** A hair of extra scale on the two "important" beats — the listing going up,
+    and the match being found — 1 → ~1.025. Meant to be felt, not seen. */
+function zoomBoost(sp: number) {
+  return pulseOpacity(sp, 0.3, 0.09) * 0.02 + pulseOpacity(sp, 0.55, 0.09) * 0.025;
+}
+
+/** Where the soft warm glow sits: donor (left) → centre → recipient (right),
+    over the same span the journey dot walks. */
+function glowPoint(sp: number) {
+  const t = clamp01(sp / JOURNEY_END);
+  return { x: 10 + t * 80, y: 40 + Math.sin(t * Math.PI) * 12 };
+}
+
 /**
  * How opaque a caption is at overall progress `p`. Fades in over the first
  * slice of its window, holds, fades out over the last slice — so nothing
@@ -116,7 +215,6 @@ function captionOpacity(p: number, c: Caption) {
 export function ItemDonationScrolly() {
   const t = useTranslations("landing.scrolly");
   const reduceMotion = useReducedMotion() ?? false;
-  
 
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -126,6 +224,33 @@ export function ItemDonationScrolly() {
 
   const [progress, setProgress] = useState(0);
   const [ready, setReady] = useState(false);
+  // Testing: cursor position for the desktop-only floating-item parallax,
+  // normalised to roughly -0.5..0.5 on each axis.
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+
+  /* ── Testing: mouse-driven depth for the floating items ──────────────────
+     Desktop pointer only (hover + fine pointer), and skipped entirely under
+     reduced motion. rAF-throttled so it never fires more than once a frame. */
+  useEffect(() => {
+    if (reduceMotion) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let raf = 0;
+    function onMove(e: MouseEvent) {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        setMouse({
+          x: e.clientX / window.innerWidth - 0.5,
+          y: e.clientY / window.innerHeight - 0.5,
+        });
+      });
+    }
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [reduceMotion]);
 
   /* ── Preload the frame set, then drive the canvas ────────────────────────
      One <img> per frame kept in a ref (never in React state — 240 Image
@@ -304,13 +429,46 @@ export function ItemDonationScrolly() {
     { v: "bottom", h: "right" },
   ] as const;
 
+  // Journey dot: only walks once the frame is open, and steps aside with the
+  // captions as the brand block takes over.
+  const journeyVisible = expand * (1 - brandOpacity);
+  const journeyPos = journeyPoint(sp);
+  const activeStatus = STATUS_BEATS.map((b) => ({ ...b, o: pulseOpacity(sp, b.at, 0.045) })).find(
+    (b) => b.o > 0.01,
+  );
+
+  // Testing: parallax depth. The film drifts a little slower than scroll,
+  // the text a little faster and the opposite direction — a small offset
+  // (single-digit / low-teens px) that reads as depth rather than movement.
+  const parallaxBg = (sp - 0.5) * 10;
+  const parallaxFg = (sp - 0.5) * -18;
+
+  // Testing: cinematic scene transitions. A brief darken + blur on the film
+  // right as the story steps from one beat to the next.
+  const transitionAmt = SCENE_TRANSITIONS.reduce(
+    (m, at) => Math.max(m, transitionPulse(sp, at, 0.022)),
+    0,
+  );
+
+  // Testing: micro zoom on the important beats, folded into the existing
+  // media scale so it's one transform, not two competing ones.
+  const zoom = zoomBoost(sp);
+
+  // Testing: the warm light that follows the story from donor to recipient.
+  // Fades out with the other decoration as the brand block takes over.
+  const glow = glowPoint(sp);
+  const glowOpacity = 0.14 * expand * smoothstep(0, 0.04, sp) * (1 - brandOpacity);
+
+  // Testing: end-scene payoff. Everything decorative rides this factor down
+  // to zero as the closing brand block fades up, so the last beat is calm.
+  const decorFade = 1 - brandOpacity;
+
   /* ── Reduced-motion / server fallback ────────────────────────────────────
      A single representative still with the brand block and CTA laid over it.
      No sticky, no 600vh, no scrub. */
   if (reduceMotion) {
     return (
       <section id="how" className="relative w-full overflow-hidden bg-[#0e0f10]">
-        
         <div className="relative aspect-[16/9] w-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -319,9 +477,8 @@ export function ItemDonationScrolly() {
             className="absolute inset-0 h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/30 to-transparent" />
-          <BrandBlock t={t} />
+          <BrandBlock t={t} reveal={1} />
         </div>
-        
       </section>
     );
   }
@@ -330,7 +487,7 @@ export function ItemDonationScrolly() {
     <section
       ref={sectionRef}
       id="how"
-      className="relative w-full bg-[var(--surface-cream)]"
+      className="relative w-full bg-[#0e0f10]"
       style={{ height: `${SECTION_VH}vh` }}
       aria-label={t("a11y")}
     >
@@ -338,9 +495,7 @@ export function ItemDonationScrolly() {
           no gutter and no corners — and while it is pinned the site header is
           hidden (see the `ck:immersive-nav` dispatch below), so the film really
           does own the whole screen. */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[var(--surface-cream)]">
-        
-        
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#0e0f10]">
         {/* Scoped keyframes for the caption chrome. Kept local (unique ck-scrolly-*
             names) rather than in the global sheet so nothing here can collide with
             it — the same reason the animations in the old dial section were named.
@@ -390,15 +545,49 @@ export function ItemDonationScrolly() {
             mildly zoomed inside and eases back to 1 as it opens. */}
         <div
           className="absolute inset-0"
-          style={{ clipPath: clip, WebkitClipPath: clip, willChange: "clip-path" }}
+          style={{
+            clipPath: clip,
+            WebkitClipPath: clip,
+            willChange: "clip-path",
+            filter: transitionAmt > 0.01 ? `blur(${transitionAmt * 5}px) brightness(${1 - transitionAmt * 0.4})` : undefined,
+          }}
         >
           <canvas
             ref={canvasRef}
             aria-hidden
             className="absolute inset-0 block h-full w-full"
-            style={{ transform: `scale(${mediaScale})`, transformOrigin: "center", willChange: "transform" }}
+            style={{
+              transform: `scale(${mediaScale + zoom}) translateY(${parallaxBg}px)`,
+              transformOrigin: "center",
+              willChange: "transform",
+            }}
           />
         </div>
+        {/* Testing: scene-transition darken, layered over the blur above so the
+            cut between beats reads as a brief "gate close / open" rather than a
+            hard cut or just new text. */}
+        {transitionAmt > 0.01 && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-black"
+            style={{ opacity: transitionAmt * 0.4 }}
+          />
+        )}
+
+        {/* Testing: the warm light that follows the story — donor → centre →
+            recipient — as a very soft moving glow. No shape, no edge, just a
+            gentle lift in warmth near where the action currently is. */}
+        {glowOpacity > 0.005 && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: `radial-gradient(38% 38% at ${glow.x}% ${glow.y}%, rgba(255,150,60,0.9), rgba(255,150,60,0) 70%)`,
+              opacity: glowOpacity,
+              mixBlendMode: "screen",
+            }}
+          />
+        )}
 
         {/* Cinematic vignette — darkens the edges so the frame reads as a lens. */}
         <div
@@ -407,7 +596,6 @@ export function ItemDonationScrolly() {
           style={{
             background:
               "radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.5) 100%)",
-            opacity: expand,
           }}
         />
         {/* Film grain — a faint SVG-noise plane, oversized so its drift never
@@ -422,7 +610,7 @@ export function ItemDonationScrolly() {
             height: "150%",
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-            opacity: 0.08 * expand,
+            opacity: 0.08 * (1 - brandOpacity * 0.5),
             mixBlendMode: "overlay",
             animation: "ck-scrolly-grain 0.7s steps(5) infinite",
           }}
@@ -463,11 +651,11 @@ export function ItemDonationScrolly() {
           className="pointer-events-none absolute inset-x-0 bottom-7 flex flex-col items-center gap-2"
           style={{ opacity: 1 - hintOut, transform: `translateY(${8 * hintOut}px)` }}
         >
-          <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-stone-600 dark:text-stone-400">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
             Scroll
           </span>
           <span
-            className="block h-4 w-4 rotate-45 border-b border-r border-stone-500 dark:border-stone-400"
+            className="block h-4 w-4 rotate-45 border-b border-r border-white/50"
             style={{ animation: "ck-scrolly-bob 1.8s ease-in-out infinite" }}
           />
         </div>
@@ -495,6 +683,104 @@ export function ItemDonationScrolly() {
           }}
         />
 
+        {/* Flying donation items — one small emoji per caption beat, thrown up
+            from off-screen with a curved path, a slight overshoot, then a
+            fade. Desktop only: on smaller screens the captions and film
+            already fill the frame, so this stays out of the way. */}
+        {FLY_ITEMS.map((f) => {
+          const c = CAPTIONS.find((cc) => cc.key === f.key)!;
+          const s = flyStyle(sp, c);
+          if (s.opacity <= 0.01) return null;
+          const Icon = f.icon;
+          // Testing: mouse parallax. Left-side items lean away from the
+          // cursor a touch more than right-side ones so the whole plane
+          // reads as tilting, not just drifting.
+          const mouseSign = f.side === "left" ? -1 : 1;
+          const mx = mouse.x * -14 * mouseSign;
+          const my = mouse.y * -8;
+          return (
+            <span
+              key={f.key}
+              aria-hidden
+              className="pointer-events-none absolute hidden items-center justify-center rounded-full lg:flex"
+              style={{
+                [f.side]: "10%",
+                bottom: "16%",
+                width: "clamp(38px, 3.2vw, 48px)",
+                height: "clamp(38px, 3.2vw, 48px)",
+                background: "rgba(20,14,10,0.55)",
+                border: "1px solid rgba(255,138,43,0.4)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                boxShadow: "0 10px 22px rgba(0,0,0,0.45), 0 0 18px rgba(255,138,43,0.18)",
+                opacity: s.opacity * expand * decorFade,
+                transform: `translate3d(${s.x + mx}px, ${s.y + my}px, 0) rotate(${s.rot}deg)`,
+                willChange: "transform, opacity",
+              }}
+            >
+              <Icon
+                aria-hidden
+                strokeWidth={1.75}
+                style={{ width: "52%", height: "52%", color: "#ff8a2b" }}
+              />
+            </span>
+          );
+        })}
+
+        {/* CauseKind-orange journey dot — a small marker that walks Donor →
+            Photo → Listing → Nearby Match → Recipient along a thin, subtle
+            path as the film scrubs. Deliberately quiet: no dashboard rail,
+            just a dot and a faint line, tucked above the captions. */}
+        {journeyVisible > 0.02 && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 hidden lg:block"
+            style={{ opacity: journeyVisible }}
+          >
+            <svg
+              className="absolute inset-0 h-full w-full"
+              preserveAspectRatio="none"
+              style={{ opacity: 0.35 }}
+            >
+              <polyline
+                points={JOURNEY_STOPS.map((p) => `${p.x}%,${p.y}%`).join(" ")}
+                fill="none"
+                stroke="#ff8a2b"
+                strokeWidth={1}
+                strokeDasharray="1 5"
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+            <span
+              className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                left: `${journeyPos.x}%`,
+                top: `${journeyPos.y}%`,
+                background: "#ff8a2b",
+                boxShadow: "0 0 10px rgba(255,138,43,0.85)",
+                willChange: "left, top",
+              }}
+            />
+            {activeStatus && (
+              <span
+                className="absolute -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/90"
+                style={{
+                  left: `${journeyPos.x}%`,
+                  top: `calc(${journeyPos.y}% - 26px)`,
+                  opacity: activeStatus.o,
+                  transform: `translate(-50%, ${(1 - activeStatus.o) * 6}px)`,
+                  background: "rgba(14,15,16,0.55)",
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                }}
+              >
+                {activeStatus.label}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Phase captions. Decorative/transient, so hidden from assistive tech —
             the accessible summary is on the <section> and the brand block. Just
             the line itself now, in a sweeping orange shine. */}
@@ -512,7 +798,7 @@ export function ItemDonationScrolly() {
               style={{
                 [c.side]: 0,
                 opacity: o,
-                transform: `translateX(${slide}px)`,
+                transform: `translateX(${slide}px) translateY(${parallaxFg}px)`,
                 transition: "opacity 0.15s linear, transform 0.15s linear",
               }}
             >
@@ -528,6 +814,32 @@ export function ItemDonationScrolly() {
               >
                 {t(c.key)}
               </p>
+              {/* One hand-drawn accent stroke per beat, under the line — not
+                  under a single word (the copy comes from i18n as one
+                  string), but restrained to a short mark rather than a full
+                  underline, so it reads as an accent and not decoration. */}
+              <svg
+                aria-hidden
+                width="84"
+                height="10"
+                viewBox="0 0 84 10"
+                className="mt-1.5"
+                style={{ opacity: o }}
+              >
+                <path
+                  d="M2 6.5 C 22 2, 62 2, 82 6.5"
+                  fill="none"
+                  stroke="#ff8a2b"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  pathLength={1}
+                  style={{
+                    strokeDasharray: 1,
+                    strokeDashoffset: 1 - o,
+                    transition: "stroke-dashoffset 0.2s linear",
+                  }}
+                />
+              </svg>
             </div>
           );
         })}
@@ -544,29 +856,61 @@ export function ItemDonationScrolly() {
             pointerEvents: brandOpacity > 0.5 ? "auto" : "none",
           }}
         >
-          <BrandBlock t={t} />
+          <BrandBlock t={t} reveal={brandOpacity} />
+        </div>
+
+        {/* Scroll-progress rail — a thin glowing line along the top edge that
+            fills as you move through the whole section. Top, not bottom, so it
+            is never lost under the OS taskbar. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[3px]">
+          <div
+            className="h-full origin-left"
+            style={{
+              transform: `scaleX(${progress})`,
+              background: "linear-gradient(90deg, #b04a15 0%, #ff8a2b 100%)",
+              boxShadow: "0 0 12px rgba(255,138,43,0.6)",
+              willChange: "transform",
+            }}
+          />
         </div>
 
         {/* First-load hint, gone once the opening frame paints. */}
         {!ready && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-600 dark:text-stone-400">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
               Loading…
             </span>
           </div>
         )}
-        
-        
       </div>
     </section>
   );
 }
 
 /** The closing message, reused by the live overlay and the reduced-motion still
-    so the two never drift apart. */
-function BrandBlock({ t }: { t: ReturnType<typeof useTranslations> }) {
+    so the two never drift apart.
+    <p><b>Testing:</b> `reveal` (0→1, defaults to the fully-open still) drives a
+    single clean orange stroke that draws in above the heading as the section
+    lands on its ending — the section's one payoff beat, after everything
+    else has faded away. */
+function BrandBlock({
+  t,
+  reveal = 1,
+}: {
+  t: ReturnType<typeof useTranslations>;
+  reveal?: number;
+}) {
   return (
     <div className="max-w-[52ch]">
+      <span
+        aria-hidden
+        className="mb-4 block h-[3px] rounded-full"
+        style={{
+          width: `${44 * reveal}px`,
+          background: "linear-gradient(90deg, #b04a15 0%, #ff8a2b 100%)",
+          boxShadow: "0 0 10px rgba(255,138,43,0.6)",
+        }}
+      />
       <h2
         className="ck-shine"
         style={{
@@ -575,6 +919,8 @@ function BrandBlock({ t }: { t: ReturnType<typeof useTranslations> }) {
           fontWeight: 600,
           lineHeight: 1.04,
           letterSpacing: "-0.025em",
+          transform: `scale(${0.985 + reveal * 0.015})`,
+          transformOrigin: "left center",
         }}
       >
         {t("brandLine1")}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resolvePostAuthDestination } from "@/lib/postAuthDestination";
 import { loginUrlFor } from "@/lib/safeRedirect";
@@ -11,13 +11,14 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
 import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, registerNgo, googleAuth, googleComplete } from "@/lib/api";
 import { trackCompleteRegistration } from "@/lib/metaEvents";
-import { Eye, EyeOff, MapPin, Package, HandHeart, Building2, Check, ArrowRight, ArrowLeft, type LucideIcon } from "lucide-react";
+import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
 import { AnimatedEmailOtp } from "@/components/auth/AnimatedEmailOtp";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
+import { Reveal } from "@/components/Reveal";
 import { cn } from "@/lib/utils";
 import {
   mapServerErrorToField, validateCity, validateCountry, validateEmail, validateFullName,
@@ -26,11 +27,9 @@ import {
   type FieldStatus,
 } from "@/features/auth-validation/authValidation";
 import { useTimedFieldValidation } from "@/features/auth-validation/useTimedFieldValidation";
-import { ValidatedFieldFeedback } from "@/features/auth-validation/ValidatedFieldFeedback";
+import { ValidatedFieldFeedback, fieldStateClass } from "@/features/auth-validation/ValidatedFieldFeedback";
 import { AuthFormAlert } from "@/features/auth-validation/AuthFormAlert";
-import { useAuthOperation } from "@/features/auth-validation/useAuthOperation";
 import { useReducedMotion } from "framer-motion";
-import { FEATURES } from "@/lib/features";
 
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
@@ -49,6 +48,13 @@ function GoogleIcon() {
   );
 }
 
+function FacebookIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" fill="#1877F2"/>
+    </svg>
+  );
+}
 
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -74,130 +80,29 @@ function detectCountryCode(): string {
   return "IN";
 }
 
-// ── Kindness-journey card pieces ─────────────────────────────────────────────
-// Scoped to this card: nothing here restyles inputs or buttons elsewhere.
-
-/** One row inside a SignupFieldGroup. Rows are separated by the group's dividers. */
-const GROUP_ROW =
-  "px-3 pt-2 pb-1.5 transition-colors first:rounded-t-[9px] last:rounded-b-[9px] " +
-  "focus-within:bg-[#fbf3ea] dark:focus-within:bg-[#382c22]/60 " +
-  "data-[invalid]:bg-red-50/70 dark:data-[invalid]:bg-red-950/20 data-[invalid]:shadow-[inset_3px_0_0_#dc2626]";
-const ROW_LABEL = "block text-[11.5px] font-semibold text-stone-500 dark:text-stone-400";
-/** 16px text so iOS Safari does not zoom on focus; ~44px row with the label. */
-const ROW_INPUT =
-  "block w-full min-w-0 min-h-10 bg-transparent border-0 p-0 text-base text-stone-900 dark:text-stone-100 " +
-  "placeholder:text-[14px] placeholder:text-stone-400 dark:placeholder:text-zinc-500 focus:outline-none";
-const PRIMARY_BUTTON =
-  "inline-flex min-h-12 items-center justify-between gap-3 rounded-lg bg-[#b04a15] px-4 text-[14px] font-semibold text-white " +
-  "hover:bg-[#963c0d] disabled:opacity-60 disabled:cursor-not-allowed transition-colors " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900";
-
-/**
- * A titled, bordered group of rows. Deliberately NOT overflow:hidden — the
- * SearchableSelect menus inside open absolutely and must not be clipped.
- */
-function SignupFieldGroup({ legend, action, children }: { legend: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <fieldset className="min-w-0">
-      <div className="mb-1.5 flex min-h-9 items-center justify-between gap-2">
-        <legend className="float-left text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
-          {legend}
-        </legend>
-        {action}
-      </div>
-      <div className="clear-both rounded-[10px] border border-stone-200 dark:border-zinc-700/70 bg-white/70 dark:bg-zinc-900/40 divide-y divide-stone-200 dark:divide-zinc-700/70">
-        {children}
-      </div>
-    </fieldset>
-  );
-}
-
-/** Two labelled steps. The current one carries aria-current="step". */
-function SignupStepIndicator({ step, onGoToStep1, labels }: {
-  step: 1 | 2; onGoToStep1?: () => void;
-  labels: { list: string; part: string; details: string; completed: string };
-}) {
-  const item = (n: 1 | 2, label: string) => {
-    const current = step === n;
-    const done = step > n;
-    const body = (
-      <>
-        <span
-          className={`grid h-5 w-5 place-items-center rounded-full border text-[10px] font-bold ${
-            current || done ? "border-[#b04a15] bg-[#b04a15] text-white" : "border-stone-300 dark:border-zinc-600 text-stone-500"
-          }`}
-          aria-hidden="true"
-        >
-          {done ? <Check className="h-3 w-3" /> : n}
-        </span>
-        <span>{label}</span>
-        {done && <span className="sr-only"> ({labels.completed})</span>}
-      </>
-    );
-    return (
-      <li
-        aria-current={current ? "step" : undefined}
-        className={`flex items-center gap-1.5 whitespace-nowrap text-[12px] ${current ? "font-semibold text-[#b04a15] dark:text-[#e07b3a]" : "text-stone-500 dark:text-stone-400"}`}
-      >
-        {done && onGoToStep1 ? (
-          <button type="button" onClick={onGoToStep1} className="-my-3 inline-flex min-h-11 items-center gap-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]">
-            {body}
-          </button>
-        ) : body}
-      </li>
-    );
-  };
-  return (
-    <ol className="flex items-center gap-2.5" aria-label={labels.list}>
-      {item(1, labels.part)}
-      <li aria-hidden="true" className={`h-px min-w-4 flex-1 ${step === 2 ? "bg-[#b04a15]/60" : "bg-stone-200 dark:bg-zinc-700"}`} />
-      {item(2, labels.details)}
-    </ol>
-  );
-}
-
-/**
- * A role as a native radio inside a full-card label: the whole card is the hit
- * area, arrow keys move between roles, and the check + border + inset bar mean
- * selection is never shown by colour alone.
- */
-function SignupRoleChoice({ value, checked, onSelect, title, label, Icon, disabled = false }: {
-  value: string; checked: boolean; onSelect: () => void; title: string; label: string; Icon: LucideIcon; disabled?: boolean;
-}) {
-  return (
-    <label
-      className={`relative flex min-h-[74px] cursor-pointer items-center has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60 gap-3 rounded-[10px] border px-3.5 py-3 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#b04a15] has-[:focus-visible]:ring-offset-2 dark:has-[:focus-visible]:ring-offset-zinc-900 ${
-        checked
-          ? "border-[#b04a15] bg-[#fbf3ea] dark:bg-[#382c22] shadow-[inset_3px_0_0_#b04a15]"
-          : "border-stone-200 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900/40 hover:border-stone-300 dark:hover:border-zinc-600"
-      }`}
-    >
-      <input type="radio" name="role" value={value} checked={checked} onChange={onSelect} disabled={disabled} className="sr-only" />
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#b04a15]/10 text-[#b04a15] dark:text-[#e07b3a]" aria-hidden="true">
-        <Icon className="h-5 w-5" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[14px] font-semibold leading-snug text-stone-900 dark:text-stone-100">{title}</span>
-        <span className="mt-0.5 block text-[12px] text-stone-500 dark:text-stone-400">{label}</span>
-      </span>
-      <span
-        className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${checked ? "border-[#b04a15] bg-[#b04a15] text-white" : "border-stone-300 dark:border-zinc-600"}`}
-        aria-hidden="true"
-      >
-        {checked && <Check className="h-3 w-3" />}
-      </span>
-    </label>
-  );
+async function detectCountryFromIP(): Promise<string> {
+  try {
+    const res = await fetch("https://ipwho.is/?output=json&fields=country_code", {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) throw new Error("non-200");
+    const data = await res.json();
+    if (typeof data.country_code === "string" && /^[A-Z]{2}$/.test(data.country_code)) {
+      return data.country_code;
+    }
+  } catch {
+    // ignore
+  }
+  return detectCountryCode();
 }
 
 // ── Input component ──────────────────────────────────────────────────────────────
 /**
- * Text field with timed validation feedback, rendered as one row of a
- * SignupFieldGroup.
+ * Text field with timed validation feedback.
  *
- * <p>`status` drives the row tint, `aria-invalid` and the message slot
- * together, so colour is never the only signal. The input is never remounted
- * when status changes — that would drop focus and the caret mid-correction.
+ * <p>`status` drives border, `aria-invalid` and the message slot together, so
+ * colour is never the only signal. The input is never remounted when status
+ * changes — that would drop focus and the caret mid-correction.
  */
 function Field({
   id, label, type = "text", placeholder, value, onChange, required = true,
@@ -212,11 +117,13 @@ function Field({
   onCompositionEnd?: () => void;
 }) {
   const status: FieldStatus = field?.status ?? "pristine";
-  const described = field && (status === "invalid" || status === "valid") ? `${id}-feedback` : hint ? `${id}-hint` : undefined;
+  const described = field && (status === "invalid" || status === "valid") ? `${id}-feedback` : undefined;
 
   return (
-    <div className={GROUP_ROW} data-invalid={status === "invalid" || undefined}>
-      <label htmlFor={id} className={ROW_LABEL}>{label}</label>
+    <div className="space-y-1 sm:space-y-1.5">
+      <label htmlFor={id} className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+        {label}
+      </label>
       <input
         id={id}
         type={type}
@@ -231,7 +138,9 @@ function Field({
         onBlur={onBlur}
         onCompositionStart={onCompositionStart}
         onCompositionEnd={onCompositionEnd}
-        className={`${ROW_INPUT} mt-0.5 ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
+        className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900
+          ${fieldStateClass(status)}
+          ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
       />
       {field ? (
         <ValidatedFieldFeedback
@@ -244,7 +153,7 @@ function Field({
         />
       ) : null}
       {status !== "invalid" && status !== "valid" && hint && (
-        <p id={`${id}-hint`} className="pb-1 text-xs text-stone-400">{hint}</p>
+        <p className="text-xs text-stone-400">{hint}</p>
       )}
     </div>
   );
@@ -288,33 +197,21 @@ function RegisterContent() {
   // and so a user who changes it is never overwritten by a later re-render.
   const initialRole = (() => {
     const raw = searchParams.get("role")?.toUpperCase();
-    if (FEATURES.ngoRegistration && raw === "NGO") return "NGO";
-    return raw === "DONEE" || raw === "DONOR" ? raw : "DONOR";
+    return raw === "DONEE" || raw === "DONOR" || raw === "NGO" ? raw : "DONOR";
   })();
 
   const [form, setForm] = useState({ fullName: "", email: "", password: "", role: initialRole });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // One lock for registration submit, Google sign-up and social completion —
-  // they must never overlap (see useAuthOperation). `loading` is the
-  // registration-submit case, kept as a name for the button label below.
-  const auth = useAuthOperation();
-  const googleOpId = useRef(0);
-  const loading = auth.op === "registering";
-
-  // Fallback: if NGO registration is disabled, ensure form role is never NGO
-  useEffect(() => {
-    if (!FEATURES.ngoRegistration && form.role === "NGO") {
-      setForm((f) => ({ ...f, role: "DONOR" }));
-    }
-  }, [form.role]);
-
+  const [loading, setLoading] = useState(false);
 
   // Email OTP verification step — shown after a successful /register/initiate,
   // not used on the Google OAuth flow (Google already verifies the email).
   const [step, setStep] = useState<"form" | "otp">("form");
   const [pendingEmail, setPendingEmail] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const [dialCountry, setDialCountry] = useState("IN");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -328,21 +225,7 @@ function RegisterContent() {
   const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  // Card step: 1 = choose a role, 2 = details. Distinct from `step`, which
-  // switches the whole card to the email-OTP screen after submit.
-  const [cardStep, setCardStep] = useState<1 | 2>(1);
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const movedByUser = useRef(false);
   const reducedMotion = !!useReducedMotion();
-
-  // Focus the new step's heading only after a deliberate Continue/Back — never
-  // on first load (no surprise keyboard), and the heading is not an input.
-  useEffect(() => {
-    if (!movedByUser.current) return;
-    movedByUser.current = false;
-    headingRef.current?.focus({ preventScroll: true });
-    headingRef.current?.scrollIntoView?.({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
-  }, [cardStep, reducedMotion]);
   const v = useTimedFieldValidation();
 
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
@@ -413,61 +296,26 @@ function RegisterContent() {
   const triggerGoogle = useGoogleLogin({
     scope: "openid email profile",
     onSuccess: async (tokenResponse) => {
-      const id = googleOpId.current;
-      // A popup that resolves after its attempt was cancelled/replaced is ignored.
-      if (!auth.isCurrent(id)) return;
+      setGoogleLoading(true);
       try {
         const res = await googleAuth(tokenResponse.access_token);
-        // Locked from here to navigation: both branches leave this screen.
-        if (!auth.succeed(id)) return;
         if (res.needsCompletion) {
           sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
           sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-          // Carry the chosen role and the original destination into the
-          // completion screen. `next` used to be dropped here, so a guest who
-          // signed up with Google from "offer help" landed on the homepage.
-          // It is passed through raw and validated only in goAfterAuth.
-          const completion = new URLSearchParams({ social: "google", role: form.role });
-          if (rawNext) completion.set("next", rawNext);
-          router.push(`/register?${completion.toString()}`);
+          router.push("/register?social=google");
         } else {
           setUser({ email: res.email, role: res.role });
-          toast.success(t("welcomeBackToast"));
+          toast.success("Welcome back!");
           goAfterAuth(res.role, router.push);
         }
       } catch (err) {
-        auth.release(id);
-        toast.error(err instanceof Error ? err.message : t("googleFailed"));
+        toast.error(err instanceof Error ? err.message : "Google sign-up failed");
+      } finally {
+        setGoogleLoading(false);
       }
     },
-    onError: () => {
-      auth.release(googleOpId.current);
-      toast.error(t("googleFailed"));
-    },
-    // Popup closed / blocked. Closing is a normal choice, not an error, so it
-    // only unlocks the card; a blocked popup says what to do about it.
-    onNonOAuthError: (err) => {
-      auth.release(googleOpId.current);
-      if (err.type === "popup_failed_to_open") toast.error(t("googlePopupBlocked"));
-      else if (err.type !== "popup_closed") toast.error(t("googleFailed"));
-    },
+    onError: () => toast.error("Google sign-up failed"),
   });
-
-  function startGoogle() {
-    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-      toast.error("Google Sign-In is not configured.");
-      return;
-    }
-    const id = auth.begin("google");
-    if (id === null) return;
-    googleOpId.current = id;
-    try {
-      triggerGoogle();
-    } catch {
-      auth.release(id);
-      toast.error(t("googleFailed"));
-    }
-  }
 
   function handleCountryChange(iso: string) {
     setCountryIso(iso);
@@ -500,18 +348,69 @@ function RegisterContent() {
     return [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
   }
 
-  // Already signed in: go on. Skipped when this page itself just signed the
-  // user in — that path has already navigated, and a second one would compete.
-  useEffect(() => {
-    if (user && !auth.isAuthenticated()) goAfterAuth(user.role, router.replace);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router, rawNext]);
+  useEffect(() => { if (user) goAfterAuth(user.role, router.replace); }, [user, router]);
 
-  // Country suggestion only; device location is requested by the GPS button.
   useEffect(() => {
-    const country = detectCountryCode();
-    setDialCountry(country);
-    setCountryIso(country);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            const address = data.address;
+            if (address) {
+              const countryCode = address.country_code?.toUpperCase();
+              const stateName = address.state;
+              const cityName = address.city || address.town || address.village || address.suburb;
+              if (countryCode) {
+                setDialCountry(countryCode);
+                setCountryIso(countryCode);
+                const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
+                
+                if (resolvedState) {
+                  setStateIso(resolvedState);
+                  if (resolvedCity) {
+                    setCityValue(resolvedCity);
+                    setCityFreeText("");
+                    setForceFreeTextCity(false);
+                  } else if (cityName) {
+                    setCityValue("");
+                    setCityFreeText(cityName);
+                    setForceFreeTextCity(true);
+                  }
+                } else {
+                  setStateIso("");
+                  setCityValue("");
+                  if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
+                }
+                return;
+              }
+            }
+          } catch {
+            // fallback to IP
+          }
+          detectCountryFromIP().then((code) => {
+            setDialCountry(code);
+            setCountryIso(code);
+          });
+        },
+        () => {
+          detectCountryFromIP().then((code) => {
+            setDialCountry(code);
+            setCountryIso(code);
+          });
+        },
+        { enableHighAccuracy: false, timeout: 5000 }
+      );
+    } else {
+      detectCountryFromIP().then((code) => {
+        setDialCountry(code);
+        setCountryIso(code);
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -575,30 +474,9 @@ function RegisterContent() {
     v.onChange("city", validators.city);
   }
 
-  function goToCardStep(next: 1 | 2) {
-    // No step (and so no role) change while Google or a submit is in flight.
-    if (next === cardStep || auth.busy) return;
-    movedByUser.current = true;
-    setCardStep(next);
-  }
-
-  /**
-   * Step 1 only needs a valid role (it always has one — DONOR by default —
-   * but the rule still gates the move). Step 2 is the original submit.
-   */
-  function handleCardSubmit(e: React.FormEvent) {
-    if (cardStep === 1) {
-      e.preventDefault();
-      if (auth.busy || !validateRole(form.role).ok) return;
-      goToCardStep(2);
-      return;
-    }
-    void handleSubmit(e);
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (auth.busy) return;
+    if (loading) return;
 
     const firstInvalid = v.validateAll(validators);
     if (firstInvalid) {
@@ -613,9 +491,7 @@ function RegisterContent() {
     const fullPhone = dialCode && phoneNumber ? `${dialCode}${phoneNumber}` : phoneNumber;
     const cityStr = buildCityString();
 
-    // The real guard: synchronous, so Enter + click cannot both get through.
-    const id = auth.begin("registering");
-    if (id === null) return;
+    setLoading(true);
     try {
       if (form.role === "NGO") {
         const res = await registerNgo({
@@ -629,17 +505,13 @@ function RegisterContent() {
           password: form.password,
           website: ngoWebsite.trim() || undefined,
         });
-        if (!auth.succeed(id)) return;
         setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role });
         trackCompleteRegistration({ method: "ngo" });
         toast.success("NGO account created! Welcome to CauseKind.");
         router.replace("/");
       } else if (isSocialFlow && googleToken) {
         const res = await googleComplete(googleToken, fullPhone, cityStr, form.role);
-        if (res.needsCompletion) {
-          auth.release(id);
-        } else {
-          if (!auth.succeed(id)) return;
+        if (!res.needsCompletion) {
           sessionStorage.removeItem("ck_google_token");
           sessionStorage.removeItem("ck_google_profile");
           setUser({ email: res.email, role: res.role });
@@ -654,9 +526,6 @@ function RegisterContent() {
         // AnimatedEmailOtp, which mounts fresh here.
         setStep("otp");
         toast.success("We've emailed you a verification code.");
-        // Not signed in yet: the OTP screen owns verification. Unlock so
-        // "Edit details" returns to a usable form.
-        auth.release(id);
       }
     } catch (err) {
       const raw = err instanceof Error ? err.message : "Registration failed";
@@ -672,7 +541,8 @@ function RegisterContent() {
       } else {
         setFormError(raw);
       }
-      auth.release(id);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -691,7 +561,6 @@ function RegisterContent() {
 
   /** Runs after the success animation. The only place auth + navigation happen. */
   function completeRegistration(res: { email: string; role: string }) {
-    auth.lockAuthenticated();
     setUser({ email: res.email, role: res.role });
     trackCompleteRegistration({ method: "email" });
     toast.success("Account created!");
@@ -736,114 +605,86 @@ function RegisterContent() {
     );
   }
 
-  const roleHint =
-    form.role === "NGO"
-      ? t("roleHintNgo")
-      : form.role === "DONEE"
-        ? t("roleHintDonee")
-        : t("roleHintDonor");
-
-  const headerSubtitle =
-    cardStep === 1
-      ? t("step1Subtitle")
-      : form.role === "NGO"
-        ? t("roleHintNgo")
-        : isSocialFlow
-          ? t("googleLinkedSubtitle")
-          : t("step2Subtitle");
-
-  // Sign-in keeps the destination: a guest sent here from "offer help" who
-  // already has an account must still land on that offer after logging in.
-  const loginHref = rawNext ? loginUrlFor(rawNext) : "/login";
-
   return (
     <div
-      className="w-full mx-auto relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-2xl sm:rounded-3xl shadow-xl transition-all duration-300 max-w-[460px]"
+      className="w-full mx-auto space-y-4 sm:space-y-6 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-2xl sm:rounded-3xl px-5 py-6 sm:px-8 sm:py-10 shadow-xl transition-all duration-300 max-w-[460px]"
     >
-      {/* ── Terracotta header. Rounded to sit inside the card's own corners
-          (card radius minus its 1px border) — the card is not overflow:hidden,
-          because the searchable selects below open absolutely and would clip. */}
-      <header className="rounded-t-[15px] sm:rounded-t-[23px] bg-[#aa461e] dark:bg-[#71381f] px-5 pt-5 pb-6 sm:px-8 sm:pt-7 sm:pb-7 text-[#fff5eb]">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#f6d6bf]">
-          {form.role === "NGO" ? t("eyebrowNgo") : t("eyebrow")}
-        </p>
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          className="mt-3 scroll-mt-28 text-[29px] sm:text-[31px] font-extrabold leading-[1.08] tracking-[-0.03em] outline-none focus-visible:ring-2 focus-visible:ring-[#ffcf9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#aa461e] rounded-sm"
-        >
-          {cardStep === 1 ? t("step1Title") : t("step2Title")}
-          <br />
-          <em className="font-serif font-normal italic text-[#ffcf9f] tracking-[-0.02em]">
-            {cardStep === 1 ? t("step1TitleAccent") : t("step2TitleAccent")}
-          </em>
-        </h1>
-        <p className="mt-2.5 text-[13px] leading-relaxed text-[#f6d6bf]">{headerSubtitle}</p>
-      </header>
+          {/* Heading */}
+          <Reveal>
+            <div className="space-y-1 sm:space-y-1.5">
+              <span className={`text-2xs font-black uppercase tracking-widest ${form.role === "NGO" ? "text-ngo-700 dark:text-ngo-300" : "text-[#b04a15]"}`}>
+                {form.role === "NGO" ? "NGO Account" : "Create account"}
+              </span>
+              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+                {form.role === "NGO"
+                  ? "Register Your NGO 🏛️"
+                  : isSocialFlow
+                  ? `${t("almostThereTitle")} 🎉`
+                  : `${t("joinTitle")} 🌱`}
+              </h1>
+              <p className="text-sm text-stone-500 dark:text-stone-400">
+                {form.role === "NGO"
+                  ? "Create your organization account to receive donations and run campaigns."
+                  : isSocialFlow
+                  ? t("googleLinkedSubtitle")
+                  : t("createSubtitle")}
+              </p>
+            </div>
+          </Reveal>
 
-      <div className="px-5 pt-5 pb-6 sm:px-8 sm:pt-6 sm:pb-8">
-        <SignupStepIndicator
-          step={cardStep}
-          labels={{ list: t("stepsLabel"), part: t("stepYourPart"), details: t("stepYourDetails"), completed: t("stepCompleted") }} onGoToStep1={cardStep === 2 && !auth.busy ? () => goToCardStep(1) : undefined} />
-
-        {/* One form for both steps, so Enter works and nothing is duplicated.
-            Step-2 inputs unmount on Back, but every value lives in state above
-            and is restored on Continue. */}
-        <form onSubmit={handleCardSubmit} className="mt-5" noValidate>
-          {cardStep === 1 ? (
-            <>
-              <fieldset>
-                <legend className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
-                  {t("rolesLegend")}
-                </legend>
-                <div className="grid gap-2">
-                  <SignupRoleChoice
-                    value="DONOR" checked={form.role === "DONOR"} onSelect={() => set("role", "DONOR")} disabled={auth.busy}
-                    title={t("roleDonorTitle")} label={t("roleDonorLabel")} Icon={Package}
-                  />
-                  <SignupRoleChoice
-                    value="DONEE" checked={form.role === "DONEE"} onSelect={() => set("role", "DONEE")} disabled={auth.busy}
-                    title={t("roleDoneeTitle")} label={t("roleDoneeLabel")} Icon={HandHeart}
-                  />
-                  {FEATURES.ngoRegistration && (
-                    <SignupRoleChoice
-                      value="NGO" checked={form.role === "NGO"} onSelect={() => set("role", "NGO")} disabled={auth.busy}
-                      title={t("roleNgoTitle")} label={t("roleNgoLabel")} Icon={Building2}
-                    />
-                  )}
-                </div>
-              </fieldset>
-              <p className="mt-2.5 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{roleHint}</p>
-
-              <button type="submit" disabled={auth.busy} className={PRIMARY_BUTTON + " mt-5 w-full"}>
-                <span>{t("continueToDetails")}</span>
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </>
-          ) : (
-            <div className="space-y-4">
-              {/* Chosen role, with a way back to change it. */}
-              <div className="flex items-center justify-between gap-3 rounded-[10px] border border-stone-200 dark:border-zinc-700/60 bg-[#fbf3ea] dark:bg-[#382c22] px-3 py-2">
-                <p className="min-w-0 text-[13px] text-stone-700 dark:text-stone-200">
-                  <span className="text-stone-500 dark:text-stone-400">{t("joiningAs")} </span>
-                  <strong className="font-semibold">
-                    {form.role === "NGO" ? t("joiningAsNgo") : form.role === "DONEE" ? t("joiningAsDonee") : t("joiningAsDonor")}
-                  </strong>
-                </p>
+          {/* Role Selection Option */}
+          <Reveal delay={60}>
+            <div className="space-y-1 sm:space-y-1.5">
+              <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                Register as
+              </label>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button
                   type="button"
-                  onClick={() => goToCardStep(1)}
-                  disabled={auth.busy}
-                  className="min-h-11 shrink-0 rounded-md px-2 text-[13px] font-semibold text-[#b04a15] dark:text-[#e07b3a] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] disabled:opacity-50"
+                  onClick={() => set("role", "DONOR")}
+                  className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
+                    form.role === "DONOR"
+                      ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
+                      : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                  }`}
                 >
-                  {t("changeRole")}<span className="sr-only"> {t("changeRoleSr")}</span>
+                  <span className="text-sm font-bold">Donor 🎁</span>
+                  <span className="text-3xs opacity-85 mt-0.5 font-normal">Donate items</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set("role", "DONEE")}
+                  className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
+                    form.role === "DONEE"
+                      ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
+                      : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                  }`}
+                >
+                  <span className="text-sm font-bold">Donee 🤝</span>
+                  <span className="text-3xs opacity-85 mt-0.5 font-normal">Request support</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set("role", "NGO")}
+                  className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
+                    form.role === "NGO"
+                      ? "border-ngo-700 bg-ngo-50 text-ngo-700 ring-2 ring-ngo-700/20 font-bold dark:bg-ngo-900/30 dark:text-ngo-300"
+                      : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                  }`}
+                >
+                  <span className="text-sm font-bold">NGO 🏢</span>
+                  <span className="text-3xs opacity-85 mt-0.5 font-normal">Organization</span>
                 </button>
               </div>
+            </div>
+          </Reveal>
 
-              {/* Server errors that belong to no single field. Values are kept. */}
-              <AuthFormAlert message={formError} />
-
-              <SignupFieldGroup legend={t("groupDetails")}>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" noValidate>
+            {/* Server errors that belong to no single field. Values are kept. */}
+            <AuthFormAlert message={formError} />
+            <Reveal delay={100}>
+              <div className="space-y-1">
                 <Field
                   id="fullName"
                   label={form.role === "NGO" ? "Organization Name *" : t("fullName")}
@@ -861,6 +702,11 @@ function RegisterContent() {
                   autoComplete={form.role === "NGO" ? "organization" : "name"}
                   field={isSocialFlow && form.fullName ? undefined : v.get("fullName")}
                 />
+              </div>
+            </Reveal>
+
+            <Reveal delay={140}>
+              <div className="space-y-1">
                 {/* Google-linked email is read-only and shows the neutral linked
                     hint rather than a green tick — it was never validated here. */}
                 <Field
@@ -876,62 +722,71 @@ function RegisterContent() {
                   autoComplete="email"
                   field={isSocialFlow ? undefined : v.get("email")}
                 />
+              </div>
+            </Reveal>
 
-                {/* Phone with dial-code */}
-                <div className={GROUP_ROW} data-invalid={v.get("phone").status === "invalid" || undefined}>
-                  <label htmlFor="phone" className={ROW_LABEL}>{t("phone")}</label>
-                  {/* min-w-0 on the input is what stops this row overflowing the
-                      card: a flex item defaults to min-width:auto, and an <input>
-                      has an implicit size=20, so flex-1 could grow it but never
-                      shrink it below ~210px. */}
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="w-[92px] sm:w-[110px] shrink-0">
-                      <SearchableSelect
-                        options={dialCodeOptions}
-                        value={dialCountry}
-                        // Changing dial country changes the expected digit count,
-                        // so any existing phone verdict must be recomputed.
-                        onChange={(iso) => {
-                          setDialCountry(iso);
-                          v.onChange("phone", () => validatePhone(phoneNumber, iso, getDialCode(iso, dialCodeOptions)));
-                        }}
-                        placeholder="+–"
-                        searchPlaceholder={t("searchCountry")}
-                        renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
-                      />
-                    </div>
-                    <input
-                      id="phone"
-                      type="tel"
-                      inputMode="numeric"
-                      placeholder={t("phone")}
-                      value={phoneNumber}
-                      maxLength={maxPhoneLength}
-                      aria-invalid={v.get("phone").status === "invalid" || undefined}
-                      aria-describedby={v.get("phone").status !== "pristine" && v.get("phone").status !== "neutral" ? "phone-feedback" : undefined}
-                      onChange={e => {
-                        const digits = e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength);
-                        setPhoneNumber(digits);
-                        setFormError(null);
-                        v.onChange("phone", () => validatePhone(digits, dialCountry, getDialCode(dialCountry, dialCodeOptions)));
+            <Reveal delay={180}>
+              {/* Phone with dial-code */}
+              <div className="space-y-1 sm:space-y-1.5">
+                <label htmlFor="phone" className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                  <Phone className="w-3.5 h-3.5" /> {t("phone")}
+                </label>
+                {/* min-w-0 on the input is what stops this row overflowing the
+                    card: a flex item defaults to min-width:auto, and an <input>
+                    has an implicit size=20, so flex-1 could grow it but never
+                    shrink it below ~210px — which overran the 318px content box
+                    sitting next to the dial select. */}
+                <div className="flex gap-2">
+                  <div className="w-[96px] sm:w-[120px] shrink-0">
+                    <SearchableSelect
+                      options={dialCodeOptions}
+                      value={dialCountry}
+                      // Changing dial country changes the expected digit count,
+                      // so any existing phone verdict must be recomputed.
+                      onChange={(iso) => {
+                        setDialCountry(iso);
+                        v.onChange("phone", () => validatePhone(phoneNumber, iso, getDialCode(iso, dialCodeOptions)));
                       }}
-                      onBlur={() => v.onBlur("phone", validators.phone)}
-                      autoComplete="tel"
-                      className={ROW_INPUT + " flex-1"}
+                      placeholder="+–"
+                      searchPlaceholder={t("searchCountry")}
+                      renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
                     />
                   </div>
-                  <ValidatedFieldFeedback
-                    id="phone-feedback"
-                    status={v.get("phone").status}
-                    errorKey={v.get("phone").errorKey}
-                    successKey={v.get("phone").successKey}
-                    params={v.get("phone").params}
-                    serverText={v.get("phone").serverErrorText}
+                  <input
+                    id="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder={t("phone")}
+                    value={phoneNumber}
+                    maxLength={maxPhoneLength}
+                    aria-invalid={v.get("phone").status === "invalid" || undefined}
+                    aria-describedby={v.get("phone").status !== "pristine" && v.get("phone").status !== "neutral" ? "phone-feedback" : undefined}
+                    onChange={e => {
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength);
+                      setPhoneNumber(digits);
+                      setFormError(null);
+                      v.onChange("phone", () => validatePhone(digits, dialCountry, getDialCode(dialCountry, dialCodeOptions)));
+                    }}
+                    onBlur={() => v.onBlur("phone", validators.phone)}
+                    autoComplete="tel"
+                    className={`flex-1 min-w-0 rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(v.get("phone").status)}`}
                   />
                 </div>
+                <ValidatedFieldFeedback
+                  id="phone-feedback"
+                  status={v.get("phone").status}
+                  errorKey={v.get("phone").errorKey}
+                  successKey={v.get("phone").successKey}
+                  params={v.get("phone").params}
+                  serverText={v.get("phone").serverErrorText}
+                />
+              </div>
+            </Reveal>
 
-                {/* PAN Number — required for NGO role */}
-                {form.role === "NGO" && (
+            {/* PAN Number — required for NGO role */}
+            {form.role === "NGO" && (
+              <Reveal delay={200}>
+                <div className="space-y-1">
                   <Field
                     id="panNumber"
                     label="PAN Number *"
@@ -947,47 +802,47 @@ function RegisterContent() {
                     autoComplete="off"
                     field={v.get("panNumber")}
                   />
-                )}
+                </div>
+              </Reveal>
+            )}
 
-                {/* Organization Website / Social Link — optional for NGO role */}
-                {form.role === "NGO" && (
-                  <div className={GROUP_ROW}>
-                    <label htmlFor="website" className={ROW_LABEL}>
-                      Organization Website / Social Link <span className="font-normal">(Optional)</span>
-                    </label>
-                    <input
-                      id="website"
-                      type="url"
-                      placeholder="https://www.helpinghearts.org"
-                      value={ngoWebsite}
-                      onChange={e => setNgoWebsite(e.target.value)}
-                      className={ROW_INPUT}
-                    />
-                  </div>
-                )}
-              </SignupFieldGroup>
-
-              {/* Location: Country → State → City. GPS only on this button. */}
-              <SignupFieldGroup
-                legend={t("location")}
-                action={
+            <Reveal delay={220}>
+              {/* Location: Country → State → City */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                    <MapPin className="w-3.5 h-3.5" /> {t("location")}
+                  </label>
                   <button
                     type="button"
                     onClick={handleGPSLocation}
                     disabled={gpsLoading}
-                    aria-busy={gpsLoading || undefined}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[#b04a15]/30 px-3 text-[11px] font-bold uppercase tracking-wide text-[#b04a15] dark:text-[#e07b3a] hover:bg-[#b04a15]/5 transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]"
+                    className="relative flex items-center gap-2 text-xs font-black text-[#b04a15] uppercase tracking-wide px-3 py-1.5 rounded-full border border-[#b04a15]/30 hover:bg-[#b04a15]/5 transition-colors disabled:opacity-50"
                   >
-                    {gpsLoading
-                      ? <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden="true" />
-                      : <MapPin className="h-3 w-3" aria-hidden="true" />}
-                    {gpsLoading ? t("gpsDetecting") : t("useGps")}
+                    {/* Radar rings — visible only when active (not loading) */}
+                    {!gpsLoading && (
+                      <>
+                        <span className="absolute inset-0 rounded-full border border-[#b04a15]/40 gps-radar-ring" />
+                        <span className="absolute inset-0 rounded-full border border-[#b04a15]/25 gps-radar-ring-2" />
+                      </>
+                    )}
+                    {/* Spinning ring while loading */}
+                    {gpsLoading && (
+                      <span className="absolute inset-0 rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15] animate-spin" />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                      </svg>
+                      {gpsLoading ? "Detecting..." : "Use GPS"}
+                    </span>
                   </button>
-                }
-              >
-                <div className={GROUP_ROW}>
-                  <span className={ROW_LABEL}>{t("country")}</span>
-                  <div className="mt-1">
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("country")}</label>
                     <SearchableSelect
                       options={countryOptions}
                       value={countryIso}
@@ -996,12 +851,11 @@ function RegisterContent() {
                       searchPlaceholder={t("searchCountry")}
                     />
                   </div>
-                </div>
-                <div className={GROUP_ROW}>
-                  <span className={ROW_LABEL}>{t("state")}</span>
-                  <div className="mt-1">
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("state")}</label>
                     {noStateOptions ? (
-                      <p className="py-2 text-xs italic text-stone-400">{t("noStatesListed")}</p>
+                      <p className="text-xs text-stone-400 italic py-1.5">{t("noStatesListed")}</p>
                     ) : (
                       <SearchableSelect
                         options={stateOptions}
@@ -1014,19 +868,15 @@ function RegisterContent() {
                       />
                     )}
                   </div>
-                </div>
-                <div className={GROUP_ROW}>
-                  {showCityFreeText
-                    ? <label htmlFor="city" className={ROW_LABEL}>{t("city")}</label>
-                    : <span className={ROW_LABEL}>{t("city")}</span>}
-                  <div className="mt-1">
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("city")}</label>
                     {showCityFreeText ? (
                       <input
                         id="city"
                         type="text"
                         placeholder={t("enterCity")}
                         value={cityFreeText}
-                        aria-describedby={locationStatus === "invalid" ? "location-feedback" : undefined}
                         onChange={e => {
                           setCityFreeText(e.target.value);
                           v.onChange("city", () => validateCity("", e.target.value, true));
@@ -1034,7 +884,7 @@ function RegisterContent() {
                         }}
                         onBlur={() => v.onBlur("city", validators.city)}
                         autoComplete="address-level2"
-                        className={ROW_INPUT}
+                        className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
                       />
                     ) : (
                       <SearchableSelect
@@ -1048,136 +898,187 @@ function RegisterContent() {
                       />
                     )}
                   </div>
-                  {/* One shared verdict for the location group, so the user sees a
-                      single "what's missing" rather than three competing messages.
-                      Suppressed while GPS is running so it cannot produce a
-                      premature error. */}
-                  {!gpsLoading && (
-                    <ValidatedFieldFeedback
-                      id="location-feedback"
-                      status={locationStatus}
-                      errorKey={locationErrorKey}
-                      successKey={locationStatus === "valid" ? "locationValid" : null}
-                      serverText={null}
-                    />
+                </div>
+
+                {/* One shared verdict for the location group, so the user sees a
+                    single "what's missing" rather than three competing messages.
+                    Suppressed while city options are still loading, and while GPS
+                    is running, so neither can produce a premature error. */}
+                {!gpsLoading && (
+                  <ValidatedFieldFeedback
+                    id="location-feedback"
+                    status={locationStatus}
+                    errorKey={locationErrorKey}
+                    successKey={locationStatus === "valid" ? "locationValid" : null}
+                    serverText={null}
+                  />
+                )}
+              </div>
+            </Reveal>
+
+            {/* Organization Website / Social Link — optional for NGO role */}
+            {form.role === "NGO" && (
+              <Reveal delay={240}>
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label htmlFor="website" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                    Organization Website / Social Link <span className="text-xs font-normal text-stone-400">(Optional)</span>
+                  </label>
+                  <input
+                    id="website"
+                    type="url"
+                    placeholder="https://www.helpinghearts.org"
+                    value={ngoWebsite}
+                    onChange={e => setNgoWebsite(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                  />
+                </div>
+              </Reveal>
+            )}
+
+            {/* Password — only on non-social flow */}
+            {!isSocialFlow && (
+              <Reveal delay={260}>
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                    {t("password")}
+                  </label>
+                  <div className="relative">
+                    <input
+                       id="password"
+                       type={showPassword ? "text" : "password"}
+                       autoComplete="new-password"
+                       required
+                       placeholder="••••••••"
+                       value={form.password}
+                       aria-invalid={v.get("password").status === "invalid" || undefined}
+                       aria-describedby="password-feedback"
+                       onChange={e => {
+                         set("password", e.target.value);
+                         setFormError(null);
+                         // Stays neutral through characters 1-7 on the first pass;
+                         // only goes live once it has already errored once.
+                         v.onChange("password", () => validateRegisterPassword(e.target.value));
+                       }}
+                       onBlur={() => v.onBlur("password", () => validateRegisterPassword(form.password))}
+                       className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(v.get("password").status)}`}
+                     />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      // `prev`, not `v` — `v` is the validation controller in this
+                      // scope and shadowing it here is a trap for the next edit.
+                      onClick={() => setShowPassword(prev => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {/* Feedback sits BELOW the input, never inside it — an icon in
+                      the field would collide with the show/hide button. */}
+                  <ValidatedFieldFeedback
+                    id="password-feedback"
+                    status={v.get("password").status}
+                    errorKey={v.get("password").errorKey}
+                    successKey={v.get("password").successKey}
+                    params={v.get("password").params}
+                    serverText={v.get("password").serverErrorText}
+                  />
+                  {v.get("password").status !== "invalid" && v.get("password").status !== "valid" && (
+                    <p className="text-xs text-stone-400">{tv("passwordHint")}</p>
                   )}
                 </div>
-              </SignupFieldGroup>
+              </Reveal>
+            )}
 
-              {/* Password — only on non-social flow (a Google account has none). */}
-              {!isSocialFlow && (
-                <SignupFieldGroup legend={t("groupSecurity")}>
-                  <div className={GROUP_ROW} data-invalid={v.get("password").status === "invalid" || undefined}>
-                    <label htmlFor="password" className={ROW_LABEL}>{t("password")}</label>
-                    <div className="mt-1 flex items-center gap-1">
-                      <input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        required
-                        placeholder="••••••••"
-                        value={form.password}
-                        aria-invalid={v.get("password").status === "invalid" || undefined}
-                        aria-describedby="password-feedback password-hint"
-                        onChange={e => {
-                          set("password", e.target.value);
-                          setFormError(null);
-                          // Stays neutral through characters 1-7 on the first pass;
-                          // only goes live once it has already errored once.
-                          v.onChange("password", () => validateRegisterPassword(e.target.value));
-                        }}
-                        onBlur={() => v.onBlur("password", () => validateRegisterPassword(form.password))}
-                        className={ROW_INPUT + " flex-1"}
-                      />
-                      <button
-                        type="button"
-                        aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-                        aria-pressed={showPassword}
-                        // `prev`, not `v` — `v` is the validation controller in this
-                        // scope and shadowing it here is a trap for the next edit.
-                        onClick={() => setShowPassword(prev => !prev)}
-                        className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-                      </button>
-                    </div>
-                    {/* Feedback sits BELOW the input, never inside it. */}
-                    <ValidatedFieldFeedback
-                      id="password-feedback"
-                      status={v.get("password").status}
-                      errorKey={v.get("password").errorKey}
-                      successKey={v.get("password").successKey}
-                      params={v.get("password").params}
-                      serverText={v.get("password").serverErrorText}
-                    />
-                    {v.get("password").status !== "invalid" && v.get("password").status !== "valid" && (
-                      <p id="password-hint" className="pb-1 text-xs text-stone-400">{tv("passwordHint")}</p>
-                    )}
-                  </div>
-                </SignupFieldGroup>
-              )}
+            <Reveal delay={285}>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-stone-300 accent-[#b04a15] cursor-pointer"
+                />
+                <span className="text-sm text-stone-600 dark:text-stone-400 group-hover:text-stone-800 dark:group-hover:text-stone-200 transition-colors">
+                  Remember me
+                </span>
+                <span className="ml-auto text-xs text-stone-400 dark:text-stone-500">
+                  {rememberMe ? "Stay logged in" : "Log out on close"}
+                </span>
+              </label>
+            </Reveal>
 
-              <div className="flex gap-2">
+            <Reveal delay={300}>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full rounded-xl disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 mt-2 animate-heartbeat ${
+                  form.role === "NGO"
+                    ? "bg-ngo-700 hover:bg-ngo-600 focus-visible:ring-ngo-700"
+                    : "bg-[#b04a15] hover:bg-[#963c0d] focus-visible:ring-[#b04a15]"
+                }`}
+              >
+                {loading
+                  ? (form.role === "NGO" ? "Creating account..." : t("creating"))
+                  : isSocialFlow
+                    ? t("complete")
+                    : (form.role === "NGO" ? "Create NGO Account 🏢" : t("submit"))}
+              </button>
+            </Reveal>
+          </form>
+
+          {/* Social buttons — only on non-social flow and non-NGO */}
+          {!isSocialFlow && form.role !== "NGO" && (
+            <div className="space-y-3">
+              <Reveal delay={340}>
                 <button
                   type="button"
-                  onClick={() => goToCardStep(1)}
-                  disabled={auth.busy}
-                  className="inline-flex min-h-12 items-center gap-1 rounded-lg border border-stone-200 dark:border-zinc-700 px-3.5 text-[13px] font-semibold text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]"
+                  disabled={googleLoading}
+                  onClick={() => {
+                    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+                      toast.error("Google Sign-In is not configured.");
+                      return;
+                    }
+                    triggerGoogle();
+                  }}
+                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
                 >
-                  <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {t("back")}
+                  <GoogleIcon />
+                  {googleLoading ? t("creating") : t("google")}
                 </button>
-                <button type="submit" disabled={auth.busy} aria-busy={loading || undefined} className={PRIMARY_BUTTON + " flex-1"}>
-                  <span>
-                    {loading
-                      ? (form.role === "NGO" ? "Creating account..." : t("creating"))
-                      : isSocialFlow
-                        ? t("complete")
-                        : (form.role === "NGO" ? "Create NGO account" : t("submit"))}
+              </Reveal>
+              <Reveal delay={380}>
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
+                  >
+                    <FacebookIcon />
+                    {t("facebook")}
+                  </button>
+                  <span className="absolute -top-2 -right-2 text-4xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[#b04a15] border border-[#e07b3a]/40 shadow-sm pointer-events-none select-none">
+                    Coming Soon
                   </span>
-                  {!loading && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
-                </button>
-              </div>
+                </div>
+              </Reveal>
             </div>
           )}
-        </form>
 
-        {/* Social sign-up — step 1 only, not inside the Google completion flow,
-            and not for NGOs (unchanged rules). Facebook is omitted: it was a
-            permanently disabled "coming soon" button with no implementation. */}
-        {cardStep === 1 && !isSocialFlow && form.role !== "NGO" && (
-          <div className="mt-5 space-y-2.5">
-            <div className="flex items-center gap-3 text-[11px] text-stone-500 dark:text-stone-400" aria-hidden="true">
-              <span className="h-px flex-1 bg-stone-200 dark:bg-zinc-700" />
-              {t("orJoinWith")}
-              <span className="h-px flex-1 bg-stone-200 dark:bg-zinc-700" />
-            </div>
-            {/* Locked from the moment the popup is requested, not only once
-                Google answers, so repeated clicks cannot open repeated attempts. */}
-            <button
-              type="button"
-              disabled={auth.busy}
-              aria-busy={auth.op === "google" || undefined}
-              onClick={startGoogle}
-              className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 text-[13px] font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
-            >
-              <GoogleIcon />
-              {auth.op === "google" ? t("googleOpening") : t("google")}
-            </button>
-          </div>
-        )}
-
-        {/* Cross-link — carries `next` through, so the journey survives. */}
-        <p className="mt-4 text-center text-[13px] text-stone-500 dark:text-stone-400">
-          {t("loginPrompt")}{" "}
-          <Link
-            href={loginHref}
-            className="inline-flex min-h-11 items-center font-semibold text-[#b04a15] dark:text-[#e07b3a] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] rounded-sm"
-          >
-            {t("logIn")}
-          </Link>
-        </p>
-      </div>
-    </div>
+          {/* Cross-link */}
+          <Reveal delay={420}>
+            <p className="text-center text-sm text-stone-500 dark:text-stone-400">
+              {t("haveAccount")}{" "}
+              <a
+                href="/login"
+                onClick={(e) => { e.preventDefault(); router.push("/login"); }}
+                className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2 cursor-pointer"
+              >
+                {t("logIn")}
+              </a>
+            </p>
+          </Reveal>
+        </div>
   );
 }
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { PHOTO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { OfferResult } from "@/features/donation-offer-wizard/OfferResult";
@@ -15,14 +17,17 @@ import {
   uploadOfferMedia,
   deleteOfferMedia,
   analyzeOfferImages,
+  checkOfferCompatibility,
   submitOffer,
   type AnonymizedRequest,
   type QuantityAllocation,
   type DonationOffer,
   type OfferStatus,
   type DonorFlowType,
+  type CompatibilityCheck,
   type ApiConflictError,
 } from "@/lib/api";
+import CompatibilityIndicator from "@/components/CompatibilityIndicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -41,7 +46,7 @@ import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOf
 import Link from "next/link";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
-  ShoppingBag, Loader2, Sparkles, type LucideIcon,
+  ShoppingBag, Shuffle, Loader2, Sparkles, type LucideIcon,
   Camera, ImagePlus, CheckCircle2, Eye, Info, ShieldAlert,
   Users, Home, UserRound, Wallet, BadgeCheck, Siren,
 } from "lucide-react";
@@ -82,9 +87,19 @@ const FLOW_OPTIONS: {
     icon: ShoppingBag,
     iconBg: "bg-blue-100 dark:bg-blue-950",
     iconText: "text-blue-600 dark:text-blue-400",
-    // "Receipt may be asked" was true while this was a plan. It is not now:
-    // a photo of the item and a receipt are both required before handover.
-    tags: ["Buy after approval", "Choose your timeline", "Photo + receipt required"],
+    tags: ["Buy after approval", "Flexible timing", "Receipt may be asked"],
+    comingSoon: true,
+  },
+  {
+    type: "SIMILAR_ITEM",
+    title: "I have a similar item",
+    desc: "Your item may not exactly match the specs — the donee will review it.",
+    badge: null,
+    icon: Shuffle,
+    iconBg: "bg-purple-100 dark:bg-purple-950",
+    iconText: "text-purple-600 dark:text-purple-400",
+    tags: ["Alt spec allowed", "Donee reviews fit", "May need clarification"],
+    comingSoon: true,
   },
 ];
 
@@ -312,9 +327,6 @@ function Tilt3DCard({
 
   return (
     <button
-      // Explicit: a <button> with no type defaults to "submit", which would
-      // post any ancestor form the day one is introduced.
-      type="button"
       ref={ref}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
@@ -378,6 +390,7 @@ function reducer(state: FormState, action: Action): FormState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function OfferWizardPage() {
+  const t = useTranslations();
   const params = useParams();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -403,22 +416,24 @@ export default function OfferWizardPage() {
   const [qty, setQty] = useState<QuantityAllocation | null>(null);
   const [offer, setOffer] = useState<DonationOffer | null>(null);
   const [existingOffer, setExistingOffer] = useState<DonationOffer | null>(null);
+  const [compat, setCompat] = useState<CompatibilityCheck | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
   const [blockedByOther, setBlockedByOther] = useState(false);
   const [nudged, setNudged] = useState<DonorFlowType | null>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [gpsLoading, setGpsLoading] = useState(false);
+  const compatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Photo AI: prohibited-content check only — no auto-fill. Condition, age,
+  // working status, and known defects are entered manually by the donor.
   const [analyzing, setAnalyzing] = useState(false);
   const [aiUnavailableNote, setAiUnavailableNote] = useState<string | null>(null);
   const [prohibited, setProhibited] = useState(false);
+  // The server sends a stable IMAGE_* code, not the model's sentence.
   const [prohibitedCode, setProhibitedCode] = useState<string | null>(null);
-  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-
-  /** Whether the "resume straight into step 2" courtesy has already been spent. */
-  const resumedOnceRef = useRef(false);
 
   // Load request data and check for an existing offer
   useEffect(() => {
@@ -445,21 +460,11 @@ export default function OfferWizardPage() {
         if (found.status === "DRAFT" || found.status === "NEEDS_INFORMATION") {
           setOffer(found);
           hydrateForm(found);
-          // ONE-SHOT. Resuming into step 2 is a courtesy on arrival, not a rule
-          // to re-apply forever: without this guard, pressing Back in the wizard
-          // set step 1 and then the next run of this effect threw the donor
-          // straight back in, which read as "the Back button does nothing".
-          if (!resumedOnceRef.current) {
-            resumedOnceRef.current = true;
-            setStep(2);
-          }
+          setStep(2);
         }
       })
       .catch(() => {});
-    // `user?.id`, not `user`. The object identity changes when the background
-    // /users/me check resolves and replaces it, which re-ran this whole effect —
-    // re-fetching, and (before the guard above) re-navigating.
-  }, [requestId, authLoading, user?.id, user?.role]);
+  }, [requestId, authLoading, user]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     dispatch({ type: "SET", key, value: value as string | boolean | DonorFlowType });
@@ -717,19 +722,8 @@ export default function OfferWizardPage() {
   // editable item form owns the viewport so its desktop rail, stacked card and
   // mobile sticky controls are not constrained by the legacy page wrapper.
   if (step === 2 && offer) {
-    // `overflow-x-clip`, deliberately NOT `overflow-x-hidden`: `hidden` would
-    // make this a scroll container, and this wizard's three `position: sticky`
-    // elements would then stick to it instead of the viewport.
-    //
-    // Kept as a cheap guard, not as the fix. The horizontal scrollbar this was
-    // added for came from the Back button's `after:absolute` escaping to
-    // ClickSpark's page-sized wrapper (see WizardNavigation) — an ancestor of
-    // this <main>, so this class never clipped it and never could.
     return (
-      <main
-        data-donation-offer-wizard
-        className="min-h-screen overflow-x-clip bg-[#faf8f5] dark:bg-zinc-950"
-      >
+      <main data-donation-offer-wizard className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950">
         <DonationOfferWizard
           offerId={offer.id}
           offer={offer}
@@ -901,7 +895,7 @@ export default function OfferWizardPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
                   {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags, comingSoon }, i) => {
                     const isSelecting = loading && form.flowType === type;
 
@@ -981,7 +975,7 @@ export default function OfferWizardPage() {
               <section className="mb-8">
                 <p className="mb-2 text-2xs font-bold uppercase tracking-wide text-gray-400">Request Description</p>
                 <div className="rounded-xl border-l-4 border-indigo-300 bg-indigo-50 px-3.5 sm:px-5 py-4 dark:border-indigo-600 dark:bg-indigo-950/30">
-                  <p className="min-w-0 max-w-full whitespace-pre-wrap text-sm italic leading-relaxed text-gray-700 dark:text-gray-300" style={{ overflowWrap: "anywhere" }}>&ldquo;{request.description}&rdquo;</p>
+                  <p className="text-sm italic leading-relaxed text-gray-700 dark:text-gray-300">&ldquo;{request.description}&rdquo;</p>
                 </div>
               </section>
             )}
@@ -1053,6 +1047,254 @@ export default function OfferWizardPage() {
           </div>
         )}
 
+        {/* ── Step 2: Item details form ─────────────────────────────────────── */}
+        {step === 2 && offer && (
+          <div className="space-y-4 sm:space-y-5">
+            <div>
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Item Details</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {form.flowType === "ALREADY_OWN" && "Tell us about the item you already have."}
+                {form.flowType === "WILL_PURCHASE" && "Describe the item you plan to purchase."}
+                {form.flowType === "SIMILAR_ITEM" && "Describe your item — note any differences from the request."}
+              </p>
+            </div>
+
+            {compat && (
+              <CompatibilityIndicator
+                indicator={compat.indicator}
+                explanation={compat.explanation}
+                breakdown={compat}
+              />
+            )}
+
+            {/* Photos — first, so AI can screen + auto-fill before the rest of the form */}
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm">
+              <div className="mb-1 flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <Camera className="h-4.5 w-4.5" />
+                </div>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">Photos (min. 2, max. 8) *</h3>
+              </div>
+              <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">Upload recent, genuine photos. Include full item view, condition, and any defects.</p>
+
+              <div className="grid grid-cols-4 gap-2">
+                {(offer.media?.length ?? 0) < 8 && (
+                  <label
+                    htmlFor="photo-upload"
+                    className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-[#1e3a60] hover:text-[#1e3a60] dark:border-gray-700 dark:text-gray-500"
+                  >
+                    {uploadingPhoto ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+                    <span className="text-2xs font-medium">{uploadingPhoto ? "Uploading…" : "Add Photo"}</span>
+                  </label>
+                )}
+                <input
+                  id="photo-upload"
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  disabled={uploadingPhoto}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                {offer.media?.map((m) => (
+                  <div key={m.id} className="relative aspect-square overflow-hidden rounded-lg">
+                    <Image src={m.mediaUrl} alt="" fill className="object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(m.id)}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs"
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+
+              {/* AI photo screening status — prohibited-content check only, no auto-fill */}
+              {analyzing && (
+                <div className="mt-3 flex items-center gap-2.5 rounded-xl bg-[#1e3a60]/8 border border-[#1e3a60]/20 px-4 py-3 text-sm font-bold text-[#1e3a60] dark:text-blue-300">
+                  <Sparkles className="w-4 h-4 animate-pulse shrink-0" />
+                  Checking your photos…
+                </div>
+              )}
+              {!analyzing && prohibited && (
+                <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm font-semibold text-red-700 dark:text-red-400">
+                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    {t(prohibitedCode
+                      ? (PHOTO_COPY.reasons[prohibitedCode] ?? PHOTO_COPY.genericReason)
+                      : PHOTO_COPY.genericReason)}{" "}
+                    Please remove this photo and upload a different one before continuing.
+                  </span>
+                </div>
+              )}
+              {!analyzing && aiUnavailableNote && (
+                <div className="mt-3 flex items-center gap-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                  <Info className="w-4 h-4 shrink-0" /> {aiUnavailableNote}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <SelectField
+                  label="Condition *"
+                  value={form.condition}
+                  onChange={(v) => set("condition", v)}
+                  options={["Unused", "Like New", "Good", "Fair", "Needs Minor Repair", "Not Working"]}
+                  wobble
+                />
+                <Field label="Approximate Age" value={form.approximateAge} onChange={(v) => set("approximateAge", v)} placeholder="e.g. 2 years" />
+              </div>
+              <Field label="Quantity to donate *" value={form.quantity} onChange={(v) => set("quantity", v)} type="number" />
+
+              <div>
+                <label className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={form.hasKnownDefects}
+                    onChange={(e) => set("hasKnownDefects", e.target.checked)}
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">This item has known defects</span>
+                </label>
+                {form.hasKnownDefects && (
+                  <div className="mt-3">
+                    <Field label="Known Defects" value={form.knownDefects} onChange={(v) => set("knownDefects", v)} placeholder="e.g. Minor scratch on lid" />
+                  </div>
+                )}
+              </div>
+
+              <Field label="Accessories Included" value={form.accessoriesIncluded} onChange={(v) => set("accessoriesIncluded", v)} placeholder="e.g. Charger, original box" />
+              {form.flowType === "SIMILAR_ITEM" && (
+                <Field label="How is your item different?" value={form.specNotes} onChange={(v) => set("specNotes", v)} placeholder="e.g. 4 GB RAM instead of 8 GB, same brand" />
+              )}
+            </div>
+
+            {/* Logistics */}
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                    <MapPin className="h-4.5 w-4.5" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Pickup / Delivery</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleUseMyLocation}
+                  disabled={gpsLoading}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 px-2.5 py-1.5 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-50 disabled:opacity-50 dark:border-teal-800 dark:text-teal-400 dark:hover:bg-teal-950/40"
+                >
+                  {gpsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
+                  Use my location
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <Field label="City *" value={form.pickupCity} onChange={(v) => set("pickupCity", v)} placeholder="e.g. Mumbai" />
+                <Field label="Pincode" value={form.pickupPincode} onChange={(v) => set("pickupPincode", v)} />
+              </div>
+              <Field label="Locality" value={form.pickupLocality} onChange={(v) => set("pickupLocality", v)} placeholder="e.g. Andheri West" />
+              <label
+                htmlFor="dropoff"
+                className="flex cursor-pointer items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4 dark:border-indigo-900 dark:bg-indigo-950/20"
+              >
+                <input type="checkbox" id="dropoff" checked={form.donorDropOffAvailable}
+                  onChange={(e) => set("donorDropOffAvailable", e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded" />
+                <div>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">I can deliver/drop off the item</p>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Check this if you are willing to transport the item to the charity or recipient&apos;s address.</p>
+                </div>
+              </label>
+              {!form.donorDropOffAvailable && (
+                <SelectField
+                  label="Who pays delivery?"
+                  value={form.deliveryCostBornBy}
+                  onChange={(v) => set("deliveryCostBornBy", v)}
+                  options={["DONOR", "DONEE", "SHARED"]}
+                  displayMap={{ DONOR: "I will pay", DONEE: "Recipient pays", SHARED: "Share cost" }}
+                />
+              )}
+            </div>
+
+            {/* Declarations */}
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm">
+              <div className="mb-3 flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <ShieldCheck className="h-4.5 w-4.5" />
+                </div>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">Declarations</h3>
+              </div>
+              <ul className="mb-4 space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                {[
+                  "I own this item or am authorised to donate it.",
+                  "The photographs are recent and genuine.",
+                  "The item details and condition are accurate.",
+                  "I have disclosed all known defects.",
+                  "I will not request payment for the donated item.",
+                  "I understand that the donation is subject to donee and admin approval.",
+                  "I agree to follow the CauseKind handover process.",
+                ].map((d, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-teal-600 dark:text-teal-400" />
+                    <span>{d}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-center gap-3 border-t border-gray-100 pt-4 dark:border-gray-800">
+                <input type="checkbox" id="decl" checked={form.declarationsAccepted}
+                  onChange={(e) => set("declarationsAccepted", e.target.checked)}
+                  className="h-4 w-4 rounded" />
+                <label htmlFor="decl" className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  I accept all the above declarations
+                </label>
+              </div>
+            </div>
+            </div>
+
+            {error && (
+              <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                {error}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-1">
+              <button
+                onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                className="group inline-flex items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-1" />
+                Back to Step 1
+              </button>
+              <button
+                onClick={handleItemDetailsSubmit}
+                disabled={loading}
+                className="rounded-xl bg-[#1e3a60] px-4 sm:px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#254876] disabled:opacity-50"
+              >
+                {loading ? "Submitting..." : "Submit Donation Offer"}
+              </button>
+            </div>
+
+            {/* Info tiles */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="rounded-xl bg-indigo-50/70 p-3 sm:p-4 dark:bg-indigo-950/20">
+                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <ShieldCheck className="h-4.5 w-4.5" />
+                </div>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Quality Assurance</p>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Your detailed info helps our team assess condition and ensure quality standards are met.</p>
+              </div>
+              <div className="rounded-xl bg-indigo-50/70 p-3 sm:p-4 dark:bg-indigo-950/20">
+                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400">
+                  <Eye className="h-4.5 w-4.5" />
+                </div>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Transparency</p>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Recipients can review condition details before accepting any donation.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Result phase: submitted / screening / outcome ─────────────── */}
         {step === 3 && (
           <OfferResult
@@ -1060,7 +1302,6 @@ export default function OfferWizardPage() {
             requestTitle={request?.title ?? null}
             onViewOffers={() => router.push("/offers")}
             onEdit={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-            onBrowseRequests={() => router.push("/requests")}
           />
         )}
       </div>
@@ -1068,3 +1309,58 @@ export default function OfferWizardPage() {
   );
 }
 
+// ── Reusable field components ──────────────────────────────────────────────────
+
+function Field({ label, value, onChange, placeholder, type = "text" }: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; type?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-indigo-100 dark:border-gray-700 bg-indigo-50/60 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#1e3a60]"
+      />
+    </div>
+  );
+}
+
+function SelectField({ label, value, onChange, options, displayMap, wobble }: {
+  label: string; value: string; onChange: (v: string) => void;
+  options: string[]; displayMap?: Record<string, string>; wobble?: boolean;
+}) {
+  const [wobbling, setWobbling] = useState(false);
+
+  function triggerWobble() {
+    if (!wobble) return;
+    setWobbling(false);
+    requestAnimationFrame(() => setWobbling(true));
+  }
+
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
+      <Select
+        value={value}
+        onValueChange={(v) => { onChange(v); triggerWobble(); }}
+        onOpenChange={(open) => { if (open) triggerWobble(); }}
+      >
+        <SelectTrigger
+          onAnimationEnd={() => setWobbling(false)}
+          className={`w-full h-auto rounded-xl border border-indigo-100 dark:border-gray-700 bg-indigo-50/60 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus-visible:border-[#1e3a60] focus-visible:ring-0 ${wobbling ? "animate-select-wobble" : ""}`}
+        >
+          <SelectValue placeholder="Select..." />
+        </SelectTrigger>
+        <SelectContent className="rounded-xl border-indigo-100 dark:border-gray-700">
+          {options.map((o) => (
+            <SelectItem key={o} value={o}>{displayMap?.[o] ?? o}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}

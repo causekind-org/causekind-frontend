@@ -9,8 +9,6 @@ import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { MATCH_RADIUS_KM } from "@/lib/constants";
 
-
-
 /* ─── Brand tokens ───────────────────────────────────────────────────
    This band used to flood the logo's ink (#1e3a60) at `lg` while keeping a
    light ground below it. It is cream at every width now, so the breakpoint
@@ -189,7 +187,6 @@ export function BeTheChangeSection({
   tourAnchors = false,
 }: { overlapHero?: boolean; tourAnchors?: boolean } = {}) {
   const { user } = useAuth();
-  
 
   // Category-pill overflow, below `lg` only. `useId` rather than a literal
   // string because HomeClient mounts this component twice — a hardcoded id
@@ -257,7 +254,6 @@ export function BeTheChangeSection({
 
             {/* ── Headline ── */}
             <div>
-              
               <p
                 className="mb-4 text-[11px] font-extrabold uppercase tracking-[0.24em]"
                 style={{ color: "var(--ck-home-ink,#b04a15)" }}
@@ -288,7 +284,6 @@ export function BeTheChangeSection({
               className="relative flex flex-col gap-6 lg:gap-7 lg:pt-2"
               data-tour={tourAnchors ? "guest-signals" : undefined}
             >
-              
               <div className="relative z-10 flex flex-col gap-6 lg:gap-7">
                 <MarqueeStat value="100%" label="Admin-verified listings" />
                 {/* Read from the shared constant, never retyped: the match radius
