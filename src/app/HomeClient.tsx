@@ -22,7 +22,7 @@
  *   4. Mobile layout (still inline — ~200 lines — a future task can extract it too)
  */
 
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 
 import { useTranslations } from "next-intl";
