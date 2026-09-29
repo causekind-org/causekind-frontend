@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
 import { getMyItemRequests, getMyProfile, type ItemRequest, type UserProfile } from "@/lib/api";
 
@@ -12,35 +12,40 @@ export function useNgoDashboardData() {
   const [errorRequests, setErrorRequests] = useState(false);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    getMyItemRequests()
-      .then((res) => {
-        if (isMounted) {
-          setRequests(res);
-          setErrorRequests(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setRequests([]);
-          setErrorRequests(true);
-        }
-      })
-      .finally(() => {
-        if (isMounted) setLoadingRequests(false);
-      });
+  const fetchRequests = useCallback(async () => {
+    const isSampleMode = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_SAMPLE_DRIVES === "true";
+    if (isSampleMode) {
+      setRequests([]);
+      setLoadingRequests(false);
+      setErrorRequests(false);
+      return;
+    }
 
-    getMyProfile()
-      .then((res) => {
-        if (isMounted) setMyProfile(res);
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
+    setLoadingRequests(true);
+    setErrorRequests(false);
+    try {
+      const res = await getMyItemRequests();
+      setRequests(res);
+      setErrorRequests(false);
+    } catch (e) {
+      setRequests([]);
+      setErrorRequests(true);
+    } finally {
+      setLoadingRequests(false);
+    }
   }, []);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await getMyProfile();
+      setMyProfile(res);
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    fetchRequests();
+    fetchProfile();
+  }, [fetchRequests, fetchProfile]);
 
   // Use real data where possible, otherwise default to what useNgoStatus gives
   const activeRequests = requests.filter(r => r.status === "OPEN" || r.status === "ACTIVE").length;
@@ -51,6 +56,7 @@ export function useNgoDashboardData() {
     requests,
     loadingRequests,
     errorRequests,
+    refetchRequests: fetchRequests,
     myProfile,
   };
 }

@@ -109,6 +109,7 @@ export default function NgoDashboardPage() {
     requests,
     loadingRequests,
     errorRequests,
+    refetchRequests,
     documents,
     myProfile
   } = useNgoDashboardData();
@@ -143,6 +144,11 @@ export default function NgoDashboardPage() {
   const showSections = isVerified || isSampleMode;
   const bypassLock = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_BYPASS_DRIVE_LOCK === "true";
   const effectivelyCanPost = isVerified || bypassLock;
+
+  const isDemoMode = process.env.NEXT_PUBLIC_NGO_DEMO_MODE === "true";
+  const hasDemoDrives = demoDrives.length > 0;
+  const isErrorWithFallback = errorRequests && hasDemoDrives && isDemoMode;
+  const isHardError = errorRequests && !isErrorWithFallback;
 
   return (
     <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-[calc(var(--ck-bottom-chrome)+1.5rem)]">
@@ -257,10 +263,10 @@ export default function NgoDashboardPage() {
               <div className="py-12 text-center">
                 <Loader2 className="w-6 h-6 animate-spin text-stone-300 mx-auto" />
               </div>
-            ) : errorRequests ? (
+            ) : isHardError ? (
               <div className="py-12 text-center text-sm text-stone-500">
                 <p>We couldn't load your drives.</p>
-                <button onClick={() => window.location.reload()} className="text-ngo-700 hover:underline font-bold mt-1">Try again</button>
+                <button onClick={refetchRequests} className="text-ngo-700 hover:underline font-bold mt-1">Try again</button>
               </div>
             ) : !showSections ? (
               <div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
@@ -286,6 +292,9 @@ export default function NgoDashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
+                {isErrorWithFallback && (
+                  <p className="text-xs text-stone-500 italic mb-2">Couldn't reach the server — showing drives saved on this device.</p>
+                )}
                 {liveDrives.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((r: any) => {
                   if (r.isDemoDrive) {
                     const drive = r;
@@ -449,10 +458,10 @@ export default function NgoDashboardPage() {
               <div className="py-12 text-center">
                 <Loader2 className="w-6 h-6 animate-spin text-stone-300 mx-auto" />
               </div>
-            ) : errorRequests ? (
+            ) : isHardError ? (
               <div className="py-12 text-center text-sm text-stone-500">
                 <p>We couldn't load your drives.</p>
-                <button onClick={() => window.location.reload()} className="text-ngo-700 hover:underline font-bold mt-1">Try again</button>
+                <button onClick={refetchRequests} className="text-ngo-700 hover:underline font-bold mt-1">Try again</button>
               </div>
             ) : !showSections ? (
               <div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
@@ -475,6 +484,9 @@ export default function NgoDashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
+                {isErrorWithFallback && (
+                  <p className="text-xs text-stone-500 italic mb-2">Couldn't reach the server — showing drives saved on this device.</p>
+                )}
                 {fulfilledDrives.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((r) => {
                   if (isSampleMode) {
                     const drive = r as SampleNgoDrive;
