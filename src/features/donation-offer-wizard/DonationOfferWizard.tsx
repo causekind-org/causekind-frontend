@@ -63,13 +63,15 @@ const STEP_INTROS: Record<OfferStep, string> = {
  * `offerId` is non-null for the whole lifetime of this component.
  */
 export function DonationOfferWizard({
-  offerId, offer, requestTitle, requestedQuantity, adminNote, onSubmitted, onExit, onSaveExit,
+  offerId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
 }: {
   offerId: number;
   /** Hydration source — a resumed DRAFT or NEEDS_INFORMATION offer. */
   offer: DonationOffer | null;
   requestTitle: string | null;
   requestedQuantity: number | null;
+  /** Less than requestedQuantity once earlier donations have been delivered. */
+  stillNeededQuantity?: number | null;
   /** Rejection guidance, kept visible while editing a NEEDS_INFORMATION offer. */
   adminNote?: string | null;
   onSubmitted: (offer: DonationOffer) => void;
@@ -83,7 +85,10 @@ export function DonationOfferWizard({
   const isRtl = locale === "ar" || locale === "ur";
 
   const showSpecNotes = needsSpecNotes(offer?.flowType);
-  const serializerOpts = useMemo(() => ({ includeSpecNotes: showSpecNotes }), [showSpecNotes]);
+  const serializerOpts = useMemo(
+    () => ({ includeSpecNotes: showSpecNotes, maxQuantity: stillNeededQuantity }),
+    [showSpecNotes, stillNeededQuantity],
+  );
 
   const [model, setModel] = useState<OfferModel>(() => offer ? offerModelFrom(offer) : emptyOfferModel);
   const [step, setStep] = useState<OfferStep>(() =>
@@ -93,6 +98,7 @@ export function DonationOfferWizard({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [gps, setGps] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
 
@@ -300,7 +306,7 @@ export function DonationOfferWizard({
   const photosBlocked = screening.kind === "prohibited";
 
   const handleContinue = useCallback(async () => {
-    const stepErrors = validateOfferStep(step, model);
+    const stepErrors = validateOfferStep(step, model, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
       setErrors({ photos: "Remove the photo we cannot accept before continuing." });
       return;
@@ -313,17 +319,22 @@ export function DonationOfferWizard({
 
     const idx = offerStepIndex(step);
     if (idx < OFFER_STEPS.length - 1) {
-      // Flush before advancing so the next step — and the compatibility check —
-      // never reason about data the server has not accepted.
-      const saved = await flush(model);
-      if (!saved) {
-        setErrors({ [step === "review" ? "declarationsConfirmed" : "quantity"]: "" });
-        toast.error("We couldn't save your changes. Check your connection and try again.");
-        return;
+      setAdvancing(true);
+      try {
+        // Flush before advancing so the next step — and the compatibility check —
+        // never reason about data the server has not accepted.
+        const saved = await flush(model);
+        if (!saved) {
+          setErrors({ [step === "review" ? "declarationsConfirmed" : "quantity"]: "" });
+          toast.error("We couldn't save your changes. Check your connection and try again.");
+          return;
+        }
+        goTo(OFFER_STEPS[idx + 1], 1);
+      } finally {
+        setAdvancing(false);
       }
-      goTo(OFFER_STEPS[idx + 1], 1);
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity]);
 
   /** Synchronous guard. Disabled UI alone loses the race on a double tap. */
   const submitLockRef = useRef(false);
@@ -333,7 +344,7 @@ export function DonationOfferWizard({
     submitLockRef.current = true;
     setSubmitError(null);
 
-    const allErrors = validateOfferAll(model);
+    const allErrors = validateOfferAll(model, stillNeededQuantity);
     if (Object.keys(allErrors).length > 0) {
       const first = Object.keys(allErrors)[0];
       const target = offerStepForField(first);
@@ -412,7 +423,7 @@ export function DonationOfferWizard({
     const out = {} as Record<OfferStep, StepAvailability>;
     const savedSnapshot = draft.isSnapshotSaved(model);
     for (const s of OFFER_STEPS) {
-      const complete = Object.keys(validateOfferStep(s, model)).length === 0;
+      const complete = Object.keys(validateOfferStep(s, model, stillNeededQuantity)).length === 0;
       // Only a completed step whose data the server has confirmed is safe to
       // jump back to; otherwise the donor could edit an unsaved earlier answer.
       out[s] = { complete, canNavigate: complete && savedSnapshot };
@@ -445,9 +456,18 @@ export function DonationOfferWizard({
           <p className="text-2xs text-white/35">Your name and address stay private until a match is approved.</p>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col justify-between">
+        <form
+          className="flex min-w-0 flex-1 flex-col justify-between h-[calc(100svh-var(--ck-bottom-chrome))] lg:h-[100dvh] overflow-y-auto"
+          onSubmit={e => {
+            e.preventDefault();
+            if (!advancing && !submitting && !submitted) {
+              if (isLast) handleSubmit();
+              else handleContinue();
+            }
+          }}
+        >
           {/* Mobile sticky progress — never rendered alongside the desktop rail. */}
-          <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5] dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
+          <div className="sticky top-0 z-40 border-b border-stone-200 bg-[#faf8f5] dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
             <div className="flex items-center justify-between px-4 pt-2">
               <button
                 type="button"
@@ -531,7 +551,8 @@ export function DonationOfferWizard({
                       {step === "details" && (
                         <OfferDetailsStep
                           model={model} errors={errors} onChange={setField}
-                          requestedQuantity={requestedQuantity} showSpecNotes={showSpecNotes}
+                          requestedQuantity={requestedQuantity} stillNeededQuantity={stillNeededQuantity}
+                          showSpecNotes={showSpecNotes}
                         />
                       )}
                       {step === "condition" && (
@@ -574,13 +595,10 @@ export function DonationOfferWizard({
             submitting={submitting}
             submitted={submitted}
             savingExit={savingExit}
+            advancing={advancing}
             avoidBottomChrome
-            // Corner clusters rather than a full-width bar. This route keeps the
-            // global dock, so a slab here stacked a third band of chrome over
-            // the form and collided with the dock's raised centre button.
-            variant="floating"
           />
-        </div>
+        </form>
       </div>
     </MotionConfig>
   );

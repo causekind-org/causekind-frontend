@@ -211,17 +211,25 @@ export const DASHBOARD_TOUR: Record<TourRole, TourStep[]> = {
       body: "Items listed, active matches, donations completed — your impact, always up to date.",
       placement: "bottom",
     },
+    // The dashboard shows one section at a time, so these three anchor on its
+    // tabs — a section that isn't open isn't in the DOM for the tour to find.
     {
       anchor: "offers",
       title: "Track your offers",
-      body: "When you offer an item to a specific request, follow every step here — from AI screening to the recipient's doorstep.",
-      placement: "top",
+      body: "When you offer an item to a specific request, follow every step here — from AI screening to the recipient's doorstep. A dot means something is waiting on you.",
+      placement: "bottom",
+    },
+    {
+      anchor: "inventory",
+      title: "Your private inventory",
+      body: "Everything you've listed lives here — only our matching engine sees it, never other users.",
+      placement: "bottom",
     },
     {
       anchor: "matches",
       title: "Match opportunities",
-      body: "When someone needs what you've listed, the match appears here. Accept it and we'll guide the handover end to end.",
-      placement: "top",
+      body: "When someone needs what you've listed, the match appears here. Accept it and we'll guide the handover end to end. Finished matches move into this tab's history.",
+      placement: "bottom",
     },
   ],
   DONEE: [
@@ -237,17 +245,25 @@ export const DASHBOARD_TOUR: Record<TourRole, TourStep[]> = {
       body: "Requests posted, matches in progress, needs fulfilled — the numbers update as things move.",
       placement: "bottom",
     },
+    // The dashboard shows one section at a time, so these three anchor on its
+    // tabs — a section that isn't open isn't in the DOM for the tour to find.
+    {
+      anchor: "offers",
+      title: "Offers from donors",
+      body: "When a donor offers to fulfil one of your requests, review their item here and accept or decline it. A dot means something is waiting on you.",
+      placement: "bottom",
+    },
     {
       anchor: "requests-list",
       title: "Follow every request's journey",
       body: "Each request travels the same road: posted → verified → matched → received. The rail shows exactly where yours stands.",
-      placement: "top",
+      placement: "bottom",
     },
     {
       anchor: "matches",
       title: "Matches & handover",
-      body: "When a donor is matched to your need, coordinate the handover here — chat, schedule, and confirm receipt safely.",
-      placement: "top",
+      body: "When a donor is matched to your need, coordinate the handover here — chat, schedule, and confirm receipt safely. Finished matches move to the history below.",
+      placement: "bottom",
     },
   ],
 };

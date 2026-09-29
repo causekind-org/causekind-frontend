@@ -34,7 +34,7 @@ export const MATCH_METHODS: HandoverMethodOption[] = [
 ];
 
 /** Human label for any stored method value, including retired ones. */
-function methodLabel(value: string | null, options: HandoverMethodOption[]): string | null {
+export function methodLabel(value: string | null, options: HandoverMethodOption[]): string | null {
   if (!value) return null;
   const known = options.find((o) => o.value === value);
   if (known) return known.label;
@@ -113,6 +113,9 @@ export function adaptOffer(
     certificateHref: role === "DONOR" && offer.status === "COMPLETED"
       ? `/certificate?offerId=${offer.id}` : null,
     closed: state === "completed" || state === "cancelled_or_failed",
+    completedAt: null,
+    offeredQuantity: offer.itemDetails?.quantity ?? null,
+    delivery: handover?.delivery ?? null,
   };
 }
 
@@ -183,7 +186,28 @@ export function adaptMatch(
     certificateCode: match.verifiedDeliveryCertificate ?? null,
     certificateHref: null,
     closed: state === "completed" || state === "cancelled_or_failed",
+    completedAt: match.completedAt ?? null,
+    offeredQuantity: matchCommittedQuantity(match),
+    delivery: match.delivery ?? null,
   };
+}
+
+/**
+ * What the donor is committed to handing over in a match. Mirrors the backend's
+ * ItemMatchService.committedQuantity, which caps what the donee can confirm
+ * receiving: the allocation set while scheduling, else as much of the listing
+ * as the request asked for.
+ */
+export function matchCommittedQuantity(
+  match: Pick<ItemMatch, "allocatedQuantity" | "listingQuantity" | "requestQuantity">,
+): number | null {
+  const positive = (n: number | null | undefined) => (n != null && n > 0 ? n : null);
+  const allocated = positive(match.allocatedQuantity);
+  if (allocated != null) return allocated;
+  const listed = positive(match.listingQuantity);
+  const asked = positive(match.requestQuantity);
+  if (listed != null && asked != null) return Math.min(listed, asked);
+  return listed ?? asked;
 }
 
 function normaliseViewerRole(value: string | null | undefined): HandoverRole | null {

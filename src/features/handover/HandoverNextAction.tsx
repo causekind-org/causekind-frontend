@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { CalendarPlus, CircleCheck, Clock, MessageCircle, TriangleAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { nextStepCopy, type HandoverViewModel } from "./model";
+import { deliveryAddressPending, nextStepCopy, type HandoverViewModel } from "./model";
+import { DeliveryAddressStep, type DeliveryAddressActions } from "./HandoverDeliveryAddress";
 import { handoverPrimary, handoverSecondary } from "./handoverStyles";
 import { ConfirmNoIssueButton } from "./HandoverSafetyActions";
 import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmPayload } from "./HandoverConfirmationPanel";
@@ -17,7 +19,7 @@ import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmP
  * transition so the change is noticed without being animated at.
  */
 export function HandoverNextAction({
-  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onOpenChat, onChanged,
+  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onOpenChat, onChanged, deliveryActions,
 }: {
   vm: HandoverViewModel;
   otp: string | null;
@@ -27,9 +29,14 @@ export function HandoverNextAction({
   onDoneeConfirm: (p: DoneeConfirmPayload) => Promise<void>;
   onOpenChat?: () => void;
   onChanged: () => void;
+  /** Absent on a flow that can't take a delivery address. */
+  deliveryActions?: DeliveryAddressActions;
 }) {
   const copy = nextStepCopy(vm);
   const donor = vm.role === "DONOR";
+  // A courier delivery can't be sent without the address — while it's missing,
+  // getting it is the action, in place of confirming the handover.
+  const addressFirst = deliveryActions != null && deliveryAddressPending(vm);
 
   return (
     <motion.section
@@ -63,11 +70,22 @@ export function HandoverNextAction({
           )
         )}
 
-        {vm.state === "scheduled" && !donor && (
+        {addressFirst && <DeliveryAddressStep vm={vm} actions={deliveryActions!} />}
+
+        {/* The donor's way out of a half-settled schedule. Without it this state
+            rendered no control at all, so a match left on a status the server
+            won't confirm from had nothing on the page that could move it. */}
+        {vm.state === "scheduled" && donor && !addressFirst && (
+          <Button onClick={onSchedule} variant="outline" className={handoverSecondary}>
+            <CalendarPlus aria-hidden /> Check the schedule
+          </Button>
+        )}
+
+        {vm.state === "scheduled" && !donor && !addressFirst && (
           <WaitingRow onOpenChat={onOpenChat} label="Ask for another time" />
         )}
 
-        {(vm.state === "ready_to_handover" || vm.state === "partially_confirmed") && (
+        {!addressFirst && (vm.state === "ready_to_handover" || vm.state === "partially_confirmed") && (
           <NeedsConfirmation
             vm={vm} otp={otp}
             onGenerateOtp={onGenerateOtp}
@@ -120,7 +138,23 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
   // Already done your part: there is genuinely nothing to submit, so offer the
   // only useful thing left — a nudge.
   if (youConfirmed) {
-    return <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />;
+    const showConfirmationPanel = donor && vm.confirmation.doneeConfirmedAt == null;
+    return (
+      <div className="space-y-4">
+        {showConfirmationPanel && (
+          <div className="-mx-1">
+            <HandoverConfirmationPanel
+              vm={vm}
+              otp={otp}
+              onGenerateOtp={onGenerateOtp}
+              onDonorConfirm={onDonorConfirm}
+              onDoneeConfirm={onDoneeConfirm}
+            />
+          </div>
+        )}
+        <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />
+      </div>
+    );
   }
 
   return (
@@ -192,6 +226,14 @@ function Completion({ vm }: { vm: HandoverViewModel }) {
           If a problem surfaces in the next few days, you can still report it below.
         </p>
       )}
+      
+      <div className="pt-2">
+        <Button asChild variant="outline" className={handoverSecondary}>
+          <Link href="/dashboard">
+            Back to dashboard
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

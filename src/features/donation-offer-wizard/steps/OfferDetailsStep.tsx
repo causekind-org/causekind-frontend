@@ -12,26 +12,33 @@ import type { OfferModel } from "../offerModel";
  * dressed up as a redesign.
  */
 export function OfferDetailsStep({
-  model, errors, onChange, requestedQuantity, showSpecNotes,
+  model, errors, onChange, requestedQuantity, stillNeededQuantity, showSpecNotes,
 }: {
   model: OfferModel;
   errors: Record<string, string>;
   onChange: <K extends keyof OfferModel>(key: K, value: OfferModel[K]) => void;
   /** Shown as context only — never enforced here. */
   requestedQuantity?: number | null;
+  /** What's left once earlier donations are counted; context only, like the above. */
+  stillNeededQuantity?: number | null;
   showSpecNotes: boolean;
 }) {
+  const partlyMet = requestedQuantity != null && stillNeededQuantity != null
+    && stillNeededQuantity < requestedQuantity;
   return (
     <div className="space-y-3">
       <WizardField
         label="How many are you donating?"
         required
         error={errors.quantity}
-        hint={requestedQuantity ? `The request asks for ${requestedQuantity}.` : undefined}
+        hint={partlyMet
+          ? `${stillNeededQuantity} still needed (of the ${requestedQuantity} requested). You can offer up to ${stillNeededQuantity}.`
+          : requestedQuantity ? `The request asks for ${requestedQuantity}.` : undefined}
       >
         {({ id, describedBy, invalid }) => (
           <input
             id={id} name="quantity" type="number" inputMode="numeric" min={1} step={1}
+            {...(stillNeededQuantity != null && stillNeededQuantity > 0 ? { max: stillNeededQuantity } : {})}
             value={model.quantity}
             onChange={e => onChange("quantity", e.target.value)}
             aria-describedby={describedBy} aria-invalid={invalid}

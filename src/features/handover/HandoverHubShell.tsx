@@ -11,6 +11,7 @@ import { HandoverScheduleDialog, type SchedulePayload } from "./HandoverSchedule
 import { HandoverContactPanel } from "./HandoverContactPanel";
 import { HandoverChatPanel, HandoverChatDrawer } from "./HandoverChatPanel";
 import { HandoverSafetyActions } from "./HandoverSafetyActions";
+import { HandoverDeliveryPanel, type DeliveryAddressActions } from "./HandoverDeliveryAddress";
 import type { DonorConfirmPayload, DoneeConfirmPayload } from "./HandoverConfirmationPanel";
 import type { HandoverViewModel } from "./model";
 
@@ -39,6 +40,8 @@ export function HandoverHubShell({
     confirmDonor: (p: DonorConfirmPayload) => Promise<void>;
     confirmDonee: (p: DoneeConfirmPayload) => Promise<void>;
     setCallPermission?: (next: boolean) => Promise<void>;
+    /** Courier delivery address — ask (donor), answer and pre-fill (recipient). */
+    deliveryAddress?: DeliveryAddressActions;
   };
   onChanged: () => void;
 }) {
@@ -117,10 +120,15 @@ export function HandoverHubShell({
               onDoneeConfirm={actions.confirmDonee}
               onOpenChat={openChat}
               onChanged={onChanged}
+              deliveryActions={actions.deliveryAddress}
             />
 
             {/* Mobile keeps schedule directly under the action; desktop moves it
                 into the rail so the main column stays about doing, not reading. */}
+            {/* Once, not per breakpoint: it can hold a form, and two copies would
+                duplicate its field ids. */}
+            <HandoverDeliveryPanel vm={vm} actions={actions.deliveryAddress} />
+
             <div className="lg:hidden">
               <HandoverScheduleSummary vm={vm} onReschedule={() => setScheduleOpen(true)} />
             </div>

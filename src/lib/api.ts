@@ -718,19 +718,32 @@ export function withdrawItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
 }
 
+/**
+ * Remove a listing from the donor's inventory.
+ *
+ * <p>The local hide is a safety rail for listings the server keeps but stops
+ * showing, and it is applied <b>only after the server has agreed</b>. It used to
+ * run first, unconditionally, with both requests' errors swallowed — so a delete
+ * the server refused still cleared the row, reported success, and hid the
+ * listing in this browser's localStorage forever, while the listing itself
+ * stayed on the server where the donor could no longer reach it. A failure has
+ * to reach the caller, or the dashboard cannot tell the donor the truth.
+ */
 export async function deleteMyListing(id: number): Promise<void> {
-  // Always mark hidden locally so it is dismissed from the donor's view immediately
-  hideListingLocally(id);
   try {
     await request<void>(`/api/v1/items/${id}`, { method: "DELETE" });
-  } catch {
-    // If server rejects DELETE on terminal/audited/rejected items, try withdraw
+  } catch (deleteError) {
+    // The server keeps some listings it will not erase; withdrawing is the
+    // honest fallback, and it is still a change the donor asked for.
     try {
       await request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
     } catch {
-      /* ignore if already withdrawn/rejected */
+      // Neither worked — say so rather than pretending. Report the delete's
+      // reason: the withdraw was our idea, not the donor's.
+      throw deleteError;
     }
   }
+  hideListingLocally(id);
 }
 
 export type CreateListingPayload = {
@@ -1033,6 +1046,8 @@ export type ItemRequest = {
   title: string;
   category: string;
   quantity: number;
+  fulfilledQuantity?: number;
+  remainingQuantity?: number;
   urgency: string;
   city: string;
   pincode: string | null;
@@ -1580,6 +1595,7 @@ export type ItemMatch = {
   /** Server-computed XOR of the two confirmation timestamps — no status reflects it. */
   handoverPartlyConfirmed: boolean;
   closedAt: string | null;
+  completedAt?: string | null;
   hiddenByDonor: boolean;
   hiddenByDonee: boolean;
   // Delivery verification
@@ -1597,6 +1613,8 @@ export type ItemMatch = {
   doneeConfirmedAt: string | null;
   doneeConditionRating: string | null;
   doneeConditionNotes: string | null;
+  /** Where a courier delivers; null from a backend that predates it. See DeliveryAddress. */
+  delivery: DeliveryAddress | null;
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
@@ -1995,6 +2013,12 @@ export type DonationOffer = {
   // Full AI screening detail — only populated on admin endpoints (adminGetAllOffers /
   // adminGetOfferById / adminActionOffer / adminRetryOfferScreening); null elsewhere.
   assessment: OfferAssessmentDetails | null;
+  /**
+   * How many the donee confirmed receiving at the handover; null until they have.
+   * This is what counts toward the request — `itemDetails.quantity` is only what
+   * was offered — so anything listing deliveries beside a total must use it.
+   */
+  receivedQuantity: number | null;
 };
 
 export type OfferAssessmentDetails = {
@@ -2047,8 +2071,73 @@ export type HandoverRecord = {
   courierName: string | null;
   trackingNumber: string | null;
   createdAt: string;
+  /** Where a courier delivers; null from a backend that predates it. */
+  delivery: DeliveryAddress | null;
   confirmation: HandoverConfirmationSummary | null;
 };
+
+/**
+ * A courier delivery's destination, supplied by the recipient for one handover.
+ * `needed` is true when the handover method sends the item to them; a
+ * `requestedAt` later than `submittedAt` means the donor asked them to check it.
+ */
+export type DeliveryAddress = {
+  needed: boolean;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  requestedAt: string | null;
+  submittedAt: string | null;
+};
+
+export type DeliveryAddressInput = {
+  address: string;
+  latitude?: number;
+  longitude?: number;
+  contactName: string;
+  contactPhone: string;
+};
+
+/** A pre-fill from the recipient's own profile — every field may be missing. */
+export type DeliveryAddressSuggestion = {
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+};
+
+export function requestOfferDeliveryAddress(offerId: number) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/delivery-address/request`, { method: "POST" });
+}
+
+export function submitOfferDeliveryAddress(offerId: number, data: DeliveryAddressInput) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/delivery-address`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getOfferDeliveryAddressSuggestion(offerId: number) {
+  return request<DeliveryAddressSuggestion>(`/api/v1/offers/${offerId}/handover/delivery-address/suggestion`);
+}
+
+export function requestMatchDeliveryAddress(matchId: number) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/delivery-address/request`, { method: "POST" });
+}
+
+export function submitMatchDeliveryAddress(matchId: number, data: DeliveryAddressInput) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/delivery-address`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getMatchDeliveryAddressSuggestion(matchId: number) {
+  return request<DeliveryAddressSuggestion>(`/api/v1/matches/${matchId}/handover/delivery-address/suggestion`);
+}
 
 export type Certificate = {
   id: number;
@@ -2484,6 +2573,15 @@ export function reportPostDeliveryIssue(offerId: number, data: {
   issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
 }) {
   return request<object>(`/api/v1/offers/${offerId}/handover/issues`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function reportMatchIssue(matchId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/matches/${matchId}/handover/issues`, {
     method: "POST",
     body: JSON.stringify(data),
   });
