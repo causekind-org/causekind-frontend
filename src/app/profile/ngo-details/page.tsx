@@ -477,7 +477,7 @@ function NgoDetailsEditor() {
                         : "border border-stone-300 text-stone-400 dark:border-zinc-600"
                     }`}
                   >
-                    {isCompleted && !isCurrent ? <Check className="w-3 h-3" /> : index + 1}
+                    {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                   </span>
                   <span className="truncate">{NGO_STEP_FULL_TITLES[stepKey]}</span>
                 </button>
@@ -547,18 +547,19 @@ function NgoDetailsEditor() {
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 {NGO_STEPS.map((stepKey, index) => {
                   const isCurrent = currentStep === stepKey;
+                  const isCompleted = progress.completedSteps.has(stepKey);
                   return (
                     <button
                       key={stepKey}
                       type="button"
                       onClick={() => goToStep(stepKey)}
-                      className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors ${
+                      className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 ${
                         isCurrent
                           ? "bg-ngo-700 text-white"
                           : "border border-stone-300 text-stone-600 dark:border-zinc-600 dark:text-stone-300"
                       }`}
                     >
-                      {index + 1}. {NGO_STEP_FULL_TITLES[stepKey]}
+                      {isCompleted ? <Check className="w-3.5 h-3.5" /> : `${index + 1}.`} {NGO_STEP_FULL_TITLES[stepKey]}
                     </button>
                   );
                 })}

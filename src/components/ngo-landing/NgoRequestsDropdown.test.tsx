@@ -42,6 +42,7 @@ describe("NgoRequestsDropdown", () => {
       dropoffsToConfirm: 0,
       photosDue: 0,
       photosDueRequestName: "",
+      documents: [],
       isVerified: false,
       isPhotosDue: false,
       canPostRequest: false,
@@ -56,8 +57,8 @@ describe("NgoRequestsDropdown", () => {
     expect(screen.getByText("Profile Incomplete")).toBeInTheDocument();
 
     // All 3 items are present
-    const postReqBtn = screen.getByRole("button", { name: /post a request/i });
-    const activeReqBtn = screen.getByRole("button", { name: /active requests/i });
+    const postReqBtn = screen.getByRole("button", { name: /start a drive/i });
+    const activeReqBtn = screen.getByRole("button", { name: /live drives/i });
     const handoversBtn = screen.getByRole("button", { name: /handovers & photos/i });
 
     expect(postReqBtn).toHaveAttribute("aria-disabled", "true");
@@ -82,6 +83,7 @@ describe("NgoRequestsDropdown", () => {
       dropoffsToConfirm: 1,
       photosDue: 0,
       photosDueRequestName: "",
+      documents: [],
       isVerified: true,
       isPhotosDue: false,
       canPostRequest: true,
@@ -96,11 +98,11 @@ describe("NgoRequestsDropdown", () => {
     expect(screen.getByText("Verified NGO Partner")).toBeInTheDocument();
 
     // Links are active
-    const postReqLink = screen.getByRole("link", { name: /post a request/i });
-    const activeReqLink = screen.getByRole("link", { name: /active requests/i });
+    const postReqLink = screen.getByRole("link", { name: /start a drive/i });
+    const activeReqLink = screen.getByRole("link", { name: /live drives/i });
     const handoversLink = screen.getByRole("link", { name: /handovers & photos/i });
 
-    expect(postReqLink).toHaveAttribute("href", "/ngo/requests/new");
+    expect(postReqLink).toHaveAttribute("href", "/ngo/drives/new");
     expect(activeReqLink).toHaveAttribute("href", "/requests");
     expect(handoversLink).toHaveAttribute("href", "/ngo/handovers");
   });

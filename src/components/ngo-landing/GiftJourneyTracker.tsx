@@ -30,7 +30,7 @@ const NGO_JOURNEY_STEPS: NgoJourneyStep[] = [
   {
     id: 1,
     icon: FileText,
-    title: "You post a request",
+    title: "You start a drive",
     description: "You list exact items (e.g. 40 blankets) for your upcoming community drive.",
     timestamp: "Step 1",
     statusBadge: "Request Live · 10 km Radius",

@@ -72,13 +72,13 @@ export default function NgoHandoversPage() {
                   variant="outline"
                   className="rounded-full border-ngo-200 hover:bg-ngo-50 text-ngo-900 text-xs font-bold px-4"
                 >
-                  Active Requests
+                  Active Drives
                 </Button>
               </Link>
-              <Link href="/ngo/requests/new">
+              <Link href="/ngo/drives/new">
                 <Button className="rounded-full bg-ngo-700 hover:bg-ngo-600 text-white text-xs font-bold px-4 shadow-sm">
                   <Plus className="w-4 h-4 mr-1.5" />
-                  Post a Request
+                  Start a Drive
                 </Button>
               </Link>
             </div>
@@ -163,13 +163,13 @@ export default function NgoHandoversPage() {
               No Pending Drop-offs
             </h3>
             <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-6">
-              When local givers pledge items to your active requests and schedule a physical drop-off, their OTP confirmation and photo upload forms will appear right here.
+              When local givers pledge items to your active donation drives and schedule a physical drop-off, their OTP confirmation and photo upload forms will appear right here.
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Link href="/ngo/requests/new">
+              <Link href="/ngo/drives/new">
                 <Button className="rounded-full bg-ngo-700 hover:bg-ngo-600 text-white text-xs font-bold px-5">
                   <Plus className="w-4 h-4 mr-1.5" />
-                  Post a Request
+                  Start a Drive
                 </Button>
               </Link>
               <Link href="/requests">

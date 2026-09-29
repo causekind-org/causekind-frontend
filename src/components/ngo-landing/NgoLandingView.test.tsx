@@ -51,13 +51,13 @@ describe("NgoLandingView Component Suite", () => {
     // 1. Hero zero state
     expect(screen.getByText("Post what you need.")).toBeInTheDocument();
     expect(screen.getByText("Givers nearby will bring it.")).toBeInTheDocument();
-    expect(screen.getByText(/Once CauseKind verifies you, your requests reach donors within 10 km/i)).toBeInTheDocument();
+    expect(screen.getByText(/Once CauseKind verifies you, your drives reach donors within 10 km/i)).toBeInTheDocument();
     expect(screen.getByText("Available once CauseKind verifies your NGO.")).toBeInTheDocument();
     expect(screen.queryByText("✓ Verified by CauseKind")).toBeNull();
     expect(screen.queryByText("Your application")).toBeNull();
 
-    // Locked Post a Request button (cannot navigate)
-    const postReqBtn = screen.getByRole("button", { name: /Post a Request/i });
+    // Locked Start a Drive button (cannot navigate)
+    const postReqBtn = screen.getByRole("button", { name: /Start a Drive/i });
     expect(postReqBtn).toHaveAttribute("aria-disabled", "true");
 
     // Secondary CTA
@@ -100,7 +100,7 @@ describe("NgoLandingView Component Suite", () => {
     // 3. Gift Journey Tracker — NGO view
     expect(screen.getByText("After you post")).toBeInTheDocument();
     expect(screen.getByText("What happens after you post")).toBeInTheDocument();
-    expect(screen.getByText(/1\. You post a request/i)).toBeInTheDocument();
+    expect(screen.getByText(/1\. You start a drive/i)).toBeInTheDocument();
     expect(screen.getByText(/2\. Donors nearby pledge them/i)).toBeInTheDocument();
     expect(screen.getByText(/3\. They drop off, and you confirm receipt/i)).toBeInTheDocument();
     expect(screen.getByText(/4\. You upload a handover photo/i)).toBeInTheDocument();
@@ -171,7 +171,7 @@ describe("NgoLandingView Component Suite", () => {
     expect(screen.queryByText("Your application")).toBeNull();
   });
 
-  it("State 4 (verified - empty): renders verified hero, category pill bar links to /ngo/requests/new, glance strip, hides problem/solution and trust grid, unlocks real scorecard", () => {
+  it("State 4 (verified - empty): renders verified hero, category pill bar links to /ngo/drives/new, glance strip, hides problem/solution and trust grid, unlocks real scorecard", () => {
     localStorage.setItem(
       "ngo-application-101",
       JSON.stringify({ status: "APPROVED", organizationName: "Asha Foundation" })
@@ -184,19 +184,19 @@ describe("NgoLandingView Component Suite", () => {
     expect(screen.getByText("Let givers nearby find you.")).toBeInTheDocument();
     expect(screen.getByText(/Post exactly what you need\. Donors within 10 km see it/i)).toBeInTheDocument();
 
-    // Active Post a Request CTA link
-    const postReqLink = screen.getByRole("link", { name: /Post a Request/i });
-    expect(postReqLink).toHaveAttribute("href", "/ngo/requests/new");
+    // Active Start a Drive CTA link
+    const postReqLink = screen.getByRole("link", { name: /Start a Drive/i });
+    expect(postReqLink).toHaveAttribute("href", "/ngo/drives/new");
 
     expect(screen.getByRole("link", { name: /View my public profile/i })).toHaveAttribute("href", "/profile");
 
-    // Category Pill Bar links to /ngo/requests/new with category pre-selection
-    expect(screen.getByRole("link", { name: /Category Medical aid/i })).toHaveAttribute("href", "/ngo/requests/new?category=Medical%20aid");
-    expect(screen.getByRole("link", { name: /Category Education/i })).toHaveAttribute("href", "/ngo/requests/new?category=Education");
+    // Category Pill Bar links to /ngo/drives/new with category pre-selection
+    expect(screen.getByRole("link", { name: /Category Medical aid/i })).toHaveAttribute("href", "/ngo/drives/new?category=Medical%20aid");
+    expect(screen.getByRole("link", { name: /Category Education/i })).toHaveAttribute("href", "/ngo/drives/new?category=Education");
 
     // 2. Glance Strip
     expect(screen.getByText("At a glance")).toBeInTheDocument();
-    expect(screen.getByText("Active requests")).toBeInTheDocument();
+    expect(screen.getByText("Live drives")).toBeInTheDocument();
     expect(screen.getByText("Items pledged")).toBeInTheDocument();
     expect(screen.getByText("Drop-offs to confirm")).toBeInTheDocument();
     expect(screen.getByText("Photos due")).toBeInTheDocument();
@@ -242,7 +242,7 @@ describe("NgoLandingView Component Suite", () => {
 
     // Verify dialog content renders
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText("Requested: 50 thermal blankets")).toBeInTheDocument();
+    expect(screen.getByText("Needed: 50 thermal blankets")).toBeInTheDocument();
     expect(screen.getByText("Delivered: 50 of 50")).toBeInTheDocument();
     expect(screen.getByText("Handed to 50 residents of Kandivali Elder Shelter")).toBeInTheDocument();
     expect(screen.getByText("Asha Foundation")).toBeInTheDocument();
@@ -330,10 +330,10 @@ describe("NgoLandingView Component Suite", () => {
 
     // 5 Short lines rendered on back
     expect(screen.getByText("Every upload screened for fraud first.")).toBeInTheDocument();
-    expect(screen.getByText("Registration and ID checked before any request.")).toBeInTheDocument();
+    expect(screen.getByText("Registration and ID checked before any drive.")).toBeInTheDocument();
     expect(screen.getByText("Matched within 10 km, down to the neighbourhood.")).toBeInTheDocument();
     expect(screen.getByText("Donors get the address only after pledging.")).toBeInTheDocument();
-    expect(screen.getByText("No proof, no next request.")).toBeInTheDocument();
+    expect(screen.getByText("No proof, no next drive.")).toBeInTheDocument();
 
     // 1. Flip Card 1 (AI Screening)
     const card1Btn = screen.getByRole("button", { name: /Step 01: AI Screening\. Every upload screened for fraud first\./i });
@@ -342,7 +342,7 @@ describe("NgoLandingView Component Suite", () => {
     expect(card1Btn).toHaveAttribute("aria-pressed", "true");
 
     // 2. Flip Card 2 (Legal Checks) -> Card 1 flips back, Card 2 flips
-    const card2Btn = screen.getByRole("button", { name: /Step 02: Legal Checks\. Registration and ID checked before any request\./i });
+    const card2Btn = screen.getByRole("button", { name: /Step 02: Legal Checks\. Registration and ID checked before any drive\./i });
     expect(card2Btn).toHaveAttribute("aria-pressed", "false");
     fireEvent.click(card2Btn);
     expect(card2Btn).toHaveAttribute("aria-pressed", "true");

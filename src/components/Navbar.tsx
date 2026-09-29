@@ -13,7 +13,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, ArrowRight, Sparkles, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
 import { getMyProfile, getMyMatches, getMyNgoApplication, type UserProfile, type ItemMatch } from "@/lib/api";
@@ -680,102 +680,6 @@ export function SiteHeader() {
     pathname?.startsWith("/ngo");
   const isNgoView = isNgoDashboard;
 
-  const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(() => {
-    if (typeof window === "undefined" || !user) return true;
-    const userIdentifier =
-      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-    const cached = localStorage.getItem(demoAppKey) || localStorage.getItem(realAppKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          return false;
-        }
-      } catch {}
-    }
-    return true;
-  });
-
-  const checkNgoApplicationStatus = useCallback(() => {
-    if (!isNgoDashboard) {
-      setIsNgoProfileIncomplete(false);
-      return;
-    }
-
-    const userIdentifier =
-      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-
-    const cachedDemo = typeof window !== "undefined" ? localStorage.getItem(demoAppKey) : null;
-    const cachedReal = typeof window !== "undefined" ? localStorage.getItem(realAppKey) : null;
-    if (cachedDemo || cachedReal) {
-      try {
-        const parsed = JSON.parse((cachedDemo || cachedReal)!);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          setIsNgoProfileIncomplete(false);
-          return;
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    if (user) {
-      getMyNgoApplication()
-        .then((app) => {
-          const isComplete =
-            (app as any)?.submissionStatus === "UNDER_REVIEW" ||
-            (app as any)?.submissionStatus === "APPROVED" ||
-            (app as any)?.submissionStatus === "PENDING_VERIFICATION" ||
-            app?.status === "UNDER_REVIEW" ||
-            app?.status === "APPROVED" ||
-            app?.status === "PENDING_VERIFICATION";
-          setIsNgoProfileIncomplete(!isComplete);
-        })
-        .catch(() => {
-          setIsNgoProfileIncomplete(true);
-        });
-    } else {
-      setIsNgoProfileIncomplete(true);
-    }
-  }, [isNgoDashboard, user]);
-
-  useEffect(() => {
-    checkNgoApplicationStatus();
-
-    const handleUpdate = (e?: Event) => {
-      const customEvent = e as CustomEvent;
-      if (
-        customEvent?.detail?.status === "UNDER_REVIEW" ||
-        customEvent?.detail?.status === "APPROVED" ||
-        customEvent?.detail?.status === "PENDING_VERIFICATION"
-      ) {
-        setIsNgoProfileIncomplete(false);
-        return;
-      }
-      checkNgoApplicationStatus();
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("ngo-application-submitted", handleUpdate);
-      window.addEventListener("storage", handleUpdate);
-      return () => {
-        window.removeEventListener("ngo-application-submitted", handleUpdate);
-        window.removeEventListener("storage", handleUpdate);
-      };
-    }
-  }, [checkNgoApplicationStatus, pathname]);
 
   const {
     status: ngoHookStatus,
@@ -784,6 +688,9 @@ export function SiteHeader() {
     photosDueRequestName: ngoPhotosDueRequestName,
     canPostRequest: canNgoPostRequest,
   } = useNgoStatus();
+
+  const bypassLock = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_BYPASS_DRIVE_LOCK === "true";
+  const effectivelyCanNgoPost = canNgoPostRequest || bypassLock;
 
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
@@ -794,7 +701,7 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    { href: "/requests", label: isNgo ? "My Requests" : t("nav.donate") },
+    { href: "/requests", label: isNgo ? "My Drives" : t("nav.donate") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -1129,7 +1036,9 @@ export function SiteHeader() {
             {FEATURES.money && !isNgoDashboard && <Donate3DButton />}
 
             {isNgoDashboard && (
-              isNgoProfileIncomplete ? (
+              ngoHookStatus === "loading" ? (
+                <div className="w-32 h-8 rounded-full bg-stone-200 dark:bg-zinc-800 animate-pulse" />
+              ) : (ngoHookStatus === "incomplete" || ngoHookStatus === "changes_requested") ? (
                 <Link href="/profile/ngo-details">
                   <Button
                     size="sm"
@@ -1138,7 +1047,7 @@ export function SiteHeader() {
                     Complete Profile
                   </Button>
                 </Link>
-              ) : (
+              ) : ngoHookStatus === "under_review" ? (
                 <Link href="/profile">
                   <Button
                     size="sm"
@@ -1148,7 +1057,7 @@ export function SiteHeader() {
                     Application Under Review
                   </Button>
                 </Link>
-              )
+              ) : null
             )}
 
             {/* Auth action — login/logout, top-right. Hidden on the auth pages
@@ -1441,20 +1350,20 @@ export function SiteHeader() {
                     !pathname?.startsWith("/profile"),
                 },
                 {
-                  label: "My Requests",
-                  ariaLabel: "My Requests",
+                  label: "My Drives",
+                  ariaLabel: "My Drives",
                   active:
-                    isActive("/ngo/requests/new") ||
+                    isActive("/ngo/drives/new") ||
                     isActive("/requests") ||
                     isActive("/ngo/handovers"),
                   children: [
                     {
-                      label: "Post a Request",
-                      ariaLabel: "Post a Request",
-                      active: isActive("/ngo/requests/new"),
-                      isLocked: !user || !canNgoPostRequest,
-                      ...(user && canNgoPostRequest
-                        ? { link: "/ngo/requests/new" }
+                      label: "Start a Drive",
+                      ariaLabel: "Start a Drive",
+                      active: isActive("/ngo/drives/new"),
+                      isLocked: !user || !effectivelyCanNgoPost,
+                      ...(user && effectivelyCanNgoPost
+                        ? { link: "/ngo/drives/new" }
                         : {
                             onClick: () => {
                               triggerNgoLockedToast(
@@ -1468,8 +1377,8 @@ export function SiteHeader() {
                           }),
                     },
                     {
-                      label: "Active Requests",
-                      ariaLabel: "Active Requests",
+                      label: "Live Drives",
+                      ariaLabel: "Live Drives",
                       active: isActive("/requests"),
                       isLocked: !user || !isNgoVerified,
                       ...(user && isNgoVerified
@@ -1512,12 +1421,12 @@ export function SiteHeader() {
                 { label: t("nav.faq"), link: "/faq", ariaLabel: t("nav.faq"), active: isActive("/faq") },
                 { label: t("nav.contact"), link: "/contact", ariaLabel: t("nav.contact"), active: isActive("/contact") },
                 {
-                  label: "My Dashboard",
-                  ariaLabel: "My Dashboard",
+                  label: isNgo ? "Dashboard" : "My Dashboard",
+                  ariaLabel: isNgo ? "Dashboard" : "My Dashboard",
                   active: isActive("/dashboard/ngo") || isActive("/dashboard"),
                   isLocked: !user,
                   ...(user
-                    ? { link: "/dashboard/ngo" }
+                    ? { link: isNgo ? "/dashboard/ngo" : "/dashboard" }
                     : {
                         onClick: () => {
                           triggerNgoLockedToast(
@@ -1581,13 +1490,13 @@ export function SiteHeader() {
                     <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
-                      {user.email[0]}
+                      {profile?.organizationName?.[0] || user.email[0]}
                     </div>
                   )}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-stone-850 dark:text-white truncate group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors">
-                    {profile?.fullName || user.email.split("@")[0]}
+                    {profile?.organizationName || user.email.split("@")[0]}
                   </p>
                   <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
                     {(roleLabel[user.role] ?? user.role)} · {livesTouched === 0 ? "New on CauseKind" : `${livesTouched} lives touched`}

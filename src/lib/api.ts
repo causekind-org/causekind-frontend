@@ -4381,3 +4381,48 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
   return res.json();
 }
 
+// ── NGO Drives ──────────────────────────────────────────────────────────────
+
+export type CreateNgoDrivePayload = {
+  driveType: "ITEMS";
+  title: string;
+  category: string;
+  itemName: string;
+  quantity: number;
+  unit: string;
+  condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED";
+  details?: string;
+  referencePhotoUrl?: string;
+  description: string;
+  beneficiaryGroup: string;
+  beneficiaryCount: number;
+  neededBy: string; // ISO date
+  urgent: boolean;
+  dropOff: {
+    useRegisteredAddress: boolean;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  dropOffDays: string[];
+  dropOffFrom: string; // "HH:mm"
+  dropOffTo: string; // "HH:mm"
+  contactName: string;
+  contactPhone: string;
+  commitments: {
+    photosWithin48h: boolean;
+    neverSold: boolean;
+    facesWithConsent: boolean;
+    accurate: boolean;
+  };
+};
+
+export async function createNgoDrive(payload: CreateNgoDrivePayload): Promise<{ id: number }> {
+  return await request<{ id: number }>("/api/v1/ngo-drives", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

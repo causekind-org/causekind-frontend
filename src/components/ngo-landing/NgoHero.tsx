@@ -15,12 +15,15 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useNgoStatus } from "./useNgoStatus";
+import { useNgoDashboardData } from "@/hooks/useNgoDashboardData";
 import { NgoCategoryPillBar } from "./NgoCategoryPillBar";
 import { NgoHeroTrustCard } from "./NgoHeroTrustCard";
 
 export function NgoHero() {
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
+  
+  // Keep using useNgoStatus for some fields if needed, but we'll extract them all from useNgoDashboardData since it wraps it
   const {
     status,
     stepNumber,
@@ -33,7 +36,10 @@ export function NgoHero() {
     isPhotosDue,
     photosDueRequestName,
     lockReason,
-  } = useNgoStatus();
+  } = useNgoDashboardData();
+
+  const bypassLock = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_BYPASS_DRIVE_LOCK === "true";
+  const effectivelyCanPost = canPostRequest || bypassLock;
 
   // Tooltip state for desktop locked click
   const [showLockedTooltip, setShowLockedTooltip] = useState<boolean>(false);
@@ -68,7 +74,7 @@ export function NgoHero() {
         },
       });
     } else if (isPhotosDue) {
-      toast.warning(`Upload handover photos for ${photosDueRequestName} to post your next request.`, {
+      toast.warning(`Upload handover photos for ${photosDueRequestName} to start your next drive.`, {
         action: {
           label: "Upload",
           onClick: () => router.push("/dashboard/ngo"),
@@ -89,21 +95,17 @@ export function NgoHero() {
   const headlineLine2 = isVerified ? "Let givers nearby find you." : "Givers nearby will bring it.";
   const subheadline = isVerified
     ? "Post exactly what you need. Donors within 10 km see it, hand it over directly, and every handover ends with a certificate."
-    : "Once CauseKind verifies you, your requests reach donors within 10 km — handed over directly, with a certificate for every handover.";
+    : "Once CauseKind verifies you, your drives reach donors within 10 km — handed over directly, with a certificate for every handover.";
 
   // Secondary CTA details
-  let secondaryCtaText = stepNumber === 0 ? "Start your application →" : "Continue application →";
+  let secondaryCtaText: string | null = "Start your application";
   let secondaryCtaHref = wizardHref || "/profile/ngo-details";
 
   if (isVerified) {
     secondaryCtaText = "View my public profile";
     secondaryCtaHref = "/profile";
   } else if (status === "under_review") {
-    secondaryCtaText = "View application status";
-    secondaryCtaHref = "/profile";
-  } else if (status === "changes_requested") {
-    secondaryCtaText = "Fix documents →";
-    secondaryCtaHref = "/profile/ngo-details";
+    secondaryCtaText = null;
   }
 
   // Stagger animation container
@@ -223,84 +225,95 @@ export function NgoHero() {
                 variants={itemVariants}
                 className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto mb-3 relative"
               >
-                {/* Post a Request Button */}
-                {canPostRequest ? (
-                  <Link
-                    href="/ngo/requests/new"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 active:scale-[0.98] text-white font-bold px-7 py-3.5 text-sm sm:text-base shadow-lg shadow-ngo-700/25 hover:shadow-xl hover:shadow-ngo-700/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
-                  >
-                    <span>Post a Request</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
+                {status === "loading" ? (
+                  <>
+                    <div className="w-full sm:w-48 h-[52px] rounded-full bg-stone-200/50 dark:bg-zinc-800/50 animate-pulse" />
+                    <div className="w-full sm:w-48 h-[52px] rounded-full bg-stone-200/50 dark:bg-zinc-800/50 animate-pulse hidden sm:block" />
+                  </>
                 ) : (
-                  <div className="relative group">
-                    <button
-                      type="button"
-                      onClick={handleLockedClick}
-                      aria-disabled="true"
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 font-bold px-7 py-3.5 text-sm sm:text-base cursor-not-allowed border border-stone-300 dark:border-zinc-700 shadow-sm transition-all focus:outline-none"
-                    >
-                      <Lock className="w-4 h-4 text-stone-400 dark:text-stone-500" />
-                      <span>Post a Request</span>
-                    </button>
-
-                    {/* Desktop Tooltip on Click */}
-                    <AnimatePresence>
-                      {showLockedTooltip && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 6 }}
-                          className="hidden sm:block absolute left-0 top-full mt-2 w-72 rounded-2xl bg-stone-900 dark:bg-zinc-800 text-white p-3.5 shadow-2xl z-30 text-xs"
+                  <>
+                    {/* Start a Drive Button */}
+                    {effectivelyCanPost ? (
+                      <Link
+                        href="/ngo/drives/new"
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 active:scale-[0.98] text-white font-bold px-7 py-3.5 text-sm sm:text-base shadow-lg shadow-ngo-700/25 hover:shadow-xl hover:shadow-ngo-700/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
+                      >
+                        <span>Start a Drive</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    ) : (
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          onClick={handleLockedClick}
+                          aria-disabled="true"
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 font-bold px-7 py-3.5 text-sm sm:text-base cursor-not-allowed border border-stone-300 dark:border-zinc-700 shadow-sm transition-all focus:outline-none"
                         >
-                          <div className="flex items-start gap-2.5">
-                            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                            <div className="space-y-2">
-                              <p className="font-medium text-stone-200 leading-snug">
-                                {status === "incomplete" && (stepNumber === 0 ? "Start your application to get verified." : "Complete your profile to get verified.")}
-                                {status === "under_review" && "Your application is under review. We'll unlock this once you're approved."}
-                                {status === "changes_requested" && "A few documents need fixing."}
-                                {isPhotosDue && `Upload handover photos for ${photosDueRequestName} to post your next request.`}
-                              </p>
-                              {status === "incomplete" && (
-                                <Link
-                                  href={wizardHref || "/profile/ngo-details"}
-                                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
-                                >
-                                  <span>{stepNumber === 0 ? "Start application →" : "Continue application →"}</span>
-                                </Link>
-                              )}
-                              {status === "changes_requested" && (
-                                <Link
-                                  href="/profile/ngo-details"
-                                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
-                                >
-                                  <span>Fix now →</span>
-                                </Link>
-                              )}
-                              {isPhotosDue && (
-                                <Link
-                                  href="/dashboard/ngo"
-                                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
-                                >
-                                  <span>Upload photos →</span>
-                                </Link>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                )}
+                          <Lock className="w-4 h-4 text-stone-400 dark:text-stone-500" />
+                          <span>Start a Drive</span>
+                        </button>
 
-                {/* Secondary CTA */}
-                <Link
-                  href={secondaryCtaHref}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-stone-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 hover:bg-stone-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-stone-800 dark:text-stone-200 font-bold px-6 py-3.5 text-sm sm:text-base backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
-                >
-                  <span>{secondaryCtaText}</span>
-                </Link>
+                        {/* Desktop Tooltip on Click */}
+                        <AnimatePresence>
+                          {showLockedTooltip && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 6 }}
+                              className="hidden sm:block absolute left-0 top-full mt-2 w-72 rounded-2xl bg-stone-900 dark:bg-zinc-800 text-white p-3.5 shadow-2xl z-30 text-xs"
+                            >
+                              <div className="flex items-start gap-2.5">
+                                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                                <div className="space-y-2">
+                                  <p className="font-medium text-stone-200 leading-snug">
+                                    {status === "incomplete" && (stepNumber === 0 ? "Start your application to get verified." : "Complete your profile to get verified.")}
+                                    {status === "under_review" && "Your application is under review. We'll unlock this once you're approved."}
+                                    {status === "changes_requested" && "A few documents need fixing."}
+                                    {isPhotosDue && `Upload handover photos for ${photosDueRequestName} to start your next drive.`}
+                                  </p>
+                                  {status === "incomplete" && (
+                                    <Link
+                                      href={wizardHref || "/profile/ngo-details"}
+                                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                    >
+                                      <span>{stepNumber === 0 ? "Start application →" : "Continue application →"}</span>
+                                    </Link>
+                                  )}
+                                  {status === "changes_requested" && (
+                                    <Link
+                                      href="/profile/ngo-details"
+                                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                    >
+                                      <span>Fix now →</span>
+                                    </Link>
+                                  )}
+                                  {isPhotosDue && (
+                                    <Link
+                                      href="/dashboard/ngo"
+                                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                    >
+                                      <span>Upload photos →</span>
+                                    </Link>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
+
+                    {/* Secondary CTA */}
+                    {secondaryCtaText && (
+                      <Link
+                        href={secondaryCtaHref}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-stone-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 hover:bg-stone-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-stone-800 dark:text-stone-200 font-bold px-6 py-3.5 text-sm sm:text-base backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
+                      >
+                        <span>{secondaryCtaText}</span>
+                      </Link>
+                    )}
+                  </>
+                )}
               </motion.div>
 
               {/* Helper Text Under Hero Button */}
@@ -340,7 +353,7 @@ export function NgoHero() {
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="text-3xs font-semibold text-stone-500 dark:text-stone-400">
-                            Your requests will look like this
+                            Your drives will look like this
                           </span>
                           <span className="text-4xs uppercase tracking-wider bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 font-bold px-1.5 py-0.5 rounded">
                             Sample
@@ -361,7 +374,7 @@ export function NgoHero() {
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="text-3xs font-bold uppercase tracking-wider text-ngo-700 dark:text-ngo-300">
-                            Active Request
+                            Active Drive
                           </span>
                           <Link
                             href="/ngo/requests"

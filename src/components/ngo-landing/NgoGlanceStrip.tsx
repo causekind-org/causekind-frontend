@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import { useNgoStatus } from "./useNgoStatus";
+import { useNgoDashboardData } from "@/hooks/useNgoDashboardData";
 
 export function NgoGlanceStrip() {
   const {
@@ -22,7 +22,7 @@ export function NgoGlanceStrip() {
     photosDue,
     photosDueRequestName,
     canPostRequest,
-  } = useNgoStatus();
+  } = useNgoDashboardData();
 
   // Strip is rendered for verified NGOs ONLY
   if (!isVerified) return null;
@@ -96,7 +96,7 @@ export function NgoGlanceStrip() {
                   {activeRequests}
                 </div>
                 <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400">
-                  Active requests
+                  Live drives
                 </div>
               </div>
             </div>
@@ -175,10 +175,10 @@ export function NgoGlanceStrip() {
                 </span>
               </div>
               <Link
-                href="/ngo/requests/new"
+                href="/ngo/drives/new"
                 className="inline-flex items-center gap-1.5 font-bold text-ngo-700 dark:text-ngo-300 hover:text-ngo-800 dark:hover:text-ngo-200"
               >
-                <span>Post a Request</span>
+                <span>Start a Drive</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>

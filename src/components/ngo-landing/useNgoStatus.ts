@@ -7,11 +7,12 @@ import { getMyNgoApplication, getNgoDraft } from "@/lib/api";
 import {
   calculateNgoProgress,
   INITIAL_NGO_FORM,
+  IS_NGO_DEMO_MODE,
   type NGOFormState,
   type NGOStep,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 
-export type NgoStatusType = "incomplete" | "under_review" | "changes_requested" | "verified";
+export type NgoStatusType = "loading" | "incomplete" | "under_review" | "changes_requested" | "verified";
 
 function parseFormState(raw: any): NGOFormState {
   if (!raw) return INITIAL_NGO_FORM;
@@ -104,39 +105,23 @@ export interface NgoStatusData {
   lockReason: string;
   hasShownWelcome: boolean;
   markWelcomeShown: () => void;
+  documents: Record<string, any>;
 }
 
 export function useNgoStatus(): NgoStatusData {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   const userIdentifier =
     user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
 
-  const [status, setStatus] = useState<NgoStatusType>(() => {
-    if (typeof window === "undefined" || !user) return "incomplete";
-
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-    const cached = localStorage.getItem(demoAppKey) || localStorage.getItem(realAppKey);
-
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        const s = parsed?.status || parsed?.submissionStatus;
-        if (s === "APPROVED" || s === "VERIFIED") return "verified";
-        if (s === "UNDER_REVIEW" || s === "SUBMITTED" || s === "PENDING_VERIFICATION") return "under_review";
-        if (s === "NEEDS_INFORMATION" || s === "CHANGES_REQUESTED" || s === "REJECTED") return "changes_requested";
-      } catch {}
-    }
-    return "incomplete";
-  });
-
+  const [status, setStatus] = useState<NgoStatusType>("loading");
   const [ngoName, setNgoName] = useState<string>("Your Organization");
   
   // Real readiness progress calculated directly from the form/draft state
   const initialProg = calculateNgoProgress(INITIAL_NGO_FORM);
   const [stepNumber, setStepNumber] = useState<number>(initialProg.completedCount);
   const [nextIncompleteStep, setNextIncompleteStep] = useState<NGOStep | null>(initialProg.nextIncompleteStep);
+  const [documents, setDocuments] = useState<Record<string, any>>({});
 
   const [activeRequests, setActiveRequests] = useState<number>(0);
   const [itemsPledged, setItemsPledged] = useState<number>(0);
@@ -166,7 +151,7 @@ export function useNgoStatus(): NgoStatusData {
         return;
       }
 
-      const rawStatus = (appData?.status || appData?.submissionStatus || "").toUpperCase();
+      const rawStatus = (appData?.submissionStatus || appData?.status || "").toUpperCase();
       if (appData?.organizationName) {
         setNgoName(appData.organizationName);
       } else if (draftData?.organizationName) {
@@ -197,11 +182,17 @@ export function useNgoStatus(): NgoStatusData {
       const prog = calculateNgoProgress(formState);
       setStepNumber(prog.completedCount);
       setNextIncompleteStep(prog.nextIncompleteStep);
+      setDocuments(formState.documents || {});
     },
     []
   );
 
   const checkStatus = useCallback(() => {
+    if (isLoading) {
+      setStatus("loading");
+      return;
+    }
+
     if (typeof window === "undefined" || !user) {
       setStatus("incomplete");
       const prog = calculateNgoProgress(INITIAL_NGO_FORM);
@@ -230,12 +221,25 @@ export function useNgoStatus(): NgoStatusData {
     // Also fetch latest from backend
     Promise.allSettled([getMyNgoApplication(), getNgoDraft()])
       .then(([appRes, draftRes]) => {
-        const apiApp = appRes.status === "fulfilled" ? appRes.value : appObj;
-        const apiDraft = draftRes.status === "fulfilled" ? draftRes.value : draftObj;
+        // Only fallback to local storage (appObj) if we are in demo mode AND the API returns null (HTTP 204/404)
+        let apiApp = null;
+        if (appRes.status === "fulfilled") {
+          apiApp = appRes.value ? appRes.value : (IS_NGO_DEMO_MODE ? appObj : null);
+        } else {
+          apiApp = IS_NGO_DEMO_MODE ? appObj : null;
+        }
+
+        let apiDraft = null;
+        if (draftRes.status === "fulfilled") {
+          apiDraft = draftRes.value ? draftRes.value : (IS_NGO_DEMO_MODE ? draftObj : null);
+        } else {
+          apiDraft = IS_NGO_DEMO_MODE ? draftObj : null;
+        }
+        
         evaluateApplication(apiApp, apiDraft);
       })
       .catch(() => {});
-  }, [user, userIdentifier, evaluateApplication]);
+  }, [isLoading, user, userIdentifier, evaluateApplication]);
 
   useEffect(() => {
     checkStatus();
@@ -267,7 +271,7 @@ export function useNgoStatus(): NgoStatusData {
   if (!isVerified) {
     lockReason = "Available once CauseKind verifies your NGO.";
   } else if (isPhotosDue) {
-    lockReason = `Upload handover photos for ${photosDueRequestName} to post your next request.`;
+    lockReason = `Upload handover photos for ${photosDueRequestName} to start your next drive.`;
   }
 
   const wizardHref = nextIncompleteStep
@@ -292,6 +296,8 @@ export function useNgoStatus(): NgoStatusData {
     lockReason,
     hasShownWelcome,
     markWelcomeShown,
+    documents,
   };
 }
+
 

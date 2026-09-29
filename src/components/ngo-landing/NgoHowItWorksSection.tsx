@@ -47,8 +47,8 @@ export function NgoHowItWorksSection() {
   let ctaLabel = "Complete Verification →";
 
   if (isVerified) {
-    ctaHref = "/ngo/requests/new";
-    ctaLabel = "Post a Request →";
+    ctaHref = "/ngo/drives/new";
+    ctaLabel = "Start a Drive →";
   } else if (status === "under_review") {
     ctaHref = "/profile";
     ctaLabel = "View Application Status →";
@@ -201,7 +201,7 @@ export function NgoHowItWorksSection() {
           <div className="mt-8 pt-6 border-t border-stone-200/80 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 text-center sm:text-left">
               {isVerified
-                ? "Your organization is verified. Post a request to reach donors nearby."
+                ? "Your organization is verified. Start a drive to reach donors nearby."
                 : status === "under_review"
                 ? "Your documents are currently being checked by our team."
                 : "Complete your 6-step registration to start receiving in-kind gifts."}

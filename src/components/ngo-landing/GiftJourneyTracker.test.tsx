@@ -23,7 +23,7 @@ describe("GiftJourneyTracker Component Suite", () => {
     render(<GiftJourneyTracker />);
 
     expect(screen.getByText("40 Blankets · Winter Relief Drive, Thane")).toBeInTheDocument();
-    expect(screen.getByText("1. You post a request")).toBeInTheDocument();
+    expect(screen.getByText("1. You start a drive")).toBeInTheDocument();
     expect(screen.getByText("2. Donors nearby pledge them")).toBeInTheDocument();
     expect(screen.getByText("3. They drop off, and you confirm receipt")).toBeInTheDocument();
     expect(screen.getByText("4. You upload a handover photo")).toBeInTheDocument();
@@ -48,6 +48,6 @@ describe("GiftJourneyTracker Component Suite", () => {
     const replayButton = screen.getByRole("button", { name: /Replay journey/i });
     fireEvent.click(replayButton);
 
-    expect(screen.getByText("1. You post a request")).toBeInTheDocument();
+    expect(screen.getByText("1. You start a drive")).toBeInTheDocument();
   });
 });

@@ -66,8 +66,8 @@ export function MobileBottomNav() {
     ...(!user || user.role === "DONEE" || user.role === "DONOR" || isNgo
       ? []
       : [{ href: centerHref, icon: Plus, label: centerLabel }]),
-    // Requests tab — shows "My Requests" for logged-in NGO users, "Requests" for others
-    { href: "/requests", icon: ClipboardList, label: isNgo ? "My Requests" : t("requests") },
+    // Requests tab — shows "My Drives" for logged-in NGO users, "Requests" for others
+    { href: "/requests", icon: ClipboardList, label: isNgo ? "My Drives" : t("requests") },
     { href: user ? "/profile" : "/login", icon: User, label: t("profile") },
   ];
 

@@ -98,7 +98,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
         <div className="col-span-4">
           {canPostRequest ? (
             <Link
-              href="/ngo/requests/new"
+              href="/ngo/drives/new"
               onClick={onNavigate}
               className="group flex flex-col justify-between h-full p-5 rounded-2xl bg-white/70 dark:bg-black/55 hover:bg-white dark:hover:bg-black/75 border border-stone-200/70 dark:border-stone-800 hover:border-ngo-600/40 dark:hover:border-ngo-500/40 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer"
             >
@@ -112,7 +112,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors mb-1.5 flex items-center gap-1.5">
-                  Post a Request
+                  Start a Drive
                 </h4>
                 <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
                   Request physical supplies, equipment, or emergency relief from givers within 10 km.
@@ -141,7 +141,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">
-                  Post a Request
+                  Start a Drive
                 </h4>
                 <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                   {isPhotosDue
@@ -174,7 +174,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors mb-1.5 flex items-center gap-1.5">
-                  Active Requests
+                  Live Drives
                 </h4>
                 <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
                   Monitor live requests, givers&apos; in-kind pledges, and current fulfillment status.
@@ -203,7 +203,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">
-                  Active Requests
+                  Live Drives
                 </h4>
                 <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                   Your organization&apos;s request management hub unlocks upon verification.
