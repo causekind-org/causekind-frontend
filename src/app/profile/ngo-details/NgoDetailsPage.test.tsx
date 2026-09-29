@@ -41,7 +41,7 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
 
   it("renders sidebar with readiness progress, 6 step navigation, and Still Needed checklist", async () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -89,7 +89,7 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
 
   it("navigates to step when step item in sidebar is clicked", async () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -120,7 +120,7 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
 
   it("shows already submitted state if application is UNDER_REVIEW and has button returning to /profile", async () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),

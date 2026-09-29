@@ -16,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Loader2, Search, CalendarDays, X } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
-const ROLES = ["DONOR", "DONEE", "REPRESENTATIVE", "NGO", "NGO_PARTNER", "ADMIN", "SUPER_ADMIN"];
+const ROLES = ["DONOR", "DONEE", "REPRESENTATIVE", "NGO_PARTNER", "ADMIN", "SUPER_ADMIN"];
 
 // Local date, not UTC — toISOString() would roll a late-evening pick in IST
 // back to the previous day.
@@ -129,7 +129,7 @@ export function UserDirectoryPanel({
           className={control}
         >
           <option value="">All roles</option>
-          {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          {ROLES.map((r) => <option key={r} value={r}>{r === "NGO_PARTNER" ? "NGO" : r}</option>)}
         </select>
 
         <select

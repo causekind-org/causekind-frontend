@@ -2578,6 +2578,15 @@ export function reportPostDeliveryIssue(offerId: number, data: {
   });
 }
 
+export function reportNgoDriveOfferIssue(offerId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/drive-offers/${offerId}/report-issue`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export function reportMatchIssue(matchId: number, data: {
   issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
 }) {
@@ -4487,34 +4496,28 @@ export type CreateNgoDrivePayload = {
   category: string;
   itemName: string;
   quantity: number;
-  unit: string;
+  unit: "PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS";
   condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED";
   details?: string;
   referencePhotoUrl?: string;
   description: string;
+  urgency: "NORMAL" | "HIGH" | "CRITICAL";
   beneficiaryGroup: string;
   beneficiaryCount: number;
-  neededBy: string; // ISO date
-  urgent: boolean;
-  dropOff: {
-    useRegisteredAddress: boolean;
-    address?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
-    latitude?: number;
-    longitude?: number;
-  };
-  dropOffDays: string[];
-  dropOffFrom: string; // "HH:mm"
-  dropOffTo: string; // "HH:mm"
+  neededBy: string;          // ISO date YYYY-MM-DD
+  availableDays: ("MON"|"TUE"|"WED"|"THU"|"FRI"|"SAT"|"SUN")[];
+  availableFrom: string;     // "HH:mm"
+  availableTo: string;       // "HH:mm"
   contactName: string;
   contactPhone: string;
-  commitments: {
-    photosWithin48h: boolean;
-    neverSold: boolean;
-    facesWithConsent: boolean;
+  declarations: {
     accurate: boolean;
+    usedOnlyForBeneficiaries: boolean;
+    proofWithin48h: boolean;
+    facesWithConsent: boolean;
+    notDuplicate: boolean;
+    falseInfoConsequences: boolean;
+    contactConsent: boolean;
   };
 };
 
@@ -4523,4 +4526,260 @@ export async function createNgoDrive(payload: CreateNgoDrivePayload): Promise<{ 
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export type NgoDrive = {
+  id: number;
+  ngoUser: { id: number; fullName: string };
+  title: string;
+  category: string;
+  itemName: string;
+  quantityNeeded: number;
+  quantityPledged: number;
+  quantityReceived: number;
+  unit: string;
+  itemCondition: string;
+  description: string;
+  urgency: string;
+  beneficiaryGroup: string;
+  beneficiaryCount: number;
+  neededBy: string; // ISO Date
+  availableDays: string;
+  availableFrom: string; // "HH:mm"
+  availableTo: string;   // "HH:mm"
+  contactName: string;
+  contactPhone: string;
+  status: string;
+  adminReason?: string;
+  createdAt: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  liveAt?: string;
+};
+
+export async function getNgoDrives(status?: string): Promise<NgoDrive[]> {
+  const query = status ? `?status=${status}` : "";
+  return await request<NgoDrive[]>(`/api/v1/drives${query}`);
+}
+
+export async function getNgoDrive(id: number): Promise<NgoDrive> {
+  return await request<NgoDrive>(`/api/v1/drives/${id}`);
+}
+
+export async function cancelNgoDrive(driveId: number): Promise<void> {
+  await request(`/api/v1/ngo-drives/${driveId}/cancel`, { method: "POST" });
+}
+
+export async function getMyNgoDrives(): Promise<NgoDrive[]> {
+  return await request<NgoDrive[]>("/api/v1/ngo-drives/mine");
+}
+
+export async function getNgoDriveDetail(id: number): Promise<NgoDrive> {
+  return await request<NgoDrive>(`/api/v1/ngo-drives/${id}`);
+}
+
+export type NgoDriveOfferResponse = {
+  id: number;
+  driveId: number;
+  donorDisplayName: string;
+  status: string;
+  quantity?: number;
+  condition?: string;
+  approximateAge?: string;
+  knownDefects?: string;
+  notesForNgo?: string;
+  handoverMethod?: string;
+  pickupCity?: string;
+  pickupLocality?: string;
+  pickupPincode?: string;
+  rejectionReason?: string;
+  ngoDeclineReason?: string;
+  submittedAt?: string;
+  driveTitle: string;
+  ngoName: string;
+  driveQuantityNeeded: number;
+  driveQuantityReceived: number;
+  driveQuantityPledged: number;
+  media?: Array<{
+    id: number;
+    mediaUrl: string;
+    mediaType: string;
+    status: string;
+    sortOrder: number;
+  }>;
+  handoverDetails?: {
+    organizationName: string;
+  };
+};
+
+export async function createNgoDriveOfferDraft(driveId: number): Promise<{ id: number }> {
+  return await request<{ id: number }>(`/api/v1/drives/${driveId}/offers/draft`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function uploadNgoDriveOfferMedia(offerId: number, formData: FormData): Promise<any> {
+  // Using native fetch because request() sets Content-Type: application/json by default
+  const token = localStorage.getItem("ck_token");
+  const headers: HeadersInit = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`/api/v1/drive-offers/${offerId}/media`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || res.statusText);
+  }
+  return await res.json();
+}
+
+export async function deleteNgoDriveOfferMedia(offerId: number, mediaId: number): Promise<void> {
+  await request(`/api/v1/drive-offers/${offerId}/media/${mediaId}`, { method: "DELETE" });
+}
+
+export async function updateNgoDriveOfferItem(offerId: number, data: Partial<NgoDriveOfferResponse>): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/item-details`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function submitNgoDriveOffer(offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ declarationsAccepted: true }),
+  });
+}
+
+export async function cancelNgoDriveOffer(offerId: number, reason: string): Promise<void> {
+  await request(`/api/v1/drive-offers/${offerId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function getMyNgoDriveOffers(): Promise<NgoDriveOfferResponse[]> {
+  return await request<NgoDriveOfferResponse[]>("/api/v1/drive-offers/mine");
+}
+
+export async function getNgoDriveOffer(offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}`);
+}
+
+export async function getNgoDriveOffersForNgo(driveId: number, status?: string): Promise<NgoDriveOfferResponse[]> {
+  const query = status ? `?status=${status}` : "";
+  return await request<NgoDriveOfferResponse[]>(`/api/v1/ngo-drives/${driveId}/offers${query}`);
+}
+
+export async function reviewNgoDriveOffer(driveId: number, offerId: number, decision: "ACCEPT" | "DECLINE", reason?: string): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/review`, {
+    method: "POST",
+    body: JSON.stringify({ decision, reason }),
+  });
+}
+
+export async function releaseNgoDriveOffer(driveId: number, offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/release`, {
+    method: "POST",
+  });
+}
+
+export type NgoDriveOfferHandoverRecordResponse = {
+  id: number;
+  offerId: number;
+  method: string | null;
+  scheduledDateTime: string | null;
+  locationAddress: string | null;
+  locationLatitude: number | null;
+  locationLongitude: number | null;
+  transportArrangedBy: string | null;
+  transportCostBornBy: string | null;
+  packagingResponsibility: string | null;
+  courierName: string | null;
+  rescheduleCount: number;
+  lastRescheduledAt: string | null;
+  rescheduleReason: string | null;
+  atRisk: boolean;
+  confirmation: {
+    deliveryOtp: string | null;
+    otpVerified: boolean;
+    otpVerifiedAt: string | null;
+    donorConfirmedQty: number | null;
+    donorConfirmedAt: string | null;
+    ngoConfirmedQty: number | null;
+    ngoConfirmedAt: string | null;
+  } | null;
+};
+
+export async function scheduleNgoDriveOfferHandover(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/schedule-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function rescheduleNgoDriveOfferHandover(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/reschedule-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function generateNgoDriveOfferHandoverOtp(offerId: number): Promise<{ otp: string }> {
+  return await request<{ otp: string }>(`/api/v1/drive-offers/${offerId}/generate-otp`, {
+    method: "POST",
+  });
+}
+export async function confirmNgoDriveOfferHandoverDonor(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/confirm-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function confirmNgoDriveOfferHandoverNgo(driveId: number, offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/confirm-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+
+export async function closeNgoDrive(driveId: number, data: { reason: string }): Promise<void> {
+  return await request<void>(`/api/v1/ngo-drives/${driveId}/close`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function uploadDistributionProof(driveId: number, file: File): Promise<void> {
+  const formData = new FormData();
+  formData.append("files", file);
+  const res = await fetch(`/api/v1/ngo-drives/${driveId}/distribution-proof`, {
+    method: "POST",
+    body: formData,
+    // Add credentials if needed or fetch wrapper that handles auth
+  });
+  if (!res.ok) throw new Error("Upload failed");
+}
+
+
+export function getNgoDriveOfferCertificate(offerId: number) {
+  return request<Certificate>(`/api/v1/drive-offers/${offerId}/certificate`);
+}
+
+export type NgoDriveProofResponse = {
+  id: number;
+  driveId: number;
+  uploadedAt: string;
+  media: { mediaUrl: string; mediaType: string }[];
+  quantityDistributed: number;
+  ngoStatement: string | null;
+  status: string;
+};
+
+export async function getNgoDriveProof(driveId: number): Promise<NgoDriveProofResponse> {
+  return await request<NgoDriveProofResponse>(`/api/v1/drives/${driveId}/proof`);
 }

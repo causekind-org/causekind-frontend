@@ -10,7 +10,7 @@ describe("roleTheme Suite", () => {
 
   describe("themeForRole", () => {
     it("maps NGO and NGO_PARTNER to 'ngo'", () => {
-      expect(themeForRole("NGO")).toBe("ngo");
+      expect(themeForRole("NGO_PARTNER")).toBe("ngo");
       expect(themeForRole("ngo")).toBe("ngo");
       expect(themeForRole("NGO_PARTNER")).toBe("ngo");
       expect(themeForRole("ngo_partner")).toBe("ngo");
@@ -64,7 +64,7 @@ describe("roleTheme Suite", () => {
 
   describe("ROLE_THEME_BOOT_SCRIPT", () => {
     it("sets data-ck-role-theme and data-theme-role to 'ngo' before first paint for NGO user", () => {
-      localStorage.setItem("ck_user", JSON.stringify({ email: "contact@ngo.org", role: "NGO" }));
+      localStorage.setItem("ck_user", JSON.stringify({ email: "contact@ngo.org", role: "NGO_PARTNER" }));
       // Execute the script
       eval(ROLE_THEME_BOOT_SCRIPT);
 

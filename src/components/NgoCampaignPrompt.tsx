@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 import { useNgoStatus } from "./ngo-landing/useNgoStatus";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 const FIRST_DELAY_MS = 10_000;
 const VISIBLE_MS = 10_000;
@@ -37,7 +38,7 @@ export function NgoCampaignPrompt() {
 
   const userEmail = user?.email;
   const userRole = user?.role;
-  const isNgo = userRole === "NGO" || userRole === "NGO_PARTNER";
+  const isNgo = isNgoRole(userRole);
 
   function clearTimers() {
     [t1, t2, t3, t4].forEach((timer) => {

@@ -16,7 +16,7 @@ describe("RoleThemeBridge Component", () => {
 
   it("sets data-ck-role-theme and data-theme-role to 'ngo' when signed in as NGO", () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "green@ngo.org", role: "NGO" } as any,
+      user: { id: 101, email: "green@ngo.org", role: "NGO_PARTNER" } as any,
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -50,7 +50,7 @@ describe("RoleThemeBridge Component", () => {
 
   it("removes attributes immediately upon logout", () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "green@ngo.org", role: "NGO" } as any,
+      user: { id: 101, email: "green@ngo.org", role: "NGO_PARTNER" } as any,
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),

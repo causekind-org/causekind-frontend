@@ -701,7 +701,7 @@ export function NgoProfileView() {
           <div>
             <NgoMemberPass
               name={displayName}
-              role="NGO"
+              role="NGO_PARTNER"
               city={displayCity}
               initials={initials}
               avatarUrl={avatarDataUrl}

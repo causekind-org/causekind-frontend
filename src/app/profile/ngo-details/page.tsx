@@ -32,6 +32,7 @@ import {
   type UploadedFileDto,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 function toDto(file: UploadedFile | null): UploadedFileDto | null {
   if (!file) return null;
@@ -97,9 +98,8 @@ function NgoDetailsEditor() {
       return;
     }
 
-    const isNgoRole =
-      user.role?.toUpperCase() === "NGO" || user.role?.toUpperCase() === "NGO_PARTNER";
-    if (!isNgoRole) {
+    const hasRole = isNgoRole(user.role?.toUpperCase());
+    if (!hasRole) {
       router.replace("/profile");
       return;
     }

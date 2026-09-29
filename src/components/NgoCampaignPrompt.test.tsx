@@ -34,7 +34,7 @@ describe("NgoCampaignPrompt", () => {
       status: "verified",
     });
     mockUseAuth.mockReturnValue({
-      user: { id: "ngo-1", email: "ngo@example.com", role: "NGO" },
+      user: { id: "ngo-1", email: "ngo@example.com", role: "NGO_PARTNER" },
       isLoading: false,
     });
   });

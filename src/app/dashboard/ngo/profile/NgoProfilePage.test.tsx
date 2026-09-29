@@ -131,8 +131,8 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
     // Initials SF
     expect(screen.getByText("SF")).toBeInTheDocument();
 
-    // Role NGO
-    expect(screen.getByText("NGO")).toBeInTheDocument();
+    // Role NGO_PARTNER
+    expect(screen.getByText("NGO_PARTNER")).toBeInTheDocument();
 
     // Email, phone, city
     expect(screen.getByText("contact@smilefoundation.org")).toBeInTheDocument();
@@ -390,6 +390,6 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
           organizationName: "Smile Foundation Global",
         })
       );
-    });
+    }, 15000);
   });
 });

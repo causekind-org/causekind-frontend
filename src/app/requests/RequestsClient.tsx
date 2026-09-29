@@ -7,9 +7,11 @@ import { createPortal } from "react-dom";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
-import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicItemRequest, type UserProfile } from "@/lib/api";
+import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicItemRequest, type UserProfile, getNgoDrives, type NgoDrive } from "@/lib/api";
+import { DriveProgressBar } from "@/features/ngo-drives/components/DriveProgressBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import { isNgoRole } from "@/lib/isNgoRole";
 import PublicRequestsBoard from "@/components/PublicRequestsBoard";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
@@ -571,10 +573,13 @@ export default function RequestsClient({
   const { user, isLoading: authLoading, isRestoring } = useAuth();
   const router   = useRouter();
 
-  useEntityUpdates(["REQUEST"], () => {
+  useEntityUpdates(["REQUEST", "NGO_DRIVE"], () => {
     if (!user || user.role === "DONEE" || !gpsCoords) return;
     getItemRequests(undefined, gpsCoords.lat, gpsCoords.lng)
       .then(setRequests)
+      .catch(() => {});
+    getNgoDrives("LIVE")
+      .then(setDrives)
       .catch(() => {});
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -593,6 +598,7 @@ export default function RequestsClient({
   // component is gated on `user`, so a guest fetches nothing from here.
 
   const [requests,  setRequests]  = useState<ItemRequest[]>([]);
+  const [drives, setDrives] = useState<NgoDrive[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState("");
@@ -706,9 +712,11 @@ export default function RequestsClient({
   useEffect(() => {
     if (!user || user.role === "DONEE" || !gpsCoords) return;
     setLoading(true);
-    getItemRequests(undefined, gpsCoords.lat, gpsCoords.lng)
-      .then(setRequests)
-      .catch(() => toast.error("Failed to load item requests"))
+    Promise.all([
+      getItemRequests(undefined, gpsCoords.lat, gpsCoords.lng).then(setRequests),
+      getNgoDrives("LIVE").then(setDrives)
+    ])
+      .catch(() => toast.error("Failed to load requests"))
       .finally(() => setLoading(false));
   }, [user, gpsCoords]);
 
@@ -726,34 +734,55 @@ export default function RequestsClient({
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    let out = requests.filter(r => {
+    
+    // Process regular requests
+    let reqsOut = requests.filter(r => {
       const mQ = !q || r.title.toLowerCase().includes(q) || r.city.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
       const mC = selectedCategories.length === 0 || selectedCategories.includes(r.category);
       const mU = selectedUrgencies.length  === 0 || selectedUrgencies.includes(r.urgency);
       return mQ && mC && mU;
-    });
+    }).map(r => ({ ...r, _type: "REQUEST" as const }));
+
+    // Process drives
+    let drivesOut = drives.filter(d => {
+      const mQ = !q || d.title.toLowerCase().includes(q) || d.category.toLowerCase().includes(q) || d.ngoUser.fullName.toLowerCase().includes(q);
+      const mC = selectedCategories.length === 0 || selectedCategories.includes(d.category);
+      const mU = selectedUrgencies.length  === 0 || selectedUrgencies.includes(d.urgency);
+      return mQ && mC && mU;
+    }).map(d => ({ ...d, _type: "DRIVE" as const }));
+
+    let out = [...reqsOut, ...drivesOut];
+
     if (sort === "nearest") {
       const lat = myProfile?.latitude, lon = myProfile?.longitude;
       if (lat != null && lon != null) {
-        out = [...out].sort((a, b) => {
-          const dA = a.latitude != null && a.longitude != null ? haversineKm(lat, lon, a.latitude, a.longitude) : 99999;
-          const dB = b.latitude != null && b.longitude != null ? haversineKm(lat, lon, b.latitude, b.longitude) : 99999;
+        out.sort((a, b) => {
+          const dA = a._type === "REQUEST" && a.latitude != null && a.longitude != null ? haversineKm(lat, lon, a.latitude, a.longitude) : 99999;
+          const dB = b._type === "REQUEST" && b.latitude != null && b.longitude != null ? haversineKm(lat, lon, b.latitude, b.longitude) : 99999;
           return dA - dB;
         });
       } else {
         const ord: Record<string, number> = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
-        out = [...out].sort((a, b) => (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2));
+        out.sort((a, b) => (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2));
       }
     } else if (sort === "urgent") {
       const ord: Record<string, number> = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
-      out = [...out].sort((a, b) => (a.isEmergency === b.isEmergency ? 0 : a.isEmergency ? -1 : 1) || (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2));
+      out.sort((a, b) => {
+        const aEmerg = a._type === "REQUEST" && a.isEmergency;
+        const bEmerg = b._type === "REQUEST" && b.isEmergency;
+        return (aEmerg === bEmerg ? 0 : aEmerg ? -1 : 1) || (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2);
+      });
     } else if (sort === "newest") {
-      out = [...out].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      out.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } else if (sort === "qty") {
-      out = [...out].sort((a, b) => b.quantity - a.quantity);
+      out.sort((a, b) => {
+        const qA = a._type === "REQUEST" ? a.quantity : a.quantityNeeded;
+        const qB = b._type === "REQUEST" ? b.quantity : b.quantityNeeded;
+        return qB - qA;
+      });
     }
     return out;
-  }, [requests, search, selectedCategories, selectedUrgencies, sort, myProfile]);
+  }, [requests, drives, search, selectedCategories, selectedUrgencies, sort, myProfile]);
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev => {
@@ -903,7 +932,7 @@ export default function RequestsClient({
   if (user.role === "DONEE") return <DoneeRequestsPage />;
 
   // Dedicated NGO portal
-  if (user.role === "NGO" || user.role === "NGO_PARTNER") return <NgoRequestsPage />;
+  if (isNgoRole(user.role)) return <NgoRequestsPage />;
 
   if (gpsBlocked) {
     return (
@@ -1127,10 +1156,50 @@ export default function RequestsClient({
                 <MagicBento
                   gridClassName="card-grid--mosaic"
                   cards={filtered.map((r, i) => {
+                    const isDrive = r._type === "DRIVE";
                     const isCrit = r.urgency === "CRITICAL";
                     const isHigh = r.urgency === "HIGH";
                     const variant = requestCardVariant(i);
                     const showsMedia = variant === "featured" || variant === "tall";
+                    
+                    if (isDrive) {
+                      const stillNeeded = Math.max(0, r.quantityNeeded - r.quantityReceived - r.quantityPledged);
+                      return {
+                        className: `bento--${variant}`,
+                        label: (
+                          <div className="flex items-center gap-1">
+                            <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold flex items-center gap-1">
+                              <ShieldCheck className="w-3 h-3" />
+                              {r.ngoUser.fullName}
+                            </span>
+                          </div>
+                        ),
+                        badge: isCrit ? "Urgent" : isHigh ? "High" : undefined,
+                        title: <TranslatedText text={r.title} />,
+                        description: (
+                          <div className="mt-2">
+                            <p className="font-semibold text-stone-700 dark:text-stone-300 mb-2 text-sm">{r.quantityNeeded} {r.unit} of {r.itemName}</p>
+                            <DriveProgressBar 
+                              driveId={r.id} 
+                              quantityNeeded={r.quantityNeeded} 
+                              initialQuantityReceived={r.quantityReceived} 
+                              initialQuantityPledged={r.quantityPledged}
+                              unit={r.unit}
+                            />
+                          </div>
+                        ),
+                        meta: (
+                          <>
+                            <span className="flex items-center gap-1 min-w-0 text-stone-500">
+                              <span className="truncate">Needed by: {new Date(r.neededBy).toLocaleDateString()}</span>
+                            </span>
+                            <span className="shrink-0 tabular-nums font-bold text-emerald-600 dark:text-emerald-400">{stillNeeded} still needed</span>
+                          </>
+                        ),
+                        onClick: () => router.push(`/drives/${r.id}`),
+                      };
+                    }
+
                     return {
                       // No `color`: the card surface comes from MagicBento.css
                       // so it follows the light/dark theme.
@@ -1156,7 +1225,7 @@ export default function RequestsClient({
                           <span className="shrink-0 tabular-nums">{r.quantity} needed</span>
                         </>
                       ),
-                      onClick: () => openDonateModal(r),
+                      onClick: () => openDonateModal(r as ItemRequest),
                     };
                   })}
                   textAutoHide

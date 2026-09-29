@@ -1,3 +1,5 @@
+import { isNgoRole } from "@/lib/isNgoRole";
+
 /**
  * Role-aware theming: terracotta for donors, blue for recipients.
  *
@@ -35,7 +37,7 @@ export function themeForRole(role: string | null | undefined): RoleTheme | null 
   const upper = role.toUpperCase();
   if (upper === "DONOR") return "donor";
   if (upper === "DONEE") return "donee";
-  if (upper === "NGO" || upper === "NGO_PARTNER") return "ngo";
+  if (isNgoRole(upper)) return "ngo";
   return null;   // ADMIN, SUPER_ADMIN, unknown, logged out
 }
 
@@ -116,7 +118,7 @@ export function currentRoleColors(): RolePalette {
 export const ROLE_THEME_BOOT_SCRIPT = `(function(){try{
 var r=JSON.parse(localStorage.getItem("ck_user")||"null");
 var role=r&&r.role?r.role.toUpperCase():"";
-var t=role==="DONOR"?"donor":role==="DONEE"?"donee":(role==="NGO"||role==="NGO_PARTNER")?"ngo":null;
+var t=role==="DONOR"?"donor":role==="DONEE"?"donee":role==="NGO_PARTNER"?"ngo":null;
 if(t){
   document.documentElement.setAttribute("${ROLE_THEME_ATTR}",t);
   document.documentElement.setAttribute("data-theme-role",t);
