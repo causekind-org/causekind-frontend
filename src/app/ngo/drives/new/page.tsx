@@ -44,7 +44,23 @@ function stepNumber(s: NgoDriveStep) { return ngoStepIndex(s) + 1; }
 const BENEFICIARY_GROUPS = [
   "Children", "Students", "Elderly", "Women", "Families", "Patients", "People with disabilities", "Animals", "Community", "Other"
 ];
-const DROP_OFF_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DROP_OFF_DAYS = [
+  { id: "MON", label: "Mon" },
+  { id: "TUE", label: "Tue" },
+  { id: "WED", label: "Wed" },
+  { id: "THU", label: "Thu" },
+  { id: "FRI", label: "Fri" },
+  { id: "SAT", label: "Sat" },
+  { id: "SUN", label: "Sun" },
+] as const;
+const UNITS = [
+  { id: "PIECES", label: "Pieces" },
+  { id: "SETS", label: "Sets" },
+  { id: "PAIRS", label: "Pairs" },
+  { id: "KG", label: "Kg" },
+  { id: "BOXES", label: "Boxes" },
+  { id: "PACKETS", label: "Packets" },
+] as const;
 const URGENCIES = [
   { value: "NORMAL", label: "Normal" },
   { value: "HIGH", label: "High" },
@@ -79,7 +95,7 @@ function NewNgoDriveForm() {
   const [category, setCategory] = useState("");
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState<number | "">("");
-  const [unit, setUnit] = useState("Pieces");
+  const [unit, setUnit] = useState<"PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS">("PIECES");
   const [description, setDescription] = useState("");
   const [urgency, setUrgency] = useState<"NORMAL" | "HIGH" | "CRITICAL">("NORMAL");
   const [condition, setCondition] = useState<"NEW_ONLY" | "NEW_OR_GENTLY_USED">("NEW_ONLY");
@@ -90,7 +106,7 @@ function NewNgoDriveForm() {
   const [beneficiaryGroup, setBeneficiaryGroup] = useState("");
   const [beneficiaryCount, setBeneficiaryCount] = useState<number | "">("");
   const [neededBy, setNeededBy] = useState("");
-  const [availableDays, setAvailableDays] = useState<string[]>([]);
+  const [availableDays, setAvailableDays] = useState<("MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN")[]>([]);
   const [availableFrom, setAvailableFrom] = useState("");
   const [availableTo, setAvailableTo] = useState("");
   const [contactName, setContactName] = useState("");
@@ -135,7 +151,7 @@ function NewNgoDriveForm() {
         setCategory(p.category || "");
         setItemName(p.itemName || "");
         setQuantity(p.quantity || "");
-        setUnit(p.unit || "Pieces");
+        setUnit(p.unit || "PIECES");
         setDescription(p.description || "");
         setUrgency(p.urgency || "NORMAL");
         setCondition(p.condition || "NEW_ONLY");
@@ -306,7 +322,7 @@ function NewNgoDriveForm() {
         localStorage.setItem(DEMO_DRIVES_KEY, JSON.stringify([newDrive, ...existing]));
       } else {
         try {
-          await createNgoDrive(payload as any);
+          await createNgoDrive(payload);
         } catch (e: any) {
           if (e.status === 404 || e.status === 405 || e.status === 501) {
             toast.info("Drive submission is launching soon. Your drive is saved on this device — you won't lose it.", { duration: 5000 });
@@ -446,12 +462,12 @@ function NewNgoDriveForm() {
             </WizardField>
             <WizardField label="Unit" required error={fieldErrors.unit}>
               {({ id, describedBy, invalid }) => (
-                <Select value={unit} onValueChange={setUnit}>
+                <Select value={unit} onValueChange={setUnit as any}>
                   <SelectTrigger id={id} data-field="unit" aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {["Pieces", "Sets", "Pairs", "Kg", "Boxes", "Packets"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                    {UNITS.map(u => <SelectItem key={u.id} value={u.id}>{u.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
@@ -578,10 +594,10 @@ function NewNgoDriveForm() {
             {({ id, describedBy }) => (
               <div id={id} data-field="availableDays" aria-describedby={describedBy} className="flex flex-wrap gap-2">
                 {DROP_OFF_DAYS.map(day => {
-                  const active = availableDays.includes(day);
+                  const active = availableDays.includes(day.id);
                   return (
-                    <button key={day} type="button" onClick={() => setAvailableDays(prev => active ? prev.filter(d => d !== day) : [...prev, day])} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${active ? 'bg-ngo-700 border-ngo-700 text-white' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}>
-                      {day}
+                    <button key={day.id} type="button" onClick={() => setAvailableDays(prev => active ? prev.filter(d => d !== day.id) : [...prev, day.id])} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${active ? 'bg-ngo-700 border-ngo-700 text-white' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}>
+                      {day.label}
                     </button>
                   );
                 })}
@@ -640,7 +656,7 @@ function NewNgoDriveForm() {
         <div className="space-y-3 text-sm">
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Title & Item</span>
-            <span className="font-medium text-right max-w-[200px] sm:max-w-md truncate text-stone-900 dark:text-stone-100">{title} <br/><span className="text-stone-400 text-xs">{quantity} {unit}</span></span>
+            <span className="font-medium text-right max-w-[200px] sm:max-w-md truncate text-stone-900 dark:text-stone-100">{title} <br/><span className="text-stone-400 text-xs">{quantity} {UNITS.find(u => u.id === unit)?.label}</span></span>
           </div>
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Needed by</span>
