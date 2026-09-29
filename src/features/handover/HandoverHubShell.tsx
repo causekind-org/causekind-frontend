@@ -105,7 +105,7 @@ export function HandoverHubShell({
 
         {/* ── Journey ────────────────────────────────────────────────────── */}
         <div className="mb-6 rounded-lg border border-stone-200 bg-white px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-900">
-          <HandoverJourneyRail state={vm.state} />
+          <HandoverJourneyRail state={vm.state} flow={vm.flow} />
         </div>
 
         {/* ── Workspace ──────────────────────────────────────────────────── */}

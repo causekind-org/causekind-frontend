@@ -238,6 +238,8 @@ function DoneeConfirm({ vm, onConfirm }: {
   const [otp, setOtp] = useState("");
   const [qty, setQty] = useState("");
   const [condition, setCondition] = useState(CONDITIONS[0].value);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -257,8 +259,10 @@ function DoneeConfirm({ vm, onConfirm }: {
   const lockedOut = failedAttempts >= OTP_LOCKOUT_ATTEMPTS;
   const otpInvalid = error != null && /otp|code/i.test(error);
 
+  const photosValid = vm.flow !== "NGO_OFFER" || (photos.length >= 1 && photos.length <= 5);
+
   async function confirm() {
-    if (busy || !qtyValid || !otpComplete || lockedOut) return;
+    if (busy || !qtyValid || !otpComplete || lockedOut || !photosValid) return;
     setBusy(true); setError(null);
     try {
       await onConfirm({ otp: otp.trim(), quantity: qtyNum, conditionRating: condition });
@@ -359,8 +363,8 @@ function DoneeConfirm({ vm, onConfirm }: {
           )}
           {qtyUnderOffered && (
             <p id="donee-qty-under" className="text-xs text-amber-600 dark:text-amber-400">
-              You received fewer than the {offered} offered.
-              After this handover closes, you can report an issue if something is wrong.
+              You received fewer than the {offered} offered. 
+              {vm.flow === "NGO_OFFER" ? " If fewer arrived, the rest goes back to still needed." : " After this handover closes, you can report an issue if something is wrong."}
             </p>
           )}
         </div>
@@ -383,12 +387,38 @@ function DoneeConfirm({ vm, onConfirm }: {
           </Select>
         </div>
 
+        {vm.flow === "NGO_OFFER" && (
+          <>
+            <div className="space-y-1.5">
+              <label className={handoverLabel}>Receipt Photos (1-5 required) <span className="text-red-500">*</span></label>
+              <Input 
+                type="file" 
+                multiple 
+                accept="image/*" 
+                onChange={(e) => setPhotos(Array.from(e.target.files || []).slice(0, 5))}
+                disabled={busy}
+              />
+              <p className="text-xs text-stone-500">Take a photo of the items received as proof.</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className={handoverLabel}>Internal Note</label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                disabled={busy}
+                className={`${handoverInput} min-h-[80px] w-full resize-y text-sm`}
+                placeholder="Optional note about the condition or handover"
+              />
+            </div>
+          </>
+        )}
+
         <p className="text-xs text-stone-500 dark:text-stone-400">
           {vm.flow === "OFFER"
             ? "Once you both confirm, there's a short window to report a problem before this closes."
             : "Once you both confirm, this handover closes and a delivery record is created."}
         </p>
-        <Button onClick={confirm} disabled={!qtyValid || !otpComplete || busy || lockedOut} className={`${handoverPrimary} w-full`}>
+        <Button onClick={confirm} disabled={!qtyValid || !otpComplete || !photosValid || busy || lockedOut} className={`${handoverPrimary} w-full`}>
           {busy
             ? <><Loader2 className="animate-spin" aria-hidden /> Recording</>
             : <><ShieldCheck aria-hidden /> I received it</>}

@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { CalendarPlus, CircleCheck, Clock, MessageCircle, TriangleAlert } from "lucide-react";
 import { motion } from "framer-motion";
@@ -194,6 +195,76 @@ function WaitingRow({ onOpenChat, label }: { onOpenChat?: () => void; label: str
  */
 function Completion({ vm }: { vm: HandoverViewModel }) {
   const qty = vm.confirmation.doneeConfirmedQty ?? vm.confirmation.donorConfirmedQty;
+  const offered = vm.offeredQuantity;
+  const [drive, setDrive] = React.useState<any>(null);
+  const [proof, setProof] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    if (vm.flow === "NGO_OFFER" && vm.parentId) {
+      import("@/lib/api").then(({ getNgoDrive, getNgoDriveProof }) => {
+        getNgoDrive(vm.parentId!).then(setDrive).catch(() => {});
+        getNgoDriveProof(vm.parentId!).then(setProof).catch(() => {});
+      });
+    }
+  }, [vm.flow, vm.parentId]);
+
+  if (vm.flow === "NGO_OFFER") {
+    const isFulfilled = vm.rawStatus === "FULFILLED";
+    const isPartial = vm.rawStatus === "RECEIVED_PARTIAL";
+    const itemStr = drive?.itemName || "items";
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-start gap-2 rounded-lg bg-green-50 px-3 py-2.5 text-sm text-green-800 dark:bg-green-950/30 dark:text-green-300">
+          <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span>
+            {vm.role === "DONOR" ? (
+              isPartial
+                ? `The NGO received ${qty} of your ${offered} ${itemStr}. The rest went back to the drive's needed amount.`
+                : `Received by ${vm.counterpart.name}: ${qty} ${itemStr}.`
+            ) : (
+              "Item received and confirmed."
+            )}
+          </span>
+        </div>
+
+        {isFulfilled && drive && proof && vm.role === "DONOR" && (
+          <div className="mt-4 p-4 border border-green-200 bg-white rounded-lg shadow-sm">
+            <h3 className="font-bold text-green-900 mb-2">Drive Complete!</h3>
+            <p className="text-sm text-green-800 mb-3">
+              Your {qty} {itemStr} reached {drive.beneficiaryCount} {drive.beneficiaryGroup}.
+            </p>
+            {proof.media && proof.media.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto mb-3 pb-2">
+                {proof.media.slice(0, 3).map((m: any, i: number) => (
+                  <img key={i} src={m.mediaUrl} alt="Distribution proof" className="h-24 w-24 object-cover rounded shadow-sm border border-stone-200 shrink-0" />
+                ))}
+              </div>
+            )}
+            <Button asChild variant="outline" size="sm" className={handoverSecondary}>
+              <Link href={`/drives/${drive.id}/proof`}>View impact report</Link>
+            </Button>
+          </div>
+        )}
+
+        {vm.certificateHref ? (
+          <Button asChild className={handoverPrimary}>
+             <Link href={vm.certificateHref}>View certificate</Link>
+          </Button>
+        ) : (
+          <p className="text-xs text-stone-500 dark:text-stone-400">
+            {vm.role === "DONOR" && !isFulfilled ? "Your certificate will be available once the NGO completes the drive and uploads proof of distribution." : ""}
+          </p>
+        )}
+        
+        <div className="pt-2">
+          <Button asChild variant="outline" className={handoverSecondary}>
+            <Link href="/dashboard">Back to dashboard</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

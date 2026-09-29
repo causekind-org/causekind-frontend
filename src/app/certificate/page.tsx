@@ -14,7 +14,7 @@ const dancingScript = Dancing_Script({ weight: "700", subsets: ["latin"] });
 // be used server-side at all (Microsoft-licensed, not redistributable), so the page
 // and the attachment were set in different typefaces. Playfair is OFL, so both
 // can use it and the two documents finally look like the same thing.
-const playfair = Playfair_Display({ weight: ["400", "700"], subsets: ["latin"] });
+const playfair = Playfair_Display({ subsets: ["latin"] });
 
 export default function CertificatePage() {
   const searchParams = useSearchParams();
@@ -22,6 +22,7 @@ export default function CertificatePage() {
   const offerId = searchParams.get("offerId");
   const matchId = searchParams.get("matchId");
   const certNumber = searchParams.get("certNumber");
+  const type = searchParams.get("type");
   const printRef = useRef<HTMLDivElement>(null);
 
   const [cert, setCert] = useState<Certificate | null>(null);
@@ -33,6 +34,10 @@ export default function CertificatePage() {
   useEffect(() => {
     if (certNumber) {
       verifyCertificate(certNumber).then(setCert).catch(() => setError("Certificate not found")).finally(() => setLoading(false));
+    } else if (offerId && type === "ngo_drive") {
+      import("@/lib/api").then(({ getNgoDriveOfferCertificate }) => {
+        getNgoDriveOfferCertificate(Number(offerId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
+      });
     } else if (offerId) {
       getOfferCertificate(Number(offerId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
     } else if (matchId) {
@@ -41,7 +46,7 @@ export default function CertificatePage() {
       setError("No certificate reference provided");
       setLoading(false);
     }
-  }, [offerId, matchId, certNumber]);
+  }, [offerId, matchId, certNumber, type]);
 
   // Generate a scannable QR pointing at this same verification page — this is what
   // actually makes the certificate "QR-verifiable", not just the text label.

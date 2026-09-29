@@ -15,6 +15,7 @@ import { toast } from "@/lib/toast";
 import {
   cancelMatch, getMatchCancellationOptions, getOfferCancellationOptions,
   reportPostDeliveryIssue, reportMatchIssue, confirmNoIssue,
+  reportNgoDriveOfferIssue,
   CANCELLATION_REASONS,
   type CancellationOption, type CancellationReason,
 } from "@/lib/api";
@@ -302,6 +303,10 @@ function ReportIssueDialog({ flow, id, role, open, onOpenChange, onReported }: {
     try {
       if (flow === "MATCH") {
         await reportMatchIssue(id, {
+          issueType, description: description.trim(), windowCategory: "GENERAL",
+        });
+      } else if (flow === "NGO_OFFER") {
+        await reportNgoDriveOfferIssue(id, {
           issueType, description: description.trim(), windowCategory: "GENERAL",
         });
       } else {

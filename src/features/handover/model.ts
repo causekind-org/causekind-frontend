@@ -15,7 +15,7 @@
  * what lets the UI tell the truth about which of the two the user is in.
  */
 
-export type HandoverFlow = "OFFER" | "MATCH";
+export type HandoverFlow = "OFFER" | "MATCH" | "NGO_OFFER";
 
 /** Resolved from participation, never from the account's role. See resolveRole. */
 export type HandoverRole = "DONOR" | "DONEE";
@@ -93,6 +93,7 @@ export type HandoverViewModel = {
   title: string;
   imageUrl: string | null;
   transactionCode: string;
+  parentId?: number; // Used for NGO Drives to pass driveId
   counterpart: HandoverParticipant;
   /** Donor-side switch letting the donee call them. Reversible at any time. */
   donorAllowsDoneeCall: boolean;
@@ -196,11 +197,35 @@ export const JOURNEY_STEPS: { key: JourneyStepKey; label: string }[] = [
   { key: "complete", label: "Complete" },
 ];
 
+export const JOURNEY_STEPS_NGO: { key: string; label: string }[] = [
+  { key: "checking", label: "Checking" },
+  { key: "review", label: "NGO reviews" },
+  { key: "approved", label: "Approved" },
+  { key: "scheduled", label: "Handover scheduled" },
+  { key: "received", label: "Received \u2713" },
+  { key: "certificate", label: "Certificate" },
+  { key: "fulfilled", label: "Fulfilled" },
+];
+
 /**
  * How far along the rail we are. Returns -1 for cancelled/failed so the rail can
  * render as halted rather than pretending to be at step 0.
  */
-export function journeyIndex(state: HandoverState): number {
+export function journeyIndex(state: HandoverState, flow?: HandoverFlow): number {
+  if (flow === "NGO_OFFER") {
+    switch (state) {
+      case "cancelled_or_failed": return -1;
+      case "awaiting_schedule":   return 2;
+      case "scheduled":           return 3;
+      case "ready_to_handover":   return 3;
+      case "at_risk":             return 3;
+      case "partially_confirmed": return 4;
+      case "issue_window":        return 4;
+      case "issue_raised":        return 4;
+      case "completed":           return 6;
+    }
+  }
+
   switch (state) {
     case "cancelled_or_failed": return -1;
     case "awaiting_schedule":   return 0;
@@ -241,9 +266,9 @@ export function resolveHandoverState(input: {
   if (COMPLETED_STATUSES.has(status)) return "completed";
   if (status === "ISSUE_RAISED") return "issue_raised";
   if (status === "ISSUE_WINDOW_OPEN") {
-    // OFFER only: a real state with actions (confirm no issue / report issue).
+    // OFFER and NGO_OFFER: a real state with actions (confirm no issue / report issue).
     // MATCH has no equivalent — it completes straight from dual confirmation.
-    return flow === "OFFER" ? "issue_window" : "completed";
+    return flow === "OFFER" || flow === "NGO_OFFER" ? "issue_window" : "completed";
   }
 
   // Before status: the half-confirmed window has no status in either flow.
@@ -260,7 +285,7 @@ const TERMINAL_STATUSES = new Set([
   "CANCELLED", "WITHDRAWN", "FAILED", "REJECTED", "DONOR_REJECTED", "ADMIN_REJECTED", "DONEE_DECLINED",
 ]);
 
-const COMPLETED_STATUSES = new Set(["COMPLETED", "FULFILLED", "CERTIFICATE_ISSUED"]);
+const COMPLETED_STATUSES = new Set(["COMPLETED", "FULFILLED", "CERTIFICATE_ISSUED", "RECEIVED_PARTIAL"]);
 
 /**
  * Statuses at which the handover can physically happen now — OTP and confirmation
@@ -364,6 +389,13 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
                body: "It's been rescheduled the maximum number of times. Our team will step in — you can still message each other below." };
 
     case "issue_window":
+      if (vm.flow === "NGO_OFFER") {
+        return donor
+          ? { title: "Delivery confirmed",
+              body: "Your certificate will be ready after the review window." }
+          : { title: "Is everything alright with the item?",
+              body: "You have a short window to tell us if something's wrong. If it's all fine, you can close this now." };
+      }
       return donor
         ? { title: "Delivery confirmed",
             body: "Both sides confirmed. There's a short window for the recipient to flag any problem, then this completes automatically." }
@@ -382,6 +414,10 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
             body: "This handover is complete and closed. Your record of it is below." };
 
     case "cancelled_or_failed":
+      if (vm.flow === "NGO_OFFER" && vm.rawStatus !== "REJECTED" && vm.rawStatus !== "DONEE_DECLINED") {
+        return { title: "This drive has ended",
+                 body: "This drive has ended. Thank you for offering." };
+      }
       return { title: "This handover is closed",
                body: "It didn't go ahead. The record stays here for reference and support." };
   }
