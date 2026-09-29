@@ -23,6 +23,7 @@
  */
 
 import React, { useEffect, useState, useMemo } from "react";
+import { isNgoRole } from "@/lib/isNgoRole";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -244,7 +245,7 @@ export default function HomeClient({
   // The single need that has gone unclaimed longest. It ends the hero's thread,
   // and is excluded from the section below so the same request does not appear
   // twice within one screen of itself.
-  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const isNgo = isNgoRole(user?.role);
   const [ngoAppStatus, setNgoAppStatus] = useState<"LOADING" | "NOT_SUBMITTED" | "SUBMITTED">(() => {
     if (typeof window === "undefined" || !user) return "NOT_SUBMITTED";
     const userIdentifier =
@@ -288,7 +289,7 @@ export default function HomeClient({
   }, []);
 
   useEffect(() => {
-    if (!user || (user.role !== "NGO" && user.role !== "NGO_PARTNER")) {
+    if (!user || (!isNgoRole(user.role))) {
       return;
     }
 
