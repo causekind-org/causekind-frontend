@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
-import { getMyItemRequests, getMyProfile, type ItemRequest, type UserProfile } from "@/lib/api";
+import { getMyNgoDrives, getMyProfile, type NgoDrive, type UserProfile } from "@/lib/api";
 
 export function useNgoDashboardData() {
   const ngoStatus = useNgoStatus();
   
-  const [requests, setRequests] = useState<ItemRequest[]>([]);
+  const [requests, setRequests] = useState<NgoDrive[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [errorRequests, setErrorRequests] = useState(false);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
@@ -24,7 +24,7 @@ export function useNgoDashboardData() {
     setLoadingRequests(true);
     setErrorRequests(false);
     try {
-      const res = await getMyItemRequests();
+      const res = await getMyNgoDrives();
       setRequests(res);
       setErrorRequests(false);
     } catch (e) {

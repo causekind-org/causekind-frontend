@@ -23,6 +23,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
+import { isNgoRole } from "@/lib/isNgoRole";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import { useNgoStatus, triggerNgoLockedToast } from "@/components/ngo-landing/useNgoStatus";
 import {
@@ -594,7 +595,7 @@ export function SiteHeader() {
 
   const dashHref = user?.role === "SUPER_ADMIN" ? "/super-admin"
     : user?.role === "ADMIN" ? "/admin/dashboard"
-    : (user?.role === "NGO" || user?.role === "NGO_PARTNER") ? "/"
+    : isNgoRole(user?.role) ? "/"
     : "/dashboard";
 
   /** Opens the confirmation dialog — actual logout happens only on confirm. */
@@ -673,7 +674,7 @@ export function SiteHeader() {
     pathname?.startsWith("/admin/dashboard") ||
     user?.role === "SUPER_ADMIN";
 
-  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const isNgo = isNgoRole(user?.role);
   const isNgoDashboard =
     isNgo ||
     pathname?.startsWith("/dashboard/ngo") ||

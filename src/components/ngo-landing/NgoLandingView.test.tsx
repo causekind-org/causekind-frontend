@@ -6,7 +6,7 @@ import { getMyNgoApplication } from "@/lib/api";
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn().mockReturnValue({
-    user: { id: 101, email: "ngo@causekind.org", role: "NGO" },
+    user: { id: 101, email: "ngo@causekind.org", role: "NGO_PARTNER" },
     isLoading: false,
     isRestoring: false,
     setUser: vi.fn(),
@@ -36,7 +36,7 @@ describe("NgoLandingView Component Suite", () => {
     sessionStorage.clear();
     vi.mocked(getMyNgoApplication).mockResolvedValue(null);
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "ngo@causekind.org", role: "NGO" } as never,
+      user: { id: 101, email: "ngo@causekind.org", role: "NGO_PARTNER" } as never,
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),

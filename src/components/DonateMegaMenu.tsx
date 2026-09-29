@@ -8,11 +8,12 @@ import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon, { ICON_MOTION_PARENT_PROPS } from "./AnimatedCategoryIcon";
 import { useAuth } from "@/hooks/useAuth";
 import NgoRequestsDropdown from "@/components/ngo-landing/NgoRequestsDropdown";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations();
   const { user } = useAuth();
-  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const isNgo = isNgoRole(user?.role);
 
   if (isNgo) {
     return <NgoRequestsDropdown onNavigate={onNavigate} />;

@@ -7,7 +7,8 @@ import { useNgoDashboardData } from "@/hooks/useNgoDashboardData";
 import { NgoReadinessRail } from "@/components/profile/NgoReadinessRail";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyMatches, type ItemMatch } from "@/lib/api";
-import { sampleLiveDrives, sampleFulfilledDrives, type SampleNgoDrive } from "@/data/sampleNgoDrives";
+import { isNgoRole } from "@/lib/isNgoRole";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -59,39 +60,28 @@ function getRequestStatusBadge(status: string) {
   return map[status] ?? { label: status, variant: "outline" as const };
 }
 
+function getUnitLabel(u: string) {
+  const map: Record<string, string> = { PIECES: "Pieces", SETS: "Sets", PAIRS: "Pairs", KG: "Kg", BOXES: "Boxes", PACKETS: "Packets" };
+  return map[u] || u;
+}
+
+function getDayLabel(d: string) {
+  const map: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
+  return map[d] || d;
+}
+
 export default function NgoDashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
   const [matches, setMatches] = useState<ItemMatch[]>([]);
-  const [demoDrives, setDemoDrives] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (!user) return;
-    const userIdentifier = user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const DEMO_DRIVES_KEY = `ngo-demo-drives-${userIdentifier}`;
-    const loadDrives = () => {
-      try {
-        const stored = localStorage.getItem(DEMO_DRIVES_KEY);
-        if (stored) {
-          setDemoDrives(JSON.parse(stored).map((d: any) => ({ ...d, isDemoDrive: true })));
-        } else {
-          setDemoDrives([]);
-        }
-      } catch (e) {
-        console.error("Failed to parse demo drives", e);
-      }
-    };
-    loadDrives();
-    window.addEventListener("focus", loadDrives);
-    return () => window.removeEventListener("focus", loadDrives);
-  }, [user]);
   
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       router.replace("/login");
-    } else if (user.role !== "NGO" && user.role !== "NGO_PARTNER") {
+    } else if (!isNgoRole(user.role)) {
       router.replace("/dashboard");
     }
   }, [user, authLoading, router]);
@@ -120,7 +110,7 @@ export default function NgoDashboardPage() {
     }
   }, [isVerified]);
 
-  if (authLoading || status === "loading" || !user || (user.role !== "NGO" && user.role !== "NGO_PARTNER")) {
+  if (authLoading || status === "loading" || !user || (!isNgoRole(user.role))) {
     return (
       <PageSkeleton>
         <DashboardSkeleton tiles={3} label="Loading your dashboard" />
@@ -128,27 +118,18 @@ export default function NgoDashboardPage() {
     );
   }
 
-  const isSampleMode = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_SAMPLE_DRIVES === "true";
+  const resolvedFulfilledCount = requests.filter(r => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status)).length;
+  const resolvedActiveMatches = matches.filter(m => !["FULFILLED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)).length;
+  const resolvedRequestsCount = requests.length;
 
-  const resolvedFulfilledCount = isSampleMode ? sampleFulfilledDrives.length : requests.filter(r => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status)).length;
-  const resolvedActiveMatches = isSampleMode ? sampleLiveDrives.filter(d => d.items.some(i => i.pledged > 0)).length : matches.filter(m => !["FULFILLED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)).length;
-  const resolvedRequestsCount = isSampleMode ? sampleLiveDrives.length + sampleFulfilledDrives.length : requests.length;
+  const liveDrives = requests.filter(r => ["OPEN", "ACTIVE", "POTENTIAL_MATCH_FOUND", "VERIFIED_PRIVATE_MATCHING", "PUBLIC_REQUEST", "PARTIALLY_MATCHED", "PUBLICATION_CONSENT_REQUIRED", "PENDING_VERIFICATION"].includes(r.status));
+  const fulfilledDrives = requests.filter(r => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status));
 
-  const baseLiveDrives = isSampleMode ? sampleLiveDrives : requests.filter(r => ["OPEN", "ACTIVE", "POTENTIAL_MATCH_FOUND", "VERIFIED_PRIVATE_MATCHING", "PUBLIC_REQUEST", "PARTIALLY_MATCHED", "PUBLICATION_CONSENT_REQUIRED", "PENDING_VERIFICATION"].includes(r.status));
-  const liveDrives = [
-    ...demoDrives.filter(d => d.status === "PENDING_VERIFICATION" || d.status === "OPEN" || d.status === "ACTIVE"),
-    ...baseLiveDrives
-  ];
-  const fulfilledDrives = isSampleMode ? sampleFulfilledDrives : requests.filter(r => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status));
-
-  const showSections = isVerified || isSampleMode;
+  const showSections = isVerified;
   const bypassLock = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_BYPASS_DRIVE_LOCK === "true";
   const effectivelyCanPost = isVerified || bypassLock;
 
-  const isDemoMode = process.env.NEXT_PUBLIC_NGO_DEMO_MODE === "true";
-  const hasDemoDrives = demoDrives.length > 0;
-  const isErrorWithFallback = errorRequests && hasDemoDrives && isDemoMode;
-  const isHardError = errorRequests && !isErrorWithFallback;
+  const isHardError = errorRequests;
 
   return (
     <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-[calc(var(--ck-bottom-chrome)+1.5rem)]">
@@ -246,16 +227,41 @@ export default function NgoDashboardPage() {
         </div>
 
         {/* Sections */}
-        {isSampleMode && (
-          <div className="text-center pb-2">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-900/50">
-              Showing sample drives (development only)
-            </span>
-          </div>
-        )}
-        <section>
-          <div className="border-b-2 border-ngo-700/60 dark:border-ngo-400/50 pb-3">
-            <p className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-400">Live Drives</p>
+
+          {(() => {
+            const needsAttention = requests.filter(r => r.status === 'COLLECTION_COMPLETE' || r.status === 'PROOF_REJECTED');
+            if (needsAttention.length > 0) {
+              return (
+                <div className="mb-8">
+                  <div className="border-b-2 border-red-700/60 dark:border-red-400/50 pb-3 mb-4">
+                    <p className="text-3xs font-black uppercase tracking-[0.24em] text-red-700 dark:text-red-400 flex items-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Needs your attention
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    {needsAttention.map((drive: any) => (
+                      <Link key={drive.id} href={`/ngo/drives/${drive.id}?tab=proof`} className="block">
+                        <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl p-4 flex items-center justify-between hover:bg-red-100 transition-colors">
+                          <div>
+                            <h4 className="font-bold text-red-900 dark:text-red-100">{drive.title}</h4>
+                            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                              {drive.status === 'PROOF_REJECTED' ? "Proof was rejected. Please re-upload." : "Collection complete. Proof of distribution is due."}
+                            </p>
+                          </div>
+                          <Button variant="destructive" size="sm" className="shrink-0">Action needed</Button>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+          
+          <section>
+            <div className="border-b-2 border-ngo-700/60 dark:border-ngo-400/50 pb-3">
+              <p className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-400">Live Drives</p>
             <p className="text-xs text-stone-400 mt-1">Drives donors near you can give to right now.</p>
           </div>
           <div className="pt-3.5 sm:pt-5">
@@ -292,20 +298,13 @@ export default function NgoDashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {isErrorWithFallback && (
-                  <p className="text-xs text-stone-500 italic mb-2">Couldn't reach the server — showing drives saved on this device.</p>
-                )}
-                {liveDrives.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((r: any) => {
-                  if (r.isDemoDrive) {
-                    const drive = r;
-                    const isAwaiting = drive.status === "PENDING_VERIFICATION";
-                    return (
-                      <div key={`demo-${drive.id}`} className="bg-white dark:bg-zinc-900 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm overflow-hidden mb-4 opacity-90">
-                        <div className="p-4 sm:p-5">
+                {liveDrives.sort((a: any, b: any) => new Date(b.createdAt || Date.now()).getTime() - new Date(a.createdAt || Date.now()).getTime()).map((drive: any) => {
+                  const isAwaiting = drive.status === "PENDING_VERIFICATION";
+                  return (
+                    <div key={drive.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm overflow-hidden mb-4">
+                      <Link href={`/ngo/drives/${drive.id}`} className="block">
+                        <div className="p-4 sm:p-5 hover:bg-stone-50 dark:hover:bg-zinc-800/50 transition-colors">
                           <div className="flex flex-col md:flex-row gap-4 md:gap-5">
-                            {drive.imageUrl && (
-                              <img src={drive.imageUrl} alt={drive.title} className="w-full md:w-20 md:h-20 object-cover rounded-lg shrink-0 aspect-video md:aspect-square" />
-                            )}
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                                 <div className="flex flex-wrap items-center gap-2">
@@ -321,123 +320,24 @@ export default function NgoDashboardPage() {
                               </div>
                               <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 mb-1">{drive.title}</h3>
                               <p className="text-sm text-stone-600 dark:text-stone-400 mb-3 font-medium">
-                                {drive.quantity} {drive.unit} of {drive.itemName}
+                                {drive.quantityNeeded} {getUnitLabel(drive.unit)} of {drive.itemName}
                               </p>
                               
                               <div className="flex flex-wrap gap-4 text-xs text-stone-500 dark:text-stone-400 mb-4">
                                 <span className="flex items-center gap-1.5"><Heart className="w-3.5 h-3.5" /> For {drive.beneficiaryCount} {drive.beneficiaryGroup}</span>
-                                {drive.neededBy && <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Needed by {drive.neededBy}</span>}
-                                <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Available {drive.availableDays}, {drive.availableFrom}–{drive.availableTo}</span>
+                                {drive.neededBy && <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Needed by {new Date(drive.neededBy).toLocaleDateString()}</span>}
                               </div>
                               
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between text-xs font-medium">
-                                  <span className="text-stone-700 dark:text-stone-300">0 of {drive.quantity} pledged</span>
+                                  <span className="text-stone-700 dark:text-stone-300">{drive.quantityPledged || 0} of {drive.quantityNeeded} pledged</span>
                                 </div>
                                 <div className="w-full max-w-sm h-2 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
-                                  <div className="h-full bg-ngo-300 dark:bg-ngo-800" style={{ width: '0%' }} />
+                                  <div className="h-full bg-ngo-300 dark:bg-ngo-800" style={{ width: `${Math.min(100, ((drive.quantityPledged || 0) / (drive.quantityNeeded || 1)) * 100)}%` }} />
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (isSampleMode) {
-                    const drive = r as SampleNgoDrive;
-                    const isDraft = drive.status === "DRAFT";
-                    const isAwaiting = drive.status === "AWAITING_MATCH_APPROVAL";
-                    const opacity = isDraft || isAwaiting ? "opacity-75" : "";
-                    return (
-                      <div key={drive.id} className={`bg-white dark:bg-zinc-900 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm overflow-hidden ${opacity}`}>
-                        <div className="p-4 sm:p-5">
-                          <div className="flex flex-col md:flex-row gap-4 md:gap-5">
-                            {drive.imageUrl && (
-                              <img src={drive.imageUrl} alt={drive.title} className="w-full md:w-20 md:h-20 object-cover rounded-lg shrink-0 aspect-video md:aspect-square" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                {drive.tag && (
-                                  <Badge variant="secondary" className="bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-stone-300 border-transparent">{drive.tag}</Badge>
-                                )}
-                                {drive.urgent && (
-                                  <Badge variant="outline" className="text-amber-600 border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20">Urgent</Badge>
-                                )}
-                                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">{drive.category}</span>
-                              </div>
-                              <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 mb-3">{drive.title}</h3>
-                              
-                              <div className="space-y-2 mb-4">
-                                {drive.items.map((item, idx) => {
-                                  const receivedPct = (item.received / item.needed) * 100;
-                                  const pledgedPct = (item.pledged / item.needed) * 100;
-                                  return (
-                                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-                                      <span className="w-32 font-medium text-stone-700 dark:text-stone-300 shrink-0">{item.name}</span>
-                                      <div className="flex-1 max-w-sm h-2 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
-                                        <div className="h-full bg-ngo-700 dark:bg-ngo-500" style={{ width: `${receivedPct}%` }} />
-                                        <div className="h-full bg-ngo-300 dark:bg-ngo-800" style={{ width: `${Math.max(0, pledgedPct - receivedPct)}%` }} />
-                                      </div>
-                                      <span className="text-xs text-stone-500 shrink-0 whitespace-nowrap">
-                                        {item.received} received &middot; {item.pledged} pledged of {item.needed}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-stone-500 dark:text-stone-400">
-                                {drive.endDate && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {drive.endDate}</span>}
-                                {(drive.dropOffArea || drive.dropOffTimings) && (
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="w-3.5 h-3.5" /> 
-                                    {drive.dropOffArea}{drive.dropOffArea && drive.dropOffTimings ? ", " : ""}{drive.dropOffTimings}
-                                  </span>
-                                )}
-                                {drive.beneficiary && <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {drive.beneficiary}</span>}
-                                {drive.condition && <span className="flex items-center gap-1"><Info className="w-3.5 h-3.5" /> {drive.condition}</span>}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="bg-stone-50 dark:bg-zinc-950/50 px-4 sm:px-5 py-3 border-t border-stone-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                          <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 w-full sm:w-auto">
-                            {drive.donorsPledged ? `${drive.donorsPledged} donors pledged` : "No pledges yet"}
-                          </p>
-                          <div className="flex w-full sm:w-auto gap-2">
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => alert("Available soon")}>Share</Button>
-                            {isDraft ? (
-                              <Button size="sm" className="w-full sm:w-auto bg-ngo-700 hover:bg-ngo-800" onClick={() => alert("Available soon")}>Continue editing</Button>
-                            ) : (
-                              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => alert("Available soon")}>Edit</Button>
-                            )}
-                            {!isDraft && !isAwaiting && (
-                              <Button size="sm" className="w-full sm:w-auto bg-ngo-700 hover:bg-ngo-800" onClick={() => alert("Available soon")}>Confirm drop-off</Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  const badge = getRequestStatusBadge(r.status);
-                  return (
-                    <div key={r.id} className="pt-3 first:pt-0 space-y-2 group px-1 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all pb-1">
-                      <Link href={`/requests/${r.id}`} className="block">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 transition-colors truncate">
-                              <TranslatedText text={r.title || "Drive"} />
-                            </p>
-                            <div className="flex items-center gap-1.5 text-xs text-stone-400 mt-0.5">
-                              <span className="bg-stone-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-3xs font-semibold uppercase">{r.category}</span>
-                              <span>·</span>
-                              <span>{formatDistanceToNow(new Date(r.createdAt || Date.now()), { addSuffix: true })}</span>
-                            </div>
-                          </div>
-                          <Badge variant={badge.variant} className="text-3xs whitespace-nowrap shrink-0">{badge.label}</Badge>
                         </div>
                       </Link>
                     </div>
@@ -484,87 +384,44 @@ export default function NgoDashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {isErrorWithFallback && (
-                  <p className="text-xs text-stone-500 italic mb-2">Couldn't reach the server — showing drives saved on this device.</p>
-                )}
-                {fulfilledDrives.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((r) => {
-                  if (isSampleMode) {
-                    const drive = r as SampleNgoDrive;
-                    return (
-                      <div key={drive.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm overflow-hidden">
-                        <div className="p-4 sm:p-5">
-                          <div className="flex flex-col md:flex-row gap-4 md:gap-5">
-                            {drive.imageUrl && (
-                              <img src={drive.imageUrl} alt={drive.title} className="w-full md:w-20 md:h-20 object-cover rounded-lg shrink-0 aspect-video md:aspect-square" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                {drive.tag && (
-                                  <Badge className="bg-ngo-100 text-ngo-800 dark:bg-ngo-900/30 dark:text-ngo-300 border-transparent">{drive.tag}</Badge>
-                                )}
-                                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">{drive.category}</span>
+                {fulfilledDrives.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((drive: any) => {
+                  return (
+                    <div key={drive.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm overflow-hidden mb-4">
+                      <div className="p-4 sm:p-5">
+                        <div className="flex flex-col md:flex-row gap-4 md:gap-5">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                              <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">{drive.category}</span>
+                              <Badge className="bg-green-100 text-green-700">Fulfilled</Badge>
+                            </div>
+                            <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 mb-3">{drive.title}</h3>
+                            
+                            <div className="space-y-2 mb-4">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
+                                <span className="w-48 font-medium text-stone-700 dark:text-stone-300 shrink-0">{drive.quantityReceived} {getUnitLabel(drive.unit)} of {drive.itemName}</span>
+                                <div className="flex-1 max-w-sm h-2 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+                                  <div className="h-full bg-green-500 w-full" />
+                                </div>
+                                <span className="text-xs text-stone-500 shrink-0 whitespace-nowrap">
+                                  Delivered to {drive.beneficiaryGroup}
+                                </span>
                               </div>
-                              <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 mb-3">{drive.title}</h3>
-                              
-                              <div className="space-y-2 mb-4">
-                                {drive.items.map((item, idx) => (
-                                  <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-                                    <span className="w-32 font-medium text-stone-700 dark:text-stone-300 shrink-0">{item.name}</span>
-                                    <div className="flex-1 max-w-sm h-2 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
-                                      <div className="h-full bg-ngo-700 dark:bg-ngo-500 w-full" />
-                                    </div>
-                                    <span className="text-xs text-stone-500 shrink-0 whitespace-nowrap">
-                                      {item.received} of {item.needed} delivered
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
+                            </div>
 
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-stone-500 dark:text-stone-400">
-                                {drive.fulfilledDate && <span className="flex items-center gap-1 font-medium"><Check className="w-3.5 h-3.5 text-ngo-600" /> Fulfilled {drive.fulfilledDate}</span>}
-                              </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-stone-500 dark:text-stone-400">
+                              <span className="flex items-center gap-1 font-medium"><Check className="w-3.5 h-3.5 text-green-600" /> Drive Completed</span>
                             </div>
                           </div>
-                        </div>
-                        <div className="bg-stone-50 dark:bg-zinc-950/50 px-4 sm:px-5 py-3 border-t border-stone-100 dark:border-zinc-800">
-                          {drive.proofStatus === "uploaded" ? (
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                              <p className="text-xs font-medium text-stone-700 dark:text-stone-300 flex items-center gap-1.5 w-full sm:w-auto">
-                                <Check className="w-4 h-4 text-emerald-600" /> Proof uploaded &middot; {drive.donorsThanked} donors received the photo and certificate
-                              </p>
-                              <Button variant="ghost" size="sm" className="w-full sm:w-auto text-ngo-700 hover:text-ngo-800 font-bold" onClick={() => alert("Available soon")}>View proof &rarr;</Button>
-                            </div>
-                          ) : drive.proofStatus === "due" ? (
-                            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-                              <p className="text-xs text-amber-800 dark:text-amber-400 w-full sm:w-auto">
-                                <strong className="font-bold block sm:inline">Photo due in {drive.proofDueInHours} hours</strong>
-                                <span className="hidden sm:inline"> &middot; </span>
-                                Upload the handover photo to start your next drive.
-                              </p>
-                              <Button size="sm" className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white shrink-0" onClick={() => alert("Available soon")}>Upload photo</Button>
-                            </div>
-                          ) : null}
                         </div>
                       </div>
-                    );
-                  }
-
-                  const badge = getRequestStatusBadge(r.status);
-                  return (
-                    <div key={r.id} className="pt-3 first:pt-0 space-y-2 group px-1 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all pb-1">
-                      <Link href={`/requests/${r.id}`} className="block">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 transition-colors truncate">
-                              <TranslatedText text={r.title || "Drive"} />
-                            </p>
-                            <div className="flex items-center gap-1.5 text-xs text-stone-400 mt-0.5">
-                              <span className="bg-stone-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-3xs font-semibold uppercase">{r.category}</span>
-                            </div>
-                          </div>
-                          <Badge variant={badge.variant} className="text-3xs whitespace-nowrap shrink-0">{badge.label}</Badge>
-                        </div>
-                      </Link>
+                      <div className="bg-stone-50 dark:bg-zinc-950/50 px-4 sm:px-5 py-3 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-between">
+                        <p className="text-xs font-medium text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                          <Check className="w-4 h-4 text-emerald-600" /> Proof uploaded and verified
+                        </p>
+                        <Button variant="ghost" size="sm" asChild className="text-ngo-700 hover:text-ngo-800 font-bold">
+                          <Link href={`/drives/${drive.id}/proof`}>View impact report &rarr;</Link>
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}

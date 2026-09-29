@@ -14,13 +14,15 @@ import {
   getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, getOffersForMyRequests, doneeReviewOffer, confirmNoIssue,
   reopenItemRequest, cancelItemRequest, deleteItemRequestDraft, hideWithdrawnRequest,
   getOfferCancellationOptions, type CancellationOption,
-  type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer
+  type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer,
+  getMyNgoDriveOffers, type NgoDriveOfferResponse
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { isNgoRole } from "@/lib/isNgoRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -580,7 +582,7 @@ function OfferStageCard({
   onWithdraw,
   onCancelled = () => {},
 }: {
-  offer: DonationOffer;
+  offer: any;
   onReconfirm: (id: number) => void;
   onWithdraw: (id: number, reason: string) => void;
   /** Refetch after a cancellation so the card and counters update. */
@@ -607,12 +609,18 @@ function OfferStageCard({
 
   const isTerminal = ["COMPLETED", "CANCELLED", "WITHDRAWN", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(offer.status);
 
-  const actionHref =
-    meta.action === "edit"        ? `/requests/${offer.requestId}/offer` :
-    meta.action === "handover"    ? `/offers/${offer.id}/handover` :
-    meta.action === "issues"      ? `/offers/${offer.id}/issues` :
-    meta.action === "certificate" ? `/certificate?offerId=${offer.id}` :
-    meta.action === "browse"      ? `/requests` : null;
+  const actionHref = offer._type === "DRIVE_OFFER" ? 
+    (meta.action === "edit"        ? `/drives/${offer.driveId}/give` :
+     meta.action === "handover"    ? `/ngo-drive-offers/${offer.id}/handover` :
+     meta.action === "issues"      ? `/ngo-drive-offers/${offer.id}/issues` :
+     meta.action === "certificate" ? `/certificate?offerId=${offer.id}&type=ngo_drive` :
+     meta.action === "browse"      ? `/requests` : null)
+    : 
+    (meta.action === "edit"        ? `/requests/${offer.requestId}/offer` :
+     meta.action === "handover"    ? `/offers/${offer.id}/handover` :
+     meta.action === "issues"      ? `/offers/${offer.id}/issues` :
+     meta.action === "certificate" ? `/certificate?offerId=${offer.id}` :
+     meta.action === "browse"      ? `/requests` : null);
 
   return (
     <div className={`rounded-xl sm:rounded-2xl border ${style.badge} p-3 sm:p-4 space-y-3`}>
@@ -624,6 +632,12 @@ function OfferStageCard({
               <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
               {meta.label}
             </span>
+            {offer._type === "DRIVE_OFFER" && (
+              <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" />
+                {offer.ngoName}
+              </span>
+            )}
             {offer.flowType && (
               <span className="text-xs text-stone-400">
                 {offer.flowType === "ALREADY_OWN" ? "Own item" : offer.flowType === "WILL_PURCHASE" ? "Will purchase" : "Similar item"}
@@ -1938,14 +1952,28 @@ export default function DashboardPage() {
     refreshListings();
     refreshMatches();
     getMyItemRequests().then(setItemRequests).catch(() => {});
-    getMyDonationOffers().then(setDonationOffers).catch(() => {});
+    Promise.all([
+      getMyDonationOffers().catch(() => []),
+      getMyNgoDriveOffers().catch(() => [])
+    ]).then(([offers, drives]) => {
+      const mapped = drives.map(d => ({
+        ...d,
+        _type: "DRIVE_OFFER",
+        requestId: d.driveId,
+        requestTitle: d.driveTitle,
+        requestCategory: "NGO Drive",
+        requestCity: d.ngoName,
+        flowType: null
+      }));
+      setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));
+    });
   });
 
   const [itemListings, setItemListings] = useState<ItemListing[]>([]);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>([]);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
-  const [donationOffers, setDonationOffers] = useState<DonationOffer[]>([]);
+  const [donationOffers, setDonationOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"donor" | "donee">("donor");
   // Null until the donor picks a section (or arrives with one in the URL hash).
@@ -1979,7 +2007,21 @@ export default function DashboardPage() {
   /** Refetch after a cancellation — the status changed server-side, and the
    *  cancel endpoint returns the policy result rather than the updated offer. */
   function handleOfferCancelled() {
-    getMyDonationOffers().then(setDonationOffers).catch(() => {});
+    Promise.all([
+      getMyDonationOffers().catch(() => []),
+      getMyNgoDriveOffers().catch(() => [])
+    ]).then(([offers, drives]) => {
+      const mapped = drives.map(d => ({
+        ...d,
+        _type: "DRIVE_OFFER",
+        requestId: d.driveId,
+        requestTitle: d.driveTitle,
+        requestCategory: "NGO Drive",
+        requestCity: d.ngoName,
+        flowType: null
+      }));
+      setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));
+    });
   }
 
   async function handleOfferReconfirm(offerId: number) {
@@ -2035,7 +2077,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) { router.push("/login"); return; }
-    if (user.role === "NGO" || user.role === "NGO_PARTNER") { router.push("/dashboard/ngo"); return; }
+    if (isNgoRole(user.role)) { router.push("/dashboard/ngo"); return; }
 
     Promise.all([
       getMyProfile().then((p) => {
@@ -2044,8 +2086,21 @@ export default function DashboardPage() {
       }).catch(() => {}),
       getMyItemListings().then(setItemListings).catch(() => setItemListings([])),
       getMyItemRequests().then(setItemRequests).catch(() => setItemRequests([])),
-      getMyMatches().then(setMatches).catch(() => setMatches([])),
-      getMyDonationOffers().then(setDonationOffers).catch(() => setDonationOffers([])),
+      Promise.all([
+        getMyDonationOffers().catch(() => []),
+        getMyNgoDriveOffers().catch(() => [])
+      ]).then(([offers, drives]) => {
+        const mapped = drives.map(d => ({
+          ...d,
+          _type: "DRIVE_OFFER",
+          requestId: d.driveId,
+          requestTitle: d.driveTitle,
+          requestCategory: "NGO Drive",
+          requestCity: d.ngoName,
+          flowType: null
+        }));
+        setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));
+      }),
     ])
       .finally(() => setLoading(false));
   }, [user, isLoading, router]);

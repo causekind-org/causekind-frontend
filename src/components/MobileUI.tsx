@@ -12,6 +12,7 @@ import { useNearFooter } from "@/hooks/useNearFooter";
 import { useDraggableBubble } from "@/hooks/useDraggableBubble";
 import { RequestNudge } from "@/components/RequestNudge";
 import GlassSurface from "@/components/GlassSurface";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 /* ─── Mobile bottom nav ─────────────────────────────────────────── */
 type MobileNavItem = {
@@ -55,7 +56,7 @@ export function MobileBottomNav() {
         ? dashboardT("requestItem")
         : navT("signUp");
 
-  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const isNgo = isNgoRole(user?.role);
 
   const items: MobileNavItem[] = [
     { href: "/", icon: Home, label: t("home") },
