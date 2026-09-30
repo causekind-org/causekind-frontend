@@ -50,6 +50,9 @@ function toDto(file: UploadedFile | null): UploadedFileDto | null {
 
 function fromDto(dto: UploadedFileDto | null | undefined): UploadedFile | null {
   if (!dto) return null;
+  // A saved reference with no upload id is not a file the backend will attach, so
+  // showing it as uploaded would only hide that it has to be uploaded again.
+  if (!IS_NGO_DEMO_MODE && dto.documentId == null && dto.photoId == null) return null;
   return {
     name: dto.name || "Uploaded document",
     documentId: dto.documentId ?? undefined,

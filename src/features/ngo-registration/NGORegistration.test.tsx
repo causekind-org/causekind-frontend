@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NGORegistration } from "./NGORegistration";
-import { submitNgoApplication, verifyNgoOtp } from "@/lib/api";
+import { submitNgoApplication, uploadNgoDocument, verifyNgoOtp } from "@/lib/api";
 
 vi.mock("@/lib/api", () => ({
   uploadNgoDocument: vi.fn().mockImplementation(async (file, category) => ({
@@ -122,8 +122,16 @@ describe("NGORegistration Component", () => {
     await user.selectOptions(screen.getByLabelText(/Designation/i), "Managing Trustee");
     await user.type(screen.getByLabelText(/Mobile Number/i), "+91 98765 43210");
     await user.type(screen.getByLabelText(/Official Email Address/i), "priya@helpinghearts.org");
-    const markLetterBtn = screen.getByRole("button", { name: /Mark as uploaded ✓/i });
-    await user.click(markLetterBtn);
+    // No "Mark as uploaded" shortcut outside demo mode: the letter is a real upload.
+    expect(screen.queryByRole("button", { name: /Mark as uploaded ✓/i })).not.toBeInTheDocument();
+    const letterInput = document.getElementById("auth-letter-upload") as HTMLInputElement;
+    await user.upload(letterInput, new File(["%PDF-1.4 letter"], "letter.pdf", { type: "application/pdf" }));
+    await waitFor(() => {
+      expect(uploadNgoDocument).toHaveBeenCalledWith(expect.any(File), "authorization-letter", "supporting");
+    });
+    await waitFor(() => {
+      expect(screen.getByText("letter.pdf")).toBeInTheDocument();
+    });
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 
     // Step 4: Organization Photos
@@ -183,6 +191,11 @@ describe("NGORegistration Component", () => {
 
     // Confirm that with demo mode OFF, real API calls are invoked normally
     expect(submitNgoApplication).toHaveBeenCalledTimes(1);
+    // Every file in the payload is a reference to a backend upload record.
+    const payload = vi.mocked(submitNgoApplication).mock.calls[0][0];
+    expect(payload.authorizationLetter?.documentId).toBe(101);
+    expect(payload.documents["trust-reg-cert"]?.documentId).toBe(101);
+    expect(payload.logo?.photoId).toBe(201);
     expect(verifyNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-ABCD1234", "123456");
   }, 60000);
 });

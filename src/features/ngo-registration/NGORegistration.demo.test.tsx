@@ -13,9 +13,19 @@ vi.mock("@/features/ngo-registration/ngoRegistrationModel", async (importOrigina
   };
 });
 
+// Demo mode still sends files through the upload endpoints (only submit and OTP are
+// simulated), so the upload mocks have to answer like the real ones.
+let nextUploadId = 1;
 vi.mock("@/lib/api", () => ({
-  uploadNgoDocument: vi.fn(),
-  uploadNgoPhoto: vi.fn(),
+  uploadNgoDocument: vi.fn().mockImplementation(async (file: File) => ({
+    documentId: nextUploadId++,
+    s3Key: `ngo-documents/${file.name}`,
+  })),
+  uploadNgoPhoto: vi.fn().mockImplementation(async (file: File) => ({
+    photoId: nextUploadId++,
+    s3Key: `ngo-photos/${file.name}`,
+    s3Url: `https://example.test/ngo-photos/${file.name}`,
+  })),
   submitNgoApplication: vi.fn(),
   verifyNgoOtp: vi.fn(),
   resendNgoOtp: vi.fn(),

@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Upload, Check, FileText } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Upload, Check, FileText, Loader2 } from "lucide-react";
 import {
   DESIGNATIONS,
+  IS_NGO_DEMO_MODE,
   type NGOFormState,
   type UploadedFile,
 } from "@/features/ngo-registration/ngoRegistrationModel";
+import { uploadNgoDocument } from "@/lib/api";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
 import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
@@ -23,6 +25,8 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
   const [errors, setErrors] = useState<Record<string, string>>({});
   const authLetterRef = useRef<HTMLInputElement>(null);
   const [draggingLetter, setDraggingLetter] = useState(false);
+  const [uploadingLetter, setUploadingLetter] = useState(false);
+  const [letterError, setLetterError] = useState<string | null>(null);
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -45,11 +49,34 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
     ) : null;
   }
 
-  function handleLetterFiles(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    onChange({ authorizationLetter: { name: files[0].name, demo: false } });
+  // The letter is a real upload like every other document: the backend only
+  // attaches files it has an upload record for, so a name on its own is not a file.
+  async function handleLetterFiles(files: FileList | null) {
+    if (!files || files.length === 0 || uploadingLetter) return;
+    const file = files[0];
+    setUploadingLetter(true);
+    setLetterError(null);
+    try {
+      const res = await uploadNgoDocument(file, "authorization-letter", "supporting");
+      onChange({
+        authorizationLetter: {
+          name: file.name,
+          documentId: res.documentId,
+          s3Key: res.s3Key,
+          s3Url: res.fileUrl ?? undefined,
+          size: file.size,
+          mimeType: file.type,
+          demo: false,
+        },
+      });
+    } catch (err) {
+      setLetterError(err instanceof Error ? err.message : "Upload failed. Please check the file and try again.");
+    } finally {
+      setUploadingLetter(false);
+    }
   }
 
+  // Demo mode never reaches the backend, so a placeholder is enough there.
   function markLetterDemo() {
     onChange({ authorizationLetter: { name: "authorization-letter-demo.pdf", demo: true } });
   }
@@ -181,6 +208,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
                 accept=".pdf,.jpg,.jpeg,.png"
                 className="sr-only"
                 id="auth-letter-upload"
+                disabled={uploadingLetter}
                 onChange={(e) => handleLetterFiles(e.target.files)}
               />
               <LocalTestUploadButton onFile={(f) => handleLetterFiles([f] as any)} accept="pdf,image" />
@@ -190,23 +218,40 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
                 onDragOver={(e) => { e.preventDefault(); setDraggingLetter(true); }}
                 onDragLeave={() => setDraggingLetter(false)}
                 onDrop={(e) => { e.preventDefault(); setDraggingLetter(false); handleLetterFiles(e.dataTransfer.files); }}
-                onClick={() => authLetterRef.current?.click()}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") authLetterRef.current?.click(); }}
+                onClick={() => { if (!uploadingLetter) authLetterRef.current?.click(); }}
+                onKeyDown={(e) => { if (!uploadingLetter && (e.key === "Enter" || e.key === " ")) authLetterRef.current?.click(); }}
                 aria-label="Upload authorization letter"
                 className={cn(
                   "flex flex-col items-center justify-center gap-1.5 py-5 cursor-pointer border-2 border-dashed m-3 rounded-lg transition-colors",
                   draggingLetter ? "border-ngo-700 bg-ngo-700/5" : "border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50"
                 )}
               >
-                <Upload className="h-5 w-5 text-stone-400" aria-hidden />
-                <p className="text-2xs font-semibold text-stone-500 dark:text-stone-400">Upload Authorization Letter</p>
-                <p className="text-3xs text-stone-400">Must be on organization letterhead with seal</p>
-                <p className="text-3xs text-stone-400">PDF, JPG or PNG · Max 5 MB</p>
+                {uploadingLetter ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin text-ngo-700" aria-hidden />
+                    <p className="text-2xs font-bold text-ngo-700">Uploading & scanning letter…</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-5 w-5 text-stone-400" aria-hidden />
+                    <p className="text-2xs font-semibold text-stone-500 dark:text-stone-400">Upload Authorization Letter</p>
+                    <p className="text-3xs text-stone-400">Must be on organization letterhead with seal</p>
+                    <p className="text-3xs text-stone-400">PDF, JPG or PNG · Max 5 MB</p>
+                  </>
+                )}
               </div>
-              <div className="border-t border-stone-100 dark:border-zinc-800 px-3.5 py-2 flex items-center justify-between">
-                <p className="text-3xs text-stone-400">Demo mode</p>
-                <button type="button" onClick={markLetterDemo} className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2">Mark as uploaded ✓</button>
-              </div>
+              {IS_NGO_DEMO_MODE && (
+                <div className="border-t border-stone-100 dark:border-zinc-800 px-3.5 py-2 flex items-center justify-between">
+                  <p className="text-3xs text-stone-400">Demo mode</p>
+                  <button type="button" onClick={markLetterDemo} className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2">Mark as uploaded ✓</button>
+                </div>
+              )}
+              {letterError && (
+                <div className="border-t border-red-100 dark:border-red-950/50 bg-red-50/70 dark:bg-red-950/20 px-3.5 py-2 flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
+                  <p className="text-3xs text-red-700 dark:text-red-300 font-medium">{letterError}</p>
+                </div>
+              )}
             </div>
           )}
         </div>

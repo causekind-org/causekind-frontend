@@ -230,8 +230,12 @@ export function legalStructureLabel(s: LegalStructure): string {
 }
 
 // ── Temporary Demo Mode Configuration ──────────────────────────────────────────
-// TEMPORARY: Demo Mode — bypasses S3 uploads and allows instant demo testing. Off by default.
-export const IS_NGO_DEMO_MODE = process.env.NEXT_PUBLIC_NGO_DEMO_MODE === "true";
+// TEMPORARY: Demo Mode — simulates submit and OTP in the browser without calling the
+// backend. Off by default, and only ever on in a development build: a production
+// bundle with the flag set by mistake would otherwise "accept" applications that
+// never reach the server.
+export const IS_NGO_DEMO_MODE =
+  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_DEMO_MODE === "true";
 
 let nextDemoDocId = -1;
 /** Returns an incrementing negative document ID for demo mode uploads. */
