@@ -15,6 +15,7 @@ import {
   handoverSelectTrigger, handoverSelectItem,
 } from "./handoverStyles";
 import { Panel } from "./HandoverScheduleSummary";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 export type DonorConfirmPayload = { quantity: number };
 export type DoneeConfirmPayload = { otp?: string; quantity: number; conditionRating: string };
@@ -398,6 +399,7 @@ function DoneeConfirm({ vm, onConfirm }: {
                 onChange={(e) => setPhotos(Array.from(e.target.files || []).slice(0, 5))}
                 disabled={busy}
               />
+              <LocalTestUploadButton onFile={(f) => setPhotos((prev) => [...prev, f].slice(0, 5))} accept="image" />
               <p className="text-xs text-stone-500">Take a photo of the items received as proof.</p>
             </div>
             <div className="space-y-1.5">

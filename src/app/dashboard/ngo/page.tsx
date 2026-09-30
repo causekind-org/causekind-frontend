@@ -93,6 +93,7 @@ export default function NgoDashboardPage() {
     totalSteps,
     isVerified,
     lockReason,
+    canPostRequest,
     nextIncompleteStep,
     wizardHref,
     activeRequests,
@@ -126,8 +127,6 @@ export default function NgoDashboardPage() {
   const fulfilledDrives = requests.filter(r => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status));
 
   const showSections = isVerified;
-  const bypassLock = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_BYPASS_DRIVE_LOCK === "true";
-  const effectivelyCanPost = isVerified || bypassLock;
 
   const isHardError = errorRequests;
 
@@ -174,7 +173,7 @@ export default function NgoDashboardPage() {
               )}
             </motion.div>
             
-            {effectivelyCanPost ? (
+            {canPostRequest ? (
               <Link href="/ngo/drives/new" data-tour="primary-cta">
                 <Button className="bg-ngo-300 hover:bg-ngo-400 text-ngo-950 font-extrabold rounded-xl sm:rounded-2xl px-3.5 sm:px-6 py-2 sm:py-3 h-auto text-sm sm:text-sm flex items-center gap-2 shadow-xl shrink-0 transition-all hover:-translate-y-0.5 w-full sm:w-auto justify-center">
                   <Plus className="w-4 h-4" /> Start a Drive
@@ -185,7 +184,7 @@ export default function NgoDashboardPage() {
                 <Button disabled className="bg-transparent text-ngo-100/70 border border-ngo-300/50 font-extrabold rounded-xl sm:rounded-2xl px-3.5 sm:px-6 py-2 sm:py-3 h-auto text-sm sm:text-sm flex items-center gap-2 shrink-0 w-full justify-center opacity-100 cursor-not-allowed">
                   <Lock className="w-4 h-4 opacity-70" /> Start a Drive
                 </Button>
-                <p className="text-xs text-ngo-100/70 w-full text-center sm:text-right">Available once you're verified.</p>
+                <p className="text-xs text-ngo-100/70 w-full text-center sm:text-right">{lockReason || "Available once CauseKind verifies your NGO."}</p>
               </div>
             )}
           </div>

@@ -17,7 +17,7 @@ const EXIT_MS = 500;
 
 export function NgoCampaignPrompt() {
   const { user, isLoading } = useAuth();
-  const { isVerified } = useNgoStatus();
+  const { isVerified, canPostRequest } = useNgoStatus();
   const isDesktop = useIsDesktop();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
@@ -49,7 +49,7 @@ export function NgoCampaignPrompt() {
 
   useEffect(() => {
     if (!isDesktop) return;
-    if (isLoading || !userEmail || !isNgo || !isVerified || dismissed) return;
+    if (isLoading || !userEmail || !isNgo || !canPostRequest || dismissed) return;
 
     let cancelled = false;
 
@@ -64,7 +64,7 @@ export function NgoCampaignPrompt() {
     function show(delay: number) {
       t1.current = setTimeout(() => {
         if (cancelled) return;
-        if (pathnameRef.current === "/requests/new") {
+        if (pathnameRef.current === "/ngo/drives/new") {
           show(REPEAT_DELAY_MS);
           return;
         }
@@ -87,7 +87,7 @@ export function NgoCampaignPrompt() {
       cancelled = true;
       clearTimers();
     };
-  }, [isDesktop, dismissed, isLoading, userEmail, isNgo, isVerified]);
+  }, [isDesktop, dismissed, isLoading, userEmail, isNgo, canPostRequest]);
 
   function dismiss() {
     clearTimers();
@@ -104,7 +104,7 @@ export function NgoCampaignPrompt() {
     setVisible(false);
   }
 
-  if (!isDesktop || !visible || !isNgo || !isVerified) return null;
+  if (!isDesktop || !visible || !isNgo || !canPostRequest) return null;
 
 
   return (
@@ -155,7 +155,7 @@ export function NgoCampaignPrompt() {
             </div>
 
             <Link
-              href="/requests/new"
+              href="/ngo/drives/new"
               onClick={handleAction}
               className="group flex h-8 shrink-0 items-center gap-1 rounded-full bg-ngo-700 hover:bg-ngo-600 px-2.5 text-2xs font-black uppercase text-white shadow-[0_7px_14px_rgba(30,107,79,0.25)] transition-all active:scale-95"
             >

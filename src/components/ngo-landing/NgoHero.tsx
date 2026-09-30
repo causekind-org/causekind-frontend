@@ -38,9 +38,6 @@ export function NgoHero() {
     lockReason,
   } = useNgoDashboardData();
 
-  const bypassLock = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_BYPASS_DRIVE_LOCK === "true";
-  const effectivelyCanPost = canPostRequest || bypassLock;
-
   // Tooltip state for desktop locked click
   const [showLockedTooltip, setShowLockedTooltip] = useState<boolean>(false);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -233,7 +230,7 @@ export function NgoHero() {
                 ) : (
                   <>
                     {/* Start a Drive Button */}
-                    {effectivelyCanPost ? (
+                    {canPostRequest ? (
                       <Link
                         href="/ngo/drives/new"
                         className="inline-flex items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 active:scale-[0.98] text-white font-bold px-7 py-3.5 text-sm sm:text-base shadow-lg shadow-ngo-700/25 hover:shadow-xl hover:shadow-ngo-700/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"

@@ -690,9 +690,6 @@ export function SiteHeader() {
     canPostRequest: canNgoPostRequest,
   } = useNgoStatus();
 
-  const bypassLock = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_BYPASS_DRIVE_LOCK === "true";
-  const effectivelyCanNgoPost = canNgoPostRequest || bypassLock;
-
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
@@ -1362,8 +1359,8 @@ export function SiteHeader() {
                       label: "Start a Drive",
                       ariaLabel: "Start a Drive",
                       active: isActive("/ngo/drives/new"),
-                      isLocked: !user || !effectivelyCanNgoPost,
-                      ...(user && effectivelyCanNgoPost
+                      isLocked: !user || !canNgoPostRequest,
+                      ...(user && canNgoPostRequest
                         ? { link: "/ngo/drives/new" }
                         : {
                             onClick: () => {

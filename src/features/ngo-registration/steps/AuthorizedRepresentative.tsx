@@ -9,6 +9,7 @@ import {
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 interface AuthorizedRepresentativeProps {
   data: NGOFormState;
@@ -182,6 +183,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
                 id="auth-letter-upload"
                 onChange={(e) => handleLetterFiles(e.target.files)}
               />
+              <LocalTestUploadButton onFile={(f) => handleLetterFiles([f] as any)} accept="pdf,image" />
               <div
                 role="button"
                 tabIndex={0}

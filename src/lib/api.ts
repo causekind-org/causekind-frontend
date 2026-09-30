@@ -4398,25 +4398,35 @@ export function submitNgoApplication(payload: {
   });
 }
 
-/**
- * Step 6: Verify the 6-digit OTP.
- * On success the application transitions to UNDER_REVIEW.
- */
-export function verifyNgoOtp(applicationId: string, otp: string) {
-  return request<{ message: string }>("/api/v1/ngo-registration/verify", {
+export async function verifyNgoOtp(applicationId: string, otp: string) {
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/verify`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ applicationId, otp }),
+    credentials: "include",
   });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody?.message || "Verification failed");
+  }
+  return res.json() as Promise<{ message: string }>;
 }
 
 /**
  * Step 6: Resend the OTP. Enforces a 60-second cooldown server-side.
  */
-export function resendNgoOtp(applicationId: string) {
-  return request<{ message: string }>("/api/v1/ngo-registration/resend-otp", {
+export async function resendNgoOtp(applicationId: string) {
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/resend-otp`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ applicationId }),
+    credentials: "include",
   });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody?.message || "Failed to resend OTP");
+  }
+  return res.json() as Promise<{ message: string }>;
 }
 
 export type NgoApplicationStatusResponse = {

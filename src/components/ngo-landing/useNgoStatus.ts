@@ -48,9 +48,9 @@ export function triggerNgoLockedToast(
     toast.info("Log in as an NGO to access this.", {
       action: router
         ? {
-            label: "Log in",
-            onClick: () => router.push("/login"),
-          }
+          label: "Log in",
+          onClick: () => router.push("/login"),
+        }
         : undefined,
     });
     return;
@@ -59,9 +59,9 @@ export function triggerNgoLockedToast(
     toast.info("Complete your profile to get verified. Continue →", {
       action: router
         ? {
-            label: "Continue",
-            onClick: () => router.push("/profile/ngo-details"),
-          }
+          label: "Continue",
+          onClick: () => router.push("/profile/ngo-details"),
+        }
         : undefined,
     });
   } else if (status === "under_review") {
@@ -70,18 +70,18 @@ export function triggerNgoLockedToast(
     toast.warning("A few documents need fixing. Fix now →", {
       action: router
         ? {
-            label: "Fix now",
-            onClick: () => router.push("/profile/ngo-details"),
-          }
+          label: "Fix now",
+          onClick: () => router.push("/profile/ngo-details"),
+        }
         : undefined,
     });
   } else if (isPhotosDue) {
     toast.warning(`Upload handover photos for ${photosDueRequestName} to post your next request.`, {
       action: router
         ? {
-            label: "Upload",
-            onClick: () => router.push("/dashboard/ngo"),
-          }
+          label: "Upload",
+          onClick: () => router.push("/dashboard/ngo"),
+        }
         : undefined,
     });
   }
@@ -106,6 +106,7 @@ export interface NgoStatusData {
   hasShownWelcome: boolean;
   markWelcomeShown: () => void;
   documents: Record<string, any>;
+  isError: boolean;
 }
 
 export function useNgoStatus(): NgoStatusData {
@@ -116,11 +117,11 @@ export function useNgoStatus(): NgoStatusData {
 
   const [status, setStatus] = useState<NgoStatusType>("loading");
   const [ngoName, setNgoName] = useState<string>("Your Organization");
-  
-  // Real readiness progress calculated directly from the form/draft state
+
   const initialProg = calculateNgoProgress(INITIAL_NGO_FORM);
   const [stepNumber, setStepNumber] = useState<number>(initialProg.completedCount);
   const [nextIncompleteStep, setNextIncompleteStep] = useState<NGOStep | null>(initialProg.nextIncompleteStep);
+  const [isError, setIsError] = useState<boolean>(false);
   const [documents, setDocuments] = useState<Record<string, any>>({});
 
   const [activeRequests, setActiveRequests] = useState<number>(0);
@@ -192,6 +193,7 @@ export function useNgoStatus(): NgoStatusData {
       setStatus("loading");
       return;
     }
+    setIsError(false);
 
     if (typeof window === "undefined" || !user) {
       setStatus("incomplete");
@@ -214,7 +216,7 @@ export function useNgoStatus(): NgoStatusData {
       if (cachedApp) appObj = JSON.parse(cachedApp);
       const cachedDraft = localStorage.getItem(demoDraftKey) || localStorage.getItem(realDraftKey);
       if (cachedDraft) draftObj = JSON.parse(cachedDraft);
-    } catch {}
+    } catch { }
 
     evaluateApplication(appObj, draftObj);
 
@@ -235,10 +237,12 @@ export function useNgoStatus(): NgoStatusData {
         } else {
           apiDraft = IS_NGO_DEMO_MODE ? draftObj : null;
         }
-        
+
         evaluateApplication(apiApp, apiDraft);
       })
-      .catch(() => {});
+      .catch((err) => {
+        setIsError(true);
+      });
   }, [isLoading, user, userIdentifier, evaluateApplication]);
 
   useEffect(() => {
@@ -263,15 +267,20 @@ export function useNgoStatus(): NgoStatusData {
     }
   }, [checkStatus, evaluateApplication]);
 
-  const isVerified = status === "verified";
-  const isPhotosDue = isVerified && photosDue > 0;
-  const canPostRequest = isVerified && !isPhotosDue;
+  const localTestMode = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_LOCAL_TEST_MODE === "true";
+  const isVerified = localTestMode ? true : status === "verified";
+  const isPhotosDue = localTestMode ? false : (isVerified && photosDue > 0);
+  const canPostRequest = localTestMode ? true : (isVerified && !isPhotosDue);
 
   let lockReason = "";
   if (!isVerified) {
     lockReason = "Available once CauseKind verifies your NGO.";
   } else if (isPhotosDue) {
     lockReason = `Upload handover photos for ${photosDueRequestName} to start your next drive.`;
+  }
+
+  if (localTestMode) {
+    lockReason = "";
   }
 
   const wizardHref = nextIncompleteStep
@@ -283,6 +292,8 @@ export function useNgoStatus(): NgoStatusData {
     ngoName,
     stepNumber,
     totalSteps: 6,
+    hasShownWelcome,
+    markWelcomeShown,
     nextIncompleteStep,
     wizardHref,
     activeRequests,
@@ -290,13 +301,12 @@ export function useNgoStatus(): NgoStatusData {
     dropoffsToConfirm,
     photosDue,
     photosDueRequestName,
-    isVerified,
     isPhotosDue,
+    isVerified,
     canPostRequest,
     lockReason,
-    hasShownWelcome,
-    markWelcomeShown,
     documents,
+    isError
   };
 }
 

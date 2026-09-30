@@ -10,6 +10,7 @@ import {
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { uploadNgoPhoto } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 interface OrgPhotosProps {
   data: NGOFormState;
@@ -235,6 +236,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                 disabled={uploadingLogo}
                 onChange={(e) => handleLogoFiles(e.target.files)}
               />
+              <LocalTestUploadButton onFile={(f) => handleLogoFiles([f] as any)} accept="image" />
               <div
                 role="button"
                 tabIndex={0}
@@ -382,6 +384,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                 disabled={uploadingOffice}
                 onChange={(e) => handleOfficeFiles(e.target.files)}
               />
+              <LocalTestUploadButton onFile={(f) => handleOfficeFiles([f] as any)} accept="image" />
               <div
                 role="button"
                 tabIndex={0}
@@ -509,6 +512,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                     disabled={isUploadingThis}
                     onChange={(e) => handleActivityFile(idx, e.target.files)}
                   />
+                  <LocalTestUploadButton onFile={(f) => handleActivityFile(idx, [f] as any)} accept="image" />
 
                   {photo ? (
                     <div className="space-y-2">

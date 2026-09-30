@@ -10,6 +10,7 @@ import {
   type UploadedFile,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { uploadNgoDocument } from "@/lib/api";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 interface DocUploadCardProps {
   docId: string;
@@ -169,6 +170,7 @@ export function DocUploadCard({
           disabled={isUploading}
           onChange={(e) => handleFiles(e.target.files)}
         />
+        <LocalTestUploadButton onFile={(f) => handleFiles([f] as any)} accept="pdf,image" />
         <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 text-center">
           {isUploading ? (
             <>

@@ -12,6 +12,7 @@ import { ArrowLeft, Loader2, Package, ShieldCheck, Check, X, AlertTriangle } fro
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 export default function NgoDriveOffersPage() {
   const params = useParams();
@@ -22,11 +23,13 @@ export default function NgoDriveOffersPage() {
   const [drive, setDrive] = useState<NgoDrive | null>(null);
   const [offers, setOffers] = useState<NgoDriveOfferResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [reviewLoading, setReviewLoading] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'review' | 'handovers' | 'proof' | 'close'>('review');
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [closeReason, setCloseReason] = useState("");
   const [closeLoading, setCloseLoading] = useState(false);
+  const [testProofFile, setTestProofFile] = useState<File | null>(null);
 
   const fetchDriveAndOffers = async () => {
     if (isNaN(id)) return;
@@ -39,6 +42,7 @@ export default function NgoDriveOffersPage() {
       setDrive(d);
       setOffers(o);
     } catch (e) {
+      setHasError(true);
       toast.error("Failed to load drive details");
     } finally {
       setLoading(false);
@@ -87,6 +91,18 @@ export default function NgoDriveOffersPage() {
 
   if (loading || authLoading) {
     return <PageSkeleton><div className="h-96" /></PageSkeleton>;
+  }
+
+  if (hasError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center">
+        <h2 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Could not load drive</h2>
+        <p className="text-stone-500 mb-6">There was an API error fetching the drive details.</p>
+        <button onClick={() => window.location.reload()} className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
+          Try again
+        </button>
+      </div>
+    );
   }
 
   if (!drive) {
@@ -310,7 +326,8 @@ export default function NgoDriveOffersPage() {
                       e.preventDefault();
                       const form = e.target as HTMLFormElement;
                       const fileInput = form.elements.namedItem('proofFiles') as HTMLInputElement;
-                      if (!fileInput.files || fileInput.files.length < 1 || fileInput.files.length > 10) {
+                      const file = testProofFile || fileInput.files?.[0];
+                      if (!file) {
                         toast.error("Please upload between 1 and 10 photos.");
                         return;
                       }
@@ -318,7 +335,7 @@ export default function NgoDriveOffersPage() {
                       try {
                         const { uploadDistributionProof } = await import("@/lib/api");
                         // In a real app we would send the extra fields. The mock API might not accept them all right now.
-                        await uploadDistributionProof(drive.id, fileInput.files[0]);
+                        await uploadDistributionProof(drive.id, file);
                         toast.success("Proof uploaded successfully! Waiting for admin approval.");
                         setTimeout(() => window.location.reload(), 1000);
                       } catch (e) {
@@ -328,7 +345,9 @@ export default function NgoDriveOffersPage() {
                       <div className="mb-4 space-y-4">
                         <div>
                           <label className="block text-sm font-bold text-stone-700 mb-1">Receipt Photos (1-10)</label>
-                          <input type="file" name="proofFiles" accept="image/*" multiple className="block w-full text-sm" required />
+                          <input type="file" name="proofFiles" accept="image/*" multiple className="block w-full text-sm" required={!testProofFile} />
+                          <LocalTestUploadButton onFile={setTestProofFile} accept="image" />
+                          {testProofFile && <p className="text-xs text-green-600 mt-1">Test file selected</p>}
                         </div>
                         <div>
                           <label className="block text-sm font-bold text-stone-700 mb-1">Beneficiaries Reached</label>

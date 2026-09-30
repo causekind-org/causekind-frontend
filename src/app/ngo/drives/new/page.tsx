@@ -21,6 +21,7 @@ import { DraftSaveStatus } from "@/features/wizard-kit/DraftSaveStatus";
 import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import type { SaveStatus } from "@/features/wizard-kit/types";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 type NgoDriveStep = "drive-type" | "drive-details" | "beneficiaries-handover" | "review-declarations";
 
@@ -70,7 +71,7 @@ const URGENCIES = [
 function NewNgoDriveForm() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const { isVerified, isPhotosDue, lockReason, photosDueRequestName, status: ngoStatus } = useNgoStatus();
+  const { isVerified, isPhotosDue, lockReason, photosDueRequestName, status: ngoStatus, canPostRequest, isError } = useNgoStatus();
 
   const [ngoContactName, setNgoContactName] = useState("");
   const [ngoContactPhone, setNgoContactPhone] = useState("");
@@ -207,19 +208,18 @@ function NewNgoDriveForm() {
     if (draftLoaded) saveDraft();
   }, [draftLoaded, saveDraft]);
 
-  const bypassLock = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_BYPASS_DRIVE_LOCK === "true";
-
   useEffect(() => {
-    if (!authLoading && user && !bypassLock) {
-      if (!isVerified) {
+    if (!authLoading && user && ngoStatus !== "loading" && !isError) {
+      if (!canPostRequest) {
         if (lockReason) toast.error(lockReason);
-        router.replace("/dashboard/ngo");
-      } else if (isPhotosDue) {
-        toast.error(`Upload handover photos for ${photosDueRequestName} to start your next drive.`);
-        router.replace("/dashboard/ngo");
+        console.warn("[NGO REDIRECT] reason: canPostRequest is false, lockReason: ", lockReason);
+        const isTestMode = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_LOCAL_TEST_MODE === "true";
+        if (!isTestMode) {
+          router.replace("/dashboard/ngo");
+        }
       }
     }
-  }, [authLoading, user, isVerified, isPhotosDue, lockReason, photosDueRequestName, router, bypassLock]);
+  }, [authLoading, user, canPostRequest, lockReason, router, ngoStatus, isError]);
 
   const goToStep = useCallback((next: NgoDriveStep, dir: number) => {
     setDirection(dir);
@@ -344,7 +344,7 @@ function NewNgoDriveForm() {
   const canSubmit = declAccurate && declUsedOnly && declProof && declFaces && declNotDuplicate && declFalseInfo && declContact;
 
   if (authLoading || !user || ngoStatus === "loading") return <FormSkeleton />;
-  if (!bypassLock && (!isVerified || isPhotosDue)) {
+  if (!canPostRequest) {
     return (
       <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
         <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
@@ -532,6 +532,7 @@ function NewNgoDriveForm() {
                 <UploadCloud className="w-4 h-4" /> Upload Image
               </button>
               <input id="photo-upload" type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handlePhotoUpload} />
+              <LocalTestUploadButton onFile={(f) => handlePhotoUpload({ target: { files: [f] } } as any)} accept="image" />
               {referencePhotoDataUrl && (
                 <div className="relative w-12 h-12 rounded-lg border border-slate-200 overflow-hidden shrink-0">
                   <img src={referencePhotoDataUrl} alt="Reference" className="w-full h-full object-cover" />
@@ -852,6 +853,20 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 }
 
 export default function NgoRequestCreationPage() {
+  const { isError } = useNgoStatus();
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center">
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Could not verify status</h1>
+        <p className="text-stone-500 mb-6">There was an API error checking your NGO status.</p>
+        <button onClick={() => window.location.reload()} className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
+          Try again
+        </button>
+      </div>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <Suspense fallback={<FormSkeleton />}>
