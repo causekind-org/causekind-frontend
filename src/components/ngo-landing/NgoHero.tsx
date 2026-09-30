@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useNgoStatus } from "./useNgoStatus";
-import { NgoCategoryPillBar } from "./NgoCategoryPillBar";
 import { NgoHeroTrustCard } from "./NgoHeroTrustCard";
 
 export function NgoHero() {
@@ -171,7 +170,7 @@ export function NgoHero() {
       {/* ─────────────────────────────────────────────────────────────
           FULL-WIDTH HERO PHOTO STAGE (100% viewport width, edge to edge)
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative isolate w-full min-h-[580px] sm:min-h-[620px] lg:min-h-0 lg:h-[max(420px,calc(100svh-var(--ck-nav-h,4.5rem)-13.5rem))] rounded-b-[24px] lg:rounded-none overflow-hidden shadow-sm lg:shadow-none flex flex-col justify-between">
+      <div className="relative isolate w-full min-h-[580px] sm:min-h-[620px] lg:min-h-0 lg:h-[max(420px,calc(100svh-var(--ck-nav-h,4.5rem)-9rem))] rounded-b-[24px] lg:rounded-none overflow-hidden shadow-sm lg:shadow-none flex flex-col justify-between">
 
         {/* Background Photo with Settle Motion & Optimal Horizon Position */}
         <motion.div
@@ -439,14 +438,7 @@ export function NgoHero() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          CATEGORY PILL BAR (Overlapping bottom edge of hero)
-          ───────────────────────────────────────────────────────────── */}
-      <div className="relative z-30 -mt-6 sm:-mt-8 lg:-mt-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <NgoCategoryPillBar />
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          LIGHT TRUST CARD (Below Category Pill Bar)
+          LIGHT TRUST CARD (Below the hero)
           ───────────────────────────────────────────────────────────── */}
       <div className="relative z-20 mt-4 sm:mt-5 max-w-7xl lg:max-w-none mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
         <NgoHeroTrustCard />
