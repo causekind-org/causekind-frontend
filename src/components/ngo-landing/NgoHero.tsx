@@ -448,7 +448,7 @@ export function NgoHero() {
       {/* ─────────────────────────────────────────────────────────────
           LIGHT TRUST CARD (Below Category Pill Bar)
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative z-20 mt-4 sm:mt-5 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-20 mt-4 sm:mt-5 max-w-7xl lg:max-w-none mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
         <NgoHeroTrustCard />
       </div>
     </section>
