@@ -10,6 +10,7 @@ import {
   type UploadedFile,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { uploadNgoDocument } from "@/lib/api";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 interface DocUploadCardProps {
   docId: string;
@@ -46,22 +47,7 @@ export function DocUploadCard({
     setUploadError(null);
     setLastFile(file);
 
-    // TEMPORARY: Demo Mode — skip real S3 upload when demo flag is active
-    if (IS_NGO_DEMO_MODE) {
-      setTimeout(() => {
-        onUpload({
-          name: file.name,
-          documentId: getNextDemoDocId(),
-          s3Key: `demo/documents/${docId}`,
-          s3Url: undefined,
-          size: file.size,
-          mimeType: file.type || "application/pdf",
-          demo: true,
-        });
-        setIsUploading(false);
-      }, 400);
-      return;
-    }
+
 
     try {
       const res = await uploadNgoDocument(file, docId, category);
@@ -184,6 +170,7 @@ export function DocUploadCard({
           disabled={isUploading}
           onChange={(e) => handleFiles(e.target.files)}
         />
+        <LocalTestUploadButton onFile={(f) => handleFiles([f] as any)} accept="pdf,image" />
         <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 text-center">
           {isUploading ? (
             <>
@@ -217,15 +204,9 @@ export function DocUploadCard({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onUpload({
-                name: `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-demo.pdf`,
-                documentId: getNextDemoDocId(),
-                s3Key: `demo/documents/${docId}`,
-                s3Url: undefined,
-                size: 1024 * 180,
-                mimeType: "application/pdf",
-                demo: true,
-              });
+              const dummyBlob = new Blob(["demo document content"], { type: "text/plain" });
+              const file = new File([dummyBlob], `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-demo.txt`, { type: "text/plain" });
+              performUpload(file);
             }}
             className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
           >

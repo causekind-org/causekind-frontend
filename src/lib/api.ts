@@ -736,19 +736,32 @@ export function withdrawItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
 }
 
+/**
+ * Remove a listing from the donor's inventory.
+ *
+ * <p>The local hide is a safety rail for listings the server keeps but stops
+ * showing, and it is applied <b>only after the server has agreed</b>. It used to
+ * run first, unconditionally, with both requests' errors swallowed — so a delete
+ * the server refused still cleared the row, reported success, and hid the
+ * listing in this browser's localStorage forever, while the listing itself
+ * stayed on the server where the donor could no longer reach it. A failure has
+ * to reach the caller, or the dashboard cannot tell the donor the truth.
+ */
 export async function deleteMyListing(id: number): Promise<void> {
-  // Always mark hidden locally so it is dismissed from the donor's view immediately
-  hideListingLocally(id);
   try {
     await request<void>(`/api/v1/items/${id}`, { method: "DELETE" });
-  } catch {
-    // If server rejects DELETE on terminal/audited/rejected items, try withdraw
+  } catch (deleteError) {
+    // The server keeps some listings it will not erase; withdrawing is the
+    // honest fallback, and it is still a change the donor asked for.
     try {
       await request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
     } catch {
-      /* ignore if already withdrawn/rejected */
+      // Neither worked — say so rather than pretending. Report the delete's
+      // reason: the withdraw was our idea, not the donor's.
+      throw deleteError;
     }
   }
+  hideListingLocally(id);
 }
 
 export type CreateListingPayload = {
@@ -1052,6 +1065,8 @@ export type ItemRequest = {
   title: string;
   category: string;
   quantity: number;
+  fulfilledQuantity?: number;
+  remainingQuantity?: number;
   urgency: string;
   city: string;
   pincode: string | null;
@@ -1652,6 +1667,7 @@ export type ItemMatch = {
   /** Server-computed XOR of the two confirmation timestamps — no status reflects it. */
   handoverPartlyConfirmed: boolean;
   closedAt: string | null;
+  completedAt?: string | null;
   hiddenByDonor: boolean;
   hiddenByDonee: boolean;
   // Delivery verification
@@ -1669,6 +1685,8 @@ export type ItemMatch = {
   doneeConfirmedAt: string | null;
   doneeConditionRating: string | null;
   doneeConditionNotes: string | null;
+  /** Where a courier delivers; null from a backend that predates it. See DeliveryAddress. */
+  delivery: DeliveryAddress | null;
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
@@ -2075,6 +2093,12 @@ export type DonationOffer = {
    * `flowType === "WILL_PURCHASE"`.
    */
   purchaseCommitment: PurchaseCommitmentDetails | null;
+  /**
+   * How many the donee confirmed receiving at the handover; null until they have.
+   * This is what counts toward the request — `itemDetails.quantity` is only what
+   * was offered — so anything listing deliveries beside a total must use it.
+   */
+  receivedQuantity: number | null;
 };
 
 /**
@@ -2150,8 +2174,73 @@ export type HandoverRecord = {
   courierName: string | null;
   trackingNumber: string | null;
   createdAt: string;
+  /** Where a courier delivers; null from a backend that predates it. */
+  delivery: DeliveryAddress | null;
   confirmation: HandoverConfirmationSummary | null;
 };
+
+/**
+ * A courier delivery's destination, supplied by the recipient for one handover.
+ * `needed` is true when the handover method sends the item to them; a
+ * `requestedAt` later than `submittedAt` means the donor asked them to check it.
+ */
+export type DeliveryAddress = {
+  needed: boolean;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  requestedAt: string | null;
+  submittedAt: string | null;
+};
+
+export type DeliveryAddressInput = {
+  address: string;
+  latitude?: number;
+  longitude?: number;
+  contactName: string;
+  contactPhone: string;
+};
+
+/** A pre-fill from the recipient's own profile — every field may be missing. */
+export type DeliveryAddressSuggestion = {
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+};
+
+export function requestOfferDeliveryAddress(offerId: number) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/delivery-address/request`, { method: "POST" });
+}
+
+export function submitOfferDeliveryAddress(offerId: number, data: DeliveryAddressInput) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/delivery-address`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getOfferDeliveryAddressSuggestion(offerId: number) {
+  return request<DeliveryAddressSuggestion>(`/api/v1/offers/${offerId}/handover/delivery-address/suggestion`);
+}
+
+export function requestMatchDeliveryAddress(matchId: number) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/delivery-address/request`, { method: "POST" });
+}
+
+export function submitMatchDeliveryAddress(matchId: number, data: DeliveryAddressInput) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/delivery-address`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getMatchDeliveryAddressSuggestion(matchId: number) {
+  return request<DeliveryAddressSuggestion>(`/api/v1/matches/${matchId}/handover/delivery-address/suggestion`);
+}
 
 export type Certificate = {
   id: number;
@@ -2587,6 +2676,24 @@ export function reportPostDeliveryIssue(offerId: number, data: {
   issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
 }) {
   return request<object>(`/api/v1/offers/${offerId}/handover/issues`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function reportNgoDriveOfferIssue(offerId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/drive-offers/${offerId}/report-issue`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function reportMatchIssue(matchId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/matches/${matchId}/handover/issues`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -4407,25 +4514,35 @@ export function submitNgoApplication(payload: {
   });
 }
 
-/**
- * Step 6: Verify the 6-digit OTP.
- * On success the application transitions to UNDER_REVIEW.
- */
-export function verifyNgoOtp(applicationId: string, otp: string) {
-  return request<{ message: string }>("/api/v1/ngo-registration/verify", {
+export async function verifyNgoOtp(applicationId: string, otp: string) {
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/verify`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ applicationId, otp }),
+    credentials: "include",
   });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody?.message || "Verification failed");
+  }
+  return res.json() as Promise<{ message: string }>;
 }
 
 /**
  * Step 6: Resend the OTP. Enforces a 60-second cooldown server-side.
  */
-export function resendNgoOtp(applicationId: string) {
-  return request<{ message: string }>("/api/v1/ngo-registration/resend-otp", {
+export async function resendNgoOtp(applicationId: string) {
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/resend-otp`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ applicationId }),
+    credentials: "include",
   });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody?.message || "Failed to resend OTP");
+  }
+  return res.json() as Promise<{ message: string }>;
 }
 
 export type NgoApplicationStatusResponse = {
@@ -4554,4 +4671,300 @@ export async function uploadNgoHandoverProof(kind: NgoHandover["kind"], id: numb
   }
   invalidateRequestCache();
   return response.json() as Promise<{ message: string }>;
+}
+
+// ── NGO Drives ──────────────────────────────────────────────────────────────
+
+export type CreateNgoDrivePayload = {
+  driveType: "ITEMS";
+  title: string;
+  category: string;
+  itemName: string;
+  quantity: number;
+  unit: "PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS";
+  condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED";
+  details?: string;
+  referencePhotoUrl?: string;
+  description: string;
+  urgency: "NORMAL" | "HIGH" | "CRITICAL";
+  beneficiaryGroup: string;
+  beneficiaryCount: number;
+  neededBy: string;          // ISO date YYYY-MM-DD
+  availableDays: ("MON"|"TUE"|"WED"|"THU"|"FRI"|"SAT"|"SUN")[];
+  availableFrom: string;     // "HH:mm"
+  availableTo: string;       // "HH:mm"
+  contactName: string;
+  contactPhone: string;
+  declarations: {
+    accurate: boolean;
+    usedOnlyForBeneficiaries: boolean;
+    proofWithin48h: boolean;
+    facesWithConsent: boolean;
+    notDuplicate: boolean;
+    falseInfoConsequences: boolean;
+    contactConsent: boolean;
+  };
+};
+
+export async function createNgoDrive(payload: CreateNgoDrivePayload): Promise<{ id: number }> {
+  return await request<{ id: number }>("/api/v1/ngo-drives", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export type NgoDrive = {
+  id: number;
+  ngoUser: { id: number; fullName: string };
+  title: string;
+  category: string;
+  itemName: string;
+  quantityNeeded: number;
+  quantityPledged: number;
+  quantityReceived: number;
+  unit: string;
+  itemCondition: string;
+  description: string;
+  urgency: string;
+  beneficiaryGroup: string;
+  beneficiaryCount: number;
+  neededBy: string; // ISO Date
+  availableDays: string;
+  availableFrom: string; // "HH:mm"
+  availableTo: string;   // "HH:mm"
+  contactName: string;
+  contactPhone: string;
+  status: string;
+  adminReason?: string;
+  createdAt: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  liveAt?: string;
+};
+
+export async function getNgoDrives(status?: string): Promise<NgoDrive[]> {
+  const query = status ? `?status=${status}` : "";
+  return await request<NgoDrive[]>(`/api/v1/drives${query}`);
+}
+
+export async function getNgoDrive(id: number): Promise<NgoDrive> {
+  return await request<NgoDrive>(`/api/v1/drives/${id}`);
+}
+
+export async function cancelNgoDrive(driveId: number): Promise<void> {
+  await request(`/api/v1/ngo-drives/${driveId}/cancel`, { method: "POST" });
+}
+
+export async function getMyNgoDrives(): Promise<NgoDrive[]> {
+  return await request<NgoDrive[]>("/api/v1/ngo-drives/mine");
+}
+
+export async function getNgoDriveDetail(id: number): Promise<NgoDrive> {
+  return await request<NgoDrive>(`/api/v1/ngo-drives/${id}`);
+}
+
+export type NgoDriveOfferResponse = {
+  id: number;
+  driveId: number;
+  donorDisplayName: string;
+  status: string;
+  quantity?: number;
+  condition?: string;
+  approximateAge?: string;
+  knownDefects?: string;
+  notesForNgo?: string;
+  handoverMethod?: string;
+  pickupCity?: string;
+  pickupLocality?: string;
+  pickupPincode?: string;
+  rejectionReason?: string;
+  ngoDeclineReason?: string;
+  submittedAt?: string;
+  driveTitle: string;
+  ngoName: string;
+  driveQuantityNeeded: number;
+  driveQuantityReceived: number;
+  driveQuantityPledged: number;
+  media?: Array<{
+    id: number;
+    mediaUrl: string;
+    mediaType: string;
+    status: string;
+    sortOrder: number;
+  }>;
+  handoverDetails?: {
+    organizationName: string;
+  };
+};
+
+export async function createNgoDriveOfferDraft(driveId: number): Promise<{ id: number }> {
+  return await request<{ id: number }>(`/api/v1/drives/${driveId}/offers/draft`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function uploadNgoDriveOfferMedia(offerId: number, formData: FormData): Promise<any> {
+  // Using native fetch because request() sets Content-Type: application/json by default
+  const token = localStorage.getItem("ck_token");
+  const headers: HeadersInit = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`/api/v1/drive-offers/${offerId}/media`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || res.statusText);
+  }
+  return await res.json();
+}
+
+export async function deleteNgoDriveOfferMedia(offerId: number, mediaId: number): Promise<void> {
+  await request(`/api/v1/drive-offers/${offerId}/media/${mediaId}`, { method: "DELETE" });
+}
+
+export async function updateNgoDriveOfferItem(offerId: number, data: Partial<NgoDriveOfferResponse>): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/item-details`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function submitNgoDriveOffer(offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ declarationsAccepted: true }),
+  });
+}
+
+export async function cancelNgoDriveOffer(offerId: number, reason: string): Promise<void> {
+  await request(`/api/v1/drive-offers/${offerId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function getMyNgoDriveOffers(): Promise<NgoDriveOfferResponse[]> {
+  return await request<NgoDriveOfferResponse[]>("/api/v1/drive-offers/mine");
+}
+
+export async function getNgoDriveOffer(offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}`);
+}
+
+export async function getNgoDriveOffersForNgo(driveId: number, status?: string): Promise<NgoDriveOfferResponse[]> {
+  const query = status ? `?status=${status}` : "";
+  return await request<NgoDriveOfferResponse[]>(`/api/v1/ngo-drives/${driveId}/offers${query}`);
+}
+
+export async function reviewNgoDriveOffer(driveId: number, offerId: number, decision: "ACCEPT" | "DECLINE", reason?: string): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/review`, {
+    method: "POST",
+    body: JSON.stringify({ decision, reason }),
+  });
+}
+
+export async function releaseNgoDriveOffer(driveId: number, offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/release`, {
+    method: "POST",
+  });
+}
+
+export type NgoDriveOfferHandoverRecordResponse = {
+  id: number;
+  offerId: number;
+  method: string | null;
+  scheduledDateTime: string | null;
+  locationAddress: string | null;
+  locationLatitude: number | null;
+  locationLongitude: number | null;
+  transportArrangedBy: string | null;
+  transportCostBornBy: string | null;
+  packagingResponsibility: string | null;
+  courierName: string | null;
+  rescheduleCount: number;
+  lastRescheduledAt: string | null;
+  rescheduleReason: string | null;
+  atRisk: boolean;
+  confirmation: {
+    deliveryOtp: string | null;
+    otpVerified: boolean;
+    otpVerifiedAt: string | null;
+    donorConfirmedQty: number | null;
+    donorConfirmedAt: string | null;
+    ngoConfirmedQty: number | null;
+    ngoConfirmedAt: string | null;
+  } | null;
+};
+
+export async function scheduleNgoDriveOfferHandover(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/schedule-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function rescheduleNgoDriveOfferHandover(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/reschedule-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function generateNgoDriveOfferHandoverOtp(offerId: number): Promise<{ otp: string }> {
+  return await request<{ otp: string }>(`/api/v1/drive-offers/${offerId}/generate-otp`, {
+    method: "POST",
+  });
+}
+export async function confirmNgoDriveOfferHandoverDonor(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/confirm-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function confirmNgoDriveOfferHandoverNgo(driveId: number, offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/confirm-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+
+export async function closeNgoDrive(driveId: number, data: { reason: string }): Promise<void> {
+  return await request<void>(`/api/v1/ngo-drives/${driveId}/close`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function uploadDistributionProof(driveId: number, file: File): Promise<void> {
+  const formData = new FormData();
+  formData.append("files", file);
+  const res = await fetch(`/api/v1/ngo-drives/${driveId}/distribution-proof`, {
+    method: "POST",
+    body: formData,
+    // Add credentials if needed or fetch wrapper that handles auth
+  });
+  if (!res.ok) throw new Error("Upload failed");
+}
+
+
+export function getNgoDriveOfferCertificate(offerId: number) {
+  return request<Certificate>(`/api/v1/drive-offers/${offerId}/certificate`);
+}
+
+export type NgoDriveProofResponse = {
+  id: number;
+  driveId: number;
+  uploadedAt: string;
+  media: { mediaUrl: string; mediaType: string }[];
+  quantityDistributed: number;
+  ngoStatement: string | null;
+  status: string;
+};
+
+export async function getNgoDriveProof(driveId: number): Promise<NgoDriveProofResponse> {
+  return await request<NgoDriveProofResponse>(`/api/v1/drives/${driveId}/proof`);
 }

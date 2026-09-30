@@ -23,6 +23,7 @@
  */
 
 import React, { useEffect, useState, useMemo } from "react";
+import { isNgoRole } from "@/lib/isNgoRole";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";

@@ -70,6 +70,7 @@ import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -273,7 +274,7 @@ export default function ProfilePage() {
       return;
     }
 
-    if (user.role?.toUpperCase() === "NGO" || user.role?.toUpperCase() === "NGO_PARTNER") {
+    if (isNgoRole(user.role?.toUpperCase())) {
       setLoading(false);
       return;
     }
@@ -596,7 +597,7 @@ export default function ProfilePage() {
     }
   }
 
-  const isNgo = user?.role?.toUpperCase() === "NGO" || user?.role?.toUpperCase() === "NGO_PARTNER";
+  const isNgo = isNgoRole(user?.role?.toUpperCase());
   if (!authLoading && isNgo) {
     return <NgoProfileView />;
   }

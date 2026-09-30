@@ -48,6 +48,6 @@ describe("GiftJourneyTracker Component Suite", () => {
     const replayButton = screen.getByRole("button", { name: /Replay journey/i });
     fireEvent.click(replayButton);
 
-    expect(screen.getByText("1. You post a request")).toBeInTheDocument();
+    expect(screen.getByText("1. You start a drive")).toBeInTheDocument();
   });
 });

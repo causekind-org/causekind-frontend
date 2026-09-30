@@ -197,7 +197,7 @@ function RegisterContent() {
   // and so a user who changes it is never overwritten by a later re-render.
   const initialRole = (() => {
     const raw = searchParams.get("role")?.toUpperCase();
-    return raw === "DONEE" || raw === "DONOR" || raw === "NGO" ? raw : "DONOR";
+    return raw === "DONEE" || raw === "DONOR" || raw === "NGO_PARTNER" ? raw : "DONOR";
   })();
 
   const [form, setForm] = useState({ fullName: "", email: "", password: "", role: initialRole });
@@ -444,13 +444,13 @@ function RegisterContent() {
    */
   const validators = {
     role: () => validateRole(form.role),
-    fullName: () => (form.role === "NGO" ? validateOrganizationName(form.fullName) : validateFullName(form.fullName)),
+    fullName: () => (form.role === "NGO_PARTNER" ? validateOrganizationName(form.fullName) : validateFullName(form.fullName)),
     email: () => validateEmail(form.email),
     phone: () => validatePhone(phoneNumber, dialCountry, getDialCode(dialCountry, dialCodeOptions)),
     country: () => validateCountry(countryIso),
     state: () => validateState(stateIso, stateOptions.length > 0),
     city: () => validateCity(cityValue, cityFreeText, showCityFreeText),
-    ...(form.role === "NGO" ? { panNumber: () => validatePanNumber(ngoPan) } : {}),
+    ...(form.role === "NGO_PARTNER" ? { panNumber: () => validatePanNumber(ngoPan) } : {}),
     ...(isSocialFlow ? {} : { password: () => validateRegisterPassword(form.password) }),
   };
 
@@ -493,7 +493,7 @@ function RegisterContent() {
 
     setLoading(true);
     try {
-      if (form.role === "NGO") {
+      if (form.role === "NGO_PARTNER") {
         const res = await registerNgo({
           organizationName: form.fullName.trim(),
           officialEmail: form.email.trim(),
@@ -612,18 +612,18 @@ function RegisterContent() {
           {/* Heading */}
           <Reveal>
             <div className="space-y-1 sm:space-y-1.5">
-              <span className={`text-2xs font-black uppercase tracking-widest ${form.role === "NGO" ? "text-ngo-700 dark:text-ngo-300" : "text-[#b04a15]"}`}>
-                {form.role === "NGO" ? "NGO Account" : "Create account"}
+              <span className={`text-2xs font-black uppercase tracking-widest ${form.role === "NGO_PARTNER" ? "text-ngo-700 dark:text-ngo-300" : "text-[#b04a15]"}`}>
+                {form.role === "NGO_PARTNER" ? "NGO Account" : "Create account"}
               </span>
               <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-                {form.role === "NGO"
+                {form.role === "NGO_PARTNER"
                   ? "Register Your NGO 🏛️"
                   : isSocialFlow
                   ? `${t("almostThereTitle")} 🎉`
                   : `${t("joinTitle")} 🌱`}
               </h1>
               <p className="text-sm text-stone-500 dark:text-stone-400">
-                {form.role === "NGO"
+                {form.role === "NGO_PARTNER"
                   ? "Create your organization account to receive donations and run campaigns."
                   : isSocialFlow
                   ? t("googleLinkedSubtitle")
@@ -665,9 +665,9 @@ function RegisterContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => set("role", "NGO")}
+                  onClick={() => set("role", "NGO_PARTNER")}
                   className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
-                    form.role === "NGO"
+                    form.role === "NGO_PARTNER"
                       ? "border-ngo-700 bg-ngo-50 text-ngo-700 ring-2 ring-ngo-700/20 font-bold dark:bg-ngo-900/30 dark:text-ngo-300"
                       : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
                   }`}
@@ -687,19 +687,19 @@ function RegisterContent() {
               <div className="space-y-1">
                 <Field
                   id="fullName"
-                  label={form.role === "NGO" ? "Organization Name *" : t("fullName")}
-                  placeholder={form.role === "NGO" ? "Helping Hearts Foundation" : "Jane Doe"}
+                  label={form.role === "NGO_PARTNER" ? "Organization Name *" : t("fullName")}
+                  placeholder={form.role === "NGO_PARTNER" ? "Helping Hearts Foundation" : "Jane Doe"}
                   value={form.fullName}
                   onChange={val => {
                     set("fullName", val);
                     setFormError(null);
-                    v.onChange("fullName", () => (form.role === "NGO" ? validateOrganizationName(val) : validateFullName(val)));
+                    v.onChange("fullName", () => (form.role === "NGO_PARTNER" ? validateOrganizationName(val) : validateFullName(val)));
                   }}
                   onBlur={() => v.onBlur("fullName", validators.fullName)}
                   onCompositionStart={() => v.onCompositionStart("fullName")}
                   onCompositionEnd={() => v.onCompositionEnd("fullName", validators.fullName)}
                   readOnly={isSocialFlow && !!form.fullName}
-                  autoComplete={form.role === "NGO" ? "organization" : "name"}
+                  autoComplete={form.role === "NGO_PARTNER" ? "organization" : "name"}
                   field={isSocialFlow && form.fullName ? undefined : v.get("fullName")}
                 />
               </div>
@@ -711,9 +711,9 @@ function RegisterContent() {
                     hint rather than a green tick — it was never validated here. */}
                 <Field
                   id="email"
-                  label={form.role === "NGO" ? "Official Email Address *" : t("email")}
+                  label={form.role === "NGO_PARTNER" ? "Official Email Address *" : t("email")}
                   type="email"
-                  placeholder={form.role === "NGO" ? "contact@helpinghearts.org" : "you@example.com"}
+                  placeholder={form.role === "NGO_PARTNER" ? "contact@helpinghearts.org" : "you@example.com"}
                   value={form.email}
                   onChange={val => { set("email", val); setFormError(null); v.onChange("email", () => validateEmail(val)); }}
                   onBlur={() => v.onBlur("email", validators.email)}
@@ -784,7 +784,7 @@ function RegisterContent() {
             </Reveal>
 
             {/* PAN Number — required for NGO role */}
-            {form.role === "NGO" && (
+            {form.role === "NGO_PARTNER" && (
               <Reveal delay={200}>
                 <div className="space-y-1">
                   <Field
@@ -917,7 +917,7 @@ function RegisterContent() {
             </Reveal>
 
             {/* Organization Website / Social Link — optional for NGO role */}
-            {form.role === "NGO" && (
+            {form.role === "NGO_PARTNER" && (
               <Reveal delay={240}>
                 <div className="space-y-1 sm:space-y-1.5">
                   <label htmlFor="website" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
@@ -1019,16 +1019,16 @@ function RegisterContent() {
                 }`}
               >
                 {loading
-                  ? (form.role === "NGO" ? "Creating account..." : t("creating"))
+                  ? (form.role === "NGO_PARTNER" ? "Creating account..." : t("creating"))
                   : isSocialFlow
                     ? t("complete")
-                    : (form.role === "NGO" ? "Create NGO Account 🏢" : t("submit"))}
+                    : (form.role === "NGO_PARTNER" ? "Create NGO Account 🏢" : t("submit"))}
               </button>
             </Reveal>
           </form>
 
           {/* Social buttons — only on non-social flow and non-NGO */}
-          {!isSocialFlow && form.role !== "NGO" && (
+          {!isSocialFlow && form.role !== "NGO_PARTNER" && (
             <div className="space-y-3">
               <Reveal delay={340}>
                 <button

@@ -334,7 +334,7 @@ export function NgoProofDetailDialog({
               {/* 2. REQUESTED VS DELIVERED */}
               <div className="rounded-2xl bg-stone-50 dark:bg-zinc-800/60 p-4 border border-stone-200/80 dark:border-zinc-700/80 space-y-2.5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
-                  <span>Requested: {detail.requestedItem}</span>
+                  <span>Needed: {detail.requestedItem}</span>
                   <span className="text-ngo-700 dark:text-ngo-300 font-mono">
                     Delivered: {detail.deliveredQuantity} of {detail.requestedQuantity}
                   </span>

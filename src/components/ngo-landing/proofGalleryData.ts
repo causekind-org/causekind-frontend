@@ -89,7 +89,7 @@ export const PROOF_CARDS: ProofCard[] = [
       requestedQuantity: 50,
       deliveredQuantity: 50,
       timeline: [
-        { step: "Posted", title: "You post a request", date: "2 Nov" },
+        { step: "Posted", title: "You start a drive", date: "2 Nov" },
         { step: "Fully pledged", title: "Donors nearby pledge them", date: "9 Nov" },
         { step: "Items received", title: "They drop off, and you confirm receipt", date: "12 Nov" },
         { step: "Handed over", title: "You upload a handover photo", date: "14 Nov" },
@@ -145,7 +145,7 @@ export const PROOF_CARDS: ProofCard[] = [
       requestedQuantity: 100,
       deliveredQuantity: 100,
       timeline: [
-        { step: "Posted", title: "You post a request", date: "5 Oct" },
+        { step: "Posted", title: "You start a drive", date: "5 Oct" },
         { step: "Fully pledged", title: "Donors nearby pledge them", date: "12 Oct" },
         { step: "Items received", title: "They drop off, and you confirm receipt", date: "18 Oct" },
         { step: "Handed over", title: "You upload a handover photo", date: "20 Oct" },
@@ -201,7 +201,7 @@ export const PROOF_CARDS: ProofCard[] = [
       requestedQuantity: 3,
       deliveredQuantity: 3,
       timeline: [
-        { step: "Posted", title: "You post a request", date: "22 Aug" },
+        { step: "Posted", title: "You start a drive", date: "22 Aug" },
         { step: "Fully pledged", title: "Donors nearby pledge them", date: "28 Aug" },
         { step: "Items received", title: "They drop off, and you confirm receipt", date: "3 Sep" },
         { step: "Handed over", title: "You upload a handover photo", date: "5 Sep" },
@@ -264,7 +264,7 @@ export const PROOF_CARDS: ProofCard[] = [
       requestedQuantity: 5,
       deliveredQuantity: 5,
       timeline: [
-        { step: "Posted", title: "You post a request", date: "1 Aug" },
+        { step: "Posted", title: "You start a drive", date: "1 Aug" },
         { step: "Fully pledged", title: "Donors nearby pledge them", date: "10 Aug" },
         { step: "Items received", title: "They drop off, and you confirm receipt", date: "16 Aug" },
         { step: "Handed over", title: "You upload a handover photo", date: "18 Aug" },

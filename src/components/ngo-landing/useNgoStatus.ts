@@ -7,11 +7,12 @@ import { getMyNgoApplication, getNgoDraft, getNgoOverview, type NgoOverview } fr
 import {
   calculateNgoProgress,
   INITIAL_NGO_FORM,
+  IS_NGO_DEMO_MODE,
   type NGOFormState,
   type NGOStep,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 
-export type NgoStatusType = "incomplete" | "under_review" | "changes_requested" | "verified";
+export type NgoStatusType = "loading" | "incomplete" | "under_review" | "changes_requested" | "verified";
 
 function parseFormState(raw: any): NGOFormState {
   if (!raw) return INITIAL_NGO_FORM;
@@ -47,9 +48,9 @@ export function triggerNgoLockedToast(
     toast.info("Log in as an NGO to access this.", {
       action: router
         ? {
-            label: "Log in",
-            onClick: () => router.push("/login"),
-          }
+          label: "Log in",
+          onClick: () => router.push("/login"),
+        }
         : undefined,
     });
     return;
@@ -58,9 +59,9 @@ export function triggerNgoLockedToast(
     toast.info("Complete your profile to get verified. Continue →", {
       action: router
         ? {
-            label: "Continue",
-            onClick: () => router.push("/profile/ngo-details"),
-          }
+          label: "Continue",
+          onClick: () => router.push("/profile/ngo-details"),
+        }
         : undefined,
     });
   } else if (status === "under_review") {
@@ -69,9 +70,9 @@ export function triggerNgoLockedToast(
     toast.warning("A few documents need fixing. Fix now →", {
       action: router
         ? {
-            label: "Fix now",
-            onClick: () => router.push("/profile/ngo-details"),
-          }
+          label: "Fix now",
+          onClick: () => router.push("/profile/ngo-details"),
+        }
         : undefined,
     });
   } else if (isPhotosDue) {
@@ -108,6 +109,8 @@ export interface NgoStatusData {
   lockReason: string;
   hasShownWelcome: boolean;
   markWelcomeShown: () => void;
+  documents: Record<string, any>;
+  isError: boolean;
 }
 
 export function useNgoStatus(): NgoStatusData {

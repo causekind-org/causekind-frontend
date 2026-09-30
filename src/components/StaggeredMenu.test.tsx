@@ -11,11 +11,11 @@ describe("StaggeredMenu Component", () => {
   const mockItems = [
     { label: "Home", link: "/", active: true },
     {
-      label: "My Requests",
+      label: "My Drives",
       active: false,
       children: [
-        { label: "Post a Request", link: "/ngo/requests/new", isLocked: false },
-        { label: "Active Requests", isLocked: true, onClick: vi.fn() },
+        { label: "Start a Drive", link: "/ngo/drives/new", isLocked: false },
+        { label: "Live Drives", isLocked: true, onClick: vi.fn() },
         { label: "Handovers & Photos", isLocked: true, onClick: vi.fn() },
       ],
     },
@@ -33,13 +33,13 @@ describe("StaggeredMenu Component", () => {
     );
 
     expect(screen.getByText("Home")).toBeInTheDocument();
-    expect(screen.getByText("My Requests")).toBeInTheDocument();
+    expect(screen.getByText("My Drives")).toBeInTheDocument();
     expect(screen.getByText("Blog")).toBeInTheDocument();
     expect(screen.getByText("About Us")).toBeInTheDocument();
 
-    const parentButton = screen.getByRole("button", { name: "My Requests" });
+    const parentButton = screen.getByRole("button", { name: "My Drives" });
     expect(parentButton).toHaveAttribute("aria-expanded", "false");
-    expect(parentButton).toHaveAttribute("aria-controls", "sm-submenu-my-requests");
+    expect(parentButton).toHaveAttribute("aria-controls", "sm-submenu-my-drives");
   });
 
   it("expands and collapses submenu on click / tap (touch accordion behavior)", () => {
@@ -51,14 +51,14 @@ describe("StaggeredMenu Component", () => {
       />
     );
 
-    const parentButton = screen.getByRole("button", { name: "My Requests" });
+    const parentButton = screen.getByRole("button", { name: "My Drives" });
     expect(parentButton).toHaveAttribute("aria-expanded", "false");
 
     // Click/tap to open
     fireEvent.click(parentButton);
     expect(parentButton).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Post a Request")).toBeInTheDocument();
-    expect(screen.getByText("Active Requests")).toBeInTheDocument();
+    expect(screen.getByText("Start a Drive")).toBeInTheDocument();
+    expect(screen.getByText("Live Drives")).toBeInTheDocument();
     expect(screen.getByText("Handovers & Photos")).toBeInTheDocument();
 
     // Click/tap to close
@@ -75,7 +75,7 @@ describe("StaggeredMenu Component", () => {
       />
     );
 
-    const parentButton = screen.getByRole("button", { name: "My Requests" });
+    const parentButton = screen.getByRole("button", { name: "My Drives" });
     fireEvent.click(parentButton);
     expect(parentButton).toHaveAttribute("aria-expanded", "true");
 
@@ -96,11 +96,11 @@ describe("StaggeredMenu Component", () => {
       />
     );
 
-    const parentButton = screen.getByRole("button", { name: "My Requests" });
+    const parentButton = screen.getByRole("button", { name: "My Drives" });
     fireEvent.click(parentButton);
 
-    const activeRequestsItem = screen.getByText("Active Requests");
-    fireEvent.click(activeRequestsItem);
+    const liveDrivesItem = screen.getByText("Live Drives");
+    fireEvent.click(liveDrivesItem);
 
     expect(mockItems[1]?.children?.[1]?.onClick).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
@@ -120,13 +120,13 @@ describe("StaggeredMenu Component", () => {
       />
     );
 
-    const parentButton = screen.getByRole("button", { name: "My Requests" });
+    const parentButton = screen.getByRole("button", { name: "My Drives" });
     fireEvent.click(parentButton);
 
-    const postRequestItem = screen.getByText("Post a Request");
-    fireEvent.click(postRequestItem);
+    const startDriveItem = screen.getByText("Start a Drive");
+    fireEvent.click(startDriveItem);
 
-    expect(onNavigate).toHaveBeenCalledWith("/ngo/requests/new");
+    expect(onNavigate).toHaveBeenCalledWith("/ngo/drives/new");
     expect(onClose).toHaveBeenCalled();
   });
 });

@@ -15,11 +15,13 @@ import { safeInternalPath } from "./safeRedirect";
  * literal defined in this file. A raw `next` value never reaches a router.
  */
 
+import { isNgoRole } from "@/lib/isNgoRole";
+
 /** Role-based landing page when there is no specific destination to return to. */
 export function homeForRole(role: string | null | undefined): string {
   if (role === "SUPER_ADMIN") return "/super-admin";
   if (role === "ADMIN") return "/admin/dashboard";
-  if (role === "NGO" || role === "NGO_PARTNER") return "/";
+  if (isNgoRole(role)) return "/";
   return "/";
 }
 

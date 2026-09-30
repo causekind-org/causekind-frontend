@@ -39,7 +39,7 @@ const TRUST_CARDS: TrustCardItem[] = [
     step: "02",
     icon: ShieldCheck,
     title: "Legal Checks",
-    shortLine: "Registration and ID checked before any request.",
+    shortLine: "Registration and ID checked before any drive.",
   },
   {
     id: "local-matching",
@@ -60,7 +60,7 @@ const TRUST_CARDS: TrustCardItem[] = [
     step: "05",
     icon: Camera,
     title: "Proof Required",
-    shortLine: "No proof, no next request.",
+    shortLine: "No proof, no next drive.",
   },
 ];
 

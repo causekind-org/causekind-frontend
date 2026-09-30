@@ -312,6 +312,18 @@ export function NgoHero() {
                 >
                   <span>{secondaryCtaText}</span>
                 </Link>
+
+                {/* Drives are the second way in: a time-boxed collection (e.g. 40
+                    blankets for a winter drive) alongside ordinary requests. Same gate. */}
+                {canPostRequest && (
+                  <Link
+                    href="/ngo/drives/new"
+                    className="inline-flex items-center justify-center gap-1 text-sm font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700 rounded"
+                  >
+                    <span>Or start a drive</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
               </motion.div>
 
               {/* Helper Text Under Hero Button */}

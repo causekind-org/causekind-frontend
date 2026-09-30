@@ -137,7 +137,7 @@ export function validateCity(cityValue: string, cityFreeText: string, useFreeTex
 
 /** DONOR, DONEE, and NGO are registerable roles. */
 export function validateRole(role: string): RuleResult {
-  if (role !== "DONOR" && role !== "DONEE" && role !== "NGO") return fail("roleRequired");
+  if (role !== "DONOR" && role !== "DONEE" && role !== "NGO_PARTNER") return fail("roleRequired");
   return OK;
 }
 

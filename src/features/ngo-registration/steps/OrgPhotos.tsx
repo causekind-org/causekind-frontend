@@ -10,6 +10,7 @@ import {
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { uploadNgoPhoto } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 interface OrgPhotosProps {
   data: NGOFormState;
@@ -48,30 +49,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
     setLogoError(null);
     setLastLogoFile(file);
 
-    // TEMPORARY: Demo Mode — skip real S3 upload when demo flag is active
-    if (IS_NGO_DEMO_MODE) {
-      setTimeout(() => {
-        let previewUrl = "";
-        try {
-          previewUrl = URL.createObjectURL(file);
-        } catch {
-          // ignore in non-browser env
-        }
-        onChange({
-          logo: {
-            name: file.name,
-            photoId: getNextDemoPhotoId(),
-            s3Url: previewUrl,
-            s3Key: "demo/photos/logo.png",
-            size: file.size,
-            mimeType: file.type || "image/png",
-            demo: true,
-          },
-        });
-        setUploadingLogo(false);
-      }, 400);
-      return;
-    }
+
 
     try {
       const res = await uploadNgoPhoto(file, "logo");
@@ -99,30 +77,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
     setOfficeError(null);
     setLastOfficeFile(file);
 
-    // TEMPORARY: Demo Mode — skip real S3 upload when demo flag is active
-    if (IS_NGO_DEMO_MODE) {
-      setTimeout(() => {
-        let previewUrl = "";
-        try {
-          previewUrl = URL.createObjectURL(file);
-        } catch {
-          // ignore in non-browser env
-        }
-        onChange({
-          officePhoto: {
-            name: file.name,
-            photoId: getNextDemoPhotoId(),
-            s3Url: previewUrl,
-            s3Key: "demo/photos/office.jpg",
-            size: file.size,
-            mimeType: file.type || "image/jpeg",
-            demo: true,
-          },
-        });
-        setUploadingOffice(false);
-      }, 400);
-      return;
-    }
+
 
     try {
       const res = await uploadNgoPhoto(file, "office_photo");
@@ -158,32 +113,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
     nextFiles[index] = file;
     setLastActivityFiles(nextFiles);
 
-    // TEMPORARY: Demo Mode — skip real S3 upload when demo flag is active
-    if (IS_NGO_DEMO_MODE) {
-      setTimeout(() => {
-        let previewUrl = "";
-        try {
-          previewUrl = URL.createObjectURL(file);
-        } catch {
-          // ignore in non-browser env
-        }
-        const nextPhotos = [...data.activityPhotos];
-        nextPhotos[index] = {
-          name: file.name,
-          photoId: getNextDemoPhotoId(),
-          s3Url: previewUrl,
-          s3Key: `demo/photos/activity-${index + 1}.jpg`,
-          size: file.size,
-          mimeType: file.type || "image/jpeg",
-          demo: true,
-        };
-        onChange({ activityPhotos: nextPhotos });
-        const resetUploading = [...uploadingActivity];
-        resetUploading[index] = false;
-        setUploadingActivity(resetUploading);
-      }, 400);
-      return;
-    }
+
 
     try {
       const res = await uploadNgoPhoto(file, "activity_photo");
@@ -306,6 +236,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                 disabled={uploadingLogo}
                 onChange={(e) => handleLogoFiles(e.target.files)}
               />
+              <LocalTestUploadButton onFile={(f) => handleLogoFiles([f] as any)} accept="image" />
               <div
                 role="button"
                 tabIndex={0}
@@ -362,16 +293,9 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onChange({
-                        logo: {
-                          name: "organization-logo-demo.png",
-                          photoId: getNextDemoPhotoId(),
-                          s3Key: "demo/photos/logo.png",
-                          size: 1024 * 64,
-                          mimeType: "image/png",
-                          demo: true,
-                        },
-                      });
+                      const dummyBlob = new Blob(["demo logo content"], { type: "image/png" });
+                      const file = new File([dummyBlob], "organization-logo-demo.png", { type: "image/png" });
+                      performLogoUpload(file);
                     }}
                     className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
                   >
@@ -460,6 +384,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                 disabled={uploadingOffice}
                 onChange={(e) => handleOfficeFiles(e.target.files)}
               />
+              <LocalTestUploadButton onFile={(f) => handleOfficeFiles([f] as any)} accept="image" />
               <div
                 role="button"
                 tabIndex={0}
@@ -516,16 +441,9 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onChange({
-                        officePhoto: {
-                          name: "office-front-entrance-demo.jpg",
-                          photoId: getNextDemoPhotoId(),
-                          s3Key: "demo/photos/office.jpg",
-                          size: 1024 * 250,
-                          mimeType: "image/jpeg",
-                          demo: true,
-                        },
-                      });
+                      const dummyBlob = new Blob(["demo office content"], { type: "image/jpeg" });
+                      const file = new File([dummyBlob], "office-front-entrance-demo.jpg", { type: "image/jpeg" });
+                      performOfficeUpload(file);
                     }}
                     className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
                   >
@@ -594,6 +512,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                     disabled={isUploadingThis}
                     onChange={(e) => handleActivityFile(idx, e.target.files)}
                   />
+                  <LocalTestUploadButton onFile={(f) => handleActivityFile(idx, [f] as any)} accept="image" />
 
                   {photo ? (
                     <div className="space-y-2">
@@ -659,16 +578,9 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const nextPhotos = [...data.activityPhotos];
-                              nextPhotos[idx] = {
-                                name: `activity-photo-${idx + 1}-demo.jpg`,
-                                photoId: getNextDemoPhotoId(),
-                                s3Key: `demo/photos/activity-${idx + 1}.jpg`,
-                                size: 1024 * 180,
-                                mimeType: "image/jpeg",
-                                demo: true,
-                              };
-                              onChange({ activityPhotos: nextPhotos });
+                              const dummyBlob = new Blob(["demo activity content"], { type: "image/jpeg" });
+                              const file = new File([dummyBlob], `activity-photo-${idx + 1}-demo.jpg`, { type: "image/jpeg" });
+                              performActivityUpload(idx, file);
                             }}
                             className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2"
                           >

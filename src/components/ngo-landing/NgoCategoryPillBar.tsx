@@ -68,7 +68,7 @@ export function NgoCategoryPillBar() {
             {DISPLAY_CATEGORIES.map((cat) => {
               const visual = CATEGORY_VISUALS[cat.name];
               const targetHref = isVerified
-                ? `/ngo/requests/new?category=${encodeURIComponent(cat.name)}`
+                ? `/ngo/drives/new?category=${encodeURIComponent(cat.name)}`
                 : `/requests/category/${cat.slug}`;
 
               return (

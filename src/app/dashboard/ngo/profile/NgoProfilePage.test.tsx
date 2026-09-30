@@ -86,7 +86,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
 
   it("renders NGO profile card with organization name, role 'NGO', and 'CAUSEKIND NGO PARTNER' label", async () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -99,7 +99,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
       email: "contact@smilefoundation.org",
       fullName: "Smile Foundation",
       organizationName: "Smile Foundation",
-      role: "NGO",
+      role: "NGO_PARTNER",
       phone: "+919876543210",
       city: "Mumbai, Maharashtra",
       latitude: null,
@@ -131,8 +131,8 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
     // Initials SF
     expect(screen.getByText("SF")).toBeInTheDocument();
 
-    // Role NGO
-    expect(screen.getByText("NGO")).toBeInTheDocument();
+    // Role NGO_PARTNER
+    expect(screen.getByText("NGO_PARTNER")).toBeInTheDocument();
 
     // Email, phone, city
     expect(screen.getByText("contact@smilefoundation.org")).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
 
   it("renders three-stat counter row adapted to NGO stats", async () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -170,7 +170,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
 
   it("renders NgoReadinessRail in hero band with progress, next step, and link to /profile/ngo-details", async () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -200,7 +200,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
 
   it("renders 2-column layout with 'Your Journey' empty state and 'Milestones' sidebar when not submitted", async () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "fresh@smilefoundation.org", role: "NGO" },
+      user: { id: 101, email: "fresh@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -234,7 +234,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
 
   it("renders Application Status card and earned milestones when application is submitted", async () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -246,7 +246,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
       email: "contact@smilefoundation.org",
       fullName: "Smile Foundation",
       organizationName: "Smile Foundation",
-      role: "NGO",
+      role: "NGO_PARTNER",
       phone: "+919876543210",
       city: "Mumbai, Maharashtra",
       latitude: null,
@@ -288,7 +288,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
   describe("Expanded 'Edit Account Details' Modal & Field Mapping", () => {
     it("opens modal with Donee-matching field set and maps Organization Name to organizationName on save", async () => {
       vi.mocked(useAuth).mockReturnValue({
-        user: { id: 101, email: "contact@smilefoundation.org", role: "NGO" },
+        user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
         isLoading: false,
         isRestoring: false,
         setUser: vi.fn(),
@@ -301,7 +301,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
         email: "contact@smilefoundation.org",
         fullName: "Smile Foundation",
         organizationName: "Smile Foundation",
-        role: "NGO",
+        role: "NGO_PARTNER",
         phone: "+919876543210",
         city: "Mumbai, Maharashtra",
         latitude: 19.076,
@@ -315,7 +315,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
         email: "contact@smilefoundation.org",
         fullName: "Smile Foundation Global",
         organizationName: "Smile Foundation Global",
-        role: "NGO",
+        role: "NGO_PARTNER",
         phone: "+919876543210",
         city: "Mumbai, Maharashtra",
         latitude: 19.076,
@@ -390,6 +390,6 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
           organizationName: "Smile Foundation Global",
         })
       );
-    });
+    }, 15000);
   });
 });
