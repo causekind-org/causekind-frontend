@@ -148,18 +148,31 @@ export function NgoHero() {
     : "NGO team coordinating community supplies";
 
   return (
-    <section id="ngo-hero" className="relative w-full overflow-hidden text-stone-900 dark:text-stone-100">
+    <section id="ngo-hero" className="relative isolate w-full overflow-hidden text-stone-900 dark:text-stone-100 lg:min-h-[calc(100svh-var(--ck-nav-h,4.5rem))] lg:pb-[2vh]">
+      {/* Desktop: one photo behind the whole section — hero, category bar and
+          trust card all sit on it. Cover, never stretch. Phones keep the photo
+          inside the hero box below. */}
+      <div className="pointer-events-none absolute inset-0 -z-10 hidden lg:block" aria-hidden="true">
+        <Image
+          src={heroImageSrc}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[center_30%]"
+        />
+      </div>
       {/* ─────────────────────────────────────────────────────────────
           FULL-WIDTH HERO PHOTO STAGE (100% viewport width, edge to edge)
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative isolate w-full min-h-[580px] sm:min-h-[620px] lg:min-h-0 lg:h-[max(420px,calc(100svh-var(--ck-nav-h,4.5rem)-13.5rem))] rounded-b-[24px] overflow-hidden shadow-sm flex flex-col justify-between">
+      <div className="relative isolate w-full min-h-[580px] sm:min-h-[620px] lg:min-h-0 lg:h-[max(420px,calc(100svh-var(--ck-nav-h,4.5rem)-13.5rem))] rounded-b-[24px] lg:rounded-none overflow-hidden shadow-sm lg:shadow-none flex flex-col justify-between">
 
         {/* Background Photo with Settle Motion & Optimal Horizon Position */}
         <motion.div
           initial={{ scale: shouldReduceMotion ? 1 : 1.04 }}
           animate={{ scale: 1 }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 -z-20 w-full h-full"
+          className="absolute inset-0 -z-20 w-full h-full lg:hidden"
         >
           <Image
             src={heroImageSrc}
