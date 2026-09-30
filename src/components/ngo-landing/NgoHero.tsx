@@ -167,7 +167,7 @@ export function NgoHero() {
             fill
             priority
             sizes="100vw"
-            className="object-cover object-[72%_35%] lg:object-[70%_center]"
+            className="object-cover object-[72%_35%] lg:object-fill"
           />
         </motion.div>
 
