@@ -161,6 +161,7 @@ export function NgoHero() {
           sizes="100vw"
           className="object-cover object-[center_30%]"
         />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.60)_18%,rgba(255,255,255,0.22)_28%,rgba(255,255,255,0)_35%,transparent_100%)] dark:bg-[linear-gradient(to_right,rgba(9,9,11,0.70)_0%,rgba(9,9,11,0.65)_18%,rgba(9,9,11,0.25)_28%,rgba(9,9,11,0)_35%,transparent_100%)]" />
       </div>
       {/* ─────────────────────────────────────────────────────────────
           FULL-WIDTH HERO PHOTO STAGE (100% viewport width, edge to edge)
@@ -186,7 +187,7 @@ export function NgoHero() {
 
         {/* Desktop Left-to-Right Lighter White Fade: ~0.60 opacity at left, fading to 0 by ~35% width */}
         <div
-          className="pointer-events-none absolute inset-0 -z-10 hidden lg:block bg-[linear-gradient(to_right,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.60)_18%,rgba(255,255,255,0.22)_28%,rgba(255,255,255,0)_35%,transparent_100%)] dark:bg-[linear-gradient(to_right,rgba(9,9,11,0.70)_0%,rgba(9,9,11,0.65)_18%,rgba(9,9,11,0.25)_28%,rgba(9,9,11,0)_35%,transparent_100%)]"
+          className="pointer-events-none absolute inset-0 -z-10 hidden bg-[linear-gradient(to_right,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.60)_18%,rgba(255,255,255,0.22)_28%,rgba(255,255,255,0)_35%,transparent_100%)] dark:bg-[linear-gradient(to_right,rgba(9,9,11,0.70)_0%,rgba(9,9,11,0.65)_18%,rgba(9,9,11,0.25)_28%,rgba(9,9,11,0)_35%,transparent_100%)]"
           aria-hidden="true"
         />
 
