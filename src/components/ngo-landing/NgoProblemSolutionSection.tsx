@@ -46,7 +46,7 @@ export function NgoProblemSolutionSection() {
         }}
       />
 
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <motion.div
@@ -71,10 +71,10 @@ export function NgoProblemSolutionSection() {
         </motion.div>
 
         {/* Contrast Comparison Grid */}
-        <div className="relative rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/90 shadow-xl overflow-hidden backdrop-blur-sm p-4 sm:p-8 lg:p-10 mb-8">
+        <div className="relative rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/90 shadow-xl overflow-hidden backdrop-blur-sm p-4 sm:p-6 lg:p-7 mb-8">
           
           {/* Header Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-stone-200/80 dark:border-zinc-800 text-center md:text-left font-black uppercase text-xs sm:text-sm tracking-wider">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-3 border-b border-stone-200/80 dark:border-zinc-800 text-center md:text-left font-black uppercase text-2xs sm:text-xs tracking-wider">
             <div className="flex items-center justify-center md:justify-start gap-2 text-stone-500 dark:text-stone-400">
               <span className="h-2 w-2 rounded-full bg-red-500" />
               <span>The Usual Way</span>
@@ -94,20 +94,20 @@ export function NgoProblemSolutionSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.15 }}
                 transition={{ duration: 0.45, delay: idx * 0.1 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 sm:py-5 items-center hover:bg-stone-50/60 dark:hover:bg-zinc-800/30 rounded-xl px-2 sm:px-3 transition-colors"
+                className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2.5 sm:py-3 items-center hover:bg-stone-50/60 dark:hover:bg-zinc-800/30 rounded-xl px-2 sm:px-3 transition-colors"
               >
                 {/* ❌ Left Column: The Usual Way */}
                 <div className="flex items-start gap-3 text-stone-500 dark:text-stone-400">
-                  <XCircle className="w-5 h-5 text-red-500/80 shrink-0 mt-0.5" />
-                  <span className="text-sm sm:text-base font-medium leading-snug">
+                  <XCircle className="w-4 h-4 text-red-500/80 shrink-0 mt-0.5" />
+                  <span className="text-sm sm:text-[0.9rem] font-medium leading-snug">
                     {row.usual}
                   </span>
                 </div>
 
                 {/* ✅ Right Column: The CauseKind Way */}
-                <div className="flex items-start gap-3 text-stone-900 dark:text-stone-100 font-semibold bg-ngo-50/70 dark:bg-ngo-900/30 p-2.5 sm:p-3 rounded-xl border border-ngo-300/40 dark:border-ngo-700/40">
-                  <CheckCircle2 className="w-5 h-5 text-ngo-700 dark:text-ngo-300 shrink-0 mt-0.5" />
-                  <span className="text-sm sm:text-base leading-snug">
+                <div className="flex items-start gap-3 text-stone-900 dark:text-stone-100 font-semibold bg-ngo-50/70 dark:bg-ngo-900/30 p-2 sm:p-2.5 rounded-xl border border-ngo-300/40 dark:border-ngo-700/40">
+                  <CheckCircle2 className="w-4 h-4 text-ngo-700 dark:text-ngo-300 shrink-0 mt-0.5" />
+                  <span className="text-sm sm:text-[0.9rem] leading-snug">
                     {row.causeKind}
                   </span>
                 </div>
