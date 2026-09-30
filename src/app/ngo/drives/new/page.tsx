@@ -71,7 +71,7 @@ const URGENCIES = [
 function NewNgoDriveForm() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const { isVerified, isPhotosDue, lockReason, photosDueRequestName, status: ngoStatus, canPostRequest, isError } = useNgoStatus();
+  const { isVerified, isPhotosDue, lockReason, photosDueRequestName, status: ngoStatus, canPostRequest } = useNgoStatus();
 
   const [ngoContactName, setNgoContactName] = useState("");
   const [ngoContactPhone, setNgoContactPhone] = useState("");
@@ -209,17 +209,13 @@ function NewNgoDriveForm() {
   }, [draftLoaded, saveDraft]);
 
   useEffect(() => {
-    if (!authLoading && user && ngoStatus !== "loading" && !isError) {
+    if (!authLoading && user) {
       if (!canPostRequest) {
         if (lockReason) toast.error(lockReason);
-        console.warn("[NGO REDIRECT] reason: canPostRequest is false, lockReason: ", lockReason);
-        const isTestMode = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_LOCAL_TEST_MODE === "true";
-        if (!isTestMode) {
-          router.replace("/dashboard/ngo");
-        }
+        router.replace("/dashboard/ngo");
       }
     }
-  }, [authLoading, user, canPostRequest, lockReason, router, ngoStatus, isError]);
+  }, [authLoading, user, canPostRequest, lockReason, router]);
 
   const goToStep = useCallback((next: NgoDriveStep, dir: number) => {
     setDirection(dir);
@@ -853,20 +849,6 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 }
 
 export default function NgoRequestCreationPage() {
-  const { isError } = useNgoStatus();
-
-  if (isError) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center">
-        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Could not verify status</h1>
-        <p className="text-stone-500 mb-6">There was an API error checking your NGO status.</p>
-        <button onClick={() => window.location.reload()} className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
-          Try again
-        </button>
-      </div>
-    );
-  }
-
   return (
     <ErrorBoundary>
       <Suspense fallback={<FormSkeleton />}>

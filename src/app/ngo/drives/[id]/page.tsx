@@ -23,7 +23,6 @@ export default function NgoDriveOffersPage() {
   const [drive, setDrive] = useState<NgoDrive | null>(null);
   const [offers, setOffers] = useState<NgoDriveOfferResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
   const [reviewLoading, setReviewLoading] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'review' | 'handovers' | 'proof' | 'close'>('review');
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
@@ -42,7 +41,6 @@ export default function NgoDriveOffersPage() {
       setDrive(d);
       setOffers(o);
     } catch (e) {
-      setHasError(true);
       toast.error("Failed to load drive details");
     } finally {
       setLoading(false);
@@ -91,18 +89,6 @@ export default function NgoDriveOffersPage() {
 
   if (loading || authLoading) {
     return <PageSkeleton><div className="h-96" /></PageSkeleton>;
-  }
-
-  if (hasError) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center">
-        <h2 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Could not load drive</h2>
-        <p className="text-stone-500 mb-6">There was an API error fetching the drive details.</p>
-        <button onClick={() => window.location.reload()} className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
-          Try again
-        </button>
-      </div>
-    );
   }
 
   if (!drive) {
