@@ -161,6 +161,11 @@ export function NgoHero() {
           sizes="100vw"
           className="object-cover object-[center_30%]"
         />
+        {/* Bottom dissolve into the next section: the photo blurs progressively
+            (masked backdrop blur), then fades into the page colour, so there is no
+            hard edge between the hero and "Sound familiar?". */}
+        <div className="absolute inset-x-0 bottom-0 h-[32%] backdrop-blur-[10px] [mask-image:linear-gradient(to_bottom,transparent,black_70%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_70%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[40%] bg-[linear-gradient(to_bottom,transparent_0%,color-mix(in_srgb,var(--surface-cream)_55%,transparent)_55%,var(--surface-cream)_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.60)_18%,rgba(255,255,255,0.22)_28%,rgba(255,255,255,0)_35%,transparent_100%)] dark:bg-[linear-gradient(to_right,rgba(9,9,11,0.70)_0%,rgba(9,9,11,0.65)_18%,rgba(9,9,11,0.25)_28%,rgba(9,9,11,0)_35%,transparent_100%)]" />
       </div>
       {/* ─────────────────────────────────────────────────────────────
