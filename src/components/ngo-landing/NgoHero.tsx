@@ -152,7 +152,7 @@ export function NgoHero() {
       {/* ─────────────────────────────────────────────────────────────
           FULL-WIDTH HERO PHOTO STAGE (100% viewport width, edge to edge)
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative isolate w-full min-h-[580px] sm:min-h-[620px] lg:min-h-[min(88vh,760px)] rounded-b-[24px] overflow-hidden shadow-sm flex flex-col justify-between">
+      <div className="relative isolate w-full min-h-[580px] sm:min-h-[620px] lg:min-h-0 lg:h-[max(420px,calc(100svh-var(--ck-nav-h,4.5rem)-13.5rem))] rounded-b-[24px] overflow-hidden shadow-sm flex flex-col justify-between">
 
         {/* Background Photo with Settle Motion & Optimal Horizon Position */}
         <motion.div
@@ -186,8 +186,8 @@ export function NgoHero() {
         {/* ─────────────────────────────────────────────────────────────
             MAIN CONTENT CONTAINER (Left-aligned text column, edge-positioned)
             ───────────────────────────────────────────────────────────── */}
-        <div className="w-full px-4 sm:px-6 lg:pl-10 xl:pl-12 lg:pr-8 py-8 sm:py-12 lg:py-16 flex-1 flex flex-col justify-between z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center flex-1 pb-6 sm:pb-8">
+        <div className="w-full px-4 sm:px-6 lg:pl-10 xl:pl-12 lg:pr-8 py-8 sm:py-12 lg:py-[clamp(1rem,3.5vh,2.5rem)] flex-1 flex flex-col justify-between z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center flex-1 pb-6 sm:pb-8 lg:pb-[2vh]">
 
             {/* LEFT COLUMN: Verified Badge (if verified), Headlines, CTAs, Helper Text */}
             <motion.div
@@ -200,7 +200,7 @@ export function NgoHero() {
               {isVerified && (
                 <motion.div
                   variants={itemVariants}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-sm mb-5 bg-ngo-700 text-white border-ngo-800"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-sm mb-5 lg:mb-[1.6vh] bg-ngo-700 text-white border-ngo-800"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                   <span className="text-3xs sm:text-2xs font-bold tracking-tight">
@@ -212,7 +212,7 @@ export function NgoHero() {
               {/* 2. Headline Line 1 & Line 2 */}
               <motion.h1
                 variants={itemVariants}
-                className="text-3xl sm:text-5xl lg:text-[3.65rem] font-bold tracking-tight text-stone-900 dark:text-stone-50 leading-[1.08] mb-5"
+                className="text-3xl sm:text-5xl lg:text-[clamp(2rem,5.4vh,3.4rem)] font-bold tracking-tight text-stone-900 dark:text-stone-50 leading-[1.08] mb-5 lg:mb-[1.8vh]"
                 style={{ fontFamily: "var(--font-source-serif-4), var(--font-lora), serif" }}
               >
                 <span className="block">{headlineLine1}</span>
@@ -224,7 +224,7 @@ export function NgoHero() {
               {/* 3. Subheadline */}
               <motion.p
                 variants={itemVariants}
-                className="text-base sm:text-lg text-stone-900 dark:text-stone-100 leading-relaxed max-w-[480px] mb-7 font-normal [text-shadow:0_1px_2px_rgba(255,255,255,0.9),0_0_12px_rgba(255,255,255,0.85)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_0_12px_rgba(0,0,0,0.85)]"
+                className="text-base sm:text-lg lg:text-[clamp(0.95rem,1.9vh,1.125rem)] text-stone-900 dark:text-stone-100 leading-relaxed max-w-[480px] mb-7 lg:mb-[2.4vh] font-normal [text-shadow:0_1px_2px_rgba(255,255,255,0.9),0_0_12px_rgba(255,255,255,0.85)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_0_12px_rgba(0,0,0,0.85)]"
               >
                 {subheadline}
               </motion.p>
@@ -238,7 +238,7 @@ export function NgoHero() {
                 {canPostRequest ? (
                   <Link
                     href="/ngo/requests/new"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 active:scale-[0.98] text-white font-bold px-7 py-3.5 text-sm sm:text-base shadow-lg shadow-ngo-700/25 hover:shadow-xl hover:shadow-ngo-700/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 active:scale-[0.98] text-white font-bold px-7 py-3.5 lg:py-[1.4vh] text-sm sm:text-base shadow-lg shadow-ngo-700/25 hover:shadow-xl hover:shadow-ngo-700/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
                   >
                     <span>Post a Request</span>
                     <ArrowRight className="w-4 h-4" />
@@ -249,7 +249,7 @@ export function NgoHero() {
                       type="button"
                       onClick={handleLockedClick}
                       aria-disabled="true"
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 font-bold px-7 py-3.5 text-sm sm:text-base cursor-not-allowed border border-stone-300 dark:border-zinc-700 shadow-sm transition-all focus:outline-none"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 font-bold px-7 py-3.5 lg:py-[1.4vh] text-sm sm:text-base cursor-not-allowed border border-stone-300 dark:border-zinc-700 shadow-sm transition-all focus:outline-none"
                     >
                       <Lock className="w-4 h-4 text-stone-400 dark:text-stone-500" />
                       <span>Post a Request</span>
@@ -308,7 +308,7 @@ export function NgoHero() {
                 {/* Secondary CTA */}
                 <Link
                   href={secondaryCtaHref}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-stone-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 hover:bg-stone-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-stone-800 dark:text-stone-200 font-bold px-6 py-3.5 text-sm sm:text-base backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-stone-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 hover:bg-stone-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-stone-800 dark:text-stone-200 font-bold px-6 py-3.5 lg:py-[1.4vh] text-sm sm:text-base backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
                 >
                   <span>{secondaryCtaText}</span>
                 </Link>
