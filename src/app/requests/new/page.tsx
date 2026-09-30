@@ -436,7 +436,7 @@ function NewRequestForm() {
     the end is worse than telling them now.
   */
   const [profileGateUnsupported, setProfileGateUnsupported] = useState(false);
-  useEffect(() => { if (!user) return; let active = true; getDoneeNeedProfile().then(p => {if(active)setNeedProfile(p);}).catch(e => {if(!active)return; if(e instanceof ApiError && e.status === 404){setProfileGateUnsupported(true);return;} setProfileError(e instanceof Error && e.message && e.message !== "Failed to fetch" ? e.message : "We could not reach CauseKind to check your profile. Please check your connection and try again.");}); return () => {active=false;}; }, [user]);
+  useEffect(() => { if (!user || ["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return; let active = true; getDoneeNeedProfile().then(p => {if(active)setNeedProfile(p);}).catch(e => {if(!active)return; if(e instanceof ApiError && e.status === 404){setProfileGateUnsupported(true);return;} setProfileError(e instanceof Error && e.message && e.message !== "Failed to fetch" ? e.message : "We could not reach CauseKind to check your profile. Please check your connection and try again.");}); return () => {active=false;}; }, [user]);
 
   const [step, setStep] = useState<DoneeRequestStep>("need-details");
   // +1 forward, -1 back. Drives the card's travel direction so going Back reads
@@ -542,7 +542,7 @@ function NewRequestForm() {
   // requests, which reopens them as drafts. Prefills need details and marks the
   // still-attached documents as uploaded so the donee only redoes what's needed.
   useEffect(() => {
-    if (!resumeDraftId || !user) return;
+    if (!resumeDraftId || !user || ["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return;
     const idNum = Number(resumeDraftId);
     if (!Number.isFinite(idNum)) return;
     getMyItemRequests()
@@ -612,6 +612,12 @@ function NewRequestForm() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.push("/login"); return; }
+    if (["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) {
+      const query = new URLSearchParams();
+      if (resumeDraftId) query.set("draft", String(resumeDraftId));
+      router.replace(`/ngo/requests/new${query.size ? `?${query}` : ""}`);
+      return;
+    }
     getProfile()
       .then((p) => {
         if (p.role !== "DONEE" && p.role !== "ADMIN") {
@@ -621,7 +627,7 @@ function NewRequestForm() {
         setUserPhone(p.phone ?? "");
       })
       .catch(() => {});
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, resumeDraftId]);
 
   function handleGPSLocation() {
     if (!navigator.geolocation) { toast.error("Your browser doesn't support GPS location"); setGpsBlocked(true); return; }
@@ -966,6 +972,7 @@ function NewRequestForm() {
   }
 
   if (authLoading || !user) return null;
+  if (["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return <p role="status" className="p-8">Opening your organization’s request form…</p>;
 
   if (!profileGateUnsupported && !needProfile?.complete) return <div className="mx-auto max-w-xl px-5 py-16"><h1 className="text-2xl font-bold text-[#1e3a60] dark:text-blue-200">{profileError ? "Could not check your profile" : !needProfile ? "Checking your profile…" : "Complete your profile first"}</h1><p className="mt-3 text-sm text-slate-500">{profileError || "Save your household details and identity documents once in your profile. You can then request items without entering them again."}</p>{needProfile && <Link href={profileLink} className="mt-6 inline-flex rounded-lg bg-[#1e3a60] px-5 py-3 text-sm font-bold text-white">Complete profile →</Link>}{profileError && <button onClick={() => window.location.reload()} className="mt-5 underline">Retry</button>}</div>;
 

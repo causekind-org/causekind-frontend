@@ -24,6 +24,7 @@ interface NgoRequestsDropdownProps {
 export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownProps) {
   const router = useRouter();
   const {
+    isLoading, error, refresh,
     status,
     ngoName,
     isVerified,
@@ -72,6 +73,8 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
     );
   }
 
+  if (isLoading) return <p role="status" className="p-4">Loading your organization’s activity…</p>;
+  if (error) return <div role="alert" className="p-4"><p>{error}</p><button className="mt-2 underline" onClick={() => void refresh()}>Retry</button></div>;
   return (
     <div className="w-full">
       {/* ── Top Header Row ────────────────────────────────────────── */}
@@ -160,7 +163,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
         <div className="col-span-4">
           {isVerified ? (
             <Link
-              href="/requests"
+              href="/ngo/requests"
               onClick={onNavigate}
               className="group flex flex-col justify-between h-full p-5 rounded-2xl bg-white/70 dark:bg-black/55 hover:bg-white dark:hover:bg-black/75 border border-stone-200/70 dark:border-stone-800 hover:border-ngo-600/40 dark:hover:border-ngo-500/40 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer"
             >

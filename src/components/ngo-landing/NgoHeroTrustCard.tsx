@@ -16,18 +16,18 @@ const TRUST_ITEMS: TrustItem[] = [
   },
   {
     icon: Handshake,
-    title: "Verified Drop-off Points",
-    subtitle: "Confirmed by the NGO itself.",
+    title: "Agreed Handover Locations",
+    subtitle: "Arrange details with the donor.",
   },
   {
     icon: Camera,
-    title: "Photo Proof on Every Delivery",
-    subtitle: "Every handover, photographed.",
+    title: "Receipt Photos Required",
+    subtitle: "Upload after confirming receipt.",
   },
   {
     icon: MapPin,
     title: "Matched Near You",
-    subtitle: "Givers within 10 km.",
+    subtitle: "Match availability varies by location.",
   },
 ];
 

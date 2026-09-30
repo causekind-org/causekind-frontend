@@ -424,7 +424,7 @@ export default function OfferWizardPage() {
     if (!requestId) return;
     // Don't fire five authenticated calls for someone who is about to be
     // redirected — a guest would just collect 401s, and a donee 403s.
-    if (authLoading || !user || user.role === "DONEE") return;
+    if (authLoading || !user || user.role !== "DONOR") return;
     getAnonymizedRequest(requestId).then(setRequest).catch(() => setRequestLoadFailed(true));
     getQuantityAllocation(requestId).then(setQty).catch(() => {});
     // Check if the donor already has an offer for this request
@@ -550,6 +550,25 @@ export default function OfferWizardPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="sr-only">Redirecting…</p>
+      </div>
+    );
+  }
+
+  // Offers are donor-only on the server (DonationOfferService.resolveDonor).
+  // An NGO, representative or admin account would only collect 403s in the
+  // wizard, so say so plainly instead — without switching their role.
+  if (user.role !== "DONOR") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
+        <p className="max-w-md text-gray-600 dark:text-gray-400">
+          Offering an item needs a donor account. You&apos;re signed in with a different account type.
+        </p>
+        <button
+          onClick={() => router.push(`/requests/${params.id}`)}
+          className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
+        >
+          Back to the request
+        </button>
       </div>
     );
   }

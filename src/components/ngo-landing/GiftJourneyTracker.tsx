@@ -31,9 +31,9 @@ const NGO_JOURNEY_STEPS: NgoJourneyStep[] = [
     id: 1,
     icon: FileText,
     title: "You post a request",
-    description: "You list exact items (e.g. 40 blankets) for your upcoming community drive.",
+    description: "Submit the items, quantity and intended use. Our team reviews each need before matching.",
     timestamp: "Step 1",
-    statusBadge: "Request Live · 10 km Radius",
+    statusBadge: "Request Submitted for Review",
   },
   {
     id: 2,
@@ -41,13 +41,13 @@ const NGO_JOURNEY_STEPS: NgoJourneyStep[] = [
     title: "Donors nearby pledge them",
     description: "Nearby givers receive the alert and commit exact quantities to fulfill the need.",
     timestamp: "Step 2",
-    statusBadge: "100% Pledged",
+    statusBadge: "Donor Commitment",
   },
   {
     id: 3,
     icon: CheckCircle2,
     title: "They drop off, and you confirm receipt",
-    description: "Donors hand over the items directly at your verified drop-off point, and you confirm delivery in 1 tap.",
+    description: "Donors hand over the items directly at your verified drop-off point, and you complete receipt and OTP confirmations.",
     timestamp: "Step 3",
     statusBadge: "Handover Verified",
   },
@@ -55,7 +55,7 @@ const NGO_JOURNEY_STEPS: NgoJourneyStep[] = [
     id: 4,
     icon: Camera,
     title: "You upload a handover photo",
-    description: "Snap a quick photo of the items in hands or at the distribution site.",
+    description: "Upload a clear photo of the received items. Avoid people and private documents.",
     timestamp: "Step 4",
     statusBadge: "Photo Proof Uploaded",
     proofBadge: "📸 Handover Proof",
@@ -64,11 +64,11 @@ const NGO_JOURNEY_STEPS: NgoJourneyStep[] = [
   {
     id: 5,
     icon: Award,
-    title: "Every donor gets the photo and their certificate",
-    description: "Every donor gets the verified photo and an official CauseKind impact certificate. Your score grows.",
+    title: "Completed handovers become eligible for certificates",
+    description: "Both parties confirm the handover and complete OTP checks before certificate eligibility is assessed.",
     timestamp: "Step 5",
-    statusBadge: "Loop Closed · Certificate Issued",
-    proofBadge: "📜 Certificates Sent",
+    statusBadge: "Completion Checks",
+    proofBadge: "Certificate Eligibility",
     image: "/images/hero-1.webp",
   },
 ];
@@ -160,7 +160,7 @@ export function GiftJourneyTracker() {
               Sample request
             </span>
             <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 mt-0.5">
-              40 Blankets · Winter Relief Drive, Thane
+              Illustrative journey · 40 blankets
             </h3>
           </div>
           <div className="flex items-center gap-2">

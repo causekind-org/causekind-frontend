@@ -506,7 +506,7 @@ export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
       aria-label="Where does my support go? Photographs from CauseKind drives"
       className={`${styles.section} ${galleryFonts} ck-m-section`}
     >
-      <div className="relative hidden px-4 py-14 md:block lg:px-8 lg:py-20">
+      <div className={styles.desktopViewport}>
         <Table photos={photos} />
       </div>
       <div className="relative px-5 md:hidden">

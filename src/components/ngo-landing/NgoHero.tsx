@@ -22,6 +22,7 @@ export function NgoHero() {
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
   const {
+    isLoading, error, refresh,
     status,
     stepNumber,
     totalSteps,
@@ -44,6 +45,11 @@ export function NgoHero() {
     e.preventDefault();
     e.stopPropagation();
 
+    if (isLoading || error) {
+      toast.info(isLoading ? "We’re checking your application. Please try again shortly." : "We couldn’t check your application. Please retry.");
+      if (error) void refresh();
+      return;
+    }
     // Trigger toast message
     if (status === "incomplete") {
       const isZero = stepNumber === 0;
@@ -71,7 +77,7 @@ export function NgoHero() {
       toast.warning(`Upload handover photos for ${photosDueRequestName} to post your next request.`, {
         action: {
           label: "Upload",
-          onClick: () => router.push("/dashboard/ngo"),
+          onClick: () => router.push("/ngo/handovers"),
         },
       });
     }
@@ -86,23 +92,28 @@ export function NgoHero() {
 
   // Headlines and subheadlines
   const headlineLine1 = isVerified ? "You're verified." : "Post what you need.";
-  const headlineLine2 = isVerified ? "Let givers nearby find you." : "Givers nearby will bring it.";
+  const headlineLine2 = isVerified ? "Let givers nearby find you." : "Connect with givers nearby.";
   const subheadline = isVerified
-    ? "Post exactly what you need. Donors within 10 km see it, hand it over directly, and every handover ends with a certificate."
-    : "Once CauseKind verifies you, your requests reach donors within 10 km — handed over directly, with a certificate for every handover.";
+    ? "Post what your organization needs. Our team reviews the request and looks for a suitable match. Track accepted handovers through your account."
+    : "Start with your organization’s application. Once approved, you can submit item requests for review and connect with nearby donors.";
 
   // Secondary CTA details
   let secondaryCtaText = stepNumber === 0 ? "Start your application →" : "Continue application →";
   let secondaryCtaHref = wizardHref || "/profile/ngo-details";
 
   if (isVerified) {
-    secondaryCtaText = "View my public profile";
-    secondaryCtaHref = "/profile";
+    secondaryCtaText = "View my application";
+    secondaryCtaHref = "/profile/ngo-details";
   } else if (status === "under_review") {
     secondaryCtaText = "View application status";
-    secondaryCtaHref = "/profile";
+    secondaryCtaHref = "/profile/ngo-details";
   } else if (status === "changes_requested") {
     secondaryCtaText = "Fix documents →";
+    secondaryCtaHref = "/profile/ngo-details";
+  }
+
+  if (isLoading || error) {
+    secondaryCtaText = isLoading ? "Checking application…" : "View your application";
     secondaryCtaHref = "/profile/ngo-details";
   }
 
@@ -280,7 +291,7 @@ export function NgoHero() {
                               )}
                               {isPhotosDue && (
                                 <Link
-                                  href="/dashboard/ngo"
+                                  href="/ngo/handovers"
                                   className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
                                 >
                                   <span>Upload photos →</span>

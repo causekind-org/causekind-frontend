@@ -280,7 +280,7 @@ async function request<T>(
 // Fix #4: login now returns email + role from the JSON body; the JWT itself is
 // delivered as an httpOnly cookie — the frontend never sees or stores the token.
 export function login(email: string, password: string, rememberMe = false) {
-  return request<{ token: null; email: string; role: string; userId: number }>(
+  return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
     "/api/v1/auth/login",
     { method: "POST", body: JSON.stringify({ email, password, rememberMe }) }
   );
@@ -303,7 +303,7 @@ export function initiateRegistration(data: {
 }
 
 export function verifyRegistrationOtp(email: string, otp: string) {
-  return request<{ token: null; email: string; role: string; userId: number }>(
+  return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
     "/api/v1/auth/register/verify",
     { method: "POST", body: JSON.stringify({ email, otp }) }
   );
@@ -329,7 +329,7 @@ export type NgoSignupData = {
 };
 
 export function registerNgo(data: NgoSignupData) {
-  return request<{ token: null; email: string; role: string; userId: number }>(
+  return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
     "/api/v1/auth/register/ngo",
     {
       method: "POST",
@@ -403,7 +403,7 @@ export function resetPassword(token: string, newPassword: string) {
 }
 
 export type GoogleAuthResponse =
-  | { needsCompletion: false; userId: number; email: string; role: string }
+  | { needsCompletion: false; userId: number; email: string; role: string; fullName?: string }
   | { needsCompletion: true; email: string; fullName: string };
 
 export function googleAuth(accessToken: string) {
@@ -1048,6 +1048,7 @@ export function analyzeOfferImages(offerId: number) {
 
 export type ItemRequest = {
   id: number;
+  ngoApplicationId?: string | null;
   title: string;
   category: string;
   quantity: number;
@@ -1070,6 +1071,10 @@ export type ItemRequest = {
   emergencyNature: string | null;
   incidentDate: string | null;
   verificationDueAt: string | null;
+  /** From the owner's role on the server (NGO_PARTNER → NGO). Absent on older responses. */
+  requesterType?: "PERSON" | "NGO";
+  /** Registered organisation name, NGO requests on the browse feed only. Not a verification claim. */
+  organizationName?: string | null;
 };
 
 /**
@@ -1090,8 +1095,57 @@ export type PublicItemRequest = {
   createdAt: string;
   imageUrl: string | null;
   emergency: boolean;
-  doneeFirstName: string;
+  /** First name for a person's request; null on NGO requests. */
+  doneeFirstName: string | null;
+  /** From the owning account's role on the server — never inferred client-side. */
+  requesterType?: "PERSON" | "NGO";
+  /** Registered organisation name; NGO requests only, and not a verification claim. */
+  organizationName?: string | null;
 };
+
+export type PublicRequesterType = "PERSON" | "NGO";
+
+/** One page of the public board plus the totals it needs — see PublicRequestPageResponse.java. */
+export type PublicRequestPage = {
+  items: PublicItemRequest[];
+  total: number;
+  page: number;
+  size: number;
+  hasMore: boolean;
+  categoryCounts: Record<string, number>;
+  typeCounts?: Partial<Record<PublicRequesterType, number>>;
+};
+
+export type PublicRequestPageQuery = {
+  q?: string;
+  requesterType?: PublicRequesterType | null;
+  categories?: string[];
+  urgencies?: string[];
+  city?: string;
+  sort?: "newest" | "urgent" | "quantity";
+  /** Zero-based, as the API takes it. */
+  page?: number;
+  size?: number;
+};
+
+/** Server-side search, filter, sort and paging over the whole public board. */
+export function getPublicRequestPage(query: PublicRequestPageQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.q?.trim()) params.set("q", query.q.trim());
+  if (query.requesterType) params.set("requesterType", query.requesterType);
+  query.categories?.forEach(c => params.append("categories", c));
+  query.urgencies?.forEach(u => params.append("urgencies", u));
+  if (query.city?.trim()) params.set("city", query.city.trim());
+  if (query.sort && query.sort !== "newest") params.set("sort", query.sort);
+  params.set("page", String(query.page ?? 0));
+  params.set("size", String(query.size ?? 12));
+  return request<PublicRequestPage>(`/api/v1/item-requests/public/page?${params.toString()}`, { silent401: true });
+}
+
+/** One open public request; rejects (404) once it is no longer publicly open. */
+export function getPublicItemRequest(id: number) {
+  return request<PublicItemRequest>(`/api/v1/item-requests/public/${id}`, { silent401: true });
+}
 
 /** Public need board — no auth, no GPS, no distance sorting (newest first). */
 export function getPublicItemRequests(categories?: string[]) {
@@ -4441,4 +4495,63 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
     throw new Error(screeningMessages[error.code] || error.detail || error.message || "Could not upload this document. Use a JPG, PNG or WebP photo under 10 MB (8 MB for your photo).");
   }
   return res.json();
+}
+
+// NGO staff review uses the same server capability as request review.
+export type NgoReviewApplication = NgoApplicationStatusResponse & {
+  id: number; userId: number | null; legalStructure: string; registrationNumber: string;
+  registeredOfficeAddress: string; yearOfEstablishment: string; representativeName: string;
+  designation: string; mobileNumber: string; officialEmail: string; reviewedAt: string | null;
+  aiScreeningVerdict: string | null; aiScreeningNotes: string | null;
+};
+export type NgoReviewFile = {
+  id: number; kind: "document" | "photo"; type: string; name: string;
+  ownershipRecorded: boolean; moderationVerdict: string | null;
+};
+export type NgoReviewDetail = {
+  application: NgoReviewApplication; files: NgoReviewFile[]; submissions: NgoReviewApplication[];
+  decisions: { id: number; fromStatus: string; toStatus: string; changedByEmail: string; note: string; changedAt: string }[];
+  current: boolean;
+};
+export function adminGetNgoApplications(status: string, page = 0) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (status) params.set("status", status);
+  return request<{ content: NgoReviewApplication[]; totalPages: number; totalElements: number }>(
+    `/api/v1/admin/ngo-applications?${params}`);
+}
+export function adminGetNgoApplication(id: string) {
+  return request<NgoReviewDetail>(`/api/v1/admin/ngo-applications/${encodeURIComponent(id)}`);
+}
+export function adminDecideNgoApplication(id: string, status: "APPROVED" | "REJECTED" | "NEEDS_INFORMATION", reason: string) {
+  return request<NgoReviewApplication>(`/api/v1/admin/ngo-applications/${encodeURIComponent(id)}/decision`, {
+    method: "PATCH", body: JSON.stringify({ status, reason }),
+  });
+}
+export function adminGetNgoEvidenceLink(id: string, file: NgoReviewFile) {
+  return request<{ url: string }>(`/api/v1/admin/ngo-applications/${encodeURIComponent(id)}/files/${file.kind}/${file.id}`);
+}
+
+export type NgoHandover = {
+  kind: "MATCH" | "OFFER"; id: number; requestId: number | null; title: string; status: string;
+  quantity: number; scheduledAt: string | null; received: boolean; dualConfirmed: boolean;
+  photoDue: boolean; href: string;
+};
+export type NgoOverview = {
+  activeRequests: number; itemsPledged: number; dropoffsToConfirm: number; photosDue: number;
+  photosDueRequestName: string; verifiedDeliveries: number; handovers: NgoHandover[];
+};
+export function getNgoOverview() {
+  // Activity events must not reuse totals cached before the handover changed.
+  getCacheMap.delete("/api/v1/ngo/overview");
+  return request<NgoOverview>("/api/v1/ngo/overview");
+}
+export async function uploadNgoHandoverProof(kind: NgoHandover["kind"], id: number, file: File) {
+  const body = new FormData(); body.append("file", file);
+  const response = await fetch(`${BASE_URL}/api/v1/ngo/handovers/${kind}/${id}/proof`, { method: "POST", body, credentials: "include" });
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+    throw new Error(result?.message || "We could not save the photo. Please try again.");
+  }
+  invalidateRequestCache();
+  return response.json() as Promise<{ message: string }>;
 }

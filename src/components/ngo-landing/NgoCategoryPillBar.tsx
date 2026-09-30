@@ -32,9 +32,15 @@ const DISPLAY_CATEGORIES = [...IN_KIND_CATEGORIES].sort((a, b) => {
 
 export function NgoCategoryPillBar() {
   const router = useRouter();
-  const { isVerified, isPhotosDue, photosDueRequestName } = useNgoStatus();
+  const { isLoading, error, refresh, isVerified, isPhotosDue, photosDueRequestName } = useNgoStatus();
 
   const handleCategoryClick = (e: React.MouseEvent, catName: string) => {
+    if (isLoading || error) {
+      e.preventDefault();
+      toast.warning(isLoading ? "We’re checking your organization’s status. Please try again shortly." : "We couldn’t check your status. Please try again.");
+      if (error) void refresh();
+      return;
+    }
     if (isVerified && isPhotosDue) {
       e.preventDefault();
       toast.warning(
@@ -42,7 +48,7 @@ export function NgoCategoryPillBar() {
         {
           action: {
             label: "Upload",
-            onClick: () => router.push("/dashboard/ngo"),
+            onClick: () => router.push("/ngo/handovers"),
           },
         }
       );

@@ -106,7 +106,7 @@ function LoginContent() {
           router.push(socialCompletionUrl(rawNext));
         } else {
           // Fix #4: cookie set by server; use role from response directly
-          setUser({ email: res.email, role: res.role });
+          setUser({ email: res.email, role: res.role, fullName: res.fullName });
           toast.success(t("welcomeBackToast"));
           goAfterAuth(res.role, router.push);
         }
@@ -189,7 +189,7 @@ function LoginContent() {
       if (!auth.succeed(id)) return;
       // No artificial delay: set the session and go. The page stays locked
       // (auth.op === "authenticated") until the navigation unmounts it.
-      setUser({ email: res.email, role: res.role });
+      setUser({ email: res.email, role: res.role, fullName: res.fullName });
       goAfterAuth(res.role, router.push);
     } catch (err) {
       const raw = err instanceof Error ? err.message : "";

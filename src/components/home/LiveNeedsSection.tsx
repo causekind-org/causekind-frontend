@@ -9,6 +9,8 @@ import {
   MapPin,
   Lock,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   ShieldCheck,
   CheckCircle2,
   Sparkles,
@@ -20,7 +22,6 @@ import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import LetterSwap from "@/components/LetterSwap";
-import { CarouselDots } from "@/components/home/mobile/primitives";
 
 /**
  * How many needs the homepage grid shows before handing off to /requests.
@@ -103,7 +104,19 @@ export function LiveNeedsSection({
         : allNeeds.filter((n) => n.category === selectedCategory),
     [allNeeds, selectedCategory],
   );
-  const displayedNeeds = filteredNeeds.slice(0, NEEDS_SHOWN);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(NEEDS_SHOWN);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const sync = () => { setPageSize(query.matches ? 1 : NEEDS_SHOWN); setPage(0); };
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+  useEffect(() => { setPage(0); }, [selectedCategory]);
+  const pageCount = Math.ceil(filteredNeeds.length / pageSize);
+  const activePage = Math.min(page, Math.max(0, pageCount - 1));
+  const displayedNeeds = filteredNeeds.slice(activePage * pageSize, (activePage + 1) * pageSize);
   const hiddenCount = filteredNeeds.length - displayedNeeds.length;
 
   const cardCount = displayedNeeds.length;
@@ -291,13 +304,13 @@ export function LiveNeedsSection({
             ) : null}
           </div>
         ) : (
-          <>
+          <div className="relative md:px-12">
           {/* A grid from 768px up; below that `.ck-snap-m` turns the same
               element into a native scroll-snap row with a peek of the next
               card, so six needs cost one card of height, not six. */}
           <div
             ref={needsRowRef}
-            className="ck-snap-m grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
             role="region"
             aria-label="Open needs"
             tabIndex={-1}
@@ -398,14 +411,32 @@ export function LiveNeedsSection({
               );
             })}
           </div>
-          <CarouselDots
-            scrollerRef={needsRowRef}
-            count={cardCount}
-            label="Open needs"
-            resetKey={selectedCategory}
-            className="md:hidden mt-1"
-          />
-          </>
+          {pageCount > 1 && (
+            <nav aria-label="Open needs pages" className="mt-3 flex items-center justify-center gap-2">
+              <button type="button" aria-label="Previous requests" disabled={activePage === 0}
+                onClick={() => setPage(activePage - 1)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 md:absolute md:left-0 md:top-1/2 md:-translate-y-1/2">
+                <ChevronLeft size={20} aria-hidden="true" />
+              </button>
+              <div className="flex min-w-0 items-center overflow-x-auto">
+                {Array.from({ length: pageCount }, (_, index) => (
+                  <button key={index} type="button" aria-label={`Requests page ${index + 1}`}
+                    aria-current={index === activePage ? "page" : undefined}
+                    onClick={() => setPage(index)}
+                    className="flex h-11 w-8 shrink-0 items-center justify-center text-[var(--ck-home-ink,#b04a15)] focus-visible:outline-2">
+                    <span className={`h-2 w-2 rounded-full bg-current ${index === activePage ? "opacity-100" : "opacity-30"}`} />
+                  </button>
+                ))}
+              </div>
+              <button type="button" aria-label="Next requests" disabled={activePage === pageCount - 1}
+                onClick={() => setPage(activePage + 1)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2">
+                <ChevronRight size={20} aria-hidden="true" />
+              </button>
+              <span className="sr-only" aria-live="polite">Page {activePage + 1} of {pageCount}</span>
+            </nav>
+          )}
+          </div>
         )}
 
         {/* The grid is a sample, so it says so. Without this the eyebrow

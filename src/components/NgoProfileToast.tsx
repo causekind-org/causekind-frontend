@@ -17,7 +17,24 @@ const VISIBLE_MS = 5000;
 const REPEAT_INTERVAL_MS = 15000;
 const EXIT_MS = 380;
 
-export function NgoProfileToast({
+export function NgoProfileToast(props: NgoProfileToastProps) {
+  const { user, isLoading, isRestoring } = useAuth();
+  const role = user?.role?.toUpperCase().replace(/^ROLE_/, "");
+
+  // Do not mount timers, storage listeners or NGO API calls for other visitors.
+  if (isLoading || isRestoring || !user || (role !== "NGO" && role !== "NGO_PARTNER")) {
+    return null;
+  }
+
+  return (
+    <AuthenticatedNgoProfileToast
+      key={String(user.id ?? user.userId ?? user.email)}
+      {...props}
+    />
+  );
+}
+
+function AuthenticatedNgoProfileToast({
   isProfileComplete = false,
   isModalOpen = false,
   userId,

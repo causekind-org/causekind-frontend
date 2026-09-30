@@ -37,6 +37,7 @@ vi.mock("@/lib/api", () => ({
     applicationId: "CK-NGO-2026-ABCD1234",
     message: "OTP resent successfully",
   }),
+  getMyNgoApplication: vi.fn().mockResolvedValue(null),
   getNgoDraft: vi.fn().mockResolvedValue(null),
   saveNgoDraft: vi.fn().mockResolvedValue({ status: "SAVED" }),
 }));
@@ -122,8 +123,8 @@ describe("NGORegistration Component", () => {
     await user.selectOptions(screen.getByLabelText(/Designation/i), "Managing Trustee");
     await user.type(screen.getByLabelText(/Mobile Number/i), "+91 98765 43210");
     await user.type(screen.getByLabelText(/Official Email Address/i), "priya@helpinghearts.org");
-    const markLetterBtn = screen.getByRole("button", { name: /Mark as uploaded ✓/i });
-    await user.click(markLetterBtn);
+    await user.upload(document.querySelector<HTMLInputElement>('input[type="file"]')!, dummyPdf);
+    await waitFor(() => expect(screen.queryByText(/Uploading.../i)).not.toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 
     // Step 4: Organization Photos

@@ -179,7 +179,7 @@ function NgoHero({ myRequests }: { myRequests: ItemRequest[] }) {
 
             {/* CTA row */}
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 anim-up anim-d4">
-              <Link href="/requests/new">
+              <Link href="/ngo/requests/new">
                 <button className="flex items-center gap-2.5 bg-[#b04a15] hover:bg-[#943d0f] active:scale-[0.97] text-white font-extrabold px-4 sm:px-7 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm transition-all shadow-xl shadow-[#b04a15]/30">
                   <Plus className="w-4 h-4" />
                   Post a Campaign / Request
@@ -389,7 +389,7 @@ function NgoCategoryStarterSection({ catCounts }: { catCounts: Record<string, nu
 
           return (
             <Reveal key={cat} delay={i * 75}>
-              <Link href={`/requests/new?category=${encodeURIComponent(cat)}`}>
+              <Link href={`/ngo/requests/new?category=${encodeURIComponent(cat)}`}>
                 <div className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${gradient}
                                 h-[102px] sm:h-44 flex flex-col justify-between p-2 sm:p-5 cursor-pointer
                                 hover:-translate-y-2 hover:shadow-xl ${shadow}
@@ -447,7 +447,7 @@ function NgoMyRequestsSection({ requests }: { requests: ItemRequest[] }) {
                 <span className="ml-2 sm:ml-3 text-sm sm:text-base font-semibold text-stone-400">({requests.length})</span>
               </h2>
             </div>
-            <Link href="/requests/new">
+            <Link href="/ngo/requests/new">
               <button className="flex items-center gap-1.5 sm:gap-2 bg-[#b04a15] hover:bg-[#963c0d] text-white font-bold px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-2xs sm:text-xs transition-all shadow-sm">
                 <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Post Request
               </button>
@@ -550,7 +550,7 @@ function NgoAvailableDonorListingsSection({ listings }: { listings: ItemListing[
       <Reveal delay={420}>
         <div className="mt-7 sm:mt-12 text-center">
           <p className="text-stone-500 dark:text-stone-400 text-sm mb-3 sm:mb-5">Need specific supplies for your cause?</p>
-          <Link href="/requests/new">
+          <Link href="/ngo/requests/new">
             <button className="inline-flex items-center gap-2 sm:gap-2.5 bg-[#b04a15] hover:bg-[#963c0d] text-white font-extrabold px-4 py-2.5 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm transition-all shadow-lg shadow-orange-900/20">
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Post What You Need

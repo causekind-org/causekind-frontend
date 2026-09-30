@@ -76,16 +76,21 @@ function Sparkles12({ color }: { color: string }) {
 }
 
 function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
-  const [firstName, setFirstName] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [profileName, setProfileName] = useState<string | null>(null);
+  const firstName = user?.fullName?.trim().split(/\s+/)[0] || profileName;
 
   useEffect(() => {
+    if (user?.fullName?.trim()) return;
+    let cancelled = false;
     getMyProfile()
       .then(p => {
         const first = p?.fullName?.trim().split(/\s+/)[0];
-        if (first) setFirstName(first);
+        if (first && !cancelled) setProfileName(first);
       })
       .catch(() => {});
-  }, []);
+    return () => { cancelled = true; };
+  }, [user?.email, user?.fullName]);
 
   function go() {
     dismiss();
@@ -174,7 +179,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
           </div>
 
           <h2 className="text-[26px] sm:text-3xl font-black text-white tracking-tight mb-3 [overflow-wrap:anywhere]">
-            Welcome back, {firstName ?? "Donor"}!
+            {firstName ? `Welcome back, ${firstName}!` : "Welcome back!"}
           </h2>
           <p className="text-stone-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
             Ready to make a difference? Choose what you&apos;d like to donate and we&apos;ll match you with someone nearby.

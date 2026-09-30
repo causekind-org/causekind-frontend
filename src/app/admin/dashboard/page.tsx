@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   adminGetCampaigns, approveCampaign, rejectCampaign, type Campaign,
@@ -654,6 +655,7 @@ export default function AdminDashboardPage() {
             <div>
               <h1 className="text-xl font-black text-stone-900 tracking-tight leading-none">{headerTitle}</h1>
               <p className="text-sm text-stone-500 mt-1.5">{headerSubtitle}</p>
+              {canSeeTab("requests") && <Link href="/admin/ngos" className="mt-3 inline-block text-sm font-semibold text-[#b04a15] underline">Review NGO applications</Link>}
             </div>
 
             {/* AI logs refresh button */}

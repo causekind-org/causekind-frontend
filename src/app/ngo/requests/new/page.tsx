@@ -1,192 +1,134 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import {
-  ShieldCheck,
-  Lock,
-  Sparkles,
-  ArrowLeft,
-  Package,
-  Layers,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
-import { toast } from "@/lib/toast";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
-import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
+import { ALL_REQUEST_CATEGORIES } from "@/lib/categoryVisuals";
+import { createItemRequestDraft, getMyItemRequests, updateItemRequestDraft, submitItemRequestDraft, type UpdateRequestPayload } from "@/lib/api";
+import { toast } from "@/lib/toast";
 
-function NgoRequestCreationContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const categoryParam = searchParams.get("category");
+const input = "mt-1 w-full rounded-xl border border-stone-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
+const button = "rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold disabled:opacity-50 dark:border-zinc-700";
+const blank = { title: "", category: "", quantity: "1", urgency: "NORMAL", city: "", pincode: "", description: "", latitude: "", longitude: "" };
 
-  const {
-    status,
-    isVerified,
-    isPhotosDue,
-    photosDueRequestName,
-    lockReason,
-  } = useNgoStatus();
-
-  // Route Guard: Non-verified NGOs or NGOs with photos due are redirected back
-  useEffect(() => {
-    if (!isVerified) {
-      if (status === "incomplete") {
-        toast.error("Complete your profile to get verified. Continue →");
-        router.replace("/profile/ngo-details");
-      } else if (status === "under_review") {
-        toast.info("Your application is under review. We'll unlock this once you're approved.");
-        router.replace("/");
-      } else if (status === "changes_requested") {
-        toast.error("A few documents need fixing. Fix now →");
-        router.replace("/profile/ngo-details");
-      }
-    } else if (isPhotosDue) {
-      toast.error(`Upload handover photos for ${photosDueRequestName} to post your next request.`);
-      router.replace("/");
-    }
-  }, [isVerified, status, isPhotosDue, photosDueRequestName, router]);
-
-  if (!isVerified || isPhotosDue) {
-    return (
-      <div className="min-h-screen bg-[#FBF9F4] dark:bg-[#09090b] flex items-center justify-center p-6 text-stone-800 dark:text-stone-200">
-        <div className="text-center max-w-md space-y-4">
-          <div className="h-14 w-14 rounded-2xl bg-amber-100 text-amber-700 mx-auto flex items-center justify-center">
-            <Lock className="w-7 h-7" />
-          </div>
-          <h1 className="text-xl font-bold">Post a Request is Locked</h1>
-          <p className="text-sm text-stone-500">{lockReason}</p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-bold text-ngo-700 dark:text-ngo-300 hover:underline"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Return to Home</span>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#FBF9F4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-8">
-        {/* Top Back Link */}
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-stone-600 dark:text-stone-400 hover:text-ngo-700 dark:hover:text-ngo-300 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to NGO Portal</span>
-        </Link>
-
-        {/* Header */}
-        <div className="space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-ngo-50 dark:bg-ngo-900/40 border border-ngo-300 text-ngo-800 dark:text-ngo-200 shadow-sm text-3xs font-black uppercase tracking-wider">
-            <ShieldCheck className="w-3.5 h-3.5 text-ngo-700 dark:text-ngo-300" />
-            <span>Verified Partner Request Creator</span>
-          </div>
-
-          <h1
-            className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900 dark:text-stone-50"
-            style={{ fontFamily: "var(--font-source-serif-4), var(--font-lora), serif" }}
-          >
-            Post what you need.
-          </h1>
-
-          <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed max-w-2xl">
-            Post an in-kind request for items your community needs. Givers within 10 km see it, pledge exact quantities, and hand them over directly.
-          </p>
-        </div>
-
-        {/* Selected Category Notice if any */}
-        {categoryParam && (
-          <div className="rounded-2xl border border-ngo-300 bg-ngo-50/80 dark:bg-ngo-900/30 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Layers className="w-5 h-5 text-ngo-700 dark:text-ngo-300" />
-              <div>
-                <span className="text-3xs uppercase tracking-wider font-black text-ngo-700 dark:text-ngo-300">
-                  Selected Category
-                </span>
-                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                  {categoryParam}
-                </p>
-              </div>
-            </div>
-            <span className="text-2xs font-bold text-ngo-700 dark:text-ngo-300">
-              Pre-selected ✓
-            </span>
-          </div>
-        )}
-
-        {/* Coming Soon Feature Card */}
-        <div className="rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 sm:p-10 shadow-xl space-y-6">
-          <div className="flex items-center gap-3 text-ngo-700 dark:text-ngo-300">
-            <Sparkles className="w-6 h-6" />
-            <h2 className="text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100">
-              Direct In-Kind Request Engine
-            </h2>
-          </div>
-
-          <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed">
-            The direct NGO request posting engine is activating in the next deployment phase. Verified NGOs like yours will be able to publish live wishlists (e.g. 50 blankets, 100 books, 20 ration kits) with automatic 10 km donor radius notifications.
-          </p>
-
-          {/* Feature Highlights */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/60 dark:border-zinc-700/60">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
-                  10 km Radius Reach
-                </p>
-                <p className="text-3xs sm:text-2xs text-stone-500 dark:text-stone-400 mt-0.5">
-                  Only nearby donors are notified, minimizing transit time and logistics friction.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/60 dark:border-zinc-700/60">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
-                  Automated Certificates
-                </p>
-                <p className="text-3xs sm:text-2xs text-stone-500 dark:text-stone-400 mt-0.5">
-                  Every donor receives a verified CauseKind handover certificate once you confirm receipt.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Button */}
-          <div className="pt-6 border-t border-stone-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-2xs text-stone-400">
-              <Clock className="w-4 h-4" />
-              <span>Full form launching soon</span>
-            </div>
-
-            <Link
-              href="/"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 text-white font-bold px-6 py-3 text-sm shadow-md transition-all"
-            >
-              <span>Back to NGO Overview</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+export default function NgoNewRequestPage() {
+  return <Suspense fallback={<p className="p-8" role="status">Loading request…</p>}><NgoRequestForm /></Suspense>;
 }
 
-export default function NgoRequestCreationPage() {
-  return (
-    <Suspense fallback={null}>
-      <NgoRequestCreationContent />
-    </Suspense>
-  );
+function NgoRequestForm() {
+  const { user, isLoading: authLoading } = useAuth();
+  const status = useNgoStatus();
+  const router = useRouter();
+  const params = useSearchParams();
+  const draftParam = params.get("draft");
+  const [form, setForm] = useState(() => ({ ...blank, category: ALL_REQUEST_CATEGORIES.find(c => c === params.get("category")) || "" }));
+  const [draftId, setDraftId] = useState<number | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(!!draftParam);
+  const [loadError, setLoadError] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const saving = useRef(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) router.replace("/login?next=%2Fngo%2Frequests%2Fnew");
+    else if (!["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) router.replace("/requests");
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (!draftParam || !user) return;
+    let active = true;
+    setLoadingDraft(true); setLoadError("");
+    getMyItemRequests().then(requests => {
+      if (!active) return;
+      const draft = requests.find(r => r.id === Number(draftParam) && r.status === "DRAFT");
+      if (!draft) { setLoadError("This draft is unavailable or has already been submitted. Open your request list to continue."); return; }
+      setDraftId(draft.id);
+      setForm({ title: draft.title === "Draft" ? "" : draft.title, category: draft.category, quantity: String(draft.quantity),
+        urgency: draft.urgency, city: draft.city, pincode: draft.pincode || "", description: draft.description || "",
+        latitude: draft.latitude == null ? "" : String(draft.latitude), longitude: draft.longitude == null ? "" : String(draft.longitude) });
+    }).catch(e => { if (active) setLoadError(e instanceof Error ? e.message : "We could not load your draft."); })
+      .finally(() => { if (active) setLoadingDraft(false); });
+    return () => { active = false; };
+  }, [draftParam, user]);
+
+  function update(key: keyof typeof blank, value: string) { setForm(previous => ({ ...previous, [key]: value })); }
+  function locate() {
+    if (!navigator.geolocation) { setError("Location is unavailable here. You can enter the coordinates below."); return; }
+    setLocating(true); setError("");
+    navigator.geolocation.getCurrentPosition(position => {
+      setForm(previous => ({ ...previous, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) }));
+      setLocating(false);
+    }, () => { setLocating(false); setError("We could not get your location. Please enter the coordinates or try again."); }, { timeout: 12000 });
+  }
+  async function save(submit: boolean) {
+    if (saving.current) return;
+    if (!status.canPostRequest) { setError(status.lockReason); return; }
+    const lat = Number(form.latitude), lng = Number(form.longitude), quantity = Number(form.quantity);
+    if (!Number.isInteger(quantity) || quantity < 1) { setError("Please enter a whole quantity of at least one."); return; }
+    const hasLocation = form.latitude.trim() !== "" && form.longitude.trim() !== "";
+    if ((submit || draftId !== null || form.latitude || form.longitude) && (!hasLocation || !Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lng) || Math.abs(lng) > 180)) {
+      setError("Please provide a valid latitude and longitude for the delivery area."); return;
+    }
+    if (submit && (form.title.trim().length < 3 || !form.category || !form.city.trim() || !form.description.trim())) {
+      setError("Please add the item, category, city and how your organization will use it."); return;
+    }
+    saving.current = true; setBusy(true); setError("");
+    try {
+      let id = draftId;
+      if (!id) { const created = await createItemRequestDraft(); id = created.id; setDraftId(id); }
+      const payload: UpdateRequestPayload = { title: form.title.trim() || "Draft", category: form.category,
+        quantity, urgency: form.urgency, city: form.city.trim(), pincode: form.pincode.trim(), description: form.description.trim(),
+        ...(hasLocation ? { latitude: lat, longitude: lng } : {}) };
+      await updateItemRequestDraft(id, payload);
+      if (submit) {
+        await submitItemRequestDraft(id);
+        toast.success("Thank you. Your organization's request is with our team for review.");
+        window.dispatchEvent(new Event("ngo-activity-updated"));
+        router.push("/ngo/requests");
+      } else {
+        toast.success("Your draft is saved. You can return to it from your requests.");
+        router.replace(`/ngo/requests/new?draft=${id}`);
+      }
+    } catch (e) { setError(e instanceof Error ? e.message : "We could not save your request. Your entries are still here."); }
+    finally { saving.current = false; setBusy(false); }
+  }
+
+  if (authLoading || status.isLoading || loadingDraft) return <p className="p-8" role="status">Loading your NGO request…</p>;
+  if (!user) return null;
+  if (loadError) return <main className="mx-auto max-w-xl space-y-4 p-8"><p role="alert">{loadError}</p><button className={button} onClick={() => window.location.reload()}>Retry</button><Link className="ml-4 underline" href="/ngo/requests">Your requests</Link></main>;
+  if (!status.canPostRequest) return <main className="mx-auto max-w-xl space-y-4 p-8">
+    <h1 className="text-2xl font-bold">Before you post a request</h1><p role={status.error ? "alert" : "status"}>{status.lockReason}</p>
+    {status.error ? <button className={button} onClick={() => void status.refresh()}>Retry</button>
+      : <Link className="underline" href={status.isPhotosDue ? "/ngo/handovers" : "/profile/ngo-details"}>{status.isPhotosDue ? "Complete your handover photos" : "View your application"}</Link>}
+  </main>;
+
+  return <main className="min-h-screen bg-stone-50 px-4 py-8 dark:bg-zinc-950 sm:px-8"><div className="mx-auto max-w-2xl space-y-6">
+    <Link href="/ngo/requests" className="text-sm underline">Back to your requests</Link>
+    <header><h1 className="text-3xl font-bold">What does your organization need?</h1><p className="mt-2 text-sm text-stone-600 dark:text-stone-400">Tell us what will help and how it will be used. Our team reviews each need, then looks for a private donor match before publishing it.</p></header>
+    {error && <p role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+    <form className="space-y-5 rounded-2xl border border-stone-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-7" onSubmit={e => { e.preventDefault(); void save(true); }}>
+      <fieldset disabled={busy} className="space-y-5 disabled:opacity-60">
+        <label className="block text-sm font-semibold">Item needed<input className={input} required minLength={3} maxLength={120} value={form.title} onChange={e => update("title", e.target.value)} placeholder="For example, school bags for our learning centre" /></label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block text-sm font-semibold">Category<select className={input} required value={form.category} onChange={e => update("category", e.target.value)}><option value="">Choose a category</option>{ALL_REQUEST_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></label>
+          <label className="block text-sm font-semibold">Quantity<input className={input} type="number" min={1} step={1} required value={form.quantity} onChange={e => update("quantity", e.target.value)} /></label>
+        </div>
+        <label className="block text-sm font-semibold">Urgency<select className={input} value={form.urgency} onChange={e => update("urgency", e.target.value)}><option value="NORMAL">Normal</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option></select></label>
+        <label className="block text-sm font-semibold">How will these items help?<textarea className={input} rows={5} required maxLength={2000} value={form.description} onChange={e => update("description", e.target.value)} placeholder="Explain the intended use, who will benefit and any item specifications. Avoid including private beneficiary information." /></label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block text-sm font-semibold">City<input className={input} required maxLength={100} value={form.city} onChange={e => update("city", e.target.value)} /></label>
+          <label className="block text-sm font-semibold">Postal code (optional)<input className={input} maxLength={10} value={form.pincode} onChange={e => update("pincode", e.target.value)} /></label>
+        </div>
+        <div className="space-y-3"><h2 className="font-semibold">Delivery area</h2><p className="text-sm text-stone-500">Choose a location where your organization can receive items. Location is requested only when you press the button.</p>
+          <button type="button" className={button} disabled={locating} onClick={locate}>{locating ? "Getting location…" : "Use my current location"}</button>
+          <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm">Latitude<input className={input} type="number" step="any" min={-90} max={90} required value={form.latitude} onChange={e => update("latitude", e.target.value)} /></label><label className="text-sm">Longitude<input className={input} type="number" step="any" min={-180} max={180} required value={form.longitude} onChange={e => update("longitude", e.target.value)} /></label></div>
+        </div>
+        <div className="flex flex-wrap gap-3"><button type="button" className={button} onClick={() => void save(false)}>Save draft</button><button type="submit" className={`${button} bg-ngo-700 text-white`}>{busy ? "Saving…" : "Submit for review"}</button></div>
+      </fieldset>
+    </form>
+  </div></main>;
 }

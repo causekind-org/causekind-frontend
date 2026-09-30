@@ -15,6 +15,7 @@ import { useNgoStatus } from "./useNgoStatus";
 
 export function NgoGlanceStrip() {
   const {
+    isLoading, error, refresh,
     isVerified,
     activeRequests,
     itemsPledged,
@@ -25,6 +26,8 @@ export function NgoGlanceStrip() {
   } = useNgoStatus();
 
   // Strip is rendered for verified NGOs ONLY
+  if (isLoading) return <p role="status" className="mx-auto max-w-7xl px-4 py-6">Loading your organization’s activity…</p>;
+  if (error) return <div role="alert" className="mx-auto max-w-7xl px-4 py-6"><p>{error}</p><button onClick={() => void refresh()} className="mt-2 underline">Retry</button></div>;
   if (!isVerified) return null;
 
   const isPhotosWarning = photosDue > 0;
@@ -55,7 +58,7 @@ export function NgoGlanceStrip() {
             </div>
 
             <Link
-              href="/dashboard/ngo"
+              href="/ngo/handovers"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold px-5 py-2.5 text-xs sm:text-sm shadow-md transition-all shrink-0 w-full sm:w-auto"
             >
               <Camera className="w-4 h-4" />

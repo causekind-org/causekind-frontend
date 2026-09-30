@@ -78,8 +78,8 @@ const TRUST_CARDS: TrustCardData[] = [
 
 const TRUST_STATS = [
   { value: "100%", label: "Admin-verified listings", color: "text-[var(--ck-role-accent,#B5480F)]" },
-  { value: "10 km", label: "Local matching radius", color: "text-[#1e3a60]" },
-  { value: "₹0", label: "Platform or hidden fees", color: "text-[#1F6B3F]" },
+  { value: "10 km", label: "Local matching radius", color: "text-[var(--ck-role-accent)]" },
+  { value: "₹0", label: "Platform or hidden fees", color: "text-[var(--ck-role-accent)]" },
   { value: "Zero", label: "Middlemen or warehouses", color: "text-stone-800 dark:text-stone-100" },
 ];
 
@@ -442,7 +442,7 @@ function TrustSafetyFull({
 
           {/* Stat 2: 10 km */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-l border-stone-200/60 dark:border-stone-800/60">
-            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#1e3a60] font-mono tracking-tight">
+            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[var(--ck-role-accent)] font-mono tracking-tight">
               {stat2} km
             </div>
             <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">
@@ -452,7 +452,7 @@ function TrustSafetyFull({
 
           {/* Stat 3: ₹0 */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-t md:border-t-0 md:border-l border-stone-200/60 dark:border-stone-800/60">
-            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#1F6B3F] font-mono tracking-tight">
+            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[var(--ck-role-accent)] font-mono tracking-tight">
               ₹{stat3}
             </div>
             <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">

@@ -1,6 +1,12 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import { TrueFocus } from "./TrueFocus";
+
+vi.mock("framer-motion", async (importOriginal) => ({
+  ...await importOriginal<typeof import("framer-motion")>(),
+  useInView: () => true,
+}));
+afterEach(() => vi.useRealTimers());
 
 describe("TrueFocus Component", () => {
   beforeEach(() => {

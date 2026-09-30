@@ -31,6 +31,7 @@ describe("NgoRequestsDropdown", () => {
 
   it("renders locked state for unverified NGOs with 3 items", () => {
     vi.spyOn(useNgoStatusModule, "useNgoStatus").mockReturnValue({
+      isLoading: false, error: null, refresh: async () => {}, overview: null,
       status: "incomplete",
       ngoName: "Helping Hands Trust",
       stepNumber: 2,
@@ -71,6 +72,7 @@ describe("NgoRequestsDropdown", () => {
 
   it("renders active links for verified NGOs", () => {
     vi.spyOn(useNgoStatusModule, "useNgoStatus").mockReturnValue({
+      isLoading: false, error: null, refresh: async () => {}, overview: null,
       status: "verified",
       ngoName: "Goonj Foundation",
       stepNumber: 6,
@@ -101,7 +103,7 @@ describe("NgoRequestsDropdown", () => {
     const handoversLink = screen.getByRole("link", { name: /handovers & photos/i });
 
     expect(postReqLink).toHaveAttribute("href", "/ngo/requests/new");
-    expect(activeReqLink).toHaveAttribute("href", "/requests");
+    expect(activeReqLink).toHaveAttribute("href", "/ngo/requests");
     expect(handoversLink).toHaveAttribute("href", "/ngo/handovers");
   });
 });

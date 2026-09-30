@@ -304,7 +304,7 @@ function RegisterContent() {
           sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
           router.push("/register?social=google");
         } else {
-          setUser({ email: res.email, role: res.role });
+          setUser({ email: res.email, role: res.role, fullName: res.fullName });
           toast.success("Welcome back!");
           goAfterAuth(res.role, router.push);
         }
@@ -505,7 +505,7 @@ function RegisterContent() {
           password: form.password,
           website: ngoWebsite.trim() || undefined,
         });
-        setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role });
+        setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName });
         trackCompleteRegistration({ method: "ngo" });
         toast.success("NGO account created! Welcome to CauseKind.");
         router.replace("/");
@@ -514,7 +514,7 @@ function RegisterContent() {
         if (!res.needsCompletion) {
           sessionStorage.removeItem("ck_google_token");
           sessionStorage.removeItem("ck_google_profile");
-          setUser({ email: res.email, role: res.role });
+          setUser({ email: res.email, role: res.role, fullName: res.fullName });
           trackCompleteRegistration({ method: "google" });
           toast.success("Account created! Welcome to CauseKind.");
           goAfterAuth(res.role, router.push);
@@ -560,8 +560,8 @@ function RegisterContent() {
   }
 
   /** Runs after the success animation. The only place auth + navigation happen. */
-  function completeRegistration(res: { email: string; role: string }) {
-    setUser({ email: res.email, role: res.role });
+  function completeRegistration(res: { email: string; role: string; fullName?: string }) {
+    setUser({ email: res.email, role: res.role, fullName: res.fullName });
     trackCompleteRegistration({ method: "email" });
     toast.success("Account created!");
     // The end of the email/OTP path — and the one that matters most for the
@@ -1012,10 +1012,10 @@ function RegisterContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full rounded-xl disabled:opacity-60 text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 mt-2 animate-heartbeat ${
+                className={`w-full rounded-xl disabled:cursor-not-allowed text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 mt-2 animate-heartbeat disabled:animate-none ${
                   form.role === "NGO"
-                    ? "bg-ngo-700 hover:bg-ngo-600 focus-visible:ring-ngo-700"
-                    : "bg-[#b04a15] hover:bg-[#963c0d] focus-visible:ring-[#b04a15]"
+                    ? "bg-[#1E6B4F] enabled:hover:bg-[#185740] disabled:bg-[#4D6B5F] focus-visible:ring-[#1E6B4F]"
+                    : "bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 focus-visible:ring-[#b04a15]"
                 }`}
               >
                 {loading

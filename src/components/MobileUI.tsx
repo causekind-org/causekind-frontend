@@ -514,8 +514,8 @@ export function FloatingSupportButton() {
             href="/faq"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--ck-role-soft)] dark:hover:bg-zinc-800 transition-colors group"
           >
-            <span className="w-8 h-8 rounded-full bg-[#1e3a60]/10 flex items-center justify-center shrink-0">
-              <Phone className="w-4 h-4 text-[#1e3a60]" />
+            <span className="w-8 h-8 rounded-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center shrink-0">
+              <Phone className="w-4 h-4 text-[var(--ck-role-accent)]" />
             </span>
             <div>
               <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("helpFaq")}</p>
@@ -547,8 +547,8 @@ export function FloatingSupportButton() {
                    ${bubblePosition ? "" : "lg:bottom-8 lg:right-5"}
                    ${dragging ? "cursor-grabbing" : "cursor-grab"}
                    ck-support-fab lg:w-13 lg:h-13 rounded-full
-                   bg-[#1e3a60]/65 backdrop-blur-md
-                   shadow-[0_8px_32px_-4px_rgba(30,58,96,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]
+                   bg-[var(--ck-role-accent)]/65 backdrop-blur-md
+                   shadow-[0_8px_32px_-4px_rgba(var(--ck-role-shadow-rgb,176,74,21),0.55),inset_0_1px_0_rgba(255,255,255,0.18)]
                    border border-white/20 dark:border-white/12
                    flex items-center justify-center
                    ${/* No transition mid-drag, or the button lags the finger. */ ""}

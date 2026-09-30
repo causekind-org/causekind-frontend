@@ -6,7 +6,7 @@ import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
-import { DonorCtaSection } from "@/components/home/DonorCtaSection";
+import { DonorTwoDoors } from "@/components/home/DonorTwoDoors";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { PublicItemRequest, PlatformStats } from "@/lib/api";
@@ -38,7 +38,7 @@ export function RoleHome({
       <TrustSafetySection variant="desktop" />
       <FoundersNoteSection variant="desktop" />
       <GoogleReviewsSection />
-      {role === "donor" && <DonorCtaSection />}
+      {role === "donor" && <DonorTwoDoors />}
     </div>
   );
 }

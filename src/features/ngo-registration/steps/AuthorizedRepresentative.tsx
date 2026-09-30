@@ -1,14 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Upload, Check, FileText } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
   DESIGNATIONS,
   type NGOFormState,
-  type UploadedFile,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
+import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
 
 interface AuthorizedRepresentativeProps {
   data: NGOFormState;
@@ -20,8 +20,6 @@ interface AuthorizedRepresentativeProps {
 /** Step 3 — Authorized Representative */
 export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }: AuthorizedRepresentativeProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const authLetterRef = useRef<HTMLInputElement>(null);
-  const [draggingLetter, setDraggingLetter] = useState(false);
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -43,17 +41,6 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
       <p className="mt-1 text-3xs font-semibold text-red-600 dark:text-red-400">{errors[key]}</p>
     ) : null;
   }
-
-  function handleLetterFiles(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    onChange({ authorizationLetter: { name: files[0].name, demo: false } });
-  }
-
-  function markLetterDemo() {
-    onChange({ authorizationLetter: { name: "authorization-letter-demo.pdf", demo: true } });
-  }
-
-  const letter = data.authorizationLetter;
 
   return (
     <div className="space-y-6">
@@ -157,56 +144,14 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
             </p>
           </div>
 
-          {letter ? (
-            <div className="rounded-xl border border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20 p-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/40">
-                  <Check className="h-4 w-4 text-green-600" strokeWidth={2.5} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-2xs font-bold text-stone-800 dark:text-stone-200 truncate flex items-center gap-1">
-                    <FileText className="h-3 w-3 shrink-0" aria-hidden />
-                    {letter.demo ? "Demo upload" : letter.name}
-                  </p>
-                </div>
-              </div>
-              <button type="button" onClick={() => onChange({ authorizationLetter: null })} className="shrink-0 text-2xs font-bold text-stone-400 hover:text-red-500 transition-colors">Remove</button>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/60 dark:bg-zinc-900/40 overflow-hidden">
-              <input
-                ref={authLetterRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="sr-only"
-                id="auth-letter-upload"
-                onChange={(e) => handleLetterFiles(e.target.files)}
-              />
-              <div
-                role="button"
-                tabIndex={0}
-                onDragOver={(e) => { e.preventDefault(); setDraggingLetter(true); }}
-                onDragLeave={() => setDraggingLetter(false)}
-                onDrop={(e) => { e.preventDefault(); setDraggingLetter(false); handleLetterFiles(e.dataTransfer.files); }}
-                onClick={() => authLetterRef.current?.click()}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") authLetterRef.current?.click(); }}
-                aria-label="Upload authorization letter"
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1.5 py-5 cursor-pointer border-2 border-dashed m-3 rounded-lg transition-colors",
-                  draggingLetter ? "border-ngo-700 bg-ngo-700/5" : "border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50"
-                )}
-              >
-                <Upload className="h-5 w-5 text-stone-400" aria-hidden />
-                <p className="text-2xs font-semibold text-stone-500 dark:text-stone-400">Upload Authorization Letter</p>
-                <p className="text-3xs text-stone-400">Must be on organization letterhead with seal</p>
-                <p className="text-3xs text-stone-400">PDF, JPG or PNG · Max 5 MB</p>
-              </div>
-              <div className="border-t border-stone-100 dark:border-zinc-800 px-3.5 py-2 flex items-center justify-between">
-                <p className="text-3xs text-stone-400">Demo mode</p>
-                <button type="button" onClick={markLetterDemo} className="text-3xs font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-2">Mark as uploaded ✓</button>
-              </div>
-            </div>
-          )}
+          <DocUploadCard
+            docId="authorization-letter"
+            label="Authorization letter"
+            category="supporting"
+            uploaded={data.authorizationLetter}
+            onUpload={(file) => onChange({ authorizationLetter: file })}
+            onRemove={() => onChange({ authorizationLetter: null })}
+          />
         </div>
       </div>
 

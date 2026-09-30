@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useState } from "react";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
@@ -420,6 +422,8 @@ export function VerificationQueuePanel() {
                       </div>
                     </div>
                   </div>
+
+                  {r.ngoApplicationId && <Link href={`/admin/ngos?application=${encodeURIComponent(r.ngoApplicationId)}`} onClick={event => event.stopPropagation()} className="inline-block text-sm font-semibold underline">Review this request’s approved NGO application</Link>}
 
                   {/* Stat grid — mirrors the reference layout, with "Requesting" standing in for "Sales Representee" */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-2 pt-3 border-t border-[#e5e2d5] dark:border-zinc-700 text-xs">
