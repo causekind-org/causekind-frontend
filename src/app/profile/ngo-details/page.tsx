@@ -83,6 +83,24 @@ function NgoDetailsEditor() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  // ?step= is read exactly once, on the first render, and applied once the saved state
+  // has loaded. It used to be an effect keyed on [searchParams, currentStep], which
+  // re-applied the URL step after every navigation: Next / Back moved the wizard and the
+  // effect immediately moved it back. From load onwards the URL follows the wizard
+  // (see the sync effect below), never the other way round.
+  const initialUrlStep = useRef<NGOStep | null | undefined>(undefined);
+  if (initialUrlStep.current === undefined) {
+    const param = searchParams.get("step");
+    // Email verification is only reachable for a submitted application, which the load
+    // below detects on its own; it is not a step a link can open.
+    initialUrlStep.current =
+      param && param !== "email-verification" && (NGO_STEPS as readonly string[]).includes(param)
+        ? (param as NGOStep)
+        : null;
+  }
+  // The starting step is decided once. A later re-run of the load (for example when the
+  // auth context hands back a new user object) refreshes data but keeps the user's place.
+  const startingStepChosen = useRef(false);
 
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
@@ -215,9 +233,16 @@ function NgoDetailsEditor() {
             documents: { ...prev.documents, ...restoredDocs },
           }));
 
-          if (draft.currentStep && draft.currentStep !== "submitted") {
-            setCurrentStep(draft.currentStep as NGOStep);
-          }
+        }
+
+        if (active && !startingStepChosen.current) {
+          startingStepChosen.current = true;
+          const savedStep =
+            draft?.currentStep && (NGO_STEPS as readonly string[]).includes(draft.currentStep)
+              ? (draft.currentStep as NGOStep)
+              : null;
+          const startStep = initialUrlStep.current ?? savedStep;
+          if (startStep) setCurrentStep(startStep);
         }
       } finally {
         if (active) setLoading(false);
@@ -231,13 +256,21 @@ function NgoDetailsEditor() {
     };
   }, [user, isLoading, router, userIdentifier]);
 
-  // Handle URL step parameter if provided (?step=legal-documents)
+  // Keep ?step= in line with the wizard, so a reload or a shared link lands on the same
+  // step. replaceState rather than pushState: the URL is never read again after load, so
+  // browser Back would change the address without moving the wizard.
   useEffect(() => {
-    const stepParam = searchParams.get("step") as NGOStep;
-    if (stepParam && NGO_STEPS.includes(stepParam) && currentStep !== "submitted") {
-      setCurrentStep(stepParam);
+    if (loading || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (currentStep === "submitted") {
+      url.searchParams.delete("step");
+    } else {
+      url.searchParams.set("step", currentStep);
     }
-  }, [searchParams, currentStep]);
+    if (url.href !== window.location.href) {
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    }
+  }, [currentStep, loading]);
 
   function updateData(patch: Partial<NGOFormState>) {
     setData((prev) => {

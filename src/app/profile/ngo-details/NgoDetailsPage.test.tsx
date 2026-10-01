@@ -14,6 +14,8 @@ import {
 
 const mockReplace = vi.fn();
 const mockPush = vi.fn();
+// The ?step= value the page sees. A fresh object per render, as in the real hook.
+let mockStepParam: string | null = null;
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -21,7 +23,7 @@ vi.mock("next/navigation", () => ({
     push: mockPush,
   }),
   useSearchParams: () => ({
-    get: vi.fn().mockReturnValue(null),
+    get: (key: string) => (key === "step" ? mockStepParam : null),
   }),
 }));
 
@@ -44,6 +46,8 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockStepParam = null;
+    window.history.replaceState(null, "", "/profile/ngo-details");
   });
 
   it("renders sidebar with readiness progress, 6 step navigation, and Still Needed checklist", async () => {
@@ -221,6 +225,69 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     }
     fireEvent.click(screen.getAllByRole("button", { name: /Organization Details/i })[0]);
     expect(screen.getByRole("heading", { name: /Verify Official Email/i })).toBeInTheDocument();
+  }, 15000);
+
+  // ── ?step= ─────────────────────────────────────────────────────────────────
+
+  async function stepHeading(n: number) {
+    await waitFor(() => expect(screen.getAllByText(new RegExp(`Step ${n} of 6`)).length).toBeGreaterThanOrEqual(1), {
+      timeout: 8000,
+    });
+  }
+
+  it("applies ?step= once on load, then navigation is not pulled back to it", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    mockStepParam = "legal-documents";
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+
+    render(<NgoDetailsPage />);
+    await stepHeading(2);
+    expect(window.location.search).toBe("?step=legal-documents");
+
+    // The page still reports ?step=legal-documents through useSearchParams, exactly the
+    // situation in which the old effect snapped the wizard back to Step 2.
+    fireEvent.click(screen.getAllByRole("button", { name: /Authorized Representative/i })[0]);
+    await stepHeading(3);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Previous$/i })[0]);
+    await stepHeading(2);
+    fireEvent.click(screen.getAllByRole("button", { name: /Organization Photos/i })[0]);
+    await stepHeading(4);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getAllByText(/Step 4 of 6/).length).toBeGreaterThanOrEqual(1);
+    expect(window.location.search).toBe("?step=org-photos");
+  }, 20000);
+
+  it("prefers the URL step over the draft's saved step, and otherwise resumes the draft and writes it to the URL", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+    vi.mocked(getNgoDraft).mockResolvedValue({ currentStep: "org-photos", organizationName: "Smile Foundation" });
+
+    mockStepParam = "authorized-rep";
+    const first = render(<NgoDetailsPage />);
+    await stepHeading(3);
+    first.unmount();
+
+    mockStepParam = null;
+    window.history.replaceState(null, "", "/profile/ngo-details");
+    render(<NgoDetailsPage />);
+    await stepHeading(4);
+    expect(window.location.search).toBe("?step=org-photos");
+  }, 20000);
+
+  it("ignores a ?step= that names no step or the email step", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+
+    mockStepParam = "email-verification";
+    render(<NgoDetailsPage />);
+    await stepHeading(1);
+    expect(window.location.search).toBe("?step=org-details");
   }, 15000);
 
   it("offers Resend immediately on the restored OTP step and verifies against the restored application", async () => {
