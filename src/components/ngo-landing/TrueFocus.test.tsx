@@ -2,6 +2,14 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import { TrueFocus } from "./TrueFocus";
 
+// TrueFocus only cycles while the heading is on screen (useInView), so it does not
+// animate off-screen. jsdom's IntersectionObserver stub never reports anything as
+// visible, so put the heading in view for these timing tests.
+vi.mock("framer-motion", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("framer-motion")>();
+  return { ...actual, useInView: () => true };
+});
+
 describe("TrueFocus Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();

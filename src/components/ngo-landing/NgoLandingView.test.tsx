@@ -25,8 +25,11 @@ vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn().mockReturnValue(new URLSearchParams() as any),
 }));
 
+// useNgoStatus loads the application and the wizard draft together; a mock without
+// getNgoDraft throws inside the hook and takes every state test down with it.
 vi.mock("@/lib/api", () => ({
   getMyNgoApplication: vi.fn().mockResolvedValue(null),
+  getNgoDraft: vi.fn().mockResolvedValue(null),
 }));
 
 describe("NgoLandingView Component Suite", () => {
