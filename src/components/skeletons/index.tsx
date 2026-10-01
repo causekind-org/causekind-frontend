@@ -61,6 +61,43 @@ export function CardGridSkeleton({ count = 6, label = "Loading" }: { count?: num
   );
 }
 
+/**
+ * Single-column editorial cards — the guest needs board below 768px.
+ *
+ * Mirrors the phone layout in `PublicRequestsBoard.module.css`: 3px corners,
+ * 16px padding, serif-title line, two description lines, metadata and a
+ * divided action row. No image block — the real cards have none.
+ */
+export function EditorialListSkeleton({ count = 4, label = "Loading" }: { count?: number; label?: string }) {
+  return (
+    <Region label={label}>
+      <ul className="grid grid-cols-1 gap-2.5">
+        {Array.from({ length: count }, (_, i) => (
+          <li
+            key={i}
+            className="flex flex-col gap-1.5 rounded-[3px] border border-stone-200/80 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.03]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <Skeleton className="h-5 w-3/5" />
+              <Skeleton className="h-4 w-4 rounded" />
+            </div>
+            <Skeleton className="mt-1 h-3 w-full" />
+            <Skeleton className="h-3 w-4/5" />
+            <div className="flex gap-3 pt-1">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+            <div className="mt-2.5 flex min-h-11 items-center justify-between border-t border-stone-200/80 dark:border-white/10">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-4" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Region>
+  );
+}
+
 /** Stacked rows — offers, matches, admin queues. */
 export function ListRowsSkeleton({ rows = 5, label = "Loading" }: { rows?: number; label?: string }) {
   return (

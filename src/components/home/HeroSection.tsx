@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import { Anton } from "next/font/google";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
-import { MotionConfig, motion } from "framer-motion";
+import { DonateNowButton } from "@/components/donate/DonateNowButton";
+import { MotionConfig } from "framer-motion";
 import { ArrowRight, Heart, MapPin, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -133,12 +134,10 @@ function ConnectionPins() {
       </svg>
 
       {callouts.map(({ lead, rest, className, delay }) => (
-        <motion.div
+        <div
           key={lead}
-          className={`ck-hero-callout absolute hidden w-[clamp(5.6rem,6.4vw,6.9rem)] text-center lg:block ${className}`}
-          initial={false}
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 3.8, ease: "easeInOut", repeat: Infinity, delay }}
+          className={`ck-hero-callout ck-hero-callout-float absolute hidden w-[clamp(5.6rem,6.4vw,6.9rem)] text-center lg:block ${className}`}
+          style={{ animationDelay: `${delay}s` }}
         >
           <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 drop-shadow-[0_5px_8px_rgba(var(--ck-home-shadow-rgb,114,43,8),0.25)]">
             <LocationMarker />
@@ -152,7 +151,7 @@ function ConnectionPins() {
             </p>
             <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-[#fffdf9] dark:bg-stone-900" aria-hidden />
           </div>
-        </motion.div>
+        </div>
       ))}
 
       {/* Desktop-only now. These were the phone's version of the callouts, sat
@@ -187,25 +186,10 @@ export function HeroSection() {
         data-tour="guest-hero"
         style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
-        className="ck-showcase-hero relative isolate overflow-hidden bg-[#fdf5ed] px-3 pb-3 pt-3 text-[#100c06] dark:bg-[#15110f] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
+        className="ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
       >
         <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
-        {/* A quiet, screen-size ornament gives the paper side of the hero some
-            ceremony without adding another message competing with the CTA. It
-            stays behind the content and is deliberately absent on phones,
-            where the photograph is already the full visual field. */}
-        <svg
-          className="ck-hero-ornament pointer-events-none absolute left-0 top-0 hidden h-full w-[43%] lg:block"
-          viewBox="0 0 520 700"
-          fill="none"
-          aria-hidden
-        >
-          <circle cx="38" cy="102" r="158" />
-          <circle cx="38" cy="102" r="122" strokeDasharray="3 13" />
-          <path d="M0 370C119 302 188 321 298 412" />
-          <path d="M0 396C108 334 183 353 278 430" strokeDasharray="2 12" />
-          <circle className="ck-hero-ornament-dot" cx="298" cy="412" r="5" />
-        </svg>
+
 
         <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full max-w-[1920px]">
           {/* Below lg the photograph becomes the hero's ground rather than a
@@ -222,19 +206,14 @@ export function HeroSection() {
               No height of its own: `.ck-showcase-hero` already stands the
               section at 100svh minus the header, so the stage only has to grow
               into it. Setting a second height here fought that one. */}
-          <div className="ck-lead-hero-stage relative flex min-w-0 flex-1 flex-col bg-[#241b14] dark:bg-[#1a1512] lg:grid lg:flex-none lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:bg-[#fdf5ed]">
+          <div className="ck-lead-hero-stage relative flex min-w-0 flex-1 flex-col bg-[#241b14] dark:bg-[#1a1512] lg:grid lg:flex-none lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:bg-[var(--surface-cream)] dark:lg:bg-[var(--surface-cream)]">
             {/* Heaviest at the foot where the copy lands, lifted again at the
                 top so the header stays legible over a bright frame. */}
             <div
               className="pointer-events-none absolute inset-0 z-[6] bg-[linear-gradient(to_top,rgba(20,14,9,0.93)_0%,rgba(20,14,9,0.66)_38%,rgba(20,14,9,0.12)_70%,rgba(20,14,9,0.38)_100%)] lg:hidden"
               aria-hidden
             />
-            <svg className="ck-mobile-hero-orbit pointer-events-none absolute right-0 top-[10%] z-[7] h-[15rem] w-[15rem] lg:hidden" viewBox="0 0 240 240" fill="none" aria-hidden>
-              <circle cx="178" cy="62" r="72" />
-              <circle cx="178" cy="62" r="53" strokeDasharray="2 11" />
-              <path d="M66 164C108 126 145 123 187 150" />
-              <circle className="ck-mobile-hero-orbit-dot" cx="66" cy="164" r="4" />
-            </svg>
+
             <div className="ck-hero-copy relative z-10 mt-auto flex min-w-0 flex-col px-5 pb-[calc(var(--ck-bottom-chrome,5rem)+1rem)] pt-10 sm:px-7 lg:mt-0 lg:justify-center lg:px-0 lg:pb-[clamp(2.6rem,5vh,5.5rem)] lg:pl-[clamp(0.75rem,1.2vw,1.75rem)] lg:pr-[clamp(3rem,6vw,8rem)] lg:pt-[clamp(1.2rem,2.4vh,2.5rem)]">
               {/* The flanking rules here and the heart divider below are
                   desktop ornament: on a phone the two pairs cost roughly 70px
@@ -281,7 +260,7 @@ export function HeroSection() {
                 {primaryAction.href ? (
                   <NewRequestLink
                     href={primaryAction.href}
-                    className="ck-hero-primary-cta ck-cta-live group relative isolate order-2 inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-transparent px-2 text-[0.84rem] font-semibold leading-tight text-[#fdf5ed]/70 shadow-none lg:order-1 lg:min-h-12 lg:bg-[var(--ck-home-accent,#b04a15)] lg:text-[0.58rem] lg:font-extrabold lg:uppercase lg:tracking-[0.035em] lg:text-white lg:shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a60] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[var(--ck-home-highlight,#f29a65)] dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-[0.9rem] lg:px-6 sm:text-xs sm:tracking-[0.045em]"
+                    className="ck-hero-primary-cta ck-cta-live group relative isolate order-2 inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-transparent px-2 text-[0.84rem] font-semibold leading-tight text-[#fdf5ed]/70 shadow-none lg:order-1 lg:min-h-12 lg:bg-[var(--ck-home-accent,#b04a15)] lg:text-[0.58rem] lg:font-extrabold lg:uppercase lg:tracking-[0.035em] lg:text-white lg:shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[var(--ck-home-highlight,#f29a65)] dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-[0.9rem] lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="ck-hero-cta-icon relative z-[1] hidden size-4 shrink-0 lg:block" strokeWidth={2} aria-hidden />
                     {!user && !isRestoring && <span aria-hidden="true" className="ck-hero-signup-prompt lg:hidden">{t.has("givingPrompt") ? t("givingPrompt") : "Have something to give?"}</span>}
@@ -307,6 +286,12 @@ export function HeroSection() {
                   <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
                   <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                 </Link>
+
+                {/* Money donation stays last on desktop and is hidden for donees. */}
+                <DonateNowButton
+                  size="sm"
+                  className="ck-hero-donate-cta order-3 w-full lg:w-auto lg:shrink-0"
+                />
               </div>
               <div className="ck-mobile-hero-trust lg:hidden">
                 <TrustBand />

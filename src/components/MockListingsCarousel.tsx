@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { ChevronLeft, ChevronRight, MapPin, Package } from "lucide-react";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";

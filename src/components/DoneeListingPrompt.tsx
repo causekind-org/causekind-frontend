@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { usePathname } from "next/navigation";
 import { ArrowRight, ClipboardList, Sparkles, X } from "lucide-react";

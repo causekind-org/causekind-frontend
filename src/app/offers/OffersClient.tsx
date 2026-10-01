@@ -6,7 +6,7 @@ import { getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, type Do
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { toast } from "@/lib/toast";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",

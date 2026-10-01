@@ -1,0 +1,122 @@
+<USER_REQUEST>
+BUILD ROLE-BASED LANDING PAGES ON "/" (DESKTOP ONLY). Build in 4 parts and STOP after each part for my go-ahead.
+
+======================================================
+GLOBAL RULES
+======================================================
+- DESKTOP ONLY (≥1024px): only change the desktop tree in HomeClient. The mobile tree (lg:hidden) must stay EXACTLY as it is for everyone, including logged-in users.
+- The GUEST (logged-out) landing page must look and behave EXACTLY as it does now, pixel for pixel.
+- Keep everyone on "/". No new routes, no redirects, no changes to login/register or resolvePostAuthDestination.
+- Frontend only. No new npm dependencies.
+- NGO, ADMIN and SUPER_ADMIN behaviour stays as it is today.
+- After each part: npx tsc --noEmit and npm run build, git diff --stat, and a list of files changed. Then STOP.
+
+======================================================
+PART 1 — THEME FOUNDATION (colours only)
+======================================================
+Goal: make the reused sections follow the role theme, without changing how the guest page looks.
+
+1. In src/styles.css, inside the existing [data-ck-role-theme="donor"] and [data-ck-role-theme="donee"] blocks (and their .dark variants), ADD any missing variables needed by the sections, e.g. a soft background tint (--ck-role-soft), a soft border (--ck-role-border) and a glow (--ck-role-glow). Only add variables; do not change existing ones.
+
+2. In these sections: HeroSection, WhoAreWeSection, SupportJourneySection, LiveNeedsSection, TrustSafetySection, FoundersNoteSection, replace hardcoded BRAND ACCENT colours with the role variables, ALWAYS with the current colour as the fallback, e.g.:
+   color: var(--ck-role-accent, #B5480F)
+   background: var(--ck-role-soft, #FBEDE3)
+   This includes colours inside SVGs, GSAP code and canvas code (read the CSS variable at runtime, and update it if the theme attribute changes).
+   Because guests have no data-ck-role-theme attribute, the fallback applies and the guest page stays identical.
+
+3. IMPORTANT DISTINCTION — do NOT convert ROLE IDENTITY colours:
+   Colours that represent a specific role (the Donors card/planet/marker = orange, the Donees card/marker = blue, the NGOs card/marker = green, e.g. in TrustSafetySection's three cards, SupportJourneySection's step markers and HOME_ROLE_COLORS) must stay FIXED to their role on every page. The donor card stays orange on the donee page, and vice versa.
+   Only the general brand accent (headings, labels, underlines, buttons, highlights, decorative lines, glows) follows the theme.
+   List every colour you converted and every colour you intentionally left as a role identity colour, with file and line.
+
+4. Fix the leftover teal: TrustSafetySection's donee card uses #0F7A6C. Change it to the donee blue from lib/roleTheme.ts (light #1e3a60, dark #7fb0e8) as a fixed role identity colour. Check the other sections for any remaining teal used for donees and fix it the same way.
+
+5. Verify: the guest page looks unchanged. Temporarily set data-ck-role-theme="donee" on <html> in DevTools and confirm the brand accent turns blue while the role identity colours stay correct. Then remove it.
+
+======================================================
+PART 2 — ROLE-BASED SECTION LISTS IN HomeClient (desktop tree)
+======================================================
+1. Create a component, e.g. src/components/home/RoleHome.tsx, with a role prop ("donor" | "donee"), rendering on desktop in this order:
+   1. Role hero (built in Part 3; for now, temporarily render the existing HeroSection)
+   2. WhoAreWeSection (About CauseKind)
+   3. SupportJourneySection (Where My Support Goes)
+   4. LiveNeedsSection (Real People. Real Needs.)
+   5. TrustSafetySection
+   6. FoundersNoteSection (keep its placeholder rules: hidden in production while FOUNDER.isPlaceholder is true)
+   Then the normal site footer (unchanged).
+   Do NOT include on the role pages: HowItWorksSection, FinalCtaSection, campaigns, DashedJourneyRoad, or seasonal banners/intros. Tell me if you think any of these should stay.
+
+2. In HomeClient's DESKTOP tree only:
+   - Guest (no user) → the current landing page, unchanged.
+   - DONOR → <RoleHome role="donor" />
+   - DONEE → <RoleHome role="donee" />
+   - Any other role → the current landing page, unchanged.
+
+3. NO FLASH, AND KEEP SEO:
+   - The guest desktop tree must still be server-rendered (search engines must see it).
+   - Add a class (e.g. ck-guest-desktop) to the guest desktop wrapper, and in CSS hide it pre-paint when the user is a donor or donee: [data-ck-role-theme="donor"] .ck-guest-desktop, [data-ck-role-theme="donee"] .ck-guest-desktop { display: none; }
+     The existing ROLE_THEME_BOOT_SCRIPT sets this attribute before the first paint, so logged-in users never see the guest page, not even for a split second.
+   - While useAuth().isRestoring is true for a logged-in user, show a lightweight placeholder with the same height as the hero (in the role's soft colour), then mount RoleHome.
+   - Once the role is known, UNMOUNT the guest desktop tree (don't just hide it), so none of its animations, ScrollTriggers, Lenis or observers keep running in the background.
+   - On logout, the guest page must come back correctly without reloading.
+
+4. Make sure all animations (ScrollTrigger pins, Lenis, gsap.matchMedia, IntersectionObservers) initialise correctly in RoleHome, and are cleaned up when switching between guest and role views.
+
+======================================================
+PART 3 — THE TWO ROLE HEROES
+======================================================
+Build DonorHero and DoneeHero (or one RoleHero with a role prop), based on the existing HeroSection's layout, style, photo and animations, but slightly different. Do NOT modify HeroSection itself (the guest hero stays untouched).
+
+Differences from the main hero:
+- A small pill above the headline: "Signed in as Donor" / "Signed in as Donee", in the role colour.
+- DONOR:
+  - Headline: Someone nearby needs what you have.
+  - Subtext: Browse verified needs within 10 km and offer an item today.
+  - Primary button: List an item → /items/new
+  - Secondary button: Browse needs → /requests
+- DONEE:
+  - Headline: Ask for what you need, with dignity.
+  - Subtext: Post exactly what you need. Verified donors nearby can offer it — free, and your address stays private.
+  - Primary button: Request an item → /requests/new
+  - Secondary button: My requests → the existing donee requests page (find the correct route; tell me which one you used)
+- All accents in the role theme colour (via the role variables).
+- Keep the same category strip and trust strip at the bottom of the hero, if the main hero has them, themed.
+- Add any new text to messages/en.json in the same way as the existing hero text.
+- Use the same isRestoring placeholder approach so no wrong buttons flash.
+
+======================================================
+PART 4 — BUTTONS THAT DON'T FIT LOGGED-IN USERS
+======================================================
+Check every CTA inside the 6 reused sections when rendered in RoleHome:
+- Remove or replace any "Join as Donor", "Join as a Donee", "Register your NGO", "Sign up" or "Create an account" style buttons for logged-in users.
+- LiveNeedsSection:
+  - Donor: keep "Offer this item" (going directly to the offer flow, not the login page).
+  - Donee: do NOT show "Offer this item". Show the cards without an offer button, and keep the empty-state "Post a need" button.
+- "Know more" in WhoAreWeSection: keep it (→ /about) for both roles.
+Report every CTA, what it shows for guest / donor / donee, and where it links.
+
+======================================================
+FINAL TEST (after Part 4)
+======================================================
+At 100% zoom (1366×768 and 1920×1080), in light and dark mode:
+1. Logged out: the landing page is identical to before.
+2. Logged in as a donor: donor hero + the 6 sections in the donor theme, with no guest flash on reload.
+3. Logged in as a donee: donee hero + the 6 sections in the donee (blue) theme, with no guest flash on reload.
+4. Log out from each role: the guest page returns correctly.
+5. The mobile view is unchanged for all three.
+6. Right after sign-up, the WelcomeOverlay still shows correctly over the role page.
+Report the results, all files changed, and the tsc and build results. Then STOP.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-28T09:51:33+05:30.
+
+The user's current state is as follows:
+Active Document: d:\causekind\causekind-frontend\src\components\FlipCard.tsx (LANGUAGE_TSX)
+Cursor is on line: 1
+Other open documents:
+- d:\causekind\causekind-frontend\src\components\ListingDetailPanel.tsx (LANGUAGE_TSX)
+- d:\causekind\causekind-frontend\scripts\capture-audience-pathways.cjs (LANGUAGE_JAVASCRIPT)
+- d:\causekind\causekind-frontend\src\components\home\liveNeedsOverflow.test.tsx (LANGUAGE_TSX)
+- d:\causekind\causekind-frontend\src\lib\features.ts (LANGUAGE_TYPESCRIPT)
+- d:\causekind\causekind-frontend\tsconfig.json (LANGUAGE_UNSPECIFIED)
+</ADDITIONAL_METADATA>

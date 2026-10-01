@@ -2,9 +2,14 @@
 
 import React, { useRef, useEffect, useCallback, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { gsap } from 'gsap';
-import { PlayCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { PlayCircle } from 'lucide-react';
 
-/* ── video sources ── */
+/* ── video sources ──
+   Each clip has a matching poster frame in /videos/posters, generated from the
+   clip itself. The poster is ~10-20 KB against a 0.2-2.3 MB clip, so the fan
+   paints complete on the first frame and the video fades in behind it. */
+const POSTERS = [1, 2, 3, 4, 5, 6, 7].map((n) => `/videos/posters/impact-${n}.webp`);
+
 const VIDEOS = [
   "/videos/WhatsApp Video 2026-09-05 at 3.20.14 PM.mp4",
   "/videos/WhatsApp Video 2026-09-05 at 3.23.16 PM.mp4",
@@ -44,13 +49,21 @@ export function ImpactCarousel() {
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const reduceMotion = usePrefersReducedMotion();
 
-  const [activeVideo, setActiveVideo] = useState<string | null>(null);
-  const activeVideoRef = useRef(activeVideo);
-  
-  // Keep ref synced for the GSAP ticker closure
-  useEffect(() => {
-    activeVideoRef.current = activeVideo;
-  }, [activeVideo]);
+  /**
+   * Whether the clips may start downloading.
+   *
+   * <p>The fan mounts 12-14 slots, every one of them a <video>. With a src set
+   * at mount the browser begins fetching all of them the moment the page
+   * renders — and this section sits SECOND on the page, so it competes with the
+   * hero and the donation form for bandwidth even though the visitor may never
+   * look at it. Worse, arriving from a "Donate Now" button scrolls straight
+   * past it to the form.
+   *
+   * <p>So the src is withheld until the section is within 300px of the
+   * viewport, and the poster carries the visuals until then. Once armed it
+   * stays armed — re-hiding a loaded clip would only make it reload later.
+   */
+  const [clipsArmed, setClipsArmed] = useState(false);
 
   const total = VIDEOS.length;
 
@@ -158,6 +171,37 @@ export function ImpactCarousel() {
   // Video playback is now seamlessly integrated into the GSAP draw loop below,
   // eliminating the need for a separate 500ms setInterval polling loop.
 
+  // Arm the clips once the section is nearly in view. Observes the STAGE rather
+  // than the section so it works regardless of what wraps it; 300px of margin
+  // means the clips are usually ready by the time a scrolling visitor arrives.
+  useEffect(() => {
+    if (clipsArmed) return;
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (typeof IntersectionObserver === 'undefined') { setClipsArmed(true); return; }
+
+    // Dwell, not mere intersection. A "Donate Now" button scrolls the visitor
+    // from the top of the page to the form, and that journey passes straight
+    // through this section — on bare intersection it would spend ~11 MB on
+    // clips nobody stopped to watch. Requiring the section to stay in view
+    // briefly distinguishes "arrived here" from "went past here".
+    let dwell: ReturnType<typeof setTimeout> | undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const inView = entries.some((e) => e.isIntersecting);
+        if (inView && dwell === undefined) {
+          dwell = setTimeout(() => { setClipsArmed(true); io.disconnect(); }, 400);
+        } else if (!inView && dwell !== undefined) {
+          clearTimeout(dwell);
+          dwell = undefined;
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    io.observe(stage);
+    return () => { if (dwell !== undefined) clearTimeout(dwell); io.disconnect(); };
+  }, [clipsArmed]);
+
   // Render loop
   useEffect(() => {
     if (!total) return;
@@ -231,7 +275,7 @@ export function ImpactCarousel() {
         if (!revealStartRef.current) revealStartRef.current = now;
         revealRef.current = Math.min(1, (now - revealStartRef.current) / 1100);
       }
-      if (autoRotateSpeed && !reduceMotion && !draggingRef.current && !(pauseOnHover && hoveredRef.current) && !activeVideoRef.current) {
+      if (autoRotateSpeed && !reduceMotion && !draggingRef.current && !(pauseOnHover && hoveredRef.current)) {
         targetRef.current += autoRotateSpeed * dt;
       }
       draw(dt);
@@ -246,10 +290,6 @@ export function ImpactCarousel() {
     const stage = stageRef.current;
     if (!stage || !total) return;
     
-    let startX = 0;
-    let startY = 0;
-    let downTarget: EventTarget | null = null;
-
     const pushSample = () => {
       const now = performance.now();
       const samples = samplesRef.current;
@@ -262,9 +302,6 @@ export function ImpactCarousel() {
       draggingRef.current = true;
       pointerIdRef.current = e.pointerId;
       lastXRef.current = e.clientX;
-      startX = e.clientX;
-      startY = e.clientY;
-      downTarget = e.target;
       samplesRef.current = [{ t: performance.now(), value: targetRef.current }];
       targetRef.current = currentRef.current;
       stage.setPointerCapture(e.pointerId);
@@ -286,19 +323,6 @@ export function ImpactCarousel() {
       stage.style.cursor = 'grab';
       if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId);
       pushSample();
-      
-      const dx = Math.abs(e.clientX - startX);
-      const dy = Math.abs(e.clientY - startY);
-      
-      // If the pointer barely moved, treat it as a click
-      if (dx < 5 && dy < 5 && downTarget) {
-        const targetEl = downTarget as HTMLElement;
-        const cardEl = targetEl.closest('[data-video-src]');
-        if (cardEl) {
-          const src = cardEl.getAttribute('data-video-src');
-          if (src) setActiveVideo(src);
-        }
-      }
 
       let projected = targetRef.current;
       if (!reduceMotion) {
@@ -394,7 +418,7 @@ export function ImpactCarousel() {
           phone through desktop without a media query. */}
       <div
         className="relative pb-4 lg:pb-8 mt-2 sm:mt-3"
-        style={{ height: 'clamp(300px, 52vh, 480px)' }}
+        style={{ height: 'clamp(300px, 52dvh, 480px)' }}
       >
         <div
           ref={stageRef}
@@ -422,7 +446,7 @@ export function ImpactCarousel() {
               <div
                 ref={(el) => { innerRefs.current[i] = el; }}
                 data-video-src={videoSrc}
-                className="relative h-full w-full overflow-hidden rounded-[10px] bg-stone-200 dark:bg-zinc-800 cursor-pointer"
+                className="relative h-full w-full overflow-hidden rounded-[10px] bg-stone-200 dark:bg-zinc-800"
                 style={{
                   opacity: reduceMotion ? 1 : 0,
                   boxShadow: '0 18px 40px -12px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.15)',
@@ -430,59 +454,23 @@ export function ImpactCarousel() {
               >
                 <video
                   ref={(el) => { videoRefs.current[i] = el; }}
-                  src={videoSrc}
+                  // No src until the section is approached — see `clipsArmed`.
+                  // `undefined` rather than "" : an empty src resolves to the
+                  // page URL and the browser tries to decode the HTML as media.
+                  src={clipsArmed ? videoSrc : undefined}
+                  poster={POSTERS[i % POSTERS.length]}
                   autoPlay
                   muted
                   loop
                   playsInline
-                  preload="metadata"
+                  preload={clipsArmed ? 'metadata' : 'none'}
                   className="pointer-events-none block h-full w-full object-cover select-none"
                 />
-                {/* Play icon overlay on hover */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
-                  <div className="w-10 h-10 bg-brand-500/90 text-white rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
-                    <PlayCircle className="w-6 h-6" />
-                  </div>
-                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Fullscreen Video Modal */}
-      {activeVideo && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-8">
-          {/* Glassmorphism Backdrop */}
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xl" onClick={() => setActiveVideo(null)} />
-          
-          <button 
-            onClick={() => setActiveVideo(null)}
-            className="absolute top-6 right-6 sm:top-10 sm:right-10 z-[101] p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white transition-all duration-300 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:scale-110"
-            aria-label="Close video"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          
-          {/* Glassmorphism Video Container */}
-          <div className="w-full h-full max-w-5xl max-h-[85vh] mx-auto rounded-[2rem] overflow-hidden relative flex items-center justify-center shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] bg-white/5 border border-white/10 backdrop-blur-xl z-10">
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
-            <video 
-              ref={(el) => { 
-                if (el) { 
-                  // Force playback on mount to bypass some browser policies
-                  el.play().catch(e => console.log("Autoplay blocked:", e)); 
-                } 
-              }}
-              src={activeVideo} 
-              controls 
-              autoPlay 
-              playsInline
-              className="w-full h-full object-contain relative z-20 rounded-[2rem]"
-            />
-          </div>
-        </div>
-      )}
     </section>
   );
 }

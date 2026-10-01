@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { BeamDivider } from "@/components/about/BeamDivider";
 import Image from "next/image";
 import { ArrowLeft, Heart, Shield, Milestone, Compass, CheckCircle2, ArrowRight } from "lucide-react";
@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { AboutCtaCard } from "@/components/AboutCtaCard";
 import { Reveal } from "@/components/Reveal";
+import { CauseKindWaySections } from "@/components/about/CauseKindWaySections";
 
 export const metadata = {
   title: "About Us — CauseKind",
@@ -126,7 +127,10 @@ export default async function AboutPage() {
         </Reveal>
       </div>
 
-      {/* ── Section 2: Vision & Mission — ALTERNATING OFFSET STAGGER ── */}
+      {/* ── 3. Manifesto, 4. Problem vs Solution, 5. Where Support Goes ── */}
+      <CauseKindWaySections />
+
+      {/* ── 6. Vision & Mission — ALTERNATING OFFSET STAGGER ── */}
       <div className="bg-[#120c04] border-y border-stone-800/60 py-10 md:py-14 overflow-hidden relative">
         <div className="pointer-events-none absolute -top-32 left-[20%] w-[500px] h-[500px] rounded-full bg-[#b04a15]/8 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 right-[10%] w-[380px] h-[380px] rounded-full bg-[#1e3a60]/10 blur-3xl" />

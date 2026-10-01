@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -44,11 +45,15 @@ export function UnclaimedSection({
   // board is empty, because the fetch failed, or because the hero took the only
   // row. A heading over nothing invites the first reading and the other two are
   // just as likely.
+  // Rendered in both responsive trees, so the heading id has to be per
+  // instance — see the same note in LiveNeedsSection.
+  const headingId = useId();
+
   if (items.length === 0) return null;
 
   return (
     <section
-      aria-labelledby="ck-unclaimed-heading"
+      aria-labelledby={headingId}
       className="w-full px-0 py-0 lg:px-12 lg:py-20"
     >
       <div className="mx-auto w-full max-w-[1440px]">
@@ -67,7 +72,7 @@ export function UnclaimedSection({
         </div>
 
         <h2
-          id="ck-unclaimed-heading"
+          id={headingId}
           className="mt-4 max-w-2xl font-jakarta text-2xl font-extrabold leading-tight tracking-tight text-stone-900 dark:text-white lg:text-4xl"
           style={{ textWrap: "balance" }}
         >

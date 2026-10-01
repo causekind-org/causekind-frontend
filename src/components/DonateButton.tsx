@@ -7,6 +7,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { initiateDonation } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import {
+  trackDonationStarted,
+  trackDonationPaymentSubmitted,
+  trackDonationCompleted,
+} from "@/lib/clarityEvents";
 
 declare global {
   interface Window {
@@ -46,6 +51,7 @@ export function DonateButton({ campaignId, campaignTitle, amount }: Props) {
       toast.error("Enter a valid amount (minimum ₹1)");
       return;
     }
+    trackDonationStarted();
     setLoading(true);
     try {
       const loaded = await loadRazorpayScript();
@@ -64,12 +70,14 @@ export function DonateButton({ campaignId, campaignTitle, amount }: Props) {
         prefill: { email: user.email },
         theme: { color: "#0f172a" },
         handler: () => {
+          trackDonationCompleted();
           router.push(
             `/thank-you?campaign=${encodeURIComponent(campaignTitle)}&amount=${amount}&campaignId=${campaignId}`
           );
         },
         modal: { ondismiss: () => toast.info("Payment cancelled.") },
       });
+      trackDonationPaymentSubmitted();
       rzp.open();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { Bell, CheckCheck, Handshake, ShieldCheck, Info, X, AlertCircle, PartyPopper, ArrowRight } from "lucide-react";
 import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
 import { useAuth } from "@/hooks/useAuth";
@@ -152,7 +152,7 @@ export function NotificationBell() {
       >
         <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 rounded-full bg-[var(--ck-role-accent)] text-white text-4xs font-black px-1 shadow-sm animate-pulse">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 rounded-full bg-[var(--nav-badge-bg,var(--ck-role-accent))] text-[var(--nav-badge-text,#ffffff)] text-4xs font-black px-1 shadow-sm animate-pulse">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -174,7 +174,7 @@ export function NotificationBell() {
           plus its 1px border). From sm: up it reverts to the original
           bell-anchored dropdown. */}
       <div
-        className={`fixed left-1/2 -translate-x-1/2 top-16 w-[calc(100vw-4rem)] max-w-[340px] sm:absolute sm:left-auto sm:translate-x-0 sm:right-0 sm:top-[calc(100%+10px)] sm:w-80 sm:max-w-none bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-[#e5e2d5] dark:border-zinc-800 shadow-2xl shadow-stone-900/10 dark:shadow-zinc-950/40 z-[200] overflow-hidden transition-all duration-200 origin-top sm:origin-top-right ${
+        className={`fixed left-1/2 -translate-x-1/2 top-16 w-[calc(100vw-4rem)] max-w-[340px] sm:absolute sm:left-auto sm:translate-x-0 sm:right-0 sm:top-[calc(100%+10px)] sm:w-80 sm:max-w-none bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-[var(--nav-border,#e5e2d5)] dark:border-zinc-800 shadow-2xl shadow-stone-900/10 dark:shadow-zinc-950/40 z-[200] overflow-hidden transition-all duration-200 origin-top sm:origin-top-right ${
           open ? "scale-100 opacity-100 pointer-events-auto" : "scale-95 opacity-0 pointer-events-none"
         }`}
       >

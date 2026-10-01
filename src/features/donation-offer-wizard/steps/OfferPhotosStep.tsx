@@ -12,6 +12,7 @@ import { MAX_OFFER_PHOTOS, MIN_OFFER_PHOTOS } from "../offerModel";
 import { OFFER_ACCEPT_ATTR } from "../useOfferPhotos";
 import type { OfferVideoState } from "../useOfferVideo";
 import { OfferVideoField } from "./OfferVideoField";
+import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 export type ScreeningState =
   | { kind: "idle" }
@@ -98,6 +99,7 @@ export function OfferPhotosStep({
         multiple className="sr-only" onChange={pick(cameraRef)} aria-hidden tabIndex={-1} />
       <input ref={galleryRef} type="file" accept={OFFER_ACCEPT_ATTR}
         multiple className="sr-only" onChange={pick(galleryRef)} aria-hidden tabIndex={-1} />
+      <LocalTestUploadButton onFile={(f) => pick(cameraRef)({ target: { files: [f] } } as any)} accept="image" />
 
       {error && (
         <p id="photos-error" className="text-3xs font-semibold text-red-600 dark:text-red-400">{error}</p>
@@ -208,6 +210,15 @@ export function OfferPhotosStep({
               <p className="mt-1 text-2xs text-red-700/80 dark:text-red-400/80">
                 Remove or replace that photo to continue.
               </p>
+              {/* A screening verdict is a judgement, and judgements are sometimes
+                  wrong. Without this the only escape from a false positive was to
+                  delete a perfectly good photo — the "unavailable" branch above
+                  has always offered a re-check, and a wrong block is worse than a
+                  provider outage, not better. */}
+              <button type="button" onClick={onRescreen}
+                className="mt-1.5 inline-flex min-h-[44px] items-center gap-1.5 text-2xs font-bold text-red-800 underline underline-offset-2 dark:text-red-300">
+                <RefreshCw className="h-3 w-3" aria-hidden /> Check again
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { motion, useInView, useReducedMotion } from "framer-motion";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   MapPin,
   Lock,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   ShieldCheck,
   CheckCircle2,
   Sparkles,
@@ -52,6 +55,7 @@ export function LiveNeedsSection({
 }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const sectionRef = useRef<HTMLElement>(null);
+  const needsRowRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
   const reduceMotion = useReducedMotion();
 
@@ -100,7 +104,19 @@ export function LiveNeedsSection({
         : allNeeds.filter((n) => n.category === selectedCategory),
     [allNeeds, selectedCategory],
   );
-  const displayedNeeds = filteredNeeds.slice(0, NEEDS_SHOWN);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(NEEDS_SHOWN);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const sync = () => { setPageSize(query.matches ? 1 : NEEDS_SHOWN); setPage(0); };
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+  useEffect(() => { setPage(0); }, [selectedCategory]);
+  const pageCount = Math.ceil(filteredNeeds.length / pageSize);
+  const activePage = Math.min(page, Math.max(0, pageCount - 1));
+  const displayedNeeds = filteredNeeds.slice(activePage * pageSize, (activePage + 1) * pageSize);
   const hiddenCount = filteredNeeds.length - displayedNeeds.length;
 
   const cardCount = displayedNeeds.length;
@@ -121,13 +137,26 @@ export function LiveNeedsSection({
     return counts;
   }, [allNeeds]);
 
+  // Below 768px the needs are a swipe row; a new filter starts it from the first card.
+  useEffect(() => {
+    if (needsRowRef.current) needsRowRef.current.scrollLeft = 0;
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    // Refresh ScrollTrigger when filtered card count changes layout height
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [selectedCategory, displayedNeeds.length]);
+
   return (
     <section
       ref={sectionRef}
       id="live-needs-section"
       aria-labelledby="live-needs-heading"
       // Was #fbf9f4 — a shade off the sections either side. Same one cream.
-      className="relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
+      className="ck-m-section relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
     >
       {/* The two warm ambient blurs are gone — see the note in
           ComingSoonMagnets. Every section was tinting its own background a
@@ -275,18 +304,30 @@ export function LiveNeedsSection({
             ) : null}
           </div>
         ) : (
-          <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="relative md:px-12">
+          {/* A grid from 768px up; below that `.ck-snap-m` turns the same
+              element into a native scroll-snap row with a peek of the next
+              card, so six needs cost one card of height, not six. */}
+          <div
+            ref={needsRowRef}
+            className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
+            role="region"
+            aria-label="Open needs"
+            tabIndex={-1}
+          >
             {displayedNeeds.map((need, idx) => {
               const visual = CATEGORY_VISUALS[need.category];
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
-              const offerUrl = loginUrlFor(`/requests/${need.id}/offer`);
+              const isDonor = role === "DONOR";
+              const isDonee = role === "DONEE";
+              const offerUrl = isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
 
               return (
                 <motion.article
                   key={need.id}
                   initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
                   animate={isInView ? { opacity: 1, y: 0 } : undefined}
-                  transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06 }}
+                  transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
                   className="flex flex-col rounded-[1.25rem] bg-white dark:bg-zinc-900/95 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 p-4 lg:p-6 lg:bg-white/95 lg:border-stone-200/90 lg:shadow-sm lg:shadow-[var(--ck-home-deep,#431407)]/5 dark:lg:shadow-black/20"
                 >
                   <div className="grow">
@@ -355,18 +396,46 @@ export function LiveNeedsSection({
                     {/* Every card is now fully visible, so every CTA is live and
                         keyboard-reachable — the carousel had to disable the
                         blurred neighbours' links. */}
+                    {!isDonee && (
                     <Link
                       href={offerUrl}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
                     >
-                      <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
-                      <span>Log in to offer this item</span>
+                      {!isDonor && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
+                      <span>{isDonor ? "Offer this item" : "Log in to offer this item"}</span>
                       <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
                     </Link>
+                    )}
                   </div>
                 </motion.article>
               );
             })}
+          </div>
+          {pageCount > 1 && (
+            <nav aria-label="Open needs pages" className="mt-3 flex items-center justify-center gap-2">
+              <button type="button" aria-label="Previous requests" disabled={activePage === 0}
+                onClick={() => setPage(activePage - 1)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 md:absolute md:left-0 md:top-1/2 md:-translate-y-1/2">
+                <ChevronLeft size={20} aria-hidden="true" />
+              </button>
+              <div className="flex min-w-0 items-center overflow-x-auto">
+                {Array.from({ length: pageCount }, (_, index) => (
+                  <button key={index} type="button" aria-label={`Requests page ${index + 1}`}
+                    aria-current={index === activePage ? "page" : undefined}
+                    onClick={() => setPage(index)}
+                    className="flex h-11 w-8 shrink-0 items-center justify-center text-[var(--ck-home-ink,#b04a15)] focus-visible:outline-2">
+                    <span className={`h-2 w-2 rounded-full bg-current ${index === activePage ? "opacity-100" : "opacity-30"}`} />
+                  </button>
+                ))}
+              </div>
+              <button type="button" aria-label="Next requests" disabled={activePage === pageCount - 1}
+                onClick={() => setPage(activePage + 1)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2">
+                <ChevronRight size={20} aria-hidden="true" />
+              </button>
+              <span className="sr-only" aria-live="polite">Page {activePage + 1} of {pageCount}</span>
+            </nav>
+          )}
           </div>
         )}
 

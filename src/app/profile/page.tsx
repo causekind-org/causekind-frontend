@@ -26,6 +26,7 @@ import {
   type DoneeNeedProfile,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { NgoProfileView } from "./ngo-view";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +61,7 @@ import {
   Star,
   RefreshCw,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { RequestReadinessRail } from "@/components/RequestReadinessRail";
 import { progressOf, needProfileItemLabel } from "@/lib/needProfileDocs";
@@ -69,6 +70,7 @@ import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -92,23 +94,6 @@ function detectCountryCode(): string {
     // ignore
   }
   return "IN";
-}
-
-/** IP-based country detection — falls back to detectCountryCode() on error */
-async function detectCountryFromIP(): Promise<string> {
-  try {
-    const res = await fetch("https://ipwho.is/?output=json&fields=country_code", {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!res.ok) throw new Error("non-200");
-    const data = await res.json();
-    if (typeof data.country_code === "string" && /^[A-Z]{2}$/.test(data.country_code)) {
-      return data.country_code;
-    }
-  } catch {
-    // ignore
-  }
-  return detectCountryCode();
 }
 
 function getInitials(name: string): string {
@@ -289,6 +274,11 @@ export default function ProfilePage() {
       return;
     }
 
+    if (isNgoRole(user.role?.toUpperCase())) {
+      setLoading(false);
+      return;
+    }
+
     // Load avatar from localStorage
     const savedAvatar = localStorage.getItem(avatarKey(user.email));
     if (savedAvatar) setAvatarDataUrl(savedAvatar);
@@ -299,9 +289,9 @@ export default function ProfilePage() {
     let activityFailed = false;
     let profileFailed = false;
 
-    // Run IP geolocation, profile fetch, donation/campaign history, and in-kind data in parallel
+    // Load the locale country suggestion, profile, donation/campaign history, and in-kind data in parallel
     Promise.all([
-      detectCountryFromIP(),
+      Promise.resolve(detectCountryCode()),
       // Caught like the activity calls: a dead /auth/me used to reject the whole
       // Promise.all, so a single backend hiccup also threw away the donations,
       // listings and matches that had already come back, and left the page
@@ -605,6 +595,11 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  const isNgo = isNgoRole(user?.role?.toUpperCase());
+  if (!authLoading && isNgo) {
+    return <NgoProfileView />;
   }
 
   // Loading skeleton

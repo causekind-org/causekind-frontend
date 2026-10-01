@@ -28,6 +28,8 @@ import { Copy, Download, Eye, Loader2, ScrollText, ShieldAlert } from "lucide-re
 const FIELDS: { value: SaRevealField; label: string }[] = [
   { value: "EMAIL", label: "Email address" },
   { value: "PHONE", label: "Phone number" },
+  { value: "PAN", label: "PAN number" },
+  { value: "PAN_PHOTO", label: "PAN photo" },
 ];
 
 export function GovernancePanel({ isDark }: { isDark: boolean }) {
@@ -165,7 +167,17 @@ export function GovernancePanel({ isDark }: { isDark: boolean }) {
             <ShieldAlert className="mt-0.5 size-4 shrink-0" />
             <div className="min-w-0 flex-1 space-y-1">
               <p className="text-xs font-bold">{revealed.field}</p>
-              <p className="break-all font-mono text-sm">{revealed.value}</p>
+              {revealed.field === "PAN_PHOTO" ? (
+                // eslint-disable-next-line @next/next/no-img-element -- a
+                // short-lived signed URL from the backend, not a static asset.
+                <img
+                  src={revealed.value}
+                  alt="PAN card"
+                  className="max-h-64 rounded-lg border border-current/20"
+                />
+              ) : (
+                <p className="break-all font-mono text-sm">{revealed.value}</p>
+              )}
               <button
                 type="button"
                 onClick={() => setRevealed(null)}
@@ -214,7 +226,8 @@ export function GovernancePanel({ isDark }: { isDark: boolean }) {
             {log.map((r) => (
               <li key={r.id} className="p-3">
                 <p className={`text-xs font-bold ${t.text}`}>
-                  {r.actorEmail} read {r.field.toLowerCase()} of user {r.targetUserId}
+                  {r.actorEmail} read {r.field.toLowerCase()} of{" "}
+                  {r.targetUserId != null ? `user ${r.targetUserId}` : `guest donation ${r.targetDonationId}`}
                 </p>
                 <p className={`text-xs ${t.muted}`}>
                   {new Date(r.revealedAt).toLocaleString()}

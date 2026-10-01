@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   superAdminApplyRestriction,
+  superAdminReveal,
   superAdminRestrictionMeta,
   superAdminRestrictions,
   superAdminRevokeRestriction,
@@ -16,6 +17,7 @@ import {
   type SaRestrictionMeta,
   type SaRestrictionScope,
   type SaRestrictionType,
+  type SaRevealField,
   type SaTimelineEvent,
   type SaTimelinePage,
   type SaUserProfile,
@@ -23,7 +25,7 @@ import {
 import { toast } from "@/lib/toast";
 import { saTheme, type SaTheme } from "@/components/super-admin/saTheme";
 import { SaPagination } from "@/components/super-admin/SaPagination";
-import { ArrowLeft, Loader2, ShieldAlert, Lock } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, ShieldAlert, Lock } from "lucide-react";
 
 type Tab = "identity" | "timeline" | "records" | "restrictions";
 
@@ -463,6 +465,8 @@ function IdentityTab({ profile, t }: { profile: SaUserProfile; t: SaTheme }) {
         />
       </section>
 
+      <PanRevealCard userId={profile.id} t={t} />
+
       <section className={`rounded-xl border p-4 ${t.card}`}>
         <h3 className={`mb-3 text-sm font-bold ${t.heading}`}>Account state</h3>
         <Field label="Active" value={s.active ? "Yes" : "No"} t={t} />
@@ -490,6 +494,91 @@ function IdentityTab({ profile, t }: { profile: SaUserProfile; t: SaTheme }) {
         </div>
       </section>
     </div>
+  );
+}
+
+/**
+ * PAN is never returned as part of the profile — it's per-donation, gated
+ * behind the same justification-required reveal used elsewhere in Governance
+ * (see GovernancePanel). This is the same mechanism, just pre-scoped to this
+ * user so an agent doesn't have to leave the page and re-type the id.
+ */
+function PanRevealCard({ userId, t }: { userId: number; t: SaTheme }) {
+  const [field, setField] = useState<Extract<SaRevealField, "PAN" | "PAN_PHOTO">>("PAN");
+  const [justification, setJustification] = useState("");
+  const [revealing, setRevealing] = useState(false);
+  const [revealed, setRevealed] = useState<{ field: string; value: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onReveal() {
+    if (!justification.trim()) return;
+    setRevealing(true);
+    setError(null);
+    setRevealed(null);
+    try {
+      setRevealed(await superAdminReveal({ targetUserId: userId, field, justification: justification.trim() }));
+      setJustification("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The reveal was refused.");
+    } finally {
+      setRevealing(false);
+    }
+  }
+
+  return (
+    <section className={`rounded-xl border p-4 ${t.card}`}>
+      <h3 className={`mb-3 text-sm font-bold ${t.heading}`}>PAN</h3>
+      <p className={`mb-2 text-xs ${t.muted}`}>
+        Captured on this user's most recent trust donation. Government ID — requires a stated
+        reason, and every read is logged (see Governance).
+      </p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={field}
+          onChange={(e) => setField(e.target.value as "PAN" | "PAN_PHOTO")}
+          className={`rounded-lg border px-2.5 py-1.5 text-xs ${t.input}`}
+        >
+          <option value="PAN">PAN number</option>
+          <option value="PAN_PHOTO">PAN photo</option>
+        </select>
+      </div>
+
+      <textarea
+        value={justification}
+        onChange={(e) => setJustification(e.target.value)}
+        rows={2}
+        placeholder="Why do you need this? Recorded against your name, permanently."
+        className={`mt-2 w-full rounded-lg border px-2.5 py-2 text-xs ${t.input} ${t.placeholder}`}
+      />
+
+      {error && <div className={`mt-2 rounded-lg border p-2.5 text-xs ${t.dangerPanel}`}>{error}</div>}
+
+      <button
+        type="button"
+        onClick={onReveal}
+        disabled={revealing || !justification.trim()}
+        className={`mt-2 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${t.btn} disabled:opacity-40 disabled:pointer-events-none`}
+      >
+        {revealing ? <Loader2 className="size-3.5 animate-spin" /> : <Eye className="size-3.5" />}
+        Reveal
+      </button>
+
+      {revealed && (
+        <div className={`mt-3 rounded-lg border p-3 ${t.dangerPanel}`}>
+          {revealed.field === "PAN_PHOTO" ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a
+            // short-lived signed URL from the backend, not a static asset.
+            <img src={revealed.value} alt="PAN card" className="max-h-56 rounded-lg" />
+          ) : (
+            <p className="break-all font-mono text-sm">{revealed.value}</p>
+          )}
+          <button type="button" onClick={() => setRevealed(null)} className="mt-1.5 text-[11px] underline opacity-80">
+            Hide it
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 

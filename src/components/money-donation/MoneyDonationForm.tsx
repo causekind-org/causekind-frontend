@@ -5,12 +5,19 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { trackDonate } from '@/lib/metaEvents';
+import {
+  trackDonationStarted,
+  trackDonationPaymentSubmitted,
+  trackDonationCompleted,
+} from '@/lib/clarityEvents';
 import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight } from 'lucide-react';
 import { initiateTrustDonation } from '@/lib/api';
 import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
 import { getDialCodes } from '@/app/actions/locations';
 import { PHONE_LENGTHS, getDialCode } from '@/lib/phone';
 import { useAuth } from '@/hooks/useAuth';
+import styles from './MoneyDonationForm.module.css';
 
 /**
  * Loads Razorpay's checkout script on demand.
@@ -58,7 +65,7 @@ const money = (n: number) => (n || 0).toLocaleString('en-IN');
 function StepLabel({ n, title, hint }: { n: number; title: string; hint?: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border border-amber-300/70 bg-amber-100 text-[11px] font-black text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/70 dark:text-amber-300">
+      <span className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border border-amber-300/70 bg-amber-100 text-[0.6875rem] font-black text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/70 dark:text-amber-300">
         {n}
       </span>
       <span className="text-sm font-bold text-foreground">{title}</span>
@@ -87,6 +94,8 @@ export function MoneyDonationForm() {
   const [presetTip, setPresetTip] = useState<number>(DEFAULT_TIP);
   const [customTip, setCustomTip] = useState<string>('');
   const [isCustomTip, setIsCustomTip] = useState(false);
+  const [mobileTipOpen, setMobileTipOpen] = useState(false);
+  const [lastMobileTip, setLastMobileTip] = useState(DEFAULT_TIP);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -154,11 +163,19 @@ export function MoneyDonationForm() {
       toast.error('Please enter your email so we can send your receipt.');
       return;
     }
-    if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
+    // Required since 2026-09-18. The trust reports every donor's PAN in Form
+    // 10BD, so a donation taken without one cannot be included in that return.
+    // The same rule is enforced on the DTO — this check only saves a round trip.
+    if (!formData.panNumber) {
+      toast.error('Please enter your PAN — it is required for your 80G receipt.');
+      return;
+    }
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
       toast.error('PAN must be five letters, four digits and one letter, e.g. ABCDE1234F.');
       return;
     }
 
+    trackDonationStarted();
     setSubmitting(true);
     try {
       const loaded = await loadRazorpayScript();
@@ -184,7 +201,9 @@ export function MoneyDonationForm() {
         // load-bearing — but omitting it would fail validation before it got there.
         email: donorEmail || formData.email,
         mobileNumber: fullPhone || undefined,
-        panNumber: formData.panNumber || undefined,
+        // Sent as-is, never coerced to undefined: it is validated non-blank just
+        // above, and the DTO now rejects a missing one.
+        panNumber: formData.panNumber,
         address: formData.address.trim() || undefined,
       });
 
@@ -196,7 +215,7 @@ export function MoneyDonationForm() {
         currency: order.currency,
         name: 'CauseKind',
         description: tip > 0
-          ? 'Donation to Sahas Charitable Trust + CauseKind tip'
+          ? 'Donation to Sahas Charitable Trust + CauseKind support'
           : 'Donation to Sahas Charitable Trust',
         order_id: order.razorpayOrderId,
         prefill: {
@@ -209,13 +228,21 @@ export function MoneyDonationForm() {
         handler: () => {
           // The donation, not the total: this is what the thank-you page and the
           // 80G receipt are about.
+          // First name only. The thank-you page greets the donor by it, and a
+          // full name in a URL lingers in browser history and referrer headers
+          // for no gain. The email is never put in the URL at all.
+          const firstName = formData.fullName.trim().split(/\s+/)[0] ?? '';
+          trackDonate({ value: Number(donation), currency: order.currency });
+          trackDonationCompleted();
           router.push(
             `/thank-you?campaign=${encodeURIComponent('Sahas Charitable Trust')}` +
-              `&amount=${encodeURIComponent(String(donation))}`
+              `&amount=${encodeURIComponent(String(donation))}` +
+              (firstName ? `&name=${encodeURIComponent(firstName)}` : '')
           );
         },
         modal: { ondismiss: () => toast.info('Payment cancelled. Nothing was charged.') },
       });
+      trackDonationPaymentSubmitted();
       rzp.open();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -244,7 +271,12 @@ export function MoneyDonationForm() {
       // sticky nav takes ~113px, so the section has to come in around 690px on a
       // 800px viewport. Every padding, gap and type size below is set with that
       // budget in mind — see the two structural savings in step 1 and step 2.
-      className="scroll-mt-24 py-6 bg-[#fff9f2] dark:bg-[#1a0b04]"
+      // scroll-mt is the landing offset for "Donate Now" and for a #donate-form
+      // deep link. It was scroll-mt-24 (96px) against a header that measures
+      // 113px, so the heading came to rest underneath the navbar. --ck-nav-h is
+      // the real height, published by Navbar from a ResizeObserver; the 7rem
+      // fallback covers the frame before it is first written.
+      className="scroll-mt-[calc(var(--ck-nav-h,7rem)+1rem)] py-6 bg-[#fff9f2] dark:bg-[#1a0b04] focus:outline-none"
     >
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-[78rem] flex-col gap-3">
@@ -262,7 +294,7 @@ export function MoneyDonationForm() {
             className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
           >
             <div className="flex max-w-3xl flex-col gap-2">
-              <div className="inline-flex w-max items-center gap-2.5 rounded-full border border-amber-300/60 bg-amber-100/90 py-1 pl-2.5 pr-3.5 text-[11px] font-bold uppercase tracking-wider text-amber-900 shadow-[0_0_12px_rgba(217,119,6,0.15)] dark:border-amber-700/50 dark:bg-amber-950/60 dark:text-amber-200">
+              <div className="inline-flex w-max items-center gap-2.5 rounded-full border border-amber-300/60 bg-amber-100/90 py-1 pl-2.5 pr-3.5 text-[0.6875rem] font-bold uppercase tracking-wider text-amber-900 shadow-[0_0_12px_rgba(217,119,6,0.15)] dark:border-amber-700/50 dark:bg-amber-950/60 dark:text-amber-200">
                 <Image
                   src="/images/money-donation/sahas-logo-transparent.png"
                   alt=""
@@ -272,7 +304,12 @@ export function MoneyDonationForm() {
                 />
                 Make a Contribution
               </div>
-              <h2 className="text-[28px] font-extrabold leading-[1.1] tracking-tight text-foreground text-pretty sm:text-[34px]">
+              {/* clamp() rather than a 28px → 34px step: a px size ignores the
+                  reader's browser font-size setting entirely, and the rem term
+                  here means the heading grows with it as well as with the
+                  viewport. Same endpoints as before (1.5rem = 28px-ish floor,
+                  2.125rem = 34px ceiling). */}
+              <h2 className="text-[clamp(1.5rem,1.15rem+1.5vw,2.125rem)] font-extrabold leading-[1.1] tracking-tight text-foreground text-pretty">
                 Empower communities with your generosity.
               </h2>
               <p className="max-w-xl text-sm leading-relaxed text-stone-600 dark:text-stone-300">
@@ -284,14 +321,14 @@ export function MoneyDonationForm() {
             <div className="flex flex-col gap-2.5 lg:pb-1">
               <div className={trustPill}>
                 <ShieldCheck className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
-                <span className="text-[13px] font-bold text-foreground">
+                <span className="text-[0.8125rem] font-bold text-foreground">
                   Registered non-profit &middot; 80G eligible
                 </span>
               </div>
               <div className={trustPill}>
                 <Heart className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
-                <span className="text-[13px] font-bold text-foreground">
-                  Zero platform fees &middot; funded by tips
+                <span className="text-[0.8125rem] font-bold text-foreground">
+                  Zero platform fees &middot; funded by supporters
                 </span>
               </div>
             </div>
@@ -317,6 +354,76 @@ export function MoneyDonationForm() {
             >
               {/* LEFT — the choices */}
               <div className="flex flex-col gap-4 p-5 sm:p-6">
+
+                <div className={styles.mobileChoices}>
+                  <div className={styles.amountSection}>
+                    <p className={styles.eyebrow}>Your gift to</p>
+                    <h3 className={styles.recipient}>Sahas Charitable Trust</h3>
+                    <label htmlFor="mobileDonationAmount" className={styles.amountLabel}>Your donation</label>
+                    <div className={styles.amountEntry}>
+                      <span aria-hidden="true">₹</span>
+                      <input
+                        id="mobileDonationAmount"
+                        type="text"
+                        inputMode="numeric"
+                        aria-label="Donation amount in rupees"
+                        aria-describedby="mobileDonationHint"
+                        value={isCustom ? customAmount : amount}
+                        onChange={handleCustomAmountChange}
+                      />
+                    </div>
+                    <p id="mobileDonationHint" className={styles.hint}>Tap the amount to enter your own</p>
+                    <div className={styles.presets} role="group" aria-label="Donation amounts">
+                      {PRESET_AMOUNTS.map((value) => (
+                        <button key={value} type="button" aria-pressed={donation === value} onClick={() => handleAmountClick(value)}>
+                          ₹{money(value)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.support}>
+                    <div className={styles.supportRow}>
+                      <label className={styles.supportLabel}>
+                        <input type="checkbox" checked={tip > 0} onChange={(event) => {
+                          if (!event.target.checked && tip > 0) setLastMobileTip(tip);
+                          setPresetTip(event.target.checked ? lastMobileTip : 0);
+                          setIsCustomTip(false);
+                          setCustomTip('');
+                        }} />
+                        <span>Add ₹{money(tip > 0 ? tip : lastMobileTip)} for CauseKind<small>Optional · helps run the platform</small></span>
+                      </label>
+                      <button className={styles.change} type="button" aria-expanded={mobileTipOpen} aria-controls="mobileTipEditor" onClick={() => setMobileTipOpen(!mobileTipOpen)}>
+                        {mobileTipOpen ? 'Done' : 'Change'}
+                      </button>
+                    </div>
+                    <div id="mobileTipEditor" hidden={!mobileTipOpen} className={styles.tipEditor}>
+                      <p>We take nothing from your donation. You choose whether to support CauseKind.</p>
+                      <div className={styles.presets} role="group" aria-label="Platform support amounts">
+                        {TIP_OPTIONS.filter((value) => value > 0).map((value) => (
+                          <button key={value} type="button" aria-pressed={tip === value} onClick={() => {
+                            setPresetTip(value);
+                            setLastMobileTip(value);
+                            setIsCustomTip(false);
+                            setCustomTip('');
+                          }}>₹{money(value)}</button>
+                        ))}
+                      </div>
+                      <label htmlFor="mobileSupportAmount">Or enter support amount (₹)</label>
+                      <input id="mobileSupportAmount" type="text" inputMode="numeric" value={isCustomTip ? customTip : presetTip} onChange={(event) => {
+                        const value = event.target.value.replace(/[^0-9]/g, '');
+                        setCustomTip(value);
+                        setIsCustomTip(true);
+                        if (Number(value) > 0) setLastMobileTip(Number(value));
+                      }} />
+                    </div>
+                  </div>
+                  <div className={styles.mobileTotal} aria-live="polite" aria-atomic="true">
+                    <div><strong>Total amount</strong><small>{tip > 0 ? `₹${money(donation)} donation + ₹${money(tip)} support` : 'No platform support added'}</small></div>
+                    <output>₹{money(total)}</output>
+                  </div>
+                </div>
+
+                <div className="hidden flex-col gap-4 md:flex">
 
                 {/* Step 1 — amount.
                     The Custom control shares the preset row as a fifth cell and
@@ -354,7 +461,6 @@ export function MoneyDonationForm() {
                           id="customAmount"
                           type="text"
                           inputMode="numeric"
-                          autoFocus
                           value={customAmount}
                           onChange={handleCustomAmountChange}
                           placeholder="Amount"
@@ -386,19 +492,19 @@ export function MoneyDonationForm() {
                     beside the total. A charge that appears at the end of a form
                     reads as a surprise fee however it is worded. */}
                 <div className="flex flex-col gap-3">
-                  <StepLabel n={2} title="Tip CauseKind" hint="optional" />
+                  <StepLabel n={2} title="Support the platform" hint="optional" />
                   {/* One line, not a paragraph. The reason to tip still has to be
                       stated — it is the whole ask — but at three lines it cost
                       more vertical space than the chips it was introducing. */}
                   <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-                    We take nothing from your donation — tips are what keep CauseKind running.
+                    We take nothing from your donation — this is what keeps CauseKind running.
                   </p>
                   {/* Same shape as step 1: the custom control is the last cell
                       of the SAME row and swaps in place, so adding it costs no
                       height and the block does not jump when it is chosen. */}
                   <div
                     role="group"
-                    aria-label="Tip to CauseKind"
+                    aria-label="Support for CauseKind"
                     className="grid grid-cols-3 gap-2.5 sm:grid-cols-6"
                   >
                     {TIP_OPTIONS.map((t) => (
@@ -415,7 +521,7 @@ export function MoneyDonationForm() {
                         }}
                         className={`${chipClasses(!isCustomTip && presetTip === t)} px-1.5`}
                       >
-                        {t === 0 ? 'No tip' : `₹${money(t)}`}
+                        {t === 0 ? 'No thanks' : `₹${money(t)}`}
                       </motion.button>
                     ))}
 
@@ -425,13 +531,12 @@ export function MoneyDonationForm() {
                           ₹
                         </span>
                         <label htmlFor="customTip" className="sr-only">
-                          Custom tip to CauseKind, in rupees
+                          Custom support for CauseKind, in rupees
                         </label>
                         <input
                           id="customTip"
                           type="text"
                           inputMode="numeric"
-                          autoFocus
                           value={customTip}
                           onChange={(e) => {
                             setCustomTip(e.target.value.replace(/[^0-9]/g, ''));
@@ -458,12 +563,14 @@ export function MoneyDonationForm() {
 
                 <hr className="border-amber-200/60 dark:border-amber-900/40" />
 
+                </div>
+
                 {/* Step 3 — details */}
                 <div className="flex flex-col gap-3">
                   <StepLabel n={3} title="Your details" />
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
-                      <label htmlFor="fullName" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                      <label htmlFor="fullName" className="text-[0.6875rem] font-bold text-stone-600 dark:text-stone-300">
                         Full name
                       </label>
                       <input
@@ -474,14 +581,14 @@ export function MoneyDonationForm() {
                         value={formData.fullName}
                         onChange={handleChange}
                         className={inputClasses}
-                        placeholder="Jane Doe"
+                        placeholder="Enter your full name"
                       />
                     </div>
                     {/* Guests only — see the useAuth comment at the top of the
                         component for why a signed-in donor is never asked. */}
                     {!user && (
                       <div className="flex flex-col gap-1.5">
-                        <label htmlFor="email" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                        <label htmlFor="email" className="text-[0.6875rem] font-bold text-stone-600 dark:text-stone-300">
                           Email address
                         </label>
                         <input
@@ -492,12 +599,12 @@ export function MoneyDonationForm() {
                           value={formData.email}
                           onChange={handleChange}
                           className={inputClasses}
-                          placeholder="jane@example.com"
+                          placeholder="Enter your email address"
                         />
                       </div>
                     )}
                     <div className="flex flex-col gap-1.5">
-                      <label htmlFor="mobileNumber" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                      <label htmlFor="mobileNumber" className="text-[0.6875rem] font-bold text-stone-600 dark:text-stone-300">
                         Mobile number
                       </label>
                       {/* `min-w-0` on the input is load-bearing, same reason the
@@ -535,27 +642,28 @@ export function MoneyDonationForm() {
                             })
                           }
                           className={`${inputClasses} flex-1 min-w-0`}
-                          placeholder="98765 43210"
+                          placeholder="Enter your mobile number"
                         />
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label htmlFor="panNumber" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                      <label htmlFor="panNumber" className="text-[0.6875rem] font-bold text-stone-600 dark:text-stone-300">
                         PAN{' '}
                         <span className="font-semibold text-stone-400 dark:text-stone-500">
-                          · for 80G receipt
+                          · required for your 80G receipt
                         </span>
                       </label>
                       <input
                         type="text"
                         id="panNumber"
                         name="panNumber"
+                        required
                         value={formData.panNumber}
                         onChange={(e) =>
                           setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })
                         }
                         className={inputClasses}
-                        placeholder="ABCDE1234F"
+                        placeholder="Enter your 10-character PAN"
                         maxLength={10}
                       />
                     </div>
@@ -565,7 +673,7 @@ export function MoneyDonationForm() {
                         receipt is valid without an address — refusing a donation
                         over a blank box would trade money for a tidier document. */}
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
-                      <label htmlFor="address" className="text-[11px] font-bold text-stone-600 dark:text-stone-300">
+                      <label htmlFor="address" className="text-[0.6875rem] font-bold text-stone-600 dark:text-stone-300">
                         Address{' '}
                         <span className="font-semibold text-stone-400 dark:text-stone-500">
                           · optional, printed on the receipt
@@ -578,7 +686,7 @@ export function MoneyDonationForm() {
                         value={formData.address}
                         onChange={handleChange}
                         className={inputClasses}
-                        placeholder="Flat, street, city, PIN"
+                        placeholder="Enter your address — flat, street, city, PIN"
                         maxLength={300}
                         autoComplete="street-address"
                       />
@@ -598,7 +706,7 @@ export function MoneyDonationForm() {
                     column, where it left an obvious dead gap. */}
                 <div className="flex flex-col gap-4 lg:sticky lg:top-24">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] font-black uppercase tracking-[0.1em] text-amber-800 dark:text-amber-300">
+                  <span className="text-[0.6875rem] font-black uppercase tracking-[0.1em] text-amber-800 dark:text-amber-300">
                     Your contribution
                   </span>
                   <Receipt className="size-[18px] text-amber-600 dark:text-amber-400" aria-hidden="true" />
@@ -606,18 +714,18 @@ export function MoneyDonationForm() {
 
                 <div className="flex flex-col gap-3">
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-[13px] font-semibold text-stone-600 dark:text-stone-300">
+                    <span className="text-[0.8125rem] font-semibold text-stone-600 dark:text-stone-300">
                       Donation to Sahas
                     </span>
-                    <span className="text-[15px] font-bold tabular-nums text-foreground">
+                    <span className="text-[0.9375rem] font-bold tabular-nums text-foreground">
                       ₹{money(donation)}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-[13px] font-semibold text-stone-600 dark:text-stone-300">
-                      Tip to CauseKind
+                    <span className="text-[0.8125rem] font-semibold text-stone-600 dark:text-stone-300">
+                      Support for CauseKind
                     </span>
-                    <span className="text-[15px] font-bold tabular-nums text-foreground">
+                    <span className="text-[0.9375rem] font-bold tabular-nums text-foreground">
                       ₹{money(tip)}
                     </span>
                   </div>
@@ -638,7 +746,7 @@ export function MoneyDonationForm() {
                   <Check className="mt-px size-4 shrink-0 text-green-700 dark:text-green-500" aria-hidden="true" />
                   <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300">
                     All <span className="font-bold tabular-nums text-foreground">₹{money(donation)}</span>{' '}
-                    reaches Sahas. CauseKind takes no cut — only the tip you choose.
+                    reaches Sahas. CauseKind takes no cut — only the support you choose to add.
                   </p>
                 </div>
 
@@ -646,7 +754,7 @@ export function MoneyDonationForm() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] px-8 py-3.5 text-[15px] font-extrabold text-white shadow-[0_0_25px_rgba(217,119,6,0.35)] transition-all duration-200 ease-out hover:from-[#c2410c] hover:to-[#b45309] hover:shadow-[0_0_35px_rgba(217,119,6,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea580c] via-[#d97706] to-[#ea580c] px-8 py-3.5 text-[0.9375rem] font-extrabold text-white shadow-[0_0_25px_rgba(217,119,6,0.35)] transition-all duration-200 ease-out hover:from-[#c2410c] hover:to-[#b45309] hover:shadow-[0_0_35px_rgba(217,119,6,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {submitting ? (
                       'Opening secure checkout…'
@@ -660,11 +768,11 @@ export function MoneyDonationForm() {
                 </motion.div>
 
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-stone-500 dark:text-stone-400">
+                  <div className="flex items-center gap-1.5 text-[0.6875rem] font-semibold text-stone-500 dark:text-stone-400">
                     <Lock className="size-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                     <span>Secure payment · UPI · Cards · Net Banking</span>
                   </div>
-                  <p className="text-center text-[11px] leading-snug text-stone-400 dark:text-stone-500">
+                  <p className="text-center text-[0.6875rem] leading-snug text-stone-400 dark:text-stone-500">
                     Nothing is charged on this page. You will be taken to a secure payment gateway.
                   </p>
                 </div>

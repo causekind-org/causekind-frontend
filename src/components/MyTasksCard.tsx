@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { myTasks, respondToTask, uploadTaskAttachment, type MyTask } from "@/lib/api";
-import { compressImageIfNeeded } from "@/lib/imageCompression";
+import { compressDisplayPhoto } from "@/lib/imageCompression";
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -221,9 +221,10 @@ function PhotoAnswer({
   async function store(file: File) {
     setBusy(true);
     try {
-      // Same compression the rest of the app applies before upload — a raw
-      // gallery shot from a modern phone otherwise trips the 10MB multipart cap.
-      const prepared = await compressImageIfNeeded(file);
+      // A task attachment is looked at, not read for text, so it takes the same
+      // ~1MB ladder as listing and offer photos rather than the gentler
+      // single-pass the documents keep.
+      const prepared = await compressDisplayPhoto(file);
       onChange(await uploadTaskAttachment(requestId, prepared));
       toast.success("Photo attached.");
     } catch (e) {

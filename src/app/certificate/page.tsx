@@ -3,9 +3,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getOfferCertificate, getMatchCertificate, verifyCertificate, type Certificate } from "@/lib/api";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { ArrowLeft, Download } from "lucide-react";
 import QRCode from "qrcode";
+import { normalizeCertificateColors } from "@/lib/certificateCaptureColors";
 import { Dancing_Script, Playfair_Display } from "next/font/google";
 
 const dancingScript = Dancing_Script({ weight: "700", subsets: ["latin"] });
@@ -14,7 +15,7 @@ const dancingScript = Dancing_Script({ weight: "700", subsets: ["latin"] });
 // be used server-side at all (Microsoft-licensed, not redistributable), so the page
 // and the attachment were set in different typefaces. Playfair is OFL, so both
 // can use it and the two documents finally look like the same thing.
-const playfair = Playfair_Display({ weight: ["400", "700"], subsets: ["latin"] });
+const playfair = Playfair_Display({ subsets: ["latin"] });
 
 export default function CertificatePage() {
   const searchParams = useSearchParams();
@@ -22,6 +23,7 @@ export default function CertificatePage() {
   const offerId = searchParams.get("offerId");
   const matchId = searchParams.get("matchId");
   const certNumber = searchParams.get("certNumber");
+  const type = searchParams.get("type");
   const printRef = useRef<HTMLDivElement>(null);
 
   const [cert, setCert] = useState<Certificate | null>(null);
@@ -29,10 +31,15 @@ export default function CertificatePage() {
   const [error, setError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (certNumber) {
       verifyCertificate(certNumber).then(setCert).catch(() => setError("Certificate not found")).finally(() => setLoading(false));
+    } else if (offerId && type === "ngo_drive") {
+      import("@/lib/api").then(({ getNgoDriveOfferCertificate }) => {
+        getNgoDriveOfferCertificate(Number(offerId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
+      });
     } else if (offerId) {
       getOfferCertificate(Number(offerId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
     } else if (matchId) {
@@ -41,7 +48,7 @@ export default function CertificatePage() {
       setError("No certificate reference provided");
       setLoading(false);
     }
-  }, [offerId, matchId, certNumber]);
+  }, [offerId, matchId, certNumber, type]);
 
   // Generate a scannable QR pointing at this same verification page — this is what
   // actually makes the certificate "QR-verifiable", not just the text label.
@@ -60,7 +67,8 @@ export default function CertificatePage() {
   // actually clicks download. The card's 1414:1000 ratio matches A4 landscape
   // exactly, so the snapshot fills the page edge to edge with no letterboxing.
   async function handleDownload() {
-    if (!printRef.current || !cert) return;
+    if (!printRef.current || !cert || generating) return;
+    setDownloadError(null);
     setGenerating(true);
     try {
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
@@ -68,10 +76,12 @@ export default function CertificatePage() {
         import("jspdf"),
       ]);
 
+      await document.fonts.ready;
       const canvas = await html2canvas(printRef.current, {
         scale: 3,
         useCORS: true,
         backgroundColor: "#f5f0e8",
+        onclone: (document, element) => normalizeCertificateColors(document, element),
       });
 
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -79,6 +89,8 @@ export default function CertificatePage() {
       const pageHeight = pdf.internal.pageSize.getHeight();
       pdf.addImage(canvas.toDataURL("image/png", 1.0), "PNG", 0, 0, pageWidth, pageHeight);
       pdf.save(`CauseKind-Certificate-${cert.certificateNumber}.pdf`);
+    } catch (error) {
+      setDownloadError(error instanceof Error ? `Could not download the certificate: ${error.message}` : "Could not download the certificate. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -167,6 +179,8 @@ export default function CertificatePage() {
           <Download size={14} /> {generating ? "Generating PDF…" : "Download PDF"}
         </button>
       </div>
+
+      {downloadError && <p role="alert" className="mx-auto mb-4 max-w-4xl text-sm text-red-700 dark:text-red-400 print:hidden">{downloadError}</p>}
 
       {/* Certificate — landscape A4 */}
       <div

@@ -5,16 +5,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
 import SpecularButton from "@/components/SpecularButton";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
-import { GanpatiLogoVideo } from "@/components/brand/GanpatiLogoVideo";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, Phone, MessageCircle, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
 import { getMyProfile, getMyMatches, getMyNgoApplication, type UserProfile, type ItemMatch } from "@/lib/api";
@@ -22,11 +21,11 @@ import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
-import { isGanpatiActive } from "@/lib/isGanpatiActive";
-import { ModakIcon } from "@/components/home/GanpatiVisuals";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
+import { DonateNowButton } from "@/components/donate/DonateNowButton";
+import { DONATE_HREF } from "@/lib/donateScroll";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -44,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { handleWhatsAppShare } from "@/components/home/WhatsAppTellAFriend";
 
 
 /** "Cause" reveals a letter at a time; the container only sets the cadence. */
@@ -65,7 +65,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   // cannot outlive its window — which is exactly how the Independence Day
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
-  const isGanpati = isGanpatiActive();
   return (
     <motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
@@ -73,9 +72,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      {/* `!isGanpati`: the festive artwork draws the heart-and-hands mark
-          itself, so keeping LogoVideo beside it shows the brand mark twice. */}
-      {!hideIcon && !isGanpati && (
+      {!hideIcon && (
         <motion.div
           className="shrink-0"
           initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
@@ -105,28 +102,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
            wordmark outright rather than decorating it. Gated on the campaign
            switch, unlike the flag asset it is standing in for. */
         <RakshaBandhanWordmark size={size} />
-      ) : isGanpati ? (
-        /* Same arrangement for Ganeshotsav, and gated the same way — on
-           isGanpatiActive(), so the artwork cannot outlive its window the way
-           the Independence Day wordmark did. The modak that used to be pinned
-           after "Kind" is not rendered alongside it: this artwork already has
-           two of them.
-
-           Now the supplied animation rather than the still it shipped with.
-           Two things about the delivered file are worth knowing before this is
-           tuned further, both fixable in one re-export:
-
-             1. It is opaque. The container declares AlphaMode=1 but the content
-                behind it is a solid rgb(252,246,237) plate, so it cannot simply
-                sit on the bar — see GanpatiLogoVideo, which multiplies it away
-                on light and keeps it as a chip on dark.
-             2. It is 2.9 MB, against 67 KB for the still, and the header is on
-                every page.
-
-           Both go away with a transparent, navbar-sized encode:
-             ffmpeg -i ganpati-logo.webm -vf "chromakey=0xFCF6ED:0.10:0.04,               scale=364:-2" -c:v libvpx-vp9 -pix_fmt yuva420p -crf 38 -b:v 0                -an ganpati-logo.webm
-           `yuva420p` is the part that matters — it is what carries the alpha. */
-        <GanpatiLogoVideo size={size} />
       ) : (
         <span className="relative flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
@@ -156,11 +131,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
           >
             Kind
           </motion.span>
-          {isGanpati && (
-            <span className="ml-1 inline-flex items-center shrink-0 self-center" aria-hidden="true" title="Ganesh Chaturthi Special">
-              <ModakIcon className="size-3.5 sm:size-4 text-amber-600 drop-shadow-[0_1px_3px_rgba(217,119,6,0.35)]" />
-            </span>
-          )}
         </span>
       )}
     </motion.span>
@@ -170,89 +140,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
 // Keep CareNestLogo exported and map it to CauseKindLogo to prevent any broken imports in other files
 export function CareNestLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   return <CauseKindLogo size={size} hideIcon={hideIcon} />;
-}
-
-function Donate3DButton() {
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [hovered, setHovered] = useState(false);
-  const [hearts, setHearts] = useState<{ id: number; x: number }[]>([]);
-  const heartIdRef = useRef(0);
-
-  function handleMouseMove(e: React.MouseEvent<HTMLButtonElement>) {
-    const btn = btnRef.current;
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    setTilt({
-      x: ((e.clientY - rect.top - rect.height / 2) / (rect.height / 2)) * -14,
-      y: ((e.clientX - rect.left - rect.width / 2) / (rect.width / 2)) * 14,
-    });
-  }
-
-  function spawnHeart() {
-    const id = ++heartIdRef.current;
-    setHearts(h => [...h, { id, x: Math.random() * 60 + 20 }]);
-    setTimeout(() => setHearts(h => h.filter(ht => ht.id !== id)), 800);
-  }
-
-  return (
-    <Link href="/donate">
-      <div style={{ perspective: "600px", display: "inline-block", position: "relative" }}>
-        {hearts.map(({ id, x }) => (
-          <span
-            key={id}
-            className="absolute z-50 text-2xs text-[var(--ck-role-highlight)] pointer-events-none select-none"
-            style={{
-              left: `${x}%`,
-              bottom: "110%",
-              animation: "donate-navbar-heart-float 0.8s ease-out forwards",
-            }}
-          >
-            ♥
-          </span>
-        ))}
-        <button
-          ref={btnRef}
-          onMouseMove={handleMouseMove}
-          onMouseEnter={() => { setHovered(true); spawnHeart(); }}
-          onMouseLeave={() => { setHovered(false); setTilt({ x: 0, y: 0 }); }}
-          style={{
-            transform: hovered
-              ? `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.1) translateZ(10px)`
-              : "rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px)",
-            transition: hovered
-              ? "transform 0.08s ease-out"
-              : "transform 0.55s cubic-bezier(0.34,1.56,0.64,1)",
-            transformStyle: "preserve-3d",
-            boxShadow: hovered
-              ? "0 0 0 2px rgba(240,185,122,0.5), 0 10px 36px rgba(176,74,21,0.65), 0 4px 14px rgba(0,0,0,0.18)"
-              : undefined,
-          }}
-          className="donate-navbar-3d relative bg-[var(--ck-role-accent)] text-white font-bold px-[18px] py-[6px] rounded-full text-xs sm:text-sm"
-          aria-label="Donate"
-        >
-          <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
-            <span className="donate-navbar-shimmer" />
-          </span>
-          {hovered && <span className="donate-navbar-ring" />}
-          <span className="relative z-10 flex items-center gap-1.5">
-            <span
-              style={{
-                display: "inline-block",
-                transform: hovered ? "scale(1.35) rotate(-15deg)" : "scale(1) rotate(0deg)",
-                transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
-                fontSize: "0.72em",
-                lineHeight: 1,
-              }}
-            >
-              ♥
-            </span>
-            Donate
-          </span>
-        </button>
-      </div>
-    </Link>
-  );
 }
 
 // ── Login nudge — a speech-bubble popover anchored to the navbar's Login
@@ -492,6 +379,8 @@ export function SiteHeader() {
       if (hero && hero !== observedHero) {
         resize.disconnect();
         resize.observe(hero);
+        crossing.disconnect();
+        crossing.observe(hero);
         observedHero = hero;
         mounted.disconnect();
       }
@@ -500,24 +389,37 @@ export function SiteHeader() {
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
+    // Scroll only matters when the hero crosses the top edge of the viewport,
+    // so watch that line instead of reading the hero's rect on every scroll
+    // event (a forced layout mid-scroll, right after the page's animations
+    // have written their styles). The root is shrunk to a 0px line along the
+    // top; intersection is edge-inclusive, so a hero spanning it counts.
+    const crossing = new IntersectionObserver(schedule, { rootMargin: "0px 0px -100% 0px" });
     // The homepage may arrive after the shared header during client navigation.
     const mounted = new MutationObserver(schedule);
     mounted.observe(document.body, { childList: true, subtree: true });
     update();
-    window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     mobile.addEventListener("change", schedule);
     return () => {
       cancelAnimationFrame(frame);
       resize.disconnect();
+      crossing.disconnect();
       mounted.disconnect();
-      window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       mobile.removeEventListener("change", schedule);
     };
   }, [pathname]);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    // Set state only when the answer flips, not on every scroll event.
+    let last: boolean | null = null;
+    const onScroll = () => {
+      const next = window.scrollY > 8;
+      if (next !== last) {
+        last = next;
+        setScrolled(next);
+      }
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -711,102 +613,32 @@ export function SiteHeader() {
     pathname?.startsWith("/dashboard/ngo") ||
     pathname?.startsWith("/ngo");
 
-  const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(() => {
-    if (typeof window === "undefined" || !user) return true;
-    const userIdentifier =
-      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-    const cached = localStorage.getItem(demoAppKey) || localStorage.getItem(realAppKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          return false;
-        }
-      } catch {}
-    }
-    return true;
-  });
-
-  const checkNgoApplicationStatus = useCallback(() => {
-    if (!isNgoDashboard) {
-      setIsNgoProfileIncomplete(false);
-      return;
-    }
-
-    const userIdentifier =
-      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-
-    const cachedDemo = typeof window !== "undefined" ? localStorage.getItem(demoAppKey) : null;
-    const cachedReal = typeof window !== "undefined" ? localStorage.getItem(realAppKey) : null;
-    if (cachedDemo || cachedReal) {
-      try {
-        const parsed = JSON.parse((cachedDemo || cachedReal)!);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          setIsNgoProfileIncomplete(false);
-          return;
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    if (user) {
-      getMyNgoApplication()
-        .then((app) => {
-          const isComplete =
-            (app as any)?.submissionStatus === "UNDER_REVIEW" ||
-            (app as any)?.submissionStatus === "APPROVED" ||
-            (app as any)?.submissionStatus === "PENDING_VERIFICATION" ||
-            app?.status === "UNDER_REVIEW" ||
-            app?.status === "APPROVED" ||
-            app?.status === "PENDING_VERIFICATION";
-          setIsNgoProfileIncomplete(!isComplete);
-        })
-        .catch(() => {
-          setIsNgoProfileIncomplete(true);
-        });
-    } else {
-      setIsNgoProfileIncomplete(true);
-    }
-  }, [isNgoDashboard, user]);
-
+  const [ngoApplicationState, setNgoApplicationState] = useState("CHECKING");
   useEffect(() => {
-    checkNgoApplicationStatus();
-
-    const handleUpdate = (e?: Event) => {
-      const customEvent = e as CustomEvent;
-      if (
-        customEvent?.detail?.status === "UNDER_REVIEW" ||
-        customEvent?.detail?.status === "APPROVED" ||
-        customEvent?.detail?.status === "PENDING_VERIFICATION"
-      ) {
-        setIsNgoProfileIncomplete(false);
-        return;
+    if (!isNgo || !user) return;
+    let active = true;
+    let sequence = 0;
+    const refresh = async () => {
+      const current = ++sequence;
+      try {
+        const app = await getMyNgoApplication();
+        if (active && current === sequence) setNgoApplicationState(app?.status || "INCOMPLETE");
+      } catch {
+        if (active && current === sequence) setNgoApplicationState("UNAVAILABLE");
       }
-      checkNgoApplicationStatus();
     };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("ngo-application-submitted", handleUpdate);
-      window.addEventListener("storage", handleUpdate);
-      return () => {
-        window.removeEventListener("ngo-application-submitted", handleUpdate);
-        window.removeEventListener("storage", handleUpdate);
-      };
-    }
-  }, [checkNgoApplicationStatus, pathname]);
+    setNgoApplicationState("CHECKING");
+    void refresh();
+    window.addEventListener("ngo-application-submitted", refresh);
+    window.addEventListener("focus", refresh);
+    return () => { active = false; window.removeEventListener("ngo-application-submitted", refresh); window.removeEventListener("focus", refresh); };
+  }, [isNgo, user, pathname]);
+  const ngoApplicationLabel = ngoApplicationState === "APPROVED" ? "NGO Approved"
+    : ngoApplicationState === "UNDER_REVIEW" ? "Application Under Review"
+    : ngoApplicationState === "PENDING_VERIFICATION" ? "Verify Application Email"
+    : ["NEEDS_INFORMATION", "REJECTED"].includes(ngoApplicationState) ? "Update Application"
+    : ngoApplicationState === "CHECKING" ? "Checking Application…"
+    : ngoApplicationState === "UNAVAILABLE" ? "View Application" : "Complete Profile";
 
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
@@ -822,6 +654,34 @@ export function SiteHeader() {
     ...aboutMenuItems,
   ];
 
+  /**
+   * The mobile drawer's list.
+   *
+   * <p>Identical to {@link navLinks} except for one entry. On desktop the
+   * "Donate" pill is a mega-menu TRIGGER: hovering it opens both the money
+   * section (/donate/money) and the in-kind categories, and its own href is the
+   * in-kind hub. The drawer has no hover surface, so that one entry collapsed to
+   * a flat "Donate" that sent every phone donor to the in-kind requests board —
+   * never to the donation form. Here it becomes the two destinations it stands
+   * for, in the same order the mega menu presents them: money first, in-kind
+   * second.
+   *
+   * <p>DERIVED from navLinks rather than written out, so a link added there
+   * still appears here, in the same position, without a second edit. Both labels
+   * reuse existing i18n keys — `nav.donate` and `nav.requests` — so all fourteen
+   * locales already carry them and nothing degrades to English.
+   */
+  const mobileNavLinks = navLinks.flatMap((link) =>
+    link.href === "/requests"
+      ? [
+          // Same constant the button uses, so the drawer lands on the donation
+          // form too rather than at the top of the page.
+          { href: DONATE_HREF, label: t("nav.donate") },
+          { href: "/requests", label: t("nav.requests") },
+        ]
+      : [link],
+  );
+
   /** Whether a nav link is active, keyed by href for exactness. */
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -830,22 +690,6 @@ export function SiteHeader() {
 
   // Hooks must run unconditionally — keep this above the hideChrome early return.
   const tilt = useTilt();
-  const isGanpati = isGanpatiActive();
-
-  /**
-   * The festive home page carries no bar on a phone: no ground, no blur, no
-   * hairline, no shadow — just the wordmark and the menu button floating on the
-   * hero. Everything that draws the bar is switched off in styles.css off the
-   * `data-bare-nav` marker below, because those rules have to outrank both the
-   * utility classes on this header and the `data-home-hero` block written for
-   * the old translucent-over-photo treatment.
-   *
-   * Scoped to the festive home. Every other page still needs a bar behind its
-   * controls — they scroll ordinary copy under this header, not a photograph —
-   * and the plain home's mobile bar is opaque rather than translucent, so there
-   * is no "transparent effect" there to remove.
-   */
-  const bareNav = isGanpati && pathname === "/";
 
   if (hideChrome) return null;
 
@@ -879,7 +723,6 @@ export function SiteHeader() {
       <header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
-        data-bare-nav={bareNav ? "true" : undefined}
         style={{
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
           opacity: immersive ? 0 : 1,
@@ -887,25 +730,11 @@ export function SiteHeader() {
           transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
           willChange: "transform",
         }}
-        className={`sticky top-0 z-50 w-full ${
-          isGanpati
-            ? pathname === "/"
-              ? "bg-gradient-to-r from-[#fffbf4]/80 via-[#fff5e6]/70 to-[#fffbf4]/80 dark:from-[#1b0c05]/80 dark:via-[#240e06]/70 dark:to-[#1b0c05]/80 backdrop-blur-xs border-b-0"
-              : "bg-gradient-to-r from-[#fffbf4] via-[#fff5e6] to-[#fffbf4] dark:from-[#1b0c05] dark:via-[#240e06] dark:to-[#1b0c05] lg:bg-gradient-to-r lg:from-[#fffbf4]/92 lg:via-[#fff5e6]/88 lg:to-[#fffbf4]/92 lg:dark:from-[#1b0c05]/92 lg:dark:via-[#240e06]/88 lg:dark:to-[#1b0c05]/92 backdrop-blur-none lg:backdrop-blur-md border-b border-amber-300/60 dark:border-amber-700/40"
-            : "bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850"
-        } ${
+        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
-          : pathname === "/" && isGanpati
-            ? "shadow-none"
-            : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
+          : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
       }`}>
-        {isGanpati && pathname !== "/" && (
-          <div
-            className="absolute bottom-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none z-10"
-            aria-hidden="true"
-          />
-        )}
         {/* One-day Raksha Bandhan dressing. Renders null on every other day, so
             the header is back to normal on its own at IST midnight. It sits at
             z-0 behind the two content rows below, which are lifted to z-[1]. */}
@@ -936,17 +765,9 @@ export function SiteHeader() {
             same colour — plus the festive layer on the one day it exists. Off
             the day, this renders pixel-identical to the opaque version.
 
-            Through Ganeshotsav the row takes the header's own warm gradient
-            instead, so it reads as part of the festive header rather than as a
-            cream band sitting on it. `ck-mobile-header` survives either branch:
-            src/styles.css hangs the whole home-hero header layout off it. */}
-        <div className={`ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 ${
-          bareNav
-            ? ""
-            : isGanpati
-              ? "bg-gradient-to-r from-[#fffbf4]/95 via-[#fff5e6]/95 to-[#fffbf4]/95 dark:from-[#1b0c05]/95 dark:via-[#240e06]/95 dark:to-[#1b0c05]/95"
-              : "bg-[#faf8f5]/90 dark:bg-zinc-950/90"
-        }`}>
+            `ck-mobile-header` matters: src/styles.css hangs the whole home-hero
+            header layout off it. */}
+        <div className="ck-mobile-header relative z-[1] lg:hidden w-full grid grid-cols-[1fr_auto_1fr] items-center px-6 py-3 bg-[#faf8f5]/90 dark:bg-zinc-950/90">
           <div className="flex items-center gap-2 justify-self-start">
             <NotificationBell />
           </div>
@@ -970,11 +791,7 @@ export function SiteHeader() {
             aria-label="Open menu"
             aria-expanded={isSidebarOpen}
             aria-controls="staggered-menu-panel"
-            className={
-              bareNav
-                ? "glass-pill glass-3d relative justify-self-end flex items-center justify-center w-11 h-11 rounded-full transition-transform active:scale-95"
-                : "justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
-            }
+            className="justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -1166,30 +983,26 @@ export function SiteHeader() {
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
             </button>
 
-            {FEATURES.money && !isNgoDashboard && <Donate3DButton />}
+            {/* Deliberately NOT behind FEATURES.money. That flag postpones
+                monetary campaigns and the old /donate page; /donate/money is
+                live and takes real payments, so gating its only always-visible
+                entry point on the same flag hid a shipped feature. The old
+                Donate3DButton pointed at /donate — the Coming Soon screen. */}
+            {!isNgoDashboard && (
+              <DonateNowButton size="sm" label="Donate" showArrow={false} />
+            )}
 
             {isNgoDashboard && (
-              <Link href="/dashboard/ngo/profile">
-                {isNgoProfileIncomplete ? (
-                  <Button
-                    size="sm"
-                    className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
-                  >
-                    Complete Profile
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
-                  >
-                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-                    Application Under Review
-                  </Button>
-                )}
+              <Link href="/profile/ngo-details">
+                <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
+                  {ngoApplicationLabel}
+                </Button>
               </Link>
             )}
 
-            {/* Auth action — login/logout, top-right */}
+            {/* Auth action — login/logout, top-right. Hidden on the auth pages
+                themselves since the page already is the login/register form. */}
+            {!(pathname === "/login" || pathname === "/register") && (
             <div className="relative">
               <SpecularButton
                 size="sm"
@@ -1215,6 +1028,7 @@ export function SiteHeader() {
               </SpecularButton>
               <LoginNudgeBubble user={user} />
             </div>
+            )}
           </div>
         </div>
 
@@ -1456,7 +1270,15 @@ export function SiteHeader() {
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
         items={[
-          ...navLinks.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
+          // `isActive` matches against the pathname, which never carries a query
+          // string — so the Donate entry (…?scroll=donate-form) has to be tested
+          // on its path alone or it could never light up.
+          ...mobileNavLinks.map((l) => ({
+            label: l.label,
+            link: l.href,
+            ariaLabel: l.label,
+            active: isActive(l.href.split("?")[0]),
+          })),
           ...(user
             ? [
                 ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
@@ -1548,7 +1370,7 @@ export function SiteFooter() {
     ...(user ? [{ href: "/requests", l: t("inkindRequests") }] : []),
   ];
   return (
-    <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
+    <footer className="bg-[#120c04] text-stone-250" id="footer">
       {/* items-start stops the short columns stretching; the row-span on Get
           support (below) is what actually compacts this on mobile. */}
       <div className={`mx-auto grid max-w-7xl items-start gap-x-4 gap-y-5 sm:gap-y-6 px-4 py-6 sm:px-6 sm:py-8 text-sm grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
@@ -1557,17 +1379,32 @@ export function SiteFooter() {
             <CareNestLogo size="md" />
           </div>
           <p className="text-stone-400 leading-relaxed font-medium">{t("tagline")}</p>
-          <div className="text-stone-400 font-medium text-xs">
-            <span className="text-white font-semibold">{t("contact")}:</span> +91 7719938619
+          <div className="space-y-1 text-xs text-stone-400 font-medium pt-0.5">
+            <div className="flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
+              <a href="tel:+917719938619" className="hover:text-white transition-colors">
+                +91 7719938619
+              </a>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
+              <a href="mailto:support@causekind.com" className="hover:text-white transition-colors">
+                support@causekind.com
+              </a>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />
+              <a href="https://wa.me/917719938619" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                WhatsApp Support
+              </a>
+            </div>
           </div>
           <div className="flex gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
             <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
               <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ck-role-accent)]" /> {t("adminVerified")}
             </span>
-            <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
-              <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
-            </span>
           </div>
+
         </div>
         {giveBackLinks.length > 0 && (
           <div className="space-y-2 sm:space-y-2.5">
@@ -1590,12 +1427,23 @@ export function SiteFooter() {
             {[
               { href: "/register", l: t("createAccount") },
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
+              { href: "/register?role=NGO", l: "Register your NGO" },
+              { href: "/give-safely", l: "Safety guidelines" },
               ...(FEATURES.money ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
               { href: "/faq", l: t("helpFaq") },
               { href: "/blog", l: t("blog") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
+            <li>
+              <button
+                type="button"
+                onClick={() => handleWhatsAppShare()}
+                className="hover:text-white hover:underline underline-offset-4 transition duration-200 text-left cursor-pointer"
+              >
+                Invite a friend
+              </button>
+            </li>
           </ul>
         </div>
         <div className="space-y-2 sm:space-y-2.5">
@@ -1604,7 +1452,7 @@ export function SiteFooter() {
               narrow column and a centred dot then floats beside the gap. */}
           <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
             <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("adminVerifiedFull")}</li>
-            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("zeroFees")}</li>
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0F7A6C]" /> OTP-confirmed handovers</li>
             <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
           </ul>
         </div>

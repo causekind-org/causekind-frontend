@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { BadgeCheck, FileSearch, MapPin, ShieldQuestion } from "lucide-react";
 
 import { SubscribeForm } from "@/components/SubscribeForm";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { Reveal } from "@/components/Reveal";
@@ -140,7 +140,7 @@ export function ContactPageClient() {
                 Get in touch
               </p>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.05]">
-                No bots. No middlemen.<br />Just us.
+                Questions about CauseKind?<br />We’re here to help.
               </h1>
             </div>
             <p className="text-sm text-stone-400 font-medium leading-relaxed max-w-xs lg:text-right lg:pb-1">
