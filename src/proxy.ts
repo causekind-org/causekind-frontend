@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { stagingGate } from "./stagingGate";
 
 /**
  * Marks requests from known internal/office IPs so client trackers (Meta
@@ -24,7 +25,10 @@ function getClientIp(request: NextRequest): string | null {
   return request.headers.get("x-real-ip");
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const gated = await stagingGate(request, getClientIp(request));
+  if (gated) return gated;
+
   const response = NextResponse.next();
 
   if (INTERNAL_IPS.length === 0) return response;
