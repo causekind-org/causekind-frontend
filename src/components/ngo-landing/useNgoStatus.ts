@@ -109,8 +109,6 @@ export interface NgoStatusData {
   lockReason: string;
   hasShownWelcome: boolean;
   markWelcomeShown: () => void;
-  documents: Record<string, any>;
-  isError: boolean;
 }
 
 export function useNgoStatus(): NgoStatusData {

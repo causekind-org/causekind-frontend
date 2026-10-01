@@ -38,6 +38,7 @@ import { offerStepForField, validateOfferAll, validateOfferStep } from "@/featur
 const STEP_LABELS: Record<OfferStep, string> = {
   photos: "Show the item",
   details: "Tell us about the item",
+  purchasePlan: "What you'll buy",
   condition: "Condition & fit",
   pickup: "Pickup & delivery",
   review: "Review your offer",
@@ -46,6 +47,7 @@ const STEP_LABELS: Record<OfferStep, string> = {
 const STEP_INTROS: Record<OfferStep, string> = {
   photos: "A few good photos do most of the work.",
   details: "What are you giving, and how much of it?",
+  purchasePlan: "Tell the recipient what you plan to buy, and how soon.",
   condition: "How is it doing, and what should the recipient know?",
   pickup: "Where would this be collected from?",
   review: "One last look before it goes to the recipient and our team.",
