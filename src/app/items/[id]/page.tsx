@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { getMyItemListings, type ItemListing } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";

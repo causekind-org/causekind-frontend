@@ -48,9 +48,12 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P7693M56";
 // banner is mounted yet. Remove once the banner is back.
 const TESTING_BYPASS = true;
 
+// Staging sets this so test traffic never reaches the Pixel/GTM/Clarity data.
+const TRACKING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "true";
+
 export default function GoogleTagManagerGated() {
   const consent = useCookieConsent();
-  if (isInternalTraffic()) return null;
+  if (TRACKING_DISABLED || isInternalTraffic()) return null;
   if (!TESTING_BYPASS && consent !== "accepted") return null;
 
   return <GoogleTagManager gtmId={GTM_ID} />;

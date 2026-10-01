@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { resolvePostAuthDestination } from "@/lib/postAuthDestination";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { Suspense } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";

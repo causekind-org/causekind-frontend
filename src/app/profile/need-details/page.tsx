@@ -2,7 +2,7 @@
 
 import { ProfileDocumentCard } from "./ProfileDocumentCard";
 import { Suspense, useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";

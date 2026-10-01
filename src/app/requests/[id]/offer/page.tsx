@@ -32,7 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { toast } from "@/lib/toast";
 import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOfferWizard";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
   ShoppingBag, Shuffle, Loader2, Sparkles, type LucideIcon,

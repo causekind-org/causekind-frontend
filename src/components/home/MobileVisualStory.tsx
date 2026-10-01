@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 
-import Link, { useLinkStatus } from "next/link";
+import Link from "@/components/AppLink";
+import { useLinkStatus } from "next/link";
 import { ArrowLeft, ArrowRight, HandHeart, Loader2, MessagesSquare, Package } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { HandCoins, Plus, X, ChevronDown } from "lucide-react";
 
 export function RequestsHero({ total, critical }: { total: number; critical: number }) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { documentScreeningCopy } from "@/features/wizard-kit/documentScreeningCopy";
 import { RequestGuidance } from "@/components/requests/RequestGuidance";
 import { toast } from "@/lib/toast";

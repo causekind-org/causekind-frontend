@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
