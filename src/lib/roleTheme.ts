@@ -1,14 +1,14 @@
 import { isNgoRole } from "@/lib/isNgoRole";
 
 /**
- * Role-aware theming: terracotta for donors, blue for recipients.
+ * Role-aware theming: terracotta for donors, blue for recipients, green for NGOs.
  *
  * <p>One module, two consumers. CSS reads the `--ck-role-*` custom properties
  * defined in `styles.css`; JavaScript that paints (ClickSpark, particle fields,
  * canvas effects, gradient props) reads the literals here. They are kept in the
  * same file so a palette change cannot land in one and miss the other.
  *
- * <p><b>Scope.</b> Only DONOR and DONEE are themed. ADMIN, SUPER_ADMIN, logged-out
+ * <p><b>Scope.</b> DONOR, DONEE, NGO and NGO_PARTNER are themed. ADMIN, SUPER_ADMIN, logged-out
  * visitors and the public marketing pages keep the existing terracotta identity —
  * the blue says "this is your recipient workspace", and painting an admin console
  * or a marketing page with it would say something untrue.

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
-  MIN_OFFER_PHOTOS, OFFER_STEPS, type OfferModel, type OfferStep,
+  MIN_OFFER_PHOTOS, PURCHASE_TIMELINES, isPurchaseFlow,
+  offerStepsFor, type OfferModel, type OfferStep,
 } from "./offerModel";
 
 /**
@@ -9,32 +10,41 @@ import {
  * `STEP_FIELDS` — the same shape the listing wizard uses, so the two validate
  * and report errors identically.
  *
- * <p>The optional `maxQuantity` context caps the quantity at what the request
- * still needs. The backend already enforces this (validateOfferQuantity in
- * DonationOfferService), but surfacing it here gives the donor an inline error
- * instead of a server 400 after submit.
+ * <p>**Built per flow, not once.** A `WILL_PURCHASE` offer has no photographs
+ * and no condition, so the rules demanding them would fail on every step and
+ * leave Continue permanently dead — and the failure would be invisible, because
+ * neither field is rendered for that flow for an error to attach to.
  */
-export function buildOfferSchema(maxQuantity?: number | null) {
+export function buildOfferSchema(flowType?: string | null, maxQuantity?: number | null) {
+  const purchase = isPurchaseFlow(flowType);
   return z
-    .object({
-      photos: z.array(z.any()),
-      quantity: z.string(),
-      approximateAge: z.string(),
-      accessoriesIncluded: z.string(),
-      specNotes: z.string(),
-      condition: z.string(),
-      hasKnownDefects: z.boolean(),
-      knownDefects: z.string(),
-      pickupCity: z.string(),
-      pickupPincode: z.string(),
-      pickupLocality: z.string(),
-      donorDropOffAvailable: z.boolean(),
-      deliveryCostBornBy: z.string(),
-      declarationsConfirmed: z.boolean(),
-    })
-    .superRefine((v, ctx) => {
-      // Photos — counted by *uploaded*, not selected. A file still uploading is
-      // not yet something the donee could ever see.
+  .object({
+    photos: z.array(z.any()),
+    proposedBrand: z.string(),
+    proposedModel: z.string(),
+    estimatedCost: z.string(),
+    intendedStore: z.string(),
+    purchaseTimeline: z.string(),
+    purchaseNotes: z.string(),
+    quantity: z.string(),
+    approximateAge: z.string(),
+    accessoriesIncluded: z.string(),
+    specNotes: z.string(),
+    condition: z.string(),
+    hasKnownDefects: z.boolean(),
+    knownDefects: z.string(),
+    pickupCity: z.string(),
+    pickupPincode: z.string(),
+    pickupLocality: z.string(),
+    donorDropOffAvailable: z.boolean(),
+    deliveryCostBornBy: z.string(),
+    declarationsConfirmed: z.boolean(),
+  })
+  .superRefine((v, ctx) => {
+    // Photos — counted by *uploaded*, not selected. A file still uploading is
+    // not yet something the donee could ever see. Skipped entirely for a
+    // purchase offer: the item does not exist to photograph.
+    if (!purchase) {
       const uploaded = (v.photos as { status?: string; remoteUrl?: string | null }[])
         .filter(p => p?.status === "uploaded" && !!p.remoteUrl).length;
       if (uploaded < MIN_OFFER_PHOTOS) {
@@ -43,23 +53,59 @@ export function buildOfferSchema(maxQuantity?: number | null) {
           message: `Add at least ${MIN_OFFER_PHOTOS} photos of the item.`,
         });
       }
+    }
 
-      // Quantity — required, a positive whole number, capped at the remaining need.
-      const qty = Number(v.quantity);
-      if (v.quantity.trim() === "") {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quantity"], message: "How many are you donating?" });
-      } else if (!Number.isInteger(qty) || qty < 1) {
+    // The purchase plan. Only the timeline is required — it is the one field a
+    // scheduler needs. Brand, model, store and cost stay optional on purpose: a
+    // donor who has not picked a shop yet is still making a real commitment,
+    // and demanding the detail would only push them to invent it.
+    if (purchase) {
+      if (!v.purchaseTimeline) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom, path: ["quantity"],
-          message: "Enter a whole number of items, at least 1.",
+          code: z.ZodIssueCode.custom, path: ["purchaseTimeline"],
+          message: "How soon can you buy it?",
         });
-      } else if (maxQuantity != null && maxQuantity > 0 && qty > maxQuantity) {
+      } else if (!PURCHASE_TIMELINES.some(o => o.value === v.purchaseTimeline)) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom, path: ["quantity"],
-          message: `This request needs only ${maxQuantity} more — you can offer up to ${maxQuantity}.`,
+          code: z.ZodIssueCode.custom, path: ["purchaseTimeline"],
+          message: "Choose one of the options.",
         });
       }
 
+      // Guards the value, not the donor's estimate. Absent is fine; a cost that
+      // is not a number would reach the backend as NaN.
+      const cost = v.estimatedCost.trim();
+      if (cost !== "" && !(Number(cost) > 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["estimatedCost"],
+          message: "Enter the amount in rupees, or leave it blank.",
+        });
+      }
+    }
+
+    // Quantity — required, a positive whole number, and at most what the
+    // request still needs when the caller passes that (maxQuantity). No other
+    // cap: how much is "too much" otherwise is the backend compatibility rule.
+    const qty = Number(v.quantity);
+    if (v.quantity.trim() === "") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quantity"], message: "How many are you donating?" });
+    } else if (!Number.isInteger(qty) || qty < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom, path: ["quantity"],
+        message: "Enter a whole number of items, at least 1.",
+      });
+    } else if (maxQuantity != null && maxQuantity > 0 && qty > maxQuantity) {
+      // Caps at what the request still needs. The backend enforces this too
+      // (DonationOfferService), but an inline error beats a 400 after submit.
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom, path: ["quantity"],
+        message: `This request needs only ${maxQuantity} more — you can offer up to ${maxQuantity}.`,
+      });
+    }
+
+    // Condition and defects describe an item that exists. A purchase offer is
+    // for a new one and never renders this step.
+    if (!purchase) {
       if (!v.condition) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["condition"], message: "Select the item's condition." });
       }
@@ -72,37 +118,38 @@ export function buildOfferSchema(maxQuantity?: number | null) {
           message: "Describe the defects so the recipient knows what to expect.",
         });
       }
+    }
 
-      // Whitespace-only is not a city.
-      if (!v.pickupCity.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupCity"], message: "Where can this be collected from?" });
-      }
+    // Whitespace-only is not a city.
+    if (!v.pickupCity.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupCity"], message: "Where can this be collected from?" });
+    }
 
-      if (!v.declarationsConfirmed) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom, path: ["declarationsConfirmed"],
-          message: "Please confirm the declarations before submitting.",
-        });
-      }
-    });
+    if (!v.declarationsConfirmed) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom, path: ["declarationsConfirmed"],
+        message: "Please confirm the declarations before submitting.",
+      });
+    }
+  });
 }
-
-/** Backwards-compatible default — used when no maxQuantity context is available. */
-export const offerSchema = buildOfferSchema();
 
 export type OfferValues = OfferModel;
 
 export const OFFER_STEP_FIELDS: Record<OfferStep, readonly (keyof OfferValues)[]> = {
   photos: ["photos"],
+  purchasePlan: [
+    "purchaseTimeline", "estimatedCost", "proposedBrand", "proposedModel",
+    "intendedStore", "purchaseNotes",
+  ],
   details: ["quantity", "approximateAge", "accessoriesIncluded", "specNotes"],
   condition: ["condition", "hasKnownDefects", "knownDefects"],
   pickup: ["pickupCity", "pickupPincode", "pickupLocality", "donorDropOffAvailable", "deliveryCostBornBy"],
   review: ["declarationsConfirmed"],
 };
 
-function issuesToRecord(values: OfferValues, maxQuantity?: number | null): Record<string, string> {
-  const schema = maxQuantity != null ? buildOfferSchema(maxQuantity) : offerSchema;
-  const result = schema.safeParse(values);
+function issuesToRecord(values: OfferValues, flowType?: string | null, maxQuantity?: number | null): Record<string, string> {
+  const result = buildOfferSchema(flowType, maxQuantity).safeParse(values);
   if (result.success) return {};
   const out: Record<string, string> = {};
   for (const issue of result.error.issues) {
@@ -119,19 +166,30 @@ function issuesToRecord(values: OfferValues, maxQuantity?: number | null): Recor
  * evaluated from a slice of the model, and filtering afterwards means one
  * definition of every rule rather than one per step.
  */
-export function validateOfferStep(step: OfferStep, values: OfferValues, maxQuantity?: number | null): Record<string, string> {
-  const all = issuesToRecord(values, maxQuantity);
+export function validateOfferStep(
+  step: OfferStep, values: OfferValues, flowType?: string | null, maxQuantity?: number | null,
+): Record<string, string> {
+  const all = issuesToRecord(values, flowType, maxQuantity);
   const fields = OFFER_STEP_FIELDS[step] as readonly string[];
   return Object.fromEntries(Object.entries(all).filter(([k]) => fields.includes(k)));
 }
 
-export function validateOfferAll(values: OfferValues, maxQuantity?: number | null): Record<string, string> {
-  return issuesToRecord(values, maxQuantity);
+export function validateOfferAll(
+  values: OfferValues, flowType?: string | null, maxQuantity?: number | null,
+): Record<string, string> {
+  return issuesToRecord(values, flowType, maxQuantity);
 }
 
-/** Which step owns a field — used to jump to the first error on submit. */
-export function offerStepForField(field: string): OfferStep {
-  for (const step of OFFER_STEPS) {
+/**
+ * Which step owns a field — used to jump to the first error on submit.
+ *
+ * <p>Searches only the steps THIS flow renders. Searching the canonical list
+ * would let a purchase offer jump to `condition`, a step it never shows, and
+ * strand the donor on a blank card with no way to fix the error.
+ */
+export function offerStepForField(field: string, flowType?: string | null): OfferStep {
+  const steps = offerStepsFor(flowType);
+  for (const step of steps) {
     if ((OFFER_STEP_FIELDS[step] as readonly string[]).includes(field)) return step;
   }
   return "review";

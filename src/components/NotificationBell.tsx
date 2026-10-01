@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { Bell, CheckCheck, Handshake, ShieldCheck, Info, X, AlertCircle, PartyPopper, ArrowRight } from "lucide-react";
 import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
 import { useAuth } from "@/hooks/useAuth";

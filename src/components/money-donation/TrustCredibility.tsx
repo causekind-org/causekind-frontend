@@ -5,10 +5,12 @@ import { motion } from 'framer-motion';
 import { Shield, FileText, Award, GraduationCap, Stethoscope, Home, Users } from 'lucide-react';
 import { CertificateCard } from './CertificateCard';
 import { SahasLogo } from './SahasLogo';
+import styles from './TrustCredibility.module.css';
 
 const allocationAreas = [
   {
     label: 'Education & Scholarships',
+    mobileLabel: 'Education',
     icon: <GraduationCap className="w-5 h-5" />,
     barColor: 'from-[#f97316] to-[#c2410c]',
     iconBg: 'bg-amber-100/90 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300/50',
@@ -17,6 +19,7 @@ const allocationAreas = [
   },
   {
     label: 'Healthcare & Medical Support',
+    mobileLabel: 'Healthcare',
     icon: <Stethoscope className="w-5 h-5" />,
     barColor: 'from-[#f43f5e] to-[#9f1239]',
     iconBg: 'bg-rose-100/90 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-300/50',
@@ -25,6 +28,7 @@ const allocationAreas = [
   },
   {
     label: 'Community Welfare & Relief',
+    mobileLabel: 'Community relief',
     icon: <Home className="w-5 h-5" />,
     barColor: 'from-[#0d9488] to-[#d97706]',
     iconBg: 'bg-teal-100/90 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 border border-teal-300/50',
@@ -33,6 +37,7 @@ const allocationAreas = [
   },
   {
     label: 'Women & Youth Empowerment',
+    mobileLabel: 'Women & youth',
     icon: <Users className="w-5 h-5" />,
     barColor: 'from-[#d97706] to-[#6b21a8]',
     iconBg: 'bg-purple-100/90 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-300/50',
@@ -43,7 +48,7 @@ const allocationAreas = [
 
 export function TrustCredibility() {
   return (
-    <section className="min-h-[calc(100svh-3.5rem)] py-12 lg:py-16 bg-[#fff9f4] dark:bg-[#180b04] flex items-center">
+    <section className={`${styles.section} ck-below-nav py-12 lg:py-16 bg-[#fff9f4] dark:bg-[#180b04] flex items-center`}>
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         
         <motion.div 
@@ -53,7 +58,7 @@ export function TrustCredibility() {
           transition={{ duration: 0.6 }}
         >
           {/* Section header */}
-          <div className="max-w-2xl mb-14">
+          <div className="hidden md:block max-w-2xl mb-14">
             <SahasLogo size={48} className="mb-4" />
             <span className="inline-block text-xs font-bold tracking-wider uppercase text-amber-900 dark:text-amber-200 mb-4 bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 px-3.5 py-1 rounded-full shadow-xs">
               Trust &amp; Credibility
@@ -63,10 +68,16 @@ export function TrustCredibility() {
             </h2>
           </div>
 
+          <div className={styles.mobileTrustHeading}>
+            <p>Sahas Charitable Trust</p>
+            <h2>Trust, on record.</h2>
+            <span>Take a look at our certificates.</span>
+          </div>
           {/* Credentials grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-14">
+          <div className={`${styles.certificates} grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-14`}>
             <CertificateCard
               title="12AA Registration Certificate"
+              mobileSummary={{ title: '12AA', subtitle: 'Charitable institution' }}
               description="Confirms our status as a charitable institution under the Income Tax Act, 1961."
               icon={<Award className="w-7 h-7" />}
               benefits={[
@@ -81,6 +92,7 @@ export function TrustCredibility() {
 
             <CertificateCard
               title="80G Tax Exemption Certificate"
+              mobileSummary={{ title: '80G', subtitle: 'Donation tax certificate' }}
               description="Allows our donors to claim 50% tax deductions on their contributions."
               icon={<FileText className="w-7 h-7" />}
               benefits={[
@@ -95,6 +107,7 @@ export function TrustCredibility() {
 
             <CertificateCard
               title="Trust Registration Certificate"
+              mobileSummary={{ title: 'Trust registration', subtitle: 'Legal registration document', wide: true }}
               description="The foundational legal document establishing Sahas Charitable Trust."
               icon={<Shield className="w-7 h-7" />}
               benefits={[
@@ -109,12 +122,12 @@ export function TrustCredibility() {
           </div>
 
           {/* Verified badge */}
-          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 text-amber-950 dark:text-amber-100 text-sm font-semibold shadow-xs mb-14">
+          <div className="hidden md:inline-flex items-center gap-3 px-5 py-3 rounded-full bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 text-amber-950 dark:text-amber-100 text-sm font-semibold shadow-xs mb-14">
             <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             Verified Nonprofit Partner
           </div>
 
-          <hr className="border-amber-200/60 dark:border-amber-900/40 mb-14" />
+          <hr className="border-amber-200/60 dark:border-amber-900/40 mb-6 md:mb-14" />
         </motion.div>
 
         {/* ── Where Your Money Goes ── */}
@@ -124,7 +137,24 @@ export function TrustCredibility() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-20">
+          <section className={styles.mobileAllocation} aria-labelledby="mobile-allocation-heading">
+            <p className={styles.eyebrow}>Your donation at work</p>
+            <h3 id="mobile-allocation-heading">Where your money goes</h3>
+            <p className={styles.intro}>Your donation helps Sahas support children, families and communities.</p>
+            <ul className={styles.focusList}>
+              {allocationAreas.map((area) => (
+                <li key={area.label}>
+                  <span className={styles.icon} aria-hidden="true">{area.icon}</span>
+                  <div>
+                    <h4>{area.mobileLabel}</h4>
+                    <p>{area.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className={styles.note}>These are the trust&apos;s stated focus areas, not an audited spending breakdown. Detailed financials are available upon request.</p>
+          </section>
+          <div className="hidden md:flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-20">
             
             {/* Left: heading and context */}
             <div className="lg:w-2/5 flex-shrink-0">
@@ -180,11 +210,10 @@ export function TrustCredibility() {
             </div>
           </div>
 
-          <hr className="border-amber-200/60 dark:border-amber-900/40 mt-14" />
+          <hr className="border-amber-200/60 dark:border-amber-900/40 mt-6 md:mt-14" />
         </motion.div>
 
       </div>
     </section>
   );
 }
-

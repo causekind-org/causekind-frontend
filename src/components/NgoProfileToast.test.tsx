@@ -33,7 +33,7 @@ describe("NgoProfileToast", () => {
     localStorage.clear();
     mockUsePathname.mockReturnValue("/dashboard");
     vi.mocked(useAuth).mockReturnValue({
-      user: null,
+      user: { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" },
       isLoading: false,
       isRestoring: false,
       setUser: vi.fn(),
@@ -123,7 +123,7 @@ describe("NgoProfileToast", () => {
     expect(screen.queryByText("Complete your profile")).not.toBeInTheDocument();
   });
 
-  it("clicking dismiss button hides the toast and restarts the 15s interval", () => {
+  it("clicking dismiss keeps the toast hidden for the session", () => {
     render(<NgoProfileToast isProfileComplete={false} isModalOpen={false} userId="102" />);
 
     expect(screen.getByText("Complete your profile")).toBeInTheDocument();
@@ -136,11 +136,11 @@ describe("NgoProfileToast", () => {
 
     expect(screen.queryByText("Complete your profile")).not.toBeInTheDocument();
 
-    // After 15 seconds, it reappears
+    // Explicit dismissal lasts for the session
     act(() => {
       vi.advanceTimersByTime(15100);
     });
-    expect(screen.getByText("Complete your profile")).toBeInTheDocument();
+    expect(screen.queryByText("Complete your profile")).not.toBeInTheDocument();
   });
 
   it("does NOT render when application status in localStorage is UNDER_REVIEW", () => {

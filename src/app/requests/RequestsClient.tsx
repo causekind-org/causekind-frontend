@@ -7,11 +7,9 @@ import { createPortal } from "react-dom";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
-import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicItemRequest, type UserProfile, getNgoDrives, type NgoDrive } from "@/lib/api";
-import { DriveProgressBar } from "@/features/ngo-drives/components/DriveProgressBar";
+import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicRequestPage, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
-import { isNgoRole } from "@/lib/isNgoRole";
 import PublicRequestsBoard from "@/components/PublicRequestsBoard";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
@@ -31,18 +29,19 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { ALL_REQUEST_CATEGORIES as ITEM_REQ_CATEGORIES } from "@/lib/categoryVisuals";
+import { audienceFromUrlType, urlTypeFromAudience, type AudienceUrlType } from "@/lib/requestAudience";
+import AudienceDialog from "@/components/requests/AudienceDialog";
+import { RequestDirectory, type LocationState } from "./RequestDirectory";
 
 /*
   Both of these are split out of the guest's download, not just deferred.
 
   This module serves three different people from one file: a logged-out
   visitor gets `PublicRequestsBoard` and nothing else, a donee gets the donee
-  portal, a donor gets the mosaic. Statically imported, the donee portal and
-  MagicBento (which drags in gsap) shipped to all three — so the visitor who
-  renders neither still paid to parse both before the board could paint.
-
-  `ssr: false` on MagicBento is not a preference: it reads the DOM and drives
-  gsap on mount, so it has nothing to render on the server anyway.
+  portal, a donor gets the Category Directory. Statically imported, the donee
+  and NGO portals shipped to everyone — so the visitor who renders neither
+  still paid to parse both before the board could paint. (The donor board used
+  the gsap-driven MagicBento mosaic until 2026-09-29; it no longer loads here.)
 */
 const DoneeRequestsPage = dynamic(
   () => import("./donee-view").then(m => m.DoneeRequestsPage),
@@ -52,163 +51,27 @@ const NgoRequestsPage = dynamic(
   () => import("./ngo-view").then(m => m.NgoRequestsPage),
   { loading: () => <PageSkeleton><CardGridSkeleton count={6} label="Loading NGO portal" /></PageSkeleton> },
 );
-// Props now come from src/components/MagicBento.d.ts — see the note there for
-// why this stopped being a `@ts-expect-error`.
-const MagicBento = dynamic(() => import("@/components/MagicBento"), { ssr: false });
-
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const URGENCY_LEVELS = [
-  { value: "CRITICAL", label: "Critical",  dot: "bg-red-500"    },
-  { value: "HIGH",     label: "High",      dot: "bg-amber-500"  },
-  { value: "NORMAL",   label: "Normal",    dot: "bg-stone-400"  },
-];
-
-const REQ_SORT_OPTIONS = [
-  { value: "nearest" as const, label: "Nearest First" },
-  { value: "urgent"  as const, label: "Most Urgent"   },
-  { value: "newest"  as const, label: "Just Added"    },
-  { value: "qty"     as const, label: "High Quantity" },
-];
 
 type ReqSortValue = "nearest" | "urgent" | "newest" | "qty";
 
-// ── Category design tokens ────────────────────────────────────────────────────
+/** `?type=` on the signed-in directory; anything unknown is Everyone. */
+function readUrlAudience(): AudienceUrlType {
+  if (typeof window === "undefined") return "all";
+  const t = new URLSearchParams(window.location.search).get("type");
+  return t === "people" || t === "ngos" ? t : "all";
+}
 
-const CAT_ICON: Record<string, React.ElementType> = {
-  "Medical aid": Stethoscope,
-  "Education":   BookOpen,
-  "Livelihood":  Sprout,
-  "Relief":      Users,
-  "Household":   Home,
-  "Furniture":   Armchair,
-  "Clothing":    Shirt,
-  "Electronics": Smartphone,
-  "Sports":      Dumbbell,
-};
-
-const CAT_COLOR: Record<string, { pill: string; bar: string; dot: string; text: string; border: string }> = {
-  "Medical aid": {
-    pill:   "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800/60",
-    bar:    "bg-sky-500",
-    dot:    "bg-sky-500",
-    text:   "text-sky-700 dark:text-sky-400",
-    border: "border-sky-500",
-  },
-  "Education": {
-    pill:   "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/60",
-    bar:    "bg-amber-500",
-    dot:    "bg-amber-500",
-    text:   "text-amber-700 dark:text-amber-400",
-    border: "border-amber-500",
-  },
-  "Livelihood": {
-    pill:   "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/60",
-    bar:    "bg-emerald-500",
-    dot:    "bg-emerald-500",
-    text:   "text-emerald-700 dark:text-emerald-400",
-    border: "border-emerald-500",
-  },
-  "Relief": {
-    pill:   "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800/60",
-    bar:    "bg-violet-500",
-    dot:    "bg-violet-500",
-    text:   "text-violet-700 dark:text-violet-400",
-    border: "border-violet-500",
-  },
-  "Household": {
-    pill:   "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/60",
-    bar:    "bg-rose-500",
-    dot:    "bg-rose-500",
-    text:   "text-rose-700 dark:text-rose-400",
-    border: "border-rose-500",
-  },
-  "Furniture": {
-    pill:   "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800/60",
-    bar:    "bg-indigo-500",
-    dot:    "bg-indigo-500",
-    text:   "text-indigo-700 dark:text-indigo-400",
-    border: "border-indigo-500",
-  },
-  "Clothing": {
-    pill:   "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-800/60",
-    bar:    "bg-teal-500",
-    dot:    "bg-teal-500",
-    text:   "text-teal-700 dark:text-teal-400",
-    border: "border-teal-500",
-  },
-  "Electronics": {
-    pill:   "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800/60",
-    bar:    "bg-orange-500",
-    dot:    "bg-orange-500",
-    text:   "text-orange-700 dark:text-orange-400",
-    border: "border-orange-500",
-  },
-  "Sports": {
-    pill:   "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/30 dark:text-cyan-400 dark:border-cyan-800/60",
-    bar:    "bg-cyan-500",
-    dot:    "bg-cyan-500",
-    text:   "text-cyan-700 dark:text-cyan-400",
-    border: "border-cyan-500",
-  },
-};
+/** `?page=` (1-based); anything missing or invalid is page 1. */
+function readUrlPage(): number {
+  if (typeof window === "undefined") return 1;
+  const n = Number(new URLSearchParams(window.location.search).get("page"));
+  return Number.isInteger(n) && n > 1 ? n : 1;
+}
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371, dLat = ((lat2 - lat1) * Math.PI) / 180, dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-/**
- * Card footprints for the needs mosaic, as a repeating 6-card unit that tiles a
- * 4-column grid exactly (see the .card-grid--mosaic block in MagicBento.css for
- * the diagram).
- *
- * Index-based and therefore deterministic: the same list renders the same
- * composition on every load, with no seeding or persistence needed. It is also
- * append-stable — loading more needs onto the end cannot change the footprint of
- * anything already on screen, because a card's variant depends only on its own
- * position. Changing filters or sort deliberately does re-compose the mosaic,
- * since that genuinely is a different list.
- */
-const REQUEST_CARD_VARIANTS = ["featured", "tall", "standard", "standard", "wide", "wide"] as const;
-type RequestCardVariant = (typeof REQUEST_CARD_VARIANTS)[number];
-
-function requestCardVariant(index: number): RequestCardVariant {
-  return REQUEST_CARD_VARIANTS[index % REQUEST_CARD_VARIANTS.length];
-}
-
-/** How much description each footprint can carry without crowding its meta row. */
-const VARIANT_EXCERPT: Record<RequestCardVariant, number> = {
-  featured: 260,
-  tall: 210,
-  wide: 110,
-  standard: 90,
-};
-
-function excerpt(text: string | null | undefined, limit: number): string {
-  if (!text) return "";
-  const clean = text.trim();
-  if (clean.length <= limit) return clean;
-  // Cut on a word boundary so an excerpt never ends mid-word.
-  return clean.slice(0, clean.lastIndexOf(" ", limit) > 0 ? clean.lastIndexOf(" ", limit) : limit).trimEnd() + "…";
-}
-
-/**
- * Skeletons carry the same variant classes as the real cards, so the loading
- * state occupies the identical footprints and swapping in data doesn't jump the
- * page. Count is a whole number of pattern units for the same reason.
- */
-function RequestsMosaicSkeleton({ count = 6 }: { count?: number }) {
-  return (
-    <div className="card-grid card-grid--mosaic" aria-busy="true" aria-label="Loading needs">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className={`bento-skeleton bento--${requestCardVariant(i)}`} />
-      ))}
-    </div>
-  );
 }
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
@@ -398,188 +261,28 @@ function RequestsHero({
   );
 }
 
-// ── Category quick-filter bar ────────────────────────────────────────────────
-
-function CategoryBar({
-  catCounts,
-  selected,
-  onToggle,
-  onClearAll,
-  total,
-}: {
-  catCounts: Record<string, number>;
-  selected: string[];
-  onToggle: (c: string) => void;
-  onClearAll: () => void;
-  total: number;
-}) {
-  return (
-    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-b border-stone-100 dark:border-zinc-800 sticky top-14 lg:top-[88px] z-40 shadow-sm">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center gap-2">
-
-        {/* Scrollable pill row. Mobile-first sizing: the base values are the
-            phone ones and every sm: restores the previous desktop value, so
-            nothing at >=640px moves. */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-2 sm:py-3 flex-1 min-w-0">
-
-          {/* All */}
-          <button
-            onClick={onClearAll}
-            className={`flex items-center gap-1 sm:gap-1.5 shrink-0 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-2xs sm:text-xs font-bold transition-all duration-200 ${
-              selected.length === 0
-                ? "bg-[var(--ck-role-accent)] text-white shadow-sm shadow-orange-900/25"
-                : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-700"
-            }`}
-          >
-            All
-            <span className={`tabular-nums text-4xs sm:text-3xs font-black ${selected.length === 0 ? "text-white/60" : "text-stone-400"}`}>{total}</span>
-          </button>
-
-          <div className="w-px h-4 sm:h-5 bg-stone-200 dark:bg-zinc-700 shrink-0 mx-0.5" />
-
-          {ITEM_REQ_CATEGORIES.map(cat => {
-            const Icon  = CAT_ICON[cat] ?? Package;
-            const count = catCounts[cat] ?? 0;
-            const act   = selected.includes(cat);
-            const col   = CAT_COLOR[cat];
-
-            return (
-              <button
-                key={cat}
-                onClick={() => onToggle(cat)}
-                disabled={count === 0}
-                className={`flex items-center gap-1.5 sm:gap-2 shrink-0 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-2xs sm:text-xs font-bold border transition-all duration-200
-                            disabled:opacity-35 disabled:cursor-not-allowed
-                            ${act
-                              ? "bg-[var(--ck-role-accent)] text-white border-transparent shadow-sm shadow-orange-900/20"
-                              : `${col.pill} hover:opacity-80`
-                            }`}
-              >
-                <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                <span>{cat}</span>
-                <span className={`tabular-nums text-4xs sm:text-3xs font-black ${act ? "text-white/60" : ""}`}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-// ── Filter sidebar panel (urgency + sort only) ────────────────────────────────
-
-function RequestFilterPanel({
-  selectedUrgencies,
-  toggleUrgency,
-  sort,
-  setSort,
-  resetFilters,
-}: {
-  selectedUrgencies: string[];
-  toggleUrgency: (u: string) => void;
-  sort: ReqSortValue;
-  setSort: (s: ReqSortValue) => void;
-  resetFilters: () => void;
-}) {
-  const active = (val: string) => selectedUrgencies.includes(val);
-  const activeSort = (val: string) => sort === val;
-
-  return (
-    <div className="space-y-7">
-
-      {/* Urgency */}
-      <div>
-        <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Urgency</p>
-        <div className="space-y-1">
-          {URGENCY_LEVELS.map(({ value, label, dot }) => (
-            <label
-              key={value}
-              className={`flex items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
-                active(value) ? "bg-[var(--ck-role-accent)]/8 dark:bg-[var(--ck-role-accent)]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={active(value)}
-                onChange={() => toggleUrgency(value)}
-                className="accent-[var(--ck-role-accent)] shrink-0"
-              />
-              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
-              <span className={`text-sm font-semibold transition-colors ${
-                active(value) ? "text-[var(--ck-role-accent)] dark:text-[var(--ck-role-secondary)]" : "text-stone-700 dark:text-stone-300"
-              }`}>
-                {label}
-              </span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Sort */}
-      <div>
-        <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Sort By</p>
-        <div className="space-y-1">
-          {REQ_SORT_OPTIONS.map(opt => (
-            <label
-              key={opt.value}
-              className={`flex items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
-                activeSort(opt.value) ? "bg-[var(--ck-role-accent)]/8 dark:bg-[var(--ck-role-accent)]/12" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
-              }`}
-            >
-              <input
-                type="radio"
-                name="req-sort"
-                checked={activeSort(opt.value)}
-                onChange={() => setSort(opt.value)}
-                className="accent-[var(--ck-role-accent)] shrink-0"
-              />
-              <span className={`text-sm font-semibold transition-colors ${
-                activeSort(opt.value) ? "text-[var(--ck-role-accent)] dark:text-[var(--ck-role-secondary)]" : "text-stone-700 dark:text-stone-300"
-              }`}>
-                {opt.label}
-              </span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <button
-        onClick={resetFilters}
-        className="w-full text-xs font-bold text-stone-400 hover:text-[var(--ck-role-accent)] dark:hover:text-[var(--ck-role-secondary)] transition-colors py-2 border border-stone-200 dark:border-zinc-700 rounded-xl hover:border-[var(--ck-role-accent)]/40"
-      >
-        Reset Filters
-      </button>
-    </div>
-  );
-}
-
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function RequestsClient({
-  initialPublicRequests = [],
+  initialPublicPage = null,
 }: {
   /**
-   * The public board, already fetched on the server by src/app/requests/page.tsx.
+   * Page one of the public board, already fetched on the server by src/app/requests/page.tsx.
    *
    * Only the logged-out branch uses it — a donor's mosaic and a donee's portal
    * both need authenticated, per-user data that a server render cannot obtain.
-   * Defaults to `[]` so the component stays renderable on its own in tests.
+   * Null when the server fetch failed; the board then fetches for itself.
    */
-  initialPublicRequests?: PublicItemRequest[];
+  initialPublicPage?: PublicRequestPage | null;
 }) {
   const t        = useTranslations("requests");
   const { user, isLoading: authLoading, isRestoring } = useAuth();
   const router   = useRouter();
 
-  useEntityUpdates(["REQUEST", "NGO_DRIVE"], () => {
-    if (!user || user.role === "DONEE" || !gpsCoords) return;
-    getItemRequests(undefined, gpsCoords.lat, gpsCoords.lng)
+  useEntityUpdates(["REQUEST"], () => {
+    if (!user || user.role === "DONEE") return;
+    getItemRequests(undefined, gpsCoords?.lat, gpsCoords?.lng)
       .then(setRequests)
-      .catch(() => {});
-    getNgoDrives("LIVE")
-      .then(setDrives)
       .catch(() => {});
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -598,7 +301,6 @@ export default function RequestsClient({
   // component is gated on `user`, so a guest fetches nothing from here.
 
   const [requests,  setRequests]  = useState<ItemRequest[]>([]);
-  const [drives, setDrives] = useState<NgoDrive[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState("");
@@ -632,8 +334,17 @@ export default function RequestsClient({
   }, []);
 
   const [selectedUrgencies,  setSelectedUrgencies]  = useState<string[]>([]);
-  const [sort, setSort]           = useState<ReqSortValue>("nearest");
-  const [showFilters, setShowFilters] = useState(false);
+  // Newest by default: nearest needs a location, and location is opt-in.
+  const [sort, setSort]           = useState<ReqSortValue>("newest");
+  // Everyone / Donee / NGOs — the same `type` URL values as the guest board.
+  // A browsing filter only; nothing is saved (owner decision 2026-09-29).
+  // Read in the initialisers (as selectedCategories already is): this branch
+  // only renders after auth restoration, so nothing server-rendered depends
+  // on them, and a mount-time sync would trip the page-reset effect below.
+  const [audience, setAudienceState] = useState<AudienceUrlType>(() => readUrlAudience());
+  const [page, setPage] = useState(() => readUrlPage());
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryTick, setRetryTick] = useState(0);
 
   // Donate modal state
   const [donateTarget,  setDonateTarget]  = useState<ItemRequest | null>(null);
@@ -648,7 +359,7 @@ export default function RequestsClient({
   // ── GPS and Profile load ───────────────────────────────────────────────────
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsBlocked, setGpsBlocked] = useState(false);
-  const [gpsLoading, setGpsLoading] = useState(true);
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const requestGps = () => {
     if (!navigator.geolocation) {
@@ -665,6 +376,8 @@ export default function RequestsClient({
         setGpsCoords({ lat, lng });
         setGpsBlocked(false);
         setGpsLoading(false);
+        // The visitor asked for their location, so show what it is for.
+        setSort("nearest");
         if (user && user.role !== "DONEE") {
           try {
             await updateLocation(lat, lng);
@@ -690,11 +403,8 @@ export default function RequestsClient({
     );
   };
 
-  useEffect(() => {
-    if (!authLoading && user && user.role !== "DONEE") {
-      requestGps();
-    }
-  }, [user, authLoading]);
+  // No GPS on arrival: location is requested only from the "Use my location"
+  // button (requestGps), and a denial never blocks browsing.
 
   // Load profile details separately
   useEffect(() => {
@@ -709,16 +419,45 @@ export default function RequestsClient({
   // the server return only the selected categories, which shrank `requests` itself and
   // broke `catCounts` (every unselected category read as 0 and got disabled, blocking
   // multiselect — you could never add a second category once one was picked).
+  // Loads straight away, coordinates or not — the endpoint takes lat/lng as
+  // optional and only uses them to pre-sort. A sequence number drops a stale
+  // response (e.g. the no-location load finishing after the located one).
+  const loadSeq = useRef(0);
   useEffect(() => {
-    if (!user || user.role === "DONEE" || !gpsCoords) return;
+    if (!user || user.role === "DONEE") return;
+    const seq = ++loadSeq.current;
     setLoading(true);
-    Promise.all([
-      getItemRequests(undefined, gpsCoords.lat, gpsCoords.lng).then(setRequests),
-      getNgoDrives("LIVE").then(setDrives)
-    ])
-      .catch(() => toast.error("Failed to load requests"))
-      .finally(() => setLoading(false));
-  }, [user, gpsCoords]);
+    setLoadFailed(false);
+    getItemRequests(undefined, gpsCoords?.lat, gpsCoords?.lng)
+      .then(res => { if (seq === loadSeq.current) setRequests(res); })
+      .catch(() => { if (seq === loadSeq.current) setLoadFailed(true); })
+      .finally(() => { if (seq === loadSeq.current) setLoading(false); });
+  }, [user?.id, user?.role, gpsCoords, retryTick]);
+
+  // Audience and page live in the URL (`type`, `page`); follow Back/Forward.
+  useEffect(() => {
+    const sync = () => {
+      setAudienceState(readUrlAudience());
+      setPage(readUrlPage());
+    };
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
+
+  const writeBrowseUrl = (next: { type?: AudienceUrlType; page?: number }, mode: "push" | "replace") => {
+    const url = new URL(window.location.href);
+    if (next.type !== undefined) {
+      if (next.type === "all") url.searchParams.delete("type");
+      else url.searchParams.set("type", next.type);
+    }
+    if (next.page !== undefined) {
+      if (next.page <= 1) url.searchParams.delete("page");
+      else url.searchParams.set("page", String(next.page));
+    }
+    if (url.href === window.location.href) return;
+    if (mode === "push") window.history.pushState(window.history.state, "", url);
+    else window.history.replaceState(window.history.state, "", url);
+  };
 
   // ── Derived counts ────────────────────────────────────────────────────────
 
@@ -732,57 +471,119 @@ export default function RequestsClient({
 
   // ── Filtered + sorted requests ────────────────────────────────────────────
 
+  // Search and urgency apply first; the audience tabs are counted over that set
+  // (before audience and category), and the category rail over that set plus
+  // the audience. Every count therefore says what its control would show.
+  const audienceOf = (r: ItemRequest): AudienceUrlType => (r.requesterType === "NGO" ? "ngos" : "people");
+  const baseFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return requests.filter(r => {
+      const mQ = !q || r.title.toLowerCase().includes(q) || (r.city ?? "").toLowerCase().includes(q)
+        || r.category.toLowerCase().includes(q) || (r.organizationName ?? "").toLowerCase().includes(q);
+      // An emergency satisfies a Critical filter, matching the "Emergency" badge.
+      const mU = selectedUrgencies.length === 0 || selectedUrgencies.includes(r.urgency)
+        || (r.isEmergency && selectedUrgencies.includes("CRITICAL"));
+      return mQ && mU;
+    });
+  }, [requests, search, selectedUrgencies]);
+
+  const typeCounts = useMemo(() => {
+    const inCats = baseFiltered.filter(r => selectedCategories.length === 0 || selectedCategories.includes(r.category));
+    return {
+      PERSON: inCats.filter(r => audienceOf(r) === "people").length,
+      NGO: inCats.filter(r => audienceOf(r) === "ngos").length,
+    };
+  }, [baseFiltered, selectedCategories]);
+
+  const directoryCatCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    baseFiltered
+      .filter(r => audience === "all" || audienceOf(r) === audience)
+      .forEach(r => { c[r.category] = (c[r.category] || 0) + 1; });
+    return c;
+  }, [baseFiltered, audience]);
+
+  // Nearest needs a real location: the one the visitor just shared, else the
+  // one saved on their profile. Without either, the option is not offered.
+  const nearOrigin = gpsCoords
+    ?? (myProfile?.latitude != null && myProfile?.longitude != null ? { lat: myProfile.latitude, lng: myProfile.longitude } : null);
+
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    
-    // Process regular requests
-    let reqsOut = requests.filter(r => {
-      const mQ = !q || r.title.toLowerCase().includes(q) || r.city.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
-      const mC = selectedCategories.length === 0 || selectedCategories.includes(r.category);
-      const mU = selectedUrgencies.length  === 0 || selectedUrgencies.includes(r.urgency);
-      return mQ && mC && mU;
-    }).map(r => ({ ...r, _type: "REQUEST" as const }));
-
-    // Process drives
-    let drivesOut = drives.filter(d => {
-      const mQ = !q || d.title.toLowerCase().includes(q) || d.category.toLowerCase().includes(q) || d.ngoUser.fullName.toLowerCase().includes(q);
-      const mC = selectedCategories.length === 0 || selectedCategories.includes(d.category);
-      const mU = selectedUrgencies.length  === 0 || selectedUrgencies.includes(d.urgency);
-      return mQ && mC && mU;
-    }).map(d => ({ ...d, _type: "DRIVE" as const }));
-
-    let out = [...reqsOut, ...drivesOut];
-
+    let out = baseFiltered.filter(r =>
+      (selectedCategories.length === 0 || selectedCategories.includes(r.category))
+      && (audience === "all" || audienceOf(r) === audience));
+    // Every sort ends on id, newest first, so ties have one fixed order and
+    // paging over them never repeats or skips a card.
+    const tie = (a: ItemRequest, b: ItemRequest) => b.id - a.id;
     if (sort === "nearest") {
-      const lat = myProfile?.latitude, lon = myProfile?.longitude;
+      const lat = nearOrigin?.lat, lon = nearOrigin?.lng;
       if (lat != null && lon != null) {
-        out.sort((a, b) => {
-          const dA = a._type === "REQUEST" && a.latitude != null && a.longitude != null ? haversineKm(lat, lon, a.latitude, a.longitude) : 99999;
-          const dB = b._type === "REQUEST" && b.latitude != null && b.longitude != null ? haversineKm(lat, lon, b.latitude, b.longitude) : 99999;
-          return dA - dB;
+        out = [...out].sort((a, b) => {
+          const dA = a.latitude != null && a.longitude != null ? haversineKm(lat, lon, a.latitude, a.longitude) : 99999;
+          const dB = b.latitude != null && b.longitude != null ? haversineKm(lat, lon, b.latitude, b.longitude) : 99999;
+          return dA - dB || tie(a, b);
         });
       } else {
-        const ord: Record<string, number> = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
-        out.sort((a, b) => (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2));
+        out = [...out].sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) || tie(a, b));
       }
     } else if (sort === "urgent") {
       const ord: Record<string, number> = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
-      out.sort((a, b) => {
-        const aEmerg = a._type === "REQUEST" && a.isEmergency;
-        const bEmerg = b._type === "REQUEST" && b.isEmergency;
-        return (aEmerg === bEmerg ? 0 : aEmerg ? -1 : 1) || (ord[a.urgency] ?? 2) - (ord[b.urgency] ?? 2);
-      });
+      out = [...out].sort((a, b) => (a.isEmergency === b.isEmergency ? 0 : a.isEmergency ? -1 : 1) || (ord[a.urgency] ?? 3) - (ord[b.urgency] ?? 3) || tie(a, b));
     } else if (sort === "newest") {
-      out.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      out = [...out].sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) || tie(a, b));
     } else if (sort === "qty") {
-      out.sort((a, b) => {
-        const qA = a._type === "REQUEST" ? a.quantity : a.quantityNeeded;
-        const qB = b._type === "REQUEST" ? b.quantity : b.quantityNeeded;
-        return qB - qA;
-      });
+      out = [...out].sort((a, b) => b.quantity - a.quantity || tie(a, b));
     }
     return out;
-  }, [requests, drives, search, selectedCategories, selectedUrgencies, sort, myProfile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseFiltered, selectedCategories, audience, sort, nearOrigin?.lat, nearOrigin?.lng]);
+
+  // ── Paging (12 per page over the filtered list; `?page`) ──
+  const DIRECTORY_PAGE_SIZE = 12;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / DIRECTORY_PAGE_SIZE));
+  // Clamp rather than store: a shrinking list never leaves an empty page.
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filtered.slice((currentPage - 1) * DIRECTORY_PAGE_SIZE, currentPage * DIRECTORY_PAGE_SIZE);
+
+  // Any change to what is listed starts again at page 1 (skipping the first
+  // run, so a shared ?page=3 survives arrival).
+  const listKey = `${search}|${selectedCategories.join(",")}|${selectedUrgencies.join(",")}|${audience}|${sort}`;
+  const lastListKey = useRef(listKey);
+  useEffect(() => {
+    if (lastListKey.current === listKey) return;
+    lastListKey.current = listKey;
+    setPage(1);
+    writeBrowseUrl({ page: 1 }, "replace");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listKey]);
+
+  const goToPage = (n: number) => {
+    const next = Math.min(Math.max(1, n), totalPages);
+    setPage(next);
+    writeBrowseUrl({ page: next }, "push");
+    document.getElementById("request-directory")?.scrollIntoView?.({
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
+  };
+
+  const setAudience = (next: AudienceUrlType) => {
+    setAudienceState(next);
+    writeBrowseUrl({ type: next, page: 1 }, "replace");
+  };
+
+  // "Who would you like to help?" — same dialog as the guest board, asked once
+  // per visit (per mount) to anyone who lands on this directory. Donees and
+  // NGOs have their own portals and never see it. Saves nothing; choosing just
+  // sets the same audience filter as the toolbar tabs.
+  const [audienceDialogOpen, setAudienceDialogOpen] = useState(false);
+  const audienceAsked = useRef(false);
+  const onDirectory = !!user && user.role !== "DONEE" && user.role !== "NGO" && user.role !== "NGO_PARTNER";
+  useEffect(() => {
+    if (isRestoring || !onDirectory || audienceAsked.current) return;
+    audienceAsked.current = true;
+    setAudienceDialogOpen(true);
+  }, [isRestoring, onDirectory]);
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev => {
@@ -801,12 +602,9 @@ export default function RequestsClient({
       localStorage.setItem("causekind_donor_category", JSON.stringify([]));
     }
     setSelectedUrgencies([]);
-    setSort("nearest");
     setSearch("");
   };
 
-  const advancedFilterCount = selectedUrgencies.length + (sort !== "nearest" ? 1 : 0);
-  const hasActiveFilters    = selectedCategories.length > 0 || advancedFilterCount > 0 || search.length > 0;
 
   // ── Donate modal handlers ─────────────────────────────────────────────────
 
@@ -926,51 +724,23 @@ export default function RequestsClient({
   // Logged-out visitors get the public board: the reduced-field endpoint, no GPS
   // prompt, and every action routed through /login?next=. They used to be held
   // on the spinner above forever, since `user` never arrives for a guest.
-  if (!user) return <PublicRequestsBoard initialRequests={initialPublicRequests} />;
+  if (!user) return <PublicRequestsBoard initialPage={initialPublicPage} />;
 
   // Dedicated donee portal
   if (user.role === "DONEE") return <DoneeRequestsPage />;
 
   // Dedicated NGO portal
-  if (isNgoRole(user.role)) return <NgoRequestsPage />;
-
-  if (gpsBlocked) {
-    return (
-      <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 flex items-center justify-center p-3 sm:p-4">
-        <div className="max-w-md w-full text-center space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-stone-250 dark:border-zinc-800 shadow-xl">
-          <div className="mx-auto w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center text-red-500">
-            <MapPin className="w-8 h-8 animate-bounce" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Location Access Required</h1>
-            <p className="text-sm text-stone-500 dark:text-stone-400">
-              Causekind requires your GPS location to display the closest in-kind needs from your community. Please enable location permissions in your browser to proceed.
-            </p>
-          </div>
-          <button
-            onClick={requestGps}
-            disabled={gpsLoading}
-            className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] disabled:opacity-50 text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
-          >
-            {gpsLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Detecting...</> : "Retry Location Detection 🎯"}
-          </button>
-          <div className="text-xs text-stone-400 dark:text-stone-500 bg-stone-50 dark:bg-zinc-800 rounded-xl p-3 text-left space-y-1">
-            <p className="font-semibold text-stone-600 dark:text-stone-300">If retry doesn&apos;t work:</p>
-            <p>🔒 Click the <strong>lock icon</strong> in your browser&apos;s address bar</p>
-            <p>📍 Set <strong>Location</strong> to <strong>Allow</strong></p>
-            <p>🔄 Then reload this page</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (user.role === "NGO" || user.role === "NGO_PARTNER") return <NgoRequestsPage />;
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  const locationState: LocationState =
+    gpsLoading ? "locating" : nearOrigin ? "on" : gpsBlocked ? "denied" : "off";
 
   return (
     <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
 
-      {/* ── Hero ── */}
+      {/* ── Hero (unchanged) ── */}
       <RequestsHero
         total={requests.length}
         critical={criticalCount}
@@ -979,272 +749,50 @@ export default function RequestsClient({
         onToggle={toggleCategory}
       />
 
-      {/* ── Category quick-filter bar ── */}
-      <CategoryBar
-        catCounts={catCounts}
-        selected={selectedCategories}
-        onToggle={toggleCategory}
-        onClearAll={() => {
-          setSelectedCategories([]);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("causekind_donor_category", JSON.stringify([]));
-          }
-        }}
-        total={requests.length}
-      />
-
-      {/* ── Main content ── */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-5 sm:py-8">
-
-        {/* Mobile: advanced filter toggle + search */}
-        <div className="flex items-center gap-3 mb-5 lg:hidden">
-          <button
-            onClick={() => setShowFilters(v => !v)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl sm:rounded-2xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-bold text-stone-700 dark:text-stone-300 hover:border-[var(--ck-role-accent)]/50 hover:text-[var(--ck-role-accent)] transition-all shrink-0 shadow-xs"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            Filters
-            {advancedFilterCount > 0 && (
-              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[var(--ck-role-accent)] text-white text-3xs font-black">
-                {advancedFilterCount}
-              </span>
-            )}
-          </button>
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
-            <Input
-              className="pl-9 h-10 rounded-full border-stone-200 dark:border-zinc-700 focus-visible:ring-[var(--ck-role-accent)]/20 bg-white dark:bg-zinc-900 text-sm shadow-xs"
-              placeholder="Search needs…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Mobile: collapsible filter panel */}
-        {showFilters && (
-          <div className="lg:hidden mb-6 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-3.5 sm:p-5 border border-stone-100 dark:border-zinc-800 shadow-sm">
-            <RequestFilterPanel
-              selectedUrgencies={selectedUrgencies}
-              toggleUrgency={toggleUrgency}
-              sort={sort}
-              setSort={setSort}
-              resetFilters={() => { resetFilters(); setShowFilters(false); }}
-            />
-          </div>
-        )}
-
-        {/* Main asymmetric grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5 sm:gap-8 items-start">
-
-          {/* Desktop sidebar */}
-          <aside className="hidden lg:block sticky top-[146px] bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-sm border border-stone-100 dark:border-zinc-800 shrink-0">
-            <h3 className="text-sm font-black text-stone-800 dark:text-stone-200 mb-5 flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-stone-400" />
-              Filters
-            </h3>
-            <RequestFilterPanel
-              selectedUrgencies={selectedUrgencies}
-              toggleUrgency={toggleUrgency}
-              sort={sort}
-              setSort={setSort}
-              resetFilters={resetFilters}
-            />
-          </aside>
-
-          {/* Right pane */}
-          <div className="min-w-0 space-y-4 sm:space-y-5">
-
-            {/* Header row */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <Reveal>
-                <div className="flex items-baseline gap-3">
-                  <h2 className="text-base sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">
-                    Community Needs
-                  </h2>
-                  {!loading && (
-                    <span className="text-sm font-semibold text-stone-400 dark:text-stone-500">
-                      {filtered.length} {filtered.length === 1 ? "request" : "requests"}
-                    </span>
-                  )}
-                </div>
-              </Reveal>
-
-              {/* Desktop search */}
-              <div className="hidden lg:flex items-center gap-3">
-                <div className="relative w-60">
-                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
-                  <Input
-                    className="pl-9 h-9 rounded-full border-stone-200 dark:border-zinc-700 focus-visible:ring-[var(--ck-role-accent)]/20 bg-white dark:bg-zinc-900 text-sm"
-                    placeholder="Search requests…"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Active filter chips */}
-            {hasActiveFilters && (
-              <div className="flex flex-wrap items-center gap-2">
-                {search && (
-                  <span className="inline-flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-stone-400 rounded-full px-3 py-1 text-xs font-semibold">
-                    &ldquo;{search}&rdquo;
-                    <button onClick={() => setSearch("")} className="hover:text-[var(--ck-role-accent)] transition-colors"><X className="h-3 w-3" /></button>
-                  </span>
-                )}
-                {selectedCategories.map(cat => {
-                  const col = CAT_COLOR[cat];
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => toggleCategory(cat)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border transition-colors ${col?.pill ?? "bg-stone-100 text-stone-600 border-stone-200"}`}
-                    >
-                      {cat} <X className="h-3 w-3" />
-                    </button>
-                  );
-                })}
-                {selectedUrgencies.map(u => (
-                  <button
-                    key={u}
-                    onClick={() => toggleUrgency(u)}
-                    className="inline-flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-stone-400 rounded-full px-3 py-1 text-xs font-bold hover:border-[var(--ck-role-accent)]/40 hover:text-[var(--ck-role-accent)] transition-colors"
-                  >
-                    {URGENCY_LEVELS.find(l => l.value === u)?.label ?? u}
-                    <X className="h-3 w-3" />
-                  </button>
-                ))}
-                <button onClick={resetFilters} className="text-xs font-semibold text-stone-400 hover:text-[var(--ck-role-accent)] transition-colors underline underline-offset-2">
-                  Clear all
-                </button>
-              </div>
-            )}
-
-            {/* Grid / skeletons / empty state */}
-            {loading ? (
-              <RequestsMosaicSkeleton count={6} />
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 px-5 sm:px-8 bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm">
-                {requests.length === 0 ? (
-                  <>
-                    <div className="mb-5 w-14 sm:w-20 h-14 sm:h-20 rounded-2xl sm:rounded-3xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center">
-                      <PackageOpen className="w-9 h-9 text-[var(--ck-role-accent)]/35" />
-                    </div>
-                    <p className="font-extrabold text-stone-700 dark:text-stone-300 text-base sm:text-lg">No needs posted yet</p>
-                    <p className="mt-2 text-sm text-stone-400 dark:text-stone-500 font-medium text-center max-w-xs">
-                      Community members haven&apos;t posted any needs yet. Check back soon.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="mb-5 w-14 sm:w-20 h-14 sm:h-20 rounded-2xl sm:rounded-3xl bg-stone-50 dark:bg-zinc-800 flex items-center justify-center">
-                      <SearchX className="w-9 h-9 text-stone-300 dark:text-zinc-600" />
-                    </div>
-                    <p className="font-extrabold text-stone-700 dark:text-stone-300 text-base sm:text-lg">No matches found</p>
-                    <p className="mt-2 text-sm text-stone-400 font-medium text-center max-w-xs">
-                      Try a different category, urgency, or search term.
-                    </p>
-                    <button onClick={resetFilters} className="mt-5 text-sm font-bold text-[var(--ck-role-accent)] hover:underline dark:text-[var(--ck-role-secondary)]">
-                      Clear all filters
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="pb-20">
-                <MagicBento
-                  gridClassName="card-grid--mosaic"
-                  cards={filtered.map((r, i) => {
-                    const isDrive = r._type === "DRIVE";
-                    const isCrit = r.urgency === "CRITICAL";
-                    const isHigh = r.urgency === "HIGH";
-                    const variant = requestCardVariant(i);
-                    const showsMedia = variant === "featured" || variant === "tall";
-                    
-                    if (isDrive) {
-                      const stillNeeded = Math.max(0, r.quantityNeeded - r.quantityReceived - r.quantityPledged);
-                      return {
-                        className: `bento--${variant}`,
-                        label: (
-                          <div className="flex items-center gap-1">
-                            <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3" />
-                              {r.ngoUser.fullName}
-                            </span>
-                          </div>
-                        ),
-                        badge: isCrit ? "Urgent" : isHigh ? "High" : undefined,
-                        title: <TranslatedText text={r.title} />,
-                        description: (
-                          <div className="mt-2">
-                            <p className="font-semibold text-stone-700 dark:text-stone-300 mb-2 text-sm">{r.quantityNeeded} {r.unit} of {r.itemName}</p>
-                            <DriveProgressBar 
-                              driveId={r.id} 
-                              quantityNeeded={r.quantityNeeded} 
-                              initialQuantityReceived={r.quantityReceived} 
-                              initialQuantityPledged={r.quantityPledged}
-                              unit={r.unit}
-                            />
-                          </div>
-                        ),
-                        meta: (
-                          <>
-                            <span className="flex items-center gap-1 min-w-0 text-stone-500">
-                              <span className="truncate">Needed by: {new Date(r.neededBy).toLocaleDateString()}</span>
-                            </span>
-                            <span className="shrink-0 tabular-nums font-bold text-emerald-600 dark:text-emerald-400">{stillNeeded} still needed</span>
-                          </>
-                        ),
-                        onClick: () => router.push(`/drives/${r.id}`),
-                      };
-                    }
-
-                    return {
-                      // No `color`: the card surface comes from MagicBento.css
-                      // so it follows the light/dark theme.
-                      className: `bento--${variant}`,
-                      // Only the two roomiest footprints carry an image, and only
-                      // when the need actually has one — an empty media band on a
-                      // small card is the "meaningless empty space" to avoid.
-                      media: showsMedia && r.imageUrl ? (
-                        <Image src={r.imageUrl} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
-                      ) : undefined,
-                      label: <TranslatedText text={r.category} />,
-                      badge: r.isEmergency ? "Emergency" : isCrit ? "Urgent" : isHigh ? "High" : undefined,
-                      title: <TranslatedText text={r.title} />,
-                      description: r.description
-                        ? <TranslatedText text={excerpt(r.description, VARIANT_EXCERPT[variant])} />
-                        : "",
-                      meta: (
-                        <>
-                          <span className="flex items-center gap-1 min-w-0">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span className="truncate"><TranslatedText text={r.city} /></span>
-                          </span>
-                          <span className="shrink-0 tabular-nums">{r.quantity} needed</span>
-                        </>
-                      ),
-                      onClick: () => openDonateModal(r as ItemRequest),
-                    };
-                  })}
-                  textAutoHide
-                  enableStars
-                  enableSpotlight
-                  enableBorderGlow
-                  enableTilt
-                  enableMagnetism
-                  clickEffect
-                  spotlightRadius={300}
-                  particleCount={10}
-                  glowColor="176, 74, 21"
-                />
-              </div>
-            )}
-
-          </div>
-        </div>
+      {/* ── Category Directory ── */}
+      <div id="request-directory" className="scroll-mt-20">
+        <RequestDirectory
+          requests={pageItems}
+          total={filtered.length}
+          counts={directoryCatCounts}
+          typeCounts={typeCounts}
+          categories={selectedCategories}
+          toggleCategory={toggleCategory}
+          clearCategories={() => {
+            setSelectedCategories([]);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("causekind_donor_category", JSON.stringify([]));
+            }
+          }}
+          audience={audience}
+          setAudience={setAudience}
+          urgencies={selectedUrgencies}
+          toggleUrgency={toggleUrgency}
+          search={search}
+          setSearch={setSearch}
+          sort={sort}
+          setSort={setSort}
+          location={locationState}
+          onUseLocation={requestGps}
+          reset={resetFilters}
+          loading={loading}
+          failed={loadFailed}
+          onRetry={() => setRetryTick(t => t + 1)}
+          page={currentPage}
+          totalPages={totalPages}
+          onPage={goToPage}
+          canOffer={user.role === "DONOR"}
+          onOffer={openDonateModal}
+        />
       </div>
+
+      <AudienceDialog
+        open={audienceDialogOpen}
+        current={audienceFromUrlType(audience)}
+        returnFocusId={a => `directory-audience-${a}`}
+        onChoose={a => { setAudienceDialogOpen(false); setAudience(urlTypeFromAudience(a)); }}
+        onDismiss={() => setAudienceDialogOpen(false)}
+      />
 
       {/* ── Donate modal ── */}
       {donateTarget && createPortal((

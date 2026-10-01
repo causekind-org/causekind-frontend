@@ -104,7 +104,7 @@ describe("Navbar - NGO Profile Button States", () => {
     });
 
     const link = screen.getByRole("link", { name: /Application Under Review/i });
-    expect(link).toHaveAttribute("href", "/profile");
+    expect(link).toHaveAttribute("href", "/profile/ngo-details");
     expect(screen.queryByRole("button", { name: /Complete Profile/i })).not.toBeInTheDocument();
   });
 
@@ -141,6 +141,7 @@ describe("Navbar - NGO Profile Button States", () => {
       expect(screen.getByRole("button", { name: /Complete Profile/i })).toBeInTheDocument();
     });
 
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ applicationId: "CK-NGO-TEST-99", organizationName: "Test NGO", status: "UNDER_REVIEW" } as never);
     // Simulate submission event dispatched when user completes Step 6
     act(() => {
       window.dispatchEvent(
@@ -155,5 +156,12 @@ describe("Navbar - NGO Profile Button States", () => {
       expect(screen.getByRole("button", { name: /Application Under Review/i })).toBeInTheDocument();
     });
     expect(screen.queryByRole("button", { name: /Complete Profile/i })).not.toBeInTheDocument();
+  });
+  it("labels approved organizations accurately", async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { id: 900, email: "approved@example.test", role: "NGO_PARTNER" }, isLoading: false, isRestoring: false, setUser: vi.fn(), logout: vi.fn(), setAuth: vi.fn() });
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Approved NGO" } as never);
+    render(<SiteHeader />);
+    expect(await screen.findByRole("link", { name: "NGO Approved" })).toHaveAttribute("href", "/profile/ngo-details");
+    expect(screen.queryByText("Application Under Review")).not.toBeInTheDocument();
   });
 });

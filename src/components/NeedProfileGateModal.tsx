@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, ArrowRight, Loader2, ShieldCheck, X } from "lucide-react";

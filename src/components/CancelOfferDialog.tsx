@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -34,6 +34,7 @@ export function CancelOfferDialog({
   const [reason, setReason] = useState<CancellationReason | "">("");
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
+  const submittingRef = useRef(false);
 
   const selected = CANCELLATION_REASONS.find(r => r.value === reason);
   const needsDetail = selected?.needsDetail ?? false;
@@ -42,7 +43,8 @@ export function CancelOfferDialog({
     (!option.requiresReason || (reason !== "" && (!needsDetail || details.trim().length > 0)));
 
   async function submit() {
-    if (busy || !canSubmit) return;   // guard here too: `disabled` lags a fast click
+    if (submittingRef.current || !canSubmit) return;
+    submittingRef.current = true;
     setBusy(true);
     try {
       await cancelOffer(offerId, reason === "" ? null : reason, details.trim() || undefined);
@@ -53,6 +55,7 @@ export function CancelOfferDialog({
       // Leave the dialog open so the typed reason isn't lost on a transient failure.
       toast.error(e instanceof Error ? e.message : "Couldn't cancel this offer");
     } finally {
+      submittingRef.current = false;
       setBusy(false);
     }
   }

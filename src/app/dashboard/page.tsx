@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import Image from "next/image";
 import { toast } from "@/lib/toast";
@@ -48,8 +48,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { ListingDetailPanel } from "@/components/ListingDetailPanel";
+import { MatchOpportunitiesWindow } from "@/components/MatchOpportunitiesWindow";
 import MatchChatPopup from "@/components/MatchChatPopup";
 import { OfferJourney, donorJourneyIndex } from "@/components/OfferJourney";
+import { WithdrawReportedIssue } from "@/components/WithdrawReportedIssue";
 
 // Once both parties accept, scheduling/confirmation/chat all live on the
 // Handover Hub page instead of inline dashboard forms.
@@ -708,6 +710,7 @@ function OfferStageCard({
           journey behind a bottom sheet. Replaces seven 9px truncated labels
           that were unreadable at card width on a phone. */}
       {!isTerminal && <OfferJourney status={offer.status} />}
+      {offer.status === "ISSUE_RAISED" && <WithdrawReportedIssue offerId={offer.id} onChanged={onCancelled} />}
 
       {/* Action button */}
       {meta.action && (
@@ -1643,6 +1646,7 @@ function DoneeDashboard({
                                   </div>
                                 </div>
                               )}
+                              {isIssueRaised && <WithdrawReportedIssue offerId={offer.id} onChanged={onRefresh} />}
                               {/* What's next */}
                               {currentIdx >= 0 && currentIdx < stages.length - 1 && !isComplete && (
                                 <div className="flex items-start gap-2 pt-1 border-t border-stone-100 dark:border-zinc-700">
@@ -2491,18 +2495,10 @@ export default function DashboardPage() {
                   </section>
                 </TabsContent>
 
-                {/* Donor Matches */}
                 <TabsContent value="matches" className="mt-0">
-                  <section>
-                    <div className="border-b-2 border-emerald-500/60 pb-3">
-                      <p className="text-3xs font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-400">Match Opportunities</p>
-                      <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
-                    </div>
-                    <div className="pt-3.5 sm:pt-5 space-y-3 sm:space-y-4">
-                      {activeDonorMatches.length === 0 && pastDonorMatches.length === 0 ? (
-                        /* Truthful empty state: the sweep only spins while a listing is
-                           live and the engine is actually checking incoming needs. */
-                        <div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
+                  <MatchOpportunitiesWindow
+                    matches={donorMatches}
+                    emptyState={(<div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
                           <div className="relative w-16 sm:w-24 h-16 sm:h-24 mx-auto rounded-full border border-emerald-500/25">
                             <div className="absolute inset-3 rounded-full border border-emerald-500/20" />
                             <div className="absolute inset-6 rounded-full border border-emerald-500/15" />
@@ -2534,13 +2530,8 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </div>
-                      ) : activeDonorMatches.length === 0 ? (
-                        <p className="py-2 text-center text-xs text-stone-400">
-                          No live matches right now — your listed items stay in the matching engine.
-                        </p>
-                      ) : (
-                        <div className="divide-y space-y-3 sm:space-y-4">
-                          {activeDonorMatches.map((m) => {
+                    )}
+                    renderMatch={(m, closeMatches) => {
                             const badge = getFulfilmentStatusBadge(m.status);
                             const isDonorReview = m.status === "DONOR_REVIEW";
                             const isDeclining = declineMatchId === m.id;
@@ -2552,7 +2543,7 @@ export default function DashboardPage() {
                                     Action Required — Please confirm this donation
                                   </div>
                                 )}
-                                <div className="flex items-start justify-between gap-3">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
                                   <div>
                                     <p className={`font-bold text-sm text-stone-900 dark:text-stone-100 transition-colors ${isDonorReview ? "" : "group-hover:text-emerald-500"}`}>
                                       Matched need for: <TranslatedText text={m.requestTitle || "Requested Need"} />
@@ -2563,7 +2554,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
                                   <div><p className="text-stone-500">Recipient Donee</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.doneeName}</p></div>
-                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[var(--ck-role-accent)]">{m.matchScore}%</p></div>)}
+                                  {m.matchScore != null && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[var(--ck-role-accent)]">{m.matchScore}%</p></div>)}
                                 </div>
                                 {isDonorReview && (
                                   <div className="space-y-2 pt-1">
@@ -2622,7 +2613,7 @@ export default function DashboardPage() {
                                       <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
                                     </Link>
                                     <button
-                                      onClick={() => setChatMatch(m)}
+                                      onClick={() => { closeMatches(); setChatMatch(m); }}
                                       className="flex items-center justify-center gap-1.5 border border-[var(--ck-role-accent)]/40 text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 dark:text-[var(--ck-role-secondary)] dark:border-[var(--ck-role-secondary)]/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
                                     >
                                       <MessageCircle className="w-3.5 h-3.5" /> Chat
@@ -2636,20 +2627,11 @@ export default function DashboardPage() {
                                 )}
                               </div>
                             );
-                          })}
-                        </div>
-                      )}
+}}
+                  />
 
-                      {/* Delivered, declined and cancelled matches keep their
-                          record without competing with the live ones. */}
-                      <PastMatchesStrip
-                        matches={pastDonorMatches}
-                        viewer="DONOR"
-                        defaultOpen={activeDonorMatches.length === 0}
-                      />
-                    </div>
-                  </section>
-                </TabsContent>
+                  </TabsContent>
+
               </Tabs>
             ) : (
               /* DONEE DASHBOARD VIEW */

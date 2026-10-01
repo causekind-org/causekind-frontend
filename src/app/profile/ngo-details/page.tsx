@@ -83,34 +83,16 @@ function NgoDetailsEditor() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  // ?step= is read exactly once, on the first render, and applied once the saved state
-  // has loaded. It used to be an effect keyed on [searchParams, currentStep], which
-  // re-applied the URL step after every navigation: Next / Back moved the wizard and the
-  // effect immediately moved it back. From load onwards the URL follows the wizard
-  // (see the sync effect below), never the other way round.
-  const initialUrlStep = useRef<NGOStep | null | undefined>(undefined);
-  if (initialUrlStep.current === undefined) {
-    const param = searchParams.get("step");
-    // Email verification is only reachable for a submitted application, which the load
-    // below detects on its own; it is not a step a link can open.
-    initialUrlStep.current =
-      param && param !== "email-verification" && (NGO_STEPS as readonly string[]).includes(param)
-        ? (param as NGOStep)
-        : null;
-  }
-  // The starting step is decided once. A later re-run of the load (for example when the
-  // auth context hands back a new user object) refreshes data but keeps the user's place.
-  const startingStepChosen = useRef(false);
+  const appliedStepLink = useRef<string | null>(null);
 
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Set once an application exists and only the email code is outstanding. The form
-  // steps are closed from then on: the application is already on the server, and
-  // submitting again just leads back to it.
-  const [awaitingVerification, setAwaitingVerification] = useState<"submitted-now" | "restored" | null>(null);
+  const [applicationStatus, setApplicationStatus] = useState("");
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [restoreError, setRestoreError] = useState("");
 
   const userIdentifier =
     user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
@@ -148,6 +130,28 @@ function NgoDetailsEditor() {
             submittedApp = await getMyNgoApplication();
           }
 
+          if (active) {
+            setApplicationStatus(submittedApp?.status || "");
+            if (submittedApp?.status === "REJECTED" || submittedApp?.status === "NEEDS_INFORMATION") {
+              const reason = submittedApp.needsInformationDetails || submittedApp.rejectionReason || "Please review your organization details.";
+              setReviewMessage(`${reason} Your details have been restored below. Please upload fresh evidence for this submission; your earlier application stays on record.`);
+              setData(INITIAL_NGO_FORM);
+            }
+          }
+
+          if (submittedApp && active && submittedApp.status === "PENDING_VERIFICATION") {
+            setData((prev) => ({
+              ...prev,
+              organizationName: submittedApp.organizationName || prev.organizationName,
+              applicationId: submittedApp.applicationId,
+              submittedAt: submittedApp.submittedAt || "",
+              officialEmail: user?.email || prev.officialEmail,
+            }));
+            setCurrentStep("email-verification");
+            setLoading(false);
+            return;
+          }
+
           if (
             submittedApp &&
             active &&
@@ -163,25 +167,9 @@ function NgoDetailsEditor() {
             setLoading(false);
             return;
           }
-
-          // Submitted but the email code was never entered — typically a reload between
-          // submit and OTP. The draft is gone by now (submit deletes it), so without this
-          // the editor would open an empty wizard and the application would be stranded.
-          if (submittedApp && active && submittedApp.status === "PENDING_VERIFICATION") {
-            setData((prev) => ({
-              ...prev,
-              organizationName: submittedApp.organizationName || prev.organizationName,
-              applicationId: submittedApp.applicationId,
-              submittedAt: submittedApp.submittedAt || "",
-              officialEmail: user?.email || prev.officialEmail,
-            }));
-            setAwaitingVerification("restored");
-            setCurrentStep("email-verification");
-            setLoading(false);
-            return;
-          }
-        } catch {
-          // ignore error fetching application
+        } catch (error) {
+          if (active) setRestoreError(error instanceof Error ? error.message : "We could not restore your application. Please retry.");
+          return;
         }
 
         // 2. If not submitted, load draft
@@ -198,8 +186,9 @@ function NgoDetailsEditor() {
         if (!draft) {
           try {
             draft = await getNgoDraft();
-          } catch {
-            // ignore draft load failure
+          } catch (error) {
+            if (active) setRestoreError(error instanceof Error ? error.message : "We could not restore your saved details. Please retry.");
+            return;
           }
         }
 
@@ -256,21 +245,15 @@ function NgoDetailsEditor() {
     };
   }, [user, isLoading, router, userIdentifier]);
 
-  // Keep ?step= in line with the wizard, so a reload or a shared link lands on the same
-  // step. replaceState rather than pushState: the URL is never read again after load, so
-  // browser Back would change the address without moving the wizard.
+  // Apply each deep link once after restoration; lifecycle screens take precedence.
   useEffect(() => {
-    if (loading || typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    if (currentStep === "submitted") {
-      url.searchParams.delete("step");
-    } else {
-      url.searchParams.set("step", currentStep);
-    }
-    if (url.href !== window.location.href) {
-      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
-    }
-  }, [currentStep, loading]);
+    if (loading) return;
+    const stepParam = searchParams.get("step");
+    if (appliedStepLink.current === stepParam) return;
+    appliedStepLink.current = stepParam;
+    if (data.applicationId || !stepParam || stepParam === "email-verification") return;
+    if (NGO_STEPS.includes(stepParam as NGOStep)) setCurrentStep(stepParam as NGOStep);
+  }, [searchParams, loading, data.applicationId]);
 
   function updateData(patch: Partial<NGOFormState>) {
     setData((prev) => {
@@ -336,7 +319,8 @@ function NgoDetailsEditor() {
   }
 
   function goToStep(step: NGOStep) {
-    if (awaitingVerification && step !== "email-verification") return;
+    if (data.applicationId && step !== "email-verification") return;
+    if (currentStep === "submitted") return;
     setCurrentStep(step);
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -345,6 +329,7 @@ function NgoDetailsEditor() {
 
   function handleNextSection() {
     const currentIndex = NGO_STEPS.indexOf(currentStep as NGOStep);
+    if (currentStep === "review-submit") return;
     if (currentIndex >= 0 && currentIndex < NGO_STEPS.length - 1) {
       goToStep(NGO_STEPS[currentIndex + 1]);
     }
@@ -410,11 +395,9 @@ function NgoDetailsEditor() {
         officialEmail: response.officialEmail || user?.email || data.officialEmail,
       });
 
-      setAwaitingVerification("submitted-now");
-      setCurrentStep("email-verification");
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
+      setApplicationStatus("PENDING_VERIFICATION");
+      setReviewMessage("");
+      goToStep("email-verification");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Submission failed. Please try again.";
       setSubmitError(msg);
@@ -466,18 +449,16 @@ function NgoDetailsEditor() {
     );
   }
 
-  const formProgress = calculateNgoProgress(data);
-  // Once submitted, the five form steps are done by definition. The local form state
-  // cannot be used to say so: after a reload it is empty.
-  const formSteps = NGO_STEPS.filter((s) => s !== "email-verification");
-  const progress = awaitingVerification
-    ? {
-        ...formProgress,
-        completedSteps: new Set<NGOStep>(formSteps),
-        completedCount: formSteps.length,
-        percent: Math.round((formSteps.length / NGO_STEPS.length) * 100),
-      }
-    : formProgress;
+  if (restoreError) return (
+    <main className="mx-auto max-w-xl space-y-4 p-8">
+      <h1 className="text-xl font-bold">Let’s restore your application</h1>
+      <p role="alert">{restoreError}</p>
+      <button type="button" className="rounded-lg border px-4 py-2" onClick={() => window.location.reload()}>Try again</button>
+      <Link href="/profile" className="ml-4 underline">Back to profile</Link>
+    </main>
+  );
+
+  const progress = calculateNgoProgress(data);
   const remaining = Math.max(0, 6 - progress.completedCount);
   const stillNeeded = currentStep !== "submitted" ? getNgoStillNeededItems(currentStep, data) : [];
 
@@ -518,9 +499,7 @@ function NgoDetailsEditor() {
             </div>
             <p className="text-xs leading-relaxed text-stone-500">
               {currentStep === "submitted"
-                ? "Your application is submitted and under review."
-                : awaitingVerification
-                ? "Application submitted. Enter the email code to finish."
+                ? (applicationStatus === "APPROVED" ? "Your organization’s application is approved." : "Your application is submitted and under review.")
                 : remaining === 0
                 ? "All steps completed. Ready to submit."
                 : `${remaining} ${remaining === 1 ? "step" : "steps"} left before you can submit.`}
@@ -536,6 +515,7 @@ function NgoDetailsEditor() {
                 <button
                   key={stepKey}
                   type="button"
+                  disabled={!!data.applicationId || stepKey === "email-verification"}
                   onClick={() => goToStep(stepKey)}
                   disabled={!!awaitingVerification && !isCurrent}
                   className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -630,6 +610,7 @@ function NgoDetailsEditor() {
                     <button
                       key={stepKey}
                       type="button"
+                      disabled={!!data.applicationId || stepKey === "email-verification"}
                       onClick={() => goToStep(stepKey)}
                       disabled={!!awaitingVerification && !isCurrent}
                       className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -650,6 +631,7 @@ function NgoDetailsEditor() {
           <div className="flex flex-1 flex-col">
             <div className="flex-1 px-5 py-8 sm:px-10">
               <div className="max-w-3xl">
+                {reviewMessage && <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 whitespace-pre-wrap">{reviewMessage}</div>}
                 {submitError && (
                   <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
                     {submitError}
@@ -664,10 +646,10 @@ function NgoDetailsEditor() {
                       </div>
                       <div>
                         <h2 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100">
-                          Application Submitted
+                          {applicationStatus === "APPROVED" ? "Application approved" : "Application submitted"}
                         </h2>
                         <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400">
-                          Your legal partner registration has been submitted and is currently under review.
+                          {applicationStatus === "APPROVED" ? "Thank you. Your organization’s registration has been approved." : "Thank you. Your registration is with our team for review."}
                         </p>
                       </div>
                     </div>
@@ -745,7 +727,7 @@ function NgoDetailsEditor() {
             </div>
 
             {/* Bottom Sticky Action Bar */}
-            {currentStep !== "submitted" && (
+            {currentStep !== "submitted" && currentStep !== "email-verification" && (
               <div className="sticky bottom-0 border-t border-stone-200 bg-white px-5 py-4 sm:px-10 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="flex max-w-3xl flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-stone-500">

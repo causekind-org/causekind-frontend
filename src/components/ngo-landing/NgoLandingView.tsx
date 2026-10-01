@@ -7,7 +7,6 @@ import { NgoProblemSolutionSection } from "./NgoProblemSolutionSection";
 import { NgoTransparencySection } from "./NgoTransparencySection";
 import { NgoTrustSection } from "./NgoTrustSection";
 import { NgoHowItWorksSection } from "./NgoHowItWorksSection";
-import { ReviewsSection } from "./ReviewsSection";
 import { NgoVerifiedWelcomeModal } from "./NgoVerifiedWelcomeModal";
 
 function NgoLandingViewContent() {
@@ -35,7 +34,7 @@ function NgoLandingViewContent() {
       <NgoHowItWorksSection />
 
       {/* SECTION 6 — COMMUNITY REVIEWS (Trusted by Givers and NGOs Marquee - last section before footer) */}
-      <ReviewsSection />
+      {/* Publish testimonials only when sourced and approved for use. */}
     </div>
   );
 }

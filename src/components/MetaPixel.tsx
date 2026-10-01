@@ -89,8 +89,12 @@ function MetaPixelInner() {
 // the banner is back — see DeferredOverlays.tsx and layout.tsx.
 const TESTING_BYPASS = true;
 
+// Staging sets this so test traffic never reaches the Pixel/GTM/Clarity data.
+const TRACKING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "true";
+
 export default function MetaPixel() {
   const consent = useCookieConsent();
+  if (TRACKING_DISABLED) return null;
 
   // Wrap in Suspense to avoid Next.js deoptimizing layout to client-side rendering due to searchParams
   return (

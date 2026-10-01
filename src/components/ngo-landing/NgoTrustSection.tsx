@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -31,7 +32,7 @@ const TRUST_CARDS: TrustCardItem[] = [
     step: "01",
     icon: Bot,
     title: "AI Screening",
-    shortLine: "Every upload screened for fraud first.",
+    shortLine: "File checks and AI signals support human review.",
   },
   {
     id: "legal-checks",
@@ -45,14 +46,14 @@ const TRUST_CARDS: TrustCardItem[] = [
     step: "03",
     icon: MapPin,
     title: "Local Matching",
-    shortLine: "Matched within 10 km, down to the neighbourhood.",
+    shortLine: "Nearby matches depend on item availability and location.",
   },
   {
     id: "safe-dropoffs",
     step: "04",
     icon: Handshake,
     title: "Safe Drop-offs",
-    shortLine: "Donors get the address only after pledging.",
+    shortLine: "Agree the handover details after a match is accepted.",
   },
   {
     id: "proof-required",
@@ -64,14 +65,8 @@ const TRUST_CARDS: TrustCardItem[] = [
 ];
 
 export function NgoTrustSection() {
-  const { isVerified, ngoName } = useNgoStatus();
+  const { isVerified, ngoName, isLoading, error } = useNgoStatus();
   const [activeFlippedCardId, setActiveFlippedCardId] = useState<string | null>(null);
-
-  const shareText = encodeURIComponent(
-    `Check out ${ngoName} on CauseKind! We are verified to receive in-kind contributions directly from givers nearby: `
-  );
-  const shareUrl = typeof window !== "undefined" ? encodeURIComponent(`${window.location.origin}/profile`) : "";
-  const whatsappUrl = `https://api.whatsapp.com/send?text=${shareText}${shareUrl}`;
 
   const handleCardFlip = (cardId: string, willFlip: boolean) => {
     setActiveFlippedCardId(willFlip ? cardId : null);
@@ -171,146 +166,11 @@ export function NgoTrustSection() {
           </div>
         )}
 
-        {/* ─────────────────────────────────────────────────────────────
-            NGO SCORECARD SECTION
-            ───────────────────────────────────────────────────────────── */}
-        <div className="space-y-4">
-          <div className="text-center sm:text-left">
-            <h3
-              className="text-2xl sm:text-3xl font-bold text-stone-900 dark:text-stone-100 mt-1"
-              style={{ fontFamily: "var(--font-source-serif-4), var(--font-lora), serif" }}
-            >
-              {isVerified ? "Your Verified CauseKind Scorecard" : "This is how donors will see you"}
-            </h3>
-          </div>
-
-          {!isVerified ? (
-            /* Before Verification: Locked Preview Scorecard */
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="relative rounded-3xl border border-stone-300 dark:border-zinc-700 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 text-white p-6 sm:p-10 shadow-2xl overflow-hidden"
-            >
-              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                {/* Scorecard Left Details (locked behind blur) */}
-                <div className="lg:col-span-7 space-y-4 filter blur-[1.5px] opacity-70 select-none">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-4xs font-black uppercase tracking-wider backdrop-blur-md">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Verified Partner Scorecard</span>
-                  </div>
-
-                  <div>
-                    <h3
-                      className="text-2xl sm:text-3xl font-bold leading-tight"
-                      style={{ fontFamily: "var(--font-source-serif-4), serif" }}
-                    >
-                      {ngoName || "Your Organization"}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-stone-300 mt-1">
-                      Registered Non-Profit · Verified Partner
-                    </p>
-                  </div>
-
-                  {/* Metrics Pills */}
-                  <div className="flex flex-wrap gap-2.5 pt-1">
-                    <div className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-bold border border-white/10">
-                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      <span>Verified Impact Score</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-bold border border-white/10">
-                      <span>0 Requests Fulfilled</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scorecard Right: Lock Overlay Message */}
-                <div className="lg:col-span-5 bg-black/40 border border-white/20 rounded-2xl p-6 backdrop-blur-md flex flex-col items-center justify-center text-center space-y-2.5">
-                  <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center text-amber-400">
-                    <Lock className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-sm sm:text-base font-bold text-white">
-                    Preview Mode · Verification Pending
-                  </h4>
-                  <p className="text-2xs sm:text-xs text-stone-300 leading-relaxed max-w-xs">
-                    Once verified, this live trust badge and scorecard becomes visible to all donors within 10 km.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            /* Verified State: Real Card */
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="relative rounded-3xl border border-ngo-700/40 bg-gradient-to-br from-ngo-950 via-ngo-900 to-ngo-950 text-white p-6 sm:p-10 shadow-2xl overflow-hidden"
-            >
-              <div className="pointer-events-none absolute -top-20 -right-20 w-80 h-80 rounded-full bg-ngo-700/20 blur-3xl" />
-
-              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                {/* Scorecard Left Details */}
-                <div className="lg:col-span-7 space-y-4">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-4xs font-black uppercase tracking-wider backdrop-blur-md">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Verified Partner Scorecard</span>
-                  </div>
-
-                  <div>
-                    <h3
-                      className="text-2xl sm:text-3xl font-bold leading-tight"
-                      style={{ fontFamily: "var(--font-source-serif-4), serif" }}
-                    >
-                      {ngoName}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-stone-300 mt-1">
-                      Legally Verified Partner · Direct Handover Network
-                    </p>
-                  </div>
-
-                  {/* Metrics Pills */}
-                  <div className="flex flex-wrap gap-2.5 pt-1">
-                    <div className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-bold border border-white/10">
-                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      <span>New — builds after your first fulfilled request</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-bold border border-white/10">
-                      <span>0 requests fulfilled</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-xl bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-300 border border-emerald-500/30">
-                      <span>100% Photo Proof Standard</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scorecard Right: Share on WhatsApp */}
-                <div className="lg:col-span-5 bg-white/10 border border-white/15 rounded-2xl p-5 backdrop-blur-md flex flex-col justify-between space-y-4">
-                  <div>
-                    <p className="text-xs font-bold text-white uppercase tracking-wider">
-                      Share Your Verified Status
-                    </p>
-                    <p className="text-xs text-stone-300 mt-1 leading-relaxed">
-                      Let your supporters and donors know that your NGO is verified for direct in-kind handovers on CauseKind.
-                    </p>
-                  </div>
-
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold px-4 py-2.5 text-xs shadow-md transition-all duration-200"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>Share on WhatsApp</span>
-                  </a>
-                </div>
-              </div>
-            </motion.div>
-          )}
+        <div className="rounded-3xl border border-ngo-200 p-6 dark:border-zinc-700">
+          <h3 className="text-xl font-bold">Your organization’s verification</h3>
+          <p className="mt-3 text-sm">{isLoading ? "Checking your application…" : error ? "We couldn’t check your application. Please retry from your profile." : isVerified ? `${ngoName} has an approved CauseKind application. Each new item request is reviewed separately.` : "Complete your application and email verification. Our team reviews the organization before request posting is enabled."}</p>
+          <Link href="/profile/ngo-details" className="mt-4 inline-block text-sm font-semibold underline">View your application</Link>
         </div>
-
       </div>
     </section>
   );

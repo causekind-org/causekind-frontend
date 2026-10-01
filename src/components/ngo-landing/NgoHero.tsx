@@ -15,16 +15,13 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useNgoStatus } from "./useNgoStatus";
-import { useNgoDashboardData } from "@/hooks/useNgoDashboardData";
-import { NgoCategoryPillBar } from "./NgoCategoryPillBar";
 import { NgoHeroTrustCard } from "./NgoHeroTrustCard";
 
 export function NgoHero() {
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
-  
-  // Keep using useNgoStatus for some fields if needed, but we'll extract them all from useNgoDashboardData since it wraps it
   const {
+    isLoading, error, refresh,
     status,
     stepNumber,
     totalSteps,
@@ -36,7 +33,7 @@ export function NgoHero() {
     isPhotosDue,
     photosDueRequestName,
     lockReason,
-  } = useNgoDashboardData();
+  } = useNgoStatus();
 
   // Tooltip state for desktop locked click
   const [showLockedTooltip, setShowLockedTooltip] = useState<boolean>(false);
@@ -47,6 +44,11 @@ export function NgoHero() {
     e.preventDefault();
     e.stopPropagation();
 
+    if (isLoading || error) {
+      toast.info(isLoading ? "We’re checking your application. Please try again shortly." : "We couldn’t check your application. Please retry.");
+      if (error) void refresh();
+      return;
+    }
     // Trigger toast message
     if (status === "incomplete") {
       const isZero = stepNumber === 0;
@@ -71,10 +73,10 @@ export function NgoHero() {
         },
       });
     } else if (isPhotosDue) {
-      toast.warning(`Upload handover photos for ${photosDueRequestName} to start your next drive.`, {
+      toast.warning(`Upload handover photos for ${photosDueRequestName} to post your next request.`, {
         action: {
           label: "Upload",
-          onClick: () => router.push("/dashboard/ngo"),
+          onClick: () => router.push("/ngo/handovers"),
         },
       });
     }
@@ -89,20 +91,29 @@ export function NgoHero() {
 
   // Headlines and subheadlines
   const headlineLine1 = isVerified ? "You're verified." : "Post what you need.";
-  const headlineLine2 = isVerified ? "Let givers nearby find you." : "Givers nearby will bring it.";
+  const headlineLine2 = isVerified ? "Let givers nearby find you." : "Connect with givers nearby.";
   const subheadline = isVerified
-    ? "Post exactly what you need. Donors within 10 km see it, hand it over directly, and every handover ends with a certificate."
-    : "Once CauseKind verifies you, your drives reach donors within 10 km — handed over directly, with a certificate for every handover.";
+    ? "Post what your organization needs. Our team reviews the request and looks for a suitable match. Track accepted handovers through your account."
+    : "Start with your organization’s application. Once approved, you can submit item requests for review and connect with nearby donors.";
 
   // Secondary CTA details
-  let secondaryCtaText: string | null = "Start your application";
+  let secondaryCtaText = stepNumber === 0 ? "Start your application →" : "Continue application →";
   let secondaryCtaHref = wizardHref || "/profile/ngo-details";
 
   if (isVerified) {
-    secondaryCtaText = "View my public profile";
-    secondaryCtaHref = "/profile";
+    secondaryCtaText = "View my application";
+    secondaryCtaHref = "/profile/ngo-details";
   } else if (status === "under_review") {
-    secondaryCtaText = null;
+    secondaryCtaText = "View application status";
+    secondaryCtaHref = "/profile/ngo-details";
+  } else if (status === "changes_requested") {
+    secondaryCtaText = "Fix documents →";
+    secondaryCtaHref = "/profile/ngo-details";
+  }
+
+  if (isLoading || error) {
+    secondaryCtaText = isLoading ? "Checking application…" : "View your application";
+    secondaryCtaHref = "/profile/ngo-details";
   }
 
   // Stagger animation container
@@ -136,18 +147,37 @@ export function NgoHero() {
     : "NGO team coordinating community supplies";
 
   return (
-    <section id="ngo-hero" className="relative w-full overflow-hidden text-stone-900 dark:text-stone-100">
+    <section id="ngo-hero" className="relative isolate w-full overflow-hidden text-stone-900 dark:text-stone-100 lg:min-h-[calc(100svh-var(--ck-nav-h,4.5rem))] lg:pb-[2vh]">
+      {/* Desktop: one photo behind the whole section — hero, category bar and
+          trust card all sit on it. Cover, never stretch. Phones keep the photo
+          inside the hero box below. */}
+      <div className="pointer-events-none absolute inset-0 -z-10 hidden lg:block" aria-hidden="true">
+        <Image
+          src={heroImageSrc}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[center_30%]"
+        />
+        {/* Bottom dissolve into the next section: the photo blurs progressively
+            (masked backdrop blur), then fades into the page colour, so there is no
+            hard edge between the hero and "Sound familiar?". */}
+        <div className="absolute inset-x-0 bottom-0 h-[32%] backdrop-blur-[10px] [mask-image:linear-gradient(to_bottom,transparent,black_70%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_70%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[40%] bg-[linear-gradient(to_bottom,transparent_0%,color-mix(in_srgb,var(--surface-cream)_55%,transparent)_55%,var(--surface-cream)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.60)_18%,rgba(255,255,255,0.22)_28%,rgba(255,255,255,0)_35%,transparent_100%)] dark:bg-[linear-gradient(to_right,rgba(9,9,11,0.70)_0%,rgba(9,9,11,0.65)_18%,rgba(9,9,11,0.25)_28%,rgba(9,9,11,0)_35%,transparent_100%)]" />
+      </div>
       {/* ─────────────────────────────────────────────────────────────
           FULL-WIDTH HERO PHOTO STAGE (100% viewport width, edge to edge)
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative isolate w-full min-h-[580px] sm:min-h-[620px] lg:min-h-[min(88vh,760px)] rounded-b-[24px] overflow-hidden shadow-sm flex flex-col justify-between">
+      <div className="relative isolate w-full min-h-[580px] sm:min-h-[620px] lg:min-h-0 lg:h-[max(420px,calc(100svh-var(--ck-nav-h,4.5rem)-9rem))] rounded-b-[24px] lg:rounded-none overflow-hidden shadow-sm lg:shadow-none flex flex-col justify-between">
 
         {/* Background Photo with Settle Motion & Optimal Horizon Position */}
         <motion.div
           initial={{ scale: shouldReduceMotion ? 1 : 1.04 }}
           animate={{ scale: 1 }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 -z-20 w-full h-full"
+          className="absolute inset-0 -z-20 w-full h-full lg:hidden"
         >
           <Image
             src={heroImageSrc}
@@ -155,13 +185,13 @@ export function NgoHero() {
             fill
             priority
             sizes="100vw"
-            className="object-cover object-[72%_35%] lg:object-[70%_center]"
+            className="object-cover object-[72%_35%] lg:object-[center_30%]"
           />
         </motion.div>
 
         {/* Desktop Left-to-Right Lighter White Fade: ~0.60 opacity at left, fading to 0 by ~35% width */}
         <div
-          className="pointer-events-none absolute inset-0 -z-10 hidden lg:block bg-[linear-gradient(to_right,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.60)_18%,rgba(255,255,255,0.22)_28%,rgba(255,255,255,0)_35%,transparent_100%)] dark:bg-[linear-gradient(to_right,rgba(9,9,11,0.70)_0%,rgba(9,9,11,0.65)_18%,rgba(9,9,11,0.25)_28%,rgba(9,9,11,0)_35%,transparent_100%)]"
+          className="pointer-events-none absolute inset-0 -z-10 hidden bg-[linear-gradient(to_right,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.60)_18%,rgba(255,255,255,0.22)_28%,rgba(255,255,255,0)_35%,transparent_100%)] dark:bg-[linear-gradient(to_right,rgba(9,9,11,0.70)_0%,rgba(9,9,11,0.65)_18%,rgba(9,9,11,0.25)_28%,rgba(9,9,11,0)_35%,transparent_100%)]"
           aria-hidden="true"
         />
 
@@ -174,8 +204,8 @@ export function NgoHero() {
         {/* ─────────────────────────────────────────────────────────────
             MAIN CONTENT CONTAINER (Left-aligned text column, edge-positioned)
             ───────────────────────────────────────────────────────────── */}
-        <div className="w-full px-4 sm:px-6 lg:pl-10 xl:pl-12 lg:pr-8 py-8 sm:py-12 lg:py-16 flex-1 flex flex-col justify-between z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center flex-1 pb-6 sm:pb-8">
+        <div className="w-full px-4 sm:px-6 lg:pl-10 xl:pl-12 lg:pr-8 py-8 sm:py-12 lg:py-[clamp(1rem,3.5vh,2.5rem)] flex-1 flex flex-col justify-between z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center flex-1 pb-6 sm:pb-8 lg:pb-[2vh]">
 
             {/* LEFT COLUMN: Verified Badge (if verified), Headlines, CTAs, Helper Text */}
             <motion.div
@@ -188,7 +218,7 @@ export function NgoHero() {
               {isVerified && (
                 <motion.div
                   variants={itemVariants}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-sm mb-5 bg-ngo-700 text-white border-ngo-800"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-sm mb-5 lg:mb-[1.6vh] bg-ngo-700 text-white border-ngo-800"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                   <span className="text-3xs sm:text-2xs font-bold tracking-tight">
@@ -200,7 +230,7 @@ export function NgoHero() {
               {/* 2. Headline Line 1 & Line 2 */}
               <motion.h1
                 variants={itemVariants}
-                className="text-3xl sm:text-5xl lg:text-[3.65rem] font-bold tracking-tight text-stone-900 dark:text-stone-50 leading-[1.08] mb-5"
+                className="text-3xl sm:text-5xl lg:text-[clamp(2rem,5.4vh,3.4rem)] font-bold tracking-tight text-stone-900 dark:text-stone-50 leading-[1.08] mb-5 lg:mb-[1.8vh]"
                 style={{ fontFamily: "var(--font-source-serif-4), var(--font-lora), serif" }}
               >
                 <span className="block">{headlineLine1}</span>
@@ -212,7 +242,7 @@ export function NgoHero() {
               {/* 3. Subheadline */}
               <motion.p
                 variants={itemVariants}
-                className="text-base sm:text-lg text-stone-900 dark:text-stone-100 leading-relaxed max-w-[480px] mb-7 font-normal [text-shadow:0_1px_2px_rgba(255,255,255,0.9),0_0_12px_rgba(255,255,255,0.85)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_0_12px_rgba(0,0,0,0.85)]"
+                className="text-base sm:text-lg lg:text-[clamp(0.95rem,1.9vh,1.125rem)] text-stone-900 dark:text-stone-100 leading-relaxed max-w-[480px] mb-7 lg:mb-[2.4vh] font-normal [text-shadow:0_1px_2px_rgba(255,255,255,0.9),0_0_12px_rgba(255,255,255,0.85)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_0_12px_rgba(0,0,0,0.85)]"
               >
                 {subheadline}
               </motion.p>
@@ -222,94 +252,95 @@ export function NgoHero() {
                 variants={itemVariants}
                 className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto mb-3 relative"
               >
-                {status === "loading" ? (
-                  <>
-                    <div className="w-full sm:w-48 h-[52px] rounded-full bg-stone-200/50 dark:bg-zinc-800/50 animate-pulse" />
-                    <div className="w-full sm:w-48 h-[52px] rounded-full bg-stone-200/50 dark:bg-zinc-800/50 animate-pulse hidden sm:block" />
-                  </>
+                {/* Post a Request Button */}
+                {canPostRequest ? (
+                  <Link
+                    href="/ngo/requests/new"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 active:scale-[0.98] text-white font-bold px-7 py-3.5 lg:py-[1.4vh] text-sm sm:text-base shadow-lg shadow-ngo-700/25 hover:shadow-xl hover:shadow-ngo-700/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
+                  >
+                    <span>Post a Request</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 ) : (
-                  <>
-                    {/* Start a Drive Button */}
-                    {canPostRequest ? (
-                      <Link
-                        href="/ngo/drives/new"
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 active:scale-[0.98] text-white font-bold px-7 py-3.5 text-sm sm:text-base shadow-lg shadow-ngo-700/25 hover:shadow-xl hover:shadow-ngo-700/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
-                      >
-                        <span>Start a Drive</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    ) : (
-                      <div className="relative group">
-                        <button
-                          type="button"
-                          onClick={handleLockedClick}
-                          aria-disabled="true"
-                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 font-bold px-7 py-3.5 text-sm sm:text-base cursor-not-allowed border border-stone-300 dark:border-zinc-700 shadow-sm transition-all focus:outline-none"
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      onClick={handleLockedClick}
+                      aria-disabled="true"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 font-bold px-7 py-3.5 lg:py-[1.4vh] text-sm sm:text-base cursor-not-allowed border border-stone-300 dark:border-zinc-700 shadow-sm transition-all focus:outline-none"
+                    >
+                      <Lock className="w-4 h-4 text-stone-400 dark:text-stone-500" />
+                      <span>Post a Request</span>
+                    </button>
+
+                    {/* Desktop Tooltip on Click */}
+                    <AnimatePresence>
+                      {showLockedTooltip && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 6 }}
+                          className="hidden sm:block absolute left-0 top-full mt-2 w-72 rounded-2xl bg-stone-900 dark:bg-zinc-800 text-white p-3.5 shadow-2xl z-30 text-xs"
                         >
-                          <Lock className="w-4 h-4 text-stone-400 dark:text-stone-500" />
-                          <span>Start a Drive</span>
-                        </button>
+                          <div className="flex items-start gap-2.5">
+                            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <div className="space-y-2">
+                              <p className="font-medium text-stone-200 leading-snug">
+                                {status === "incomplete" && (stepNumber === 0 ? "Start your application to get verified." : "Complete your profile to get verified.")}
+                                {status === "under_review" && "Your application is under review. We'll unlock this once you're approved."}
+                                {status === "changes_requested" && "A few documents need fixing."}
+                                {isPhotosDue && `Upload handover photos for ${photosDueRequestName} to post your next request.`}
+                              </p>
+                              {status === "incomplete" && (
+                                <Link
+                                  href={wizardHref || "/profile/ngo-details"}
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                >
+                                  <span>{stepNumber === 0 ? "Start application →" : "Continue application →"}</span>
+                                </Link>
+                              )}
+                              {status === "changes_requested" && (
+                                <Link
+                                  href="/profile/ngo-details"
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                >
+                                  <span>Fix now →</span>
+                                </Link>
+                              )}
+                              {isPhotosDue && (
+                                <Link
+                                  href="/ngo/handovers"
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                >
+                                  <span>Upload photos →</span>
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
 
-                        {/* Desktop Tooltip on Click */}
-                        <AnimatePresence>
-                          {showLockedTooltip && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 6 }}
-                              className="hidden sm:block absolute left-0 top-full mt-2 w-72 rounded-2xl bg-stone-900 dark:bg-zinc-800 text-white p-3.5 shadow-2xl z-30 text-xs"
-                            >
-                              <div className="flex items-start gap-2.5">
-                                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                                <div className="space-y-2">
-                                  <p className="font-medium text-stone-200 leading-snug">
-                                    {status === "incomplete" && (stepNumber === 0 ? "Start your application to get verified." : "Complete your profile to get verified.")}
-                                    {status === "under_review" && "Your application is under review. We'll unlock this once you're approved."}
-                                    {status === "changes_requested" && "A few documents need fixing."}
-                                    {isPhotosDue && `Upload handover photos for ${photosDueRequestName} to start your next drive.`}
-                                  </p>
-                                  {status === "incomplete" && (
-                                    <Link
-                                      href={wizardHref || "/profile/ngo-details"}
-                                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
-                                    >
-                                      <span>{stepNumber === 0 ? "Start application →" : "Continue application →"}</span>
-                                    </Link>
-                                  )}
-                                  {status === "changes_requested" && (
-                                    <Link
-                                      href="/profile/ngo-details"
-                                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
-                                    >
-                                      <span>Fix now →</span>
-                                    </Link>
-                                  )}
-                                  {isPhotosDue && (
-                                    <Link
-                                      href="/dashboard/ngo"
-                                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
-                                    >
-                                      <span>Upload photos →</span>
-                                    </Link>
-                                  )}
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    )}
+                {/* Secondary CTA */}
+                <Link
+                  href={secondaryCtaHref}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-stone-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 hover:bg-stone-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-stone-800 dark:text-stone-200 font-bold px-6 py-3.5 lg:py-[1.4vh] text-sm sm:text-base backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
+                >
+                  <span>{secondaryCtaText}</span>
+                </Link>
 
-                    {/* Secondary CTA */}
-                    {secondaryCtaText && (
-                      <Link
-                        href={secondaryCtaHref}
-                        className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-stone-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 hover:bg-stone-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-stone-800 dark:text-stone-200 font-bold px-6 py-3.5 text-sm sm:text-base backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
-                      >
-                        <span>{secondaryCtaText}</span>
-                      </Link>
-                    )}
-                  </>
+                {/* Drives are the second way in: a time-boxed collection (e.g. 40
+                    blankets for a winter drive) alongside ordinary requests. Same gate. */}
+                {canPostRequest && (
+                  <Link
+                    href="/ngo/drives/new"
+                    className="inline-flex items-center justify-center gap-1 text-sm font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700 rounded"
+                  >
+                    <span>Or start a drive</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 )}
               </motion.div>
 
@@ -350,7 +381,7 @@ export function NgoHero() {
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="text-3xs font-semibold text-stone-500 dark:text-stone-400">
-                            Your drives will look like this
+                            Your requests will look like this
                           </span>
                           <span className="text-4xs uppercase tracking-wider bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 font-bold px-1.5 py-0.5 rounded">
                             Sample
@@ -371,7 +402,7 @@ export function NgoHero() {
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="text-3xs font-bold uppercase tracking-wider text-ngo-700 dark:text-ngo-300">
-                            Active Drive
+                            Active Request
                           </span>
                           <Link
                             href="/ngo/requests"
@@ -407,16 +438,9 @@ export function NgoHero() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          CATEGORY PILL BAR (Overlapping bottom edge of hero)
+          LIGHT TRUST CARD (Below the hero)
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative z-30 -mt-6 sm:-mt-8 lg:-mt-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <NgoCategoryPillBar />
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          LIGHT TRUST CARD (Below Category Pill Bar)
-          ───────────────────────────────────────────────────────────── */}
-      <div className="relative z-20 mt-4 sm:mt-5 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-20 mt-4 sm:mt-5 max-w-7xl lg:max-w-none mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
         <NgoHeroTrustCard />
       </div>
     </section>

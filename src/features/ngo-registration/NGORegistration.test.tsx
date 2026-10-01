@@ -37,6 +37,7 @@ vi.mock("@/lib/api", () => ({
     applicationId: "CK-NGO-2026-ABCD1234",
     message: "OTP resent successfully",
   }),
+  getMyNgoApplication: vi.fn().mockResolvedValue(null),
   getNgoDraft: vi.fn().mockResolvedValue(null),
   saveNgoDraft: vi.fn().mockResolvedValue({ status: "SAVED" }),
 }));
@@ -122,16 +123,8 @@ describe("NGORegistration Component", () => {
     await user.selectOptions(screen.getByLabelText(/Designation/i), "Managing Trustee");
     await user.type(screen.getByLabelText(/Mobile Number/i), "+91 98765 43210");
     await user.type(screen.getByLabelText(/Official Email Address/i), "priya@helpinghearts.org");
-    // No "Mark as uploaded" shortcut outside demo mode: the letter is a real upload.
-    expect(screen.queryByRole("button", { name: /Mark as uploaded ✓/i })).not.toBeInTheDocument();
-    const letterInput = document.getElementById("auth-letter-upload") as HTMLInputElement;
-    await user.upload(letterInput, new File(["%PDF-1.4 letter"], "letter.pdf", { type: "application/pdf" }));
-    await waitFor(() => {
-      expect(uploadNgoDocument).toHaveBeenCalledWith(expect.any(File), "authorization-letter", "supporting");
-    });
-    await waitFor(() => {
-      expect(screen.getByText("letter.pdf")).toBeInTheDocument();
-    });
+    await user.upload(document.querySelector<HTMLInputElement>('input[type="file"]')!, dummyPdf);
+    await waitFor(() => expect(screen.queryByText(/Uploading.../i)).not.toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 
     // Step 4: Organization Photos

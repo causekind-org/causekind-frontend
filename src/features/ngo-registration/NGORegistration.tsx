@@ -19,7 +19,7 @@ import { OrgPhotos } from "@/features/ngo-registration/steps/OrgPhotos";
 import { ReviewSubmit } from "@/features/ngo-registration/steps/ReviewSubmit";
 import { EmailVerification } from "@/features/ngo-registration/steps/EmailVerification";
 import { ApplicationSubmitted } from "@/features/ngo-registration/steps/ApplicationSubmitted";
-import { submitNgoApplication, getNgoDraft, saveNgoDraft, type UploadedFileDto } from "@/lib/api";
+import { submitNgoApplication, getMyNgoApplication, getNgoDraft, saveNgoDraft, type UploadedFileDto } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
 export interface NGOProgressInfo {
@@ -71,6 +71,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
   const [completedSteps, setCompletedSteps] = useState<Set<NGOStep>>(new Set());
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [reviewMessage, setReviewMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const reduced = !!useReducedMotion();
 
@@ -131,8 +132,30 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
     }
 
     if (!user) return;
-
-    getNgoDraft()
+    getMyNgoApplication()
+      .then((application) => {
+        if (cancelled) return null;
+        if (application && ["PENDING_VERIFICATION", "UNDER_REVIEW", "APPROVED"].includes(application.status)) {
+          setData((prev) => ({
+            ...prev,
+            applicationId: application.applicationId,
+            organizationName: application.organizationName || prev.organizationName,
+            submittedAt: application.submittedAt || "",
+            officialEmail: user.email || prev.officialEmail,
+          }));
+          if (application.status === "APPROVED") {
+            window.location.replace("/profile/ngo-details");
+            return null;
+          }
+          setCurrentStep(application.status === "PENDING_VERIFICATION" ? "email-verification" : "submitted");
+          return null;
+        }
+        if (application?.status === "REJECTED" || application?.status === "NEEDS_INFORMATION") {
+          setData(INITIAL_NGO_FORM);
+          setReviewMessage(`${application.needsInformationDetails || application.rejectionReason || "Please review your details."} Your details have been restored. Upload fresh evidence for this submission; your earlier application remains on record.`);
+        }
+        return getNgoDraft();
+      })
       .then((draft) => {
         if (cancelled || !draft) return;
 
@@ -435,6 +458,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
       )}
 
       {/* Step Components with Smooth Transition */}
+      {reviewMessage && <p role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 whitespace-pre-wrap">{reviewMessage}</p>}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}

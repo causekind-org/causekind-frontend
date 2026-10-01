@@ -26,19 +26,19 @@ export function NgoHowItWorksSection() {
       num: "1",
       icon: FileCheck2,
       title: "Get verified",
-      desc: "Submit your legal registration documents once. Fast automated check + admin review confirms your organization.",
+      desc: "Submit your legal registration documents once. File checks support a review by our team.",
     },
     {
       num: "2",
       icon: Megaphone,
       title: "Post what you need",
-      desc: "40 blankets, 100 books, 20 ration kits — donors within 10 km pledge exact items and drop off directly.",
+      desc: "Describe the items, quantity and intended use. Our team reviews your need before looking for nearby donor matches.",
     },
     {
       num: "3",
       icon: Sparkles,
       title: "Deliver, then prove it",
-      desc: "Upload delivery photos. Donors get their verified certificates. Your trust score builds automatically.",
+      desc: "Confirm receipt and upload a handover photo. Certificate eligibility follows the completed handover checks.",
     },
   ];
 
@@ -50,7 +50,7 @@ export function NgoHowItWorksSection() {
     ctaHref = "/ngo/drives/new";
     ctaLabel = "Start a Drive →";
   } else if (status === "under_review") {
-    ctaHref = "/profile";
+    ctaHref = "/profile/ngo-details";
     ctaLabel = "View Application Status →";
   } else if (status === "changes_requested") {
     ctaHref = "/profile/ngo-details";

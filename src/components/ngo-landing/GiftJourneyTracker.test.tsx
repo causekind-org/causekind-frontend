@@ -22,12 +22,12 @@ describe("GiftJourneyTracker Component Suite", () => {
   it("renders NGO request lifecycle steps and allows clicking steps to view details", () => {
     render(<GiftJourneyTracker />);
 
-    expect(screen.getByText("40 Blankets · Winter Relief Drive, Thane")).toBeInTheDocument();
-    expect(screen.getByText("1. You start a drive")).toBeInTheDocument();
+    expect(screen.getByText("Illustrative journey · 40 blankets")).toBeInTheDocument();
+    expect(screen.getByText("1. You post a request")).toBeInTheDocument();
     expect(screen.getByText("2. Donors nearby pledge them")).toBeInTheDocument();
     expect(screen.getByText("3. They drop off, and you confirm receipt")).toBeInTheDocument();
     expect(screen.getByText("4. You upload a handover photo")).toBeInTheDocument();
-    expect(screen.getByText("5. Every donor gets the photo and their certificate")).toBeInTheDocument();
+    expect(screen.getByText("5. Completed handovers become eligible for certificates")).toBeInTheDocument();
 
     // Click step 4 (You upload a handover photo)
     const step4Button = screen.getByRole("button", { name: /4\. You upload a handover photo/i });

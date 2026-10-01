@@ -1,186 +1,76 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Camera,
-  ShieldCheck,
-  PackageCheck,
-  CheckCircle2,
-  Clock,
-  ArrowLeft,
-  Plus,
-  Lock,
-  Sparkles,
-  MapPin,
-  Calendar,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
+import { doneeAcceptMatch, doneeRejectMatch, uploadNgoHandoverProof, type NgoHandover } from "@/lib/api";
 
 export default function NgoHandoversPage() {
+  return <Suspense fallback={<p role="status">Loading handovers…</p>}><Handovers /></Suspense>;
+}
+
+function Handovers() {
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const {
-    status,
-    ngoName,
-    isVerified,
-    isPhotosDue,
-    photosDueRequestName,
-    dropoffsToConfirm,
-    photosDue,
-  } = useNgoStatus();
-
-  return (
-    <div className="min-h-screen bg-[#FAFDFB] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-20 pt-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top Back Navigation */}
-        <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-ngo-700 dark:text-ngo-300 hover:underline"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
-          <div className="flex items-center gap-2">
-            <span className="text-2xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-ngo-100 text-ngo-800 dark:bg-ngo-900/50 dark:text-ngo-200 border border-ngo-200 dark:border-ngo-800">
-              {ngoName || "NGO Partner"}
-            </span>
-          </div>
-        </div>
-
-        {/* Header Strip */}
-        <div className="rounded-3xl bg-gradient-to-br from-ngo-50 via-white to-ngo-50/50 dark:from-ngo-950/40 dark:via-zinc-900 dark:to-zinc-900 border border-ngo-100 dark:border-zinc-800 p-6 sm:p-8 shadow-xs mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ngo-500/10 text-ngo-800 dark:text-ngo-200 border border-ngo-500/20 text-xs font-bold uppercase tracking-wider mb-3">
-                <Camera className="w-3.5 h-3.5 text-ngo-700 dark:text-ngo-300" />
-                Handover Hub &amp; Photo Proof
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ngo-950 dark:text-white">
-                Handovers &amp; Photos
-              </h1>
-              <p className="mt-1.5 text-sm text-stone-600 dark:text-stone-400 max-w-2xl">
-                Confirm scheduled drop-offs from local givers, verify delivery OTPs, and upload required handover photographs.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href="/requests">
-                <Button
-                  variant="outline"
-                  className="rounded-full border-ngo-200 hover:bg-ngo-50 text-ngo-900 text-xs font-bold px-4"
-                >
-                  Active Drives
-                </Button>
-              </Link>
-              <Link href="/ngo/drives/new">
-                <Button className="rounded-full bg-ngo-700 hover:bg-ngo-600 text-white text-xs font-bold px-4 shadow-sm">
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Start a Drive
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Unverified Locked Warning Banner */}
-        {!isVerified && (
-          <div className="mb-8 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
-                <Lock className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100">
-                  Verification Required to Confirm Handovers
-                </h3>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-                  {status === "incomplete"
-                    ? "Complete your 6-step organization registration to enable donor drop-offs and live matching."
-                    : "Your organization application is currently under review by the CauseKind team."}
-                </p>
-              </div>
-            </div>
-            <Link href={status === "incomplete" ? "/profile/ngo-details" : "/profile"}>
-              <Button size="sm" className="rounded-full bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold">
-                {status === "incomplete" ? "Complete Profile →" : "View Application Status"}
-              </Button>
-            </Link>
-          </div>
-        )}
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200/70 dark:border-zinc-800 shadow-2xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                Drop-offs to Confirm
-              </span>
-              <PackageCheck className="w-4 h-4 text-ngo-700 dark:text-ngo-300" />
-            </div>
-            <p className="text-2xl font-black text-ngo-950 dark:text-white">
-              {dropoffsToConfirm}
-            </p>
-            <p className="text-3xs text-stone-500 mt-1">Scheduled by donors</p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200/70 dark:border-zinc-800 shadow-2xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                Photos Due
-              </span>
-              <Camera className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            </div>
-            <p className="text-2xl font-black text-amber-900 dark:text-amber-300">
-              {photosDue}
-            </p>
-            <p className="text-3xs text-stone-500 mt-1">Pending handover photo proof</p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200/70 dark:border-zinc-800 shadow-2xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                Verified Deliveries
-              </span>
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <p className="text-2xl font-black text-emerald-900 dark:text-emerald-300">
-              0
-            </p>
-            <p className="text-3xs text-stone-500 mt-1">Certified completed handovers</p>
-          </div>
-        </div>
-
-        {/* Handover List Container */}
-        <div className="rounded-3xl bg-white dark:bg-zinc-900 border border-stone-200/70 dark:border-zinc-800 p-8 shadow-xs text-center">
-          <div className="max-w-md mx-auto py-8">
-            <div className="w-14 h-14 rounded-2xl bg-ngo-500/10 dark:bg-ngo-500/20 text-ngo-700 dark:text-ngo-300 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-7 h-7" />
-            </div>
-            <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">
-              No Pending Drop-offs
-            </h3>
-            <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-6">
-              When local givers pledge items to your active donation drives and schedule a physical drop-off, their OTP confirmation and photo upload forms will appear right here.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Link href="/ngo/drives/new">
-                <Button className="rounded-full bg-ngo-700 hover:bg-ngo-600 text-white text-xs font-bold px-5">
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Start a Drive
-                </Button>
-              </Link>
-              <Link href="/requests">
-                <Button variant="outline" className="rounded-full text-xs font-bold px-5">
-                  Browse Needs
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const params = useSearchParams();
+  const { overview, isLoading, error, refresh } = useNgoStatus();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [reasons, setReasons] = useState<Record<number, string>>({});
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) router.replace("/login?next=%2Fngo%2Fhandovers");
+    else if (!["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) router.replace("/requests");
+  }, [user, authLoading, router]);
+  async function act(row: NgoHandover, action: "accept" | "reject" | "photo", file?: File) {
+    setBusy(`${row.kind}-${row.id}`); setFeedback(""); setActionError("");
+    try {
+      if (action === "photo") {
+        if (!file) return;
+        await uploadNgoHandoverProof(row.kind, row.id, file);
+        setFeedback("Thank you! Your handover photo has been saved.");
+      } else if (action === "accept") {
+        await doneeAcceptMatch(row.id);
+        setFeedback("Thank you for accepting. We’ll wait for the donor’s confirmation before arranging the handover.");
+      } else {
+        await doneeRejectMatch(row.id, reasons[row.id]?.trim());
+        setFeedback("Thank you for letting us know. This match has been declined.");
+      }
+      window.dispatchEvent(new Event("ngo-activity-updated"));
+      await refresh();
+    } catch (e) { setActionError(e instanceof Error ? e.message : "We couldn’t save that. Please try again."); }
+    finally { setBusy(null); }
+  }
+  const requestId = params.get("request");
+  const rows = overview?.handovers.filter(row => !requestId || String(row.requestId) === requestId) ?? [];
+  if (authLoading || !user || !["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return <p role="status">Loading your account…</p>;
+  return <main className="min-h-screen bg-stone-50 px-4 py-8 dark:bg-zinc-950"><div className="mx-auto max-w-4xl space-y-6">
+    <Link href="/ngo/requests" className="text-sm underline">Your organization’s requests</Link>
+    <header><h1 className="text-3xl font-bold">Handovers and photos</h1><p className="mt-2 text-sm text-stone-500">Track your items, confirm receipt, and share a photo of the handover.</p></header>
+    <nav className="flex flex-wrap gap-4 text-sm underline"><Link href="/donee/offers">Review incoming offers</Link><Link href="/ngo/requests/new">Post a request</Link>{requestId && <Link href="/ngo/handovers">Show all handovers</Link>}</nav>
+    {feedback && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-900">{feedback}</p>}
+    {actionError && <p role="alert" className="rounded-xl border border-red-300 p-4">{actionError}</p>}
+    {isLoading ? <p role="status">Loading your handovers…</p> : error ? <div role="alert"><p>{error}</p><button className="mt-2 underline" onClick={() => void refresh()}>Retry</button></div> : overview && <>
+      <dl className="grid gap-4 sm:grid-cols-3">{[["Scheduled receipts pending", overview.dropoffsToConfirm], ["Photos due", overview.photosDue], ["Both parties and OTP confirmed", overview.verifiedDeliveries]].map(([label, count]) => <div key={label} className="rounded-xl border border-stone-200 p-4 dark:border-zinc-700"><dt className="text-sm">{label}</dt><dd className="mt-2 text-2xl font-bold">{count}</dd></div>)}</dl>
+      {rows.length === 0 && <p>No handovers to show yet{requestId ? " for this request" : ""}. Accepted offers and available matches will appear here.</p>}
+      {rows.map(row => <article key={`${row.kind}-${row.id}`} className="space-y-3 rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+        <h2 className="text-xl font-semibold">{row.title}</h2>
+        <p className="text-sm capitalize">{row.status.replaceAll("_", " ").toLowerCase()} · {row.quantity} items allocated</p>
+        {row.scheduledAt && <p className="text-sm">Scheduled: {new Date(row.scheduledAt).toLocaleString()}</p>}
+        <p className="text-sm">{row.dualConfirmed ? "Thank you! Receipt is confirmed by both parties and OTP." : row.received ? "Thank you for confirming receipt. The remaining handover checks are still pending." : "Please confirm receipt only after the items arrive."}</p>
+        {row.kind === "MATCH" && row.status === "AWAITING_DONEE_CONFIRMATION" ? <div className="space-y-3">
+          <button disabled={busy !== null} className="rounded-lg bg-ngo-700 px-4 py-2 text-white disabled:opacity-50" onClick={() => void act(row, "accept")}>Accept this match</button>
+          <label className="block text-sm">If this match is unsuitable, tell us why<textarea className="mt-1 block w-full rounded-lg border bg-transparent p-2" maxLength={500} value={reasons[row.id] || ""} onChange={e => setReasons(prev => ({ ...prev, [row.id]: e.target.value }))} /></label>
+          <button disabled={busy !== null || !reasons[row.id]?.trim()} className="text-sm underline disabled:opacity-50" onClick={() => void act(row, "reject")}>Decline this match</button>
+        </div> : row.status === "DONEE_ACCEPTED" ? <p className="text-sm">Your choice is saved. Waiting for the donor to confirm.</p> : <Link className="inline-block text-sm font-semibold underline" href={row.href}>Open handover details</Link>}
+        {row.photoDue ? <label className="block rounded-lg bg-amber-50 p-4 text-sm text-amber-950">Please upload a clear photo of the items received. Avoid showing people or personal documents.
+          <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy !== null} className="mt-3 block w-full" onChange={e => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void act(row, "photo", file); }} />
+        </label> : row.received && <p className="text-sm text-emerald-700">Handover photo saved. Thank you!</p>}
+        {busy === `${row.kind}-${row.id}` && <p role="status">Saving your update…</p>}
+      </article>)}
+    </>}
+  </div></main>;
 }

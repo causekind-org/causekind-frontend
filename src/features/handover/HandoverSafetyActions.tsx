@@ -20,6 +20,7 @@ import {
   type CancellationOption, type CancellationReason,
 } from "@/lib/api";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
+import { WithdrawReportedIssue } from "@/components/WithdrawReportedIssue";
 import { handoverScope, REPORT_ISSUE_WINDOW_MS, type HandoverFlow, type HandoverRole, type HandoverViewModel } from "./model";
 import {
   handoverPrimary, handoverSecondary, handoverDestructive,
@@ -97,7 +98,8 @@ export function HandoverSafetyActions({ vm, onChanged }: {
       ? isWithinThreeHoursOfCompletion
       : (disputeOnly || vm.state === "issue_window");
 
-  if (!showCancel && !disputeOnly && !canReportIssue) return null;
+  const canWithdrawIssue = vm.flow === "OFFER" && vm.state === "issue_raised";
+  if (!showCancel && !disputeOnly && !canReportIssue && !canWithdrawIssue) return null;
 
   return (
     <section className="border-t border-stone-200 pt-5 dark:border-zinc-800">
@@ -111,6 +113,7 @@ export function HandoverSafetyActions({ vm, onChanged }: {
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
+        {canWithdrawIssue && <WithdrawReportedIssue offerId={vm.id} onChanged={onChanged} />}
         {showCancel && (
           <button
             type="button"

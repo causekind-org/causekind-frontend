@@ -164,7 +164,7 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
 
     await waitFor(
       () => {
-        expect(screen.getAllByText("Application Submitted").length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText("Application submitted").length).toBeGreaterThanOrEqual(1);
       },
       { timeout: 8000 }
     );

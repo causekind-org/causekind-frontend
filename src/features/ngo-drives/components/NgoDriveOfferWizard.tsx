@@ -38,6 +38,7 @@ import { offerStepForField, validateOfferAll, validateOfferStep } from "@/featur
 const STEP_LABELS: Record<OfferStep, string> = {
   photos: "Show the item",
   details: "Tell us about the item",
+  purchasePlan: "What you'll buy",
   condition: "Condition & fit",
   pickup: "Pickup & delivery",
   review: "Review your offer",
@@ -46,6 +47,7 @@ const STEP_LABELS: Record<OfferStep, string> = {
 const STEP_INTROS: Record<OfferStep, string> = {
   photos: "A few good photos do most of the work.",
   details: "What are you giving, and how much of it?",
+  purchasePlan: "Tell the recipient what you plan to buy, and how soon.",
   condition: "How is it doing, and what should the recipient know?",
   pickup: "Where would this be collected from?",
   review: "One last look before it goes to the recipient and our team.",
@@ -311,7 +313,7 @@ export function NgoDriveOfferWizard({
   const photosBlocked = screening.kind === "prohibited";
 
   const handleContinue = useCallback(async () => {
-    const stepErrors = validateOfferStep(step, model, stillNeededQuantity);
+    const stepErrors = validateOfferStep(step, model, null, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
       setErrors({ photos: "Remove the photo we cannot accept before continuing." });
       return;
@@ -349,7 +351,7 @@ export function NgoDriveOfferWizard({
     submitLockRef.current = true;
     setSubmitError(null);
 
-    const allErrors = validateOfferAll(model, stillNeededQuantity);
+    const allErrors = validateOfferAll(model, null, stillNeededQuantity);
     if (Object.keys(allErrors).length > 0) {
       const first = Object.keys(allErrors)[0];
       const target = offerStepForField(first);
@@ -428,7 +430,7 @@ export function NgoDriveOfferWizard({
     const out = {} as Record<OfferStep, StepAvailability>;
     const savedSnapshot = draft.isSnapshotSaved(model);
     for (const s of OFFER_STEPS) {
-      const complete = Object.keys(validateOfferStep(s, model, stillNeededQuantity)).length === 0;
+      const complete = Object.keys(validateOfferStep(s, model, null, stillNeededQuantity)).length === 0;
       // Only a completed step whose data the server has confirmed is safe to
       // jump back to; otherwise the donor could edit an unsaved earlier answer.
       out[s] = { complete, canNavigate: complete && savedSnapshot };

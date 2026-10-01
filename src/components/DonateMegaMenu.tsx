@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, HandCoins } from "lucide-react";
 import { useTranslations } from "next-intl";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { ArrowUpRight, Plus } from "lucide-react";
 
 import { RakhiMotif } from "@/components/RakhiMotif";
