@@ -65,6 +65,12 @@ function fromDto(dto: UploadedFileDto | null | undefined): UploadedFile | null {
   };
 }
 
+// Reads a ?step=... deep link. email-verification is never a valid entry point.
+function readUrlStep(param: string | null): NGOStep | null {
+  if (!param || param === "email-verification") return null;
+  return (NGO_STEPS as readonly string[]).includes(param) ? (param as NGOStep) : null;
+}
+
 export default function NgoDetailsPage() {
   return (
     <Suspense
@@ -84,6 +90,8 @@ function NgoDetailsEditor() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const appliedStepLink = useRef<string | null>(null);
+  const startingStepChosen = useRef(false);
+  const initialUrlStep = useRef<NGOStep | null>(readUrlStep(searchParams.get("step")));
 
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
@@ -93,6 +101,8 @@ function NgoDetailsEditor() {
   const [applicationStatus, setApplicationStatus] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
   const [restoreError, setRestoreError] = useState("");
+  // "fresh" = just submitted in this session, "restored" = returned to a pending application.
+  const [awaitingVerification, setAwaitingVerification] = useState<"fresh" | "restored" | null>(null);
 
   const userIdentifier =
     user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
@@ -147,6 +157,7 @@ function NgoDetailsEditor() {
               submittedAt: submittedApp.submittedAt || "",
               officialEmail: user?.email || prev.officialEmail,
             }));
+            setAwaitingVerification("restored");
             setCurrentStep("email-verification");
             setLoading(false);
             return;
@@ -221,9 +232,9 @@ function NgoDetailsEditor() {
             confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
             documents: { ...prev.documents, ...restoredDocs },
           }));
-
         }
 
+        // Choose the starting step once: a ?step= deep link wins over the saved draft step.
         if (active && !startingStepChosen.current) {
           startingStepChosen.current = true;
           const savedStep =
@@ -357,6 +368,7 @@ function NgoDetailsEditor() {
           submittedAt: subTime,
           officialEmail: user?.email || data.officialEmail,
         });
+        setAwaitingVerification("fresh");
         goToStep("email-verification");
       } finally {
         setBusy(false);
@@ -396,6 +408,7 @@ function NgoDetailsEditor() {
       });
 
       setApplicationStatus("PENDING_VERIFICATION");
+      setAwaitingVerification("fresh");
       setReviewMessage("");
       goToStep("email-verification");
     } catch (err) {
@@ -500,6 +513,8 @@ function NgoDetailsEditor() {
             <p className="text-xs leading-relaxed text-stone-500">
               {currentStep === "submitted"
                 ? (applicationStatus === "APPROVED" ? "Your organization’s application is approved." : "Your application is submitted and under review.")
+                : awaitingVerification
+                ? "Submitted. Enter the email code to finish."
                 : remaining === 0
                 ? "All steps completed. Ready to submit."
                 : `${remaining} ${remaining === 1 ? "step" : "steps"} left before you can submit.`}
@@ -515,9 +530,8 @@ function NgoDetailsEditor() {
                 <button
                   key={stepKey}
                   type="button"
-                  disabled={!!data.applicationId || stepKey === "email-verification"}
                   onClick={() => goToStep(stepKey)}
-                  disabled={!!awaitingVerification && !isCurrent}
+                  disabled={stepKey === "email-verification" || (!!awaitingVerification && !isCurrent)}
                   className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                     isCurrent
                       ? "bg-ngo-50 font-bold text-ngo-700 dark:bg-ngo-900/30 dark:text-ngo-300"
@@ -610,9 +624,8 @@ function NgoDetailsEditor() {
                     <button
                       key={stepKey}
                       type="button"
-                      disabled={!!data.applicationId || stepKey === "email-verification"}
                       onClick={() => goToStep(stepKey)}
-                      disabled={!!awaitingVerification && !isCurrent}
+                      disabled={stepKey === "email-verification" || (!!awaitingVerification && !isCurrent)}
                       className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50 ${
                         isCurrent
                           ? "bg-ngo-700 text-white"
@@ -738,26 +751,26 @@ function NgoDetailsEditor() {
                   </p>
                   {/* Not rendered (rather than hidden) once submitted, so neither action is reachable by keyboard either. */}
                   {!awaitingVerification && (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={handleSaveDraft}
-                      className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                    >
-                      {busy ? "Saving…" : "Save draft"}
-                    </button>
-                    {NGO_STEPS.indexOf(currentStep as NGOStep) > 0 && (
+                    <div className="flex flex-wrap items-center gap-3">
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={handlePreviousSection}
+                        onClick={handleSaveDraft}
                         className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                       >
-                        Previous
+                        {busy ? "Saving…" : "Save draft"}
                       </button>
-                    )}
-                  </div>
+                      {NGO_STEPS.indexOf(currentStep as NGOStep) > 0 && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={handlePreviousSection}
+                          className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
