@@ -2495,6 +2495,7 @@ export default function DashboardPage() {
                   </section>
                 </TabsContent>
 
+                <TabsContent value="matches" className="mt-0">
                   <MatchOpportunitiesWindow
                     matches={donorMatches}
                     emptyState={(<div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
@@ -2629,9 +2630,9 @@ export default function DashboardPage() {
 }}
                   />
 
-                </div>
+                  </TabsContent>
 
-              </div>
+              </Tabs>
             ) : (
               /* DONEE DASHBOARD VIEW */
               <div className="space-y-4 sm:space-y-6">

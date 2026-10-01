@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+"use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
