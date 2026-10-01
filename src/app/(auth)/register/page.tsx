@@ -40,10 +40,10 @@ function FieldError({ msg }: { msg?: string }) {
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-      <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/>
-      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853" />
+      <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05" />
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335" />
     </svg>
   );
 }
@@ -51,7 +51,7 @@ function GoogleIcon() {
 function FacebookIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" fill="#1877F2"/>
+      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" fill="#1877F2" />
     </svg>
   );
 }
@@ -255,7 +255,7 @@ function RegisterContent() {
               setDialCountry(countryCode);
               setCountryIso(countryCode);
               const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
-              
+
               if (resolvedState) {
                 setStateIso(resolvedState);
                 if (resolvedCity) {
@@ -369,7 +369,7 @@ function RegisterContent() {
                 setDialCountry(countryCode);
                 setCountryIso(countryCode);
                 const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
-                
+
                 if (resolvedState) {
                   setStateIso(resolvedState);
                   if (resolvedCity) {
@@ -461,9 +461,9 @@ function RegisterContent() {
   const locationParts = [countryF, stateF, cityF];
   const locationStatus: FieldStatus =
     locationParts.some(f => f.status === "invalid") ? "invalid"
-    : locationParts.every(f => f.status === "valid") ? "valid"
-    : locationParts.some(f => f.status !== "pristine") ? "neutral"
-    : "pristine";
+      : locationParts.every(f => f.status === "valid") ? "valid"
+        : locationParts.some(f => f.status !== "pristine") ? "neutral"
+          : "pristine";
   const locationErrorKey = countryF.errorKey ?? stateF.errorKey ?? cityF.errorKey;
 
   /** Re-runs the group, but only once it has already produced an error. */
@@ -605,480 +605,503 @@ function RegisterContent() {
     );
   }
 
+
+  const roleThemes: Record<string, React.CSSProperties> = {
+    DONOR: {
+      "--accent": "#b04a15",
+      "--accent-hover": "#963c0d",
+      "--accent-secondary": "#e07b3a",
+    } as React.CSSProperties,
+    DONEE: {
+      "--accent": "#1e3a60",
+      "--accent-hover": "#12253f",
+      "--accent-secondary": "#7fb0e8",
+    } as React.CSSProperties,
+    NGO_PARTNER: {
+      "--accent": "#1e6b4f",
+      "--accent-hover": "#123d2e",
+      "--accent-secondary": "#86cfae",
+    } as React.CSSProperties,
+  };
+  const currentTheme = roleThemes[form.role] || roleThemes.DONOR;
+  const themeVars = {
+    ...currentTheme,
+    "--accent-5": "color-mix(in srgb, var(--accent) 5%, transparent)",
+    "--accent-20": "color-mix(in srgb, var(--accent) 20%, transparent)",
+    "--accent-25": "color-mix(in srgb, var(--accent) 25%, transparent)",
+    "--accent-30": "color-mix(in srgb, var(--accent) 30%, transparent)",
+    "--accent-40": "color-mix(in srgb, var(--accent) 40%, transparent)",
+    "--accent-secondary-40": "color-mix(in srgb, var(--accent-secondary) 40%, transparent)",
+  } as React.CSSProperties;
+
   return (
     <div
+      style={themeVars}
       className="w-full mx-auto space-y-4 sm:space-y-6 relative z-10 bg-white/85 dark:bg-zinc-900/75 backdrop-blur-sm border border-white/60 dark:border-zinc-700/30 rounded-2xl sm:rounded-3xl px-5 py-6 sm:px-8 sm:py-10 shadow-xl transition-all duration-300 max-w-[460px]"
     >
-          {/* Heading */}
-          <Reveal>
-            <div className="space-y-1 sm:space-y-1.5">
-              <span className={`text-2xs font-black uppercase tracking-widest ${form.role === "NGO_PARTNER" ? "text-ngo-700 dark:text-ngo-300" : "text-[#b04a15]"}`}>
-                {form.role === "NGO_PARTNER" ? "NGO Account" : "Create account"}
-              </span>
-              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-                {form.role === "NGO_PARTNER"
-                  ? "Register Your NGO 🏛️"
-                  : isSocialFlow
-                  ? `${t("almostThereTitle")} 🎉`
-                  : `${t("joinTitle")} 🌱`}
-              </h1>
-              <p className="text-sm text-stone-500 dark:text-stone-400">
-                {form.role === "NGO_PARTNER"
-                  ? "Create your organization account to receive donations and run campaigns."
-                  : isSocialFlow
-                  ? t("googleLinkedSubtitle")
-                  : t("createSubtitle")}
-              </p>
-            </div>
-          </Reveal>
+      {/* Heading */}
+      <Reveal>
+        <div className="space-y-1 sm:space-y-1.5">
+          <span className="text-2xs font-black uppercase tracking-widest text-[var(--accent)]">
+            {form.role === "NGO_PARTNER" ? "Create Account" : "Create account"}
+          </span>
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+            {form.role === "NGO_PARTNER"
+              ? "Join CauseKind 🌱"
+              : isSocialFlow
+                ? `${t("almostThereTitle")} 🎉`
+                : `${t("joinTitle")} 🌱`}
+          </h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            {form.role === "NGO_PARTNER"
+              ? "Create your account and start making a difference today."
+              : isSocialFlow
+                ? t("googleLinkedSubtitle")
+                : t("createSubtitle")}
+          </p>
+        </div>
+      </Reveal>
 
-          {/* Role Selection Option */}
-          <Reveal delay={60}>
-            <div className="space-y-1 sm:space-y-1.5">
-              <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-                Register as
-              </label>
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => set("role", "DONOR")}
-                  className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
-                    form.role === "DONOR"
-                      ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
-                      : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
-                  }`}
-                >
-                  <span className="text-sm font-bold">Donor 🎁</span>
-                  <span className="text-3xs opacity-85 mt-0.5 font-normal">Donate items</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => set("role", "DONEE")}
-                  className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
-                    form.role === "DONEE"
-                      ? "border-[#b04a15] bg-[#b04a15]/5 text-[#b04a15] ring-2 ring-[#b04a15]/20 font-bold"
-                      : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
-                  }`}
-                >
-                  <span className="text-sm font-bold">Donee 🤝</span>
-                  <span className="text-3xs opacity-85 mt-0.5 font-normal">Request support</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => set("role", "NGO_PARTNER")}
-                  className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${
-                    form.role === "NGO_PARTNER"
-                      ? "border-ngo-700 bg-ngo-50 text-ngo-700 ring-2 ring-ngo-700/20 font-bold dark:bg-ngo-900/30 dark:text-ngo-300"
-                      : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
-                  }`}
-                >
-                  <span className="text-sm font-bold">NGO 🏢</span>
-                  <span className="text-3xs opacity-85 mt-0.5 font-normal">Organization</span>
-                </button>
-              </div>
-            </div>
-          </Reveal>
+      {/* Role Selection Option */}
+      <Reveal delay={60}>
+        <div className="space-y-1 sm:space-y-1.5">
+          <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+            Register as
+          </label>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => set("role", "DONOR")}
+              className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${form.role === "DONOR"
+                ? "border-[var(--accent)] bg-[var(--accent-5)] text-[var(--accent)] ring-2 ring-[var(--accent-20)] font-bold"
+                : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                }`}
+            >
+              <span className="text-sm font-bold">Donor 🎁</span>
+              <span className="text-3xs opacity-85 mt-0.5 font-normal">Donate items</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => set("role", "DONEE")}
+              className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${form.role === "DONEE"
+                ? "border-[var(--accent)] bg-[var(--accent-5)] text-[var(--accent)] ring-2 ring-[var(--accent-20)] font-bold"
+                : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                }`}
+            >
+              <span className="text-sm font-bold">Donee 🤝</span>
+              <span className="text-3xs opacity-85 mt-0.5 font-normal">Request support</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => set("role", "NGO_PARTNER")}
+              className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${form.role === "NGO_PARTNER"
+                ? "border-[var(--accent)] bg-[var(--accent-5)] text-[var(--accent)] ring-2 ring-[var(--accent-20)] font-bold"
+                : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
+                }`}
+            >
+              <span className="text-sm font-bold">NGO 🏢</span>
+              <span className="text-3xs opacity-85 mt-0.5 font-normal">Organization</span>
+            </button>
+          </div>
+        </div>
+      </Reveal>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" noValidate>
-            {/* Server errors that belong to no single field. Values are kept. */}
-            <AuthFormAlert message={formError} />
-            <Reveal delay={100}>
-              <div className="space-y-1">
-                <Field
-                  id="fullName"
-                  label={form.role === "NGO_PARTNER" ? "Organization Name *" : t("fullName")}
-                  placeholder={form.role === "NGO_PARTNER" ? "Helping Hearts Foundation" : "Jane Doe"}
-                  value={form.fullName}
-                  onChange={val => {
-                    set("fullName", val);
-                    setFormError(null);
-                    v.onChange("fullName", () => (form.role === "NGO_PARTNER" ? validateOrganizationName(val) : validateFullName(val)));
-                  }}
-                  onBlur={() => v.onBlur("fullName", validators.fullName)}
-                  onCompositionStart={() => v.onCompositionStart("fullName")}
-                  onCompositionEnd={() => v.onCompositionEnd("fullName", validators.fullName)}
-                  readOnly={isSocialFlow && !!form.fullName}
-                  autoComplete={form.role === "NGO_PARTNER" ? "organization" : "name"}
-                  field={isSocialFlow && form.fullName ? undefined : v.get("fullName")}
-                />
-              </div>
-            </Reveal>
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" noValidate>
+        {/* Server errors that belong to no single field. Values are kept. */}
+        <AuthFormAlert message={formError} />
+        <Reveal delay={100}>
+          <div className="space-y-1">
+            <Field
+              id="fullName"
+              label={form.role === "NGO_PARTNER" ? "Organization Name *" : t("fullName")}
+              placeholder={form.role === "NGO_PARTNER" ? "Helping Hearts Foundation" : "Jane Doe"}
+              value={form.fullName}
+              onChange={val => {
+                set("fullName", val);
+                setFormError(null);
+                v.onChange("fullName", () => (form.role === "NGO_PARTNER" ? validateOrganizationName(val) : validateFullName(val)));
+              }}
+              onBlur={() => v.onBlur("fullName", validators.fullName)}
+              onCompositionStart={() => v.onCompositionStart("fullName")}
+              onCompositionEnd={() => v.onCompositionEnd("fullName", validators.fullName)}
+              readOnly={isSocialFlow && !!form.fullName}
+              autoComplete={form.role === "NGO_PARTNER" ? "organization" : "name"}
+              field={isSocialFlow && form.fullName ? undefined : v.get("fullName")}
+            />
+          </div>
+        </Reveal>
 
-            <Reveal delay={140}>
-              <div className="space-y-1">
-                {/* Google-linked email is read-only and shows the neutral linked
+        <Reveal delay={140}>
+          <div className="space-y-1">
+            {/* Google-linked email is read-only and shows the neutral linked
                     hint rather than a green tick — it was never validated here. */}
-                <Field
-                  id="email"
-                  label={form.role === "NGO_PARTNER" ? "Official Email Address *" : t("email")}
-                  type="email"
-                  placeholder={form.role === "NGO_PARTNER" ? "contact@helpinghearts.org" : "you@example.com"}
-                  value={form.email}
-                  onChange={val => { set("email", val); setFormError(null); v.onChange("email", () => validateEmail(val)); }}
-                  onBlur={() => v.onBlur("email", validators.email)}
-                  readOnly={isSocialFlow}
-                  hint={isSocialFlow ? t("googleLinkedHint") : undefined}
-                  autoComplete="email"
-                  field={isSocialFlow ? undefined : v.get("email")}
-                />
-              </div>
-            </Reveal>
+            <Field
+              id="email"
+              label={form.role === "NGO_PARTNER" ? "Official Email Address *" : t("email")}
+              type="email"
+              placeholder={form.role === "NGO_PARTNER" ? "contact@helpinghearts.org" : "you@example.com"}
+              value={form.email}
+              onChange={val => { set("email", val); setFormError(null); v.onChange("email", () => validateEmail(val)); }}
+              onBlur={() => v.onBlur("email", validators.email)}
+              readOnly={isSocialFlow}
+              hint={isSocialFlow ? t("googleLinkedHint") : undefined}
+              autoComplete="email"
+              field={isSocialFlow ? undefined : v.get("email")}
+            />
+          </div>
+        </Reveal>
 
-            <Reveal delay={180}>
-              {/* Phone with dial-code */}
-              <div className="space-y-1 sm:space-y-1.5">
-                <label htmlFor="phone" className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                  <Phone className="w-3.5 h-3.5" /> {t("phone")}
-                </label>
-                {/* min-w-0 on the input is what stops this row overflowing the
+        <Reveal delay={180}>
+          {/* Phone with dial-code */}
+          <div className="space-y-1 sm:space-y-1.5">
+            <label htmlFor="phone" className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+              <Phone className="w-3.5 h-3.5" /> {t("phone")}
+            </label>
+            {/* min-w-0 on the input is what stops this row overflowing the
                     card: a flex item defaults to min-width:auto, and an <input>
                     has an implicit size=20, so flex-1 could grow it but never
                     shrink it below ~210px — which overran the 318px content box
                     sitting next to the dial select. */}
-                <div className="flex gap-2">
-                  <div className="w-[96px] sm:w-[120px] shrink-0">
-                    <SearchableSelect
-                      options={dialCodeOptions}
-                      value={dialCountry}
-                      // Changing dial country changes the expected digit count,
-                      // so any existing phone verdict must be recomputed.
-                      onChange={(iso) => {
-                        setDialCountry(iso);
-                        v.onChange("phone", () => validatePhone(phoneNumber, iso, getDialCode(iso, dialCodeOptions)));
-                      }}
-                      placeholder="+–"
-                      searchPlaceholder={t("searchCountry")}
-                      renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
-                    />
-                  </div>
-                  <input
-                    id="phone"
-                    type="tel"
-                    inputMode="numeric"
-                    placeholder={t("phone")}
-                    value={phoneNumber}
-                    maxLength={maxPhoneLength}
-                    aria-invalid={v.get("phone").status === "invalid" || undefined}
-                    aria-describedby={v.get("phone").status !== "pristine" && v.get("phone").status !== "neutral" ? "phone-feedback" : undefined}
-                    onChange={e => {
-                      const digits = e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength);
-                      setPhoneNumber(digits);
-                      setFormError(null);
-                      v.onChange("phone", () => validatePhone(digits, dialCountry, getDialCode(dialCountry, dialCodeOptions)));
-                    }}
-                    onBlur={() => v.onBlur("phone", validators.phone)}
-                    autoComplete="tel"
-                    className={`flex-1 min-w-0 rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(v.get("phone").status)}`}
-                  />
-                </div>
-                <ValidatedFieldFeedback
-                  id="phone-feedback"
-                  status={v.get("phone").status}
-                  errorKey={v.get("phone").errorKey}
-                  successKey={v.get("phone").successKey}
-                  params={v.get("phone").params}
-                  serverText={v.get("phone").serverErrorText}
+            <div className="flex gap-2">
+              <div className="w-[96px] sm:w-[120px] shrink-0">
+                <SearchableSelect
+                  options={dialCodeOptions}
+                  value={dialCountry}
+                  // Changing dial country changes the expected digit count,
+                  // so any existing phone verdict must be recomputed.
+                  onChange={(iso) => {
+                    setDialCountry(iso);
+                    v.onChange("phone", () => validatePhone(phoneNumber, iso, getDialCode(iso, dialCodeOptions)));
+                  }}
+                  placeholder="+–"
+                  searchPlaceholder={t("searchCountry")}
+                  renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
                 />
               </div>
-            </Reveal>
+              <input
+                id="phone"
+                type="tel"
+                inputMode="numeric"
+                placeholder={t("phone")}
+                value={phoneNumber}
+                maxLength={maxPhoneLength}
+                aria-invalid={v.get("phone").status === "invalid" || undefined}
+                aria-describedby={v.get("phone").status !== "pristine" && v.get("phone").status !== "neutral" ? "phone-feedback" : undefined}
+                onChange={e => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength);
+                  setPhoneNumber(digits);
+                  setFormError(null);
+                  v.onChange("phone", () => validatePhone(digits, dialCountry, getDialCode(dialCountry, dialCodeOptions)));
+                }}
+                onBlur={() => v.onBlur("phone", validators.phone)}
+                autoComplete="tel"
+                className={`flex-1 min-w-0 rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(v.get("phone").status)}`}
+              />
+            </div>
+            <ValidatedFieldFeedback
+              id="phone-feedback"
+              status={v.get("phone").status}
+              errorKey={v.get("phone").errorKey}
+              successKey={v.get("phone").successKey}
+              params={v.get("phone").params}
+              serverText={v.get("phone").serverErrorText}
+            />
+          </div>
+        </Reveal>
 
-            {/* PAN Number — required for NGO role */}
-            {form.role === "NGO_PARTNER" && (
-              <Reveal delay={200}>
-                <div className="space-y-1">
-                  <Field
-                    id="panNumber"
-                    label="PAN Number *"
-                    placeholder="AABCT1234C"
-                    value={ngoPan}
-                    onChange={val => {
-                      const upper = val.toUpperCase().slice(0, 10);
-                      setNgoPan(upper);
-                      setFormError(null);
-                      v.onChange("panNumber", () => validatePanNumber(upper));
-                    }}
-                    onBlur={() => v.onBlur("panNumber", () => validatePanNumber(ngoPan))}
-                    autoComplete="off"
-                    field={v.get("panNumber")}
-                  />
-                </div>
-              </Reveal>
-            )}
+        {/* PAN Number — required for NGO role */}
+        {form.role === "NGO_PARTNER" && (
+          <Reveal delay={200}>
+            <div className="space-y-1">
+              <Field
+                id="panNumber"
+                label="PAN Number *"
+                placeholder="AABCT1234C"
+                value={ngoPan}
+                onChange={val => {
+                  const upper = val.toUpperCase().slice(0, 10);
+                  setNgoPan(upper);
+                  setFormError(null);
+                  v.onChange("panNumber", () => validatePanNumber(upper));
+                }}
+                onBlur={() => v.onBlur("panNumber", () => validatePanNumber(ngoPan))}
+                autoComplete="off"
+                field={v.get("panNumber")}
+              />
+            </div>
+          </Reveal>
+        )}
 
-            <Reveal delay={220}>
-              {/* Location: Country → State → City */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
-                    <MapPin className="w-3.5 h-3.5" /> {t("location")}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleGPSLocation}
-                    disabled={gpsLoading}
-                    className="relative flex items-center gap-2 text-xs font-black text-[#b04a15] uppercase tracking-wide px-3 py-1.5 rounded-full border border-[#b04a15]/30 hover:bg-[#b04a15]/5 transition-colors disabled:opacity-50"
-                  >
-                    {/* Radar rings — visible only when active (not loading) */}
-                    {!gpsLoading && (
-                      <>
-                        <span className="absolute inset-0 rounded-full border border-[#b04a15]/40 gps-radar-ring" />
-                        <span className="absolute inset-0 rounded-full border border-[#b04a15]/25 gps-radar-ring-2" />
-                      </>
-                    )}
-                    {/* Spinning ring while loading */}
-                    {gpsLoading && (
-                      <span className="absolute inset-0 rounded-full border-2 border-[#b04a15]/20 border-t-[#b04a15] animate-spin" />
-                    )}
-                    <span className="relative z-10 flex items-center gap-1.5">
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-                      </svg>
-                      {gpsLoading ? "Detecting..." : "Use GPS"}
-                    </span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("country")}</label>
-                    <SearchableSelect
-                      options={countryOptions}
-                      value={countryIso}
-                      onChange={handleCountryChange}
-                      placeholder={t("selectCountry")}
-                      searchPlaceholder={t("searchCountry")}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("state")}</label>
-                    {noStateOptions ? (
-                      <p className="text-xs text-stone-400 italic py-1.5">{t("noStatesListed")}</p>
-                    ) : (
-                      <SearchableSelect
-                        options={stateOptions}
-                        value={stateIso}
-                        onChange={handleStateChange}
-                        placeholder={t("selectState")}
-                        disabledPlaceholder={t("selectCountryFirst")}
-                        disabled={!countryIso}
-                        searchPlaceholder={t("searchState")}
-                      />
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-stone-500 dark:text-stone-400">{t("city")}</label>
-                    {showCityFreeText ? (
-                      <input
-                        id="city"
-                        type="text"
-                        placeholder={t("enterCity")}
-                        value={cityFreeText}
-                        onChange={e => {
-                          setCityFreeText(e.target.value);
-                          v.onChange("city", () => validateCity("", e.target.value, true));
-                          setFormError(null);
-                        }}
-                        onBlur={() => v.onBlur("city", validators.city)}
-                        autoComplete="address-level2"
-                        className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
-                      />
-                    ) : (
-                      <SearchableSelect
-                        options={cityOptions}
-                        value={cityValue}
-                        onChange={(val) => { setCityValue(val); v.onChange("city", () => validateCity(val, "", false)); setFormError(null); }}
-                        placeholder={t("selectCity")}
-                        disabledPlaceholder={t("selectStateFirst")}
-                        disabled={!stateIso && !noStateOptions}
-                        searchPlaceholder={t("searchCity")}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* One shared verdict for the location group, so the user sees a
-                    single "what's missing" rather than three competing messages.
-                    Suppressed while city options are still loading, and while GPS
-                    is running, so neither can produce a premature error. */}
+        <Reveal delay={220}>
+          {/* Location: Country → State → City */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
+                <MapPin className="w-3.5 h-3.5" /> {t("location")}
+              </label>
+              <button
+                type="button"
+                onClick={handleGPSLocation}
+                disabled={gpsLoading}
+                className="relative flex items-center gap-2 text-xs font-black text-[var(--accent)] uppercase tracking-wide px-3 py-1.5 rounded-full border border-[var(--accent-30)] hover:bg-[var(--accent-5)] transition-colors disabled:opacity-50"
+              >
+                {/* Radar rings — visible only when active (not loading) */}
                 {!gpsLoading && (
-                  <ValidatedFieldFeedback
-                    id="location-feedback"
-                    status={locationStatus}
-                    errorKey={locationErrorKey}
-                    successKey={locationStatus === "valid" ? "locationValid" : null}
-                    serverText={null}
+                  <>
+                    <span className="absolute inset-0 rounded-full border border-[var(--accent-40)] gps-radar-ring" />
+                    <span className="absolute inset-0 rounded-full border border-[var(--accent-25)] gps-radar-ring-2" />
+                  </>
+                )}
+                {/* Spinning ring while loading */}
+                {gpsLoading && (
+                  <span className="absolute inset-0 rounded-full border-2 border-[var(--accent-20)] border-t-[var(--accent)] animate-spin" />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                  </svg>
+                  {gpsLoading ? "Detecting..." : "Use GPS"}
+                </span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-stone-500 dark:text-stone-400">{t("country")}</label>
+                <SearchableSelect
+                  options={countryOptions}
+                  value={countryIso}
+                  onChange={handleCountryChange}
+                  placeholder={t("selectCountry")}
+                  searchPlaceholder={t("searchCountry")}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-stone-500 dark:text-stone-400">{t("state")}</label>
+                {noStateOptions ? (
+                  <p className="text-xs text-stone-400 italic py-1.5">{t("noStatesListed")}</p>
+                ) : (
+                  <SearchableSelect
+                    options={stateOptions}
+                    value={stateIso}
+                    onChange={handleStateChange}
+                    placeholder={t("selectState")}
+                    disabledPlaceholder={t("selectCountryFirst")}
+                    disabled={!countryIso}
+                    searchPlaceholder={t("searchState")}
                   />
                 )}
               </div>
-            </Reveal>
 
-            {/* Organization Website / Social Link — optional for NGO role */}
-            {form.role === "NGO_PARTNER" && (
-              <Reveal delay={240}>
-                <div className="space-y-1 sm:space-y-1.5">
-                  <label htmlFor="website" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-                    Organization Website / Social Link <span className="text-xs font-normal text-stone-400">(Optional)</span>
-                  </label>
+              <div className="space-y-1">
+                <label className="text-xs text-stone-500 dark:text-stone-400">{t("city")}</label>
+                {showCityFreeText ? (
                   <input
-                    id="website"
-                    type="url"
-                    placeholder="https://www.helpinghearts.org"
-                    value={ngoWebsite}
-                    onChange={e => setNgoWebsite(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"
+                    id="city"
+                    type="text"
+                    placeholder={t("enterCity")}
+                    value={cityFreeText}
+                    onChange={e => {
+                      setCityFreeText(e.target.value);
+                      v.onChange("city", () => validateCity("", e.target.value, true));
+                      setFormError(null);
+                    }}
+                    onBlur={() => v.onBlur("city", validators.city)}
+                    autoComplete="address-level2"
+                    className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-20)] transition"
                   />
-                </div>
-              </Reveal>
-            )}
-
-            {/* Password — only on non-social flow */}
-            {!isSocialFlow && (
-              <Reveal delay={260}>
-                <div className="space-y-1 sm:space-y-1.5">
-                  <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-                    {t("password")}
-                  </label>
-                  <div className="relative">
-                    <input
-                       id="password"
-                       type={showPassword ? "text" : "password"}
-                       autoComplete="new-password"
-                       required
-                       placeholder="••••••••"
-                       value={form.password}
-                       aria-invalid={v.get("password").status === "invalid" || undefined}
-                       aria-describedby="password-feedback"
-                       onChange={e => {
-                         set("password", e.target.value);
-                         setFormError(null);
-                         // Stays neutral through characters 1-7 on the first pass;
-                         // only goes live once it has already errored once.
-                         v.onChange("password", () => validateRegisterPassword(e.target.value));
-                       }}
-                       onBlur={() => v.onBlur("password", () => validateRegisterPassword(form.password))}
-                       className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(v.get("password").status)}`}
-                     />
-                    <button
-                      type="button"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      // `prev`, not `v` — `v` is the validation controller in this
-                      // scope and shadowing it here is a trap for the next edit.
-                      onClick={() => setShowPassword(prev => !prev)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {/* Feedback sits BELOW the input, never inside it — an icon in
-                      the field would collide with the show/hide button. */}
-                  <ValidatedFieldFeedback
-                    id="password-feedback"
-                    status={v.get("password").status}
-                    errorKey={v.get("password").errorKey}
-                    successKey={v.get("password").successKey}
-                    params={v.get("password").params}
-                    serverText={v.get("password").serverErrorText}
+                ) : (
+                  <SearchableSelect
+                    options={cityOptions}
+                    value={cityValue}
+                    onChange={(val) => { setCityValue(val); v.onChange("city", () => validateCity(val, "", false)); setFormError(null); }}
+                    placeholder={t("selectCity")}
+                    disabledPlaceholder={t("selectStateFirst")}
+                    disabled={!stateIso && !noStateOptions}
+                    searchPlaceholder={t("searchCity")}
                   />
-                  {v.get("password").status !== "invalid" && v.get("password").status !== "valid" && (
-                    <p className="text-xs text-stone-400">{tv("passwordHint")}</p>
-                  )}
-                </div>
-              </Reveal>
-            )}
+                )}
+              </div>
+            </div>
 
-            <Reveal delay={285}>
-              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={e => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-stone-300 accent-[#b04a15] cursor-pointer"
-                />
-                <span className="text-sm text-stone-600 dark:text-stone-400 group-hover:text-stone-800 dark:group-hover:text-stone-200 transition-colors">
-                  Remember me
-                </span>
-                <span className="ml-auto text-xs text-stone-400 dark:text-stone-500">
-                  {rememberMe ? "Stay logged in" : "Log out on close"}
-                </span>
+            {/* One shared verdict for the location group, so the user sees a
+                    single "what's missing" rather than three competing messages.
+                    Suppressed while city options are still loading, and while GPS
+                    is running, so neither can produce a premature error. */}
+            {!gpsLoading && (
+              <ValidatedFieldFeedback
+                id="location-feedback"
+                status={locationStatus}
+                errorKey={locationErrorKey}
+                successKey={locationStatus === "valid" ? "locationValid" : null}
+                serverText={null}
+              />
+            )}
+          </div>
+        </Reveal>
+
+        {/* Organization Website / Social Link — optional for NGO role */}
+        {form.role === "NGO_PARTNER" && (
+          <Reveal delay={240}>
+            <div className="space-y-1 sm:space-y-1.5">
+              <label htmlFor="website" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                Organization Website / Social Link <span className="text-xs font-normal text-stone-400">(Optional)</span>
               </label>
-            </Reveal>
+              <input
+                id="website"
+                type="url"
+                placeholder="https://www.helpinghearts.org"
+                value={ngoWebsite}
+                onChange={e => setNgoWebsite(e.target.value)}
+                className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-20)] transition"
+              />
+            </div>
+          </Reveal>
+        )}
 
-            <Reveal delay={300}>
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full rounded-xl disabled:cursor-not-allowed text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 mt-2 animate-heartbeat disabled:animate-none ${
-                  form.role === "NGO"
-                    ? "bg-[#1E6B4F] enabled:hover:bg-[#185740] disabled:bg-[#4D6B5F] focus-visible:ring-[#1E6B4F]"
-                    : "bg-[#b04a15] hover:bg-[#963c0d] disabled:opacity-60 focus-visible:ring-[#b04a15]"
-                }`}
-              >
-                {loading
-                  ? (form.role === "NGO_PARTNER" ? "Creating account..." : t("creating"))
-                  : isSocialFlow
-                    ? t("complete")
-                    : (form.role === "NGO_PARTNER" ? "Create NGO Account 🏢" : t("submit"))}
-              </button>
-            </Reveal>
-          </form>
-
-          {/* Social buttons — only on non-social flow and non-NGO */}
-          {!isSocialFlow && form.role !== "NGO_PARTNER" && (
-            <div className="space-y-3">
-              <Reveal delay={340}>
+        {/* Password — only on non-social flow */}
+        {!isSocialFlow && (
+          <Reveal delay={260}>
+            <div className="space-y-1 sm:space-y-1.5">
+              <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                {t("password")}
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  placeholder="••••••••"
+                  value={form.password}
+                  aria-invalid={v.get("password").status === "invalid" || undefined}
+                  aria-describedby="password-feedback"
+                  onChange={e => {
+                    set("password", e.target.value);
+                    setFormError(null);
+                    // Stays neutral through characters 1-7 on the first pass;
+                    // only goes live once it has already errored once.
+                    v.onChange("password", () => validateRegisterPassword(e.target.value));
+                  }}
+                  onBlur={() => v.onBlur("password", () => validateRegisterPassword(form.password))}
+                  className={`w-full rounded-xl border px-3.5 py-2.5 sm:px-4 sm:py-3 pr-11 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 transition bg-stone-50 dark:bg-zinc-900 ${fieldStateClass(v.get("password").status)}`}
+                />
                 <button
                   type="button"
-                  disabled={googleLoading}
-                  onClick={() => {
-                    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-                      toast.error("Google Sign-In is not configured.");
-                      return;
-                    }
-                    triggerGoogle();
-                  }}
-                  className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  // `prev`, not `v` — `v` is the validation controller in this
+                  // scope and shadowing it here is a trap for the next edit.
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
                 >
-                  <GoogleIcon />
-                  {googleLoading ? t("creating") : t("google")}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
-              </Reveal>
-              <Reveal delay={380}>
-                <div className="relative">
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
-                  >
-                    <FacebookIcon />
-                    {t("facebook")}
-                  </button>
-                  <span className="absolute -top-2 -right-2 text-4xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[#b04a15] border border-[#e07b3a]/40 shadow-sm pointer-events-none select-none">
-                    Coming Soon
-                  </span>
-                </div>
-              </Reveal>
+              </div>
+              {/* Feedback sits BELOW the input, never inside it — an icon in
+                      the field would collide with the show/hide button. */}
+              <ValidatedFieldFeedback
+                id="password-feedback"
+                status={v.get("password").status}
+                errorKey={v.get("password").errorKey}
+                successKey={v.get("password").successKey}
+                params={v.get("password").params}
+                serverText={v.get("password").serverErrorText}
+              />
+              {v.get("password").status !== "invalid" && v.get("password").status !== "valid" && (
+                <p className="text-xs text-stone-400">{tv("passwordHint")}</p>
+              )}
             </div>
-          )}
+          </Reveal>
+        )}
 
-          {/* Cross-link */}
-          <Reveal delay={420}>
-            <p className="text-center text-sm text-stone-500 dark:text-stone-400">
-              {t("haveAccount")}{" "}
-              <a
-                href="/login"
-                onClick={(e) => { e.preventDefault(); router.push("/login"); }}
-                className="font-semibold text-[#b04a15] dark:text-[#e07b3a] hover:underline underline-offset-2 cursor-pointer"
+        <Reveal delay={285}>
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={e => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-stone-300 accent-[var(--accent)] cursor-pointer"
+            />
+            <span className="text-sm text-stone-600 dark:text-stone-400 group-hover:text-stone-800 dark:group-hover:text-stone-200 transition-colors">
+              Remember me
+            </span>
+            <span className="ml-auto text-xs text-stone-400 dark:text-stone-500">
+              {rememberMe ? "Stay logged in" : "Log out on close"}
+            </span>
+          </label>
+        </Reveal>
+
+        <Reveal delay={300}>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl disabled:cursor-not-allowed text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 mt-2 animate-heartbeat disabled:animate-none bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-60 focus-visible:ring-[var(--accent)]"
+          >
+            {loading
+              ? (form.role === "NGO_PARTNER" ? "Creating account..." : t("creating"))
+              : isSocialFlow
+                ? t("complete")
+                : (form.role === "NGO_PARTNER" ? "Create NGO Account 🏢" : t("submit"))}
+          </button>
+        </Reveal>
+      </form>
+
+      {/* Social buttons — only on non-social flow and non-NGO */}
+      {!isSocialFlow && form.role !== "NGO_PARTNER" && (
+        <div className="space-y-3">
+          <Reveal delay={340}>
+            <button
+              type="button"
+              disabled={googleLoading}
+              onClick={() => {
+                if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+                  toast.error("Google Sign-In is not configured.");
+                  return;
+                }
+                triggerGoogle();
+              }}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
+            >
+              <GoogleIcon />
+              {googleLoading ? t("creating") : t("google")}
+            </button>
+          </Reveal>
+          <Reveal delay={380}>
+            <div className="relative">
+              <button
+                type="button"
+                disabled
+                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
               >
-                {t("logIn")}
-              </a>
-            </p>
+                <FacebookIcon />
+                {t("facebook")}
+              </button>
+              <span className="absolute -top-2 -right-2 text-4xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[var(--accent)] border border-[var(--accent-secondary-40)] shadow-sm pointer-events-none select-none">
+                Coming Soon
+              </span>
+            </div>
           </Reveal>
         </div>
+      )}
+
+      {/* Cross-link */}
+      <Reveal delay={420}>
+        <p className="text-center text-sm text-stone-500 dark:text-stone-400">
+          {t("haveAccount")}{" "}
+          <a
+            href="/login"
+            onClick={(e) => { e.preventDefault(); router.push("/login"); }}
+            className="font-semibold text-[var(--accent)] dark:text-[var(--accent-secondary)] hover:underline underline-offset-2 cursor-pointer"
+          >
+            {t("logIn")}
+          </a>
+        </p>
+      </Reveal>
+    </div>
   );
 }
 
