@@ -109,6 +109,8 @@ export interface NgoStatusData {
   lockReason: string;
   hasShownWelcome: boolean;
   markWelcomeShown: () => void;
+  documents: Record<string, any>;
+  isError: boolean;
 }
 
 export function useNgoStatus(): NgoStatusData {
@@ -121,6 +123,7 @@ export function useNgoStatus(): NgoStatusData {
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasShownWelcome, setHasShownWelcome] = useState(true);
+  const [documents, setDocuments] = useState<Record<string, any>>({});
   const sequence = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -138,7 +141,9 @@ export function useNgoStatus(): NgoStatusData {
         : raw === "REJECTED" || raw === "NEEDS_INFORMATION" ? "changes_requested"
         : raw === "UNDER_REVIEW" || raw === "PENDING_VERIFICATION" ? "under_review" : "incomplete");
       setNgoName(application?.organizationName || draft?.organizationName || "Your Organization");
-      setProgress(calculateNgoProgress(parseFormState(draft || application)));
+      const form = parseFormState(draft || application);
+      setProgress(calculateNgoProgress(form));
+      setDocuments(form.documents || {});
       setOverview(totals);
     } catch (e) {
       if (request === sequence.current) {
@@ -190,5 +195,6 @@ export function useNgoStatus(): NgoStatusData {
     dropoffsToConfirm: overview?.dropoffsToConfirm ?? 0, photosDue: overview?.photosDue ?? 0,
     photosDueRequestName: overview?.photosDueRequestName ?? "", isVerified, isPhotosDue,
     canPostRequest, lockReason, hasShownWelcome, markWelcomeShown,
+    documents, isError: !!error,
   };
 }
