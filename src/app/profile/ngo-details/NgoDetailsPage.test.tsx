@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import NgoDetailsPage from "./page";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getMyNgoApplication,
   getNgoDraft,
+  resendNgoOtp,
   saveNgoDraft,
   submitNgoApplication,
+  verifyNgoOtp,
 } from "@/lib/api";
 
 const mockReplace = vi.fn();
@@ -27,6 +30,10 @@ vi.mock("@/lib/api", () => ({
   getNgoDraft: vi.fn(),
   saveNgoDraft: vi.fn(),
   submitNgoApplication: vi.fn(),
+  verifyNgoOtp: vi.fn(),
+  resendNgoOtp: vi.fn(),
+  uploadNgoDocument: vi.fn(),
+  uploadNgoPhoto: vi.fn(),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -164,4 +171,77 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     const returnBtn = screen.getAllByRole("link", { name: /Return to Profile/i })[0];
     expect(returnBtn).toHaveAttribute("href", "/profile");
   }, 15000);
+
+  // ── Reload between submit and OTP ──────────────────────────────────────────
+
+  function signInAsNgo() {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
+      isLoading: false,
+      isRestoring: false,
+      setUser: vi.fn(),
+      logout: vi.fn(),
+      setAuth: vi.fn(),
+    });
+  }
+
+  const pendingApplication = {
+    applicationId: "CK-NGO-2026-PENDING1",
+    organizationName: "Smile Foundation",
+    status: "PENDING_VERIFICATION",
+    submittedAt: "2026-09-12T10:00:00",
+    verifiedAt: null,
+    updatedAt: null,
+    rejectionReason: null,
+    needsInformationDetails: null,
+  };
+
+  it("reopens the OTP step for an application that was submitted but never verified", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    // Submit deleted the draft, so after a reload the application is all there is.
+    vi.mocked(getMyNgoApplication).mockResolvedValue(pendingApplication);
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+
+    render(<NgoDetailsPage />);
+
+    await waitFor(
+      () => expect(screen.getByRole("heading", { name: /Verify Official Email/i })).toBeInTheDocument(),
+      { timeout: 8000 }
+    );
+    expect(screen.getByText("CK-NGO-2026-PENDING1")).toBeInTheDocument();
+    expect(screen.getByText(/already submitted and is waiting for this code/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/5 of 6 done/).length).toBeGreaterThanOrEqual(1);
+
+    // Nothing to go back to: the form steps are closed and there is no Back / Save draft.
+    expect(screen.queryByRole("button", { name: /^Back$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Save draft/i })).not.toBeInTheDocument();
+    for (const stepButton of screen.getAllByRole("button", { name: /Organization Details/i })) {
+      expect(stepButton).toBeDisabled();
+    }
+    fireEvent.click(screen.getAllByRole("button", { name: /Organization Details/i })[0]);
+    expect(screen.getByRole("heading", { name: /Verify Official Email/i })).toBeInTheDocument();
+  }, 15000);
+
+  it("offers Resend immediately on the restored OTP step and verifies against the restored application", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    vi.mocked(getMyNgoApplication).mockResolvedValue(pendingApplication);
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+    vi.mocked(resendNgoOtp).mockResolvedValue({ message: "sent" });
+    vi.mocked(verifyNgoOtp).mockResolvedValue({ message: "verified" });
+    const user = userEvent.setup();
+
+    render(<NgoDetailsPage />);
+
+    const resend = await screen.findByRole("button", { name: /^Resend code$/i }, { timeout: 8000 });
+    expect(resend).toBeEnabled();
+    await user.click(resend);
+    await waitFor(() => expect(resendNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-PENDING1"));
+
+    await user.type(screen.getByRole("textbox"), "123456");
+    await waitFor(() => expect(verifyNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-PENDING1", "123456"));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/profile"));
+    expect(submitNgoApplication).not.toHaveBeenCalled();
+  }, 20000);
 });

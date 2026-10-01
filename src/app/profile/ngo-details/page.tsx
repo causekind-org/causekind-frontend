@@ -89,6 +89,10 @@ function NgoDetailsEditor() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Set once an application exists and only the email code is outstanding. The form
+  // steps are closed from then on: the application is already on the server, and
+  // submitting again just leads back to it.
+  const [awaitingVerification, setAwaitingVerification] = useState<"submitted-now" | "restored" | null>(null);
 
   const userIdentifier =
     user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
@@ -138,6 +142,23 @@ function NgoDetailsEditor() {
               submittedAt: submittedApp.submittedAt || "",
             }));
             setCurrentStep("submitted");
+            setLoading(false);
+            return;
+          }
+
+          // Submitted but the email code was never entered — typically a reload between
+          // submit and OTP. The draft is gone by now (submit deletes it), so without this
+          // the editor would open an empty wizard and the application would be stranded.
+          if (submittedApp && active && submittedApp.status === "PENDING_VERIFICATION") {
+            setData((prev) => ({
+              ...prev,
+              organizationName: submittedApp.organizationName || prev.organizationName,
+              applicationId: submittedApp.applicationId,
+              submittedAt: submittedApp.submittedAt || "",
+              officialEmail: user?.email || prev.officialEmail,
+            }));
+            setAwaitingVerification("restored");
+            setCurrentStep("email-verification");
             setLoading(false);
             return;
           }
@@ -282,6 +303,7 @@ function NgoDetailsEditor() {
   }
 
   function goToStep(step: NGOStep) {
+    if (awaitingVerification && step !== "email-verification") return;
     setCurrentStep(step);
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -355,7 +377,11 @@ function NgoDetailsEditor() {
         officialEmail: response.officialEmail || user?.email || data.officialEmail,
       });
 
-      goToStep("email-verification");
+      setAwaitingVerification("submitted-now");
+      setCurrentStep("email-verification");
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Submission failed. Please try again.";
       setSubmitError(msg);
@@ -407,7 +433,18 @@ function NgoDetailsEditor() {
     );
   }
 
-  const progress = calculateNgoProgress(data);
+  const formProgress = calculateNgoProgress(data);
+  // Once submitted, the five form steps are done by definition. The local form state
+  // cannot be used to say so: after a reload it is empty.
+  const formSteps = NGO_STEPS.filter((s) => s !== "email-verification");
+  const progress = awaitingVerification
+    ? {
+        ...formProgress,
+        completedSteps: new Set<NGOStep>(formSteps),
+        completedCount: formSteps.length,
+        percent: Math.round((formSteps.length / NGO_STEPS.length) * 100),
+      }
+    : formProgress;
   const remaining = Math.max(0, 6 - progress.completedCount);
   const stillNeeded = currentStep !== "submitted" ? getNgoStillNeededItems(currentStep, data) : [];
 
@@ -449,6 +486,8 @@ function NgoDetailsEditor() {
             <p className="text-xs leading-relaxed text-stone-500">
               {currentStep === "submitted"
                 ? "Your application is submitted and under review."
+                : awaitingVerification
+                ? "Application submitted. Enter the email code to finish."
                 : remaining === 0
                 ? "All steps completed. Ready to submit."
                 : `${remaining} ${remaining === 1 ? "step" : "steps"} left before you can submit.`}
@@ -465,7 +504,8 @@ function NgoDetailsEditor() {
                   key={stepKey}
                   type="button"
                   onClick={() => goToStep(stepKey)}
-                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${
+                  disabled={!!awaitingVerification && !isCurrent}
+                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                     isCurrent
                       ? "bg-ngo-50 font-bold text-ngo-700 dark:bg-ngo-900/30 dark:text-ngo-300"
                       : "font-semibold text-stone-600 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-zinc-800/60"
@@ -544,6 +584,8 @@ function NgoDetailsEditor() {
             <p className="mt-2 text-xs text-stone-500">
               {currentStep === "submitted"
                 ? "Application submitted."
+                : awaitingVerification
+                ? "Submitted. Enter the email code to finish."
                 : `${remaining} ${remaining === 1 ? "step" : "steps"} left before submit.`}
             </p>
             {currentStep !== "submitted" && (
@@ -556,7 +598,8 @@ function NgoDetailsEditor() {
                       key={stepKey}
                       type="button"
                       onClick={() => goToStep(stepKey)}
-                      className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 ${
+                      disabled={!!awaitingVerification && !isCurrent}
+                      className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50 ${
                         isCurrent
                           ? "bg-ngo-700 text-white"
                           : "border border-stone-300 text-stone-600 dark:border-zinc-600 dark:text-stone-300"
@@ -658,8 +701,9 @@ function NgoDetailsEditor() {
                       <EmailVerification
                         data={data}
                         onChange={updateData}
-                        onBack={handlePreviousSection}
+                        onBack={awaitingVerification ? undefined : handlePreviousSection}
                         onVerified={handleVerifiedOtp}
+                        resumed={awaitingVerification === "restored"}
                       />
                     )}
                   </div>
@@ -677,6 +721,8 @@ function NgoDetailsEditor() {
                       {NGO_STEP_FULL_TITLES[currentStep as NGOStep]}
                     </span>
                   </p>
+                  {/* Not rendered (rather than hidden) once submitted, so neither action is reachable by keyboard either. */}
+                  {!awaitingVerification && (
                   <div className="flex flex-wrap items-center gap-3">
                     <button
                       type="button"
@@ -697,6 +743,7 @@ function NgoDetailsEditor() {
                       </button>
                     )}
                   </div>
+                  )}
                 </div>
               </div>
             )}
