@@ -2,14 +2,34 @@
    ABOUT CAUSEKIND — Living Ecosystem
    ─────────────────────────────────────────────────────────────────────────── */
 
+.aboutLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .625rem;
+  min-height: 44px;
+  margin-top: 1rem;
+  padding: .625rem 1rem;
+  border: 1px solid var(--ck-role-accent);
+  border-radius: .625rem;
+  background: var(--ck-role-accent);
+  color: var(--ck-role-on-accent);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 150ms;
+}
+.aboutLink:hover { background: var(--ck-role-hover); }
+.aboutLink:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
 .section {
   --eco-orange: #B5480F;
   --eco-orange-light: #F4A25B;
-  --eco-teal: #0F7A6C;
-  --eco-teal-light: #5ec7b6;
+  --eco-navy: #1e3a60;
+  --eco-navy-light: #7fb0e8;
   --eco-green: #1F6B3F;
   --eco-green-light: #6cc98f;
-  --eco-cream: #F8F6F2;
+  --eco-cream: var(--surface-cream);
   --eco-ink: #1C1410;
   position: relative;
   overflow: hidden;
@@ -17,13 +37,14 @@
   transition: background-color 300ms;
 }
 :global(.dark) .section {
-  --eco-cream: #140E0B;
+  --eco-cream: var(--surface-cream);
   --eco-ink: #F5EEE8;
   background: var(--eco-cream);
 }
 
 /* Subtle paper grain overlay */
 .section::before {
+  display: none;
   content: "";
   position: absolute;
   inset: 0;
@@ -34,6 +55,7 @@
 
 /* Soft radial lighting */
 .ambientGlow {
+  display: none;
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -56,14 +78,14 @@
   left: 35%;
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(15, 122, 108, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(30, 58, 96, 0.06) 0%, transparent 70%);
   border-radius: 50%;
 }
 :global(.dark) .ambientGlow::before {
   background: radial-gradient(circle, rgba(244, 162, 91, 0.04) 0%, transparent 70%);
 }
 :global(.dark) .ambientGlow::after {
-  background: radial-gradient(circle, rgba(94, 199, 182, 0.03) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(74, 127, 193, 0.03) 0%, transparent 70%);
 }
 
 /* ── Layout ────────────────────────────────────────────────────────────────── */
@@ -114,17 +136,17 @@
   height: 2px;
   width: 1.5rem;
   border-radius: 99px;
-  background: var(--eco-orange);
+  background: var(--ck-role-accent);
 }
 .eyebrowText {
   font-size: 0.6875rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: var(--eco-orange);
+  color: var(--ck-role-accent);
 }
 :global(.dark) .eyebrowText {
-  color: var(--eco-orange-light);
+  color: var(--ck-role-accent);
 }
 
 .headline {
@@ -136,11 +158,17 @@
   max-width: 560px;
 }
 .headlineHighlight {
-  color: var(--eco-orange);
+  color: var(--ck-role-accent);
   position: relative;
 }
 :global(.dark) .headlineHighlight {
-  color: var(--eco-orange-light);
+  color: var(--ck-role-accent);
+}
+.doneeHighlight {
+  color: var(--ck-role-accent);
+}
+:global(.dark) .doneeHighlight {
+  color: var(--ck-role-accent);
 }
 
 .subhead {
@@ -643,7 +671,7 @@
   animation: jMarch 0.8s linear infinite;
 }
 .jGuide[data-live="true"][data-dest="person"] {
-  stroke: #0f7a6c;
+  stroke: #1e3a60;
 }
 .jGuide[data-live="true"][data-dest="ngo"] {
   stroke: #1f6b3f;

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion } from "framer-motion";
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";

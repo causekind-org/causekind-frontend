@@ -61,6 +61,7 @@ import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
+import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
@@ -136,7 +137,7 @@ export default function HomeClient({
 }) {
   const t = useTranslations("landing");
   const tCommon = useTranslations("common");
-  const { user } = useAuth();
+  const { user, isRestoring } = useAuth();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -234,6 +235,14 @@ export default function HomeClient({
     [rakshaBandhan, initialPublicRequests],
   );
 
+
+
+  // NGO accounts get the NGO-specific home (from staging's NGO module), not the
+  // general landing page.
+  const roleStr = user?.role?.replace(/^ROLE_/, "");
+  if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
+    return <NgoLandingView />;
+  }
 
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">

@@ -16,6 +16,9 @@ import { Big_Shoulders, Fraunces, IBM_Plex_Mono } from "next/font/google";
  * - Mono: IBM Plex Mono — the camera HUD and eyebrows.
  */
 const display = Big_Shoulders({
+  // Next has no automatic fallback metrics for this family.
+  adjustFontFallback: false,
+  fallback: ["Impact", "Arial Narrow", "sans-serif"],
   subsets: ["latin"],
   weight: "variable",
   axes: ["opsz"],

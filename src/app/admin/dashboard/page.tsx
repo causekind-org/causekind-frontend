@@ -11,11 +11,13 @@ import {
   adminGetAllOffers,
   adminGetAllAiAssessments, type AiAssessmentResponse,
   adminGetMyPermissions,
+  adminGetNgoApplications,
 } from "@/lib/api";
 import { displayReason } from "@/lib/rejectionReason";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { OffersQueuePanel } from "../offers/OffersQueuePanel";
+import { NgoReviewPanel } from "../ngos/NgoReviewPanel";
 import { VerificationQueuePanel } from "../verifications/VerificationQueuePanel";
 import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
@@ -23,20 +25,22 @@ import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import {
-  Bot, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
+  Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
   Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "listings" | "matches" | "offers" | "match-history" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
 const TAB_CAPABILITY: Record<TabKey, string> = {
   campaigns: "CAMPAIGNS",
   requests: "REQUEST_REVIEW",
+  // Same capability the backend checks on /api/v1/admin/ngo-applications.
+  "ngo-applications": "REQUEST_REVIEW",
   listings: "LISTING_REVIEW",
   matches: "MATCH_INTERVENE",
   offers: "OFFER_REVIEW",
@@ -156,6 +160,7 @@ export default function AdminDashboardPage() {
   const [listings, setListings] = useState<ItemListing[]>([]);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [offersNeedingAction, setOffersNeedingAction] = useState(0);
+  const [ngoAwaiting, setNgoAwaiting] = useState(0);
   const [offersInFlight, setOffersInFlight] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -210,6 +215,26 @@ export default function AdminDashboardPage() {
     if (ju && !Number.isNaN(Number(ju))) {
       setJourneyUserId(Number(ju));
       setTab("user-journey");
+    }
+  }, []);
+
+  // NGO applications awaiting review — the sidebar badge and the header total.
+  // Its own request, so an admin without REQUEST_REVIEW (a 403 here) still gets
+  // the rest of the queue; the badge just stays at zero for them.
+  const loadNgoCount = useCallback(() => {
+    adminGetNgoApplications("UNDER_REVIEW", 0)
+      .then(res => setNgoAwaiting(res.totalElements))
+      .catch(() => setNgoAwaiting(0));
+  }, []);
+  useEffect(() => { loadNgoCount(); }, [loadNgoCount]);
+
+  // Deep link: /admin/dashboard?tab=ngo-applications[&application=<id>]
+  const [ngoDeepLink, setNgoDeepLink] = useState<string | null>(null);
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search);
+    if (qs.get("tab") === "ngo-applications") {
+      setTab("ngo-applications");
+      setNgoDeepLink(qs.get("application"));
     }
   }, []);
   const [rejectId, setRejectId] = useState<number | null>(null);
@@ -479,7 +504,7 @@ export default function AdminDashboardPage() {
   }
   if (!user) return null;
 
-  const total = campaigns.length + requests.length + listings.length + matches.length + offersNeedingAction;
+  const total = campaigns.length + requests.length + listings.length + matches.length + offersNeedingAction + ngoAwaiting;
   // "user-journey" belongs here too. Leaving it out meant that tab rendered its
   // own panel *and* the approval-queue feed underneath it, and put it on the
   // wrong side of the mobile nav split below.
@@ -492,6 +517,7 @@ export default function AdminDashboardPage() {
     { key: "listings"  as TabKey, label: "Listings",     count: listings.length,    icon: Package,        color: "#a78bfa" },
     { key: "matches"   as TabKey, label: "Matches",      count: matches.length,     icon: Handshake,      color: "#34d399" },
     { key: "offers"    as TabKey, label: "Offers",       count: offersNeedingAction, icon: Gift,          color: "#f472b6" },
+    { key: "ngo-applications" as TabKey, label: "NGO Applications", count: ngoAwaiting, icon: Building2, color: "#34a578" },
   ].filter(t => canSeeTab(t.key));
 
   // Single source for the report destinations, consumed by both the desktop
@@ -505,14 +531,17 @@ export default function AdminDashboardPage() {
     { key: "whatsapp"      as TabKey, label: "WhatsApp",          icon: MessageCircle, color: "text-green-400"  },
   ].filter(t => canSeeTab(t.key));
 
-  const headerTitle =tab === "match-history" ? "Match History"
+  const headerTitle = tab === "ngo-applications" ? "NGO Applications"
+    : tab === "match-history" ? "Match History"
     : tab === "ai-logs" ? "AI Screening Logs"
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
     : tab === "whatsapp" ? "WhatsApp"
     : "Approval Queue";
 
-  const headerSubtitle = tab === "match-history"
+  const headerSubtitle = tab === "ngo-applications"
+    ? `${ngoAwaiting} application${ngoAwaiting !== 1 ? "s" : ""} awaiting review · approval unlocks requests and drives`
+    : tab === "match-history"
     ? `${allMatches.length} match${allMatches.length !== 1 ? "es" : ""} · complete lifecycle view`
     : tab === "user-journey"
     ? "One user's complete story — every step on record, from registration to today"
@@ -725,10 +754,14 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ── Cards feed ── */}
-        <div className="flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 max-w-4xl space-y-3 sm:space-y-4">
+        <div className={`flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 ${tab === "ngo-applications" ? "max-w-6xl" : "max-w-4xl"} space-y-3 sm:space-y-4`}>
 
           {/* ── DONATION OFFERS TAB — reuses the same panel as the standalone /admin/offers page ── */}
           {tab === "offers" && <OffersQueuePanel />}
+
+          {/* ── NGO APPLICATIONS TAB — same panel as the standalone /admin/ngos page. Approving
+                 creates the NGO profile, which unlocks requests and drives. ── */}
+          {tab === "ngo-applications" && <NgoReviewPanel initialApplicationId={ngoDeepLink} onDecision={loadNgoCount} />}
 
           {/* ── REQUESTS TAB — merged with Donee Verification: the tiered verification
                  queue (checklist, SLA, hold, documents) is the single review path,

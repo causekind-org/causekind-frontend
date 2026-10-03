@@ -1,0 +1,27 @@
+.mobileIntro { display: none; }
+
+@media (max-width: 767px) {
+  .section { padding-block: 1.75rem; background: var(--surface-cream); }
+  .layout { gap: 1rem; }
+  .eyebrow {
+    padding: 0; margin-bottom: .875rem; border: 0; border-radius: 0;
+    background: transparent; box-shadow: none; color: var(--primary);
+    font-size: .625rem; letter-spacing: .12em;
+  }
+  .heading { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; font-size: 1.125rem; line-height: 1.3; text-wrap: balance; }
+  .heading > :first-child { flex-shrink: 0; width: 42px; height: 42px; margin-bottom: 0; }
+  .location { display: block; margin-top: .25rem; font-family: inherit; font-size: .6875rem; font-weight: 400; color: var(--muted-foreground); }
+  .mobileIntro { display: block; margin: 0 0 .875rem; font-size: .8125rem; line-height: 1.6; color: var(--muted-foreground); text-wrap: pretty; }
+  .certification { display: block; padding: .625rem .75rem; border: 0; border-radius: .5rem; background: var(--muted); box-shadow: none; }
+  .certification p:first-child { font-size: .6875rem; color: var(--primary); }
+  .certification p:last-child { font-size: .6875rem; line-height: 1.5; margin-top: .125rem; color: var(--muted-foreground); }
+  .areas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+  .area, .area:hover { min-width: 0; flex-direction: column; gap: .5rem; padding: .875rem .625rem; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .area:nth-child(odd) { padding-left: 0; border-right: 1px solid var(--border); }
+  .area:nth-child(even) { padding-right: 0; padding-left: .875rem; }
+  .area:nth-child(n + 3) { border-top: 1px solid var(--border); }
+  .area > :first-child { width: 28px; height: 28px; border-radius: 0; background: transparent; color: var(--primary); box-shadow: none; transform: none; }
+  .area svg { width: 20px; height: 20px; }
+  .area h3 { margin-bottom: .375rem; font-size: .75rem; line-height: 1.4; text-wrap: balance; }
+  .area p { font-size: .6875rem; line-height: 1.6; color: var(--muted-foreground); text-wrap: pretty; }
+}

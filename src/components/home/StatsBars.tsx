@@ -20,7 +20,7 @@ export function DesktopStatsBar({ stats }: { stats: PlatformStats | null }) {
   const items = [
     { value: stats ? `₹${formatINR(stats.totalRaised)}` : "₹5,652", label: tStats("totalRaised"),    icon: Coins,    color: "text-[var(--ck-home-ink,#b04a15)]"  },
     { value: stats ? stats.activeCampaigns             : "3",       label: tStats("activeCampaigns"), icon: Heart,    color: "text-[var(--ck-home-ink,#c2660a)]"  },
-    { value: stats ? stats.totalDonations               : "24",      label: tStats("donations"),       icon: Sparkles, color: "text-[#1e3a60]"  },
+    { value: stats ? stats.totalDonations               : "24",      label: tStats("donations"),       icon: Sparkles, color: "text-[var(--ck-role-accent)]"  },
     { value: stats ? stats.uniqueDonors                 : "18",      label: tStats("donors"),          icon: Users,    color: "text-amber-700"  },
   ];
 
@@ -64,8 +64,8 @@ export function LiveTicker({ activity }: { activity: RecentActivity[] }) {
                 </>
               ) : (
                 <>
-                  <span className="inline-block h-2 w-2 rounded-full bg-[#1e3a60]" />
-                  <span className="text-[#1e3a60] font-extrabold">New Campaign </span>
+                  <span className="inline-block h-2 w-2 rounded-full bg-[var(--ck-role-accent)]" />
+                  <span className="text-[var(--ck-role-accent)] font-extrabold">New Campaign </span>
                   <span className="font-extrabold text-stone-800 dark:text-stone-200"><TranslatedText text={a.campaignTitle} /></span>
                   <span className="text-stone-400">· <TranslatedText text={a.category} /> · <TranslatedText text={a.city} /></span>
                 </>

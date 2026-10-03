@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, type LucideIcon } from "lucide-react";
 import PathwayScene, { type PathwayTone } from "./PathwayScene";

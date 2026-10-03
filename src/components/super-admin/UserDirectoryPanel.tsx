@@ -129,7 +129,7 @@ export function UserDirectoryPanel({
           className={control}
         >
           <option value="">All roles</option>
-          {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          {ROLES.map((r) => <option key={r} value={r}>{r === "NGO_PARTNER" ? "NGO" : r}</option>)}
         </select>
 
         <select

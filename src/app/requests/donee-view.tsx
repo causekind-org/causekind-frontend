@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import {
   Stethoscope, BookOpen, Sprout, Users, Home, Package,

@@ -12,6 +12,7 @@ import {
 export type AuthUser = {
   id?: number;
   userId?: number;
+  fullName?: string;
   email: string;
   role: string;
 };
@@ -130,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .then(data => {
         if (data?.email && data?.role) {
-          const fresh: AuthUser = { id: data.id, userId: data.id, email: data.email, role: data.role };
+          const fresh: AuthUser = { id: data.id, userId: data.id, email: data.email, role: data.role, fullName: data.fullName };
           localStorage.setItem(USER_KEY, JSON.stringify(fresh));
           setUserState(fresh);
         }

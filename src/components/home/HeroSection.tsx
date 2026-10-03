@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Anton } from "next/font/google";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import { MotionConfig } from "framer-motion";
@@ -186,7 +186,7 @@ export function HeroSection() {
         data-tour="guest-hero"
         style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
-        className="ck-showcase-hero relative isolate overflow-hidden bg-[#fdf5ed] px-3 pb-3 pt-3 text-[#100c06] dark:bg-[#15110f] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
+        className="ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
       >
         <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
 
@@ -206,7 +206,7 @@ export function HeroSection() {
               No height of its own: `.ck-showcase-hero` already stands the
               section at 100svh minus the header, so the stage only has to grow
               into it. Setting a second height here fought that one. */}
-          <div className="ck-lead-hero-stage relative flex min-w-0 flex-1 flex-col bg-[#241b14] dark:bg-[#1a1512] lg:grid lg:flex-none lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:bg-[#fdf5ed]">
+          <div className="ck-lead-hero-stage relative flex min-w-0 flex-1 flex-col bg-[#241b14] dark:bg-[#1a1512] lg:grid lg:flex-none lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:bg-[var(--surface-cream)] dark:lg:bg-[var(--surface-cream)]">
             {/* Heaviest at the foot where the copy lands, lifted again at the
                 top so the header stays legible over a bright frame. */}
             <div
@@ -260,7 +260,7 @@ export function HeroSection() {
                 {primaryAction.href ? (
                   <NewRequestLink
                     href={primaryAction.href}
-                    className="ck-hero-primary-cta ck-cta-live group relative isolate order-2 inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-transparent px-2 text-[0.84rem] font-semibold leading-tight text-[#fdf5ed]/70 shadow-none lg:order-1 lg:min-h-12 lg:bg-[var(--ck-home-accent,#b04a15)] lg:text-[0.58rem] lg:font-extrabold lg:uppercase lg:tracking-[0.035em] lg:text-white lg:shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a60] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[var(--ck-home-highlight,#f29a65)] dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-[0.9rem] lg:px-6 sm:text-xs sm:tracking-[0.045em]"
+                    className="ck-hero-primary-cta ck-cta-live group relative isolate order-2 inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-transparent px-2 text-[0.84rem] font-semibold leading-tight text-[#fdf5ed]/70 shadow-none lg:order-1 lg:min-h-12 lg:bg-[var(--ck-home-accent,#b04a15)] lg:text-[0.58rem] lg:font-extrabold lg:uppercase lg:tracking-[0.035em] lg:text-white lg:shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[var(--ck-home-highlight,#f29a65)] dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-[0.9rem] lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="ck-hero-cta-icon relative z-[1] hidden size-4 shrink-0 lg:block" strokeWidth={2} aria-hidden />
                     {!user && !isRestoring && <span aria-hidden="true" className="ck-hero-signup-prompt lg:hidden">{t.has("givingPrompt") ? t("givingPrompt") : "Have something to give?"}</span>}

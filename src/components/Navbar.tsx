@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
 import SpecularButton from "@/components/SpecularButton";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
@@ -613,102 +613,32 @@ export function SiteHeader() {
     pathname?.startsWith("/dashboard/ngo") ||
     pathname?.startsWith("/ngo");
 
-  const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(() => {
-    if (typeof window === "undefined" || !user) return true;
-    const userIdentifier =
-      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-    const cached = localStorage.getItem(demoAppKey) || localStorage.getItem(realAppKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          return false;
-        }
-      } catch {}
-    }
-    return true;
-  });
-
-  const checkNgoApplicationStatus = useCallback(() => {
-    if (!isNgoDashboard) {
-      setIsNgoProfileIncomplete(false);
-      return;
-    }
-
-    const userIdentifier =
-      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-
-    const cachedDemo = typeof window !== "undefined" ? localStorage.getItem(demoAppKey) : null;
-    const cachedReal = typeof window !== "undefined" ? localStorage.getItem(realAppKey) : null;
-    if (cachedDemo || cachedReal) {
-      try {
-        const parsed = JSON.parse((cachedDemo || cachedReal)!);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          setIsNgoProfileIncomplete(false);
-          return;
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    if (user) {
-      getMyNgoApplication()
-        .then((app) => {
-          const isComplete =
-            (app as any)?.submissionStatus === "UNDER_REVIEW" ||
-            (app as any)?.submissionStatus === "APPROVED" ||
-            (app as any)?.submissionStatus === "PENDING_VERIFICATION" ||
-            app?.status === "UNDER_REVIEW" ||
-            app?.status === "APPROVED" ||
-            app?.status === "PENDING_VERIFICATION";
-          setIsNgoProfileIncomplete(!isComplete);
-        })
-        .catch(() => {
-          setIsNgoProfileIncomplete(true);
-        });
-    } else {
-      setIsNgoProfileIncomplete(true);
-    }
-  }, [isNgoDashboard, user]);
-
+  const [ngoApplicationState, setNgoApplicationState] = useState("CHECKING");
   useEffect(() => {
-    checkNgoApplicationStatus();
-
-    const handleUpdate = (e?: Event) => {
-      const customEvent = e as CustomEvent;
-      if (
-        customEvent?.detail?.status === "UNDER_REVIEW" ||
-        customEvent?.detail?.status === "APPROVED" ||
-        customEvent?.detail?.status === "PENDING_VERIFICATION"
-      ) {
-        setIsNgoProfileIncomplete(false);
-        return;
+    if (!isNgo || !user) return;
+    let active = true;
+    let sequence = 0;
+    const refresh = async () => {
+      const current = ++sequence;
+      try {
+        const app = await getMyNgoApplication();
+        if (active && current === sequence) setNgoApplicationState(app?.status || "INCOMPLETE");
+      } catch {
+        if (active && current === sequence) setNgoApplicationState("UNAVAILABLE");
       }
-      checkNgoApplicationStatus();
     };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("ngo-application-submitted", handleUpdate);
-      window.addEventListener("storage", handleUpdate);
-      return () => {
-        window.removeEventListener("ngo-application-submitted", handleUpdate);
-        window.removeEventListener("storage", handleUpdate);
-      };
-    }
-  }, [checkNgoApplicationStatus, pathname]);
+    setNgoApplicationState("CHECKING");
+    void refresh();
+    window.addEventListener("ngo-application-submitted", refresh);
+    window.addEventListener("focus", refresh);
+    return () => { active = false; window.removeEventListener("ngo-application-submitted", refresh); window.removeEventListener("focus", refresh); };
+  }, [isNgo, user, pathname]);
+  const ngoApplicationLabel = ngoApplicationState === "APPROVED" ? "NGO Approved"
+    : ngoApplicationState === "UNDER_REVIEW" ? "Application Under Review"
+    : ngoApplicationState === "PENDING_VERIFICATION" ? "Verify Application Email"
+    : ["NEEDS_INFORMATION", "REJECTED"].includes(ngoApplicationState) ? "Update Application"
+    : ngoApplicationState === "CHECKING" ? "Checking Application…"
+    : ngoApplicationState === "UNAVAILABLE" ? "View Application" : "Complete Profile";
 
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
@@ -1063,23 +993,10 @@ export function SiteHeader() {
             )}
 
             {isNgoDashboard && (
-              <Link href="/dashboard/ngo/profile">
-                {isNgoProfileIncomplete ? (
-                  <Button
-                    size="sm"
-                    className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
-                  >
-                    Complete Profile
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
-                  >
-                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-                    Application Under Review
-                  </Button>
-                )}
+              <Link href="/profile/ngo-details">
+                <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
+                  {ngoApplicationLabel}
+                </Button>
               </Link>
             )}
 

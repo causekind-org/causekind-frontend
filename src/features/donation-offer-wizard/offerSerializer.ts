@@ -38,17 +38,25 @@ export type OfferPatch = {
   deliveryCostBornBy?: string;
 };
 
-export function serializeOffer(
-  model: OfferModel,
-  opts: { includeSpecNotes: boolean; flowType?: string | null },
-): OfferPatch {
+export type OfferSerializerOptions = {
+  includeSpecNotes: boolean;
+  flowType?: string | null;
+  /** What the request still needs — the most the backend will accept. */
+  maxQuantity?: number | null;
+};
+
+export function serializeOffer(model: OfferModel, opts: OfferSerializerOptions): OfferPatch {
   const qty = Number(model.quantity);
   const purchase = isPurchaseFlow(opts.flowType);
+  const withinNeed = opts.maxQuantity == null || opts.maxQuantity <= 0 || qty <= opts.maxQuantity;
 
   const patch: OfferPatch = {
     // Only send a quantity the backend can store. A half-typed "" or "abc"
-    // would otherwise arrive as NaN and be rejected — or worse, coerced.
-    ...(Number.isInteger(qty) && qty >= 1 ? { quantity: qty } : {}),
+    // would otherwise arrive as NaN and be rejected — or worse, coerced. One
+    // above what the request still needs is held back too: the backend refuses
+    // the whole PATCH for it, which would drop every other field's autosave while
+    // the donor reads the inline error telling them to lower it.
+    ...(Number.isInteger(qty) && qty >= 1 && withinNeed ? { quantity: qty } : {}),
 
     // Editable text: always sent, empty when cleared. See rule 1 above.
     accessoriesIncluded: model.accessoriesIncluded.trim(),
@@ -149,9 +157,7 @@ export function serializePurchaseCommitment(
 }
 
 /** Stable digest of everything that would be sent — the autosave dedupe key. */
-export function offerSnapshotKey(
-  model: OfferModel, opts: { includeSpecNotes: boolean; flowType?: string | null },
-): string {
+export function offerSnapshotKey(model: OfferModel, opts: OfferSerializerOptions): string {
   return JSON.stringify([
     serializeOffer(model, opts),
     // The commitment saves through its own endpoint, so a change to it has to

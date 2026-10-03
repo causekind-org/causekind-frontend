@@ -1,0 +1,190 @@
+/*
+ * Audience illustrations — one family, three stories. Scoped by CSS modules,
+ * so the keyframe names cannot collide with anything global.
+ *
+ * Rules shared by all three:
+ * - Base geometry is always visible; only accents move. The first and last
+ *   keyframe of every loop are the resting pose, so there is no snap and an
+ *   animation delay never leaves anything blank.
+ * - Transforms and opacity, plus stroke-dashoffset for the connection paths.
+ *   Travel is 3–7 SVG units — at 32–40px on screen, the 1–3 first tried moved under 1px and read as static (CSS px = user units on SVG elements).
+ * - Loops run only while `data-playing="true"`; the dialog clears it when the
+ *   visitor pauses or the tab is hidden, and prefers-reduced-motion disables
+ *   them outright. `data-settled="true"` (the option just chosen) drops to the
+ *   resting pose.
+ */
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.svg * { transform-box: fill-box; transform-origin: center; }
+
+.neutral { stroke: currentColor; opacity: 0.35; }
+.soft { fill: currentColor; stroke: none; opacity: 0.15; }
+
+/* Connection paths: drawn by stroke reveal (pathLength="1" on each). */
+.link {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  stroke-width: 1.8;
+}
+
+.anim {
+  animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-play-state: paused;
+}
+
+[data-playing="true"] .anim { animation-play-state: running; }
+[data-settled="true"] .anim { animation: none; }
+
+/* ── Everyone · 5.8s · phase 0 ───────────────────────────────────────────
+   0–1.0 rest · 1.0–2.1 people lean in, left link draws · 2.1–3.1 heart lifts,
+   right link draws · 3.1–4.2 building settles, heart returns · 4.2–5.8 rest */
+
+.everyone .anim { animation-duration: 5.8s; animation-delay: 0s; }
+.evPeople { animation-name: evPeople; }
+.evHeart { animation-name: evHeart; }
+.evBuilding { animation-name: evBuilding; }
+.evLinkL { animation-name: evLinkL; }
+.evLinkR { animation-name: evLinkR; }
+
+@keyframes evPeople {
+  0%, 17% { transform: translateX(0); }
+  36%, 53% { transform: translateX(4px); }
+  72%, 100% { transform: translateX(0); }
+}
+@keyframes evHeart {
+  0%, 36% { transform: translateY(0) scale(1); }
+  53% { transform: translateY(-6px) scale(1.15); }
+  72%, 100% { transform: translateY(0) scale(1); }
+}
+@keyframes evBuilding {
+  0%, 53% { transform: translateY(0); }
+  62% { transform: translateY(2.5px); }
+  72%, 100% { transform: translateY(0); }
+}
+@keyframes evLinkL {
+  0%, 17% { stroke-dashoffset: 1; opacity: 0; }
+  24% { opacity: 0.8; }
+  36%, 72% { stroke-dashoffset: 0; opacity: 0.8; }
+  90% { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 1; opacity: 0; }
+}
+@keyframes evLinkR {
+  0%, 36% { stroke-dashoffset: 1; opacity: 0; }
+  42% { opacity: 0.8; }
+  53%, 72% { stroke-dashoffset: 0; opacity: 0.8; }
+  90% { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 1; opacity: 0; }
+}
+
+/* ── Donee · 5.2s · phase 0.6s ───────────────────────────────────────────
+   0–1.1 rest · 1.1–2.3 hand lifts, parcel moves a few units toward the person ·
+   2.3–3.2 parcel settles, person acknowledges, heart brightens · 3.2–4.1 hand
+   returns · 4.1–5.2 parcel crossfades back to rest (two identical parcels, so
+   nothing is seen being "taken away") */
+
+.donee .anim { animation-duration: 5.2s; animation-delay: 0.6s; }
+.dnHand { animation-name: dnHand; }
+.dnParcel { animation-name: dnParcel; }
+.dnParcelRest { animation-name: dnParcelRest; opacity: 0; }
+.dnPerson { animation-name: dnPerson; }
+.dnHeart { animation-name: dnHeart; opacity: 0.3; }
+
+@keyframes dnHand {
+  0%, 21% { transform: translate(0, 0); }
+  44%, 62% { transform: translate(4px, -4px); }
+  79%, 100% { transform: translate(0, 0); }
+}
+@keyframes dnParcel {
+  0%, 21% { transform: translate(0, 0); opacity: 1; }
+  34% { transform: translate(4px, -6px); }
+  44% { transform: translate(7px, -5px); }
+  62%, 79% { transform: translate(7px, -3px); opacity: 1; }
+  85% { transform: translate(7px, -3px); opacity: 0; }
+  86%, 90% { transform: translate(0, 0); opacity: 0; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes dnParcelRest {
+  0%, 79% { opacity: 0; }
+  85%, 90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes dnPerson {
+  0%, 44% { transform: translateY(0); }
+  53% { transform: translateY(-3px); }
+  62%, 100% { transform: translateY(0); }
+}
+@keyframes dnHeart {
+  0%, 44% { opacity: 0.3; }
+  53%, 70% { opacity: 0.85; }
+  79%, 100% { opacity: 0.3; }
+}
+
+/* ── NGO · 6.2s · phase 1.2s ─────────────────────────────────────────────
+   0–1.2 rest · 1.2–2.4 parcel moves toward the doorway, door brightens ·
+   2.4–3.8 two paths draw to the community in turn · 3.8–4.8 the two people
+   settle, staggered · 4.8–6.2 rest. The building itself never moves. */
+
+.ngo .anim { animation-duration: 6.2s; animation-delay: 1.2s; }
+.ngParcel { animation-name: ngParcel; }
+.ngDoor { animation-name: ngDoor; }
+.ngLinkL { animation-name: ngLinkL; }
+.ngLinkR { animation-name: ngLinkR; }
+.ngPersonL { animation-name: ngPersonL; }
+.ngPersonR { animation-name: ngPersonR; }
+
+@keyframes ngParcel {
+  0%, 19% { transform: translateX(0); }
+  39%, 77% { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+@keyframes ngDoor {
+  0%, 19% { opacity: 0.15; }
+  39%, 77% { opacity: 0.45; }
+  92%, 100% { opacity: 0.15; }
+}
+@keyframes ngLinkL {
+  0%, 39% { stroke-dashoffset: 1; opacity: 0; }
+  43% { opacity: 0.8; }
+  50%, 77% { stroke-dashoffset: 0; opacity: 0.8; }
+  92% { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 1; opacity: 0; }
+}
+@keyframes ngLinkR {
+  0%, 50% { stroke-dashoffset: 1; opacity: 0; }
+  54% { opacity: 0.8; }
+  61%, 77% { stroke-dashoffset: 0; opacity: 0.8; }
+  92% { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 1; opacity: 0; }
+}
+@keyframes ngPersonL {
+  0%, 61% { transform: translateY(0); }
+  66% { transform: translateY(-3px); }
+  71%, 100% { transform: translateY(0); }
+}
+@keyframes ngPersonR {
+  0%, 67% { transform: translateY(0); }
+  72% { transform: translateY(-3px); }
+  77%, 100% { transform: translateY(0); }
+}
+
+/* Reduced motion: no loops at all, and a complete static composition — the
+   connection paths are shown softly so the "link" is still there to read. */
+@media (prefers-reduced-motion: reduce) {
+  .anim { animation: none !important; }
+  .link { stroke-dashoffset: 0; opacity: 0.45; }
+  .dnHeart { opacity: 0.6; }
+}

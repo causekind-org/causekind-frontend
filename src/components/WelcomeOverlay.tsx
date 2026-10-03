@@ -76,16 +76,21 @@ function Sparkles12({ color }: { color: string }) {
 }
 
 function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
-  const [firstName, setFirstName] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [profileName, setProfileName] = useState<string | null>(null);
+  const firstName = user?.fullName?.trim().split(/\s+/)[0] || profileName;
 
   useEffect(() => {
+    if (user?.fullName?.trim()) return;
+    let cancelled = false;
     getMyProfile()
       .then(p => {
         const first = p?.fullName?.trim().split(/\s+/)[0];
-        if (first) setFirstName(first);
+        if (first && !cancelled) setProfileName(first);
       })
       .catch(() => {});
-  }, []);
+    return () => { cancelled = true; };
+  }, [user?.email, user?.fullName]);
 
   function go() {
     dismiss();
@@ -145,7 +150,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
       `}</style>
 
       <div
-        className={`fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-stone-950/85 backdrop-blur-xl ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
+        className={`fixed inset-0 z-[9999] flex flex-col items-center overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-16 bg-stone-950/85 backdrop-blur-xl ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
         onClick={dismiss}
       >
         {/* Ambient animated backdrop — deliberately faint, behind the card */}
@@ -161,11 +166,11 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
           ))}
         </div>
 
-        <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-6 right-6 text-white/40 hover:text-white hover:rotate-90 transition-all duration-300 p-2">
+        <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-3 right-3 text-white/40 hover:text-white hover:rotate-90 transition-all duration-300 p-2">
           <X className="w-7 h-7" aria-hidden="true" />
         </button>
 
-        <div className="ck-donor-card relative w-full max-w-sm text-center" onClick={e => e.stopPropagation()}>
+        <div className="ck-donor-card relative my-auto w-full max-w-sm min-w-0 text-center" onClick={e => e.stopPropagation()}>
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-[#b04a15]/25 blur-[60px] -z-10 rounded-full" />
             <div className="w-20 h-20 rounded-[1.8rem] bg-gradient-to-br from-[#b04a15] to-[#e07b3a] flex items-center justify-center mx-auto shadow-xl shadow-[#b04a15]/30">
@@ -173,8 +178,8 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
             </div>
           </div>
 
-          <h2 className="text-3xl font-black text-white tracking-tight mb-3">
-            Welcome back, {firstName ?? "Donor"}!
+          <h2 className="text-[26px] sm:text-3xl font-black text-white tracking-tight mb-3 [overflow-wrap:anywhere]">
+            {firstName ? `Welcome back, ${firstName}!` : "Welcome back!"}
           </h2>
           <p className="text-stone-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
             Ready to make a difference? Choose what you&apos;d like to donate and we&apos;ll match you with someone nearby.
@@ -214,8 +219,8 @@ function DefaultWelcomeView({ user, exiting, dismiss }: { user: any; exiting: bo
         .ck-card-exit { animation: ck-card-out 0.38s cubic-bezier(0.4,0,1,1) both; }
         @keyframes ck-progress-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
       `}</style>
-      <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-stone-950/50 dark:bg-black/60 backdrop-blur-sm ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`} onClick={dismiss}>
-        <div className={`relative w-full max-w-sm bg-[#faf8f5] dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-stone-900/20 dark:shadow-black/50 overflow-hidden ${exiting ? "ck-card-exit" : "ck-card-enter"}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`fixed inset-0 z-[9999] flex flex-col items-center overflow-x-hidden overflow-y-auto overscroll-contain p-4 bg-stone-950/50 dark:bg-black/60 backdrop-blur-sm ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`} onClick={dismiss}>
+        <div className={`relative my-auto w-full max-w-sm min-w-0 bg-[#faf8f5] dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-stone-900/20 dark:shadow-black/50 overflow-hidden ${exiting ? "ck-card-exit" : "ck-card-enter"}`} onClick={(e) => e.stopPropagation()}>
           <Sparkles12 color={cfg.confettiColor} />
           <div className={`${cfg.accentBg} h-1.5 w-full`} />
           <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-all active:scale-95">
@@ -250,7 +255,7 @@ function SuperAdminWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden bg-[#05070d] ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
+      className={`fixed inset-0 z-[9999] flex flex-col items-center p-4 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#05070d] ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
       onClick={dismiss}
     >
       {/* Animated grid backdrop */}
@@ -265,7 +270,7 @@ function SuperAdminWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss
         <X className="w-7 h-7" aria-hidden="true" />
       </button>
 
-      <div className="relative z-10 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="relative z-10 my-auto w-full max-w-lg min-w-0" onClick={e => e.stopPropagation()}>
         {/* Boot log */}
         <div className="font-mono text-sm space-y-2 mb-8">
           {bootLines.map((l, i) => (
@@ -340,6 +345,16 @@ export function WelcomeOverlay() {
       return () => clearTimeout(t);
     }
   }, [isLoading, user, dismiss, isAdminDash]);
+
+  // Lock the page behind the overlay while it is open, so it cannot be panned
+  // or scrolled underneath; restored exactly as it was on close.
+  useEffect(() => {
+    if (!show || isAdminDash) return;
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    return () => { html.style.overflow = prev; };
+  }, [show, isAdminDash]);
 
   if (isAdminDash || !show) return null;
 

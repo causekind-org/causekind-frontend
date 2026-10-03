@@ -1,0 +1,15 @@
+.mini { display: none; }
+@media (max-width: 767px) {
+  .mini { display: flex; flex-direction: column; min-width: 0; padding: .75rem; border: 1px solid var(--border); border-radius: .625rem; background: var(--surface-cream); color: var(--foreground); }
+  .icon { display: flex; color: var(--primary); margin-bottom: .75rem; }
+  .icon svg { width: 20px; height: 20px; }
+  .copy { min-width: 0; }
+  .copy h3 { margin: 0 0 .3125rem; font: 400 1.75rem/1.1 Georgia, serif; }
+  .copy p { margin: 0; font-size: .6875rem; line-height: 1.5; color: var(--muted-foreground); }
+  .mini button { min-height: 44px; margin-top: auto; padding: .5rem 0 0; text-align: left; color: var(--primary); background: transparent; font-size: .75rem; cursor: pointer; }
+  .wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: .625rem; padding-block: .5625rem; }
+  .wide .icon { margin: 0; flex-shrink: 0; }
+  .wide .copy { flex: 1; }
+  .wide h3 { font-family: inherit; font-size: .8125rem; font-weight: 600; }
+  .wide button { margin: 0; padding: .5rem 0 .5rem .25rem; flex-shrink: 0; }
+}

@@ -1,12 +1,14 @@
+import { isNgoRole } from "@/lib/isNgoRole";
+
 /**
- * Role-aware theming: terracotta for donors, blue for recipients.
+ * Role-aware theming: terracotta for donors, blue for recipients, green for NGOs.
  *
  * <p>One module, two consumers. CSS reads the `--ck-role-*` custom properties
  * defined in `styles.css`; JavaScript that paints (ClickSpark, particle fields,
  * canvas effects, gradient props) reads the literals here. They are kept in the
  * same file so a palette change cannot land in one and miss the other.
  *
- * <p><b>Scope.</b> Only DONOR and DONEE are themed. ADMIN, SUPER_ADMIN, logged-out
+ * <p><b>Scope.</b> DONOR, DONEE, NGO and NGO_PARTNER are themed. ADMIN, SUPER_ADMIN, logged-out
  * visitors and the public marketing pages keep the existing terracotta identity —
  * the blue says "this is your recipient workspace", and painting an admin console
  * or a marketing page with it would say something untrue.
@@ -18,7 +20,7 @@
  * merge them; see Decisions and Gotchas.
  */
 
-export const ROLE_THEMES = ["donor", "donee"] as const;
+export const ROLE_THEMES = ["donor", "donee", "ngo"] as const;
 export type RoleTheme = (typeof ROLE_THEMES)[number];
 
 /** The DOM attribute. Lives on <html> so portalled overlays inherit it. */
@@ -31,8 +33,11 @@ export const ROLE_THEME_ATTR = "data-ck-role-theme";
  * null and leave the public palette in place, never guess a theme.
  */
 export function themeForRole(role: string | null | undefined): RoleTheme | null {
-  if (role === "DONOR") return "donor";
-  if (role === "DONEE") return "donee";
+  if (!role) return null;
+  const upper = role.toUpperCase();
+  if (upper === "DONOR") return "donor";
+  if (upper === "DONEE") return "donee";
+  if (isNgoRole(upper)) return "ngo";
   return null;   // ADMIN, SUPER_ADMIN, unknown, logged out
 }
 
@@ -57,6 +62,7 @@ export type RolePalette = {
 const LIGHT: Record<RoleTheme, RolePalette> = {
   donor: { accent: "#b04a15", hover: "#c45520", secondary: "#e07b3a", highlight: "#f0b97a", onAccent: "#ffffff", deep: "#7a3410" },
   donee: { accent: "#1e3a60", hover: "#2d5a96", secondary: "#4a7fc1", highlight: "#7fb0e8", onAccent: "#ffffff", deep: "#12253f" },
+  ngo:   { accent: "#1E6B4F", hover: "#248A63", secondary: "#34A578", highlight: "#86CFAE", onAccent: "#ffffff", deep: "#123D2E" },
 };
 
 const DARK: Record<RoleTheme, RolePalette> = {
@@ -64,6 +70,7 @@ const DARK: Record<RoleTheme, RolePalette> = {
   // Navy on a dark surface is unreadable, so dark mode lifts to a clear sky blue.
   // Same role signal, inverted for the surface it sits on.
   donee: { accent: "#7fb0e8", hover: "#a3c8f2", secondary: "#4a7fc1", highlight: "#a3c8f2", onAccent: "#0b1929", deep: "#3f6c9e" },
+  ngo:   { accent: "#86CFAE", hover: "#A7DEC5", secondary: "#34A578", highlight: "#A7DEC5", onAccent: "#0B2E22", deep: "#185740" },
 };
 
 /** Public/neutral palette — what an admin, or a logged-out visitor, sees. */
@@ -80,7 +87,7 @@ export function roleColors(theme: RoleTheme | null, dark = false): RolePalette {
  */
 export function currentRoleTheme(): RoleTheme | null {
   if (typeof document === "undefined") return null;
-  const v = document.documentElement.getAttribute(ROLE_THEME_ATTR);
+  const v = document.documentElement.getAttribute(ROLE_THEME_ATTR) || document.documentElement.getAttribute("data-theme-role");
   return (ROLE_THEMES as readonly string[]).includes(v ?? "") ? (v as RoleTheme) : null;
 }
 
@@ -96,7 +103,7 @@ export function currentRoleColors(): RolePalette {
 /**
  * The pre-paint script, inlined into <head>.
  *
- * <p>Without it, DONEE users see a terracotta flash: `useAuth` hydrates from
+ * <p>Without it, DONEE or NGO users see a terracotta flash: `useAuth` hydrates from
  * `localStorage` inside a `useEffect`, which runs *after* first paint, so the
  * public palette renders first and then swaps. This runs before the browser
  * paints anything.
@@ -104,12 +111,16 @@ export function currentRoleColors(): RolePalette {
  * <p>It reads only the non-secret `{email, role}` metadata the app already
  * caches, parses it inside try/catch, and passes the role through the same
  * whitelist as `themeForRole` — an attacker-controlled localStorage value can
- * therefore only ever produce "donor", "donee", or no attribute at all. It grants
+ * therefore only ever produce "donor", "donee", "ngo", or no attribute at all. It grants
  * nothing: the attribute is decorative, and every permission check remains
  * server-side.
  */
 export const ROLE_THEME_BOOT_SCRIPT = `(function(){try{
 var r=JSON.parse(localStorage.getItem("ck_user")||"null");
-var t=r&&r.role==="DONOR"?"donor":r&&r.role==="DONEE"?"donee":null;
-if(t)document.documentElement.setAttribute("${ROLE_THEME_ATTR}",t);
+var role=r&&r.role?r.role.toUpperCase():"";
+var t=role==="DONOR"?"donor":role==="DONEE"?"donee":role==="NGO_PARTNER"?"ngo":null;
+if(t){
+  document.documentElement.setAttribute("${ROLE_THEME_ATTR}",t);
+  document.documentElement.setAttribute("data-theme-role",t);
+}
 }catch(e){}})();`;

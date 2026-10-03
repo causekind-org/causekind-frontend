@@ -10,6 +10,9 @@ const CLARITY_PROJECT_ID = "ykpnfnuc02";
 // (revert to `consent === "accepted"`) once the banner is back.
 const TESTING_BYPASS = true;
 
+// Staging sets this so test traffic never reaches the Pixel/GTM/Clarity data.
+const TRACKING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "true";
+
 /**
  * Microsoft Clarity, gated behind the same cookie-consent answer as
  * MetaPixel. Clarity is a separate, independent script — its own global
@@ -20,7 +23,7 @@ export default function ClarityAnalytics() {
   const consent = useCookieConsent();
   const consentAccepted = TESTING_BYPASS || consent === "accepted";
 
-  if (!consentAccepted) return null;
+  if (TRACKING_DISABLED || !consentAccepted) return null;
 
   return (
     <Script

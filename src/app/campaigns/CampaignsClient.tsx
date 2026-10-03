@@ -6,7 +6,7 @@ import { ComingSoon } from "@/components/ComingSoon";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { useRouter } from "next/navigation";
 import { getCampaigns, type Campaign } from "@/lib/api";

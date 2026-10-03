@@ -17,6 +17,7 @@ import { SearchableSelect, type SelectOption } from '@/components/profile/Search
 import { getDialCodes } from '@/app/actions/locations';
 import { PHONE_LENGTHS, getDialCode } from '@/lib/phone';
 import { useAuth } from '@/hooks/useAuth';
+import styles from './MoneyDonationForm.module.css';
 
 /**
  * Loads Razorpay's checkout script on demand.
@@ -93,6 +94,8 @@ export function MoneyDonationForm() {
   const [presetTip, setPresetTip] = useState<number>(DEFAULT_TIP);
   const [customTip, setCustomTip] = useState<string>('');
   const [isCustomTip, setIsCustomTip] = useState(false);
+  const [mobileTipOpen, setMobileTipOpen] = useState(false);
+  const [lastMobileTip, setLastMobileTip] = useState(DEFAULT_TIP);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -352,6 +355,76 @@ export function MoneyDonationForm() {
               {/* LEFT — the choices */}
               <div className="flex flex-col gap-4 p-5 sm:p-6">
 
+                <div className={styles.mobileChoices}>
+                  <div className={styles.amountSection}>
+                    <p className={styles.eyebrow}>Your gift to</p>
+                    <h3 className={styles.recipient}>Sahas Charitable Trust</h3>
+                    <label htmlFor="mobileDonationAmount" className={styles.amountLabel}>Your donation</label>
+                    <div className={styles.amountEntry}>
+                      <span aria-hidden="true">₹</span>
+                      <input
+                        id="mobileDonationAmount"
+                        type="text"
+                        inputMode="numeric"
+                        aria-label="Donation amount in rupees"
+                        aria-describedby="mobileDonationHint"
+                        value={isCustom ? customAmount : amount}
+                        onChange={handleCustomAmountChange}
+                      />
+                    </div>
+                    <p id="mobileDonationHint" className={styles.hint}>Tap the amount to enter your own</p>
+                    <div className={styles.presets} role="group" aria-label="Donation amounts">
+                      {PRESET_AMOUNTS.map((value) => (
+                        <button key={value} type="button" aria-pressed={donation === value} onClick={() => handleAmountClick(value)}>
+                          ₹{money(value)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.support}>
+                    <div className={styles.supportRow}>
+                      <label className={styles.supportLabel}>
+                        <input type="checkbox" checked={tip > 0} onChange={(event) => {
+                          if (!event.target.checked && tip > 0) setLastMobileTip(tip);
+                          setPresetTip(event.target.checked ? lastMobileTip : 0);
+                          setIsCustomTip(false);
+                          setCustomTip('');
+                        }} />
+                        <span>Add ₹{money(tip > 0 ? tip : lastMobileTip)} for CauseKind<small>Optional · helps run the platform</small></span>
+                      </label>
+                      <button className={styles.change} type="button" aria-expanded={mobileTipOpen} aria-controls="mobileTipEditor" onClick={() => setMobileTipOpen(!mobileTipOpen)}>
+                        {mobileTipOpen ? 'Done' : 'Change'}
+                      </button>
+                    </div>
+                    <div id="mobileTipEditor" hidden={!mobileTipOpen} className={styles.tipEditor}>
+                      <p>We take nothing from your donation. You choose whether to support CauseKind.</p>
+                      <div className={styles.presets} role="group" aria-label="Platform support amounts">
+                        {TIP_OPTIONS.filter((value) => value > 0).map((value) => (
+                          <button key={value} type="button" aria-pressed={tip === value} onClick={() => {
+                            setPresetTip(value);
+                            setLastMobileTip(value);
+                            setIsCustomTip(false);
+                            setCustomTip('');
+                          }}>₹{money(value)}</button>
+                        ))}
+                      </div>
+                      <label htmlFor="mobileSupportAmount">Or enter support amount (₹)</label>
+                      <input id="mobileSupportAmount" type="text" inputMode="numeric" value={isCustomTip ? customTip : presetTip} onChange={(event) => {
+                        const value = event.target.value.replace(/[^0-9]/g, '');
+                        setCustomTip(value);
+                        setIsCustomTip(true);
+                        if (Number(value) > 0) setLastMobileTip(Number(value));
+                      }} />
+                    </div>
+                  </div>
+                  <div className={styles.mobileTotal} aria-live="polite" aria-atomic="true">
+                    <div><strong>Total amount</strong><small>{tip > 0 ? `₹${money(donation)} donation + ₹${money(tip)} support` : 'No platform support added'}</small></div>
+                    <output>₹{money(total)}</output>
+                  </div>
+                </div>
+
+                <div className="hidden flex-col gap-4 md:flex">
+
                 {/* Step 1 — amount.
                     The Custom control shares the preset row as a fifth cell and
                     SWAPS IN PLACE into an input when chosen, rather than sitting
@@ -388,7 +461,6 @@ export function MoneyDonationForm() {
                           id="customAmount"
                           type="text"
                           inputMode="numeric"
-                          autoFocus
                           value={customAmount}
                           onChange={handleCustomAmountChange}
                           placeholder="Amount"
@@ -465,7 +537,6 @@ export function MoneyDonationForm() {
                           id="customTip"
                           type="text"
                           inputMode="numeric"
-                          autoFocus
                           value={customTip}
                           onChange={(e) => {
                             setCustomTip(e.target.value.replace(/[^0-9]/g, ''));
@@ -491,6 +562,8 @@ export function MoneyDonationForm() {
                 </div>
 
                 <hr className="border-amber-200/60 dark:border-amber-900/40" />
+
+                </div>
 
                 {/* Step 3 — details */}
                 <div className="flex flex-col gap-3">

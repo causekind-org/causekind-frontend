@@ -26,6 +26,7 @@ import {
   type DoneeNeedProfile,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { NgoProfileView } from "./ngo-view";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +61,7 @@ import {
   Star,
   RefreshCw,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { RequestReadinessRail } from "@/components/RequestReadinessRail";
 import { progressOf, needProfileItemLabel } from "@/lib/needProfileDocs";
@@ -69,6 +70,7 @@ import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -269,6 +271,11 @@ export default function ProfilePage() {
     if (authLoading) return;
     if (!user) {
       router.push("/login");
+      return;
+    }
+
+    if (isNgoRole(user.role?.toUpperCase())) {
+      setLoading(false);
       return;
     }
 
@@ -588,6 +595,11 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  const isNgo = isNgoRole(user?.role?.toUpperCase());
+  if (!authLoading && isNgo) {
+    return <NgoProfileView />;
   }
 
   // Loading skeleton

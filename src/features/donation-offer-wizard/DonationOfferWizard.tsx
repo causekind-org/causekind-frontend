@@ -72,13 +72,15 @@ const STEP_COUNT_WORD: Record<number, string> = { 4: "Four", 5: "Five" };
  * `offerId` is non-null for the whole lifetime of this component.
  */
 export function DonationOfferWizard({
-  offerId, offer, requestTitle, requestedQuantity, adminNote, onSubmitted, onExit, onSaveExit,
+  offerId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
 }: {
   offerId: number;
   /** Hydration source — a resumed DRAFT or NEEDS_INFORMATION offer. */
   offer: DonationOffer | null;
   requestTitle: string | null;
   requestedQuantity: number | null;
+  /** What the request still needs; caps the quantity field. Null when unknown. */
+  stillNeededQuantity?: number | null;
   /** Rejection guidance, kept visible while editing a NEEDS_INFORMATION offer. */
   adminNote?: string | null;
   onSubmitted: (offer: DonationOffer) => void;
@@ -95,8 +97,8 @@ export function DonationOfferWizard({
   const purchase = isPurchaseFlow(flowType);
   const showSpecNotes = needsSpecNotes(flowType);
   const serializerOpts = useMemo(
-    () => ({ includeSpecNotes: showSpecNotes, flowType }),
-    [showSpecNotes, flowType],
+    () => ({ includeSpecNotes: showSpecNotes, flowType, maxQuantity: stillNeededQuantity }),
+    [showSpecNotes, flowType, stillNeededQuantity],
   );
 
   /** This flow's steps. Everything that counts, walks or jumps reads this. */
@@ -396,7 +398,7 @@ export function DonationOfferWizard({
   const photosBlocked = !purchase && screening.kind === "prohibited";
 
   const handleContinue = useCallback(async () => {
-    const stepErrors = validateOfferStep(step, model, flowType);
+    const stepErrors = validateOfferStep(step, model, flowType, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
       setErrors({ photos: "Remove the photo we cannot accept before continuing." });
       return;
@@ -422,7 +424,7 @@ export function DonationOfferWizard({
       }
       goTo(steps[idx + 1], 1);
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField, steps, flowType]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, steps, flowType, stillNeededQuantity]);
 
   /** Synchronous guard. Disabled UI alone loses the race on a double tap. */
   const submitLockRef = useRef(false);
@@ -432,7 +434,7 @@ export function DonationOfferWizard({
     submitLockRef.current = true;
     setSubmitError(null);
 
-    const allErrors = validateOfferAll(model, flowType);
+    const allErrors = validateOfferAll(model, flowType, stillNeededQuantity);
     if (Object.keys(allErrors).length > 0) {
       const first = Object.keys(allErrors)[0];
       const target = offerStepForField(first, flowType);
@@ -469,7 +471,7 @@ export function DonationOfferWizard({
     } finally {
       setSubmitting(false);
     }
-  }, [model, submitted, photosBlocked, flush, offerId, onSubmitted, step, goTo, focusField, flowType]);
+  }, [model, submitted, photosBlocked, flush, offerId, onSubmitted, step, goTo, focusField, flowType, stillNeededQuantity]);
 
   const handleSaveExit = useCallback(async () => {
     setSavingExit(true);
@@ -534,11 +536,11 @@ export function DonationOfferWizard({
   const availability = useMemo(() => {
     const out = {} as Record<OfferStep, StepAvailability>;
     for (const s of steps) {
-      const complete = Object.keys(validateOfferStep(s, model, flowType)).length === 0;
+      const complete = Object.keys(validateOfferStep(s, model, flowType, stillNeededQuantity)).length === 0;
       out[s] = { complete, canNavigate: complete };
     }
     return out;
-  }, [model, steps, flowType]);
+  }, [model, steps, flowType, stillNeededQuantity]);
 
   const isLast = step === "review";
 
@@ -595,7 +597,7 @@ export function DonationOfferWizard({
                       {step === "details" && (
                         <OfferDetailsStep
                           model={model} errors={errors} onChange={setField}
-                          requestedQuantity={requestedQuantity} showSpecNotes={showSpecNotes}
+                          requestedQuantity={requestedQuantity} stillNeededQuantity={stillNeededQuantity} showSpecNotes={showSpecNotes}
                           purchase={purchase}
                         />
                       )}

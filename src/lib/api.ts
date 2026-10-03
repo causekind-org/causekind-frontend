@@ -280,7 +280,7 @@ async function request<T>(
 // Fix #4: login now returns email + role from the JSON body; the JWT itself is
 // delivered as an httpOnly cookie — the frontend never sees or stores the token.
 export function login(email: string, password: string, rememberMe = false) {
-  return request<{ token: null; email: string; role: string; userId: number }>(
+  return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
     "/api/v1/auth/login",
     { method: "POST", body: JSON.stringify({ email, password, rememberMe }) }
   );
@@ -303,7 +303,7 @@ export function initiateRegistration(data: {
 }
 
 export function verifyRegistrationOtp(email: string, otp: string) {
-  return request<{ token: null; email: string; role: string; userId: number }>(
+  return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
     "/api/v1/auth/register/verify",
     { method: "POST", body: JSON.stringify({ email, otp }) }
   );
@@ -329,7 +329,7 @@ export type NgoSignupData = {
 };
 
 export function registerNgo(data: NgoSignupData) {
-  return request<{ token: null; email: string; role: string; userId: number }>(
+  return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
     "/api/v1/auth/register/ngo",
     {
       method: "POST",
@@ -403,7 +403,7 @@ export function resetPassword(token: string, newPassword: string) {
 }
 
 export type GoogleAuthResponse =
-  | { needsCompletion: false; userId: number; email: string; role: string }
+  | { needsCompletion: false; userId: number; email: string; role: string; fullName?: string }
   | { needsCompletion: true; email: string; fullName: string };
 
 export function googleAuth(accessToken: string) {
@@ -426,6 +426,7 @@ export type UserProfile = {
   id: number;
   email: string;
   fullName: string;
+  organizationName?: string;
   phone: string;
   city: string | null;
   role: string;
@@ -437,7 +438,7 @@ export function getProfile() {
   return request<UserProfile>("/api/v1/auth/me");
 }
 
-export function updateProfile(data: { fullName?: string; phone?: string; city?: string }) {
+export function updateProfile(data: { fullName?: string; organizationName?: string; phone?: string; city?: string }) {
   return request<UserProfile>("/api/v1/auth/me", {
     method: "PUT",
     body: JSON.stringify(data),
@@ -735,19 +736,32 @@ export function withdrawItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
 }
 
+/**
+ * Remove a listing from the donor's inventory.
+ *
+ * <p>The local hide is a safety rail for listings the server keeps but stops
+ * showing, and it is applied <b>only after the server has agreed</b>. It used to
+ * run first, unconditionally, with both requests' errors swallowed — so a delete
+ * the server refused still cleared the row, reported success, and hid the
+ * listing in this browser's localStorage forever, while the listing itself
+ * stayed on the server where the donor could no longer reach it. A failure has
+ * to reach the caller, or the dashboard cannot tell the donor the truth.
+ */
 export async function deleteMyListing(id: number): Promise<void> {
-  // Always mark hidden locally so it is dismissed from the donor's view immediately
-  hideListingLocally(id);
   try {
     await request<void>(`/api/v1/items/${id}`, { method: "DELETE" });
-  } catch {
-    // If server rejects DELETE on terminal/audited/rejected items, try withdraw
+  } catch (deleteError) {
+    // The server keeps some listings it will not erase; withdrawing is the
+    // honest fallback, and it is still a change the donor asked for.
     try {
       await request<ItemListing>(`/api/v1/items/${id}/withdraw`, { method: "POST" });
     } catch {
-      /* ignore if already withdrawn/rejected */
+      // Neither worked — say so rather than pretending. Report the delete's
+      // reason: the withdraw was our idea, not the donor's.
+      throw deleteError;
     }
   }
+  hideListingLocally(id);
 }
 
 export type CreateListingPayload = {
@@ -927,6 +941,15 @@ export function getListingPhotos(listingId: number) {
 }
 
 /**
+ * Admin-scoped: same shape as {@link getListingPhotos}, but for any listing
+ * regardless of who owns it — the donor-facing route 401s an admin viewing
+ * someone else's listing, since it checks ownership, not just authentication.
+ */
+export function adminGetListingPhotos(listingId: number) {
+  return request<ListingPhoto[]>(`/api/v1/admin/items/${listingId}/photos`);
+}
+
+/**
  * Uploads one photo to one listing and returns the row it created.
  *
  * <p>Returns as soon as the bytes are quarantined — the row comes back
@@ -981,6 +1004,19 @@ export function deleteListingPhoto(listingId: number, mediaId: number) {
  */
 export async function getCurrentListingVideo(listingId: number) {
   const res = await fetch(`${BASE_URL}/api/v1/items/${listingId}/video`, {
+    credentials: "include",
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error("Could not load the video status");
+  return (await res.json()) as OfferVideoStatus;
+}
+
+/**
+ * Admin-scoped: same contract as {@link getCurrentListingVideo}, but for any
+ * listing regardless of who owns it.
+ */
+export async function adminGetListingVideo(listingId: number) {
+  const res = await fetch(`${BASE_URL}/api/v1/admin/items/${listingId}/video`, {
     credentials: "include",
   });
   if (res.status === 204) return null;
@@ -1047,9 +1083,12 @@ export function analyzeOfferImages(offerId: number) {
 
 export type ItemRequest = {
   id: number;
+  ngoApplicationId?: string | null;
   title: string;
   category: string;
   quantity: number;
+  fulfilledQuantity?: number;
+  remainingQuantity?: number;
   urgency: string;
   city: string;
   pincode: string | null;
@@ -1069,6 +1108,10 @@ export type ItemRequest = {
   emergencyNature: string | null;
   incidentDate: string | null;
   verificationDueAt: string | null;
+  /** From the owner's role on the server (NGO_PARTNER → NGO). Absent on older responses. */
+  requesterType?: "PERSON" | "NGO";
+  /** Registered organisation name, NGO requests on the browse feed only. Not a verification claim. */
+  organizationName?: string | null;
 };
 
 /**
@@ -1089,8 +1132,57 @@ export type PublicItemRequest = {
   createdAt: string;
   imageUrl: string | null;
   emergency: boolean;
-  doneeFirstName: string;
+  /** First name for a person's request; null on NGO requests. */
+  doneeFirstName: string | null;
+  /** From the owning account's role on the server — never inferred client-side. */
+  requesterType?: "PERSON" | "NGO";
+  /** Registered organisation name; NGO requests only, and not a verification claim. */
+  organizationName?: string | null;
 };
+
+export type PublicRequesterType = "PERSON" | "NGO";
+
+/** One page of the public board plus the totals it needs — see PublicRequestPageResponse.java. */
+export type PublicRequestPage = {
+  items: PublicItemRequest[];
+  total: number;
+  page: number;
+  size: number;
+  hasMore: boolean;
+  categoryCounts: Record<string, number>;
+  typeCounts?: Partial<Record<PublicRequesterType, number>>;
+};
+
+export type PublicRequestPageQuery = {
+  q?: string;
+  requesterType?: PublicRequesterType | null;
+  categories?: string[];
+  urgencies?: string[];
+  city?: string;
+  sort?: "newest" | "urgent" | "quantity";
+  /** Zero-based, as the API takes it. */
+  page?: number;
+  size?: number;
+};
+
+/** Server-side search, filter, sort and paging over the whole public board. */
+export function getPublicRequestPage(query: PublicRequestPageQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.q?.trim()) params.set("q", query.q.trim());
+  if (query.requesterType) params.set("requesterType", query.requesterType);
+  query.categories?.forEach(c => params.append("categories", c));
+  query.urgencies?.forEach(u => params.append("urgencies", u));
+  if (query.city?.trim()) params.set("city", query.city.trim());
+  if (query.sort && query.sort !== "newest") params.set("sort", query.sort);
+  params.set("page", String(query.page ?? 0));
+  params.set("size", String(query.size ?? 12));
+  return request<PublicRequestPage>(`/api/v1/item-requests/public/page?${params.toString()}`, { silent401: true });
+}
+
+/** One open public request; rejects (404) once it is no longer publicly open. */
+export function getPublicItemRequest(id: number) {
+  return request<PublicItemRequest>(`/api/v1/item-requests/public/${id}`, { silent401: true });
+}
 
 /** Public need board — no auth, no GPS, no distance sorting (newest first). */
 export function getPublicItemRequests(categories?: string[]) {
@@ -1597,6 +1689,7 @@ export type ItemMatch = {
   /** Server-computed XOR of the two confirmation timestamps — no status reflects it. */
   handoverPartlyConfirmed: boolean;
   closedAt: string | null;
+  completedAt?: string | null;
   hiddenByDonor: boolean;
   hiddenByDonee: boolean;
   // Delivery verification
@@ -1614,6 +1707,8 @@ export type ItemMatch = {
   doneeConfirmedAt: string | null;
   doneeConditionRating: string | null;
   doneeConditionNotes: string | null;
+  /** Where a courier delivers; null from a backend that predates it. See DeliveryAddress. */
+  delivery: DeliveryAddress | null;
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
@@ -2020,6 +2115,12 @@ export type DonationOffer = {
    * `flowType === "WILL_PURCHASE"`.
    */
   purchaseCommitment: PurchaseCommitmentDetails | null;
+  /**
+   * How many the donee confirmed receiving at the handover; null until they have.
+   * This is what counts toward the request — `itemDetails.quantity` is only what
+   * was offered — so anything listing deliveries beside a total must use it.
+   */
+  receivedQuantity: number | null;
 };
 
 /**
@@ -2095,8 +2196,73 @@ export type HandoverRecord = {
   courierName: string | null;
   trackingNumber: string | null;
   createdAt: string;
+  /** Where a courier delivers; null from a backend that predates it. */
+  delivery: DeliveryAddress | null;
   confirmation: HandoverConfirmationSummary | null;
 };
+
+/**
+ * A courier delivery's destination, supplied by the recipient for one handover.
+ * `needed` is true when the handover method sends the item to them; a
+ * `requestedAt` later than `submittedAt` means the donor asked them to check it.
+ */
+export type DeliveryAddress = {
+  needed: boolean;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  requestedAt: string | null;
+  submittedAt: string | null;
+};
+
+export type DeliveryAddressInput = {
+  address: string;
+  latitude?: number;
+  longitude?: number;
+  contactName: string;
+  contactPhone: string;
+};
+
+/** A pre-fill from the recipient's own profile — every field may be missing. */
+export type DeliveryAddressSuggestion = {
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+};
+
+export function requestOfferDeliveryAddress(offerId: number) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/delivery-address/request`, { method: "POST" });
+}
+
+export function submitOfferDeliveryAddress(offerId: number, data: DeliveryAddressInput) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/delivery-address`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getOfferDeliveryAddressSuggestion(offerId: number) {
+  return request<DeliveryAddressSuggestion>(`/api/v1/offers/${offerId}/handover/delivery-address/suggestion`);
+}
+
+export function requestMatchDeliveryAddress(matchId: number) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/delivery-address/request`, { method: "POST" });
+}
+
+export function submitMatchDeliveryAddress(matchId: number, data: DeliveryAddressInput) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/delivery-address`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getMatchDeliveryAddressSuggestion(matchId: number) {
+  return request<DeliveryAddressSuggestion>(`/api/v1/matches/${matchId}/handover/delivery-address/suggestion`);
+}
 
 export type Certificate = {
   id: number;
@@ -2532,6 +2698,24 @@ export function reportPostDeliveryIssue(offerId: number, data: {
   issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
 }) {
   return request<object>(`/api/v1/offers/${offerId}/handover/issues`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function reportNgoDriveOfferIssue(offerId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/drive-offers/${offerId}/report-issue`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function reportMatchIssue(matchId: number, data: {
+  issueType: string; description: string; windowCategory: string; evidenceUrls?: string[];
+}) {
+  return request<object>(`/api/v1/matches/${matchId}/handover/issues`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -4352,25 +4536,35 @@ export function submitNgoApplication(payload: {
   });
 }
 
-/**
- * Step 6: Verify the 6-digit OTP.
- * On success the application transitions to UNDER_REVIEW.
- */
-export function verifyNgoOtp(applicationId: string, otp: string) {
-  return request<{ message: string }>("/api/v1/ngo-registration/verify", {
+export async function verifyNgoOtp(applicationId: string, otp: string) {
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/verify`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ applicationId, otp }),
+    credentials: "include",
   });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody?.message || "Verification failed");
+  }
+  return res.json() as Promise<{ message: string }>;
 }
 
 /**
  * Step 6: Resend the OTP. Enforces a 60-second cooldown server-side.
  */
-export function resendNgoOtp(applicationId: string) {
-  return request<{ message: string }>("/api/v1/ngo-registration/resend-otp", {
+export async function resendNgoOtp(applicationId: string) {
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/resend-otp`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ applicationId }),
+    credentials: "include",
   });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody?.message || "Failed to resend OTP");
+  }
+  return res.json() as Promise<{ message: string }>;
 }
 
 export type NgoApplicationStatusResponse = {
@@ -4440,4 +4634,359 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
     throw new Error(screeningMessages[error.code] || error.detail || error.message || "Could not upload this document. Use a JPG, PNG or WebP photo under 10 MB (8 MB for your photo).");
   }
   return res.json();
+}
+
+// NGO staff review uses the same server capability as request review.
+export type NgoReviewApplication = NgoApplicationStatusResponse & {
+  id: number; userId: number | null; legalStructure: string; registrationNumber: string;
+  registeredOfficeAddress: string; yearOfEstablishment: string; representativeName: string;
+  designation: string; mobileNumber: string; officialEmail: string; reviewedAt: string | null;
+  aiScreeningVerdict: string | null; aiScreeningNotes: string | null;
+};
+export type NgoReviewFile = {
+  id: number; kind: "document" | "photo"; type: string; name: string;
+  ownershipRecorded: boolean; moderationVerdict: string | null;
+};
+export type NgoReviewDetail = {
+  application: NgoReviewApplication; files: NgoReviewFile[]; submissions: NgoReviewApplication[];
+  decisions: { id: number; fromStatus: string; toStatus: string; changedByEmail: string; note: string; changedAt: string }[];
+  current: boolean;
+};
+export function adminGetNgoApplications(status: string, page = 0) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (status) params.set("status", status);
+  return request<{ content: NgoReviewApplication[]; totalPages: number; totalElements: number }>(
+    `/api/v1/admin/ngo-applications?${params}`);
+}
+export function adminGetNgoApplication(id: string) {
+  return request<NgoReviewDetail>(`/api/v1/admin/ngo-applications/${encodeURIComponent(id)}`);
+}
+export function adminDecideNgoApplication(id: string, status: "APPROVED" | "REJECTED" | "NEEDS_INFORMATION", reason: string) {
+  return request<NgoReviewApplication>(`/api/v1/admin/ngo-applications/${encodeURIComponent(id)}/decision`, {
+    method: "PATCH", body: JSON.stringify({ status, reason }),
+  });
+}
+export function adminGetNgoEvidenceLink(id: string, file: NgoReviewFile) {
+  return request<{ url: string }>(`/api/v1/admin/ngo-applications/${encodeURIComponent(id)}/files/${file.kind}/${file.id}`);
+}
+
+export type NgoHandover = {
+  kind: "MATCH" | "OFFER"; id: number; requestId: number | null; title: string; status: string;
+  quantity: number; scheduledAt: string | null; received: boolean; dualConfirmed: boolean;
+  photoDue: boolean; href: string;
+};
+export type NgoOverview = {
+  activeRequests: number; itemsPledged: number; dropoffsToConfirm: number; photosDue: number;
+  photosDueRequestName: string; verifiedDeliveries: number; handovers: NgoHandover[];
+};
+export function getNgoOverview() {
+  // Activity events must not reuse totals cached before the handover changed.
+  getCacheMap.delete("/api/v1/ngo/overview");
+  return request<NgoOverview>("/api/v1/ngo/overview");
+}
+export async function uploadNgoHandoverProof(kind: NgoHandover["kind"], id: number, file: File) {
+  const body = new FormData(); body.append("file", file);
+  const response = await fetch(`${BASE_URL}/api/v1/ngo/handovers/${kind}/${id}/proof`, { method: "POST", body, credentials: "include" });
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+    throw new Error(result?.message || "We could not save the photo. Please try again.");
+  }
+  invalidateRequestCache();
+  return response.json() as Promise<{ message: string }>;
+}
+
+// ── NGO Drives ──────────────────────────────────────────────────────────────
+
+export type CreateNgoDrivePayload = {
+  driveType: "ITEMS";
+  title: string;
+  category: string;
+  itemName: string;
+  quantity: number;
+  unit: "PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS";
+  condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED";
+  details?: string;
+  referencePhotoUrl?: string;
+  description: string;
+  urgency: "NORMAL" | "HIGH" | "CRITICAL";
+  beneficiaryGroup: string;
+  beneficiaryCount: number;
+  neededBy: string;          // ISO date YYYY-MM-DD
+  availableDays: ("MON"|"TUE"|"WED"|"THU"|"FRI"|"SAT"|"SUN")[];
+  availableFrom: string;     // "HH:mm"
+  availableTo: string;       // "HH:mm"
+  contactName: string;
+  contactPhone: string;
+  declarations: {
+    accurate: boolean;
+    usedOnlyForBeneficiaries: boolean;
+    proofWithin48h: boolean;
+    facesWithConsent: boolean;
+    notDuplicate: boolean;
+    falseInfoConsequences: boolean;
+    contactConsent: boolean;
+  };
+};
+
+export async function createNgoDrive(payload: CreateNgoDrivePayload): Promise<{ id: number }> {
+  return await request<{ id: number }>("/api/v1/ngo-drives", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export type NgoDrive = {
+  id: number;
+  ngoUser: { id: number; fullName: string };
+  title: string;
+  category: string;
+  itemName: string;
+  quantityNeeded: number;
+  quantityPledged: number;
+  quantityReceived: number;
+  unit: string;
+  itemCondition: string;
+  description: string;
+  urgency: string;
+  beneficiaryGroup: string;
+  beneficiaryCount: number;
+  neededBy: string; // ISO Date
+  availableDays: string;
+  availableFrom: string; // "HH:mm"
+  availableTo: string;   // "HH:mm"
+  contactName: string;
+  contactPhone: string;
+  status: string;
+  adminReason?: string;
+  createdAt: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  liveAt?: string;
+};
+
+export async function getNgoDrives(status?: string): Promise<NgoDrive[]> {
+  const query = status ? `?status=${status}` : "";
+  return await request<NgoDrive[]>(`/api/v1/drives${query}`);
+}
+
+export async function getNgoDrive(id: number): Promise<NgoDrive> {
+  return await request<NgoDrive>(`/api/v1/drives/${id}`);
+}
+
+export async function cancelNgoDrive(driveId: number): Promise<void> {
+  await request(`/api/v1/ngo-drives/${driveId}/cancel`, { method: "POST" });
+}
+
+export async function getMyNgoDrives(): Promise<NgoDrive[]> {
+  return await request<NgoDrive[]>("/api/v1/ngo-drives/mine");
+}
+
+export async function getNgoDriveDetail(id: number): Promise<NgoDrive> {
+  return await request<NgoDrive>(`/api/v1/ngo-drives/${id}`);
+}
+
+export type NgoDriveOfferResponse = {
+  id: number;
+  driveId: number;
+  donorDisplayName: string;
+  status: string;
+  quantity?: number;
+  condition?: string;
+  approximateAge?: string;
+  knownDefects?: string;
+  notesForNgo?: string;
+  handoverMethod?: string;
+  pickupCity?: string;
+  pickupLocality?: string;
+  pickupPincode?: string;
+  rejectionReason?: string;
+  ngoDeclineReason?: string;
+  submittedAt?: string;
+  driveTitle: string;
+  ngoName: string;
+  driveQuantityNeeded: number;
+  driveQuantityReceived: number;
+  driveQuantityPledged: number;
+  media?: Array<{
+    id: number;
+    mediaUrl: string;
+    mediaType: string;
+    status: string;
+    sortOrder: number;
+  }>;
+  handoverDetails?: {
+    organizationName: string;
+  };
+};
+
+export async function createNgoDriveOfferDraft(driveId: number): Promise<{ id: number }> {
+  return await request<{ id: number }>(`/api/v1/drives/${driveId}/offers/draft`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function uploadNgoDriveOfferMedia(offerId: number, formData: FormData): Promise<any> {
+  // Using native fetch because request() sets Content-Type: application/json by default
+  const token = localStorage.getItem("ck_token");
+  const headers: HeadersInit = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`/api/v1/drive-offers/${offerId}/media`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || res.statusText);
+  }
+  return await res.json();
+}
+
+export async function deleteNgoDriveOfferMedia(offerId: number, mediaId: number): Promise<void> {
+  await request(`/api/v1/drive-offers/${offerId}/media/${mediaId}`, { method: "DELETE" });
+}
+
+export async function updateNgoDriveOfferItem(offerId: number, data: Partial<NgoDriveOfferResponse>): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/item-details`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function submitNgoDriveOffer(offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ declarationsAccepted: true }),
+  });
+}
+
+export async function cancelNgoDriveOffer(offerId: number, reason: string): Promise<void> {
+  await request(`/api/v1/drive-offers/${offerId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function getMyNgoDriveOffers(): Promise<NgoDriveOfferResponse[]> {
+  return await request<NgoDriveOfferResponse[]>("/api/v1/drive-offers/mine");
+}
+
+export async function getNgoDriveOffer(offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}`);
+}
+
+export async function getNgoDriveOffersForNgo(driveId: number, status?: string): Promise<NgoDriveOfferResponse[]> {
+  const query = status ? `?status=${status}` : "";
+  return await request<NgoDriveOfferResponse[]>(`/api/v1/ngo-drives/${driveId}/offers${query}`);
+}
+
+export async function reviewNgoDriveOffer(driveId: number, offerId: number, decision: "ACCEPT" | "DECLINE", reason?: string): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/review`, {
+    method: "POST",
+    body: JSON.stringify({ decision, reason }),
+  });
+}
+
+export async function releaseNgoDriveOffer(driveId: number, offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/release`, {
+    method: "POST",
+  });
+}
+
+export type NgoDriveOfferHandoverRecordResponse = {
+  id: number;
+  offerId: number;
+  method: string | null;
+  scheduledDateTime: string | null;
+  locationAddress: string | null;
+  locationLatitude: number | null;
+  locationLongitude: number | null;
+  transportArrangedBy: string | null;
+  transportCostBornBy: string | null;
+  packagingResponsibility: string | null;
+  courierName: string | null;
+  rescheduleCount: number;
+  lastRescheduledAt: string | null;
+  rescheduleReason: string | null;
+  atRisk: boolean;
+  confirmation: {
+    deliveryOtp: string | null;
+    otpVerified: boolean;
+    otpVerifiedAt: string | null;
+    donorConfirmedQty: number | null;
+    donorConfirmedAt: string | null;
+    ngoConfirmedQty: number | null;
+    ngoConfirmedAt: string | null;
+  } | null;
+};
+
+export async function scheduleNgoDriveOfferHandover(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/schedule-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function rescheduleNgoDriveOfferHandover(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/reschedule-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function generateNgoDriveOfferHandoverOtp(offerId: number): Promise<{ otp: string }> {
+  return await request<{ otp: string }>(`/api/v1/drive-offers/${offerId}/generate-otp`, {
+    method: "POST",
+  });
+}
+export async function confirmNgoDriveOfferHandoverDonor(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/confirm-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function confirmNgoDriveOfferHandoverNgo(driveId: number, offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
+  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/confirm-handover`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+
+export async function closeNgoDrive(driveId: number, data: { reason: string }): Promise<void> {
+  return await request<void>(`/api/v1/ngo-drives/${driveId}/close`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+export async function uploadDistributionProof(driveId: number, file: File): Promise<void> {
+  const formData = new FormData();
+  formData.append("files", file);
+  const res = await fetch(`/api/v1/ngo-drives/${driveId}/distribution-proof`, {
+    method: "POST",
+    body: formData,
+    // Add credentials if needed or fetch wrapper that handles auth
+  });
+  if (!res.ok) throw new Error("Upload failed");
+}
+
+
+export function getNgoDriveOfferCertificate(offerId: number) {
+  return request<Certificate>(`/api/v1/drive-offers/${offerId}/certificate`);
+}
+
+export type NgoDriveProofResponse = {
+  id: number;
+  driveId: number;
+  uploadedAt: string;
+  media: { mediaUrl: string; mediaType: string }[];
+  quantityDistributed: number;
+  ngoStatement: string | null;
+  status: string;
+};
+
+export async function getNgoDriveProof(driveId: number): Promise<NgoDriveProofResponse> {
+  return await request<NgoDriveProofResponse>(`/api/v1/drives/${driveId}/proof`);
 }

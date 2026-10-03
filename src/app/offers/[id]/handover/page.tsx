@@ -13,6 +13,7 @@ import { useParams } from "next/navigation";
 import {
   getDonationOffer, getHandover, scheduleHandover, rescheduleHandover,
   generateHandoverOtp, confirmHandoverDonor, confirmHandoverDonee,
+  requestOfferDeliveryAddress, submitOfferDeliveryAddress, getOfferDeliveryAddressSuggestion,
   setDoneeCallPermission,
   type DonationOffer, type HandoverRecord, type OfferHandoverMethod,
 } from "@/lib/api";
@@ -27,7 +28,7 @@ import { useCoalescedReload } from "@/features/handover/useCoalescedReload";
 
 export default function OfferHandoverHubPage() {
   const params = useParams();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const offerId = Number(params.id);
 
   const [offer, setOffer] = useState<DonationOffer | null>(null);
@@ -96,7 +97,7 @@ export default function OfferHandoverHubPage() {
     } catch { /* private mode — never block the page */ }
   }, [offer?.status, offerId]);
 
-  if (loading) return <HandoverSkeleton />;
+  if (loading || authLoading) return <HandoverSkeleton />;
   if (loadError) return <HandoverLoadError message={loadError} onRetry={() => { setLoading(true); void reload(); }} />;
 
   const vm = offer ? adaptOffer(offer, handover, user?.email) : null;
@@ -148,6 +149,11 @@ export default function OfferHandoverHubPage() {
           setCallPermission: vm.role === "DONOR"
             ? async (next) => { setOffer(await setDoneeCallPermission(offerId, next)); }
             : undefined,
+          deliveryAddress: {
+            request: async () => { applyHandover(await requestOfferDeliveryAddress(offerId)); },
+            submit: async (input) => { applyHandover(await submitOfferDeliveryAddress(offerId, input)); },
+            suggest: () => getOfferDeliveryAddressSuggestion(offerId),
+          },
         }}
       />
       <HandoverCelebration

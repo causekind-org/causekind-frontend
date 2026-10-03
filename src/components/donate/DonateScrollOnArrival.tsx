@@ -42,7 +42,7 @@ export function DonateScrollOnArrival() {
         // Drop the param so a reload does not scroll again.
         const url = new URL(window.location.href);
         url.searchParams.delete(DONATE_SCROLL_PARAM);
-        window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
         return;
       }
       // Not mounted yet. Give up after ~1s rather than spinning forever.

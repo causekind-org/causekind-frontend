@@ -1,18 +1,23 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
+import path from "path";
+import fs from "fs";
 
-/**
- * Vitest, added alongside the existing `tsc --noEmit` + `next build` gate
- * rather than replacing it.
- *
- * <p>Those two catch type errors and build breaks, which is most of what goes
- * wrong here. They cannot catch the failure this suite exists for: a link that
- * points at a route which does not exist, a `?next=` that silently loses its
- * destination, or a guest board that quietly starts calling an authenticated
- * endpoint. All three compile cleanly and all three are user-visible breakage.
- */
+const realRoot = fs.existsSync(process.cwd()) ? fs.realpathSync(process.cwd()) : process.cwd();
+
 export default defineConfig({
+  root: realRoot,
+  resolve: {
+    alias: {
+      vitest: path.resolve(realRoot, "node_modules/vitest"),
+    },
+  },
+  server: {
+    fs: {
+      strict: false,
+    },
+  },
   // Cast, because two copies of Vite's types are in play: Next 16 pulls in the
   // rolldown-based Vite, Vitest ships its own rollup-based one, and their
   // `Plugin` types differ on hook internals that nothing here touches. The

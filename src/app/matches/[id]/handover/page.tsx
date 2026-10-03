@@ -14,6 +14,7 @@ import { useParams } from "next/navigation";
 import {
   getMatch, saveMatchLogistics, generateDeliveryOtp,
   confirmMatchHandoverDonor, confirmMatchHandoverDonee, setMatchDoneeCallPermission,
+  requestMatchDeliveryAddress, submitMatchDeliveryAddress, getMatchDeliveryAddressSuggestion,
   type ItemMatch,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,7 +28,7 @@ import { useCoalescedReload } from "@/features/handover/useCoalescedReload";
 
 export default function MatchHandoverHubPage() {
   const params = useParams();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const matchId = Number(params.id);
 
   const [match, setMatch] = useState<ItemMatch | null>(null);
@@ -69,7 +70,7 @@ export default function MatchHandoverHubPage() {
     } catch { /* private mode — never block the page */ }
   }, [match?.status, matchId]);
 
-  if (loading) return <HandoverSkeleton />;
+  if (loading || authLoading) return <HandoverSkeleton />;
   if (loadError) return <HandoverLoadError message={loadError} onRetry={() => { setLoading(true); void reload(); }} />;
 
   const vm = match ? adaptMatch(match, user?.email) : null;
@@ -119,6 +120,11 @@ export default function MatchHandoverHubPage() {
           setCallPermission: vm.role === "DONOR"
             ? async (next) => { setMatch(await setMatchDoneeCallPermission(matchId, next)); }
             : undefined,
+          deliveryAddress: {
+            request: async () => { setMatch(await requestMatchDeliveryAddress(matchId)); },
+            submit: async (input) => { setMatch(await submitMatchDeliveryAddress(matchId, input)); },
+            suggest: () => getMatchDeliveryAddressSuggestion(matchId),
+          },
         }}
       />
       <HandoverCelebration

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 
 import { useTranslations } from "next-intl";
 import LetterSwap from "@/components/LetterSwap";

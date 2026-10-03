@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { CheckCircle2, Heart, Mail, ArrowRight, HandHeart } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
