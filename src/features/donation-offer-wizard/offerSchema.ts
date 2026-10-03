@@ -15,7 +15,7 @@ import {
  * leave Continue permanently dead — and the failure would be invisible, because
  * neither field is rendered for that flow for an error to attach to.
  */
-export function buildOfferSchema(flowType?: string | null) {
+export function buildOfferSchema(flowType?: string | null, maxQuantity?: number | null) {
   const purchase = isPurchaseFlow(flowType);
   return z
   .object({
@@ -83,9 +83,9 @@ export function buildOfferSchema(flowType?: string | null) {
       }
     }
 
-    // Quantity — required, a positive whole number. No maximum is imposed here:
-    // how much is "too much" is the backend's compatibility rule, and inventing
-    // a cap in the form would silently disagree with it.
+    // Quantity — required, a positive whole number, and at most what the
+    // request still needs when the caller passes that (maxQuantity). No other
+    // cap: how much is "too much" otherwise is the backend compatibility rule.
     const qty = Number(v.quantity);
     if (v.quantity.trim() === "") {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quantity"], message: "How many are you donating?" });
@@ -93,6 +93,13 @@ export function buildOfferSchema(flowType?: string | null) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom, path: ["quantity"],
         message: "Enter a whole number of items, at least 1.",
+      });
+    } else if (maxQuantity != null && maxQuantity > 0 && qty > maxQuantity) {
+      // Caps at what the request still needs. The backend enforces this too
+      // (DonationOfferService), but an inline error beats a 400 after submit.
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom, path: ["quantity"],
+        message: `This request needs only ${maxQuantity} more — you can offer up to ${maxQuantity}.`,
       });
     }
 
@@ -141,8 +148,8 @@ export const OFFER_STEP_FIELDS: Record<OfferStep, readonly (keyof OfferValues)[]
   review: ["declarationsConfirmed"],
 };
 
-function issuesToRecord(values: OfferValues, flowType?: string | null): Record<string, string> {
-  const result = buildOfferSchema(flowType).safeParse(values);
+function issuesToRecord(values: OfferValues, flowType?: string | null, maxQuantity?: number | null): Record<string, string> {
+  const result = buildOfferSchema(flowType, maxQuantity).safeParse(values);
   if (result.success) return {};
   const out: Record<string, string> = {};
   for (const issue of result.error.issues) {
@@ -160,17 +167,17 @@ function issuesToRecord(values: OfferValues, flowType?: string | null): Record<s
  * definition of every rule rather than one per step.
  */
 export function validateOfferStep(
-  step: OfferStep, values: OfferValues, flowType?: string | null,
+  step: OfferStep, values: OfferValues, flowType?: string | null, maxQuantity?: number | null,
 ): Record<string, string> {
-  const all = issuesToRecord(values, flowType);
+  const all = issuesToRecord(values, flowType, maxQuantity);
   const fields = OFFER_STEP_FIELDS[step] as readonly string[];
   return Object.fromEntries(Object.entries(all).filter(([k]) => fields.includes(k)));
 }
 
 export function validateOfferAll(
-  values: OfferValues, flowType?: string | null,
+  values: OfferValues, flowType?: string | null, maxQuantity?: number | null,
 ): Record<string, string> {
-  return issuesToRecord(values, flowType);
+  return issuesToRecord(values, flowType, maxQuantity);
 }
 
 /**

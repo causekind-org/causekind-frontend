@@ -17,7 +17,7 @@
 .section {
   position: relative;
   overflow-x: clip;
-  background: #f4eee4;
+  background: var(--surface-cream);
   color: #1c1410;
   --sg-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --sg-accent: #b5470f;
@@ -25,7 +25,7 @@
   --sg-paper: #fcfaf5;
 }
 :global(.dark) .section {
-  background: #17110c;
+  background: var(--surface-cream);
   color: #f5eee8;
   --sg-ink: #c8b6a4;
   --sg-paper: #efe9df;
@@ -36,7 +36,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.15 0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
@@ -59,6 +59,26 @@
 }
 
 /* ══ Desktop / tablet table (≥ 768px) ═══════════════════════════════════════ */
+.desktopViewport { display: none; }
+
+@media (min-width: 768px) {
+  .desktopViewport {
+    /* Fit the whole composition, including rotated prints and margin notes,
+       below the measured navbar rather than sizing solely from screen width. */
+    --sg-available-height: max(280px, calc(100svh - var(--ck-nav-h, 7rem)));
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--sg-available-height);
+    padding: 24px 24px;
+  }
+  .desktopViewport .stage {
+    width: min(100%, 1600px, calc((var(--sg-available-height) - 48px) * 1.6));
+    flex-shrink: 0;
+  }
+}
+
 .stage {
   position: relative;
   width: 100%;

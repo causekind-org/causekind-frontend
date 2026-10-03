@@ -32,7 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { toast } from "@/lib/toast";
 import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOfferWizard";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
   ShoppingBag, Shuffle, Loader2, Sparkles, type LucideIcon,
@@ -412,6 +412,8 @@ export default function OfferWizardPage() {
   const [error, setError] = useState<string | null>(null);
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
   const [blockedByOther, setBlockedByOther] = useState(false);
+  // This donor already completed a donation to this request — they can give more.
+  const [donatedBefore, setDonatedBefore] = useState(false);
   const [nudged, setNudged] = useState<DonorFlowType | null>(null);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -424,14 +426,19 @@ export default function OfferWizardPage() {
     if (!requestId) return;
     // Don't fire five authenticated calls for someone who is about to be
     // redirected — a guest would just collect 401s, and a donee 403s.
-    if (authLoading || !user || user.role === "DONEE") return;
+    if (authLoading || !user || user.role !== "DONOR") return;
     getAnonymizedRequest(requestId).then(setRequest).catch(() => setRequestLoadFailed(true));
     getQuantityAllocation(requestId).then(setQty).catch(() => {});
     // Check if the donor already has an offer for this request
     getMyDonationOffers()
       .then((offers) => {
-        const found = offers.find((o) => o.requestId === requestId &&
-          !["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(o.status));
+        const mine = offers.filter((o) => o.requestId === requestId);
+        setDonatedBefore(mine.some((o) => o.status === "COMPLETED"));
+        // Finished offers don't block a new one — neither a withdrawn/declined/rejected
+        // attempt nor a COMPLETED donation: a donor who gave 4 of 10 laptops can come
+        // back and give the other 6. Mirrors DonationOfferService.isFinishedOfferStatus.
+        const found = mine.find((o) =>
+          !["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED", "COMPLETED"].includes(o.status));
         if (!found) {
           // No offer of our own yet — check whether another donor already has one
           // actively in progress on this request before letting the donor start.
@@ -554,6 +561,25 @@ export default function OfferWizardPage() {
     );
   }
 
+  // Offers are donor-only on the server (DonationOfferService.resolveDonor).
+  // An NGO, representative or admin account would only collect 403s in the
+  // wizard, so say so plainly instead — without switching their role.
+  if (user.role !== "DONOR") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
+        <p className="max-w-md text-gray-600 dark:text-gray-400">
+          Offering an item needs a donor account. You&apos;re signed in with a different account type.
+        </p>
+        <button
+          onClick={() => router.push(`/requests/${params.id}`)}
+          className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
+        >
+          Back to the request
+        </button>
+      </div>
+    );
+  }
+
   if (!request) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -561,6 +587,10 @@ export default function OfferWizardPage() {
       </div>
     );
   }
+
+  // What donors can still send once earlier donations are counted — from the
+  // request's own quantity, capped, so it can never read below zero.
+  const stillNeeded = Math.max(0, request.quantity - Math.min(request.quantityDelivered ?? 0, request.quantity));
 
   // The request/flow picker creates the server draft. Once it exists, the
   // editable item form owns the viewport so its desktop rail, stacked card and
@@ -584,6 +614,7 @@ export default function OfferWizardPage() {
           offer={offer}
           requestTitle={request.title}
           requestedQuantity={request.quantity}
+          stillNeededQuantity={stillNeeded}
           adminNote={offer.status === "NEEDS_INFORMATION" ? offer.displayRejectionReason : null}
           onExit={() => {
             setExistingOffer(offer);
@@ -696,6 +727,18 @@ export default function OfferWizardPage() {
               );
             })()}
 
+            {/* A returning donor — their earlier donation is done, and the request
+                still needs more. Same left-accent style as the existing-offer banner. */}
+            {donatedBefore && !existingOffer && stillNeeded > 0 && (
+              <div className="mb-6 border-l-4 border-green-400 py-1 pl-4 dark:border-green-600">
+                <p className="text-sm font-bold text-green-800 dark:text-green-200">Thank you for donating to this request</p>
+                <p className="mt-1 text-sm leading-relaxed text-green-700 dark:text-green-300">
+                  Your earlier donation is complete. {stillNeeded} more {stillNeeded === 1 ? "is" : "are"} still
+                  needed — you can offer again below.
+                </p>
+              </div>
+            )}
+
             {/* Breadcrumb */}
             <div className="mb-4 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">
               <Link href="/requests" className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">Requests</Link>
@@ -727,7 +770,12 @@ export default function OfferWizardPage() {
                 <span className="text-gray-300 dark:text-gray-700">•</span>
                 <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {request.city}</span>
                 <span className="text-gray-300 dark:text-gray-700">•</span>
-                <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {request.quantity} unit{request.quantity === 1 ? "" : "s"} needed</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" />
+                  {stillNeeded < request.quantity
+                    ? `${stillNeeded} of ${request.quantity} still needed`
+                    : `${request.quantity} unit${request.quantity === 1 ? "" : "s"} needed`}
+                </span>
               </div>
             </header>
 
@@ -850,7 +898,7 @@ export default function OfferWizardPage() {
                   </div>
                   <div className="flex gap-5 sm:gap-8 text-right">
                     <div>
-                      <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityDelivered} / {qty.quantityRequired}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{request.quantity - stillNeeded} / {request.quantity}</p>
                       <p className="text-2xs font-semibold uppercase tracking-wide text-gray-400">Provided</p>
                     </div>
                     <div>
@@ -876,7 +924,7 @@ export default function OfferWizardPage() {
             <div className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {daysAgo(request.createdAt)}</span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
-              <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {request.quantityRemaining} still needed</span>
+              <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {stillNeeded} still needed</span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
               <button
                 onClick={() => shareRequest(request.title, request.id)}

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence, useInView, useReducedMotion } from "framer-motion";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import {
   UserCheck,
   MapPin,
@@ -86,11 +86,11 @@ const TABS: TabConfig[] = [
   {
     id: "donee",
     label: "I need help",
-    roleColor: "#0F7A6C",
-    roleColorHover: "#095349",
-    roleBgSoft: "#E3F2EF",
-    roleBorder: "rgba(15, 122, 108, 0.25)",
-    roleGlow: "rgba(15, 122, 108, 0.15)",
+    roleColor: "#1e3a60",
+    roleColorHover: "#2d5a96",
+    roleBgSoft: "#E8EFF8",
+    roleBorder: "rgba(30, 58, 96, 0.25)",
+    roleGlow: "rgba(30, 58, 96, 0.15)",
     buttonText: "Join as a Donee",
     buttonHref: LANDING_ROUTES.doneeRegister,
     steps: [
@@ -232,7 +232,7 @@ function StepCard({
         style={{
           transform: isHovered && !reduceMotion ? `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(6px)` : "none",
           boxShadow: isHovered ? `0 14px 28px -10px ${roleBorder}` : undefined,
-          borderColor: isHovered ? roleColor : undefined,
+          borderColor: isHovered ? roleColor : roleBorder,
         }}
       >
         {/* Subtle top role accent highlight */}
@@ -536,7 +536,6 @@ export function HowItWorksSection() {
 
           {/* DESKTOP: 4 Symmetrically Centred Steps Cards Grid */}
           <div className="relative z-10 hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 items-stretch justify-items-stretch w-full">
-            <AnimatePresence mode="wait">
               {currentTabConfig.steps.map((step, idx) => (
                 <StepCard
                   key={`${activeTab}-step-${step.number}`}
@@ -547,7 +546,6 @@ export function HowItWorksSection() {
                   roleBorder={currentTabConfig.roleBorder}
                 />
               ))}
-            </AnimatePresence>
           </div>
 
           {/* PHONE (< 768px): the roles on a horizontal track — current in

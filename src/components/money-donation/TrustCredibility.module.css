@@ -1,0 +1,72 @@
+.mobileAllocation { display: none; }
+.mobileTrustHeading { display: none; }
+
+@media (max-width: 767px) {
+  .section { padding-block: 1.75rem; background: var(--surface-cream); }
+  .mobileTrustHeading { display: block; margin-bottom: 1rem; }
+  .mobileTrustHeading p { margin: 0 0 .5rem; font-size: .625rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); }
+  .mobileTrustHeading h2 { margin: 0 0 .4375rem; font-size: 1.375rem; font-weight: 700; line-height: 1.2; letter-spacing: -.025em; color: var(--foreground); }
+  .mobileTrustHeading span { font-size: .75rem; line-height: 1.5; color: var(--muted-foreground); }
+  .certificates { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-bottom: 1.5rem; }
+  .mobileAllocation {
+    display: block;
+    min-width: 0;
+    padding: 1rem .875rem;
+    border-radius: .875rem;
+    background: var(--surface-cream);
+    color: var(--foreground);
+  }
+  .eyebrow {
+    margin: 0 0 .5rem;
+    color: var(--primary);
+    font-size: .625rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .mobileAllocation > h3 {
+    margin: 0 0 .5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -.025em;
+    text-wrap: balance;
+  }
+  .intro {
+    margin: 0 0 .75rem;
+    color: var(--muted-foreground);
+    font-size: .8125rem;
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+  .focusList { list-style: none; margin: 0; padding: 0; }
+  .focusList li {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: start;
+    gap: .625rem;
+    padding: .75rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: .5rem;
+    background: var(--muted);
+    color: var(--primary);
+  }
+  .icon svg { width: 17px; height: 17px; }
+  .focusList h4 { margin: 0 0 .25rem; font-size: .8125rem; font-weight: 600; line-height: 1.35; }
+  .focusList p { margin: 0; color: var(--muted-foreground); font-size: .75rem; line-height: 1.5; text-wrap: pretty; }
+  .note {
+    margin: .25rem 0 0;
+    padding-top: .75rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted-foreground);
+    font-size: .6875rem;
+    line-height: 1.55;
+  }
+}

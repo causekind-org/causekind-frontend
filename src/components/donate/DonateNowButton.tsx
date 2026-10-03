@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { DONATE_HREF } from "@/lib/donateScroll";
 
 /**
@@ -49,6 +49,8 @@ export function DonateNowButton({
   return (
     <Link
       href={href}
+      // The arrival handler owns scrolling for the donation deep link.
+      scroll={href === DONATE_HREF ? false : undefined}
       data-donate-cta={size}
       className={[
         "ck-donate-cta",

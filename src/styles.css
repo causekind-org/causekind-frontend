@@ -100,6 +100,19 @@
 }
 
 @theme inline {
+  /* NGO components use this palette directly, including primary button backgrounds. */
+  --color-ngo-50: #f0f9f4;
+  --color-ngo-100: #dcf0e4;
+  --color-ngo-200: #bce1ce;
+  --color-ngo-300: #86cfae;
+  --color-ngo-400: #55b58c;
+  --color-ngo-500: #34a578;
+  --color-ngo-600: #248a63;
+  --color-ngo-700: #1e6b4f;
+  --color-ngo-800: #185740;
+  --color-ngo-900: #123d2e;
+  --color-ngo-950: #0b2e22;
+
   /* ── Fluid type scale ───────────────────────────────────────────────────
      Redefining Tailwind's --text-* here makes every text-xs … text-9xl
      utility on the site fluid from one place — no component file needs to
@@ -3704,6 +3717,9 @@ div:has(.searchable-select-open) {
   --ck-role-on-accent: #ffffff;
   --ck-role-soft: oklch(0.96 0.035 55);
   --ck-role-on-soft: oklch(0.28 0.10 45);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(176, 74, 21, 0.4);
+  --ck-role-shadow-rgb: 176, 74, 21;
   --ck-role-ring: #b04a15;
   --ck-role-gradient: linear-gradient(135deg, #b04a15 0%, #e07b3a 100%);
   --ck-role-gradient-soft: linear-gradient(135deg, #e07b3a 0%, #f0b97a 100%);
@@ -3719,6 +3735,9 @@ div:has(.searchable-select-open) {
   --ck-role-soft: oklch(0.95 0.03 250);
   /* Readable text ON --ck-role-soft. Dark navy on the pale blue: ~13:1. */
   --ck-role-on-soft: oklch(0.26 0.08 255);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(30, 58, 96, 0.4);
+  --ck-role-shadow-rgb: 30, 58, 96;
   /* Ring is the HOVER blue, not the accent: #1e3a60 against a white page is a
      dark ring that reads as a border, and focus must be unmistakable. */
   --ck-role-ring: #2d5a96;
@@ -3726,6 +3745,43 @@ div:has(.searchable-select-open) {
   --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #7fb0e8 100%);
 }
 
+[data-ck-role-theme="ngo"] {
+  --ck-role-accent: #1e6b4f;
+  --ck-role-deep: #123d2e;
+  --ck-role-hover: #248a63;
+  --ck-role-secondary: #34a578;
+  --ck-role-highlight: #86cfae;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: #e8f5ee;
+  --ck-role-on-soft: #123d2e;
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(30, 107, 79, 0.4);
+  --ck-role-shadow-rgb: 30, 107, 79;
+  --ck-role-ring: #248a63;
+  --ck-role-gradient: linear-gradient(135deg, #1e6b4f 0%, #34a578 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #34a578 0%, #86cfae 100%);
+  --primary: var(--ck-role-accent);
+  --primary-foreground: var(--ck-role-on-accent);
+  --ring: var(--ck-role-ring);
+}
+
+.dark[data-ck-role-theme="ngo"],
+.dark [data-ck-role-theme="ngo"] {
+  --ck-role-accent: #86cfae;
+  --ck-role-deep: #185740;
+  --ck-role-hover: #a7dec5;
+  --ck-role-highlight: #a7dec5;
+  --ck-role-on-accent: #0b2e22;
+  --ck-role-soft: #123d2e;
+  --ck-role-on-soft: #e8f5ee;
+  --ck-role-glow: rgba(134, 207, 174, 0.4);
+  --ck-role-shadow-rgb: 134, 207, 174;
+  --ck-role-ring: #86cfae;
+  --ck-role-gradient: linear-gradient(135deg, #248a63 0%, #86cfae 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #34a578 0%, #a7dec5 100%);
+}
+
+.dark:not([data-ck-role-theme]),
 .dark [data-ck-role-theme="donor"],
 .dark[data-ck-role-theme="donor"] {
   --ck-role-accent: #e07b3a;
@@ -3734,6 +3790,9 @@ div:has(.searchable-select-open) {
   --ck-role-on-accent: #1a1207;
   --ck-role-soft: oklch(0.26 0.05 50);
   --ck-role-on-soft: oklch(0.94 0.03 60);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(224, 123, 58, 0.4);
+  --ck-role-shadow-rgb: 224, 123, 58;
   --ck-role-ring: #e07b3a;
 }
 
@@ -3745,9 +3804,13 @@ div:has(.searchable-select-open) {
   --ck-role-accent: #7fb0e8;
   --ck-role-deep: #3f6c9e;
   --ck-role-hover: #a3c8f2;
+  --ck-role-highlight: #a3c8f2;
   --ck-role-on-accent: #0b1929;
   --ck-role-soft: oklch(0.26 0.05 250);
   --ck-role-on-soft: oklch(0.93 0.02 250);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(127, 176, 232, 0.4);
+  --ck-role-shadow-rgb: 127, 176, 232;
   --ck-role-ring: #7fb0e8;
   --ck-role-gradient: linear-gradient(135deg, #2d5a96 0%, #7fb0e8 100%);
   --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #a3c8f2 100%);
@@ -3958,6 +4021,19 @@ div:has(.searchable-select-open) {
   --color-orange-800: #12253f;
   --color-orange-900: #12253f;
   --color-orange-950: #0b1929;
+}
+
+/* Shared home accents track every signed-in palette, including dark mode. */
+[data-ck-role-theme]:has(.ck-home-page) {
+  --ck-home-accent: var(--ck-role-accent);
+  --ck-home-ink: var(--ck-role-accent);
+  --ck-home-hover: var(--ck-role-hover);
+  --ck-home-deep: var(--ck-role-deep);
+  --ck-home-highlight: var(--ck-role-highlight);
+  --ck-home-soft: var(--ck-role-soft);
+  --ck-home-surface: var(--ck-role-soft);
+  --ck-home-shadow-rgb: var(--ck-role-shadow-rgb);
+  --rust-action: var(--ck-role-accent);
 }
 
 /* Category colours are semantic elsewhere; on the home page only, the two
@@ -4582,3 +4658,16 @@ div:has(.searchable-select-open) {
     animation: none;
   }
 }
+
+@media (min-width: 1024px) {
+  [data-ck-role-theme="donor"] .ck-guest-desktop,
+  [data-ck-role-theme="donee"] .ck-guest-desktop {
+    display: none !important;
+  }
+
+  [data-ck-role-theme="donor"] .ck-role-restoring-placeholder,
+  [data-ck-role-theme="donee"] .ck-role-restoring-placeholder {
+    display: block !important;
+  }
+}
+

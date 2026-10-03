@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import Image from "next/image";
 import { toast } from "@/lib/toast";
 import { getCampaign, getProfile, initiateDonation, getCampaignDonations, type Campaign, type UserProfile, type Donation } from "@/lib/api";

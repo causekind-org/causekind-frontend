@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useTranslations } from "next-intl";
 import { FileCheck2, UserSearch, ClipboardList } from "lucide-react";
 import LetterSwap from "@/components/LetterSwap";

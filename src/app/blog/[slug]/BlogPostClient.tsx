@@ -8,7 +8,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 // rendered document carries clean HTML and there is never an unsanitized
 // frame. Next splits by route, so the cost lands on the blog page alone.
 import DOMPurify from "isomorphic-dompurify";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { fetchBlogTranslation, getBlogTranslation, type BlogTranslation } from "@/data/blogTranslations";

@@ -16,7 +16,8 @@
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { Heart } from "lucide-react";
+import { Heart, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { AboutJourneyMobile, type JourneyItem } from "./AboutJourneyMobile";
 import styles from "./WhoAreWeSection.module.css";
 
@@ -52,9 +53,9 @@ function DoneeSvg({ size = 56 }: { size?: number }) {
       <path d="M20 13c0-5 3.5-9 8-9s8 4 8 9c0 0-1-3-4-4h-8c-3 1-4 4-4 4z" fill="#1A1A2E" />
       <circle cx="28" cy="10.5" r="1" fill="#E53E3E" />
       {/* Body — salwar */}
-      <path d="M16 32c0-6 5-10 12-10s12 4 12 10v8c0 2-1 3-3 3H19c-2 0-3-1-3-3v-8z" fill="#5EC7B6" />
+      <path d="M16 32c0-6 5-10 12-10s12 4 12 10v8c0 2-1 3-3 3H19c-2 0-3-1-3-3v-8z" fill="#4a7fc1" />
       {/* Dupatta accent */}
-      <path d="M20 22c2 3 6 4 8 4" stroke="#0F7A6C" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+      <path d="M20 22c2 3 6 4 8 4" stroke="#1e3a60" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
       {/* Open palms — receiving */}
       <ellipse cx="23" cy="42" rx="3" ry="2" fill="#D4A574" />
       <ellipse cx="33" cy="42" rx="3" ry="2" fill="#D4A574" />
@@ -101,8 +102,8 @@ function BookIcon({ size = 28 }: { size?: number }) {
 function BagIcon({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" fill="none" aria-hidden>
-      <path d="M7 10h14v14a2 2 0 01-2 2H9a2 2 0 01-2-2V10z" fill="#0F7A6C" opacity="0.85" />
-      <path d="M10 10V7a4 4 0 018 0v3" stroke="#0F7A6C" strokeWidth="2" fill="none" />
+      <path d="M7 10h14v14a2 2 0 01-2 2H9a2 2 0 01-2-2V10z" fill="#1e3a60" opacity="0.85" />
+      <path d="M10 10V7a4 4 0 018 0v3" stroke="#1e3a60" strokeWidth="2" fill="none" />
       <rect x="11" y="14" width="6" height="4" rx="1" fill="white" opacity="0.4" />
     </svg>
   );
@@ -110,8 +111,8 @@ function BagIcon({ size = 28 }: { size?: number }) {
 function ShirtIcon({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden>
-      <path d="M8 4l-5 4 3 3 2-2v13h10V9l2 2 3-3-5-4c-1 2-3 3-5 3s-4-1-5-3z" fill="#F4A25B" opacity="0.8" />
-      <path d="M10 4c1 2 2.5 3 3 3s2-1 3-3" stroke="#B5480F" strokeWidth="0.8" fill="none" />
+      <path d="M8 4l-5 4 3 3 2-2v13h10V9l2 2 3-3-5-4c-1 2-3 3-5 3s-4-1-5-3z" fill="#4a7fc1" opacity="0.8" />
+      <path d="M10 4c1 2 2.5 3 3 3s2-1 3-3" stroke="#1e3a60" strokeWidth="0.8" fill="none" />
     </svg>
   );
 }
@@ -300,7 +301,7 @@ function Ecosystem() {
       <div className={styles.bgNetwork}>
         <svg viewBox="0 0 500 460" fill="none" aria-hidden>
           <circle cx="250" cy="230" r="120" stroke="rgba(181,72,15,0.04)" strokeWidth="1" fill="none" />
-          <circle cx="250" cy="230" r="200" stroke="rgba(15,122,108,0.03)" strokeWidth="0.8" fill="none" />
+          <circle cx="250" cy="230" r="200" stroke="rgba(30, 58, 96,0.03)" strokeWidth="0.8" fill="none" />
           <line x1="50" y1="100" x2="450" y2="100" stroke="rgba(120,113,108,0.03)" strokeWidth="0.5" />
           <line x1="50" y1="360" x2="450" y2="360" stroke="rgba(120,113,108,0.03)" strokeWidth="0.5" />
         </svg>
@@ -313,9 +314,9 @@ function Ecosystem() {
             <stop offset="0%" stopColor="#B5480F" stopOpacity="0.8" />
             <stop offset="100%" stopColor="#F4A25B" stopOpacity="0.3" />
           </linearGradient>
-          <linearGradient id="eco-grad-teal" x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#0F7A6C" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#5ec7b6" stopOpacity="0.3" />
+          <linearGradient id="eco-grad-navy" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#1e3a60" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#4a7fc1" stopOpacity="0.3" />
           </linearGradient>
           <linearGradient id="eco-grad-green" x1="50%" y1="100%" x2="50%" y2="0%">
             <stop offset="0%" stopColor="#1F6B3F" stopOpacity="0.8" />
@@ -339,7 +340,7 @@ function Ecosystem() {
         <motion.path
           d={PATHS.doneeToHub}
           className={styles.connectionLine}
-          stroke="url(#eco-grad-teal)"
+          stroke="url(#eco-grad-navy)"
           strokeDasharray="5 5"
           data-active={hoveredChar === "donee"}
           initial={{ pathLength: 0 }}
@@ -369,7 +370,7 @@ function Ecosystem() {
                 repeatCount="indefinite"
               />
             </circle>
-            <circle r="3" className={styles.flowParticle} fill="#0F7A6C">
+            <circle r="3" className={styles.flowParticle} fill="#1e3a60">
               <animateMotion
                 path={PATHS.doneeToHub}
                 dur="3.8s"
@@ -494,13 +495,13 @@ function Ecosystem() {
         <div
           className={styles.characterBody}
           style={{
-            background: "linear-gradient(135deg, #E3F2EF 0%, #C5E8E0 100%)",
-            boxShadow: "0 4px 16px -4px rgba(15,122,108,0.25)",
+            background: "linear-gradient(135deg, #E6EEF8 0%, #C9DAEF 100%)",
+            boxShadow: "0 4px 16px -4px rgba(30, 58, 96,0.25)",
           }}
         >
           <DoneeSvg size={52} />
         </div>
-        <span className={styles.characterName} style={{ color: "#0F7A6C" }}>
+        <span className={styles.characterName} style={{ color: "#1e3a60" }}>
           Donee
         </span>
       </div>
@@ -606,8 +607,8 @@ export function WhoAreWeSection() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: reduceMotion ? 0 : 0.15, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className={styles.headlineHighlight}>Good things</span>{" "}
-            shouldn&apos;t sit unused.
+            <span className={styles.headlineHighlight}>Things you don&apos;t use.</span>{" "}
+            <span className={styles.doneeHighlight}>Someone else needs.</span>
           </motion.h2>
 
           {/* Subhead */}
@@ -617,11 +618,10 @@ export function WhoAreWeSection() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.3 }}
           >
-            CauseKind connects people who have useful things with verified
-            people and NGOs nearby who{" "}
-            <span className={styles.headlineHighlight} style={{ fontWeight: 600 }}>
+            CauseKind helps you give useful things to people and NGOs near you who{" "}
+            <span className={styles.doneeHighlight} style={{ fontWeight: 600 }}>
               need them
-            </span>.
+            </span>. We check who you&apos;re giving to.
           </motion.p>
 
           {/* Supporting detail */}
@@ -631,10 +631,12 @@ export function WhoAreWeSection() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.4 }}
           >
-            A free platform in India. Books, clothes, furniture, electronics and
-            more — given directly. No cash. No middlemen. Just real things
-            reaching real people.
+            Give books, clothes, furniture, electronics and more. CauseKind is
+            free to use. You give items directly to the person or NGO.
           </motion.p>
+          <Link href="/about" className={styles.aboutLink}>
+            About us <ArrowRight size={16} aria-hidden="true" />
+          </Link>
         </div>
 
         {/* ── RIGHT: Ecosystem (Desktop) ──────────────────── */}

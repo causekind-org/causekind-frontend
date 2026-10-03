@@ -30,13 +30,13 @@ const REQUESTS: PublicItemRequest[] = [
   },
   {
     id: 2, title: "School desks", category: "Education", quantity: 12,
-    urgency: "LOW", city: "Pune", description: "For a small school.",
+    urgency: "NORMAL", city: "Pune", description: "For a small school.",
     createdAt: "2026-08-09T10:00:00", imageUrl: null, emergency: false,
     doneeFirstName: "Amit",
   },
   {
     id: 3, title: "Blankets", category: "Relief", quantity: 5,
-    urgency: "MEDIUM", city: "Nashik", description: "After the flood.",
+    urgency: "NORMAL", city: "Nashik", description: "After the flood.",
     createdAt: "2026-08-05T10:00:00", imageUrl: null, emergency: true,
     doneeFirstName: "Sana",
   },
@@ -147,7 +147,7 @@ describe("guest filtering and sorting", () => {
   it("ranks an emergency above its own urgency label when sorting by urgency", async () => {
     await renderBoard();
     await userEvent.selectOptions(screen.getByLabelText(/sort/i), "urgent");
-    // Blankets is MEDIUM but flagged emergency, so it must outrank the
+    // Blankets is NORMAL but flagged emergency, so it must outrank the
     // CRITICAL wheelchair — the card visibly says "Urgent" either way.
     expect(titlesInOrder()[0]).toMatch(/blankets/i);
   });
@@ -230,5 +230,138 @@ describe("guest error handling", () => {
 
     await waitFor(() => expect(screen.getByText(/folding wheelchair/i)).toBeInTheDocument());
     expect(getItemRequests).not.toHaveBeenCalled();
+  });
+});
+
+describe("guest urgency matches the backend enum", () => {
+  beforeEach(() => {
+    getPublicItemRequests.mockReset();
+    getItemRequests.mockReset();
+  });
+
+  const titlesInOrder = () =>
+    screen.getAllByRole("heading", { level: 2 }).map(h => h.textContent);
+
+  // ItemUrgency on the backend is NORMAL | HIGH | CRITICAL. The board used to
+  // offer MEDIUM and LOW, which no request ever carries.
+  it("offers exactly Critical, High and Normal, worst first", async () => {
+    await renderBoard();
+    const group = screen.getByRole("group", { name: /filter by urgency/i });
+    expect(within(group).getAllByRole("button").map(b => b.textContent)).toEqual([
+      "Critical", "High", "Normal",
+    ]);
+  });
+
+  it("filters NORMAL needs, which the old options could not reach", async () => {
+    await renderBoard();
+    await userEvent.click(screen.getByRole("button", { name: /^normal$/i }));
+    expect(screen.getByText(/school desks/i)).toBeInTheDocument();
+    expect(screen.queryByText(/folding wheelchair/i)).toBeNull();
+  });
+
+  it("keeps an emergency under Critical even when its stored urgency is lower", async () => {
+    await renderBoard();
+    await userEvent.click(screen.getByRole("button", { name: /^critical$/i }));
+    expect(screen.getByText(/blankets/i)).toBeInTheDocument(); // NORMAL + emergency
+    expect(screen.queryByText(/school desks/i)).toBeNull();
+  });
+
+  it("sorts unknown or missing urgency after every recognised value", async () => {
+    const odd = {
+      ...REQUESTS[1], id: 9, title: "Mystery crate", urgency: "LOW",
+      createdAt: "2026-08-20T10:00:00",
+    } as PublicItemRequest;
+    await renderBoard([odd, ...REQUESTS]);
+    await userEvent.selectOptions(screen.getByLabelText(/sort/i), "urgent");
+    expect(titlesInOrder().at(-1)).toMatch(/mystery crate/i);
+  });
+});
+
+describe("guest card metadata and mobile controls", () => {
+  beforeEach(() => {
+    getPublicItemRequests.mockReset();
+    getItemRequests.mockReset();
+  });
+
+  it("keeps the city when the category has no known visual", async () => {
+    const unknown = {
+      ...REQUESTS[0], id: 7, title: "Folding wheelchair", category: "Toys", city: "Thane",
+    } as PublicItemRequest;
+    await renderBoard([unknown]);
+    expect(screen.getByText("Thane")).toBeInTheDocument();
+    // Category stays available to assistive tech even without a visual.
+    expect(screen.getByText("Toys")).toBeInTheDocument();
+  });
+
+  it("'All needs' clears categories but leaves search and urgency alone", async () => {
+    await renderBoard();
+    await userEvent.type(screen.getByLabelText(/search open needs/i), "a");
+    await userEvent.click(screen.getByRole("button", { name: /^normal$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /education/i }));
+
+    const all = screen.getByRole("button", { name: /all needs/i });
+    expect(all).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(all);
+
+    expect(all).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText(/search open needs/i)).toHaveValue("a");
+    expect(screen.getByRole("button", { name: /^normal$/i })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("exposes the urgency panel toggle with aria-expanded and aria-controls", async () => {
+    await renderBoard();
+    const toggle = screen.getByRole("button", { name: /^filters$/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "guest-needs-urgency");
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps every card link pointed at the selected request's offer page", async () => {
+    await renderBoard();
+    const link = screen.getByText(/school desks/i).closest("a");
+    expect(link).toHaveAttribute("href", "/login?next=%2Frequests%2F2%2Foffer");
+  });
+});
+
+describe("guest pagination", () => {
+  beforeEach(() => {
+    getPublicItemRequests.mockReset();
+    getItemRequests.mockReset();
+    window.history.replaceState(null, "", "/requests");
+  });
+
+  // 14 needs; the newest (i = 13) is the wheelchair renderBoard waits for.
+  const many = Array.from({ length: 14 }, (_, i) => ({
+    ...REQUESTS[0],
+    id: 100 + i,
+    title: i === 13 ? "Folding wheelchair" : `Need number ${i + 1}`,
+    createdAt: `2026-08-${String(i + 1).padStart(2, "0")}T10:00:00`,
+  })) as PublicItemRequest[];
+
+  const cardCount = () => screen.getAllByRole("heading", { level: 2 }).length;
+
+  it("shows 12 per page and moves to the next page", async () => {
+    await renderBoard(many);
+    expect(cardCount()).toBe(12);
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(cardCount()).toBe(2);
+    expect(window.location.search).toBe("?page=2");
+    expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
+  });
+
+  it("returns to page 1 when the filters change", async () => {
+    await renderBoard(many);
+    await userEvent.click(screen.getByRole("button", { name: /next/i }));
+    await userEvent.type(screen.getByLabelText(/search open needs/i), "need");
+    expect(screen.getByText(/page 1 of/i)).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
+  it("hides the pager when everything fits on one page", async () => {
+    await renderBoard();
+    expect(screen.queryByRole("navigation", { name: /pages of open needs/i })).toBeNull();
   });
 });

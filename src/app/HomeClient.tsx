@@ -23,6 +23,7 @@
  */
 
 import React, { useEffect, useState, useMemo } from "react";
+import { isNgoRole } from "@/lib/isNgoRole";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -63,18 +64,14 @@ import { toast } from "@/lib/toast";
 import { HeroSection } from "@/components/home/HeroSection";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
-import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
+import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
-// PC view (>= 1024px) of these four sections comes from feature/landing-page-redesign;
-// the mobile view (< 1024px) keeps the components above.
-import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
-import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
-import { FoundersNoteDesktop } from "@/components/home/desktop/FoundersNoteDesktop";
-import { FinalCtaDesktop } from "@/components/home/desktop/FinalCtaDesktop";
+import { RoleHome } from "@/components/home/RoleHome";
+import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
@@ -136,7 +133,7 @@ export default function HomeClient({
 }) {
   const t = useTranslations("landing");
   const tCommon = useTranslations("common");
-  const { user } = useAuth();
+  const { user, isRestoring } = useAuth();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
@@ -235,6 +232,26 @@ export default function HomeClient({
   );
 
 
+  const roleStr = user?.role?.replace(/^ROLE_/, "");
+  const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
+  
+  const [isDesktop, setIsDesktop] = useState(true);
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
+  const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
+
+  // The general landing redesign must not replace the NGO-specific home.
+  if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
+    return <NgoLandingView />;
+  }
+
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
@@ -247,37 +264,22 @@ export default function HomeClient({
       <IndependenceDayStrip />
       <RakshaBandhanStrip />
       <SmoothScroll />
-      {/* Continuous dashed road across whole desktop page */}
-      <DashedJourneyRoad />
-      {/* One responsive front door. Keeping it outside the two legacy layout
-          trees prevents CTA, image and tour-anchor drift between breakpoints.
-          With the film on, the same hero is laid over the film's first screen
-          and slides off it on scroll — see HeroFilm. */}
+      {/* SHARED / GUEST DESKTOP TREE */}
+      {showGuestDesktopTree && (
+        <div className="ck-guest-desktop">
+          {/* Continuous dashed road across whole desktop page */}
+          <DashedJourneyRoad />
+      {/* One responsive front door. With cinematicLanding on, the film sits
+          pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
-      {/* WHERE DOES MY SUPPORT GO — real photographs from our drives, straight
-          after the film: the film is scroll-driven; this is still and tactile.
-          It replaces SupportJourneySection (file kept) on the page. */}
+      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
+      <WhoAreWeSection />
+
       <SupportGallery />
 
-      {/* SECTION 1 — WHO ARE WE. The planned "What is CauseKind?" typographic
-          section (components/home/whatIsCauseKind/) has no component yet — only
-          its CSS and fonts — so this slot keeps WhoAreWeSection until it exists. */}
-      {/* PC first, so id lookups (DashedJourneyRoad) find the visible one. */}
-      <div className="hidden lg:block">
-        <WhoAreWeDesktop />
-      </div>
-      <div className="lg:hidden">
-        <WhoAreWeSection />
-      </div>
-
       {/* SECTION 3 — HOW DO WE WORK */}
-      <div className="hidden lg:block">
-        <HowItWorksDesktop />
-      </div>
-      <div className="lg:hidden">
-        <HowItWorksSection />
-      </div>
+      <HowItWorksSection />
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       <div className="ck-home-paper hidden lg:block relative z-10">
@@ -291,10 +293,9 @@ export default function HomeClient({
 
       {/* FOUNDER'S NOTE (Desktop) */}
       <div className="hidden lg:block">
-        <FoundersNoteDesktop variant="desktop" />
+        <FoundersNoteSection variant="desktop" />
       </div>
 
-      {/* GOOGLE REVIEWS (Desktop) */}
       <div className="hidden lg:block">
         <GoogleReviewsSection />
       </div>
@@ -415,8 +416,26 @@ export default function HomeClient({
 
 
         {/* SECTION 8 — FINAL CTA */}
-        <FinalCtaDesktop variant="desktop" />
+        <FinalCtaComponent variant="desktop" />
       </div>
+      </div>
+      )}
+
+      {/* ROLE HOME FOR DESKTOP */}
+      {isDonorOrDonee && !isRestoring && isDesktop && (
+        <div className="max-lg:hidden w-full">
+          <RoleHome 
+            role={roleStr?.toLowerCase() as "donor" | "donee"} 
+            initialPublicRequests={initialPublicRequests} 
+            stats={stats} 
+          />
+        </div>
+      )}
+
+      {/* PLACEHOLDER FOR DONOR/DONEE WHILE RESTORING */}
+      {isRestoring && (
+        <div className="ck-role-restoring-placeholder hidden max-lg:hidden w-full h-[85vh] bg-[var(--ck-role-soft)]" />
+      )}
 
       {/* ════════════════════════════════════════════════════════════
           MOBILE VIEW  (lg:hidden)
@@ -482,7 +501,6 @@ export default function HomeClient({
           <FoundersNoteSection variant="mobile" />
         </div>
 
-        {/* GOOGLE REVIEWS (Mobile) */}
         <div className="-mx-5">
           <GoogleReviewsSection />
         </div>
