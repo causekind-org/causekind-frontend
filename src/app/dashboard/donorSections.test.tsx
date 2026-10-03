@@ -83,7 +83,7 @@ const openTab = (name: RegExp) => screen.findByRole("tab", { name, selected: tru
 
 const INVENTORY_BLURB = /Only our matching engine sees these/;
 const MATCHES_BLURB = /Verified needs your items can fulfil/;
-const OFFERS_BLURB = /Items you offered directly against someone/;
+const OFFERS_BLURB = /Offers you made to fulfil specific requests/;
 
 describe("donor dashboard sections", () => {
   it("opens on Your Offers when an offer is waiting on the donor", async () => {
@@ -280,3 +280,91 @@ describe("donor match history", () => {
     expect(screen.getByText(/No live matches right now/)).toBeInTheDocument();
   });
 });
+
+describe("matched donations & fulfilled inventory", () => {
+  it("excludes fulfilled listings from inventory tab count and renders in matched donations", async () => {
+    mocks.listings.mockResolvedValue([
+      listing(1, "AVAILABLE"),
+      listing(2, "FULFILLED", { title: "Fulfilled Study Earbuds" }),
+    ]);
+    mocks.matches.mockResolvedValue([
+      match(50, "COMPLETED", { listingId: 2, listingTitle: "Fulfilled Study Earbuds" }),
+    ]);
+    render(<DashboardPage />);
+
+    // Inventory tab count shows only 1 (excludes FULFILLED)
+    const itemsTab = await openTab(/Your Inventory/);
+    expect(within(itemsTab).getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("Listed laptop 1")).toBeInTheDocument();
+    // Fulfilled group not rendered in inventory tab
+    expect(screen.queryByText("Fulfilled Study Earbuds")).toBeNull();
+
+    // Switch to Offers tab
+    await userEvent.click(await tab(/Your Offers/));
+    await openTab(/Your Offers/);
+
+    // Matched Donations panel is visible
+    expect(screen.getByText("Matched Donations")).toBeInTheDocument();
+    expect(screen.getByText("Your listed items that were matched and donated")).toBeInTheDocument();
+    expect(screen.getByText("Fulfilled Study Earbuds")).toBeInTheDocument();
+    expect(screen.getByText("Fulfilled")).toBeInTheDocument();
+    expect(screen.getByText("Now · Complete")).toBeInTheDocument();
+    expect(screen.getByText(/The donation was successfully completed/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /View Certificate/i })).toHaveAttribute("href", "/certificate?matchId=50");
+    // With only 1 fulfilled item, no View all link
+    expect(screen.queryByRole("link", { name: /View all/i })).toBeNull();
+  });
+
+  it("shows only the most recent card and renders View all when there are 2+ fulfilled items", async () => {
+    mocks.listings.mockResolvedValue([
+      listing(1, "FULFILLED", { title: "Older Earbuds", createdAt: new Date(Date.now() - 10 * 86400000).toISOString() }),
+      listing(2, "FULFILLED", { title: "Newer Earbuds", createdAt: new Date(Date.now() - 1 * 86400000).toISOString() }),
+    ]);
+    mocks.matches.mockResolvedValue([
+      match(101, "COMPLETED", { listingId: 1, completedAt: new Date(Date.now() - 10 * 86400000).toISOString() }),
+      match(102, "COMPLETED", { listingId: 2, completedAt: new Date(Date.now() - 1 * 86400000).toISOString() }),
+    ]);
+    render(<DashboardPage />);
+
+    await userEvent.click(await tab(/Your Offers/));
+    await openTab(/Your Offers/);
+
+    // Only the newest item is rendered on the dashboard preview
+    expect(screen.getByText("Newer Earbuds")).toBeInTheDocument();
+    expect(screen.queryByText("Older Earbuds")).toBeNull();
+
+    // View all button appears linking to /offers/matched
+    const viewAllLink = screen.getByRole("link", { name: /View all/i });
+    expect(viewAllLink).toHaveAttribute("href", "/offers/matched");
+  });
+
+  it("does NOT match by title if listingId is different or missing", async () => {
+    mocks.listings.mockResolvedValue([
+      listing(99, "FULFILLED", { title: "earbuds" }),
+    ]);
+    // Match has same title "earbuds" but a different listingId
+    mocks.matches.mockResolvedValue([
+      match(200, "COMPLETED", { listingId: 88, listingTitle: "earbuds" }),
+    ]);
+    render(<DashboardPage />);
+
+    await userEvent.click(await tab(/Your Offers/));
+    await openTab(/Your Offers/);
+
+    expect(screen.getByText("earbuds")).toBeInTheDocument();
+    // No certificate button because listingId 99 !== 88
+    expect(screen.queryByRole("link", { name: /View Certificate/i })).toBeNull();
+  });
+
+  it("shows empty state in matched donations when there are no fulfilled items", async () => {
+    mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
+    render(<DashboardPage />);
+
+    await userEvent.click(await tab(/Your Offers/));
+    await openTab(/Your Offers/);
+
+    expect(screen.getByText("Matched Donations")).toBeInTheDocument();
+    expect(screen.getByText("No fulfilled items yet.")).toBeInTheDocument();
+  });
+});
+
