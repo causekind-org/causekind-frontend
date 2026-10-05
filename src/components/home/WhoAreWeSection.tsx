@@ -573,7 +573,7 @@ export function WhoAreWeSection() {
     <section
       ref={sectionRef}
       id="about-causekind"
-      className={`${styles.section} ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex items-center py-10 sm:py-12 lg:py-8 border-b border-stone-200/80 dark:border-stone-850/70`}
+      className={`${styles.section} ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex items-center py-10 sm:py-12 lg:py-8`}
     >
       <div className={styles.ambientGlow} />
 

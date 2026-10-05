@@ -158,11 +158,8 @@
   max-width: 560px;
 }
 .headlineHighlight {
-  color: var(--ck-role-accent);
+  color: var(--eco-ink);
   position: relative;
-}
-:global(.dark) .headlineHighlight {
-  color: var(--ck-role-accent);
 }
 .doneeHighlight {
   color: var(--ck-role-accent);
