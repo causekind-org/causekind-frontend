@@ -338,6 +338,23 @@ export function registerNgo(data: NgoSignupData) {
   );
 }
 
+/**
+ * NGO signup with Google. No email (the server takes the verified Google account's) and
+ * no password (the account signs in with Google). Same response and session as registerNgo.
+ */
+export type NgoGoogleSignupData = Omit<NgoSignupData, "officialEmail" | "password">;
+
+export function registerNgoWithGoogle(googleToken: string, data: NgoGoogleSignupData) {
+  return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
+    "/api/v1/auth/register/ngo/google",
+    {
+      method: "POST",
+      // The browser flow holds an OAuth access token; the server accepts it under either key.
+      body: JSON.stringify({ ...data, idToken: googleToken, accessToken: googleToken }),
+    }
+  );
+}
+
 export function serverLogout() {
   return request<void>("/api/v1/auth/logout", { method: "POST" });
 }
